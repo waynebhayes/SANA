@@ -708,7 +708,7 @@ void Graph::saveInGWFormat(string outputFile, const vector<string>& nodeNames,
 	for (uint i = 0; i < numNodes; i++) {
 		for (uint j = 0; j < i; j++) {
 			if (adjMatrix[i][j]) {
-				outfile << j+1 << " " << i+1 << " |{}|" << endl;
+				outfile << j+1 << " " << i+1 << " 0 |{}|" << endl;
 			}
 		}
 	}
