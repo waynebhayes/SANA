@@ -621,6 +621,7 @@ double SANA::scoreForK(double k) {
 
 	double oldIterationsPerStep = this->iterationsPerStep;
 	double oldK = this->k;
+	bool oldRestart = restart;
 
 	this->iterationsPerStep = ITERATIONS;
 	this->k = k;
@@ -634,7 +635,8 @@ double SANA::scoreForK(double k) {
 	this->k = oldK;
 	constantTemp = false;
 	enableTrackProgress = true;
-
+	restart = oldRestart;
+	
 	return currentScore;
 }
 
