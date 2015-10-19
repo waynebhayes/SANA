@@ -114,10 +114,6 @@ SANA::SANA(Graph* G1, Graph* G2,
 	iterationsPerStep = 10000000;
 
 
-	//to track progress
-	vector<double> eIncs = energyIncSample();
-	avgEnergyInc = vectorMean(eIncs);
-
 	//this does not need to be initialized here,
 	//but the space has to be reserved in the
 	//stack. it is initialized properly before
@@ -125,6 +121,12 @@ SANA::SANA(Graph* G1, Graph* G2,
 	assignedNodesG2 = vector<bool> (n2);
 	unassignedNodesG2 = vector<ushort> (n2-n1);
 	A = vector<ushort> (n1);
+
+
+	//to track progress
+	//vector<double> eIncs = energyIncSample();
+	//avgEnergyInc = vectorMean(eIncs);
+	avgEnergyInc = -0.00001;
 }
 
 SANA::~SANA() {
@@ -636,7 +638,7 @@ double SANA::scoreForK(double k) {
 	constantTemp = false;
 	enableTrackProgress = true;
 	restart = oldRestart;
-	
+
 	return currentScore;
 }
 
