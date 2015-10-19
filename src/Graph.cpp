@@ -733,3 +733,133 @@ Graph Graph::randomNodeInducedSubgraph(uint numNodes) {
 	v = vector<ushort> (v.begin(), v.begin()+numNodes);
 	return nodeInducedSubgraph(v);
 }
+
+bool Graph::isWellDefined() {
+	bool isWellDefined = true;
+	//check that adj lists don't have repeated entries
+	//check that all indices in adj lists are within bounds
+	//check that every edge in the adj lists appears in the adj matrix
+	//check that no node is neighbor to itself in the adj lists
+	uint numNodes = adjMatrix.size();
+	for (uint i = 0; i < adjLists.size(); i++) {
+		for (uint j = 0; j < adjLists[i].size(); j++) {
+			uint neighbor = adjLists[i][j];
+			if (neighbor < 0 or neighbor >= numNodes) {
+				cerr << "Adjacency list ill defined: node " << i << " adjacent to ";
+				cerr << "node out of range " << neighbor << endl;
+				isWellDefined = false;
+			}
+			if (neighbor == i) {
+				cerr << "Adjacency list ill defined: node " << i << " adjacent to itself" << endl;
+				isWellDefined = false;
+
+			}
+			if (not adjMatrix[i][neighbor] or not adjMatrix[i][neighbor]) {
+				cerr << "node " << i << " adjacent to node " << adjMatrix[i][neighbor];
+				cerr << " in the adj lists but not on the adj matrix" << endl;
+				isWellDefined = false;
+			}
+			for (uint k = j+1; k < adjLists[i].size(); k++) {
+				if (neighbor == adjLists[i][k]) {
+					cerr << "Adjacency list ill defined: node " << i << " adjacent to ";
+					cerr << neighbor << " twice" << endl;
+					isWellDefined = false;
+				}
+			}
+		}
+	}
+	//check that no node is adj to itself in the adj matrix
+	for (uint i = 0; i < numNodes; i++) {
+		if (adjMatrix[i][i]) {
+			cerr << "Adjacency matrix ill defined: node " << i << " adjacent to itself" << endl;
+			isWellDefined = false; 
+		}
+	}
+	//check that adj matrix is symmetric
+	//check that every edge in the adj matrix appears in the adj lists (twice)
+	for (uint i = 0; i < numNodes; i++) {
+		for (uint j = 0; j < i; j++) {
+			if (adjMatrix[i][j] != adjMatrix[j][i]) {
+				cerr << "Adjacency matrix ill defined: node (" << i << "," << j;
+				cerr << ") is not symmetric" << endl;
+				isWellDefined = false;
+			}
+			if (adjMatrix[i][j]) {
+				bool found = false;
+				for (uint k = 0; not found and k < adjLists[i].size(); k++) {
+					if (adjLists[i][k] == j) {
+						found = true;
+					}
+				}
+				if (not found) {
+					cerr << "Node " << i << " adjacent to node " << j << " in adjacency";
+					cerr << " matrix but not adjacency lists" << endl;
+					isWellDefined = false;
+				}
+				found = false;
+				for (uint k = 0; not found and k < adjLists[j].size(); k++) {
+					if (adjLists[j][k] == i) {
+						found = true;
+					}
+				}
+				if (not found) {
+					cerr << "Node " << i << " adjacent to node " << j << " in adjacency";
+					cerr << " matrix but not adjacency lists" << endl;
+					isWellDefined = false;
+				}
+			}
+		}
+	}
+	//check that edge list does not have repeated entries
+	//check no node is adjacent to itself in the edge list
+	//check all indices in range
+	//check that every edge in edge list appears in the adj matrix
+	for (uint i = 0; i < edgeList.size(); i++) {
+		if (edgeList[i][0] == edgeList[i][1]) {
+			cerr << "Edge list ill defined: node " << edgeList[i][0];
+			cerr << " adjacent to itself" << endl;
+			isWellDefined = false;
+		}
+		if (edgeList[i][0] < 0 or edgeList[i][0] >= numNodes or
+			edgeList[i][1] < 0 or edgeList[i][1] >= numNodes) {
+			cerr << "Edge list ill defined: node out of range" << edgeList[i][0] << endl;
+			isWellDefined = false;			
+		}
+		if (not adjMatrix[edgeList[i][0]][edgeList[i][1]]) {
+			cerr << "Nodes " << edgeList[i][0] << " and " << edgeList[i][1];
+			cerr << " adjacent in the edge list but not in the adjacency matrix" << endl;
+			isWellDefined = false;
+		}
+		for (uint j = 0; j < i; j++) {
+			if (edgeList[i][0] == edgeList[j][0] and edgeList[i][1] == edgeList[j][1]) {
+				cerr << "Edge list ill defined: edge (" << edgeList[i][0] << ",";
+				cerr << edgeList[i][1] << ") is repeated" << endl;
+				isWellDefined = false;
+			}
+			if (edgeList[i][0] == edgeList[j][1] and edgeList[i][1] == edgeList[j][0]) {
+				cerr << "edge list ill defined: edge (" << edgeList[i][0] << ",";
+				cerr << edgeList[i][1] << ") is repeated" << endl;
+				isWellDefined = false;
+			}
+		}
+	}
+	//check that every edge in adj matrix appears in the edge list
+	for (uint i = 0; i < numNodes; i++) {
+		for (uint j = 0; j < i; j++) {
+			if (adjMatrix[i][j]) {
+				bool found = false;
+				for (uint k = 0; not found and k < edgeList.size(); k++) {
+					if ((edgeList[k][0] == i and edgeList[k][1] == j) or
+						(edgeList[k][1] == i and edgeList[k][0] == j))
+						found = true;
+				}
+				if (not found) {
+					cerr << "Node " << i << " adjacent to node " << j << " in adjacency";
+					cerr << " matrix but not in edge list" << endl;
+					isWellDefined = false;					
+				}
+			}
+		}
+	}
+	return isWellDefined;
+}

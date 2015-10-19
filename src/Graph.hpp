@@ -76,6 +76,8 @@ public:
 	void saveInGWFormat(string outputFile);
 	Graph randomNodeInducedSubgraph(uint numNodes);
 
+	bool isWellDefined();
+
 private:
 
 	string name;
