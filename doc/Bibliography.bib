@@ -320,20 +320,16 @@ SAGA
 
 
 MAGNA
-@ARTICLE{MAGNA,
-   author = {{Saraph}, V. and {Milenkovi{\'c}}, T.},
-    title = "{MAGNA: Maximizing Accuracy in Global Network Alignment}",
-  journal = {ArXiv e-prints},
-archivePrefix = "arXiv",
-   eprint = {1311.2452},
- primaryClass = "q-bio.MN",
- keywords = {Quantitative Biology - Molecular Networks, Quantitative Biology - Quantitative Methods},
-     year = 2013,
-    month = nov,
-   adsurl = {http://adsabs.harvard.edu/abs/2013arXiv1311.2452S},
-  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+@article{MAGNA,
+author = {Saraph, Vikram and Milenković, Tijana}, 
+title = {MAGNA: Maximizing Accuracy in Global Network Alignment},
+year = {2014}, 
+doi = {10.1093/bioinformatics/btu409}, 
+abstract ={Motivation: Biological network alignment aims to identify similar regions between networks of different species. Existing methods compute node similarities to rapidly identify from possible alignments the high-scoring alignments with respect to the overall node similarity. But, the accuracy of the alignments is then evaluated with some other measure that is different than the node similarity used to construct the alignments. Typically, one measures the amount of conserved edges. Thus, the existing methods align similar nodes between networks hoping to conserve many edges (after the alignment is constructed!).Results: Instead, we introduce MAGNA to directly ‘optimize’ edge conservation while the alignment is constructed, without decreasing the quality of node mapping. MAGNA uses a genetic algorithm and our novel function for ‘crossover’ of two ‘parent’ alignments into a superior ‘child’ alignment to simulate a ‘population’ of alignments that ‘evolves’ over time; the ‘fittest’ alignments survive and proceed to the next ‘generation’, until the alignment accuracy cannot be optimized further. While we optimize our new and superior measure of the amount of conserved edges, MAGNA can optimize any alignment accuracy measure, including a combined measure of both node and edge conservation. In systematic evaluations against state-of-the-art methods (IsoRank, MI-GRAAL and GHOST), on both synthetic networks and real-world biological data, MAGNA outperforms all of the existing methods, in terms of both node and edge conservation as well as both topological and biological alignment accuracy.Availability: Software: http://nd.edu/∼cone/MAGNAContact: tmilenko@nd.eduSupplementary information: Supplementary data are available at Bioinformatics online.}, 
+URL = {http://bioinformatics.oxfordjournals.org/content/early/2014/08/02/bioinformatics.btu409.abstract}, 
+eprint = {http://bioinformatics.oxfordjournals.org/content/early/2014/08/02/bioinformatics.btu409.full.pdf+html}, 
+journal = {Bioinformatics} 
 }
-
 
 NETAL
 @article{NETAL,
@@ -409,20 +405,24 @@ IsoRankN
 
 
 % WAVE
-@ARTICLE{WAVE,
-   author = {{Sun}, Y. and {Crawford}, J. and {Tang}, J. and {Milenkovi{\'c}}, T.
-	},
-    title = "{Simultaneous Optimization of Both Node and Edge Conservation in Network Alignment via WAVE}",
-  journal = {ArXiv e-prints},
-archivePrefix = "arXiv",
-   eprint = {1410.3301},
- primaryClass = "q-bio.MN",
- keywords = {Quantitative Biology - Molecular Networks},
-     year = 2014,
-    month = oct,
-   adsurl = {http://adsabs.harvard.edu/abs/2014arXiv1410.3301S},
-  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+
+@incollection{WAVE,
+year={2015},
+isbn={978-3-662-48220-9},
+booktitle={Algorithms in Bioinformatics},
+volume={9289},
+series={Lecture Notes in Computer Science},
+editor={Pop, Mihai and Touzet, Hélène},
+doi={10.1007/978-3-662-48221-6_2},
+title={Simultaneous Optimization of both Node and Edge Conservation in Network Alignment via WAVE},
+url={http://dx.doi.org/10.1007/978-3-662-48221-6_2},
+publisher={Springer Berlin Heidelberg},
+author={Sun, Yihan and Crawford, Joseph and Tang, Jie and Milenković, Tijana},
+pages={16-39},
+language={English}
 }
+
+
 
 % GREAT
 @ARTICLE{GREAT,
