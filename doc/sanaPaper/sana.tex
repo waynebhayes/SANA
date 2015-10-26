@@ -424,6 +424,15 @@ While SANA-S3 grossly outperforms all other methods in optimizing S3, its sequen
 
 In conclusion, we have introduced a new simulated annealing search algorithm that can optimize any objective function when performing network alignment.  We have shown that SANA optimizes any explicit objective function better than any existing method, and produces solutions that score better in virtually every way compared to existing solutions, and does so faster than current methods. We have also shown, so far as we know for the first time, that when compared on a level playing field, a graphlet-based topology measure produces better biological information than other topological scoring methods.
 
+\subsection{EC is edge coverage, not edge ``correctness''}
+
+When two pairs of aligned nodes both have an edge between them, we say that the edges are ``covered'' by each other.  Given that there are thousands of edges in both networks, this fact alone, for this particular pair, implies nothing ``correct'' about this particular alignment.  Furthermore, as Figure~\ref{fig:syntheticyeast} demonstrates, SAGA-LG is capable of maintaining virtually $100\%$ edge coverage even as the node correctness (and ``correctness'' here does have meaning) drops significantly.
+
+In other words, there is nothing ``correct'' about edge correctness. In fact, if one is aligning two cliques, every alignment has $100\%$ EC, even if every node and edge is in the wrong place. The second author (W. Hayes) was in the room when this term was coined for this measure, and at the time it did not occur to anybody that it would be possible that EC could stay so high while the value of the alignment diminished so significantly. It is time to rename this measure to a more meaningful name: edges can be covered independently of their ``correctness'', and so the word ``correct'' is misleading. In fact, EC is so incorrect that S3 was invented to replace it. It is time to stop calling it ``correct''. We are doing a disservice to the long-term community of network alignment scientists by maintaining such a misleading term.
+
+
+
+
 \section*{Acknowledgments}
 
 We are very grateful to Tijana Milenkovi\'{c} and Vikram Saraph for directions on how to perform GO similarity analysis. We are also very grateful to No{\"e}l Malod-Dognin for assistance with sequence and GO similarity analysis on the BioGRID dataset. We thank Oleksii Kuchaiev for his insights on how to compute a statistically significant measure based on GO terms. We thank Yuki Sawa for help obtaining the sequence data of the Yeast and Human dataset.
