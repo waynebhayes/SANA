@@ -144,7 +144,7 @@ If we take a random alignment, called the \textit{initial solution}, we can impr
 
 \subsection{SANA algorithm}
 % definitions and notations
-Let $G_1=(V_1,E_1)$ and $G_2=(V_2,E_2)$ be two graphs (networks) with $|V_1|\leq|V_2|$. An alignment $a$ from $G_1$ to $G_2$ is an injective function from $V_1$ to $V_2$. An objective function $f$ is a function from the set of all alignments to the closed range $[0,1]$.
+Let $G_1=(V_1,E_1)$ and $G_2=(V_2,E_2)$ be two graphs (networks) with $|V_1|\leq|V_2|$. A pairwise global alignment $a$ (from this point simply alignment) from $G_1$ to $G_2$ is an injective function from $V_1$ to $V_2$. An objective function $f$ is a function from the set of all alignments to the closed range $[0,1]$.
 
 % algorithm
 The basic scheme of SANA is shown in Algorithm~\ref{alg:SANA}. The input consists of the two networks $G_1,G_2$, an objective function $f$, and a starting alignment (in the absence of one, SANA generates a random alignment). The last input $S$ provides a stopping condition: a maximum number of iterations or execution time. Since SANA is a generic search algorithm, $f$ can be any objective function. The output is an alignment $a$ that aims to optimize $f$---in our case, we {\it maximize} various topological and biological similarity measures rather than minimizing energy.
