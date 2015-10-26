@@ -37,7 +37,7 @@
 \begin{document}
 \firstpage{1}
 
-\title[SANA: Simulated Annealing Graph Alignment Applied to Biological Networks]{SANA: Simulated Annealing Graph Alignment Applied to Biological Networks}
+\title[SANA: Simulated Annealing Network Alignment Applied to Biological Networks]{SANA: Simulated Annealing Network Alignment Applied to Biological Networks}
 \author[N.Mamano and W.Hayes]{Nil Mamano and Wayne Hayes\footnote{to whom correspondence should be addressed}}
 \address{Department of Computer Science, University of California, Irvine CA 92697-3435, USA
 }
@@ -53,7 +53,7 @@ The alignment of biological networks has the potential to teach us as much about
 Sequence alignment can be optimally solved in polynomial time. In contrast, network alignment is $NP$-hard,
 meaning optimal solutions are impossible to find, and the quality of found alignments depend strongly upon the algorithm used
 to create them.
-Every network alignment algorithm consists of two orthogonal components: first, an objective function or measure $M$ that is used to evaluate the quality of any proposed alignment; and second, a search algorithm used to explore the exponentially large set of possible alignments in an effort to find ``good'' ones according to $M$.  Objective functions fall into many categories, including biological measures such as sequence similarity, as well as topological measures like graphlet similarity and edge coverage (possibly weighted). Algorithms to search the space of all possible alignments can be deterministic or stochastic, and many possibilities have been offered over the past decade. In this paper we introduce a new stochastic search algorithm called SANA: Simulated Annealing Graph Aligner. We test it on several popular objective functions and demonstrate that it almost universally optimizes each one significantly better, and faster, than existing search algorithms.
+Every network alignment algorithm consists of two orthogonal components: first, an objective function or measure $M$ that is used to evaluate the quality of any proposed alignment; and second, a search algorithm used to explore the exponentially large set of possible alignments in an effort to find ``good'' ones according to $M$.  Objective functions fall into many categories, including biological measures such as sequence similarity, as well as topological measures like graphlet similarity and edge coverage (possibly weighted). Algorithms to search the space of all possible alignments can be deterministic or stochastic, and many possibilities have been offered over the past decade. In this paper we introduce a new stochastic search algorithm called SANA: Simulated Annealing Network Aligner. We test it on several popular objective functions and demonstrate that it almost universally optimizes each one significantly better, and faster, than existing search algorithms.
 Finally, we compare several topological objective functions using SANA, and find that graphlet-based topology measures recover more biological information than other topological measures.
 Software available at http://sana.ics.uci.edu.
 \begin{comment}
@@ -62,7 +62,7 @@ Text version of the abstract:
 The alignment of biological networks has the potential to teach us as much about biology and disease as has sequence alignment.
 Sequence alignment can be optimally solved in polynomial time. In contrast, network alignment is NP-hard, meaning optimal solutions are impossible to find, and the quality of found alignments depend strongly upon the algorithm used
 to create them.
-Every network alignment algorithm consists of two orthogonal components: first, an objective function or measure M that is used to evaluate the quality of any proposed alignment; and second, a search algorithm used to explore the exponentially large set of possible alignments in an effort to find "good" ones according to M.  Objective functions fall into many categories, including biological measures such as sequence similarity, as well as topological measures like graphlet similarity and edge coverage (possibly weighted). Algorithms to search the space of all possible alignments can be deterministic or stochastic, and many possibilities have been offered over the past decade. In this paper we introduce a new stochastic search algorithm called SANA: Simulated Annealing Graph Aligner. We test it on several popular objective functions and demonstrate that it almost universally optimizes each one significantly better, and faster, than existing search algorithms.
+Every network alignment algorithm consists of two orthogonal components: first, an objective function or measure M that is used to evaluate the quality of any proposed alignment; and second, a search algorithm used to explore the exponentially large set of possible alignments in an effort to find "good" ones according to M.  Objective functions fall into many categories, including biological measures such as sequence similarity, as well as topological measures like graphlet similarity and edge coverage (possibly weighted). Algorithms to search the space of all possible alignments can be deterministic or stochastic, and many possibilities have been offered over the past decade. In this paper we introduce a new stochastic search algorithm called SANA: Simulated Annealing Network Aligner. We test it on several popular objective functions and demonstrate that it almost universally optimizes each one significantly better, and faster, than existing search algorithms.
 Finally, we compare several topological objective functions using SANA, and find that graphlet-based topology measures recover more biological information than other topological measures.
 \end{comment}
 \section{Contact:} \href{whayes@uci.edu}{whayes@uci.edu}
@@ -122,7 +122,7 @@ Among all the methods for aligning PPI networks, currently L-GRAAL \citep{LGRAAL
 
 \subsection{Our contributions}
 
-We present SANA (\textit{Simulated Annealing Graph Aligner}), a search algorithm based on Simulated Annealing~\citep{SA1,SA2}, a metaheuristic randomized algorithm with a rich history of successful applications to many optimization problems across a wide variety of domains.
+We present SANA (\textit{Simulated Annealing Network Aligner}), a search algorithm based on Simulated Annealing~\citep{SA1,SA2}, a metaheuristic randomized algorithm with a rich history of successful applications to many optimization problems across a wide variety of domains.
 %and show that it is effective, efficient, simple, and flexible.
 It shares many characteristics with MAGNA~\citep{MAGNA}, a genetic algorithm. Both can be used to optimize any objective function directly, and both can start with any alignment and then improve it. However, SANA converges to a good solution faster than most existing algorithms.
 It is conceptually simple to implement, although it has a few user-defined parameters that need to be optimized to get the best results. This can be done either manually by trial-and-error, or automatically~\citep{autosa}.
@@ -400,6 +400,7 @@ Figure~\ref{fig:biogridgo} shows the biological quality of the alignments obtain
 \subsection{Running time}
 
 HubAlign, with a time complexity of $O(n^2\log n)$ is the fastest method. Its execution time for the largest pair of networks, \textit{SCerevisiae} and \textit{HSapiens}, was 33 minutes. In the case of SANA and L-GRAAL the maximum running time is a parameter specified by the user, which we set to one hour. For the runs from the biological comparison (where $\beta=0.5$), which are the most important, SANA's runtime was limited to 1 hour. For the other runs, more time was used, but we suspect a better choice of parameters would recover similar results in less time. This is an area of further research.
+
 
 \section{Discussion}
 
