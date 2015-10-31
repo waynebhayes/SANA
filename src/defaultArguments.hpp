@@ -20,6 +20,6 @@ vector<string> defaultArguments = {
 "-tfin 3",
 "-qcount 1",
 "-alphafile experiments/alphas.out",
-"-o x",
+"-o sana.out",
 "-rewire 0"
 };
