@@ -39,8 +39,8 @@ private:
 	uniform_real_distribution<> randomReal;
 
 
-	//temperature schedule
 	double minutes;
+	uint iterationsPerStep;
 
 	//data structures for the solution space search
 	double changeProbability;

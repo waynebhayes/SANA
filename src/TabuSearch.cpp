@@ -110,10 +110,6 @@ TabuSearch::TabuSearch(Graph* G1, Graph* G2,
 	unassignedNodesG2 = vector<ushort> (n2-n1);
 	A = vector<ushort> (n1);
 
-	//to track progress
-	//vector<double> eIncs = energyIncSample();
-	//avgEnergyInc = vectorMean(eIncs);
-	avgEnergyInc = -0.00001;
 }
 
 TabuSearch::~TabuSearch() {
@@ -254,7 +250,7 @@ void TabuSearch::performChange() {
 
 	energyInc = newCurrentScore-currentScore;
 
-	if (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T)) {
+	if (energyInc >= 0) {
 		A[source] = newTarget;
 		unassignedNodesG2[newTargetIndex] = oldTarget;
 		assignedNodesG2[oldTarget] = false;
@@ -293,7 +289,7 @@ void TabuSearch::performSwap() {
 	newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 	
 	energyInc = newCurrentScore-currentScore;
-	if (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T)) {
+	if (energyInc >= 0) {
 		A[source1] = target2;
 		A[source2] = target1;
 		aligEdges = newAligEdges;
