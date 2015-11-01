@@ -223,10 +223,11 @@ bool TabuSearch::isTabu(ushort node) {
 }
 
 void TabuSearch::addTabu(ushort node) {
-	if (tabus.size() == maxTabus) {
-		tabus.pop_back();
-	}
-	tabus.push_front(node);
+  if (tabus.size() == 0) return;
+  if (tabus.size() == maxTabus) {
+    tabus.pop_back();
+  }
+  tabus.push_front(node);
 }
 
 void TabuSearch::TabuSearchIteration() {
