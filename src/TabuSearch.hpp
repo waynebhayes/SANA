@@ -7,12 +7,13 @@
 #include "Method.hpp"
 #include "Alignment.hpp"
 #include <map>
+#include <deque>
 
 class TabuSearch: public Method {
 
 public:
     TabuSearch(Graph* G1, Graph* G2,
-		double t, MeasureCombination* MC);
+		double t, MeasureCombination* MC, uint ntabus, uint nneighbors);
     ~TabuSearch();
 
     Alignment run();
@@ -99,13 +100,45 @@ private:
 	double currentScore;
 	double energyInc;
 	void TabuSearchIteration();
-	void performChange();
-	void performSwap();
-
+	void performChange(ushort source);
+	void performSwap(ushort source1, ushort source2);
 
 	//others
 	Timer timer;
 	void setInterruptSignal(); //allows the execution to be paused with Control+C
+
+	//tabu search-specific data structures
+	//best-known solution
+	vector<ushort> bestA;
+	double bestScore;
+
+	//each tabu is a node in G1 which cannot be touched
+	deque<ushort> tabus; //to be optimized with a hash table
+	bool isTabu(ushort node);
+	void addTabu(ushort node);
+
+	uint maxTabus;
+	uint nNeighbors;
+
+	double nScore;
+
+	//variables to apply change
+	void moveToBestAdmiNeighbor();
+
+	bool isChangeNeighbor;
+	ushort nSource;
+	ushort nOldTarget;
+	ushort nNewTarget;
+	uint nNewTargetIndex;
+	int nAligEdges;
+	int nInducedEdges;
+	double nLocalScoreSum;
+	double nWecSum;
+
+	ushort nSource1, nSource2;
+	ushort nTarget1, nTarget2;
+
+
 
 };
 

@@ -63,7 +63,7 @@ char doubleArgs[][80] = {
   "-t",
   "-rewire", "-go", "-alpha", "-lgraaliter",
   "-tnew", "-iterperstep", "-numcand", "-tcand", "-tfin",
-  "-qcount", "-graphletlgraal",
+  "-qcount", "-graphletlgraal", "-ntabus", "-nneighbors",
   ""};
 char boolArgs[][80] = {"-dbg", "-goavg", "-submit", "-qsub", "-autoalpha",
 "-restart", "-detailedreport", ""};
@@ -339,7 +339,9 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     M.printWeights(cerr);
     cerr << endl; 
     double minutes = args.doubles["-t"];
-    Method* method = new TabuSearch(&G1, &G2, minutes, &M);    
+    uint ntabus = args.doubles["-ntabus"];
+    uint nneighbors = args.doubles["-nneighbors"];
+    Method* method = new TabuSearch(&G1, &G2, minutes, &M, ntabus, nneighbors);    
     return method;  
   }
   if (strEq(name, "sana")) {

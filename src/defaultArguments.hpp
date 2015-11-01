@@ -8,7 +8,7 @@ vector<string> defaultArguments = {
 "-wavenodesim noded",
 "-k 1",
 "-l 1",
-"-t 1",
+"-t 5",
 "-method sana",
 "-ec 1",
 "-lgraaliter 1000",
@@ -21,5 +21,7 @@ vector<string> defaultArguments = {
 "-qcount 1",
 "-alphafile experiments/alphas.out",
 "-o sana.out",
-"-rewire 0"
+"-rewire 0",
+"-ntabus 300",
+"-nneighbors 50"
 };
