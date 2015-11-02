@@ -1,0 +1,205 @@
+\ProvidesPackage{beamerthemedrexel}  % this style was created by Evan Sultanik
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newif\if@dragon \@dragontrue
+
+\DeclareOption{nodragon}{\@dragonfalse}
+\ProcessOptions
+
+\RequirePackage{drexelcolors}
+\RequirePackage{tikz}
+%%\usetikzlibrary{shadows}
+
+\selectcolormodel{cmyk}
+\mode<presentation>
+
+\newcommand{\email}[1]{
+  \def\@beamerthemedrexel@email{#1}
+}
+\gdef\@beamerthemedrexel@email{}
+
+\newcommand{\DrexelLogo}[1]{
+  \def\@beamerthemedrexel@logo{#1}
+}
+\gdef\@beamerthemedrexel@logo{\includegraphics[width=\WhenPortrait{.95}{0.5}\linewidth]{drexel-logo}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\setbeamercolor{headline}{fg=drexelblue,bg=drexelgold}
+\setbeamercolor{footline}{fg=drexelgold, bg=d3gray}
+\setbeamerfont{footline}{size=\large,series=\tt}
+\setbeamercolor{separation line}{bg=ta2orange}
+\setbeamercolor{title in headline}{fg=drexelblue}
+\setbeamercolor{author in headline}{fg=drexelblue2}
+\setbeamercolor{institute in headline}{fg=drexelblue3}
+
+\setbeamercolor{framesubtitle}{fg=drexelgold, bg=d2gray}
+\setbeamercolor{author in head/foot}{fg=drexelgold, bg=drexelblue}
+\setbeamercolor{title in head/foot}{fg=drexelgold, bg=drexelblue}
+
+\setbeamercolor*{normal text}{fg=black, bg=white}
+%%\setbeamercolor*{block body}{bg=blockBackground,fg=black}
+\setbeamercolor*{block body}{fg=black}
+\setbeamercolor*{block title}{fg=drexelblue,bg=drexelgold}
+\setbeamerfont{block title}{size=\large,series=\bf}
+\setbeamercolor{upper separation line head}{fg=ta2orange}
+
+\setbeamercolor*{example body}{fg=ta3aluminium,bg=black}
+\setbeamercolor*{example text}{fg=ta3aluminium,bg=black}
+\setbeamercolor*{example title}{bg=taorange,fg=d2gray}
+
+%\setbeamercolor{alerted text}{fg=d3gray}
+
+%\setbeamercolor{example text}{fg=taorange}
+\setbeamercolor{structure}{fg=ta3skyblue}
+
+\setbeamertemplate{itemize items}[triangle]
+\setbeamertemplate{navigation symbols}{}  % no navigation on a poster
+
+%% 
+%% Note, you can try removing the word "-low" for a higher resolution background, but it may not print.
+%% Or you can comment it out for even faster building
+%% 
+\if@dragon
+\setbeamertemplate{background}{%
+    \parbox[c][\paperheight]{\paperwidth}{%
+        \vfill \hfill
+ \includegraphics[width=\paperwidth]{white.jpg}
+         \hfill \vfill
+      }}
+\fi
+%%\usebackgroundtemplate{\includegraphics[width=\paperwidth]{bigDragon-low.png}}
+
+%%
+%% This is the block environment that gives transparant blocks
+%%
+\newenvironment{transbox}[1][blockBackground]{
+\begin{tikzpicture}
+\node[text width=\textwidth, fill opacity=0.85, text opacity=1, fill=#1, rounded corners, draw=drexelblue] \bgroup%
+}{\egroup;\end{tikzpicture}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% Block style
+%%
+\newlength{\blocktitleheight}\settoheight{\blocktitleheight}{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890}
+\setlength{\blocktitleheight}{7\blocktitleheight}
+\setbeamertemplate{block begin}{
+  \begin{transbox} % Make background transparent
+    \vspace{3mm}
+    %% \begin{beamercolorbox}[leftskip=1mm]{block title}
+    %%     %\color{orange}{\rule[1ex]{0.025\linewidth}{1mm}}
+    %%     \usebeamercolor*{block title}
+    %%     \usebeamerfont*{block title}
+    %%     \insertblocktitle
+    %%     %~~ \vspace{-0.5em}\huge\color{orange}{\dotfill}\vspace{0.5em}~~
+    %% \end{beamercolorbox}
+    \begin{center}\begin{tikzpicture}
+      \node[text width=0.97\textwidth,inner sep=3mm,fill=drexelgold,draw=ta2orange,text=drexelblue,rounded corners,minimum height=\blocktitleheight] {\usebeamerfont*{block title}\insertblocktitle};
+    \end{tikzpicture}\end{center}
+    \vspace{3mm}
+    \begin{beamercolorbox}[leftskip=9mm]{block body}
+    \usebeamerfont*{block body}
+    \usebeamercolor*{block body}
+}
+    % Content goes here
+\setbeamertemplate{block end}{
+    \end{beamercolorbox}
+  \end{transbox}
+  \vspace{-1em}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setbeamertemplate{headline}{  
+  \leavevmode
+
+  \begin{beamercolorbox}[wd=\paperwidth]{headline}
+    \begin{columns}[T]
+      \begin{column}{.02\paperwidth}
+      \end{column}
+      \begin{column}{.1\paperwidth}
+        \begin{center}
+          \@beamerthemedrexel@logo
+        \end{center}
+      \end{column}
+      \begin{column}{.8\paperwidth}
+        \vskip4ex
+        \centering
+        \usebeamercolor{title in headline}{\color{fg}\textbf{\LARGE{\inserttitle}}\\[1ex]}
+        \usebeamercolor{author in headline}{\color{fg}\large{\insertauthor}\\[1ex]}
+        \usebeamercolor{institute in headline}{\color{fg}\large{\insertinstitute}\\[1ex]}     
+      \end{column}
+      \begin{column}{.1\paperwidth}
+    %% \parbox[c][3in]{\hsize}{%
+    %%     \vfill\includegraphics[width=\hsize]{art/cs}\vfill
+    %%   }
+      \end{column}
+      \begin{column}{.02\paperwidth}
+      \end{column}
+    \end{columns}
+    \vskip2ex
+  \end{beamercolorbox}
+
+  \begin{beamercolorbox}[wd=\paperwidth]{lower separation line head}
+    \rule{0pt}{3pt}
+  \end{beamercolorbox}
+}
+
+%  \setbeamertemplate{headline}{  
+%    \leavevmode
+%    \begin{beamercolorbox}[sep=0.5cm,wd=.8\paperwidth]{headline}
+%      \usebeamercolor{title in headline}{\raggedleft\color{fg}\textbf{\LARGE{\inserttitle}}\\[1ex]}
+%      \usebeamercolor{author in headline}{\raggedleft\color{fg}\large{\insertauthor}\\[1ex]}
+%      \usebeamercolor{institute in headline}{\raggedleft\color{fg}\large{\insertinstitute}\\[1ex]}     
+%    \end{beamercolorbox}%
+%    \begin{beamercolorbox}[wd=.2\paperwidth]{logo in headline}
+%      \centering
+%      \LARGE{LOGO}
+%    \end{beamercolorbox}  
+
+
+%}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setbeamertemplate{footline}{
+  \begin{beamercolorbox}[wd=\paperwidth]{upper separation line foot}
+    \rule{0pt}{3pt}
+  \end{beamercolorbox}
+  
+  \leavevmode%
+  \begin{beamercolorbox}[ht=4ex,leftskip=1em,rightskip=1em]{author in head/foot}%
+    \url{http://www.cs.uci.edu/}
+    \hfill
+    \@beamerthemedrexel@email
+    \vskip1ex
+  \end{beamercolorbox}
+  \vskip0pt%
+  \begin{beamercolorbox}[wd=\paperwidth]{lower separation line foot}
+    \rule{0pt}{3pt}
+  \end{beamercolorbox}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Display a grid to help align images ... and it looks nice with this color scheme
+%\beamertemplategridbackground[1cm]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\mode<all>
+
+% adapt height of imtemize rectangles
+\setbeamertemplate{itemize items}[triangle]
+\setbeamertemplate{itemize item}{\raisebox{0.12ex}{$\blacktriangleright$}\hskip0.1em}
+\setbeamertemplate{itemize subitem}{\raisebox{0.12ex}{$\triangleright$}\hskip0.1em}
+% or define your own template using \defbeamertemplate{itemize item}, see beameruserguide.pdf
+
+% equal font sizes for all levels
+\setbeamerfont{itemize/enumerate body}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subbody}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subsubbody}{size=\normalsize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-PDF-mode: t
+%%% TeX-master: "poster-surf"
+%%% End: 
