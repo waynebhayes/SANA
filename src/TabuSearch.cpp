@@ -30,8 +30,8 @@
 using namespace std;
 
 TabuSearch::TabuSearch(Graph* G1, Graph* G2,
-	double t, MeasureCombination* MC):
-	Method(G1, G2, "TabuSearch_"+MC->toString())
+	double t, MeasureCombination* MC, uint maxTabus, uint nNeighbors):
+	Method(G1, G2, "TabuSearch_"+MC->toString()), maxTabus(maxTabus), nNeighbors(nNeighbors)
 {
 	//data structures for the networks
 	n1 = G1->getNumNodes();
@@ -100,7 +100,7 @@ TabuSearch::TabuSearch(Graph* G1, Graph* G2,
 
 	//other execution options
 	enableTrackProgress = true;
-	iterationsPerStep = 10000000;
+	iterationsPerStep = 100000;
 
 	//this does not need to be initialized here,
 	//but the space has to be reserved in the
@@ -110,10 +110,7 @@ TabuSearch::TabuSearch(Graph* G1, Graph* G2,
 	unassignedNodesG2 = vector<ushort> (n2-n1);
 	A = vector<ushort> (n1);
 
-	//to track progress
-	//vector<double> eIncs = energyIncSample();
-	//avgEnergyInc = vectorMean(eIncs);
-	avgEnergyInc = -0.00001;
+	assert(n1 > maxTabus);
 }
 
 TabuSearch::~TabuSearch() {
@@ -138,6 +135,7 @@ string TabuSearch::fileNameSuffix(const Alignment& A) {
 
 void TabuSearch::initDataStructures(const Alignment& startA) {
 	A = startA.getMapping();
+	bestA = startA.getMapping();
 
 	assignedNodesG2 = vector<bool> (n2, false);
 	for (uint i = 0; i < n1; i++) {
@@ -175,7 +173,9 @@ void TabuSearch::initDataStructures(const Alignment& startA) {
 		}
 	}
 	
-	currentScore = eval(startA);
+	currentScore = bestScore = eval(startA);
+
+	tabus = deque<ushort> ();
 
 	timer.start();
 }
@@ -212,16 +212,73 @@ Alignment TabuSearch::simpleRun(const Alignment& startA, double maxExecutionSeco
 		}
 		TabuSearchIteration();
 	}
-	return A; //dummy return to shut compiler warning
+	return bestA; //dummy return to shut compiler warning
+}
+
+bool TabuSearch::isTabu(ushort node) {
+	for (ushort tabu : tabus) {
+		if (tabu == node) return true;
+	}
+	return false;
+}
+
+void TabuSearch::addTabu(ushort node) {
+  if (tabus.size() == 0) return;
+  if (tabus.size() == maxTabus) {
+    tabus.pop_back();
+  }
+  tabus.push_front(node);
 }
 
 void TabuSearch::TabuSearchIteration() {
-	if (randomReal(gen) <= changeProbability) performChange();
-	else performSwap();
+	nScore = -1;
+	ushort numAdmiNeighborsFound = 0;
+	while (numAdmiNeighborsFound < nNeighbors) {
+		if (randomReal(gen) <= changeProbability) {
+			ushort source = G1RandomNode(gen);
+			if (isTabu(source)) continue; 
+			++numAdmiNeighborsFound;
+			performChange(source);
+		}
+		else {
+			ushort source1 = G1RandomNode(gen), source2 = G1RandomNode(gen);
+			if (isTabu(source1) or isTabu(source2)) continue;
+			++numAdmiNeighborsFound;
+			performSwap(source1, source2);
+		}
+	}
+	moveToBestAdmiNeighbor();
+	if (currentScore > bestScore) {
+		bestA = A;
+	}
 }
 
-void TabuSearch::performChange() {
-	ushort source = G1RandomNode(gen);
+void TabuSearch::moveToBestAdmiNeighbor() {
+	if (isChangeNeighbor) {
+		A[nSource] = nNewTarget;
+		unassignedNodesG2[nNewTargetIndex] = nOldTarget;
+		assignedNodesG2[nOldTarget] = false;
+		assignedNodesG2[nNewTarget] = true;
+		aligEdges = nAligEdges;
+		inducedEdges = nInducedEdges;
+		localScoreSum = nLocalScoreSum;
+		wecSum = nWecSum;
+		currentScore = nScore;
+		addTabu(nSource);		
+	}
+	else {
+		A[nSource1] = nTarget2;
+		A[nSource2] = nTarget1;
+		aligEdges = nAligEdges;
+		localScoreSum = nLocalScoreSum;
+		wecSum = nWecSum;
+		currentScore = nScore;
+		addTabu(nSource1);
+		addTabu(nSource2);
+	}
+}
+
+void TabuSearch::performChange(ushort source) {
 	ushort oldTarget = A[source];
 	uint newTargetIndex = G2RandomUnassignedNode(gen);
 	ushort newTarget = unassignedNodesG2[newTargetIndex];
@@ -252,23 +309,21 @@ void TabuSearch::performChange() {
 	newCurrentScore += localWeight * (newLocalScoreSum/n1);
 	newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 
-	energyInc = newCurrentScore-currentScore;
-
-	if (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T)) {
-		A[source] = newTarget;
-		unassignedNodesG2[newTargetIndex] = oldTarget;
-		assignedNodesG2[oldTarget] = false;
-		assignedNodesG2[newTarget] = true;
-		aligEdges = newAligEdges;
-		inducedEdges = newInducedEdges;
-		localScoreSum = newLocalScoreSum;
-		wecSum = newWecSum;
-		currentScore = newCurrentScore;
+	if (newCurrentScore > nScore) {
+		isChangeNeighbor = true;
+		nSource = source;
+		nOldTarget = oldTarget;
+		nNewTarget = newTarget;
+		nNewTargetIndex = newTargetIndex;
+		nAligEdges = newAligEdges;
+		nInducedEdges = newInducedEdges;
+		nLocalScoreSum = newLocalScoreSum;
+		nWecSum = newWecSum;
+		nScore = newCurrentScore;
 	}
 }
 
-void TabuSearch::performSwap() {
-	ushort source1 = G1RandomNode(gen), source2 = G1RandomNode(gen);
+void TabuSearch::performSwap(ushort source1, ushort source2) {
 	ushort target1 = A[source1], target2 = A[source2];
 
 	int newAligEdges = -1; //dummy initialization to shut compiler warnings
@@ -292,14 +347,16 @@ void TabuSearch::performSwap() {
 	newCurrentScore += localWeight * (newLocalScoreSum/n1);
 	newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 	
-	energyInc = newCurrentScore-currentScore;
-	if (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T)) {
-		A[source1] = target2;
-		A[source2] = target1;
-		aligEdges = newAligEdges;
-		localScoreSum = newLocalScoreSum;
-		wecSum = newWecSum;
-		currentScore = newCurrentScore;
+	if (newCurrentScore > nScore) {
+		isChangeNeighbor = false;
+		nSource1 = source1;
+		nSource2 = source2;
+		nTarget1 = target1;
+		nTarget2 = target2;
+		nAligEdges = newAligEdges;
+		nLocalScoreSum = newLocalScoreSum;
+		nWecSum = newWecSum;
+		nScore = newCurrentScore;
 	}
 }
 

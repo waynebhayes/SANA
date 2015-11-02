@@ -37,6 +37,7 @@
 #include "LGraalWrapper.hpp"
 #include "HubAlignWrapper.hpp"
 #include "SANA.hpp"
+#include "TabuSearch.hpp"
 #include "NoneMethod.hpp"
 #include "GreedyLCCS.hpp"
 #include "GenericLocalMeasure.hpp"
@@ -62,7 +63,7 @@ char doubleArgs[][80] = {
   "-t",
   "-rewire", "-go", "-alpha", "-lgraaliter",
   "-tnew", "-iterperstep", "-numcand", "-tcand", "-tfin",
-  "-qcount", "-graphletlgraal",
+  "-qcount", "-graphletlgraal", "-ntabus", "-nneighbors",
   ""};
 char boolArgs[][80] = {"-dbg", "-goavg", "-submit", "-qsub", "-autoalpha",
 "-restart", "-detailedreport", ""};
@@ -333,6 +334,16 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     //in hubalign alpha is the fraction of topology
     return new HubAlignWrapper(&G1, &G2, 1 - alpha);
   }
+  if (strEq(name, "tabu")) {
+    cerr << "=== Tabu -- optimize: ===" << endl;
+    M.printWeights(cerr);
+    cerr << endl; 
+    double minutes = args.doubles["-t"];
+    uint ntabus = args.doubles["-ntabus"];
+    uint nneighbors = args.doubles["-nneighbors"];
+    Method* method = new TabuSearch(&G1, &G2, minutes, &M, ntabus, nneighbors);    
+    return method;  
+  }
   if (strEq(name, "sana")) {
     cerr << "=== SANA -- optimize: ===" << endl;
     M.printWeights(cerr);
@@ -475,6 +486,9 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
 }
 
 void dbgMode(Graph& G1, Graph& G2, ArgumentParser& args) {
+  G1.isWellDefined();
+  //G2.isWellDefined();
+  exit(0);
   // printLocalTopologicalSimilarities(G1, G2, 1);
   // exit(0);
 
