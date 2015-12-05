@@ -172,8 +172,12 @@ void loadLocalSimilaritiesMatrixFormat(const string& fileName, vector<vector<flo
 }
 
 bool fileExists(const string& fileName) {
-  ifstream ifile(fileName.c_str());
-  return ifile;
+    if (FILE *file = fopen(fileName.c_str(), "r")) {
+        fclose(file);
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void checkFileExists(const string& fileName) {

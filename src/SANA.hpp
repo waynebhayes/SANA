@@ -12,7 +12,7 @@ class SANA: public Method {
 
 public:
     SANA(Graph* G1, Graph* G2,
-		double k, double l, double t, MeasureCombination* MC);
+		double T_initial, double T_decay, double t, MeasureCombination* MC);
     ~SANA();
 
     Alignment run();
@@ -24,8 +24,8 @@ public:
 
     //set temperature schedule automatically
     void setTemperatureScheduleAutomatically();
-	void setKAutomatically();
-	void setLAutomatically();
+	void setT_INITIALAutomatically();
+	void setT_DECAYAutomatically();
 
 
 
@@ -55,25 +55,25 @@ private:
 
 
 	//temperature schedule
-	double k;
-	double l;
+	double T_initial;
+	double T_decay;
 	double minutes;
-	const double kScaling = 0.00004;
-	const double lScaling = 0.00000001;
+	const double T_initialScaling = 0.00004;
+	const double T_decayScaling = 0.00000001;
 
 	double T;
-	double temperatureFunction(double iter, double k, double l);
+	double temperatureFunction(double iter, double T_initial, double T_decay);
 	double acceptingProbability(double energyInc, double T);
-	//to compute k automatically
-	//returns a value of K such that the temperature is random
-    double searchK();
-	double scoreForK(double k);
-	bool isRandomK(double k, double highThresholdScore, double lowThresholdScore);
+	//to compute T_initial automatically
+	//returns a value of T_INITIAL such that the temperature is random
+    double searchT_INITIAL();
+	double scoreForT_INITIAL(double T_initial);
+	bool isRandomT_INITIAL(double T_initial, double highThresholdScore, double lowThresholdScore);
 	double scoreRandom();
-	//to compute l automatically
-    //returns a value of lambda such that with this k, temperature reaches
+	//to compute T_decay automatically
+    //returns a value of lambda such that with this T_initial, temperature reaches
     //0 after a certain number of minutes
-    double searchl(double k, double minutes);
+    double searchT_decay(double T_initial, double minutes);
 	double iterPerSecond();
 	vector<double> energyIncSample();
 	double expectedNumAccEInc(double temp, const vector<double>& energyIncSample);

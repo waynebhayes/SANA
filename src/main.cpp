@@ -56,7 +56,7 @@ const string projectFolder = "/extra/wayne0/preserve/nmamano/networkalignment";
 char stringArgs[][80] = {
   "-g1", "-g2", "-startalignment", "-wecnodesim", "-wavenodesim", "-method",
   "-truealignment", "-experiment", "-o", "-paramestimation", "-alphaestimation", "-alphafile",
-  "-eval", "-k", "-l", "-fg1", "-fg2"};
+  "-eval", "-T_initial", "-T_decay", "-fg1", "-fg2"};
 char doubleArgs[][80] = {
   "-ec", "-s3", "-graphlet", "-noded", "-edged", "-wec",
   "-importance", "-sequence",
@@ -349,12 +349,12 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     M.printWeights(cerr);
     cerr << endl;
 
-    double k;
-    if (args.strings["-k"] == "auto") k = 0;
-    else k = stod(args.strings["-k"]);
-    double l;
-    if (args.strings["-l"] == "auto") l = 0;
-    else l = stod(args.strings["-l"]);
+    double T_initial;
+    if (args.strings["-T_initial"] == "auto") T_initial = 0;
+    else T_initial = stod(args.strings["-T_initial"]);
+    double T_decay;
+    if (args.strings["-T_decay"] == "auto") T_decay = 0;
+    else T_decay = stod(args.strings["-T_decay"]);
 
     double minutes = args.doubles["-t"];
 
@@ -367,7 +367,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
       // if (alpha == -1) alpha = args.doubles["-alpha"];
     }
 
-    Method* method = new SANA(&G1, &G2, k, l, minutes, &M);    
+    Method* method = new SANA(&G1, &G2, T_initial, T_decay, minutes, &M);    
     if (args.bools["-restart"]) {
       double tnew = args.doubles["-tnew"];
       uint iterperstep = args.doubles["-iterperstep"];
@@ -376,11 +376,11 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
       double tfin = args.doubles["-tfin"];
       ((SANA*) method)->enableRestartScheme(tnew, iterperstep, numcand, tcand, tfin);
     }
-    if (args.strings["-k"] == "auto") {
-      ((SANA*) method)->setKAutomatically();
+    if (args.strings["-T_initial"] == "auto") {
+      ((SANA*) method)->setT_INITIALAutomatically();
     }
-    if (args.strings["-l"] == "auto") {
-      ((SANA*) method)->setLAutomatically();
+    if (args.strings["-T_decay"] == "auto") {
+      ((SANA*) method)->setT_DECAYAutomatically();
     }
 
     return method;

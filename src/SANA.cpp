@@ -30,7 +30,7 @@
 using namespace std;
 
 SANA::SANA(Graph* G1, Graph* G2,
-	double k, double l, double t, MeasureCombination* MC):
+	double T_initial, double T_decay, double t, MeasureCombination* MC):
 	Method(G1, G2, "SANA_"+MC->toString())
 {
 	//data structures for the networks
@@ -52,8 +52,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
 	//temperature schedule
-	this->k = k;
-	this->l = l;
+	this->T_initial = T_initial;
+	this->T_decay = T_decay;
 	minutes = t;
 
 
@@ -142,8 +142,8 @@ Alignment SANA::run() {
 
 void SANA::describeParameters(ostream& sout) {
     sout << "Temperature schedule:" << endl;
-    sout << "k: " << k << endl;
-    sout << "l: " << l << endl;
+    sout << "T_initial: " << T_initial << endl;
+    sout << "T_decay: " << T_decay << endl;
     
     sout << "Optimize: " << endl;
     MC->printWeights(sout);
@@ -183,8 +183,8 @@ void SANA::enableRestartScheme(double minutesNewAlignments, uint iterationsPerSt
 	}
 }
 
-double SANA::temperatureFunction(double iter, double k, double l) {
-	return kScaling * k * (constantTemp ? 1 : exp(-l*lScaling*iter));
+double SANA::temperatureFunction(double iter, double T_initial, double T_decay) {
+	return T_initialScaling * T_initial * (constantTemp ? 1 : exp(-T_decay*T_decayScaling*iter));
 }
 
 double SANA::acceptingProbability(double energyInc, double T) {
@@ -256,7 +256,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
 	setInterruptSignal();
 
 	for (; ; iter++) {
-		T = temperatureFunction(iter, k, l);
+		T = temperatureFunction(iter, T_initial, T_decay);
 		if (interrupt) {
 			return A;
 		}
@@ -537,19 +537,19 @@ uint SANA::getHighestIndex() const {
 
 
 void SANA::setTemperatureScheduleAutomatically() {
-	setKAutomatically();
-	setLAutomatically();
+	setT_INITIALAutomatically();
+	setT_DECAYAutomatically();
 }
 
-void SANA::setKAutomatically() {
-	k = searchK();
+void SANA::setT_INITIALAutomatically() {
+	T_initial = searchT_INITIAL();
 }
 
-void SANA::setLAutomatically() {
-	l = searchl(k, minutes);
+void SANA::setT_DECAYAutomatically() {
+	T_decay = searchT_decay(T_initial, minutes);
 }
 
-double SANA::searchK() {
+double SANA::searchT_INITIAL() {
 	const double NUM_SAMPLES_RANDOM = 100;
 	const double HIGH_THRESHOLD_P = 0.999999;	
 	const double LOW_THRESHOLD_P = 0.99;
@@ -572,14 +572,14 @@ double SANA::searchK() {
 	cerr << LOW_THRESHOLD_P << " of random runs have a score <= " << lowThresholdScore << endl;
 	cerr << HIGH_THRESHOLD_P << " of random runs have a score <= " << highThresholdScore << endl;
 
-	double lowerBoundK = 0;
-	double upperBoundK = 1;
-	while (not isRandomK(upperBoundK, highThresholdScore, lowThresholdScore)) {
+	double lowerBoundT_INITIAL = 0;
+	double upperBoundT_INITIAL = 1;
+	while (not isRandomT_INITIAL(upperBoundT_INITIAL, highThresholdScore, lowThresholdScore)) {
 		cerr << endl;
-		upperBoundK *= 2;
+		upperBoundT_INITIAL *= 2;
 	}
 	cerr << endl;
-	if (upperBoundK > 1) lowerBoundK = upperBoundK/2;
+	if (upperBoundT_INITIAL > 1) lowerBoundT_INITIAL = upperBoundT_INITIAL/2;
 
 	uint n1 = G1->getNumNodes();
 	uint n2 = G2->getNumNodes();
@@ -587,46 +587,46 @@ double SANA::searchK() {
 
 	uint count = 0;
 	T.start();
-	while (lowerBoundK < upperBoundK and
+	while (lowerBoundT_INITIAL < upperBoundT_INITIAL and
 		   count <= 10) {
 		//search in log space
-		double lowerBoundKLog = log2(lowerBoundK+1);
-		double upperBoundKLog = log2(upperBoundK+1);
-		double midKLog = (lowerBoundKLog+upperBoundKLog)/2.;
-		double midK = exp2(midKLog)-1;
+		double lowerBoundT_INITIALLog = log2(lowerBoundT_INITIAL+1);
+		double upperBoundT_INITIALLog = log2(upperBoundT_INITIAL+1);
+		double midT_INITIALLog = (lowerBoundT_INITIALLog+upperBoundT_INITIALLog)/2.;
+		double midT_INITIAL = exp2(midT_INITIALLog)-1;
 
 		//we prefer false negatives (random scores classified as non-random)
 		//than false positives (non-random scores classified as random)
 		cerr << "Test " << count << " (" << T.elapsedString() << "): ";
 		count++;
-		if (isRandomK(midK, highThresholdScore, lowThresholdScore)) {
-			upperBoundK = midK;
+		if (isRandomT_INITIAL(midT_INITIAL, highThresholdScore, lowThresholdScore)) {
+			upperBoundT_INITIAL = midT_INITIAL;
 			cerr << " (random behavior)";
 		}
 		else {
-			lowerBoundK = midK;
+			lowerBoundT_INITIAL = midT_INITIAL;
 			cerr << " (NOT random behavior)";
 		}
-		cerr << " New range: (" << lowerBoundK << ", " << upperBoundK << ")" << endl;
+		cerr << " New range: (" << lowerBoundT_INITIAL << ", " << upperBoundT_INITIAL << ")" << endl;
 	}
 	//return the top of the range
-	cerr << "Final range: (" << lowerBoundK << ", " << upperBoundK << ")" << endl;
-	cerr << "Final k: " << upperBoundK << endl;
-	return upperBoundK;
+	cerr << "Final range: (" << lowerBoundT_INITIAL << ", " << upperBoundT_INITIAL << ")" << endl;
+	cerr << "Final T_initial: " << upperBoundT_INITIAL << endl;
+	return upperBoundT_INITIAL;
 }
 
 //takes a random alignment, lets it run for a certain number
-//of iterations (ITERATIONS) with fixed temperature k
+//of iterations (ITERATIONS) with fixed temperature T_initial
 //and returns its score
-double SANA::scoreForK(double k) {
+double SANA::scoreForT_INITIAL(double T_initial) {
 	uint ITERATIONS = 10000.+100.*n1+10.*n2+n1*n2*0.1; //heuristic value
 
 	double oldIterationsPerStep = this->iterationsPerStep;
-	double oldK = this->k;
+	double oldT_INITIAL = this->T_initial;
 	bool oldRestart = restart;
 
 	this->iterationsPerStep = ITERATIONS;
-	this->k = k;
+	this->T_initial = T_initial;
 	constantTemp = true;
 	enableTrackProgress = false;
 	restart = false;
@@ -634,7 +634,7 @@ double SANA::scoreForK(double k) {
 	long long unsigned int iter = 0;
 	simpleRun(Alignment::random(n1, n2), 0, iter);
 	this->iterationsPerStep = oldIterationsPerStep;
-	this->k = oldK;
+	this->T_initial = oldT_INITIAL	;
 	constantTemp = false;
 	enableTrackProgress = true;
 	restart = oldRestart;
@@ -642,18 +642,18 @@ double SANA::scoreForK(double k) {
 	return currentScore;
 }
 
-bool SANA::isRandomK(double k, double highThresholdScore, double lowThresholdScore) {
+bool SANA::isRandomT_INITIAL(double T_initial, double highThresholdScore, double lowThresholdScore) {
 	const double NUM_SAMPLES = 5;
 
-	double score = scoreForK(k);
-	cerr << "k = " << k << ", score = " << score;
+	double score = scoreForT_INITIAL(T_initial);
+	cerr << "T_initial = " << T_initial << ", score = " << score;
 	//quick filter all the scores that are obviously not random
 	if (score > highThresholdScore) return false;
 	if (score < lowThresholdScore) return true;
 	//make sure that alignments that passed the first test are truly random
 	//(among NUM_SAMPLES runs, at least one of them has a p-value smaller than LOW_THRESHOLD_P)
 	for (uint i = 0; i < NUM_SAMPLES; i++) {
-		if (scoreForK(k) <= lowThresholdScore) return true;
+		if (scoreForT_INITIAL(T_initial) <= lowThresholdScore) return true;
 	}
 	return false;
 }
@@ -719,7 +719,7 @@ vector<double> SANA::energyIncSample() {
 	return EIncs;
 }
 
-double SANA::searchl(double k, double minutes) {
+double SANA::searchT_decay(double T_initial, double minutes) {
 
 	vector<double> EIncs = energyIncSample();
 	cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
@@ -750,8 +750,8 @@ double SANA::searchl(double k, double minutes) {
 	cerr << "Final epsilon: " << epsilon << endl;
 	double iter_t = minutes*60*iterPerSecond();
 
-	double lambda = log((k*kScaling)/epsilon)/(iter_t*lScaling);
-	cerr << "Final l: " << lambda << endl;
+	double lambda = log((T_initial*T_initialScaling)/epsilon)/(iter_t*T_decayScaling);
+	cerr << "Final T_decay: " << lambda << endl;
 	return lambda;
 }
 
