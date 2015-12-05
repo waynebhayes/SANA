@@ -220,12 +220,11 @@ bool TabuSearch::isTabu(ushort node) {
 }
 
 void TabuSearch::addTabu(ushort node) {
-  if (tabus.size() == 0) return;
   if (tabus.size() == maxTabus) {
+  	if (tabus.size() == 0) return;
     tabusHash.erase(tabus.back());
     tabus.pop_back();
   }
-  cerr <<"added tabu"<<endl;
   tabus.push_front(node);
   tabusHash.insert(node);
 }
