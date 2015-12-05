@@ -176,7 +176,7 @@ void TabuSearch::initDataStructures(const Alignment& startA) {
 	currentScore = bestScore = eval(startA);
 
 	tabus = deque<ushort> ();
-
+	tabusHash = unordered_set<ushort> ();
 	timer.start();
 }
 
@@ -216,18 +216,18 @@ Alignment TabuSearch::simpleRun(const Alignment& startA, double maxExecutionSeco
 }
 
 bool TabuSearch::isTabu(ushort node) {
-	for (ushort tabu : tabus) {
-		if (tabu == node) return true;
-	}
-	return false;
+	return tabusHash.count(node) != 0;
 }
 
 void TabuSearch::addTabu(ushort node) {
   if (tabus.size() == 0) return;
   if (tabus.size() == maxTabus) {
+    tabusHash.erase(tabus.back());
     tabus.pop_back();
   }
+  cerr <<"added tabu"<<endl;
   tabus.push_front(node);
+  tabusHash.insert(node);
 }
 
 void TabuSearch::TabuSearchIteration() {

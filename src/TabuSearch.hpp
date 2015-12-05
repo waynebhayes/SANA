@@ -1,13 +1,14 @@
 #ifndef TabuSearch_HPP
 #define	TabuSearch_HPP
+#include <map>
+#include <deque>
+#include <unordered_set>
 #include "LocalMeasure.hpp"
 #include "Measure.hpp"
 #include "MeasureCombination.hpp"
 #include "Timer.hpp"
 #include "Method.hpp"
 #include "Alignment.hpp"
-#include <map>
-#include <deque>
 
 class TabuSearch: public Method {
 
@@ -113,7 +114,8 @@ private:
 	double bestScore;
 
 	//each tabu is a node in G1 which cannot be touched
-	deque<ushort> tabus; //to be optimized with a hash table
+	deque<ushort> tabus;
+	unordered_set<ushort> tabusHash;
 	bool isTabu(ushort node);
 	void addTabu(ushort node);
 
