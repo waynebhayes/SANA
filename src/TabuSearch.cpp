@@ -247,7 +247,8 @@ void TabuSearch::TabuSearchIteration() {
 		}
 	}
 	moveToBestAdmiNeighbor();
-	if (currentScore > bestScore) {
+	if (currentScore > bestScore*1.01) {
+		bestScore = currentScore;
 		bestA = A;
 	}
 }
