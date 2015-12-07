@@ -49,7 +49,7 @@
 
 using namespace std;
 
-const string projectFolder = "/extra/wayne0/preserve/nmamano/networkalignment";
+const string projectFolder = "/extra/wayne0/preserve/nmamano/sana";
 
 #include "defaultArguments.hpp"
 
