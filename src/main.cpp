@@ -66,7 +66,7 @@ char doubleArgs[][80] = {
   "-qcount", "-graphletlgraal", "-ntabus", "-nneighbors",
   ""};
 char boolArgs[][80] = {"-dbg", "-goavg", "-submit", "-qsub", "-autoalpha",
-"-restart", "-detailedreport", ""};
+"-restart", "-detailedreport", "-nodetabus", ""};
 char vectorArgs[][80] = {"-nodedweights", "-edgedweights", "-goweights", ""};
 
 string makeScript(const vector<string>& argvs) {
@@ -341,7 +341,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     double minutes = args.doubles["-t"];
     uint ntabus = args.doubles["-ntabus"];
     uint nneighbors = args.doubles["-nneighbors"];
-    Method* method = new TabuSearch(&G1, &G2, minutes, &M, ntabus, nneighbors);    
+    Method* method = new TabuSearch(&G1, &G2, minutes, &M, ntabus, nneighbors, args.bools["-nodetabus"]);    
     return method;  
   }
   if (strEq(name, "sana")) {
