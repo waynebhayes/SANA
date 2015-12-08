@@ -14,7 +14,7 @@ class TabuSearch: public Method {
 
 public:
     TabuSearch(Graph* G1, Graph* G2,
-		double t, MeasureCombination* MC, uint ntabus, uint nneighbors);
+		double t, MeasureCombination* MC, uint ntabus, uint nneighbors, bool nodeTabus);
     ~TabuSearch();
 
     Alignment run();
@@ -101,7 +101,9 @@ private:
 	double currentScore;
 	double energyInc;
 	void TabuSearchIteration();
+	void TabuSearchIterationMappingTabus();
 	void performChange(ushort source);
+	void performChange(ushort source, uint newTargetIndex);
 	void performSwap(ushort source1, ushort source2);
 
 	//others
@@ -113,14 +115,24 @@ private:
 	vector<ushort> bestA;
 	double bestScore;
 
-	//each tabu is a node in G1 which cannot be touched
-	deque<ushort> tabus;
-	unordered_set<ushort> tabusHash;
-	bool isTabu(ushort node);
-	void addTabu(ushort node);
 
 	uint maxTabus;
 	uint nNeighbors;
+
+	//if true, tabus are nodes in G1. If false, tabus are
+	//mappings between a node in G1 and a node in G2
+	bool nodeTabus;
+
+	//if tabus are mappings, the first 16 bits are the node in G1
+	//and the last 16 bits are the node in G2
+	deque<uint> tabus;
+	unordered_set<uint> tabusHash;
+
+	bool isTabu(ushort node);
+	void addTabu(ushort node);
+	bool isTabu(ushort node1, ushort node2);
+	void addTabu(ushort node1, ushort node2);
+
 
 	double nScore;
 

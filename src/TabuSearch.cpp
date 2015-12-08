@@ -30,8 +30,9 @@
 using namespace std;
 
 TabuSearch::TabuSearch(Graph* G1, Graph* G2,
-	double t, MeasureCombination* MC, uint maxTabus, uint nNeighbors):
-	Method(G1, G2, "TabuSearch_"+MC->toString()), maxTabus(maxTabus), nNeighbors(nNeighbors)
+	double t, MeasureCombination* MC, uint maxTabus, uint nNeighbors, bool nodeTabus):
+	Method(G1, G2, "TabuSearch_"+MC->toString()),
+	maxTabus(maxTabus), nNeighbors(nNeighbors), nodeTabus(nodeTabus)
 {
 	//data structures for the networks
 	n1 = G1->getNumNodes();
@@ -110,7 +111,7 @@ TabuSearch::TabuSearch(Graph* G1, Graph* G2,
 	unassignedNodesG2 = vector<ushort> (n2-n1);
 	A = vector<ushort> (n1);
 
-	assert(n1 > maxTabus);
+	assert((nodeTabus and n1 > maxTabus) or (not nodeTabus and n1*n2 > maxTabus));
 }
 
 TabuSearch::~TabuSearch() {
@@ -175,8 +176,8 @@ void TabuSearch::initDataStructures(const Alignment& startA) {
 	
 	currentScore = bestScore = eval(startA);
 
-	tabus = deque<ushort> ();
-	tabusHash = unordered_set<ushort> ();
+	tabus = deque<uint> ();
+	tabusHash = unordered_set<uint> ();
 	timer.start();
 }
 
@@ -210,7 +211,8 @@ Alignment TabuSearch::simpleRun(const Alignment& startA, double maxExecutionSeco
 				return A;
 			}
 		}
-		TabuSearchIteration();
+		if (nodeTabus) TabuSearchIteration();
+		else TabuSearchIterationMappingTabus();
 	}
 	return bestA; //dummy return to shut compiler warning
 }
@@ -227,6 +229,26 @@ void TabuSearch::addTabu(ushort node) {
   }
   tabus.push_front(node);
   tabusHash.insert(node);
+}
+
+//if tabus are mappings, the first 16 bits are the node in G1
+//and the last 16 bits are the node in G2
+bool TabuSearch::isTabu(ushort node1, ushort node2) {
+	uint tabuId = node1;
+	tabuId = (tabuId << 16) | node2;
+	return tabusHash.count(tabuId) != 0;
+}
+
+void TabuSearch::addTabu(ushort node1, ushort node2) {
+	if (tabus.size() == maxTabus) {
+  		if (tabus.size() == 0) return;
+    	tabusHash.erase(tabus.back());
+    	tabus.pop_back();
+  	}
+	uint tabuId = node1;
+	tabuId = (tabuId << 16) | node2;
+  	tabus.push_front(tabuId);
+  	tabusHash.insert(tabuId);
 }
 
 void TabuSearch::TabuSearchIteration() {
@@ -253,6 +275,32 @@ void TabuSearch::TabuSearchIteration() {
 	}
 }
 
+void TabuSearch::TabuSearchIterationMappingTabus() {
+	nScore = -1;
+	ushort numAdmiNeighborsFound = 0;
+	while (numAdmiNeighborsFound < nNeighbors) {
+		if (randomReal(gen) <= changeProbability) {
+			ushort source = G1RandomNode(gen);
+			uint newTargetIndex = G2RandomUnassignedNode(gen);
+			ushort newTarget = unassignedNodesG2[newTargetIndex];
+			if (isTabu(source, newTarget)) continue; 
+			++numAdmiNeighborsFound;
+			performChange(source, newTargetIndex);
+		}
+		else {
+			ushort source1 = G1RandomNode(gen), source2 = G1RandomNode(gen);
+			if (isTabu(source1, A[source2]) or isTabu(source2, A[source1])) continue;
+			++numAdmiNeighborsFound;
+			performSwap(source1, source2);
+		}
+	}
+	moveToBestAdmiNeighbor();
+	if (currentScore > bestScore*1.01) {
+		bestScore = currentScore;
+		bestA = A;
+	}
+}
+
 void TabuSearch::moveToBestAdmiNeighbor() {
 	if (isChangeNeighbor) {
 		A[nSource] = nNewTarget;
@@ -264,7 +312,8 @@ void TabuSearch::moveToBestAdmiNeighbor() {
 		localScoreSum = nLocalScoreSum;
 		wecSum = nWecSum;
 		currentScore = nScore;
-		addTabu(nSource);		
+		if (nodeTabus) addTabu(nSource);		
+		else addTabu(nSource, nNewTarget);
 	}
 	else {
 		A[nSource1] = nTarget2;
@@ -273,14 +322,23 @@ void TabuSearch::moveToBestAdmiNeighbor() {
 		localScoreSum = nLocalScoreSum;
 		wecSum = nWecSum;
 		currentScore = nScore;
-		addTabu(nSource1);
-		addTabu(nSource2);
+		if (nodeTabus) {
+			addTabu(nSource1);
+			addTabu(nSource2);
+		} else {
+			addTabu(nSource1, nTarget2);
+			addTabu(nSource2, nTarget1);
+		}
 	}
 }
 
 void TabuSearch::performChange(ushort source) {
-	ushort oldTarget = A[source];
 	uint newTargetIndex = G2RandomUnassignedNode(gen);
+	performChange(source, newTargetIndex);
+}
+
+void TabuSearch::performChange(ushort source, uint newTargetIndex) {
+	ushort oldTarget = A[source];
 	ushort newTarget = unassignedNodesG2[newTargetIndex];
 
 	int newAligEdges = -1; //dummy initialization to shut compiler warnings
