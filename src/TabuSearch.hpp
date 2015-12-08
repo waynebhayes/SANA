@@ -103,6 +103,7 @@ private:
 	void TabuSearchIteration();
 	void TabuSearchIterationMappingTabus();
 	void performChange(ushort source);
+	void performChange(ushort source, uint newTargetIndex);
 	void performSwap(ushort source1, ushort source2);
 
 	//others
@@ -113,6 +114,10 @@ private:
 	//best-known solution
 	vector<ushort> bestA;
 	double bestScore;
+
+
+	uint maxTabus;
+	uint nNeighbors;
 
 	//if true, tabus are nodes in G1. If false, tabus are
 	//mappings between a node in G1 and a node in G2
@@ -128,9 +133,6 @@ private:
 	bool isTabu(ushort node1, ushort node2);
 	void addTabu(ushort node1, ushort node2);
 
-
-	uint maxTabus;
-	uint nNeighbors;
 
 	double nScore;
 

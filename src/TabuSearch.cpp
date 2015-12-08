@@ -111,7 +111,7 @@ TabuSearch::TabuSearch(Graph* G1, Graph* G2,
 	unassignedNodesG2 = vector<ushort> (n2-n1);
 	A = vector<ushort> (n1);
 
-	assert(n1 > maxTabus);
+	assert((nodeTabus and n1 > maxTabus) or (not nodeTabus and n1*n2 > maxTabus));
 }
 
 TabuSearch::~TabuSearch() {
