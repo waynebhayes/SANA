@@ -64,10 +64,12 @@ char doubleArgs[][80] = {
   "-rewire", "-go", "-alpha", "-lgraaliter",
   "-tnew", "-iterperstep", "-numcand", "-tcand", "-tfin",
   "-qcount", "-graphletlgraal", "-ntabus", "-nneighbors",
+  "-seed",
   ""};
 char boolArgs[][80] = {"-dbg", "-goavg", "-submit", "-qsub", "-autoalpha",
 "-restart", "-detailedreport", "-nodetabus", ""};
 char vectorArgs[][80] = {"-nodedweights", "-edgedweights", "-goweights", ""};
+
 
 string makeScript(const vector<string>& argvs) {
   int argc = argvs.size();
@@ -557,6 +559,10 @@ int main(int argc, char* argv[]) {
 
   ArgumentParser args(stringArgs, doubleArgs, boolArgs, vectorArgs);
   args.parse(getArgumentList(argc, argv, defaultArguments, true));
+
+  if(args.doubles.find("-seed") != args.doubles.end()) {
+	  forceSeed(args.doubles["-seed"]);
+  }
 
   if (args.bools["-qsub"]) {
     for (int i = 0; i < args.doubles["-qcount"]; i++) {

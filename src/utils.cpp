@@ -19,10 +19,21 @@
 using namespace std;
 
 random_device rd;
-mt19937 gen(rd());
-ranlux24_base fastGen(rd());
+unsigned int currentSeed = rd();
+mt19937 gen(currentSeed);
+ranlux24_base fastGen(currentSeed);
 
 uniform_real_distribution<> realDis(0, 1);
+
+void forceSeed(unsigned int newSeed) {
+	currentSeed = newSeed;
+	gen.seed(currentSeed);
+	fastGen.seed(currentSeed);
+}
+
+unsigned int getSeed() {
+	return currentSeed;
+}
 
 double randDouble() {	
     return realDis(fastGen);

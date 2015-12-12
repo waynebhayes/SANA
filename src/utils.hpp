@@ -10,6 +10,9 @@ using namespace std;
 typedef uint16_t ushort;
 typedef uint32_t uint;
 
+void forceSeed(unsigned int newSeed);
+unsigned int getSeed();
+
 double randDouble();
 int randInt(int low, int high);
 int randMod(int n);
