@@ -63,7 +63,8 @@ OTHER_SRC =                                             \
 	src/NormalDistribution.cpp                          \
 	src/templateUtils.cpp                               \
 	src/Timer.cpp                                       \
-	src/utils.cpp
+	src/utils.cpp										\
+	src/RandomSeed.cpp
 	
 
 SRCS = $(MEASUSES_SRCS) $(METHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)

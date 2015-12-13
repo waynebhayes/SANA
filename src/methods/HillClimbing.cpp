@@ -22,6 +22,7 @@
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/Measure.hpp"
 #include "../Timer.hpp"
+#include "../RandomSeed.hpp"
 
 using namespace std;
 
@@ -45,7 +46,7 @@ HillClimbing::HillClimbing(Graph* G1, Graph* G2, MeasureCombination* M, string s
 	}
 
 	random_device rd;
-	gen = mt19937(rd());
+	gen = mt19937(getRandomSeed());
 	G1RandomNode = uniform_int_distribution<>(0, n1-1);
 	G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
 	randomReal = uniform_real_distribution<>(0, 1);

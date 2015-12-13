@@ -6,6 +6,7 @@
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
+#include "../RandomSeed.hpp"
 
 class SANA: public Method {
 

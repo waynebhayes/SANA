@@ -24,6 +24,8 @@
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
 #include "../NormalDistribution.hpp"
+#include "../RandomSeed.hpp"
+
 using namespace std;
 
 TabuSearch::TabuSearch(Graph* G1, Graph* G2,
@@ -43,7 +45,7 @@ TabuSearch::TabuSearch(Graph* G1, Graph* G2,
 
 	//random number generation
 	random_device rd;
-	gen = mt19937(rd());
+	gen = mt19937(getRandomSeed());
 	G1RandomNode = uniform_int_distribution<>(0, n1-1);
 	G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
 	randomReal = uniform_real_distribution<>(0, 1);

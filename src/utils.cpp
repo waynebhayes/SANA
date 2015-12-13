@@ -16,24 +16,13 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include "utils.hpp"
+#include "RandomSeed.hpp"
+
 using namespace std;
 
-random_device rd;
-unsigned int currentSeed = rd();
-mt19937 gen(currentSeed);
-ranlux24_base fastGen(currentSeed);
-
+mt19937 gen(getRandomSeed());
+ranlux24_base fastGen(getRandomSeed());
 uniform_real_distribution<> realDis(0, 1);
-
-void forceSeed(unsigned int newSeed) {
-	currentSeed = newSeed;
-	gen.seed(currentSeed);
-	fastGen.seed(currentSeed);
-}
-
-unsigned int getSeed() {
-	return currentSeed;
-}
 
 double randDouble() {	
     return realDis(fastGen);

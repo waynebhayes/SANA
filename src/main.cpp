@@ -25,6 +25,7 @@
 #include "Timer.hpp"
 #include "utils.hpp"
 #include "Alignment.hpp"
+#include "RandomSeed.hpp"
 
 using namespace std;
 
@@ -32,8 +33,8 @@ int main(int argc, char* argv[]) {
   ArgumentParser args(stringArgs, doubleArgs, boolArgs, vectorArgs);
   args.parse(getArgumentList(argc, argv, defaultArguments, true));
 
-  if(args.doubles.find("-seed") != args.doubles.end()) {
-	  forceSeed(args.doubles["-seed"]);
+  if(args.doubles["-seed"] != 0) {
+	  setSeed(args.doubles["-seed"]);
   }
 
   if (args.bools["-qsub"]) {
@@ -61,8 +62,9 @@ int main(int argc, char* argv[]) {
     Experiment e(experFile);
     e.printData("experiments/"+exper+".txt");
     e.printDataCSV("experiments/"+exper+".csv");
-    return 0;    
+    exit(0);
   }
+
   string paramEstimation = args.strings["-paramestimation"];
   if (not strEq(paramEstimation, "")) {
     string experFile = "experiments/"+paramEstimation+".exp";
@@ -75,15 +77,16 @@ int main(int argc, char* argv[]) {
       pe.collectData();
       pe.printData("experiments/"+paramEstimation+".out");
     }
-    return 0;    
+    exit(0);
   }
+
   string alphaEstimation = args.strings["-alphaestimation"];
   if (not strEq(alphaEstimation, "")) {
     string experFile = "experiments/"+alphaEstimation;
     assert(fileExists(experFile));
     AlphaEstimation ae(experFile);
     ae.printData(experFile+".out");
-    return 0;    
+    exit(0);
   }
 
   createFolders(args);
