@@ -2,8 +2,8 @@
 #define EXPERIMENT_H
 #include <vector>
 #include <string>
-#include "Measure.hpp"
-#include "Method.hpp"
+#include "measures/Measure.hpp"
+#include "methods/Method.hpp"
 #include "Graph.hpp"
 
 using namespace std;

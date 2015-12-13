@@ -1,25 +1,25 @@
-#include "Experiment.hpp"
-#include "Alignment.hpp"
-#include "SymmetricSubstructureScore.hpp"
-#include "EdgeCorrectness.hpp"
-#include "LargestCommonConnectedSubgraph.hpp"
-#include "NodeCorrectness.hpp"
-#include "GoSimilarity.hpp"
-#include "GoCoverage.hpp"
-#include "ShortestPathConservation.hpp"
-#include "Importance.hpp"
-#include "InvalidMeasure.hpp"
-#include "Sequence.hpp"
-#include "InducedConservedStructure.hpp"
-#include "NodeDensity.hpp"
-#include "EdgeDensity.hpp"
-#include "Graphlet.hpp"
-#include "WeightedEdgeConservation.hpp"
 #include <cassert>
 #include <map>
 #include <sstream>
-#include "Timer.hpp"
 #include <algorithm>
+#include "Experiment.hpp"
+#include "measures/SymmetricSubstructureScore.hpp"
+#include "measures/EdgeCorrectness.hpp"
+#include "measures/LargestCommonConnectedSubgraph.hpp"
+#include "measures/NodeCorrectness.hpp"
+#include "measures/GoCoverage.hpp"
+#include "measures/ShortestPathConservation.hpp"
+#include "measures/InvalidMeasure.hpp"
+#include "measures/InducedConservedStructure.hpp"
+#include "measures/WeightedEdgeConservation.hpp"
+#include "measures/localMeasures/GoSimilarity.hpp"
+#include "measures/localMeasures/Importance.hpp"
+#include "measures/localMeasures/Sequence.hpp"
+#include "measures/localMeasures/NodeDensity.hpp"
+#include "measures/localMeasures/EdgeDensity.hpp"
+#include "measures/localMeasures/Graphlet.hpp"
+#include "Alignment.hpp"
+#include "Timer.hpp"
 
 const int Experiment::NUM_RANDOM_RUNS = 10;
 const int Experiment::PRECISION_DECIMALS = 6;

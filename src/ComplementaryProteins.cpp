@@ -6,12 +6,12 @@
 #include "Graph.hpp"
 #include "Timer.hpp"
 #include "utils.hpp"
-#include "Graphlet.hpp"
-#include "NodeDensity.hpp"
-#include "EdgeDensity.hpp"
-#include "Importance.hpp"
-#include "Sequence.hpp"
-#include "GoSimilarity.hpp"
+#include "measures/localMeasures/Graphlet.hpp"
+#include "measures/localMeasures/NodeDensity.hpp"
+#include "measures/localMeasures/EdgeDensity.hpp"
+#include "measures/localMeasures/Importance.hpp"
+#include "measures/localMeasures/Sequence.hpp"
+#include "measures/localMeasures/GoSimilarity.hpp"
 using namespace std;
 
 vector<vector<string> > getProteinPairs(string complementStatus, bool BioGRIDNetworks) {
