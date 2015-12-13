@@ -2,9 +2,9 @@
 #define ParameterEstimation_H
 #include <vector>
 #include <string>
-#include "measures/Measure.hpp"
-#include "methods/Method.hpp"
-#include "Graph.hpp"
+#include "../measures/Measure.hpp"
+#include "../methods/Method.hpp"
+#include "../Graph.hpp"
 
 using namespace std;
 
@@ -16,7 +16,6 @@ public:
 	void collectData();
 	void printData(string outputFile);
 	//void printDataCSV(string outputFile);
-
 
 private:
 	string measureName;

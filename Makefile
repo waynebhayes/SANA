@@ -6,6 +6,10 @@ CXXFLAGS = -Wall -std=c++11 -O3 -march=native
 INCLUDES = 
 LFLAGS = 
 LIBS = 
+
+ARGUMENTS_SRC = 										\
+	src/arguments/ArgumentParser.cpp
+
 MEASUSES_SRCS = 				 						\
 	src/measures/EdgeCorrectness.cpp 					\
 	src/measures/GoAverage.cpp      					\
@@ -41,25 +45,28 @@ METHODS_SRC =                                           \
 	src/methods/TabuSearch.cpp                          \
 	src/methods/WeightedAlignmentVoter.cpp              \
 
-ARGUMENTS_SRC = 										\
-	src/arguments/ArgumentParser.cpp
+MODES_SRC = 											\
+	src/modes/AlphaEstimation.cpp                       \
+	src/modes/Experiment.cpp                            \
+	src/modes/ParameterEstimation.cpp                   \
+	src/modes/NormalMode.cpp							\
+	src/modes/DebugMode.cpp								\
+	src/modes/ClusterMode.cpp
+	
 
 OTHER_SRC =                                             \
 	src/Alignment.cpp                                   \
-	src/AlphaEstimation.cpp                             \
 	src/ComplementaryProteins.cpp                       \
 	src/computeGraphlets.cpp                            \
-	src/Experiment.cpp                                  \
 	src/Graph.cpp                                       \
 	src/main.cpp                                        \
 	src/NormalDistribution.cpp                          \
-	src/ParameterEstimation.cpp                         \
 	src/templateUtils.cpp                               \
 	src/Timer.cpp                                       \
 	src/utils.cpp
 	
 
-SRCS = $(MEASUSES_SRCS) $(METHODS_SRC) $(ARGUMENTS_SRC) $(OTHER_SRC)
+SRCS = $(MEASUSES_SRCS) $(METHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)
 OBJS = $(SRCS:.cpp=.o)
 #MAIN = sana_dbg
 MAIN = sana

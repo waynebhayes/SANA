@@ -2,11 +2,10 @@
 #define ALPHAESTIMATION_H
 #include <vector>
 #include <string>
-#include "measures/Measure.hpp"
-#include "methods/Method.hpp"
-#include "Graph.hpp"
-#include <vector>
 #include <map>
+#include "../measures/Measure.hpp"
+#include "../methods/Method.hpp"
+#include "../Graph.hpp"
 
 using namespace std;
 
@@ -32,7 +31,6 @@ private:
 	double computeAlpha(Graph& G1, Graph& G2, string methodName, Measure* topMeasure);
 	double computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasure);
 	void computeAlphas();
-
 };
 
 

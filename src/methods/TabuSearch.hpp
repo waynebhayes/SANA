@@ -2,6 +2,7 @@
 #define	TabuSearch_HPP
 #include <map>
 #include <deque>
+#include <random>
 #include <unordered_set>
 #include "Method.hpp"
 #include "../measures/localMeasures/LocalMeasure.hpp"

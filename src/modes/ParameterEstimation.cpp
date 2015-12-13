@@ -2,17 +2,17 @@
 #include <sstream>
 #include <map>
 #include "ParameterEstimation.hpp"
-#include "measures/SymmetricSubstructureScore.hpp"
-#include "measures/EdgeCorrectness.hpp"
-#include "measures/LargestCommonConnectedSubgraph.hpp"
-#include "measures/NodeCorrectness.hpp"
-#include "measures/GoCoverage.hpp"
-#include "measures/ShortestPathConservation.hpp"
-#include "measures/InvalidMeasure.hpp"
-#include "measures/localMeasures/GoSimilarity.hpp"
-#include "Alignment.hpp"
 #include "Experiment.hpp"
-#include "Timer.hpp"
+#include "../measures/SymmetricSubstructureScore.hpp"
+#include "../measures/EdgeCorrectness.hpp"
+#include "../measures/LargestCommonConnectedSubgraph.hpp"
+#include "../measures/NodeCorrectness.hpp"
+#include "../measures/GoCoverage.hpp"
+#include "../measures/ShortestPathConservation.hpp"
+#include "../measures/InvalidMeasure.hpp"
+#include "../measures/localMeasures/GoSimilarity.hpp"
+#include "../Alignment.hpp"
+#include "../Timer.hpp"
 
 const int ParameterEstimation::PRECISION_DECIMALS = 6;
 const double ParameterEstimation::minutes = 60;

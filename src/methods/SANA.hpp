@@ -2,6 +2,7 @@
 #define	SANA_HPP
 #include <map>
 #include "Method.hpp"
+#include <random>
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
