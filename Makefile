@@ -41,10 +41,12 @@ METHODS_SRC =                                           \
 	src/methods/TabuSearch.cpp                          \
 	src/methods/WeightedAlignmentVoter.cpp              \
 
+ARGUMENTS_SRC = 										\
+	src/arguments/ArgumentParser.cpp
+
 OTHER_SRC =                                             \
 	src/Alignment.cpp                                   \
 	src/AlphaEstimation.cpp                             \
-	src/ArgumentParser.cpp                              \
 	src/ComplementaryProteins.cpp                       \
 	src/computeGraphlets.cpp                            \
 	src/Experiment.cpp                                  \
@@ -57,7 +59,7 @@ OTHER_SRC =                                             \
 	src/utils.cpp
 	
 
-SRCS = $(MEASUSES_SRCS) $(METHODS_SRC) $(OTHER_SRC)
+SRCS = $(MEASUSES_SRCS) $(METHODS_SRC) $(ARGUMENTS_SRC) $(OTHER_SRC)
 OBJS = $(SRCS:.cpp=.o)
 #MAIN = sana_dbg
 MAIN = sana

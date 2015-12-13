@@ -41,8 +41,11 @@
 #include "methods/GreedyLCCS.hpp"
 #include "methods/RandomAligner.hpp"
 
+#include "arguments/ArgumentParser.hpp"
+#include "arguments/SupportedArguments.hpp"
+#include "arguments/defaultArguments.hpp"
+
 #include "Graph.hpp"
-#include "ArgumentParser.hpp"
 #include "Experiment.hpp"
 #include "ParameterEstimation.hpp"
 #include "ComplementaryProteins.hpp"
@@ -54,26 +57,6 @@
 using namespace std;
 
 const string projectFolder = "/extra/wayne0/preserve/nmamano/networkalignment";
-
-#include "defaultArguments.hpp"
-
-char stringArgs[][80] = {
-  "-g1", "-g2", "-startalignment", "-wecnodesim", "-wavenodesim", "-method",
-  "-truealignment", "-experiment", "-o", "-paramestimation", "-alphaestimation", "-alphafile",
-  "-eval", "-T_initial", "-T_decay", "-fg1", "-fg2"};
-char doubleArgs[][80] = {
-  "-ec", "-s3", "-graphlet", "-noded", "-edged", "-wec",
-  "-importance", "-sequence",
-  "-t",
-  "-rewire", "-go", "-alpha", "-lgraaliter",
-  "-tnew", "-iterperstep", "-numcand", "-tcand", "-tfin",
-  "-qcount", "-graphletlgraal", "-ntabus", "-nneighbors",
-  "-seed",
-  ""};
-char boolArgs[][80] = {"-dbg", "-goavg", "-submit", "-qsub", "-autoalpha",
-"-restart", "-detailedreport", "-nodetabus", ""};
-char vectorArgs[][80] = {"-nodedweights", "-edgedweights", "-goweights", ""};
-
 
 string makeScript(const vector<string>& argvs) {
   int argc = argvs.size();
@@ -560,7 +543,6 @@ void dbgMode(Graph& G1, Graph& G2, ArgumentParser& args) {
 }
 
 int main(int argc, char* argv[]) {
-
   ArgumentParser args(stringArgs, doubleArgs, boolArgs, vectorArgs);
   args.parse(getArgumentList(argc, argv, defaultArguments, true));
 
