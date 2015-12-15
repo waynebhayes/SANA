@@ -66,7 +66,8 @@ OTHER_SRC =                                             \
 	src/templateUtils.cpp                               \
 	src/Timer.cpp                                       \
 	src/utils.cpp										\
-	src/RandomSeed.cpp
+	src/RandomSeed.cpp									\
+	src/Report.cpp
 	
 
 SRCS = $(MEASUSES_SRCS) $(METHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)

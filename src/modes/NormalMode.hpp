@@ -10,13 +10,6 @@
 class NormalMode : public Mode {
 public:
 	void run(ArgumentParser& args);
-
-private:
-	void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
-	  const MeasureCombination& M, Method* method, ofstream& stream);
-
-	void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
-	  const MeasureCombination& M, Method* method, string reportFile);
 };
 
 void createFolders(ArgumentParser& args);
