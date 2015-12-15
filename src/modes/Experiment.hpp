@@ -2,15 +2,20 @@
 #define EXPERIMENT_H
 #include <vector>
 #include <string>
+
+#include "Mode.hpp"
 #include "../measures/Measure.hpp"
 #include "../methods/Method.hpp"
 #include "../Graph.hpp"
 
 using namespace std;
 
-class Experiment {
+class Experiment : public Mode {
 public:
+	Experiment();
 	Experiment(string experimentFile);
+
+	void run(ArgumentParser& args);
 	void printData(string outputFile);
 
 	void printDataCSV(string outputFile);
@@ -34,6 +39,7 @@ private:
 	//third index: network pair
 	vector<vector<vector<double> > > data;
 
+	void init(string experimentFile);
 	void scoresToRankings(vector<string>& row);
 	void collectData();
 

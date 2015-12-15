@@ -82,6 +82,7 @@ ArgumentParser::ArgumentParser(char listStringArgs[][80], char listDoubleArgs[][
 }
 
 void ArgumentParser::parse(vector<string> vArg) {
+  this->vArg = vector<string>(vArg);
   int n = vArg.size();
   //check to see if there is a help argument
   for (string arg : vArg) {

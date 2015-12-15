@@ -24,7 +24,22 @@
 const int Experiment::NUM_RANDOM_RUNS = 10;
 const int Experiment::PRECISION_DECIMALS = 6;
 
+void Experiment::run(ArgumentParser& args) {
+	string exper = args.strings["-experiment"];
+	string experFile = "experiments/"+exper+".exp";
+	assert(fileExists(experFile));
+	init(experFile);
+	printData("experiments/"+exper+".txt");
+	printDataCSV("experiments/"+exper+".csv");
+}
+
+Experiment::Experiment() {}
+
 Experiment::Experiment(string experimentFile) {
+	init(experimentFile);
+}
+
+void Experiment::init(string experimentFile) {
 	vector<vector<string> > content = fileToStringsByLines(experimentFile);
 	uint nlines = content.size();
 	measures = content[0];

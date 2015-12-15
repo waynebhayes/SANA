@@ -3,16 +3,21 @@
 #include <vector>
 #include <string>
 #include <map>
+
+#include "Mode.hpp"
+#include "../arguments/ArgumentParser.hpp"
 #include "../measures/Measure.hpp"
 #include "../methods/Method.hpp"
 #include "../Graph.hpp"
 
 using namespace std;
 
-class AlphaEstimation {
+class AlphaEstimation : public Mode {
 public:
+	AlphaEstimation();
 	AlphaEstimation(string alphaFile);
 	void printData(string outputFile);
+	void run(ArgumentParser& args);
 
 	static double getAlpha(string alphaFile, string methodName, string G1Name, string G2Name);
 private:
@@ -28,6 +33,7 @@ private:
 	//second index: network pair
 	vector<vector<double> > alphas;
 
+	void init(string alphaFile);
 	double computeAlpha(Graph& G1, Graph& G2, string methodName, Measure* topMeasure);
 	double computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasure);
 	void computeAlphas();

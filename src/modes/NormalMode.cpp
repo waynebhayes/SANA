@@ -31,12 +31,11 @@
 #include "../methods/SANA.hpp"
 #include "../methods/RandomAligner.hpp"
 
-void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
-  const MeasureCombination& M, Method* method, ofstream& stream);
-void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
-  const MeasureCombination& M, Method* method, string reportFile);
+void NormalMode::run(ArgumentParser& args) {
+	createFolders(args);
+	Graph G1, G2;
+	initGraphs(G1, G2, args);
 
-void normalMode(Graph& G1, Graph& G2, ArgumentParser& args) {
 	MeasureCombination M;
 	initMeasures(M, G1, G2, args);
 
@@ -44,12 +43,12 @@ void normalMode(Graph& G1, Graph& G2, ArgumentParser& args) {
 	Alignment A = Alignment::empty();
 	string aligFile = args.strings["-eval"];
 	if (aligFile != "") {
-	method = new NoneMethod(&G1, &G2, aligFile);
-	A = Alignment::loadEdgeList(&G1, &G2, aligFile);
+		method = new NoneMethod(&G1, &G2, aligFile);
+		A = Alignment::loadEdgeList(&G1, &G2, aligFile);
 	}
 	else {
-	method = initMethod(G1, G2, args, M);
-	A = method->runAndPrintTime();
+		method = initMethod(G1, G2, args, M);
+		A = method->runAndPrintTime();
 	}
 
 	A.printDefinitionErrors(G1,G2);
@@ -255,7 +254,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
   throw runtime_error("Error: unknown method: " + name);
 }
 
-void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
+void NormalMode::makeReport(const Graph& G1, Graph& G2, const Alignment& A,
   const MeasureCombination& M, Method* method, ofstream& stream) {
   int numCCsToPrint = 3;
 
@@ -324,7 +323,7 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
   stream << endl;
 }
 
-void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
+void NormalMode::saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   const MeasureCombination& M, Method* method, string reportFile) {
   string G1Name = G1.getName();
   string G2Name = G2.getName();

@@ -11,6 +11,7 @@
 #include "../utils.hpp"
 #include "../Alignment.hpp"
 #include "../Timer.hpp"
+#include <cassert>
 
 double AlphaEstimation::computeAlpha(Graph& G1, Graph& G2, string methodName, Measure* topMeasure) {
 	string g1Name = G1.getName();
@@ -30,6 +31,44 @@ double AlphaEstimation::computeAlpha(Graph& G1, Graph& G2, string methodName, Me
 	double seqScore = seq.eval(Alignment::loadMapping(aligFileAlpha1));
 
 	return topScore/(topScore+seqScore);
+}
+
+void AlphaEstimation::run(ArgumentParser& args) {
+	string alphaEstimation = args.strings["-alphaestimation"];
+	string experFile = "experiments/"+alphaEstimation;
+	assert(fileExists(experFile));
+	init(experFile);
+	printData(experFile+".out");
+}
+
+AlphaEstimation::AlphaEstimation(){}
+
+void AlphaEstimation::init(string alphaFile) {
+	vector<vector<string> > content = fileToStringsByLines(alphaFile);
+	methods = content[0];
+	for (uint i = 1; i < content.size(); i++) {
+		networkPairs.push_back(content[i]);
+	}
+
+	cerr << "Loading graphs...";
+	Timer T;
+	T.start();
+	for (auto pair : networkPairs) {
+		string g1Name = pair[0];
+		string g2Name = pair[1];
+		if (graphs.count(g1Name) == 0) {
+			graphs[g1Name] = Graph::loadGraph(g1Name);
+		}
+		if (graphs.count(g2Name) == 0) {
+			graphs[g2Name] = Graph::loadGraph(g2Name);
+		}
+	}
+	cerr << "done ("+T.elapsedString()+")" << endl;
+
+	cerr << "Computing alphas...";
+	T.start();
+	computeAlphas();
+	cerr << "done ("+T.elapsedString()+")" << endl;
 }
 
 double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasure) {
@@ -127,31 +166,7 @@ void AlphaEstimation::computeAlphas() {
 }
 
 AlphaEstimation::AlphaEstimation(string alphaFile) {
-	vector<vector<string> > content = fileToStringsByLines(alphaFile);
-	methods = content[0];
-	for (uint i = 1; i < content.size(); i++) {
-		networkPairs.push_back(content[i]);
-	}
-
-	cerr << "Loading graphs...";
-	Timer T;
-	T.start();
-	for (auto pair : networkPairs) {
-		string g1Name = pair[0];
-		string g2Name = pair[1];
-		if (graphs.count(g1Name) == 0) {
-			graphs[g1Name] = Graph::loadGraph(g1Name);
-		}
-		if (graphs.count(g2Name) == 0) {
-			graphs[g2Name] = Graph::loadGraph(g2Name);
-		}
-	}
-	cerr << "done ("+T.elapsedString()+")" << endl;
-
-	cerr << "Computing alphas...";
-	T.start();
-	computeAlphas();
-	cerr << "done ("+T.elapsedString()+")" << endl;
+	init(alphaFile);
 }
 
 double AlphaEstimation::getAlpha(string alphaFile, string methodName, string G1Name, string G2Name) {

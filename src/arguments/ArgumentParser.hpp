@@ -13,6 +13,7 @@ public:
 	map<string, double> doubles;
 	map<string, bool> bools;
 	map<string, vector<double> > vectors;
+	vector<string> vArg;
 
 	//each array should have an empty entry ("") to denote the end
 	ArgumentParser(char listStringArgs[][80], char listDoubleArgs[][80], char listBoolArgs[][80], char listVectorArgs[][80]);

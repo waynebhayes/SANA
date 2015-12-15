@@ -1,9 +1,13 @@
 #ifndef DEBUGMODE_HPP_
 #define DEBUGMODE_HPP_
 
+#include "Mode.hpp"
 #include "../Graph.hpp"
 #include "../arguments/ArgumentParser.hpp"
 
-void dbgMode(Graph& G1, Graph& G2, ArgumentParser& args);
+class DebugMode : public Mode {
+public:
+	void run(ArgumentParser& args);
+};
 
 #endif /* DEBUGMODE_HPP_ */

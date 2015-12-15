@@ -19,8 +19,30 @@ const double ParameterEstimation::minutes = 60;
 const string ParameterEstimation::method = "sac";
 const string ParameterEstimation::projectFolder = "/extra/wayne0/preserve/nmamano/networkalignment";
 
-ParameterEstimation::ParameterEstimation(string parameterEstimationFile) {
+void ParameterEstimation::run(ArgumentParser& args) {
+	string paramEstimation = args.strings["-paramestimation"];
+	string experFile = "experiments/"+paramEstimation+".exp";
+	assert(fileExists(experFile));
 
+	init(experFile);
+
+	if (args.bools["-submit"]) {
+	  submitScriptsToCluster();
+	}
+	else {
+	  collectData();
+	  printData("experiments/"+paramEstimation+".out");
+	}
+	exit(0);
+}
+
+ParameterEstimation::ParameterEstimation(){}
+
+ParameterEstimation::ParameterEstimation(string parameterEstimationFile) {
+	init(parameterEstimationFile);
+}
+
+void ParameterEstimation::init(string parameterEstimationFile) {
 	vector<vector<string> > content = fileToStringsByLines(parameterEstimationFile);
 	G1 = Graph::loadGraph(content[0][0]);
 	G2 = Graph::loadGraph(content[0][1]);

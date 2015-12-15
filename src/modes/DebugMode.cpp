@@ -8,7 +8,11 @@
 #include "../Alignment.hpp"
 #include "../ComplementaryProteins.hpp"
 
-void dbgMode(Graph& G1, Graph& G2, ArgumentParser& args) {
+void DebugMode::run(ArgumentParser& args) {
+  createFolders(args);
+  Graph G1, G2;
+  initGraphs(G1, G2, args);
+
   G1.isWellDefined();
   //G2.isWellDefined();
   exit(0);

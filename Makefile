@@ -8,7 +8,8 @@ LFLAGS =
 LIBS = 
 
 ARGUMENTS_SRC = 										\
-	src/arguments/ArgumentParser.cpp
+	src/arguments/ArgumentParser.cpp					\
+	src/arguments/ModeSelector.cpp
 
 MEASUSES_SRCS = 				 						\
 	src/measures/EdgeCorrectness.cpp 					\

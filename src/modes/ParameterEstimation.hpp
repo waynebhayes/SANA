@@ -2,19 +2,23 @@
 #define ParameterEstimation_H
 #include <vector>
 #include <string>
+
+#include "Mode.hpp"
 #include "../measures/Measure.hpp"
 #include "../methods/Method.hpp"
 #include "../Graph.hpp"
 
 using namespace std;
 
-class ParameterEstimation {
+class ParameterEstimation : public Mode {
 public:
+	ParameterEstimation();
 	ParameterEstimation(string parameterEstimationFile);
 
 	void submitScriptsToCluster();
 	void collectData();
 	void printData(string outputFile);
+	void run(ArgumentParser& args);
 	//void printDataCSV(string outputFile);
 
 private:
@@ -33,6 +37,7 @@ private:
 
 	void makeScript(double k, double l);
 	void submitScript(double k, double l);
+	void init(string parameterEstimationFile);
 
 	double getScore(double k, double l);
 

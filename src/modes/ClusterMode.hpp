@@ -4,8 +4,16 @@
 #include <vector>
 #include <string>
 
-using namespace std;
+#include "Mode.hpp"
+#include "../arguments/ArgumentParser.hpp"
 
-void submitToCluster(const vector<string>& argvs);
+using namespace std;
+class ClusterMode : public Mode {
+public:
+	void run(ArgumentParser& args);
+	void submitToCluster(const vector<string>& argvs);
+private:
+	string makeScript(const vector<string>& argvs);
+};
 
 #endif /* CLUSTERMODE_HPP_ */
