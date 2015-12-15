@@ -12,6 +12,4 @@ public:
 	void run(ArgumentParser& args);
 };
 
-void createFolders(ArgumentParser& args);
-
 #endif /* NORMALMODE_HPP_ */

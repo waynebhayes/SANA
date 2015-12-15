@@ -64,6 +64,7 @@ string toString(int n);
 
 bool folderExists(string folderName);
 void createFolder(string folderName);
+void createFolders(void);
 
 string exec(string cmd);
 void execPrintOutput(string cmd);

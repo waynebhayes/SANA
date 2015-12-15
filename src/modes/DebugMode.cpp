@@ -1,5 +1,6 @@
 #include "DebugMode.hpp"
-#include "NormalMode.hpp"
+
+#include "../utils.hpp"
 
 #include "../arguments/ArgumentParser.hpp"
 #include "../arguments/MeasureSelector.hpp"
@@ -14,7 +15,7 @@
 #include "../ComplementaryProteins.hpp"
 
 void DebugMode::run(ArgumentParser& args) {
-  createFolders(args);
+  createFolders();
   Graph G1, G2;
   initGraphs(G1, G2, args);
 
