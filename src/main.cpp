@@ -17,7 +17,8 @@ int main(int argc, char* argv[]) {
 	args.writeArguments();
 
 	Mode* mode = selectMode(args);
-
 	mode->run(args);
+	delete mode;
+
 	return 0;
 }

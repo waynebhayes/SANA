@@ -22,7 +22,6 @@ private:
 void createFolders(ArgumentParser& args);
 void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args);
 Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M);
-void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& args);
 void normalMode(Graph& G1, Graph& G2, ArgumentParser& args);
 
 #endif /* NORMALMODE_HPP_ */
