@@ -13,7 +13,5 @@ public:
 };
 
 void createFolders(ArgumentParser& args);
-void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args);
-void normalMode(Graph& G1, Graph& G2, ArgumentParser& args);
 
 #endif /* NORMALMODE_HPP_ */

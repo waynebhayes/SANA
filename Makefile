@@ -11,7 +11,8 @@ ARGUMENTS_SRC = 										\
 	src/arguments/ArgumentParser.cpp					\
 	src/arguments/ModeSelector.cpp						\
 	src/arguments/MeasureSelector.cpp					\
-	src/arguments/MethodSelector.cpp
+	src/arguments/MethodSelector.cpp					\
+	src/arguments/GraphLoader.cpp
 
 MEASUSES_SRCS = 				 						\
 	src/measures/EdgeCorrectness.cpp 					\
