@@ -2,6 +2,7 @@
 #include "NormalMode.hpp"
 #include "../arguments/ArgumentParser.hpp"
 #include "../arguments/MeasureSelector.hpp"
+#include "../arguments/MethodSelector.hpp"
 #include "../measures/MeasureCombination.hpp"
 #include "../methods/Method.hpp"
 #include "../methods/SANA.hpp"

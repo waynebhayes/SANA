@@ -10,7 +10,8 @@ LIBS =
 ARGUMENTS_SRC = 										\
 	src/arguments/ArgumentParser.cpp					\
 	src/arguments/ModeSelector.cpp						\
-	src/arguments/MeasureSelector.cpp
+	src/arguments/MeasureSelector.cpp					\
+	src/arguments/MethodSelector.cpp
 
 MEASUSES_SRCS = 				 						\
 	src/measures/EdgeCorrectness.cpp 					\
