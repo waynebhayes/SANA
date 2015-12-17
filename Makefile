@@ -106,6 +106,9 @@ TEST_OBJS = $(addprefix $(OBJDIR)/, $(TEST_SRC:.cpp=.o))
 TEST_MAIN = unit_test
 TEST_CXXFLAGS = $(CXXFLAGS) -lpthread # add pthread for Gtest
 
+regresion_test:
+	./regresionTest.sh
+
 test_all: $(TEST_OBJS) $(GTEST_OBJS) $(TEST_DEPENDS)
 	$(CC) $(TEST_CXXFLAGS) $(INCLUDES) -o $(OBJDIR)/$(TEST_MAIN) $(TEST_OBJS) $(GTEST_OBJS) $(TEST_DEPENDS) $(LFLAGS) $(LIBS)
 	./$(OBJDIR)/$(TEST_MAIN)
