@@ -37,7 +37,7 @@ rm x
 
 # Only look at the first 7 iterations because not all computers will get through the same number
 # of iterations
-scores=(`grep -A7 "0 (0s)" run_output.txt  | sed -e 's/.*score = \(.*\) P(.*/\1/'`)
+scores=(`grep -aA7 "0 (0s)" run_output.txt  | sed -e 's/.*score = \(.*\) P(.*/\1/'`)
 
 if [[ ! -e $olddata ]]
 then
@@ -50,7 +50,8 @@ else
 	olddate=${oldrun[7]}
 
 	isAtLeastOneLessThanTolerance=false
-	i=0	
+
+	i=0
 	while [ $i -lt 6 ]; do
 		if [ $(echo "${scores[$i]} < ${oldScores[$i]}" | bc) == "1" ]; then
 			echo "Less than oldscore on the "$i"th iteration."
@@ -69,7 +70,7 @@ else
 	fi
 fi
 
-rm run_output.txt
+#rm run_output.txt
 
 
 
