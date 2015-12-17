@@ -85,3 +85,7 @@ void DebugMode::run(ArgumentParser& args) {
   Method* method = initMethod(G1, G2, args, M);
   ((SANA*) method)->setTemperatureScheduleAutomatically();
 }
+
+std::string DebugMode::getName(void) {
+	return "DebugMode";
+}

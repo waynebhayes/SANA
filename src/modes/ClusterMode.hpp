@@ -12,6 +12,7 @@ class ClusterMode : public Mode {
 public:
 	void run(ArgumentParser& args);
 	void submitToCluster(const vector<string>& argvs);
+	std::string getName(void);
 private:
 	string makeScript(const vector<string>& argvs);
 };

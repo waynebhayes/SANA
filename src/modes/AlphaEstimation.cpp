@@ -43,6 +43,10 @@ void AlphaEstimation::run(ArgumentParser& args) {
 
 AlphaEstimation::AlphaEstimation(){}
 
+string AlphaEstimation::getName(void) {
+	return "AlphaEstimation";
+}
+
 void AlphaEstimation::init(string alphaFile) {
 	vector<vector<string> > content = fileToStringsByLines(alphaFile);
 	methods = content[0];

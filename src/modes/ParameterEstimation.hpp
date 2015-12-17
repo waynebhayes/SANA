@@ -19,6 +19,7 @@ public:
 	void collectData();
 	void printData(string outputFile);
 	void run(ArgumentParser& args);
+	std::string getName(void);
 	//void printDataCSV(string outputFile);
 
 private:

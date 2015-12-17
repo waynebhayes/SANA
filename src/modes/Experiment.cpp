@@ -369,3 +369,7 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
 	assert(false and "Unknown measure");
 	return NULL;
 }
+
+std::string Experiment::getName(void) {
+	return "Experiment";
+}

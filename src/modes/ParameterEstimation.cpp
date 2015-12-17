@@ -152,3 +152,7 @@ void ParameterEstimation::printData(string outputFile) {
 	fout << endl;
 	fout.close();
 }
+
+string ParameterEstimation::getName(void) {
+	return "ParameterEstimation";
+}

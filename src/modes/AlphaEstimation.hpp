@@ -18,6 +18,7 @@ public:
 	AlphaEstimation(string alphaFile);
 	void printData(string outputFile);
 	void run(ArgumentParser& args);
+	std::string getName(void);
 
 	static double getAlpha(string alphaFile, string methodName, string G1Name, string G2Name);
 private:

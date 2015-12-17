@@ -17,8 +17,9 @@ public:
 
 	void run(ArgumentParser& args);
 	void printData(string outputFile);
-
 	void printDataCSV(string outputFile);
+
+	std::string getName(void);
 
 	static Measure* loadMeasure(Graph* G1, Graph* G2, string name);
 

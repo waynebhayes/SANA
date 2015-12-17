@@ -26,3 +26,7 @@ void NormalMode::run(ArgumentParser& args) {
 
 	saveReport(G1, G2, A, M, method, args.strings["-o"]);
 }
+
+string NormalMode::getName(void) {
+	return "NormalMode";
+}
