@@ -24,7 +24,7 @@
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
 #include "../NormalDistribution.hpp"
-#include "../RandomSeed.hpp"
+#include "../randomSeed.hpp"
 
 using namespace std;
 

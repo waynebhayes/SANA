@@ -68,7 +68,7 @@ OTHER_SRC =                                             \
 	src/templateUtils.cpp                               \
 	src/Timer.cpp                                       \
 	src/utils.cpp										\
-	src/RandomSeed.cpp									\
+	src/randomSeed.cpp									\
 	src/Report.cpp
 	
 

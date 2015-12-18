@@ -22,7 +22,7 @@
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/Measure.hpp"
 #include "../Timer.hpp"
-#include "../RandomSeed.hpp"
+#include "../randomSeed.hpp"
 
 using namespace std;
 

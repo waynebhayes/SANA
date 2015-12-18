@@ -16,7 +16,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include "utils.hpp"
-#include "RandomSeed.hpp"
+#include "randomSeed.hpp"
 
 using namespace std;
 

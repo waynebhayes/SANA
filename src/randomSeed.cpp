@@ -1,4 +1,4 @@
-#include "RandomSeed.hpp"
+#include "randomSeed.hpp"
 #include <random>
 
 using namespace std;
