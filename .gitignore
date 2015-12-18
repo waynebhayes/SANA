@@ -34,3 +34,6 @@ doc/sanaPaper/sana.pdf
 sana.out
 
 /_objs/
+
+regresion_test_baseline.txt
+run_output.txt
