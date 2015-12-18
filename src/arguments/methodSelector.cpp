@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "MethodSelector.hpp"
+#include "methodSelector.hpp"
 
 #include "../modes/AlphaEstimation.hpp"
 

@@ -1,7 +1,7 @@
 #include "arguments/ArgumentParser.hpp"
-#include "arguments/SupportedArguments.hpp"
+#include "arguments/supportedArguments.hpp"
 #include "arguments/defaultArguments.hpp"
-#include "arguments/ModeSelector.hpp"
+#include "arguments/modeSelector.hpp"
 #include "RandomSeed.hpp"
 
 using namespace std;

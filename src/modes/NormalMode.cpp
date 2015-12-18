@@ -3,9 +3,9 @@
 
 #include "../utils.hpp"
 
-#include "../arguments/MeasureSelector.hpp"
-#include "../arguments/MethodSelector.hpp"
-#include "../arguments/GraphLoader.hpp"
+#include "../arguments/measureSelector.hpp"
+#include "../arguments/methodSelector.hpp"
+#include "../arguments/graphLoader.hpp"
 
 #include "../Report.hpp"
 

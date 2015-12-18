@@ -1,7 +1,7 @@
 #include <string>
 #include <iostream>
 
-#include "GraphLoader.hpp"
+#include "graphLoader.hpp"
 #include "../Timer.hpp"
 
 using namespace std;

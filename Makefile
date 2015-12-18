@@ -9,10 +9,10 @@ LIBS =
 
 ARGUMENTS_SRC = 										\
 	src/arguments/ArgumentParser.cpp					\
-	src/arguments/ModeSelector.cpp						\
-	src/arguments/MeasureSelector.cpp					\
-	src/arguments/MethodSelector.cpp					\
-	src/arguments/GraphLoader.cpp
+	src/arguments/modeSelector.cpp						\
+	src/arguments/measureSelector.cpp					\
+	src/arguments/methodSelector.cpp					\
+	src/arguments/graphLoader.cpp
 
 MEASUSES_SRCS = 				 						\
 	src/measures/EdgeCorrectness.cpp 					\
@@ -60,7 +60,7 @@ MODES_SRC = 											\
 
 OTHER_SRC =                                             \
 	src/Alignment.cpp                                   \
-	src/ComplementaryProteins.cpp                       \
+	src/complementaryProteins.cpp                       \
 	src/computeGraphlets.cpp                            \
 	src/Graph.cpp                                       \
 	src/main.cpp                                        \

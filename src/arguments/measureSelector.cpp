@@ -1,7 +1,7 @@
 #include <cassert>
 #include <iostream>
 
-#include "MeasureSelector.hpp"
+#include "measureSelector.hpp"
 
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/InducedConservedStructure.hpp"

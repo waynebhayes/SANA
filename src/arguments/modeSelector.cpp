@@ -1,4 +1,4 @@
-#include "ModeSelector.hpp"
+#include "modeSelector.hpp"
 
 #include "../modes/ParameterEstimation.hpp"
 #include "../modes/AlphaEstimation.hpp"

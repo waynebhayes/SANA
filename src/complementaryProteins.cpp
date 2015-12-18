@@ -1,4 +1,4 @@
-#include "ComplementaryProteins.hpp"
+#include "complementaryProteins.hpp"
 #include <vector>
 #include <iostream>
 #include <fstream>

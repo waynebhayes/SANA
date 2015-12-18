@@ -3,16 +3,16 @@
 #include "../utils.hpp"
 
 #include "../arguments/ArgumentParser.hpp"
-#include "../arguments/MeasureSelector.hpp"
-#include "../arguments/MethodSelector.hpp"
-#include "../arguments/GraphLoader.hpp"
+#include "../arguments/measureSelector.hpp"
+#include "../arguments/methodSelector.hpp"
+#include "../arguments/graphLoader.hpp"
 
 #include "../measures/MeasureCombination.hpp"
 #include "../methods/Method.hpp"
 #include "../methods/SANA.hpp"
 #include "../Graph.hpp"
 #include "../Alignment.hpp"
-#include "../ComplementaryProteins.hpp"
+#include "../complementaryProteins.hpp"
 
 void DebugMode::run(ArgumentParser& args) {
   createFolders();
