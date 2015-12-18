@@ -57,27 +57,23 @@ vector<string> getArgumentList(int argc, char* argv[],
 }
 
 
-ArgumentParser::ArgumentParser(char listStringArgs[][80], char listDoubleArgs[][80], char listBoolArgs[][80], char listVectorArgs[][80]) {
+ArgumentParser::ArgumentParser(
+    const vector<string> &listStringArgs,
+    const vector<string> &listDoubleArgs,
+    const vector<string> &listBoolArgs,
+    const vector<string> &listVectorArgs) {
 
-  int i = 0;
-  while (not strEq(listStringArgs[i], "")) {
-    strings[listStringArgs[i]] = "";
-    i++;
+  for (string s : listStringArgs) {
+    strings[s] = "";
   }
-  i = 0;
-  while (not strEq(listDoubleArgs[i], "")) {
-    doubles[listDoubleArgs[i]] = 0;
-    i++;
+  for (string s : listDoubleArgs) {
+    doubles[s] = 0;
   }
-  i = 0;
-  while (not strEq(listBoolArgs[i], "")) {
-    bools[listBoolArgs[i]] = false;
-    i++;
+  for (string s : listBoolArgs) {
+    bools[s] = false;
   }
-  i = 0;
-  while (not strEq(listVectorArgs[i], "")) {
-    vectors[listVectorArgs[i]] = vector<double> (0);
-    i++;
+  for (string s : listVectorArgs) {
+    vectors[s] = vector<double> (0);
   }
 }
 

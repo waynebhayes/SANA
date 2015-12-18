@@ -8,7 +8,6 @@ LFLAGS =
 LIBS = 
 
 ARGUMENTS_SRC = 										\
-	src/arguments/SupportedArguments.cpp				\
 	src/arguments/ArgumentParser.cpp					\
 	src/arguments/ModeSelector.cpp						\
 	src/arguments/MeasureSelector.cpp					\

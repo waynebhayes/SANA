@@ -15,8 +15,11 @@ public:
 	map<string, vector<double> > vectors;
 	vector<string> vArg;
 
-	//each array should have an empty entry ("") to denote the end
-	ArgumentParser(char listStringArgs[][80], char listDoubleArgs[][80], char listBoolArgs[][80], char listVectorArgs[][80]);
+	ArgumentParser(
+		const vector<string> &listStringArgs,
+    	const vector<string> &listDoubleArgs,
+    	const vector<string> &listBoolArgs,
+    	const vector<string> &listVectorArgs);
 	
 	void parse(vector<string> vArg);
 	void writeArguments();
