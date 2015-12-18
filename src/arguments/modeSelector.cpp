@@ -7,21 +7,37 @@
 #include "../modes/ClusterMode.hpp"
 #include "../modes/Experiment.hpp"
 
+#include "../utils.hpp"
+
+bool validMode(string name) {
+	vector<string> validModes = {
+		"cluster", "exp", "param", "alpha", "dbg", "normal"
+	};
+	for (string s : validModes) {
+		if (s == name) return true;
+	}
+	return false;
+}
+
+
 Mode* selectMode(ArgumentParser& args) {
 	Mode* mode;
 
-	if (args.bools["-qsub"]) {
+	string name = args.strings["-mode"];
+	if (name == "cluster") {
 		mode = new ClusterMode();
-	} else if (not strEq(args.strings["-experiment"], "")) {
+	} else if (name == "exp") {
 		mode = new Experiment();
-	} else if (not strEq( args.strings["-paramestimation"], "")) {
+	} else if (name == "param") {
 		mode = new ParameterEstimation();
-	} else if (not strEq(args.strings["-alphaestimation"], "")) {
+	} else if (name == "alpha") {
 		mode = new AlphaEstimation();
-	} else if (args.bools["-dbg"]) {
+	} else if (name == "dbg") {
 		mode = new DebugMode();
-	} else {
+	} else if (name == "normal") {
 		mode = new NormalMode();
+	} else {
+		throw runtime_error("Error: unknown mode: " + name);
 	}
 
 	return mode;

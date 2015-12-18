@@ -2,12 +2,14 @@ vector<string> stringArgs = {
 "-g1", "-g2",
 "-fg1", "-fg2",
 "-method",
+"-mode",
 "-o",
 "-eval",
 "-T_initial", "-T_decay", 
 "-startalignment",
 "-truealignment",
 "-wecnodesim", "-wavenodesim",
+"-qmode",
 "-experiment",
 "-paramestimation",
 "-alphaestimation", "-alphafile"
@@ -29,10 +31,8 @@ vector<string> doubleArgs = {
 };
 
 vector<string> boolArgs = {
-"-dbg",
 "-restart",
 "-detailedreport",
-"-qsub",
 "-goavg",
 "-nodetabus",
 "-autoalpha",

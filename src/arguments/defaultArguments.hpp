@@ -9,6 +9,7 @@ vector<string> defaultArguments = {
 "-T_initial 1",
 "-T_decay 1",
 "-t 5",
+"-mode normal",
 "-method sana",
 "-ec 1",
 "-lgraaliter 1000",
@@ -23,5 +24,5 @@ vector<string> defaultArguments = {
 "-o sana.out",
 "-rewire 0",
 "-ntabus 300",
-"-nneighbors 50"
+"-nneighbors 50",
 };
