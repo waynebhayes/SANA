@@ -13,40 +13,51 @@ public:
 	map<string, double> doubles;
 	map<string, bool> bools;
 	map<string, vector<double> > vectors;
-	vector<string> vArg;
+
+	vector<string> originalArgv; //argv but in vector format
 
 	ArgumentParser(
-		const vector<string> &listStringArgs,
-    	const vector<string> &listDoubleArgs,
-    	const vector<string> &listBoolArgs,
-    	const vector<string> &listVectorArgs);
+		const vector<string> &defStringArgs,
+    	const vector<string> &defDoubleArgs,
+    	const vector<string> &defBoolArgs,
+    	const vector<string> &defVectorArgs);
 	
-	void parse(vector<string> vArg);
+	void parseArgs(int argc, char* argv[],
+		vector<string> baseValueLines, bool readParamsFromFileInFirstArg);
+
 	void writeArguments();
+
+private:
+	void initDefaultValues(
+		const vector<string> &defStringArgs,
+    	const vector<string> &defDoubleArgs,
+    	const vector<string> &defBoolArgs,
+    	const vector<string> &defVectorArgs);
+
+	void initParsedValues(vector<string> vArg);
+
+	/*
+	collects the arguments from the terminal command, a list of base values for some arguments,
+	and possibly additional arguments from a file (see below)
+	into a more uniform vector of strings.
+
+	readParamsFromFileInFirstArg: allows the user to have his own file with
+	default values. If this option is set, the user can optionally put his
+	file with default values as first argument. 
+	
+	Note: arguments in the optional file will override base values, and command line
+	arguments will override any other value.
+
+	Note: all arguments that are not collected here will be initialized to the default
+	value: string arguments are set to "", double arguments to 0,
+	bool arguments to false, and vector arguments to an empty vector.
+	*/
+	static vector<string> getFullArgList(const vector<string>& argv, 
+		const vector<string>& baseValues, bool readParamsFromFileInFirstArg);
+
 
 };
 
-/*
-collects the arguments from the terminal, as well as from the different possible files with
-default values (see below) into a more uniform vector of strings, which can be fed to the parse function
-
-useFileWithDefaultValues: by default, string arguments are set to "", double arguments to 0,
-bool arguments to false, and vector arguments to an empty vector. However, this option
-allows to specify default values for the arguments in the file fileWithDefaultValues.
-This file should contain a line for each argument.
-
-readParamsFromFileInFirstArg: allows the user to have his own file with default values.
-If this option is set, the user can optionally put his file with default values as first argument 
-*/
-vector<string> getArgumentList(int argc, char* argv[], bool useFileWithDefaultValues,
-	string fileWithDefaultValues, bool readParamsFromFileInFirstArg);
-
-/*
-Similar as above but instead of fileWithDefaultValues, it receives
-a vector containing the lines of that file as elements
-*/
-vector<string> getArgumentList(int argc, char* argv[],
-	vector<string> defaultValues, bool readParamsFromFileInFirstArg);
 
 
 

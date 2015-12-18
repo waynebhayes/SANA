@@ -8,7 +8,7 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
 	ArgumentParser args(stringArgs, doubleArgs, boolArgs, vectorArgs);
-	args.parse(getArgumentList(argc, argv, defaultArguments, true));
+	args.parseArgs(argc, argv, defaultArguments, true);
 
 	if(args.doubles["-seed"] != 0) {
 		setSeed(args.doubles["-seed"]);

@@ -3,82 +3,86 @@
 #include "../utils.hpp"
 using namespace std;
 
-vector<string> getArgumentList(int argc, char* argv[], bool useFileWithDefaultValues,
-	string fileWithDefaultValues, bool readParamsFromFileInFirstArg) {
-
-  vector<string> result;
-  if (useFileWithDefaultValues) {
-  	if (fileExists(fileWithDefaultValues)) {
-  		result = fileToStrings(fileWithDefaultValues);
-  	}
-  	else {
-  		throw runtime_error("Cannot find file with default argument values: " + fileWithDefaultValues);
-  	}
-  }
-
-  if (argc < 2) return result;
-  int i = 1;
-  if (readParamsFromFileInFirstArg and fileExists(argv[1])) {
-    vector<string> aux = fileToStrings(argv[1]);
-    result.insert(result.end(), aux.begin(), aux.end());
-    i++;
-  }
-
-  for (; i < argc; i++) {
-    result.push_back(string(argv[i]));
-  }
-
-  return result;
-}
-
-vector<string> getArgumentList(int argc, char* argv[],
-  vector<string> defaultValues, bool readParamsFromFileInFirstArg) {
-
-  vector<string> result;
-  for (string arg : defaultValues) {
-    for (string s : split(arg, ' ')) {
-      result.push_back(s);
-    }
-  }
-
-  if (argc < 2) return result;
-  int i = 1;
-  if (readParamsFromFileInFirstArg and fileExists(argv[1])) {
-    vector<string> aux = fileToStrings(argv[1]);
-    result.insert(result.end(), aux.begin(), aux.end());
-    i++;
-  }
-
-  for (; i < argc; i++) {
-    result.push_back(string(argv[i]));
-  }
-
-  return result;
-}
-
-
 ArgumentParser::ArgumentParser(
-    const vector<string> &listStringArgs,
-    const vector<string> &listDoubleArgs,
-    const vector<string> &listBoolArgs,
-    const vector<string> &listVectorArgs) {
+    const vector<string>& defStringArgs,
+    const vector<string>& defDoubleArgs,
+    const vector<string>& defBoolArgs,
+    const vector<string>& defVectorArgs) {
+  initDefaultValues(defStringArgs, defDoubleArgs, defBoolArgs, defVectorArgs);
 
-  for (string s : listStringArgs) {
+}
+
+void ArgumentParser::initDefaultValues(
+    const vector<string>& defStringArgs,
+    const vector<string>& defDoubleArgs,
+    const vector<string>& defBoolArgs,
+    const vector<string>& defVectorArgs) {
+
+  for (string s : defStringArgs) {
     strings[s] = "";
   }
-  for (string s : listDoubleArgs) {
+  for (string s : defDoubleArgs) {
     doubles[s] = 0;
   }
-  for (string s : listBoolArgs) {
+  for (string s : defBoolArgs) {
     bools[s] = false;
   }
-  for (string s : listVectorArgs) {
+  for (string s : defVectorArgs) {
     vectors[s] = vector<double> (0);
   }
 }
 
-void ArgumentParser::parse(vector<string> vArg) {
-  this->vArg = vector<string>(vArg);
+void ArgumentParser::parseArgs(int argc, char* argv[],
+  vector<string> baseValueLines, bool readParamsFromFileInFirstArg) {
+
+  originalArgv = vector<string> (argc);
+  for (int i = 0; i < argc; i++) {
+    originalArgv[i] = argv[i];
+  }
+
+  vector<string> baseValues = vector<string> ();
+  for (string line : baseValueLines) {
+    for (string s : split(line, ' ')) {
+      baseValues.push_back(s);
+    }
+  } 
+
+  vector<string> allArgs = getFullArgList(originalArgv, baseValues,
+    readParamsFromFileInFirstArg);
+
+  initParsedValues(allArgs);
+
+}
+
+vector<string> ArgumentParser::getFullArgList(const vector<string>& argv,
+  const vector<string>& baseValues, bool readParamsFromFileInFirstArg) {
+
+  uint argc = argv.size();
+
+  vector<string> result(0);
+
+  //add first the base values
+  for (string s : baseValues) {
+    result.push_back(s);
+  }
+  if (argc < 2) return result;
+
+  //next add values from file
+  bool addValuesFromFile = readParamsFromFileInFirstArg and fileExists(argv[1]);
+  if (addValuesFromFile) {
+    vector<string> aux = fileToStrings(argv[1]);
+    result.insert(result.end(), aux.begin(), aux.end());
+  }
+
+  //finally add command line values
+  for (uint i = addValuesFromFile ? 2 : 1; i < argc; i++) {
+    result.push_back(string(argv[i]));
+  }
+
+  return result;
+}
+
+void ArgumentParser::initParsedValues(vector<string> vArg) {
   int n = vArg.size();
   //check to see if there is a help argument
   for (string arg : vArg) {
