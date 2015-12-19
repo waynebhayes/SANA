@@ -28,7 +28,7 @@ double MeasureCombination::eval(const string& measureName, const Alignment& A) c
             return measures[i]->eval(A);
         }
     }
-    error("Measure not found.");
+    throw runtime_error("Measure not found.");
     return 0;
 }
 
@@ -112,7 +112,7 @@ double MeasureCombination::getWeight(const string& measureName) const {
             return weights[i];
         }
     }
-    error("Measure not found.");
+    throw runtime_error("Measure not found.");
     return 0;
 }
 
@@ -123,7 +123,7 @@ Measure* MeasureCombination::getMeasure(const string& measureName) const {
             return measures[i];
         }
     }
-    error("Measure not found.");
+    throw runtime_error("Measure not found.");
     return 0;
 }
 
@@ -155,7 +155,7 @@ void MeasureCombination::initn1n2(uint& n1, uint& n2) const {
             return;
         }
     }
-    error("There are no local measures");
+    throw runtime_error("There are no local measures");
 }
 
 vector<vector<float> > MeasureCombination::getAggregatedLocalSims() const {

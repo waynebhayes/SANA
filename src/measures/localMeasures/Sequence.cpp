@@ -59,7 +59,7 @@ void Sequence::initSimMatrix() {
     bool g2NeedNameMap = fileExists(g2CuratedFastaFile);
     unordered_map<string,string> g1NameMap;
     unordered_map<string,string> g2NameMap;
-    
+
     if (g1NeedNameMap) g1NameMap = initNameMap(g1CuratedFastaFile);
     if (g2NeedNameMap) g2NameMap = initNameMap(g2CuratedFastaFile);
 
@@ -72,7 +72,7 @@ void Sequence::initSimMatrix() {
 
     string blastFile = "sequence/scores/"+g1Name+"_"+g2Name+"_blast.out";
     if (not fileExists(blastFile)) {
-        error("Cannot find sequence scores for "+g1Name+"-"+g2Name);
+        throw runtime_error("Cannot find sequence scores for "+g1Name+"-"+g2Name);
     }
     ifstream infile(blastFile);
 

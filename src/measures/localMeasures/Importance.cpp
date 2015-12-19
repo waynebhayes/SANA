@@ -54,7 +54,7 @@ vector<ushort> Importance::getNodesSortedByDegree(const vector<vector<ushort> >&
         if (adjLists[nodes[i]].size() > d) return res;
         res.push_back(nodes[i]);
     }
-    error("no nodes left");
+    throw runtime_error("no nodes left");
     return res;//dummy return
 }
 
@@ -129,7 +129,7 @@ vector<double> Importance::getImportances(const Graph& G) {
         true when also adding sequnece similarity).
         I assume here that they don't keep their weight (to change this, comment the previous line)
         Note: in a test, the scores were similar in both cases */
-        
+
         /* same story with edge weights... */
         for (uint i = 0; i < n; i++) {
             edgeWeights[u][i] = edgeWeights[i][u] = 0;

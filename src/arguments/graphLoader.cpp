@@ -65,10 +65,10 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
                     Graph::edgeList2gw(fg1, g1GWFile);
                 }
             } else {
-                error("File not found: "+fg1);
+                throw runtime_error("File not found: "+fg1);
             }
         } else {
-            error("File not found: "+g1GWFile);
+            throw runtime_error("File not found: "+g1GWFile);
         }
     }
     if (not fileExists(g2GWFile)) {
@@ -80,10 +80,10 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
                     Graph::edgeList2gw(fg2, g2GWFile);
                 }
             } else {
-                error("File not found: "+fg2);
+                throw runtime_error("File not found: "+fg2);
             }
         } else {
-            error("File not found: "+g2GWFile);
+            throw runtime_error("File not found: "+g2GWFile);
         }
     }
 
@@ -95,11 +95,17 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 
     double rewiredFraction = args.doubles["-rewire"];
     if (rewiredFraction > 0) {
-        if (rewiredFraction > 1) error("Cannot rewire more than 100% of the edges");
+        if (rewiredFraction > 1) {
+            throw runtime_error("Cannot rewire more than 100% of the edges");
+        }
         G2.rewireRandomEdges(rewiredFraction);
     }
 
-    if (G1.getNumNodes() > G2.getNumNodes()) error("G2 has less nodes than G1");
-    if (G1.getNumEdges() == 0 or G2.getNumEdges() == 0) error ("One of the networks has 0 edges");
+    if (G1.getNumNodes() > G2.getNumNodes()) {
+        throw runtime_error("G2 has less nodes than G1");
+    }
+    if (G1.getNumEdges() == 0 or G2.getNumEdges() == 0) {
+        throw runtime_error("One of the networks has 0 edges");
+    }
     cerr << "done (" << T.elapsedString() << ")" << endl;
 }

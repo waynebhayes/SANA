@@ -182,12 +182,6 @@ checkFileExists(fileName);
     return result;
 }
 
-void error(const string& message) {
-  stringstream errorMsg;
-  errorMsg << message << endl;
-  throw runtime_error(errorMsg.str().c_str());
-}
-
 string extractDecimals(double value, int count) {
     string valueString = to_string(value);
     int k = 0;
@@ -335,8 +329,7 @@ string autocompleteFileName(const string dir, const string fileNamePrefix) {
     for (uint i = 0; i < files.size(); i++) {
         if (files[i].substr(0, n) == fileNamePrefix) return files[i];
     }
-    error("file with prefix "+fileNamePrefix+" in directory "+dir+" not found");
-    return "";
+    throw runtime_error("file with prefix "+fileNamePrefix+" in directory "+dir+" not found");
 }
 
 string toLowerCase(string s) {

@@ -34,7 +34,9 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
         double alpha = args.doubles["-alpha"];
         if (args.bools["-autoalpha"]) {
             string alphaFile = args.strings["-alphafile"];
-            if (not fileExists(alphaFile)) error("Couldn't find file "+alphaFile);
+            if (not fileExists(alphaFile)) {
+                throw runtime_error("Couldn't find file "+alphaFile);
+            }
             alpha = AlphaEstimation::getAlpha(alphaFile, "LGRAAL", G1.getName(), G2.getName());
             if (alpha == -1) alpha = args.doubles["-alpha"];
         }
@@ -43,7 +45,9 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
         double alpha = args.doubles["-alpha"];
         if (args.bools["-autoalpha"]) {
             string alphaFile = args.strings["-alphafile"];
-            if (not fileExists(alphaFile)) error("Couldn't find file "+alphaFile);
+            if (not fileExists(alphaFile)) {
+                throw runtime_error("Couldn't find file "+alphaFile);
+            }
             alpha = AlphaEstimation::getAlpha(alphaFile, "HubAlign", G1.getName(), G2.getName());
             if (alpha == -1) alpha = args.doubles["-alpha"];
         }
@@ -75,7 +79,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
             cout << "Outdated; needs to be refactored" << endl;
             // string methodName = "SANA";
             // string alphaFile = args.strings["-alphafile"];
-            // if (not fileExists(alphaFile)) error("Couldn't find file "+alphaFile);
+            // if (not fileExists(alphaFile)) throw runtime_error("Couldn't find file "+alphaFile);
             // alpha = AlphaEstimation::getAlpha(alphaFile, methodName, G1.getName(), G2.getName());
             // if (alpha == -1) alpha = args.doubles["-alpha"];
         }

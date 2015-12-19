@@ -23,8 +23,8 @@ double AlphaEstimation::computeAlpha(Graph& G1, Graph& G2, string methodName, Me
         string aligFileAlpha0 = "experiments/"+methodName+"_alpha0/"+g1Name+"_"+g2Name+"_"+methodName+"_alpha0.txt";
         string aligFileAlpha1 = "experiments/"+methodName+"_alpha0,9999/"+g1Name+"_"+g2Name+"_"+methodName+"_alpha0.9999.txt";
     }
-    if (not fileExists(aligFileAlpha0)) return -1; //error("file "+aligFileAlpha0+" not found");
-    if (not fileExists(aligFileAlpha1)) return -1; //error("file "+aligFileAlpha1+" not found");
+    if (not fileExists(aligFileAlpha0)) return -1;
+    if (not fileExists(aligFileAlpha1)) return -1;
 
     double topScore = topMeasure->eval(Alignment::loadMapping(aligFileAlpha0));
     Sequence seq(&G1, &G2);
@@ -91,9 +91,8 @@ double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasu
             aligFileAlpha0 += "0";
         }
         if (not fileExists(aligFileAlpha0)) {
-            //error("file "+aligFileAlpha0+" not found");
             sampleCount--;
-        } 
+        }
         else {
             topScore += topMeasure->eval(Alignment::loadMapping(aligFileAlpha0));
         }
@@ -113,7 +112,6 @@ double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasu
             aligFileAlpha1 += "0";
         }
         if (not fileExists(aligFileAlpha1)) {
-            //error("file "+aligFileAlpha1+" not found");
             sampleCount--;
         }
         else {
@@ -149,7 +147,7 @@ void AlphaEstimation::computeAlphas() {
         for (uint j = 0; j < nPairs; j++) {
             string g1Name = networkPairs[j][0];
             string g2Name = networkPairs[j][1];
-            
+
             if (methodName == "LGRAAL") {
                 LocalMeasure* m = new GraphletLGraal(&graphs[g1Name], &graphs[g2Name]);
                 topMeasure = new WeightedEdgeConservation(&graphs[g1Name], &graphs[g2Name], m);
@@ -157,7 +155,7 @@ void AlphaEstimation::computeAlphas() {
             else if (methodName == "HubAlign") topMeasure = new Importance(&graphs[g1Name], &graphs[g2Name]);
             else if (methodName == "SANA_EC") topMeasure = new EdgeCorrectness(&graphs[g1Name], &graphs[g2Name]);
             else /*if (methodName == "sanas3")*/ topMeasure = new SymmetricSubstructureScore(&graphs[g1Name], &graphs[g2Name]);
-            
+
             if (methodName.substr(0,4) == "SANA") {
                 alphas[i][j] = computeAlphaSANA(graphs[g1Name], graphs[g2Name], topMeasure);
             }
@@ -179,6 +177,5 @@ double AlphaEstimation::getAlpha(string alphaFile, string methodName, string G1N
         if (content[i][0] == methodName and content[i][1] == G1Name and content[i][2] == G2Name)
             return stod(content[i][3]);
     }
-    error("Could not find the alpha value");
-    return -1;
+    throw runtime_error("Could not find the alpha value");
 }
