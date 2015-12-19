@@ -11,8 +11,8 @@ args="
   -goweights 1 1
   -wecnodesim graphletlgraal
   -wavenodesim noded
-  -T_initial 1
-  -T_decay 1
+  -tinitial 1
+  -tdecay 1
   -t 1
   -method sana
   -ec 1
@@ -55,9 +55,9 @@ else
 	while [ $i -lt 6 ]; do
 		if [ $(echo "${scores[$i]} < ${oldScores[$i]}" | bc) == "1" ]; then
 			echo "Less than oldscore on the "$i"th iteration."
-			echo "${scores[$i]} < ${oldScores[$i]}" 
-			isAtLeastOneLessThanTolerance=true	
-		fi	
+			echo "${scores[$i]} < ${oldScores[$i]}"
+			isAtLeastOneLessThanTolerance=true
+		fi
 		let i=i+1
 	done
 
