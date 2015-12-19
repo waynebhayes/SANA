@@ -1,6 +1,6 @@
 #!/bin/bash
 
-olddata="regresion_test_baseline.txt"
+olddata="regression_test_baseline.txt"
 
 args="
   -seed 10000
@@ -29,7 +29,7 @@ args="
   -rewire 0
 "
 
-echo "Running SANA regresion test"
+echo "Running SANA regression test"
 
 make all > /dev/null
 ./sana $args &> run_output.txt
