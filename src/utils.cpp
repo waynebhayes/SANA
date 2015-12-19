@@ -103,74 +103,6 @@ void printTable(const vector<vector<string> >& table, int colSeparation, ostream
     }
 }
 
-map<string,ushort> loadNameToIndexMapping(const string& fileName) {
-    stringstream errorMsg;
-    ifstream infile(fileName.c_str());
-    string line;
-    //ignore header
-    for (int i = 0; i < 4; i++) getline(infile, line);
-    //read number of nodes
-    int n;
-    getline(infile, line);
-    istringstream iss(line);
-    if (!(iss >> n) or n <= 0) {
-        errorMsg << "Failed to read node count: " << line;
-        throw runtime_error(errorMsg.str().c_str());
-    }
-   
-    map<string,ushort> nameToIndexMapping;
-    string node;
-    for (int i = 0; i < n; i++) {
-        getline(infile, line);
-        istringstream iss(line);
-        if (!(iss >> node)) {
-            errorMsg << "Failed to read node " << i << " of " << n << ": " << line << " (" << node << ")";
-            throw runtime_error(errorMsg.str().c_str());
-        }
-        int nameLength = node.size()-4;
-        node = node.substr(2, nameLength); //strip '|{' and '}|'
-        nameToIndexMapping[node] = i;
-    }
-    infile.close();
-    return nameToIndexMapping;
-}
-
-void loadLocalSimilaritiesListFormat(map<string,ushort>& yeastNamesToIndex, map<string,ushort>& G2NamesToIndex, const string& fileName, vector<vector<float> >& sims) {
-    uint n1 = yeastNamesToIndex.size();
-    uint n2 = G2NamesToIndex.size();
-
-    checkFileExists(fileName);
-    ifstream infile(fileName.c_str());
-    sims = vector<vector<float> > (n1, vector<float> (n2, -1.0));
-    cerr << "loading " << fileName << "...";
-    for (uint i = 0; i < n1*n2; i++) {
-        string G2Name, yeastName;
-        float sim;
-        infile >> G2Name >> yeastName >> sim;
-        int G2Index, yeastIndex;
-        G2Index = G2NamesToIndex[G2Name];
-        yeastIndex = yeastNamesToIndex[yeastName];
-        sims[yeastIndex][G2Index] = sim;
-    }
-    cerr << "done." << endl;
-    infile.close();
-}
-
-void loadLocalSimilaritiesMatrixFormat(const string& fileName, vector<vector<float> >& sims, uint n1, uint n2) {
-    checkFileExists(fileName);
-    ifstream infile;
-    infile.open(fileName.c_str());
-    sims = vector<vector<float> > (n1, vector<float> (n2, -1.0));
-    cerr << "loading " << fileName << "...";
-    for (uint i = 0; i < n1; i++) {
-        for (uint j = 0; j < n2; j++) {
-            infile >> sims[i][j];
-        }
-    }
-    cerr << "done." << endl;
-    infile.close();
-}
-
 bool fileExists(const string& fileName) {
     if (FILE *file = fopen(fileName.c_str(), "r")) {
         fclose(file);
@@ -210,62 +142,6 @@ const string currentDateTime() {
     return buf;
 }
 
-double alignmentSimilarity(const vector<ushort>& A1, const vector<ushort>& A2) {
-    uint sharedNodes = 0;
-    for (uint i = 0; i < A1.size(); i++) {
-        if (A1[i] == A2[i]) sharedNodes++;
-    }
-    return sharedNodes/((double) A1.size());
-}
-
-//oldFile is in list format, newFile is in matrix format
-void transformLocalSimilarityFileFormat(const string& oldFileName, const string& newFileName, const string& G1File, const string& G2File) {
-    map<string,ushort> G1NamesToIndex = loadNameToIndexMapping(G1File.c_str());
-    map<string,ushort> G2NamesToIndex = loadNameToIndexMapping(G2File.c_str());
-    vector<vector<float> > sims;
-    loadLocalSimilaritiesListFormat(G1NamesToIndex, G2NamesToIndex, oldFileName, sims);
-    ofstream outfile;
-    outfile.open(newFileName.c_str());
-    int n1 = G1NamesToIndex.size();
-    int n2 = G2NamesToIndex.size();
-    for(int i = 0; i < n1; i++) {
-        for (int j = 0; j < n2; j++) {
-            outfile << sims[i][j] << " ";
-        }
-        outfile << endl;
-    }
-}
-
-void loadDistanceMatrixFile(const string& fileName, vector<vector<short> >& dists, uint n) {
-    checkFileExists(fileName);
-    ifstream infile;
-    infile.open(fileName.c_str());
-    dists = vector<vector<short> > (n, vector<short> (n));
-    for (uint i = 0; i < n; i++) {
-        for (uint j = 0; j < n; j++) {
-            infile >> dists[i][j];
-        }
-    }
-    infile.close();
-}
-
-string substrBefore(const string& s, const string& chars) {
-    for (uint i = 0; i < s.size(); i++) {
-        for (uint j = 0; j < chars.size(); j++) {
-            if (s[i]==chars[j]) return s.substr(0, i);
-        }
-    }
-    return s;
-}
-
-string removeDirectoryFromFileName(const string& fileName) {
-    uint lastDashPos = 0;
-    for (uint i = 0; i < fileName.size(); i++) {
-        if (fileName[i] == '/') lastDashPos = i;
-    }
-    return fileName.substr(lastDashPos+1);
-}
-
 void normalizeWeights(vector<double>& weights) {
     double sum = 0;
     uint n = weights.size();
@@ -303,7 +179,7 @@ checkFileExists(fileName);
         result.push_back(words);
     }
     ifs.close();
-    return result;    
+    return result;
 }
 
 void error(const string& message) {
@@ -312,7 +188,7 @@ void error(const string& message) {
   throw runtime_error(errorMsg.str().c_str());
 }
 
-string extractDecimals(double value, int count) {    
+string extractDecimals(double value, int count) {
     string valueString = to_string(value);
     int k = 0;
     int n = valueString.size();
@@ -326,14 +202,6 @@ string extractDecimals(double value, int count) {
     }
     while (result.size() < (uint) count) result += "0";
     return result;
-}
-
-void simFileToBinaryFormat(const string& simFile, const string& binFile, const string& G1File, const string& G2File) {
-    map<string,ushort> G1NamesToIndex = loadNameToIndexMapping(G1File.c_str());
-    map<string,ushort> G2NamesToIndex = loadNameToIndexMapping(G2File.c_str());
-    vector<vector<float> > sims;
-    loadLocalSimilaritiesListFormat(G1NamesToIndex, G2NamesToIndex, simFile, sims);
-    writeMatrixToBinaryFile(sims, binFile);
 }
 
 string toString(int n) {
@@ -352,7 +220,7 @@ bool folderExists(string folderName) {
 void createFolder(string folderName) {
     if (not folderExists(folderName)) {
         int res = mkdir(folderName.c_str(), ACCESSPERMS);
-        if (res == -1) throw runtime_error("error creating directory " + folderName + " ("+strerror(errno)+")"); 
+        if (res == -1) throw runtime_error("error creating directory " + folderName + " ("+strerror(errno)+")");
     }
 }
 
@@ -434,7 +302,7 @@ double binomialCoefficientFloat(uint n, uint k) {
     if (k > n) throw runtime_error("n choose k with k > n");
     if (k == 0) return 1;
     if (k > n-k) return binomialCoefficient(n, n-k);
-    return n*binomialCoefficient(n-1, k-1)/k;    
+    return n*binomialCoefficient(n-1, k-1)/k;
 }
 
 //do not include the trailing '/' when calling it

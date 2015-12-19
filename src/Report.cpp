@@ -27,13 +27,6 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
   M.printMeasures(A, stream);
   stream << endl;
 
-  // string compareAFile = args.strings["-compare"];
-  // if (compareAFile != "") {
-  //   stream << "Alignment comparison:" << endl;
-  //   vector<ushort> compareA = loadAlignment(compareAFile);
-  //   stream << compareAFile << " = " << alignmentSimilarity(A, compareA) << endl;
-  // }
-
   Graph CS = A.commonSubgraph(G1, G2);
   stream << "Common subgraph:" << endl;
   CS.printStats(numCCsToPrint, stream);
