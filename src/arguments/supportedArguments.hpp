@@ -5,7 +5,7 @@ vector<string> stringArgs = {
 "-mode",
 "-o",
 "-eval",
-"-T_initial", "-T_decay", 
+"-tinitial", "-tdecay", 
 "-startalignment",
 "-truealignment",
 "-wecnodesim", "-wavenodesim",

@@ -63,11 +63,11 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     cerr << endl;
 
     double T_initial;
-    if (args.strings["-T_initial"] == "auto") T_initial = 0;
-    else T_initial = stod(args.strings["-T_initial"]);
+    if (args.strings["-tinitial"] == "auto") T_initial = 0;
+    else T_initial = stod(args.strings["-tinitial"]);
     double T_decay;
-    if (args.strings["-T_decay"] == "auto") T_decay = 0;
-    else T_decay = stod(args.strings["-T_decay"]);
+    if (args.strings["-tdecay"] == "auto") T_decay = 0;
+    else T_decay = stod(args.strings["-tdecay"]);
 
     double minutes = args.doubles["-t"];
 
@@ -89,10 +89,10 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
       double tfin = args.doubles["-tfin"];
       ((SANA*) method)->enableRestartScheme(tnew, iterperstep, numcand, tcand, tfin);
     }
-    if (args.strings["-T_initial"] == "auto") {
+    if (args.strings["-tinitial"] == "auto") {
       ((SANA*) method)->setT_INITIALAutomatically();
     }
-    if (args.strings["-T_decay"] == "auto") {
+    if (args.strings["-tdecay"] == "auto") {
       ((SANA*) method)->setT_DECAYAutomatically();
     }
   } else if (name == "hc") {
