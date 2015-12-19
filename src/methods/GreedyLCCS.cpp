@@ -9,7 +9,7 @@ GreedyLCCS::GreedyLCCS(Graph* G1, Graph* G2, string startAName):
 	Method(G1, G2, "GreedyLCCS"), startAName(startAName) {
 
 	uint n1 = G1->getNumNodes();
-	if (strEq(startAName,"")) {
+	if (startAName == "") {
 		uint n2 = G2->getNumNodes();
 		startA = new Alignment(Alignment::random(n1, n2));
 	}
@@ -91,7 +91,7 @@ Alignment GreedyLCCS::run() {
 
 void GreedyLCCS::describeParameters(ostream& stream) {
 	stream << "starting alignment: ";
-	if (strEq(startAName,"")) stream << "random" << endl;
+	if (startAName == "") stream << "random" << endl;
 	else stream << startAName << endl;
 }
 

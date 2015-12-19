@@ -210,10 +210,6 @@ const string currentDateTime() {
     return buf;
 }
 
-bool strEq(const string& s1, const string& s2) {
-    return s1.compare(s2) == 0;
-}
-
 double alignmentSimilarity(const vector<ushort>& A1, const vector<ushort>& A2) {
     uint sharedNodes = 0;
     for (uint i = 0; i < A1.size(); i++) {

@@ -79,7 +79,7 @@ double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasu
 	string g1Name = G1.getName();
 	string g2Name = G2.getName();
 	string optName = toLowerCase(topMeasure->getName());
-	if (strEq(optName.substr(0, 6), "lgraal")) optName = optName.substr(0, 6);
+	if (optName.substr(0, 6) == "lgraal") optName = optName.substr(0, 6);
 	string aligFileAlpha0 = "experiments/sana_"+optName+"_alpha0/"+g1Name+"_"+g2Name+"_sana_alpha0.txt";
 	double topScore = 0;
 	uint sampleCount = 10;
@@ -158,7 +158,7 @@ void AlphaEstimation::computeAlphas() {
 			else if (methodName == "SANA_EC") topMeasure = new EdgeCorrectness(&graphs[g1Name], &graphs[g2Name]);
 			else /*if (methodName == "sanas3")*/ topMeasure = new SymmetricSubstructureScore(&graphs[g1Name], &graphs[g2Name]);
 			
-			if (strEq(methodName.substr(0,4), "SANA")) {
+			if (methodName.substr(0,4) == "SANA") {
 				alphas[i][j] = computeAlphaSANA(graphs[g1Name], graphs[g2Name], topMeasure);
 			}
 			else {

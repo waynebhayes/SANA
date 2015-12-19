@@ -6,7 +6,7 @@ using namespace std;
 NoneMethod::NoneMethod(Graph* G1, Graph* G2, string startAName):
 	Method(G1, G2, "None"), A(Alignment::empty())
 {
-	if (strEq(startAName,"")) {
+	if (startAName == "") {
 		uint n1 = G1->getNumNodes();
 		uint n2 = G2->getNumNodes();
 		A = Alignment(Alignment::random(n1, n2));

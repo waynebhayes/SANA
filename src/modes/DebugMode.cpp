@@ -15,6 +15,7 @@
 #include "../complementaryProteins.hpp"
 
 void DebugMode::run(ArgumentParser& args) {
+
   createFolders();
   Graph G1, G2;
   initGraphs(G1, G2, args);

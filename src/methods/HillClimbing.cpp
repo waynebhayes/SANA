@@ -38,7 +38,7 @@ HillClimbing::HillClimbing(Graph* G1, Graph* G2, MeasureCombination* M, string s
 	uint totalRamification = ramificationSwap + ramificationChange;
 	changeProbability = (double) ramificationChange/totalRamification;
 
-	if (strEq(startAName,"")) {
+	if (startAName == "") {
 		startA = Alignment::random(n1, n2);
 	}
 	else {
@@ -480,7 +480,7 @@ string HillClimbing::fileNameSuffix(const Alignment& A) {
 
 void HillClimbing::describeParameters(ostream& stream) {
 	stream << "starting alignment: ";
-	if (strEq(startAName,"")) stream << "'random'" << endl;
+	if (startAName == "") stream << "'random'" << endl;
 	else stream << startAName << endl;
     stream << endl << "Optimization criteria:" << endl;
     M->printWeights(stream);    

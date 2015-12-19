@@ -24,12 +24,12 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
 
   if (aligFile != "") {
   	method = new NoneMethod(&G1, &G2, aligFile);
-  } else if (strEq(name, "greedylccs")) {
+  } else if (name == "greedylccs") {
 	method = new GreedyLCCS(&G1, &G2, startAName);
-  } else if (strEq(name, "wave")) {
+  } else if (name == "wave") {
     LocalMeasure* waveNodeSim = (LocalMeasure*) M.getMeasure(args.strings["-wavenodesim"]);
     method = new WeightedAlignmentVoter(&G1, &G2, waveNodeSim);
-  } else if (strEq(name, "lgraal")) {
+  } else if (name == "lgraal") {
     double seconds = args.doubles["-t"]*60;
     double alpha = args.doubles["-alpha"];
     if (args.bools["-autoalpha"]) {
@@ -39,7 +39,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
       if (alpha == -1) alpha = args.doubles["-alpha"];
     }
     method = new LGraalWrapper(&G1, &G2, alpha, args.doubles["-lgraaliter"], seconds);
-  } else if (strEq(name, "hubalign")) {
+  } else if (name == "hubalign") {
     double alpha = args.doubles["-alpha"];
     if (args.bools["-autoalpha"]) {
       string alphaFile = args.strings["-alphafile"];
@@ -49,7 +49,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     }
     //in hubalign alpha is the fraction of topology
     method = new HubAlignWrapper(&G1, &G2, 1 - alpha);
-  } else if (strEq(name, "tabu")) {
+  } else if (name == "tabu") {
     cerr << "=== Tabu -- optimize: ===" << endl;
     M.printWeights(cerr);
     cerr << endl;
@@ -57,7 +57,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     uint ntabus = args.doubles["-ntabus"];
     uint nneighbors = args.doubles["-nneighbors"];
     method = new TabuSearch(&G1, &G2, minutes, &M, ntabus, nneighbors, args.bools["-nodetabus"]);
-  } else if (strEq(name, "sana")) {
+  } else if (name == "sana") {
     cerr << "=== SANA -- optimize: ===" << endl;
     M.printWeights(cerr);
     cerr << endl;
@@ -95,11 +95,11 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (args.strings["-T_decay"] == "auto") {
       ((SANA*) method)->setT_DECAYAutomatically();
     }
-  } else if (strEq(name, "hc")) {
+  } else if (name == "hc") {
 	method = new HillClimbing(&G1, &G2, &M, startAName);
-  } else if (strEq(name, "random")) {
+  } else if (name == "random") {
 	method = new RandomAligner(&G1, &G2);
-  } else   if (strEq(name, "none")) {
+  } else   if (name == "none") {
 	method = new NoneMethod(&G1, &G2, startAName);
   } else {
 	  throw runtime_error("Error: unknown method: " + name);

@@ -69,7 +69,7 @@ string ClusterMode::makeScript(const vector<string>& argv) {
 
   //add all the same arguments, but replace the value of -mode for the value of -qmode
   for (int i = 0; i < argc; i++) {
-    if (not strEq(argv[i], "cluster")) {
+    if (argv[i] != "cluster") {
       fout << argv[i] << " ";
     } else {
       fout << qmode << " ";
@@ -84,7 +84,7 @@ string ClusterMode::getQModeArgValue(const vector<string>& argv) {
   string qmode;
   bool found = false;
   for (int i = 0; i < argc-1; i++) {
-    if (strEq(argv[i], "-qmode")) {
+    if (argv[i] == "-qmode") {
       found = true;
       qmode = argv[i+1];
     }

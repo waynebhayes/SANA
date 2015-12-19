@@ -86,7 +86,7 @@ void ArgumentParser::initParsedValues(vector<string> vArg) {
   int n = vArg.size();
   //check to see if there is a help argument
   for (string arg : vArg) {
-    if (strEq(arg, "-h") or strEq(arg, "--help")) {
+    if (arg == "-h" or arg == "--help") {
       cerr << "See the README to see the available arguments." << endl;
       exit(0);
     }

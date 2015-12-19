@@ -18,7 +18,6 @@ vector<ushort> reverseMapping(const vector<ushort>& map, int range);
 
 int min(int a, int b);
 int max(int a, int b);
-bool strEq(const string& s1, const string& s2);
 
 double vectorMean(const vector<double>& v);
 double vectorMax(const vector<double>& v);

@@ -28,7 +28,7 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
   stream << endl;
 
   // string compareAFile = args.strings["-compare"];
-  // if (not strEq(compareAFile, "")) {
+  // if (compareAFile != "") {
   //   stream << "Alignment comparison:" << endl;
   //   vector<ushort> compareA = loadAlignment(compareAFile);
   //   stream << compareAFile << " = " << alignmentSimilarity(A, compareA) << endl;
@@ -77,7 +77,7 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   const MeasureCombination& M, Method* method, string reportFile) {
   string G1Name = G1.getName();
   string G2Name = G2.getName();
-  if (strEq(reportFile, "")) {
+  if (reportFile == "") {
     reportFile = "alignments/" + G1Name + "_" + G2Name + "/"
     + G1Name + "_" + G2Name + "_" + method->getName() + method->fileNameSuffix(A);
     addUniquePostfixToFilename(reportFile, ".txt");

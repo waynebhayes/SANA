@@ -157,7 +157,7 @@ void Experiment::printData(string outputFile) {
 				ss << data[i][k][j];
 				string val;
 				ss >> val;
-				if (strEq(val.substr(val.size()-7), ".000000")) val = val.substr(0, val.size()-7);
+				if (val.substr(val.size()-7) == ".000000") val = val.substr(0, val.size()-7);
 				table[j+1][k+2] = val;
 			}
 		}
@@ -258,7 +258,7 @@ void Experiment::collectData() {
 			Measure* measure = loadMeasure(&G1, &G2, measures[measure_i]);
 			for (uint method_i = 0; method_i < methods.size(); method_i++) {
 				string alig = alignmentFiles[pair_i][method_i];
-				if (not strEq(alig, "*")) {
+				if (alig != "*") {
 					Alignment A = Alignment::loadMapping(folderName+alig);
 					data[measure_i][method_i][pair_i] = measure->eval(A);
 				}

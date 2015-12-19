@@ -78,9 +78,9 @@ void ParameterEstimation::makeScript(double k, double l) {
 	fout << "cd " << projectFolder << endl;
 	fout << "./simanneal -g1 " << G1.getName() << " -g2 " << G2.getName();
 	fout << " -method " << method << " -restart 60";
-	if (strEq(measureName, "ec")) fout << " -ec 1 -s3 0";
-	else if (strEq(measureName, "s3")) fout << " -ec 0 -s3 1";
-	else assert(false and "unexpected optimization measure");
+	if (measureName == "ec") fout << " -ec 1 -s3 0";
+	else if (measureName == "s3") fout << " -ec 0 -s3 1";
+	else throw runtime_error("unexpected optimization measure");
 	fout << " -k " << k << " -l " << l;
 	fout << " -t " << minutes;
 	fout << " -o " << getAlignmentFileName(k, l) << endl;
@@ -144,7 +144,7 @@ void ParameterEstimation::printData(string outputFile) {
 			ss << data[i][j];
 			string val;
 			ss >> val;
-			if (strEq(val.substr(val.size()-7), ".000000")) val = val.substr(0, val.size()-7);
+			if (val.substr(val.size()-7) == ".000000") val = val.substr(0, val.size()-7);
 			table[i+1][j+1] = val;
 		}
 	}

@@ -24,7 +24,7 @@ double MeasureCombination::eval(const Alignment& A) const {
 double MeasureCombination::eval(const string& measureName, const Alignment& A) const {
 	uint n = measures.size();
 	for (uint i = 0; i < n; i++) {
-		if (strEq(measures[i]->getName(), measureName)) {
+		if (measures[i]->getName() == measureName) {
 			return measures[i]->eval(A);
 		}
 	}
@@ -108,7 +108,7 @@ void MeasureCombination::normalize() {
 double MeasureCombination::getWeight(const string& measureName) const {
 	uint n = measures.size();
 	for (uint i = 0; i < n; i++) {
-		if (strEq(measures[i]->getName(), measureName)) {
+		if (measures[i]->getName() == measureName) {
 			return weights[i];
 		}
 	}
@@ -119,7 +119,7 @@ double MeasureCombination::getWeight(const string& measureName) const {
 Measure* MeasureCombination::getMeasure(const string& measureName) const {
 	uint n = measures.size();
 	for (uint i = 0; i < n; i++) {
-		if (strEq(measures[i]->getName(), measureName)) {
+		if (measures[i]->getName() == measureName) {
 			return measures[i];
 		}
 	}
@@ -134,7 +134,7 @@ Measure* MeasureCombination::getMeasure(int i) const {
 bool MeasureCombination::containsMeasure(const string& measureName) {
 	uint n = measures.size();
 	for (uint i = 0; i < n; i++) {
-		if (strEq(measures[i]->getName(), measureName)) {
+		if (measures[i]->getName() == measureName) {
 			return true;
 		}
 	}

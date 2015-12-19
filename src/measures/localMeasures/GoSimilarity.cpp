@@ -81,10 +81,11 @@ void GoSimilarity::generateGOFileSimpleFormat(string GOFile, string GOFileSimple
 	    	//this is necessary because sometimes there is a optional 4th column with qualifiers
 	    	iss >> goTerm;
 	    }
-	    assert(strEq(goTerm.substr(0,3), "GO:"));
+	    assert(goTerm.substr(0,3) == "GO:");
 	    string aspect;
 	    iss >> waste >> waste >> aspect;
-	    while (not (aspect.size() == 1 and (strEq(aspect,"F") or strEq(aspect,"P") or strEq(aspect,"C")))) {
+	    while (not (aspect.size() == 1 and
+	    	(aspect == "F" or aspect == "P" or aspect == "C"))) {
 	    	//again necessary because there are optional columns
 	    	iss >> aspect;
 	    }

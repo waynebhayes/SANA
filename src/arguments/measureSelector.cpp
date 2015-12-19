@@ -107,7 +107,7 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 	}
 
 	if (G1.getNumNodes() == G2.getNumNodes()) { //assume that we are aligning a network with itself
-	if (strEq(args.strings["-truealignment"], "")) {
+	if (args.strings["-truealignment"] == "") {
 	  m = new NodeCorrectness(Alignment::identity(G1.getNumNodes()));
 	}
 	else {
