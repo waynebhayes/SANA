@@ -7,7 +7,7 @@
 #include "../arguments/methodSelector.hpp"
 #include "../arguments/graphLoader.hpp"
 
-#include "../Report.hpp"
+#include "../report.hpp"
 
 void NormalMode::run(ArgumentParser& args) {
     createFolders();

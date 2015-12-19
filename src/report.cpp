@@ -1,4 +1,4 @@
-#include "Report.hpp"
+#include "report.hpp"
 
 #include "measures/EdgeCorrectness.hpp"
 #include "measures/InducedConservedStructure.hpp"
