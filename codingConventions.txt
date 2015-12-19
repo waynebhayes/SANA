@@ -1,0 +1,9 @@
+In general, use camelCase (file names, class names, function names, variable names, ...)
+Exceptions:
+* Class names: start with uppercase
+* Files containing classes: start with uppercase
+* terminal arguments: start with "-" and include only lower case letters
+
+Indentation is 4 spaces (tabs should not appear anywhere)
+
+Unix-like newlines
