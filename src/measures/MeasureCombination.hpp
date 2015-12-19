@@ -1,5 +1,5 @@
 #ifndef MEASURECOMBINATION_HPP
-#define	MEASURECOMBINATION_HPP
+#define MEASURECOMBINATION_HPP
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -27,8 +27,8 @@ public:
     vector<vector<float> > getAggregatedLocalSims() const;
 
 private:
-	vector<Measure*> measures;
-	vector<double> weights;
+    vector<Measure*> measures;
+    vector<double> weights;
 
     void initn1n2(uint& n1, uint& n2) const;
 };

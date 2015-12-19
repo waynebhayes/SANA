@@ -15,12 +15,12 @@ double LargestCommonConnectedSubgraph::eval(const Alignment& A) {
     double N = (double) n/G1->getNumNodes();
     if (not USE_MAGNA_DEFINITION) return N;
 
-	Graph G1InducedSubgraph = G1->nodeInducedSubgraph(LCCSNodes);
-	Graph G2InducedSubgraph = G2->nodeInducedSubgraph(LCCSNodes);
-	double E1 = (double) G1InducedSubgraph.getNumEdges()/G1->getNumEdges();
-	double E2 = (double) G2InducedSubgraph.getNumEdges()/G2->getNumEdges();
-	double E = min(E1,E2);
-	return sqrt(E*N);
+    Graph G1InducedSubgraph = G1->nodeInducedSubgraph(LCCSNodes);
+    Graph G2InducedSubgraph = G2->nodeInducedSubgraph(LCCSNodes);
+    double E1 = (double) G1InducedSubgraph.getNumEdges()/G1->getNumEdges();
+    double E2 = (double) G2InducedSubgraph.getNumEdges()/G2->getNumEdges();
+    double E = min(E1,E2);
+    return sqrt(E*N);
 }
 
 double LargestCommonConnectedSubgraph::nodeProportion(const Alignment& A) {

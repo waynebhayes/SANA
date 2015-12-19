@@ -1,5 +1,5 @@
 #ifndef EDGECORRECTNESS_HPP
-#define	EDGECORRECTNESS_HPP
+#define EDGECORRECTNESS_HPP
 #include "Measure.hpp"
 
 class EdgeCorrectness: public Measure {

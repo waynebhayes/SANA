@@ -1,5 +1,5 @@
 #ifndef NONEMETHOD_HPP
-#define	NONEMETHOD_HPP
+#define NONEMETHOD_HPP
 #include <string>
 #include <iostream>
 #include <iostream>

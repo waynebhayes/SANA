@@ -1,5 +1,5 @@
 #ifndef GRAPHLETLGRAAL_HPP
-#define	GRAPHLETLGRAAL_HPP
+#define GRAPHLETLGRAAL_HPP
 #include "LocalMeasure.hpp"
 
 class GraphletLGraal: public LocalMeasure {
@@ -8,10 +8,10 @@ public:
     virtual ~GraphletLGraal();
 
 private:
-	void initSimMatrix();
-	
-	double gdvSim(uint i, uint j, const vector<vector<uint> >& gdvsG1,
-		const vector<vector<uint> >& gdvsG2);
+    void initSimMatrix();
+    
+    double gdvSim(uint i, uint j, const vector<vector<uint> >& gdvsG1,
+        const vector<vector<uint> >& gdvsG2);
 
 };
 

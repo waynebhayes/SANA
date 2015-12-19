@@ -1,5 +1,5 @@
 #ifndef GOCOVERAGE_HPP
-#define	GOCOVERAGE_HPP
+#define GOCOVERAGE_HPP
 #include "localMeasures/LocalMeasure.hpp"
 #include "Measure.hpp"
 
@@ -9,11 +9,11 @@ public:
     virtual ~GoCoverage();
     double eval(const Alignment& A);
 private:
-	bool NORMALIZE;
+    bool NORMALIZE;
     double permutationInverse(uint M, uint N);
 
-	double downweightedScore(uint M, uint N);
-	double scoreUpperBound();
+    double downweightedScore(uint M, uint N);
+    double scoreUpperBound();
 };
 
 #endif

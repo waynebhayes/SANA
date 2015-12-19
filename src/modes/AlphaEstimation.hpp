@@ -14,30 +14,30 @@ using namespace std;
 
 class AlphaEstimation : public Mode {
 public:
-	AlphaEstimation();
-	AlphaEstimation(string alphaFile);
-	void printData(string outputFile);
-	void run(ArgumentParser& args);
-	std::string getName(void);
+    AlphaEstimation();
+    AlphaEstimation(string alphaFile);
+    void printData(string outputFile);
+    void run(ArgumentParser& args);
+    std::string getName(void);
 
-	static double getAlpha(string alphaFile, string methodName, string G1Name, string G2Name);
+    static double getAlpha(string alphaFile, string methodName, string G1Name, string G2Name);
 private:
-	vector<string> methods;
+    vector<string> methods;
 
-	//first index: network pair
-	//second index: 0: g1 1: g2
-	vector<vector<string> > networkPairs;
+    //first index: network pair
+    //second index: 0: g1 1: g2
+    vector<vector<string> > networkPairs;
 
-	map<string, Graph> graphs;
+    map<string, Graph> graphs;
 
-	//first index: method
-	//second index: network pair
-	vector<vector<double> > alphas;
+    //first index: method
+    //second index: network pair
+    vector<vector<double> > alphas;
 
-	void init(string alphaFile);
-	double computeAlpha(Graph& G1, Graph& G2, string methodName, Measure* topMeasure);
-	double computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasure);
-	void computeAlphas();
+    void init(string alphaFile);
+    double computeAlpha(Graph& G1, Graph& G2, string methodName, Measure* topMeasure);
+    double computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasure);
+    void computeAlphas();
 };
 
 

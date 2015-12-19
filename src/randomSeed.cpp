@@ -7,10 +7,10 @@ random_device rd;
 unsigned int currentSeed = rd();
 
 void setSeed(unsigned int seed) {
-	currentSeed = seed;
+    currentSeed = seed;
 }
 
 unsigned int getRandomSeed() {
-	return currentSeed;
+    return currentSeed;
 }
 

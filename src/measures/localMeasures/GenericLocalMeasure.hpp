@@ -1,5 +1,5 @@
 #ifndef GENERICLOCALMEASURE_HPP
-#define	GENERICLOCALMEASURE_HPP
+#define GENERICLOCALMEASURE_HPP
 #include "LocalMeasure.hpp"
 
 class GenericLocalMeasure: public LocalMeasure {
@@ -8,7 +8,7 @@ public:
     virtual ~GenericLocalMeasure();
 private:
 
-	void initSimMatrix();
+    void initSimMatrix();
 };
 
 #endif

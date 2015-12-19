@@ -1,5 +1,5 @@
 #ifndef TIMER_HPP
-#define	TIMER_HPP
+#define TIMER_HPP
 #include <string>
 using namespace std;
 

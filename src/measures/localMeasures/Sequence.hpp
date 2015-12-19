@@ -1,5 +1,5 @@
 #ifndef SEQUENCE_HPP
-#define	SEQUENCE_HPP
+#define SEQUENCE_HPP
 #include "LocalMeasure.hpp"
 #include <unordered_map>
 
@@ -11,8 +11,8 @@ public:
 
 private:
 
-	unordered_map<string,string> initNameMap(string curatedFastaFile);
-	void initSimMatrix();
+    unordered_map<string,string> initNameMap(string curatedFastaFile);
+    void initSimMatrix();
 };
 
 #endif

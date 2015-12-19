@@ -5,7 +5,7 @@
 const string projectFolder = "/extra/wayne0/preserve/nmamano/networkalignment";
 
 string ClusterMode::getName(void) {
-	return "ClusterMode";
+    return "ClusterMode";
 }
 
 uint ClusterMode::getOArgValueIndex(const vector<string>& argv) {

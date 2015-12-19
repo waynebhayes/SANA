@@ -1,5 +1,5 @@
 #ifndef RANDOMALIGNER_HPP
-#define	RANDOMALIGNER_HPP
+#define RANDOMALIGNER_HPP
 
 #include <string>
 #include <vector>
@@ -11,10 +11,10 @@ using namespace std;
 class RandomAligner: public Method {
 public:
 
-	RandomAligner(Graph* G1, Graph* G2);
-	Alignment run();
-	void describeParameters(ostream& stream);
-	string fileNameSuffix(const Alignment& A);
+    RandomAligner(Graph* G1, Graph* G2);
+    Alignment run();
+    void describeParameters(ostream& stream);
+    string fileNameSuffix(const Alignment& A);
 
 private:
 

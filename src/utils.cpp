@@ -24,7 +24,7 @@ mt19937 gen(getRandomSeed());
 ranlux24_base fastGen(getRandomSeed());
 uniform_real_distribution<> realDis(0, 1);
 
-double randDouble() {	
+double randDouble() {
     return realDis(fastGen);
 }
 

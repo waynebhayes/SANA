@@ -1,5 +1,5 @@
 #ifndef LOCALMEASURE_HPP
-#define	LOCALMEASURE_HPP
+#define LOCALMEASURE_HPP
 #include "../Measure.hpp"
 
 class LocalMeasure: public Measure {
@@ -12,11 +12,11 @@ public:
     void writeSimsWithNames(string outfile);
 
 protected:
-	void loadBinSimMatrix(string simMatrixFileName);
-	virtual void initSimMatrix() =0;
-	
-	vector<vector<float> > sims;
-	static const string autogenMatricesFolder;
+    void loadBinSimMatrix(string simMatrixFileName);
+    virtual void initSimMatrix() =0;
+    
+    vector<vector<float> > sims;
+    static const string autogenMatricesFolder;
 };
 
 #endif

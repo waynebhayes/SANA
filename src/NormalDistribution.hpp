@@ -1,5 +1,5 @@
 #ifndef NORMALDISTRIBUTION_HPP
-#define	NORMALDISTRIBUTION_HPP
+#define NORMALDISTRIBUTION_HPP
 #include <string>
 #include <iostream>
 #include <vector>
@@ -17,8 +17,8 @@ public:
     double quantile(double p);
     
 private:
-	double mean;
-	double sd;
+    double mean;
+    double sd;
 };
 
 #endif

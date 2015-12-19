@@ -1,5 +1,5 @@
 #ifndef COMPLEMENTARYPROTEINS_HPP
-#define	COMPLEMENTARYPROTEINS_HPP
+#define COMPLEMENTARYPROTEINS_HPP
 #include "Alignment.hpp"
 
 //the first (second) element is the number of complementary (non-complementary)

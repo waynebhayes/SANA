@@ -1,5 +1,5 @@
 #ifndef WEIGHTEDEDGECONSERVATION_HPP
-#define	WEIGHTEDEDGECONSERVATION_HPP
+#define WEIGHTEDEDGECONSERVATION_HPP
 #include "Measure.hpp"
 #include "localMeasures/LocalMeasure.hpp"
 
@@ -10,7 +10,7 @@ public:
     double eval(const Alignment& A);
     LocalMeasure* getNodeSimMeasure();
 private:
-	LocalMeasure *nodeSim;
+    LocalMeasure *nodeSim;
 };
 
 #endif

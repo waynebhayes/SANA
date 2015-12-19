@@ -9,8 +9,8 @@
 
 class NormalMode : public Mode {
 public:
-	void run(ArgumentParser& args);
-	std::string getName(void);
+    void run(ArgumentParser& args);
+    std::string getName(void);
 };
 
 #endif /* NORMALMODE_HPP_ */

@@ -11,5 +11,5 @@ InvalidMeasure::~InvalidMeasure() {
 }
 
 double InvalidMeasure::eval(const Alignment& A) {
-	return -1;
+    return -1;
 }

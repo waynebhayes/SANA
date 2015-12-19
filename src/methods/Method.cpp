@@ -7,19 +7,19 @@ Method::~Method() {
 }
 
 string Method::getName() {
-	return name;
+    return name;
 }
 
 Alignment Method::runAndPrintTime() {
-	cerr << "Start execution of " << name << endl;
-	Timer T;
-	T.start();
-	Alignment A = run();
-	execTime = T.elapsed();
-	cerr << "Executed " << name << " in " << T.elapsedString() << endl;
-	return A;
+    cerr << "Start execution of " << name << endl;
+    Timer T;
+    T.start();
+    Alignment A = run();
+    execTime = T.elapsed();
+    cerr << "Executed " << name << " in " << T.elapsedString() << endl;
+    return A;
 }
 
 double Method::getExecTime() {
-	return execTime;
+    return execTime;
 }

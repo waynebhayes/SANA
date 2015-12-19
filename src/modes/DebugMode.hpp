@@ -7,8 +7,8 @@
 
 class DebugMode : public Mode {
 public:
-	void run(ArgumentParser& args);
-	std::string getName(void);
+    void run(ArgumentParser& args);
+    std::string getName(void);
 };
 
 #endif /* DEBUGMODE_HPP_ */

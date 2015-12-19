@@ -1,5 +1,5 @@
 #ifndef MEASURE_HPP
-#define	MEASURE_HPP
+#define MEASURE_HPP
 #include <string>
 #include "../Graph.hpp"
 #include "../utils.hpp"
@@ -16,11 +16,11 @@ public:
     virtual bool isLocal();
 
 protected:
-	Graph* G1;
-	Graph* G2;
-	
+    Graph* G1;
+    Graph* G2;
+    
 private:
-	string name;
+    string name;
 
 };
 

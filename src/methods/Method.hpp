@@ -1,5 +1,5 @@
 #ifndef METHOD_HPP
-#define	METHOD_HPP
+#define METHOD_HPP
 #include <string>
 #include <iostream>
 #include "../Graph.hpp"
@@ -20,11 +20,11 @@ public:
     double getExecTime();
     
 protected:
-	Graph* G1;
-	Graph* G2;
-	
+    Graph* G1;
+    Graph* G2;
+    
 private:
-	string name;
+    string name;
     double execTime;
 
 };

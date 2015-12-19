@@ -88,5 +88,5 @@ void DebugMode::run(ArgumentParser& args) {
 }
 
 std::string DebugMode::getName(void) {
-	return "DebugMode";
+    return "DebugMode";
 }

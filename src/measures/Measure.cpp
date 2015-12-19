@@ -7,9 +7,9 @@ Measure::~Measure() {
 }
 
 string Measure::getName() {
-	return name;
+    return name;
 }
 
 bool Measure::isLocal() {
-	return false;
+    return false;
 }

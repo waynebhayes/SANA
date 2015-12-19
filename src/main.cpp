@@ -7,18 +7,18 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-	ArgumentParser args(stringArgs, doubleArgs, boolArgs, vectorArgs);
-	args.parseArgs(argc, argv, defaultArguments, true);
+    ArgumentParser args(stringArgs, doubleArgs, boolArgs, vectorArgs);
+    args.parseArgs(argc, argv, defaultArguments, true);
 
-	if(args.doubles["-seed"] != 0) {
-		setSeed(args.doubles["-seed"]);
-	}
+    if(args.doubles["-seed"] != 0) {
+        setSeed(args.doubles["-seed"]);
+    }
 
-	args.writeArguments();
+    args.writeArguments();
 
-	Mode* mode = selectMode(args);
-	mode->run(args);
-	delete mode;
+    Mode* mode = selectMode(args);
+    mode->run(args);
+    delete mode;
 
-	return 0;
+    return 0;
 }
