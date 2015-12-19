@@ -25,12 +25,12 @@ void ClusterMode::run(ArgumentParser& args) {
 
   int submitCount = args.doubles["-qcount"];
   string outFile = args.strings["-o"];
-  
+
   //indicates that multiple runs will all overwrite outFile
   bool sameOutFile = submitCount > 1 and outFile != "";
 
   //call submitToCluster -qcount times
-  
+
   if (not sameOutFile) {
     //easy case, identical submits
     for (int i = 0; i < submitCount; i++) {
@@ -42,9 +42,9 @@ void ClusterMode::run(ArgumentParser& args) {
     int outFileIndex = getOArgValueIndex(args.originalArgv);
     for (int i = 0; i < submitCount; i++) {
       vector<string> vargs(args.originalArgv);
-      vargs[outFileIndex] += "_"+toString(i+1);
+      vargs[outFileIndex] += "_"+intToString(i+1);
       submitToCluster(vargs);
-    }    
+    }
   }
 }
 

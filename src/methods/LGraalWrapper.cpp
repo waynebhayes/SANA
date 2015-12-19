@@ -30,11 +30,11 @@ void LGraalWrapper::generateGDVFile(int graphNum) {
     string rawGDVFileName;
     if (graphNum == 1) {
         int lastindex = g1GDVFile.find_last_of(".");
-        rawGDVFileName = g1GDVFile.substr(0, lastindex); 
+        rawGDVFileName = g1GDVFile.substr(0, lastindex);
     }
     else {
         int lastindex = g2GDVFile.find_last_of(".");
-        rawGDVFileName = g2GDVFile.substr(0, lastindex); 
+        rawGDVFileName = g2GDVFile.substr(0, lastindex);
     }
 
     exec("chmod +x "+GDVCounterProgram);
@@ -46,15 +46,15 @@ void LGraalWrapper::generateGDVFile(int graphNum) {
         cmd = GDVCounterProgram+" "+g2NetworkFile+" "+rawGDVFileName;
     }
     execPrintOutput(cmd);
-    
+
     //clean auxiliar files (leave only .ndump2)
     deleteFile(rawGDVFileName);
     deleteFile(rawGDVFileName+".gr_freq");
     for (int i = 0; i < 10; i++) {
-        deleteFile(rawGDVFileName+".cl_0"+toString(i)+"_freq");
+        deleteFile(rawGDVFileName+".cl_0"+intToString(i)+"_freq");
     }
     for (int i = 10; i < 73; i++) {
-        deleteFile(rawGDVFileName+".cl_"+toString(i)+"_freq");
+        deleteFile(rawGDVFileName+".cl_"+intToString(i)+"_freq");
     }
 }
 
@@ -67,12 +67,12 @@ string LGraalWrapper::generateDummySimilarityFile() {
 
 void LGraalWrapper::generateAlignment() {
     exec("chmod +x "+lgraalProgram);
-    //Example, when aligning RNorvegicus and SPombe: 
+    //Example, when aligning RNorvegicus and SPombe:
     //./L-GRAAL -Q RNorvegicus.gw -T SPombe.gw -q RNorvegicus.ndump2 -t SPombe.ndump2 -B blast_evalues.txt -o my_output
     string cmd = lgraalProgram + " -Q " + g1NetworkFile + " -T " + g2NetworkFile;
     cmd += " -q " + g1GDVFile + " -t " + g2GDVFile;
     cmd += " -B " + similarityFile + " -o " + lgraalOutputFile;
-    cmd += " -I " + toString(iterlimit) + " -L " + to_string(timelimit);
+    cmd += " -I " + intToString(iterlimit) + " -L " + to_string(timelimit);
     cmd += " -a " + to_string(alpha);
     cerr << "Executing " << cmd << endl;
     execPrintOutput(cmd);

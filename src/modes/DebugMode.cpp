@@ -65,7 +65,7 @@ void DebugMode::run(ArgumentParser& args) {
   //   n /= 2;
   //   cerr << n;
   //   G1 = G1.randomNodeInducedSubgraph(n);
-  //   G1.saveInGWFormat("subgeo"+toString(n)+".gw");
+  //   G1.saveInGWFormat("subgeo"+intToString(n)+".gw");
   // }
   // exit(0);
 

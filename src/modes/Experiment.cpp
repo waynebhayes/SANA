@@ -109,7 +109,7 @@ void Experiment::scoresToRankings(vector<string>& row) {
     sort(indices.begin(), indices.end(), RankComp(&scores));
     int nextRank = 1;
     for (uint i = 0; i < n; i++) {
-        row[indices[i]+2] = toString(nextRank);
+        row[indices[i]+2] = intToString(nextRank);
         if (i < n-1 and scores[indices[i]] != scores[indices[i+1]]) ++nextRank;
     }
 }
@@ -138,7 +138,7 @@ void addAverageToLastRow(vector<vector<string> >& table) {
 void Experiment::printData(string outputFile) {
     ofstream fout(outputFile.c_str());
 
-    vector<vector<vector<string> > > tables; 
+    vector<vector<vector<string> > > tables;
     for (uint i = 0; i < data.size(); i++) {
         vector<vector<string> > table(networkPairs.size()+1, vector<string> (methods.size()+2));
         fout << "Measure: " << measures[i] << endl;
@@ -210,7 +210,7 @@ void Experiment::printDataCSV(string outputFile) {
 void Experiment::collectData() {
     uint npairs = networkPairs.size();
     data = vector<vector<vector<double> > > (measures.size(), vector<vector<double> > (methods.size(), vector<double> (npairs, -1)));
-    
+
     cerr << "Loading graphs...";
     Timer T;
     T.start();

@@ -45,7 +45,7 @@ vector<vector<string> > fileToStringsByLines(const string& fileName);
 
 string extractDecimals(double value, int count);
 
-string toString(int n);
+string intToString(int n);
 
 bool folderExists(string folderName);
 void createFolder(string folderName);

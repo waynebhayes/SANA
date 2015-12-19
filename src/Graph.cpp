@@ -525,7 +525,7 @@ map<string,ushort> Graph::getNodeNameToIndexMap() const {
         getline(infile, line);
         istringstream iss(line);
         if (!(iss >> node)) {
-            throw runtime_error("Failed to read node "+toString(i)+" of "+toString(n)+": "+line+" ("+node+")");
+            throw runtime_error("Failed to read node "+intToString(i)+" of "+intToString(n)+": "+line+" ("+node+")");
         }
         node = node.substr(2,node.size()-4); //strip |{ and }|
         res[node] = i;
@@ -719,7 +719,7 @@ void Graph::saveInGWFormat(string outputFile) {
     uint numNodes = getNumNodes();
     vector<string> nodeNames(numNodes);
     for (uint i = 0; i < numNodes; i++) {
-        nodeNames[i] = "node"+toString(i+1);
+        nodeNames[i] = "node"+intToString(i+1);
     }
     saveInGWFormat(outputFile, nodeNames, adjMatrix);
 }
@@ -772,7 +772,7 @@ bool Graph::isWellDefined() {
     for (uint i = 0; i < numNodes; i++) {
         if (adjMatrix[i][i]) {
             cerr << "Adjacency matrix ill defined: node " << i << " adjacent to itself" << endl;
-            isWellDefined = false; 
+            isWellDefined = false;
         }
     }
     //check that adj matrix is symmetric

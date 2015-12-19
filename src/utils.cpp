@@ -127,7 +127,7 @@ void addUniquePostfixToFilename(string& name, const string& fileExtension) {
     }
     int i = 3;
     while (fileExists(name + fileExtension)) {
-        string n = toString(i);
+        string n = intToString(i);
         name = origName + "_" + n;
         i++;
     }
@@ -198,7 +198,7 @@ string extractDecimals(double value, int count) {
     return result;
 }
 
-string toString(int n) {
+string intToString(int n) {
     return static_cast<ostringstream*>( &(ostringstream() << n) )->str();
 }
 
