@@ -11,6 +11,8 @@ class NormalMode : public Mode {
 public:
     void run(ArgumentParser& args);
     std::string getName(void);
+
+    static void createFolders();
 };
 
 #endif /* NORMALMODE_HPP_ */

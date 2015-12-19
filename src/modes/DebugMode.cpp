@@ -13,10 +13,11 @@
 #include "../Graph.hpp"
 #include "../Alignment.hpp"
 #include "../complementaryProteins.hpp"
+#include "NormalMode.hpp"
 
 void DebugMode::run(ArgumentParser& args) {
 
-  createFolders();
+  NormalMode::createFolders();
   Graph G1, G2;
   initGraphs(G1, G2, args);
 
