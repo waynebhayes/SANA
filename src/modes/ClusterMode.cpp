@@ -1,5 +1,5 @@
 #include "ClusterMode.hpp"
-#include "../utils.hpp"
+#include "../utils/utils.hpp"
 #include "../arguments/modeSelector.hpp"
 
 const string projectFolder = "/extra/wayne0/preserve/nmamano/networkalignment";

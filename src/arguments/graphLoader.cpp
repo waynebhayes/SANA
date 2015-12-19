@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include "graphLoader.hpp"
-#include "../Timer.hpp"
+#include "../utils/Timer.hpp"
 
 using namespace std;
 

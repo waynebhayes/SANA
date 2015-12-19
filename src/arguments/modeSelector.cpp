@@ -7,7 +7,7 @@
 #include "../modes/ClusterMode.hpp"
 #include "../modes/Experiment.hpp"
 
-#include "../utils.hpp"
+#include "../utils/utils.hpp"
 
 bool validMode(string name) {
     vector<string> validModes = {

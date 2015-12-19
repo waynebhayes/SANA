@@ -21,8 +21,8 @@
 #include "../measures/localMeasures/GenericLocalMeasure.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/Measure.hpp"
-#include "../Timer.hpp"
-#include "../randomSeed.hpp"
+#include "../utils/Timer.hpp"
+#include "../utils/randomSeed.hpp"
 
 using namespace std;
 
@@ -118,7 +118,7 @@ Alignment HillClimbing::run() {
     }
     Measure* allLocals = new GenericLocalMeasure(G1, G2, "locals", localsCombined);
     double localScoreSum = allLocals->eval(Alignment(A)) * n1;
-    
+
     //initialize data structures for incremental evaluation of WEC
     double wecWeight = M->getWeight("wec");
     double wecSum = 0;
@@ -194,12 +194,12 @@ Alignment HillClimbing::run() {
                     }
                 }
 
-                double newCurrentScore = newLocalScoreSum / g1Nodes + 
+                double newCurrentScore = newLocalScoreSum / g1Nodes +
                     newAligEdges*(ecWeight/g1Edges +
                                   icsWeight/newG2InducedEdges +
                                   s3Weight/(g1Edges + newG2InducedEdges - newAligEdges)) +
                     wecWeight*(newWecSum/(2*g1Edges));
-                
+
                 if (newCurrentScore > bestNewCurrentScore) {
                     bestNewCurrentScore = newCurrentScore;
                     useChangeOperator = true;
@@ -270,7 +270,7 @@ Alignment HillClimbing::run() {
                     }
                 }
 
-                double newCurrentScore = newLocalScoreSum / g1Nodes + 
+                double newCurrentScore = newLocalScoreSum / g1Nodes +
                     newAligEdges*(ecWeight/g1Edges +
                                   icsWeight/g2InducedEdges +
                                   s3Weight/(g1Edges + g2InducedEdges - newAligEdges)) +
@@ -324,5 +324,5 @@ void HillClimbing::describeParameters(ostream& stream) {
     if (startAName == "") stream << "'random'" << endl;
     else stream << startAName << endl;
     stream << endl << "Optimization criteria:" << endl;
-    M->printWeights(stream);    
+    M->printWeights(stream);
 }

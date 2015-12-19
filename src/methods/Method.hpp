@@ -3,9 +3,9 @@
 #include <string>
 #include <iostream>
 #include "../Graph.hpp"
-#include "../utils.hpp"
+#include "../utils/utils.hpp"
 #include "../Alignment.hpp"
-#include "../Timer.hpp"
+#include "../utils/Timer.hpp"
 
 class Method {
 public:
@@ -18,11 +18,11 @@ public:
 
     string getName();
     double getExecTime();
-    
+
 protected:
     Graph* G1;
     Graph* G2;
-    
+
 private:
     string name;
     double execTime;

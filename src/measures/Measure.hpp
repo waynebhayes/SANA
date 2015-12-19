@@ -2,9 +2,9 @@
 #define MEASURE_HPP
 #include <string>
 #include "../Graph.hpp"
-#include "../utils.hpp"
+#include "../utils/utils.hpp"
 #include "../Alignment.hpp"
-#include "../Timer.hpp"
+#include "../utils/Timer.hpp"
 
 class Measure {
 public:
@@ -18,7 +18,7 @@ public:
 protected:
     Graph* G1;
     Graph* G2;
-    
+
 private:
     string name;
 

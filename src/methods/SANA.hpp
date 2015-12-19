@@ -6,7 +6,7 @@
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
-#include "../randomSeed.hpp"
+#include "../utils/randomSeed.hpp"
 
 class SANA: public Method {
 
@@ -32,11 +32,11 @@ public:
     //returns the number of iterations until it stagnates when not using temperture
     long long unsigned int hillClimbingIterations(long long unsigned int idleCountTarget);
 
-    //returns an approximation of the the logarithm in base e of the size of the search space 
+    //returns an approximation of the the logarithm in base e of the size of the search space
     double searchSpaceSizeLog();
 
 private:
-    
+
     //data structures for the networks
     uint n1;
     uint n2;

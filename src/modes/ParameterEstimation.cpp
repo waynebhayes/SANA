@@ -12,7 +12,7 @@
 #include "../measures/InvalidMeasure.hpp"
 #include "../measures/localMeasures/GoSimilarity.hpp"
 #include "../Alignment.hpp"
-#include "../Timer.hpp"
+#include "../utils/Timer.hpp"
 
 const int ParameterEstimation::PRECISION_DECIMALS = 6;
 const double ParameterEstimation::minutes = 60;

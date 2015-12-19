@@ -3,9 +3,16 @@ CC = g++
 #CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g
 CXXFLAGS = -Wall -std=c++11 -O3 -march=native
 
-INCLUDES = 
-LFLAGS = 
-LIBS = 
+INCLUDES =
+LFLAGS =
+LIBS =
+
+UTILS_SRC = 											\
+	src/utils/NormalDistribution.cpp					\
+	src/utils/templateUtils.cpp							\
+	src/utils/Timer.cpp									\
+	src/utils/utils.cpp									\
+	src/utils/randomSeed.cpp							\
 
 ARGUMENTS_SRC = 										\
 	src/arguments/ArgumentParser.cpp					\
@@ -35,8 +42,8 @@ MEASUSES_SRCS = 				 						\
 	src/measures/localMeasures/Importance.cpp           \
 	src/measures/localMeasures/LocalMeasure.cpp         \
 	src/measures/localMeasures/NodeDensity.cpp          \
-	src/measures/localMeasures/Sequence.cpp			
-	
+	src/measures/localMeasures/Sequence.cpp
+
 METHODS_SRC =                                           \
 	src/methods/GreedyLCCS.cpp                          \
 	src/methods/HillClimbing.cpp                        \
@@ -56,7 +63,7 @@ MODES_SRC = 											\
 	src/modes/NormalMode.cpp							\
 	src/modes/DebugMode.cpp								\
 	src/modes/ClusterMode.cpp
-	
+
 
 OTHER_SRC =                                             \
 	src/Alignment.cpp                                   \
@@ -64,15 +71,10 @@ OTHER_SRC =                                             \
 	src/computeGraphlets.cpp                            \
 	src/Graph.cpp                                       \
 	src/main.cpp                                        \
-	src/NormalDistribution.cpp                          \
-	src/templateUtils.cpp                               \
-	src/Timer.cpp                                       \
-	src/utils.cpp										\
-	src/randomSeed.cpp									\
 	src/Report.cpp
-	
 
-SRCS = $(MEASUSES_SRCS) $(METHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)
+
+SRCS = $(UTILS_SRC) $(MEASUSES_SRCS) $(METHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)
 OBJDIR = _objs
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
@@ -83,24 +85,24 @@ MAIN = sana
 
 all:    $(MAIN)
 
-$(MAIN): $(OBJS) 
+$(MAIN): $(OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
 
 #.c.o:
 #	$(CC) $(CXXFLAGS) $(INCLUDES) -c $<  -o $@
-	
+
 #$(OBJDIR)/%.o: %.c
 #    $(CC) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<
 
 $(OBJDIR)/%.o: %.cpp
 	mkdir -p $(dir $@)
-	$(CC) -c $(INCLUDES) -o $@ $< $(CXXFLAGS) 
+	$(CC) -c $(INCLUDES) -o $@ $< $(CXXFLAGS)
 
 # TEST_SRC is anyting that ends in _UT (unit test)
 TEST_SRC = $(wildcard test/*_UT.cpp)
-# TEST_DEPENDS is all the OBJS without main and Gtest 
+# TEST_DEPENDS is all the OBJS without main and Gtest
 _MAIN_OBJ = $(OBJDIR)/src/main.o
-TEST_DEPENDS = $(filter-out $(_MAIN_OBJ), $(OBJS)) 
+TEST_DEPENDS = $(filter-out $(_MAIN_OBJ), $(OBJS))
 GTEST_OBJS = test/gtest/gtest-main.o test/gtest/gtest-all.o
 TEST_OBJS = $(addprefix $(OBJDIR)/, $(TEST_SRC:.cpp=.o))
 TEST_MAIN = unit_test
@@ -112,11 +114,11 @@ regression_test:
 test_all: $(TEST_OBJS) $(GTEST_OBJS) $(TEST_DEPENDS)
 	$(CC) $(TEST_CXXFLAGS) $(INCLUDES) -o $(OBJDIR)/$(TEST_MAIN) $(TEST_OBJS) $(GTEST_OBJS) $(TEST_DEPENDS) $(LFLAGS) $(LIBS)
 	./$(OBJDIR)/$(TEST_MAIN)
-	
+
 test: $(OBJDIR)/test/$(tg).o $(GTEST_OBJS) $(TEST_DEPENDS)
 	$(CC) $(TEST_CXXFLAGS) $(INCLUDES) -o $(OBJDIR)/$(tg) $(OBJDIR)/test/$(tg).o $(GTEST_OBJS) $(TEST_DEPENDS) $(LFLAGS) $(LIBS)
 	./$(OBJDIR)/$(tg)
-	
+
 $(GTEST_OBJS):
 	cd test/gtest && make
 
@@ -133,5 +135,5 @@ depend: $(SRCS)
 	makedepend $(INCLUDES) $^
 
 
-	
+
 

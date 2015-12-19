@@ -23,8 +23,8 @@
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
-#include "../NormalDistribution.hpp"
-#include "../randomSeed.hpp"
+#include "../utils/NormalDistribution.hpp"
+#include "../utils/randomSeed.hpp"
 
 using namespace std;
 
@@ -124,7 +124,7 @@ Alignment TabuSearch::run() {
 void TabuSearch::describeParameters(ostream& sout) {
     sout << "Optimize: " << endl;
     MC->printWeights(sout);
-    
+
     sout << "Execution time: ";
     sout << minutes << "m" << endl;
 }
@@ -141,8 +141,8 @@ void TabuSearch::initDataStructures(const Alignment& startA) {
     for (uint i = 0; i < n1; i++) {
         assignedNodesG2[A[i]] = true;
     }
-    
-    unassignedNodesG2 = vector<ushort> (n2-n1); 
+
+    unassignedNodesG2 = vector<ushort> (n2-n1);
     int j = 0;
     for (uint i = 0; i < n2; i++) {
         if (not assignedNodesG2[i]) {
@@ -172,7 +172,7 @@ void TabuSearch::initDataStructures(const Alignment& startA) {
             wecSum += wecSims[i][A[i]];
         }
     }
-    
+
     currentScore = bestScore = eval(startA);
 
     tabus = deque<uint> ();
@@ -195,7 +195,7 @@ void TabuSearch::setInterruptSignal() {
 
 Alignment TabuSearch::simpleRun(const Alignment& startA, double maxExecutionSeconds,
     long long unsigned int& iter) {
-    
+
     initDataStructures(startA);
 
     setInterruptSignal();
@@ -256,7 +256,7 @@ void TabuSearch::TabuSearchIteration() {
     while (numAdmiNeighborsFound < nNeighbors) {
         if (randomReal(gen) <= changeProbability) {
             ushort source = G1RandomNode(gen);
-            if (isTabu(source)) continue; 
+            if (isTabu(source)) continue;
             ++numAdmiNeighborsFound;
             performChange(source);
         }
@@ -282,7 +282,7 @@ void TabuSearch::TabuSearchIterationMappingTabus() {
             ushort source = G1RandomNode(gen);
             uint newTargetIndex = G2RandomUnassignedNode(gen);
             ushort newTarget = unassignedNodesG2[newTargetIndex];
-            if (isTabu(source, newTarget)) continue; 
+            if (isTabu(source, newTarget)) continue;
             ++numAdmiNeighborsFound;
             performChange(source, newTargetIndex);
         }
@@ -387,7 +387,7 @@ void TabuSearch::performSwap(ushort source1, ushort source2) {
     if (needAligEdges) {
         newAligEdges = aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2);
     }
-    
+
     double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
     if (needLocal) {
         newLocalScoreSum = localScoreSum + localScoreSumIncSwapOp(source1, source2, target1, target2);
@@ -403,7 +403,7 @@ void TabuSearch::performSwap(ushort source1, ushort source2) {
     newCurrentScore += s3Weight * (newAligEdges/(g1Edges+inducedEdges-newAligEdges));
     newCurrentScore += localWeight * (newLocalScoreSum/n1);
     newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
-    
+
     if (newCurrentScore > nScore) {
         isChangeNeighbor = false;
         nSource1 = source1;

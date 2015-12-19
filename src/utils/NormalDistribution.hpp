@@ -15,7 +15,7 @@ public:
     double Psmaller(double value);
     double Plarger(double value);
     double quantile(double p);
-    
+
 private:
     double mean;
     double sd;

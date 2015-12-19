@@ -19,7 +19,7 @@
 #include "../measures/localMeasures/EdgeDensity.hpp"
 #include "../measures/localMeasures/Graphlet.hpp"
 #include "../Alignment.hpp"
-#include "../Timer.hpp"
+#include "../utils/Timer.hpp"
 
 const int Experiment::NUM_RANDOM_RUNS = 10;
 const int Experiment::PRECISION_DECIMALS = 6;

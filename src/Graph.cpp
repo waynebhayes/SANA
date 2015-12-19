@@ -16,9 +16,9 @@
 #include <time.h>
 #include <cassert>
 #include "Graph.hpp"
-#include "Timer.hpp"
+#include "utils/Timer.hpp"
 #include "computeGraphlets.hpp"
-#include "utils.hpp"
+#include "utils/utils.hpp"
 using namespace std;
 
 Graph Graph::loadGraph(string name) {

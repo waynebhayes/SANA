@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include "Graph.hpp"
-#include "utils.hpp"
+#include "utils/utils.hpp"
 using namespace std;
 
 class Alignment {
@@ -32,7 +32,7 @@ public:
     void write(ostream& stream) const;
 
     void writeEdgeList(const Graph* G1, const Graph* G2, ostream& stream) const;
-    
+
     uint numAlignedEdges(const Graph& G1, const Graph& G2) const;
 
     //common subgraph: graph with same nodes as G1, but with only the edges preserved by A
@@ -43,7 +43,7 @@ public:
     void completeWithArbitraryEdges(const Graph& G1, const Graph& G2);
 
     bool isCorrectlyDefined(const Graph& G1, const Graph& G2);
-    
+
     void printDefinitionErrors(const Graph& G1, const Graph& G2);
 
 private:

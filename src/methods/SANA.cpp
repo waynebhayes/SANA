@@ -24,7 +24,7 @@
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
-#include "../NormalDistribution.hpp"
+#include "../utils/NormalDistribution.hpp"
 using namespace std;
 
 SANA::SANA(Graph* G1, Graph* G2,
@@ -142,15 +142,15 @@ void SANA::describeParameters(ostream& sout) {
     sout << "Temperature schedule:" << endl;
     sout << "T_initial: " << T_initial << endl;
     sout << "T_decay: " << T_decay << endl;
-    
+
     sout << "Optimize: " << endl;
     MC->printWeights(sout);
-    
+
     sout << "Execution time: ";
     if (restart) sout << minutesNewAlignments + minutesPerCandidate*numCandidates + minutesFinalist;
     else sout << minutes;
     sout << "m" << endl;
-    
+
     if (restart) {
         sout << "Restart scheme:" << endl;
         sout << "- new alignments: " << minutesNewAlignments << "m" << endl;
@@ -196,8 +196,8 @@ void SANA::initDataStructures(const Alignment& startA) {
     for (uint i = 0; i < n1; i++) {
         assignedNodesG2[A[i]] = true;
     }
-    
-    unassignedNodesG2 = vector<ushort> (n2-n1); 
+
+    unassignedNodesG2 = vector<ushort> (n2-n1);
     int j = 0;
     for (uint i = 0; i < n2; i++) {
         if (not assignedNodesG2[i]) {
@@ -227,7 +227,7 @@ void SANA::initDataStructures(const Alignment& startA) {
             wecSum += wecSims[i][A[i]];
         }
     }
-    
+
     currentScore = eval(startA);
 
     timer.start();
@@ -248,7 +248,7 @@ void SANA::setInterruptSignal() {
 
 Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
     long long unsigned int& iter) {
-    
+
     initDataStructures(startA);
 
     setInterruptSignal();
@@ -329,7 +329,7 @@ void SANA::performSwap() {
     if (needAligEdges) {
         newAligEdges = aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2);
     }
-    
+
     double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
     if (needLocal) {
         newLocalScoreSum = localScoreSum + localScoreSumIncSwapOp(source1, source2, target1, target2);
@@ -345,7 +345,7 @@ void SANA::performSwap() {
     newCurrentScore += s3Weight * (newAligEdges/(g1Edges+inducedEdges-newAligEdges));
     newCurrentScore += localWeight * (newLocalScoreSum/n1);
     newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
-    
+
     energyInc = newCurrentScore-currentScore;
     if (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T)) {
         A[source1] = target2;
@@ -756,6 +756,6 @@ double SANA::searchT_decay(double T_initial, double minutes) {
 double SANA::iterPerSecond() {
     long long unsigned int iter = hillClimbingIterations(1000000+searchSpaceSizeLog());
     double res = iter/timer.elapsed();
-    cerr << "SANA does " << to_string(res) << " iterations per second" << endl; 
+    cerr << "SANA does " << to_string(res) << " iterations per second" << endl;
     return res;
 }

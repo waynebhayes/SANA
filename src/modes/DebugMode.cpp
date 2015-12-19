@@ -1,6 +1,6 @@
 #include "DebugMode.hpp"
 
-#include "../utils.hpp"
+#include "../utils/utils.hpp"
 
 #include "../arguments/ArgumentParser.hpp"
 #include "../arguments/measureSelector.hpp"

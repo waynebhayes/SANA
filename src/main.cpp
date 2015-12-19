@@ -2,7 +2,7 @@
 #include "arguments/supportedArguments.hpp"
 #include "arguments/defaultArguments.hpp"
 #include "arguments/modeSelector.hpp"
-#include "randomSeed.hpp"
+#include "utils/randomSeed.hpp"
 
 using namespace std;
 

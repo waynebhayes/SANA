@@ -8,9 +8,9 @@
 #include "../measures/SymmetricSubstructureScore.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/localMeasures/GraphletLGraal.hpp"
-#include "../utils.hpp"
+#include "../utils/utils.hpp"
 #include "../Alignment.hpp"
-#include "../Timer.hpp"
+#include "../utils/Timer.hpp"
 #include <cassert>
 
 double AlphaEstimation::computeAlpha(Graph& G1, Graph& G2, string methodName, Measure* topMeasure) {

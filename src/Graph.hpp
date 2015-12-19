@@ -4,7 +4,7 @@
 #include <vector>
 #include <utility>
 #include <unordered_set>
-#include "utils.hpp"
+#include "utils/utils.hpp"
 using namespace std;
 
 class Graph {
@@ -17,7 +17,7 @@ public:
     static void saveInGWFormat(string outputFile, const vector<string>& nodeNames,
         const vector<vector<bool> >& adjMatrix);
     static void edgeList2gw(string fin, string fout);
-    
+
     static void GeoGeneDuplicationModel(uint numNodes, uint numEdges, string outputFile);
 
 
@@ -29,33 +29,33 @@ public:
     Graph(uint n, const vector<vector<ushort> > edgeList);
 
     string getName() const;
-    
+
     uint getNumNodes() const;
     uint getNumEdges() const;
     const vector<vector<ushort> >& getConnectedComponents() const;
     uint getNumConnectedComponents() const;
     void getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const;
-    void getAdjLists(vector<vector<ushort> >& adjListsCopy) const;   
+    void getAdjLists(vector<vector<ushort> >& adjListsCopy) const;
     void getEdgeList(vector<vector<ushort> > & edgeListCopy) const;
     vector<string> getNodeNames() const;
-    
+
     //loads graph from file in GraphWin (.gw) format:
     //http://www.algorithmic-solutions.info/leda_guide/graphs/leda_native_graph_fileformat.html
     //note: it does not parse correctly files with comments or blank lines.
     void loadGwFile(const string& fileName);
 
-    //nodes are relabeled so that the new i-th node is the node nodes[i]-th in this 
+    //nodes are relabeled so that the new i-th node is the node nodes[i]-th in this
     Graph nodeInducedSubgraph(const vector<ushort>& nodes) const;
 
     uint numNodeInducedSubgraphEdges(const vector<ushort>& subgraphNodes) const;
 
     vector<ushort> numEdgesAround(ushort node, ushort maxDist) const;
     vector<ushort> numNodesAround(ushort node, ushort maxDist) const;
-    
+
     void printStats(int numConnectedComponentsToPrint, ostream& stream) const;
 
     void writeGraphEdgeListFormat(const string& fileName);
-    
+
     void addRandomEdges(double addedEdgesProportion);
     void removeRandomEdges(double removedEdgesProportion);
     void rewireRandomEdges(double rewiredEdgesProportion);

@@ -1,6 +1,6 @@
 #include <iostream>
 #include "ArgumentParser.hpp"
-#include "../utils.hpp"
+#include "../utils/utils.hpp"
 using namespace std;
 
 ArgumentParser::ArgumentParser(
@@ -45,7 +45,7 @@ void ArgumentParser::parseArgs(int argc, char* argv[],
         for (string s : split(line, ' ')) {
             baseValues.push_back(s);
         }
-    } 
+    }
 
     vector<string> allArgs = getFullArgList(originalArgv, baseValues,
         readParamsFromFileInFirstArg);

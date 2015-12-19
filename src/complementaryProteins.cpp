@@ -4,8 +4,8 @@
 #include <fstream>
 #include <sstream>
 #include "Graph.hpp"
-#include "Timer.hpp"
-#include "utils.hpp"
+#include "utils/Timer.hpp"
+#include "utils/utils.hpp"
 #include "measures/localMeasures/Graphlet.hpp"
 #include "measures/localMeasures/NodeDensity.hpp"
 #include "measures/localMeasures/EdgeDensity.hpp"

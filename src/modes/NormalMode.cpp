@@ -1,7 +1,7 @@
 #include <cassert>
 #include "NormalMode.hpp"
 
-#include "../utils.hpp"
+#include "../utils/utils.hpp"
 
 #include "../arguments/measureSelector.hpp"
 #include "../arguments/methodSelector.hpp"

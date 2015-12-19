@@ -5,7 +5,7 @@
 #include <cassert>
 #include "Alignment.hpp"
 #include "Graph.hpp"
-#include "utils.hpp"
+#include "utils/utils.hpp"
 using namespace std;
 
 Alignment::Alignment(const vector<ushort>& mapping): A(mapping) {}
@@ -157,7 +157,7 @@ uint Alignment::numAlignedEdges(const Graph& G1, const Graph& G2) const {
     G1.getEdgeList(G1EdgeList);
     vector<vector<bool> > G2AdjMatrix;
     G2.getAdjMatrix(G2AdjMatrix);
-    
+
     uint count = 0;
     for (const auto& edge: G1EdgeList) {
         ushort node1 = edge[0], node2 = edge[1];
