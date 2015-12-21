@@ -2,7 +2,7 @@
 #include "../utils/utils.hpp"
 #include "../arguments/modeSelector.hpp"
 
-const string projectFolder = "/extra/wayne0/preserve/nmamano/networkalignment";
+const string projectFolder = "/extra/wayne0/preserve/nmamano/sana";
 
 string ClusterMode::getName(void) {
     return "ClusterMode";
