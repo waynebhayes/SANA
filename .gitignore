@@ -32,3 +32,8 @@ doc/userManual/userManual.pdf
 doc/sanaPaper/sana.pdf
 
 sana.out
+
+/_objs/
+
+regression_test_baseline.txt
+run_output.txt
