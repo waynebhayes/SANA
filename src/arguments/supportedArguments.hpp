@@ -42,7 +42,6 @@ vector<string> doubleArgs = {
 vector<string> boolArgs = {
 "-restart",
 "-detailedreport",
-"-goavg",
 "-nodetabus",
 "-submit",
 };
