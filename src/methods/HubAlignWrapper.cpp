@@ -49,14 +49,18 @@ void HubAlignWrapper::copyEdgeListsToTmpFiles() {
     exec("cp " + g2EdgeListFile + " " + g2TmpFile);
 }
 
+//Examples of executions of HubAlign (if alpha==1 sim file is not needed)
 //./HubAlign Test1.tab Test2.tab –l 0.1 –a 0.7 –d 10 –b similarityFile.txt
 //./HubAlign Test1.tab Test2.tab –l 0.1 –a 1 
 void HubAlignWrapper::generateAlignment() {
+    //in hubalign alpha is the fraction of topology
+    double reversedAlpha = 1 - alpha;
+    
     exec("chmod +x "+hubalignProgram);
     string cmd = hubalignProgram + " " + g1TmpFile + " " + g2TmpFile;
-    cmd += " -l 0.1 -a " + to_string(alpha);
+    cmd += " -l 0.1 -a " + to_string(reversedAlpha);
     cmd += " -d 10 ";
-    if (alpha < 1) {
+    if (reversedAlpha < 1) {
         cmd += " -b " + similarityFile;
     }
     cerr << "Executing " << cmd << endl;
@@ -88,8 +92,8 @@ Alignment HubAlignWrapper::run() {
 }
 
 void HubAlignWrapper::describeParameters(ostream& stream) {
-    stream << "alpha: " << alpha << " (alpha = 1 means only topology)" << endl;
-    if (alpha < 1) {
+    stream << "alpha: " << alpha << endl;
+    if (alpha > 0) {
         stream << "Similarity file: " << similarityFile << endl;
     }
 }

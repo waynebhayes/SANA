@@ -89,8 +89,7 @@ Method* initHubAlign(Graph& G1, Graph& G2, ArgumentParser& args) {
         throw runtime_error("unknown value of -objfuntype: "+objFunType);
     }
 
-    //in hubalign alpha is the fraction of topology
-    return new HubAlignWrapper(&G1, &G2, 1 - alpha);
+    return new HubAlignWrapper(&G1, &G2, alpha);
 }
 
 // If the objective function type (-objfuntype) is not generic,
