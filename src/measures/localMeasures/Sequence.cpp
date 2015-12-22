@@ -53,8 +53,8 @@ unordered_map<string,string> Sequence::initNameMap(string curatedFastaFile) {
 void Sequence::initSimMatrix() {
     string g1Name = G1->getName();
     string g2Name = G2->getName();
-    string g1CuratedFastaFile = "networks/"+g1Name+"/sequence/"+g1Name+"_curated.fasta";
-    string g2CuratedFastaFile = "networks/"+g2Name+"/sequence/"+g2Name+"_curated.fasta";
+    string g1CuratedFastaFile = "sequence/"+g1Name+".fasta";
+    string g2CuratedFastaFile = "sequence/"+g2Name+".fasta";
     bool g1NeedNameMap = fileExists(g1CuratedFastaFile);
     bool g2NeedNameMap = fileExists(g2CuratedFastaFile);
     unordered_map<string,string> g1NameMap;
@@ -107,4 +107,12 @@ void Sequence::initSimMatrix() {
 }
 
 Sequence::~Sequence() {
+}
+
+string Sequence::blastScoreFile(const string& G1Name, const string& G2Name) {
+    return "sequence/scores/"+G1Name+"_"+G2Name+"_blast.out";
+}
+
+bool Sequence::fulfillsPrereqs(Graph* G1, Graph* G2) {
+    return fileExists(blastScoreFile(G1->getName(), G2->getName()));
 }

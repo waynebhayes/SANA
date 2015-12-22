@@ -202,11 +202,3 @@ void MeasureCombination::setWeight(const string& measureName, double weight) {
     }
     throw runtime_error("Measure not found: "+measureName);
 }
-
-void MeasureCombination::setAlphaBasedWeights(string topMeasure, double alpha) {
-    clearWeights();
-    setWeight(topMeasure, 1-alpha);
-    if (alpha > 0) {
-        setWeight("sequence", alpha);        
-    }
-}

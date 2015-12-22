@@ -23,8 +23,6 @@ public:
     uint numMeasures() const;
     string toString() const;
 
-    void setAlphaBasedWeights(string topMeasure, double alpha);
-
     double getSumLocalWeight() const;
     vector<vector<float> > getAggregatedLocalSims() const;
 

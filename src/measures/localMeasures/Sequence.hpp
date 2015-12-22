@@ -9,10 +9,14 @@ public:
     virtual ~Sequence();
     void generateBitscoresFile(string bitscoresFile);
 
+    static bool fulfillsPrereqs(Graph* G1, Graph* G2);
+
 private:
 
     unordered_map<string,string> initNameMap(string curatedFastaFile);
     void initSimMatrix();
+
+    static string blastScoreFile(const string& G1Name, const string& G2Name);
 };
 
 #endif

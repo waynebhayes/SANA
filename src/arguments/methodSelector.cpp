@@ -2,7 +2,7 @@
 
 #include "methodSelector.hpp"
 
-#include "../modes/AlphaEstimation.hpp"
+#include "measureSelector.hpp"
 
 #include "../methods/NoneMethod.hpp"
 #include "../methods/GreedyLCCS.hpp"
@@ -15,44 +15,6 @@
 #include "../methods/RandomAligner.hpp"
 
 using namespace std;
-
-const string scoreFile = "topologySequenceScoreTable.cnf";
-
-vector<vector<string> > getScoreTable() {
-    if (not fileExists(scoreFile)) {
-        throw runtime_error("Couldn't find file "+scoreFile);
-    }
-    return fileToStringsByLines(scoreFile);
-}
-
-vector<string> getScoreTuple(string methodName, string G1Name, string G2Name) {
-    vector<vector<string> > scoreTable = getScoreTable();
-    for (vector<string> line : scoreTable) {
-        if (methodName == line[0] and G1Name == line[1] and G2Name == line[2]) {
-            return line;
-        }
-    }
-    throw runtime_error("Couldn't find entry in "+scoreFile+" for "+methodName+" "+G1Name+" "+G2Name);
-}
-
-double getTopScore(string methodName, string G1Name, string G2Name) {
-    vector<string> tuple = getScoreTuple(methodName, G1Name, G2Name);
-    return stod(tuple[3]);
-}
-
-double getSeqScore(string methodName, string G1Name, string G2Name) {
-    vector<string> tuple = getScoreTuple(methodName, G1Name, G2Name);
-    return stod(tuple[4]);
-}
-
-double betaDerivedAlpha(string methodName, string G1Name, string G2Name, double beta) {
-    double topScore = getTopScore(methodName, G1Name, G2Name);
-    double seqScore = getSeqScore(methodName, G1Name, G2Name);
-
-    double topFactor = beta*topScore;
-    double seqFactor = (1-beta)*seqScore;
-    return topFactor/(topFactor+seqFactor);
-}
 
 Method* initLgraal(Graph& G1, Graph& G2, ArgumentParser& args) {
     string objFunType = args.strings["-objfuntype"];
@@ -92,38 +54,8 @@ Method* initHubAlign(Graph& G1, Graph& G2, ArgumentParser& args) {
     return new HubAlignWrapper(&G1, &G2, alpha);
 }
 
-// If the objective function type (-objfuntype) is not generic,
-//the weights of the measures in M are adjusted to an alpha based weighting
-void updateObjFun(string methodName, Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
-    string objFunType = args.strings["-objfuntype"];
-    if (objFunType == "generic") {
-        //nothing to do
-    } else if (objFunType == "alpha" or objFunType == "beta") {
-        string topMeasure = args.strings["-topmeasure"];
-        if (topMeasure != "ec" and topMeasure != "s3" and topMeasure != "wec") {
-            cerr << "Warning: -topmeasure is " << topMeasure << endl;
-        }
-        double alpha;
-        if (objFunType == "alpha") {
-            alpha = args.doubles["-alpha"];
-        } else {
-            string methodId = methodName + topMeasure;
-            double beta = args.doubles["-beta"];
-            alpha = betaDerivedAlpha(methodId, G1.getName(), G2.getName(), beta);
-        }
-        M.setAlphaBasedWeights(topMeasure, alpha);
-    } else {
-        throw runtime_error("unknown value of -objfuntype: "+objFunType);
-    }
-
-    cerr << "=== "+methodName+" -- optimize: ===" << endl;
-    M.printWeights(cerr);
-    cerr << endl;
-}
-
 Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
 
-    updateObjFun("tabu", G1, G2, args, M);
     double minutes = args.doubles["-t"];
     uint ntabus = args.doubles["-ntabus"];
     uint nneighbors = args.doubles["-nneighbors"];
@@ -132,8 +64,6 @@ Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombin
 }
 
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
-
-    updateObjFun("sana", G1, G2, args, M);
 
     double T_initial = 0;
     if (args.strings["-tinitial"] != "auto") {
