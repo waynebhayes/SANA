@@ -124,9 +124,9 @@ double getWeight(string measureName, Graph& G1, Graph& G2, ArgumentParser& args)
     }
 }
 
-bool shouldInit(string measureName, bool detailedReport,
-        Graph& G1, Graph& G2, ArgumentParser& args) {
+bool shouldInit(string measureName, Graph& G1, Graph& G2, ArgumentParser& args) {
 
+    bool detailedReport = args.bools["-detailedreport"];
     if (detailedReport) return true;
 
     double weight = getWeight(measureName, G1, G2, args);
@@ -161,20 +161,20 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     //local measures must be initialized before wec,
     //as wec uses one of the local measures
 
-    if (shouldInit("noded", detRep, G1, G2, args)) {
+    if (shouldInit("noded", G1, G2, args)) {
         m = new NodeDensity(&G1, &G2, args.vectors["-nodedweights"]);
         double nodedWeight = getWeight("noded", G1, G2, args);
         M.addMeasure(m, nodedWeight);
     }
 
-    if (shouldInit("edged", detRep, G1, G2, args)) {
+    if (shouldInit("edged", G1, G2, args)) {
         m = new EdgeDensity(&G1, &G2, args.vectors["-edgedweights"]);
         double edgedWeight = getWeight("edged", G1, G2, args);
         M.addMeasure(m, edgedWeight);
     }
 
     if (GoSimilarity::fulfillsPrereqs(&G1, &G2)) {
-        if (shouldInit("go", detRep, G1, G2, args)) {
+        if (shouldInit("go", G1, G2, args)) {
             m = new GoSimilarity(&G1, &G2, args.vectors["-goweights"]);
             double goWeight = getWeight("go", G1, G2, args);
             M.addMeasure(m, goWeight);
@@ -190,7 +190,7 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     }
 
     if (Importance::fulfillsPrereqs(&G1, &G2)) {
-        if (shouldInit("importance", detRep, G1, G2, args)) {
+        if (shouldInit("importance", G1, G2, args)) {
             m = new Importance(&G1, &G2);
             double impWeight = getWeight("importance", G1, G2, args);
             M.addMeasure(m, impWeight);
@@ -198,20 +198,20 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     }
 
     if (Sequence::fulfillsPrereqs(&G1, &G2)) {
-        if (shouldInit("sequence", detRep, G1, G2, args)) {
+        if (shouldInit("sequence", G1, G2, args)) {
             m = new Sequence(&G1, &G2);
             double seqWeight = getWeight("sequence", G1, G2, args);
             M.addMeasure(m, seqWeight);
         }
     }
 
-    if (shouldInit("graphlet", detRep, G1, G2, args)) {
+    if (shouldInit("graphlet", G1, G2, args)) {
         m = new Graphlet(&G1, &G2);
         double graphletWeight = getWeight("graphlet", G1, G2, args);
         M.addMeasure(m, graphletWeight);
     }
 
-    if (shouldInit("graphletlgraal", detRep, G1, G2, args)) {
+    if (shouldInit("graphletlgraal", G1, G2, args)) {
         m = new GraphletLGraal(&G1, &G2);
         double graphletLgraalWeight = getWeight("graphletlgraal", G1, G2, args);
         M.addMeasure(m, graphletLgraalWeight);
