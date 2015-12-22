@@ -18,10 +18,10 @@ HubAlignWrapper::HubAlignWrapper(Graph* G1, Graph* G2, double alpha): Method(G1,
 
     similarityFile = "sequence/bitscores/" + g1Name + "_" + g2Name + ".bitscores";
 
-    g1TmpFile = g1Name+"_"+g2Name+"_hubaligntmp1";
-    g2TmpFile = g1Name+"_"+g2Name+"_hubaligntmp2";
+    g1TmpFile = "tmp/"+g1Name+"_"+g2Name+"_hubaligntmp1";
+    g2TmpFile = "tmp/"+g1Name+"_"+g2Name+"_hubaligntmp2";
 
-    alignmetFile = g1TmpFile + "-" + g2TmpFile + ".alignment";
+    alignmetFile = "tmp/"+g1TmpFile + "-" + g2TmpFile + ".alignment";
 
 }
 
