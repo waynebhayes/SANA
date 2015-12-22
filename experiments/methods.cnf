@@ -1,0 +1,5 @@
+sanalg -method sana -objfuntype generic -topmeasure wec -wecnodesim graphletlgraal -ec 0 -wec 1
+sanaec -method sana -objfuntype generic -topmeasure ec -ec 1
+sanas3 -method sana -objfuntype generic -topmeasure s3 -s3 1 -ec 0
+lgraal -method lgraal -objfuntype alpha -alpha 0
+hubalign -method hubalign -objfuntype alpha -alpha 0

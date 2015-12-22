@@ -5,7 +5,6 @@
 
 #include "Mode.hpp"
 #include "../measures/Measure.hpp"
-#include "../methods/Method.hpp"
 #include "../Graph.hpp"
 
 using namespace std;
@@ -13,43 +12,39 @@ using namespace std;
 class Experiment : public Mode {
 public:
     Experiment();
-    Experiment(string experimentFile);
+    string getName();
 
     void run(ArgumentParser& args);
-    void printData(string outputFile);
-    void printDataCSV(string outputFile);
 
-    std::string getName(void);
 
+    //used by other modes
     static Measure* loadMeasure(Graph* G1, Graph* G2, string name);
 
 private:
-    vector<string> measures;
+    const int PRECISION_DECIMALS = 6;
+    static const string methodArgsFile;
+    static const string datasetsFile;
+    string experName;
+    string experFolder;
+    string experFile;
+    string resultsFolder;
+
+    double t;
+    uint nSubs;
+    string subPolicy;
+    vector<string> experArgs;
     vector<string> methods;
+    string dataset;
+    vector<vector<string>> networkPairs;
+    vector<string> measures;
 
-    //first index: network pair
-    //second index: 0: g1 1: g2
-    vector<vector<string> > networkPairs;
+    void init();
 
-    //first index: network pair
-    //second index: method
-    vector<vector<string> > alignmentFiles;
-
-    //first index: measure
-    //second index: method
-    //third index: network pair
-    vector<vector<vector<double> > > data;
-
-    void init(string experimentFile);
-    void scoresToRankings(vector<string>& row);
-    void collectData();
-
-    vector<vector<string> > getNetworkPairs(string experimentFile);
-
-    static const int NUM_RANDOM_RUNS;
-    static const int PRECISION_DECIMALS;
-
-    bool folderFormat;
+    static vector<string> getMethodArgs(string method);
+    static vector<vector<string>> getNetworkPairs(string dataset);
+    string subCommand(string method, string G1Name, string G2Name, uint subNum);
+    void makeSubmissions();
+    void printSubmissions();
 };
 
 
