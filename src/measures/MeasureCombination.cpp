@@ -113,7 +113,6 @@ double MeasureCombination::getWeight(const string& measureName) const {
         }
     }
     throw runtime_error("Measure not found.");
-    return 0;
 }
 
 Measure* MeasureCombination::getMeasure(const string& measureName) const {
@@ -124,7 +123,6 @@ Measure* MeasureCombination::getMeasure(const string& measureName) const {
         }
     }
     throw runtime_error("Measure not found.");
-    return 0;
 }
 
 Measure* MeasureCombination::getMeasure(int i) const {
@@ -186,4 +184,29 @@ double MeasureCombination::getSumLocalWeight() const {
         }
     }
     return res;
+}
+
+void MeasureCombination::clearWeights() {
+    for (uint i = 0; i < weights.size(); i++) {
+        weights[i] = 0;
+    }
+}
+
+void MeasureCombination::setWeight(const string& measureName, double weight) {
+    uint n = measures.size();
+    for (uint i = 0; i < n; i++) {
+        if (measures[i]->getName() == measureName) {
+            weights[i] = weight;
+            return;
+        }
+    }
+    throw runtime_error("Measure not found: "+measureName);
+}
+
+void MeasureCombination::setAlphaBasedWeights(string topMeasure, double alpha) {
+    clearWeights();
+    setWeight(topMeasure, 1-alpha);
+    if (alpha > 0) {
+        setWeight("sequence", alpha);        
+    }
 }

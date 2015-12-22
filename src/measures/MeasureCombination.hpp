@@ -23,6 +23,8 @@ public:
     uint numMeasures() const;
     string toString() const;
 
+    void setAlphaBasedWeights(string topMeasure, double alpha);
+
     double getSumLocalWeight() const;
     vector<vector<float> > getAggregatedLocalSims() const;
 
@@ -31,6 +33,10 @@ private:
     vector<double> weights;
 
     void initn1n2(uint& n1, uint& n2) const;
+
+    void clearWeights();
+    void setWeight(const string& measureName, double weight);
+
 };
 
 #endif

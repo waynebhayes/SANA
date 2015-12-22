@@ -12,22 +12,31 @@ vector<string> stringArgs = {
 "-qmode",
 "-experiment",
 "-paramestimation",
-"-alphaestimation", "-alphafile"
+"-objfuntype", //can be "generic", "alpha", "beta"
+               //generic: use '-ec','-s3',...
+               //alpha: use '-topmeasure' and sequence balanced with '-alpha'
+               //beta: use '-topmeasure' and sequence balanced with '-beta'
+"-topmeasure", //can be "ec", "s3", "wec"
+               //used when '-objfuntype' is "alpha" or "beta"
 };
 
 vector<string> doubleArgs = {
+//objective function weights. used when '-objfuntype' is "generic"
 "-ec", "-s3", "-wec",
 "-importance", "-noded", "-edged",
 "-graphlet", "-graphletlgraal",
 "-sequence", "-go",
+
+"-alpha", //used when '-objfuntype' is "alpha"
+"-beta", //used when '-objfuntype' is "beta"
+
 "-t",
 "-rewire", 
-"-alpha",
 "-tnew", "-iterperstep", "-numcand", "-tcand", "-tfin",
 "-seed",
 "-qcount",
 "-ntabus", "-nneighbors",
-"-lgraaliter"
+"-lgraaliter",
 };
 
 vector<string> boolArgs = {
@@ -35,8 +44,7 @@ vector<string> boolArgs = {
 "-detailedreport",
 "-goavg",
 "-nodetabus",
-"-autoalpha",
-"-submit"
+"-submit",
 };
 
 vector<string> vectorArgs = {
