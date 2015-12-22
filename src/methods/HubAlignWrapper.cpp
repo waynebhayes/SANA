@@ -18,11 +18,11 @@ HubAlignWrapper::HubAlignWrapper(Graph* G1, Graph* G2, double alpha): Method(G1,
 
     similarityFile = "sequence/bitscores/" + g1Name + "_" + g2Name + ".bitscores";
 
-    g1TmpFile = "tmp/"+g1Name+"_"+g2Name+"_hubaligntmp1";
-    g2TmpFile = "tmp/"+g1Name+"_"+g2Name+"_hubaligntmp2";
+    //rand int used to avoid collision between parallel runs
+    g1TmpFile = "hubaligntmp1_"+g1Name+"_"+g2Name+"_"+intToString(randInt(0, 999999));
+    g2TmpFile = "hubaligntmp2_"+g1Name+"_"+g2Name+"_"+intToString(randInt(0, 999999));
 
-    alignmetFile = "tmp/"+g1TmpFile + "-" + g2TmpFile + ".alignment";
-
+    alignmetFile = g1TmpFile + "-" + g2TmpFile + ".alignment";
 }
 
 void HubAlignWrapper::generateEdgeListFile(int graphNum) {
