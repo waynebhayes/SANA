@@ -35,7 +35,14 @@ void Experiment::run(ArgumentParser& args) {
     resultsFolder = experFolder+"results/";
     createFolder(resultsFolder);
     init();
-    makeSubmissions();
+
+    bool dbg = args.bools["-dbg"];
+    if (not dbg) {
+        makeSubmissions();        
+    } else {
+        printSubmissions();
+    }
+
 }
 
 void Experiment::init() {
@@ -51,24 +58,41 @@ void Experiment::init() {
 }
 
 void Experiment::makeSubmissions() {
-    for (uint i = 0; i < methods.size(); i++) {
-        for (uint j = 0; j < networkPairs.size(); j++) {
-            for (uint k = 0; k < nSubs; k++) {
-                string cmd = subCommand(methods[i], networkPairs[j][0], networkPairs[j][1], k);
-                execPrintOutput(cmd);
+    for (string method: methods) {
+        for (const auto& pair: networkPairs) {
+            for (uint i = 0; i < nSubs; i++) {
+                string cmd = subCommand(method, pair[0], pair[1], i);
+                string outFile = getOutputFileName(method, pair[0], pair[1], i);
+                if (not fileExists(outFile)) {
+                    cerr << "SUBMIT "+outFile << endl;
+                    exec(cmd);
+                } else {
+                    cerr << "OMIT   "+outFile << endl;
+                }
             }
         }
     }
 }
 
 void Experiment::printSubmissions() {
-    for (uint i = 0; i < methods.size(); i++) {
-        for (uint j = 0; j < networkPairs.size(); j++) {
-            for (uint k = 0; k < nSubs; k++) {
-                cout << subCommand(methods[i], networkPairs[j][0], networkPairs[j][1], k) << endl;
+    for (string method: methods) {
+        for (const auto& pair: networkPairs) {
+            for (uint i = 0; i < nSubs; i++) {
+                string cmd = subCommand(method, pair[0], pair[1], i);
+                string outFile = getOutputFileName(method, pair[0], pair[1], i);
+                if (not fileExists(outFile)) {
+                    cout << "SUBMIT "+outFile << endl;
+                } else {
+                    cout << "OMIT   "+outFile << endl;
+                }
+                cout << cmd << endl;
             }
         }
     }
+}
+
+string Experiment::getOutputFileName(string method, string G1Name, string G2Name, uint subNum) {
+    return resultsFolder+method+"_"+G1Name+"_"+G2Name+"_"+intToString(subNum);
 }
 
 string Experiment::subCommand(string method, string G1Name, string G2Name, uint subNum) {
@@ -77,7 +101,7 @@ string Experiment::subCommand(string method, string G1Name, string G2Name, uint 
     command += " -t " + to_string(t);
     for (string arg: getMethodArgs(method)) command += " " + arg;
     for (string arg: experArgs) command += " " + arg;
-    string outFile = resultsFolder+method+"_"+G1Name+"_"+G2Name+"_"+intToString(subNum);
+    string outFile = getOutputFileName(method, G1Name, G2Name, subNum);
     command += " -o " + outFile;
     return command;
 }

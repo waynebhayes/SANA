@@ -42,6 +42,7 @@ private:
 
     static vector<string> getMethodArgs(string method);
     static vector<vector<string>> getNetworkPairs(string dataset);
+    string getOutputFileName(string method, string G1Name, string G2Name, uint subNum);
     string subCommand(string method, string G1Name, string G2Name, uint subNum);
     void makeSubmissions();
     void printSubmissions();
