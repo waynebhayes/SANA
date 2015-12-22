@@ -74,7 +74,7 @@ void HubAlignWrapper::deleteAuxFiles() {
 }
 
 Alignment HubAlignWrapper::run() {
-    if (alpha < 1 and not fileExists(similarityFile)) {
+    if (alpha > 0 and not fileExists(similarityFile)) {
         Sequence sequence(G1, G2);
         sequence.generateBitscoresFile(similarityFile);
     }

@@ -251,4 +251,3 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     M.printWeights(cerr);
     cerr << endl;
 }
-
