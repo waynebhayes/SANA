@@ -36,6 +36,8 @@ private:
     void generateAlignment();
     string generateDummySimilarityFile();
 
+    void deleteAuxFiles();
+
 };
 
 #endif
