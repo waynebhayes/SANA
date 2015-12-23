@@ -37,15 +37,20 @@ void Graph::edgeList2gw(string fin, string fout) {
         nodeName2IndexMap[nodes[i]] = i;
     }
     vector<vector<string> > edges = fileToStringsByLines(fin);
-    vector<vector<bool> > adjMatrix(numNodes, vector<bool> (numNodes, false));
+    vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (2));
+
     for (uint i = 0; i < edges.size(); i++) {
+        if (edges[i].size() != 2) {
+            throw runtime_error("File not in edge-list format: "+fin);
+        }
         string node1 = edges[i][0];
         string node2 = edges[i][1];
         uint index1 = nodeName2IndexMap[node1];
         uint index2 = nodeName2IndexMap[node2];
-        adjMatrix[index1][index2] = adjMatrix[index2][index1] = true;
+        edgeList[i][0] = index1;
+        edgeList[i][1] = index2;
     }
-    saveInGWFormat(fout, nodes, adjMatrix);
+    saveInGWFormat(fout, nodes, edgeList);
 }
 
 string Graph::getName() const {
@@ -681,47 +686,86 @@ void Graph::GeoGeneDuplicationModel(uint numNodes, uint numEdges, string outputF
     outfile << endl;
 }
 
-void Graph::saveInGWFormat(string outputFile, const vector<string>& nodeNames,
-    const vector<vector<bool> >& adjMatrix) {
-    ofstream outfile;
-    outfile.open(outputFile.c_str());
-
-    //header
+void writeGWHeader(ofstream& outfile) {
     outfile << "LEDA.GRAPH" << endl;
     outfile << "string" << endl;
     outfile << "short" << endl;
     outfile << "-2" << endl;
+}
 
+void writeGWNodes(ofstream& outfile, const vector<string>& nodeNames) {
     uint numNodes = nodeNames.size();
     outfile << numNodes << endl;
     for (uint i = 0; i < numNodes; i++) {
         outfile << "|{" << nodeNames[i] << "}|" << endl;
     }
+}
 
-    uint numEdges = 0;
-    for (uint i = 0; i < numNodes; i++) {
-        for (uint j = 0; j < i; j++) {
-            if (adjMatrix[i][j]) numEdges++;
-        }
-    }
+void writeGWEdges(ofstream& outfile, const vector<vector<ushort>>& edgeList) {
+    uint numEdges = edgeList.size();
     outfile << numEdges << endl;
-    for (uint i = 0; i < numNodes; i++) {
-        for (uint j = 0; j < i; j++) {
-            if (adjMatrix[i][j]) {
-                outfile << j+1 << " " << i+1 << " 0 |{}|" << endl;
-            }
-        }
+    for (uint i = 0; i < numEdges; i++) {
+        outfile << edgeList[i][0]+1 << " " << edgeList[i][1]+1 << " 0 |{}|" << endl;
     }
     outfile << endl;
 }
 
+void Graph::saveInGWFormat(string outputFile, const vector<string>& nodeNames,
+    const vector<vector<ushort>>& edgeList) {
+    ofstream outfile;
+    outfile.open(outputFile.c_str());
+
+    writeGWHeader(outfile);
+    writeGWNodes(outfile, nodeNames);
+    writeGWEdges(outfile, edgeList);
+}
+
+void Graph::saveInGWFormatShuffled(string outputFile, const vector<string>& nodeNames,
+    const vector<vector<ushort>>& edgeList) {
+
+    uint n = nodeNames.size();
+    vector<ushort> origPos2NewPos(n);
+    for (uint i = 0; i < n; i++) origPos2NewPos[i] = i;
+    randomShuffle(origPos2NewPos);
+
+    map<ushort, ushort> newPos2OrigPos;
+    for (uint i = 0; i < n; i++) {
+        newPos2OrigPos[origPos2NewPos[i]] = i;
+    }
+
+    vector<string> newNodeNames(n);
+    for (uint i = 0; i < n; i++) {
+        newNodeNames[i] = nodeNames[newPos2OrigPos[i]];
+    }
+
+    uint m = edgeList.size();
+    vector<vector<ushort>> newEdgeList(m, vector<ushort> (2));
+    for (uint i = 0; i < m; i++) {
+        newEdgeList[i][0] = origPos2NewPos[edgeList[i][0]];
+        newEdgeList[i][1] = origPos2NewPos[edgeList[i][1]];
+    }
+    saveInGWFormat(outputFile, newNodeNames, newEdgeList);
+}
+
+//assumes the gw file for this graph does not already exist
+//so we create new node names
 void Graph::saveInGWFormat(string outputFile) {
     uint numNodes = getNumNodes();
     vector<string> nodeNames(numNodes);
     for (uint i = 0; i < numNodes; i++) {
         nodeNames[i] = "node"+intToString(i+1);
     }
-    saveInGWFormat(outputFile, nodeNames, adjMatrix);
+    saveInGWFormat(outputFile, nodeNames, edgeList);
+}
+
+void Graph::saveInShuffledOrder(string outputFile) {
+    uint numNodes = getNumNodes();
+    map<ushort,string> index2Name = getIndexToNodeNameMap();
+    vector<string> nodeNames(numNodes);
+    for (uint i = 0; i < numNodes; i++) {
+        nodeNames[i] = index2Name[i];
+    }
+    saveInGWFormatShuffled(outputFile, nodeNames, edgeList);
 }
 
 Graph Graph::randomNodeInducedSubgraph(uint numNodes) {
@@ -862,4 +906,14 @@ bool Graph::isWellDefined() {
         }
     }
     return isWellDefined;
+}
+
+//returns whether this graph and other have exactly the
+//same set of node names
+bool Graph::sameNodeNames(const Graph& other) const {
+    vector<string> thisNames = getNodeNames();
+    vector<string> otherNames = other.getNodeNames();
+    set<string> s1(thisNames.begin(), thisNames.end());
+    set<string> s2(otherNames.begin(), otherNames.end());
+    return s1 == s2;
 }

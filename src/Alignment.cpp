@@ -120,6 +120,22 @@ Alignment Alignment::identity(uint n) {
     return Alignment(A);
 }
 
+Alignment Alignment::correctMapping(const Graph& G1, const Graph& G2) {
+    if (not G1.sameNodeNames(G2)) {
+        throw runtime_error("cannot load correct mapping");
+    }
+    
+    map<ushort,string> G1Index2Name = G1.getIndexToNodeNameMap();
+    map<string,ushort> G2Name2Index = G2.getNodeNameToIndexMap();
+
+    uint n = G1.getNumNodes();
+    vector<ushort> A(n);
+    for (uint i = 0; i < n; i++) {
+        A[i] = G2Name2Index[G1Index2Name[i]];
+    }
+    return Alignment(A);
+}
+
 vector<ushort> Alignment::getMapping() const {
     return A;
 }

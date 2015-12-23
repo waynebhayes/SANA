@@ -15,7 +15,10 @@ public:
 
 
     static void saveInGWFormat(string outputFile, const vector<string>& nodeNames,
-        const vector<vector<bool> >& adjMatrix);
+        const vector<vector<ushort>>& edgeList);
+    static void saveInGWFormatShuffled(string outputFile, const vector<string>& nodeNames,
+        const vector<vector<ushort>>& edgeList);
+
     static void edgeList2gw(string fin, string fout);
 
     static void GeoGeneDuplicationModel(uint numNodes, uint numEdges, string outputFile);
@@ -74,9 +77,14 @@ public:
     double getAverageDistance() const;
 
     void saveInGWFormat(string outputFile);
+    void saveInShuffledOrder(string outputFile);
+
     Graph randomNodeInducedSubgraph(uint numNodes);
 
     bool isWellDefined();
+
+    bool sameNodeNames(const Graph& other) const;
+
 
 private:
 

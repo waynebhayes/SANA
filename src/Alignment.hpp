@@ -19,6 +19,12 @@ public:
     static Alignment empty();
     static Alignment identity(uint n);
 
+    //returns the correct alignment between G1 and G2 by looking at
+    //their node names. it assumes that they have the same node names
+    //this is useful when aligning a network with itself but with
+    //shuffled node order
+    static Alignment correctMapping(const Graph& G1, const Graph& G2);
+    
     Alignment(const Alignment& alig);
     Alignment(const vector<ushort>& mapping);
     Alignment(Graph* G1, Graph* G2, const vector<vector<string> >& mapList);

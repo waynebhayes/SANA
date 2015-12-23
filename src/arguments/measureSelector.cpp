@@ -224,16 +224,11 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
         M.addMeasure(m, wecWeight);
     }
 
-    //NC is evaluated iff G1 and G2 have the same size
-    //(for the networks we have, only happens in the syeast dataset)
-    //alternatively, an argument '-evalnc' could be used
-    if (G1.getNumNodes() == G2.getNumNodes()) {
-        if (args.strings["-truealignment"] == "") {
-            m = new NodeCorrectness(Alignment::identity(G1.getNumNodes()));
-        }
-        else {
-            m = new NodeCorrectness(Alignment::loadMapping(args.strings["-truealignment"]));
-        }
+    if (args.strings["-truealignment"] != "") {
+        m = new NodeCorrectness(Alignment::loadMapping(args.strings["-truealignment"]));
+        M.addMeasure(m);
+    } else if (G1.sameNodeNames(G2)) {
+        m = new NodeCorrectness(Alignment::correctMapping(G1, G2));
         M.addMeasure(m);
     }
 
