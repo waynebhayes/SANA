@@ -1,8 +1,18 @@
 #include "ClusterMode.hpp"
+#include <iostream>
 #include "../utils/utils.hpp"
 #include "../arguments/modeSelector.hpp"
 
-const string projectFolder = "/extra/wayne0/preserve/nmamano/sana";
+using namespace std;
+
+
+string ClusterMode::getProjectFolder() {
+  string projectFolder = "/extra/wayne0/preserve/nmamano/sana/";
+  if (not folderExists(projectFolder)) {
+    throw runtime_error("Project folder not found: "+projectFolder);
+  }
+  return projectFolder;
+}
 
 string ClusterMode::getName(void) {
     return "ClusterMode";
@@ -23,11 +33,15 @@ uint ClusterMode::getOArgValueIndex(const vector<string>& argv) {
 
 void ClusterMode::run(ArgumentParser& args) {
 
-  int submitCount = args.doubles["-qcount"];
-  string outFile = args.strings["-o"];
+  scriptFileNameArg = args.strings["-qsubscriptfile"];
+  outFileName = args.strings["-qsuboutfile"];
+  errFileName = args.strings["-qsuberrfile"];
 
-  //indicates that multiple runs will all overwrite outFile
-  bool sameOutFile = submitCount > 1 and outFile != "";
+  int submitCount = args.doubles["-qcount"];
+  string alignmentFile = args.strings["-o"];
+
+  //indicates that multiple runs will all overwrite alignmentFile
+  bool sameOutFile = submitCount > 1 and alignmentFile != "";
 
   //call submitToCluster -qcount times
 
@@ -48,35 +62,64 @@ void ClusterMode::run(ArgumentParser& args) {
   }
 }
 
+string ClusterMode::getQsubCommand(const string& scriptFile) {
+  string cmd = "qsub";
+  if (outFileName != "") cmd += " -o " + outFileName;
+  if (errFileName != "") cmd += " -e " + errFileName;
+  cmd += " " + scriptFile;
+  return cmd;
+}
+
 void ClusterMode::submitToCluster(const vector<string>& argv) {
-  string scriptName = makeScript(argv);
-  exec("chmod +x " + scriptName);
-  execPrintOutput("qsub " + scriptName);
+  cerr<<0;
+  string scriptFile = makeScript(argv);
+  cerr<<1;
+  exec("chmod +x " + scriptFile);
+  cerr<<2;
+  exec(getQsubCommand(scriptFile));
+  cerr<<3;
+}
+
+string ClusterMode::getScriptFileName() {
+  if (scriptFileNameArg != "") {
+    return scriptFileNameArg;
+  }
+  string scriptFile = "tmp/submit";
+  addUniquePostfixToFilename(scriptFile, ".sh");
+  scriptFile += ".sh";
+  return scriptFile;
 }
 
 string ClusterMode::makeScript(const vector<string>& argv) {
-  int argc = argv.size();
-  string scriptName = "tmp/submit";
-  addUniquePostfixToFilename(scriptName, ".sh");
-  scriptName += ".sh";
+  string scriptFile = getScriptFileName();
 
   //mode to be used in the cluster
   string qmode = getQModeArgValue(argv);
 
-  ofstream fout(scriptName.c_str());
+  ofstream fout(scriptFile.c_str());
   fout << "#!/bin/bash" << endl;
-  fout << "cd " << projectFolder << endl;
+  fout << "cd " << getProjectFolder() << endl;
 
-  //add all the same arguments, but replace the value of -mode for the value of -qmode
-  for (int i = 0; i < argc; i++) {
-    if (argv[i] != "cluster") {
-      fout << argv[i] << " ";
+  //add all the same arguments, but:
+  //replace the value of -mode for the value of -qmode
+  //remove cluster-mode specific arguments, for cleanliness
+  uint i = 0;
+  while (i < argv.size()) {
+    if (argv[i] == "-qmode" or argv[i] == "-qsubscriptfile" or
+      argv[i] == "-qsuboutfile" or argv[i] == "-qsuberrfile") {
+      //skip this and next
+      i += 2;
     } else {
-      fout << qmode << " ";
+      if (argv[i] == "cluster") { //this is the original value of '-mode'
+        fout << qmode << " ";
+      } else {
+        fout << argv[i] << " ";
+      }
+      ++i;     
     }
   }
   fout << endl;
-  return scriptName;
+  return scriptFile;
 }
 
 string ClusterMode::getQModeArgValue(const vector<string>& argv) {

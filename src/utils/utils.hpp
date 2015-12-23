@@ -32,10 +32,6 @@ void randomShuffle(vector<ushort>& v);
 
 void printTable(const vector<vector<string> >& table, int colSeparation, ostream& stream);
 
-bool fileExists(const string& filename);
-void checkFileExists(const string& filename);
-void addUniquePostfixToFilename(string& name, const string& extension);
-
 const string currentDateTime();
 
 void normalizeWeights(vector<double>& weights);
@@ -46,6 +42,10 @@ vector<vector<string> > fileToStringsByLines(const string& fileName);
 string extractDecimals(double value, int count);
 
 string intToString(int n);
+
+bool fileExists(const string& filename);
+void checkFileExists(const string& filename);
+void addUniquePostfixToFilename(string& name, const string& extension);
 
 bool folderExists(string folderName);
 void createFolder(string folderName);

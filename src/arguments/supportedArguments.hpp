@@ -9,7 +9,6 @@ vector<string> stringArgs = {
 "-startalignment",
 "-truealignment",
 "-wecnodesim", "-wavenodesim",
-"-qmode",
 "-experiment",
 "-paramestimation",
 "-objfuntype", //can be "generic", "alpha", "beta"
@@ -18,6 +17,14 @@ vector<string> stringArgs = {
                //beta: use '-topmeasure' and sequence balanced with '-beta'
 "-topmeasure", //can be "ec", "s3", "wec"
                //used when '-objfuntype' is "alpha" or "beta"
+
+//for submissions to the cluster
+"-qmode", //mode of the submission (since the value of mode will be 'cluster')
+//the next 3 arguments are only read from the command line,
+//they should not appear in defaultArguments.hpp
+"-qsuboutfile",
+"-qsuberrfile",
+"-qsubscriptfile",
 };
 
 vector<string> doubleArgs = {
