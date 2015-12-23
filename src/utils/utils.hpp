@@ -52,6 +52,7 @@ bool folderExists(string folderName);
 void createFolder(string folderName);
 
 string exec(string cmd);
+string execWithoutPrintingErr(string cmd);
 void execPrintOutput(string cmd);
 
 void deleteFile(string name);

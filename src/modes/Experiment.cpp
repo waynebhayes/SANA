@@ -83,7 +83,7 @@ void Experiment::makeSubmissions() {
                 string resultFile = resultsFolder+subId;
                 if (not fileExists(resultFile)) {
                     cerr << "SUBMIT "+subId << endl;
-                    exec(cmd);
+                    execWithoutPrintingErr(cmd);
                 } else {
                     cerr << "OMIT   "+subId << endl;
                 }

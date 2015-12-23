@@ -235,6 +235,11 @@ string exec(string cmd) {
     return result;
 }
 
+string execWithoutPrintingErr(string cmd) {
+    cmd += " 2>/dev/null";
+    return exec(cmd);
+}
+
 void execPrintOutput(string cmd) {
     cmd += " 2>&1";
     FILE* pipe = popen(cmd.c_str(), "r");
