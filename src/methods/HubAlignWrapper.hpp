@@ -18,8 +18,6 @@ public:
 private:
     
     static const string hubalignProgram;
-    string g1TmpFile;
-    string g2TmpFile;
 
     double alpha;
 
@@ -32,7 +30,6 @@ private:
 
     void generateEdgeListFile(int graphNum);
     void generateAlignment();
-    void copyEdgeListsToTmpFiles();
     void deleteAuxFiles();
 };
 

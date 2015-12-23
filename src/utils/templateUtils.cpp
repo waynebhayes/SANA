@@ -77,7 +77,7 @@ T matrixMin(vector<vector<T> >& matrix) {
 }
 
 template<class T>
-bool contains(vector<T> v, T x) {
+bool contains(const vector<T>& v, T x) {
     for (uint i = 0; i < v.size(); i++) {
         if (v[i] == x) return true;
     }

@@ -29,6 +29,7 @@ double vectorMin(const vector<double>& v);
 double vectorSum(const vector<double>& v);
 
 void randomShuffle(vector<ushort>& v);
+void randomShuffle(vector<vector<string>>& v);
 
 void printTable(const vector<vector<string> >& table, int colSeparation, ostream& stream);
 

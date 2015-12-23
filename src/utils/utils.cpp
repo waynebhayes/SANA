@@ -65,6 +65,10 @@ void randomShuffle(vector<ushort>& v) {
     random_shuffle(v.begin(), v.end(), randMod);
 }
 
+void randomShuffle(vector<vector<string>>& v) {
+    random_shuffle(v.begin(), v.end(), randMod);
+}
+
 //result[map[i]] = i
 vector<ushort> reverseMapping(const vector<ushort>& map, int range) {
     vector<ushort> result(range, -1);
