@@ -53,7 +53,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     this->T_initial = T_initial;
     this->T_decay = T_decay;
     minutes = t;
-
+    initializedIterPerSecond = false;
 
     //data structures for the solution space search
     uint ramificationChange = n1*(n2-n1);
@@ -462,7 +462,7 @@ void SANA::trackProgress(long long unsigned int i) {
     if (not enableTrackProgress) return;
     bool printDetails = false;
     bool printScores = false;
-    bool checkScores = true;
+    bool checkScores = false;
     cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
     cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << endl;
     if (not (printDetails or printScores or checkScores)) return;
@@ -683,7 +683,7 @@ long long unsigned int SANA::hillClimbingIterations(long long unsigned int idleC
         }
         double oldScore = currentScore;
         SANAIteration();
-        if (oldScore == currentScore) idleCount++;
+        if (abs(oldScore-currentScore) < 0.00001) idleCount++;
         else idleCount = 0;
         if (idleCount == idleCountTarget) {
             return  iter - idleCount;
@@ -703,7 +703,11 @@ double SANA::expectedNumAccEInc(double temp, const vector<double>& energyIncSamp
 //returns a sample of energy increments, with size equal to the number of iterations per second
 //after hill climbing
 vector<double> SANA::energyIncSample() {
-    double iter = iterPerSecond(); //this runs HC, so it updates the values of A and currentScore
+
+    initIterPerSecond(); //this runs HC, so it updates the values
+                         //of A and currentScore (besides iterPerSecond)
+
+    double iter = iterPerSecond;
     cout << "Hill climbing score: " << currentScore << endl;
     //generate a sample of energy increments, with size equal to the number of iterations per second
     vector<double> EIncs(0);
@@ -746,16 +750,26 @@ double SANA::searchT_decay(double T_initial, double minutes) {
     double epsilon = (x_left + x_right)/2;
     cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
     cerr << "Final epsilon: " << epsilon << endl;
-    double iter_t = minutes*60*iterPerSecond();
+    double iter_t = minutes*60*getIterPerSecond();
 
     double lambda = log((T_initial*T_initialScaling)/epsilon)/(iter_t*T_decayScaling);
     cerr << "Final T_decay: " << lambda << endl;
     return lambda;
 }
 
-double SANA::iterPerSecond() {
-    long long unsigned int iter = hillClimbingIterations(1000000+searchSpaceSizeLog());
+double SANA::getIterPerSecond() {
+    if (not initializedIterPerSecond) {
+        initIterPerSecond();
+    }
+    return iterPerSecond;
+}
+
+void SANA::initIterPerSecond() {
+    long long unsigned int iter = hillClimbingIterations(500000+searchSpaceSizeLog());
     double res = iter/timer.elapsed();
     cerr << "SANA does " << to_string(res) << " iterations per second" << endl;
-    return res;
+    
+    initializedIterPerSecond = true;
+    iterPerSecond = res;
+
 }

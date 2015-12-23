@@ -74,7 +74,12 @@ private:
     //returns a value of lambda such that with this T_initial, temperature reaches
     //0 after a certain number of minutes
     double searchT_decay(double T_initial, double minutes);
-    double iterPerSecond();
+
+    bool initializedIterPerSecond;
+    double iterPerSecond;
+    double getIterPerSecond();
+    void initIterPerSecond();
+
     vector<double> energyIncSample();
     double expectedNumAccEInc(double temp, const vector<double>& energyIncSample);
 
