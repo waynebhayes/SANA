@@ -17,9 +17,13 @@
 
 void DebugMode::run(ArgumentParser& args) {
 
+
   NormalMode::createFolders();
   Graph G1, G2;
   initGraphs(G1, G2, args);
+  G1.saveInShuffledOrder("testfile.x");
+  exit(0);
+
 
   G1.isWellDefined();
   //G2.isWellDefined();

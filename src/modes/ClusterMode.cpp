@@ -71,13 +71,9 @@ string ClusterMode::getQsubCommand(const string& scriptFile) {
 }
 
 void ClusterMode::submitToCluster(const vector<string>& argv) {
-  cerr<<0;
   string scriptFile = makeScript(argv);
-  cerr<<1;
   exec("chmod +x " + scriptFile);
-  cerr<<2;
   exec(getQsubCommand(scriptFile));
-  cerr<<3;
 }
 
 string ClusterMode::getScriptFileName() {

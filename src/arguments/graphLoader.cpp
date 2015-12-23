@@ -24,7 +24,6 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     string fg1 = args.strings["-fg1"], fg2 = args.strings["-fg2"];
     createFolder("networks");
     string g1Name, g2Name;
-    createFolder("alignments/"+g1Name+"_"+g2Name);
     if (fg1 != "") {
         g1Name = extractFileNameNoExtension(fg1);
     } else {
