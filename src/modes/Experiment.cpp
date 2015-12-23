@@ -19,6 +19,7 @@
 #include "../measures/localMeasures/Graphlet.hpp"
 #include "../Alignment.hpp"
 #include "../utils/Timer.hpp"
+#include "ClusterMode.hpp"
 
 
 const string Experiment::methodArgsFile = "experiments/methods.cnf";
@@ -32,9 +33,9 @@ void Experiment::run(ArgumentParser& args) {
     experFolder = "experiments/"+experName+"/";
     experFile = experFolder+experName+".exp";
     checkFileExists(experFile);
-    resultsFolder = experFolder+"results/";
-    createFolder(resultsFolder);
-    init();
+
+    initSubfolders();
+    initData();
 
     bool dbg = args.bools["-dbg"];
     if (not dbg) {
@@ -45,7 +46,23 @@ void Experiment::run(ArgumentParser& args) {
 
 }
 
-void Experiment::init() {
+void Experiment::initSubfolders() {
+    resultsFolder = experFolder+"results/";
+    scriptsFolder = experFolder+"scripts/";
+
+    //outsFolder and errsFolder must be absolute path
+    //because qsub requires it 
+    string projectFolder = ClusterMode::getProjectFolder();
+    outsFolder = projectFolder+experFolder+"outs/";
+    errsFolder = projectFolder+experFolder+"errs/";
+
+    createFolder(resultsFolder);
+    createFolder(outsFolder);
+    createFolder(errsFolder);
+    createFolder(scriptsFolder);
+}
+
+void Experiment::initData() {
     vector<vector<string>> data = fileToStringsByLines(experFile);
     t = stod(data[0][0]);
     nSubs = stoi(data[1][0]);
@@ -62,12 +79,13 @@ void Experiment::makeSubmissions() {
         for (const auto& pair: networkPairs) {
             for (uint i = 0; i < nSubs; i++) {
                 string cmd = subCommand(method, pair[0], pair[1], i);
-                string outFile = getOutputFileName(method, pair[0], pair[1], i);
-                if (not fileExists(outFile)) {
-                    cerr << "SUBMIT "+outFile << endl;
+                string subId = getSubId(method, pair[0], pair[1], i);
+                string resultFile = resultsFolder+subId;
+                if (not fileExists(resultFile)) {
+                    cerr << "SUBMIT "+subId << endl;
                     exec(cmd);
                 } else {
-                    cerr << "OMIT   "+outFile << endl;
+                    cerr << "OMIT   "+subId << endl;
                 }
             }
         }
@@ -79,11 +97,12 @@ void Experiment::printSubmissions() {
         for (const auto& pair: networkPairs) {
             for (uint i = 0; i < nSubs; i++) {
                 string cmd = subCommand(method, pair[0], pair[1], i);
-                string outFile = getOutputFileName(method, pair[0], pair[1], i);
-                if (not fileExists(outFile)) {
-                    cout << "SUBMIT "+outFile << endl;
+                string subId = getSubId(method, pair[0], pair[1], i);
+                string resultFile = resultsFolder+subId;
+                if (not fileExists(resultFile)) {
+                    cout << "SUBMIT "+subId << endl;
                 } else {
-                    cout << "OMIT   "+outFile << endl;
+                    cout << "OMIT   "+subId << endl;
                 }
                 cout << cmd << endl;
             }
@@ -91,8 +110,8 @@ void Experiment::printSubmissions() {
     }
 }
 
-string Experiment::getOutputFileName(string method, string G1Name, string G2Name, uint subNum) {
-    return resultsFolder+method+"_"+G1Name+"_"+G2Name+"_"+intToString(subNum);
+string Experiment::getSubId(string method, string G1Name, string G2Name, uint subNum) {
+    return method+"_"+G1Name+"_"+G2Name+"_"+intToString(subNum);
 }
 
 string Experiment::subCommand(string method, string G1Name, string G2Name, uint subNum) {
@@ -101,8 +120,12 @@ string Experiment::subCommand(string method, string G1Name, string G2Name, uint 
     command += " -t " + to_string(t);
     for (string arg: getMethodArgs(method)) command += " " + arg;
     for (string arg: experArgs) command += " " + arg;
-    string outFile = getOutputFileName(method, G1Name, G2Name, subNum);
-    command += " -o " + outFile;
+
+    string subId = getSubId(method, G1Name, G2Name, subNum);
+    command += " -o " + resultsFolder+subId;
+    command += " -qsuboutfile " + outsFolder+subId+".out";
+    command += " -qsuberrfile " + errsFolder+subId+".err";
+    command += " -qsubscriptfile " + scriptsFolder+subId+".sh";
     return command;
 }
 

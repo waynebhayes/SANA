@@ -27,7 +27,11 @@ private:
     string experName;
     string experFolder;
     string experFile;
+
     string resultsFolder;
+    string outsFolder;
+    string errsFolder;
+    string scriptsFolder;
 
     double t;
     uint nSubs;
@@ -38,11 +42,12 @@ private:
     vector<vector<string>> networkPairs;
     vector<string> measures;
 
-    void init();
+    void initSubfolders();
+    void initData();
 
     static vector<string> getMethodArgs(string method);
     static vector<vector<string>> getNetworkPairs(string dataset);
-    string getOutputFileName(string method, string G1Name, string G2Name, uint subNum);
+    string getSubId(string method, string G1Name, string G2Name, uint subNum);
     string subCommand(string method, string G1Name, string G2Name, uint subNum);
     void makeSubmissions();
     void printSubmissions();
