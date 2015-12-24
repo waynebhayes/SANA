@@ -2,29 +2,14 @@
 #define EXPERIMENT_H
 #include <vector>
 #include <string>
+#include <tuple>
+#include <map>
 
 #include "Mode.hpp"
 #include "../measures/Measure.hpp"
 #include "../Graph.hpp"
 
 using namespace std;
-
-struct ResultTuple {
-    string measure;
-    string method;
-    string G1Name;
-    string G2Name;
-    uint numSub;
-    double score;
-    bool NA; //not applicable; check that this
-            //is false before using the score
-
-    ResultTuple();
-
-    ResultTuple(string measure, string method,
-        string G1Name, string G2Name,
-        uint numSub, double score, bool NA);
-};
 
 class Experiment : public Mode {
 public:
@@ -69,12 +54,21 @@ private:
     void makeSubmissions();
     void printSubmissions();
 
-    vector<ResultTuple> allResults;
+    map<string,double> resultMap;
     string allResultsFile;
+
     void loadGraphs(map<string,Graph>& graphs);
     void collectResults();
     void saveResults();
     bool allRunsFinished();
+
+    string getResultId(string method, string G1Name,
+        string G2Name, uint numSub, string measure);
+    double getScore(string method, string G1Name,
+        string G2Name, uint numSub, string measure);
+    double computeScore(string method, string G1Name,
+        string G2Name, uint numSub, Measure* measure);
+
 };
 
 

@@ -23,30 +23,14 @@
 #include "../utils/Timer.hpp"
 #include "ClusterMode.hpp"
 
-inline bool operator< (const ResultTuple& lhs, const ResultTuple& rhs){
-    if (lhs.measure != rhs.measure) return lhs.measure < rhs.measure;
-    if (lhs.G1Name != rhs.G1Name) return lhs.G1Name < rhs.G1Name;
-    if (lhs.G2Name != rhs.G2Name) return lhs.G2Name < rhs.G2Name;
-    if (lhs.method != rhs.method) return lhs.method < rhs.method;
-    return lhs.numSub < rhs.numSub;
-}
-
-ResultTuple::ResultTuple() {}
-ResultTuple::ResultTuple(string measure, string method,
-        string G1Name, string G2Name,
-        uint numSub, double score, bool NA):
-        measure(measure), method(method),
-        G1Name(G1Name), G2Name(G2Name),
-        numSub(numSub), score(score), NA(NA) {}
-
 
 const string Experiment::methodArgsFile = "experiments/methods.cnf";
 const string Experiment::datasetsFile = "experiments/datasets.cnf";
 
 void Experiment::run(ArgumentParser& args) {
+    cerr<<methodArgsFile<<endl;
     checkFileExists(methodArgsFile);
     checkFileExists(datasetsFile);
-
     experName = args.strings["-experiment"];
     experFolder = "experiments/"+experName+"/";
     experFile = experFolder+experName+".exp";
@@ -152,18 +136,18 @@ bool Experiment::allRunsFinished() {
 }
 
 
-string Experiment::getSubId(string method, string G1Name, string G2Name, uint subNum) {
-    return method+"_"+G1Name+"_"+G2Name+"_"+intToString(subNum);
+string Experiment::getSubId(string method, string G1Name, string G2Name, uint numSub) {
+    return method+"_"+G1Name+"_"+G2Name+"_"+intToString(numSub);
 }
 
-string Experiment::subCommand(string method, string G1Name, string G2Name, uint subNum) {
+string Experiment::subCommand(string method, string G1Name, string G2Name, uint numSub) {
     string command = "./sana -mode cluster -qmode normal";
     command += " -g1 " + G1Name + " -g2 " + G2Name;
     command += " -t " + to_string(t);
     for (string arg: getMethodArgs(method)) command += " " + arg;
     for (string arg: experArgs) command += " " + arg;
 
-    string subId = getSubId(method, G1Name, G2Name, subNum);
+    string subId = getSubId(method, G1Name, G2Name, numSub);
     command += " -o " + resultsFolder+subId;
     command += " -qsuboutfile " + outsFolder+subId+".out";
     command += " -qsuberrfile " + errsFolder+subId+".err";
@@ -186,40 +170,61 @@ void Experiment::loadGraphs(map<string, Graph>& graphs) {
     cerr << "done ("+T.elapsedString()+")" << endl;
 }
 
+string Experiment::getResultId(string method, string G1Name, string G2Name,
+    uint numSub, string measure) {
+    return getSubId(method, G1Name, G2Name, numSub)+"_"+measure;
+}
+
+//use after calling collect results, which initializes 'resultMap'
+double Experiment::getScore(string method, string G1Name, string G2Name,
+    uint numSub, string measure) {
+
+    string key = getResultId(method, G1Name, G2Name, numSub, measure);
+    if (resultMap.count(key) == 0) {
+        throw runtime_error("Score not found");
+    }
+    return resultMap[key];
+}
+
+double Experiment::computeScore(string method, string G1Name,
+        string G2Name, uint numSub, Measure* measure) {
+
+    string subId = getSubId(method, G1Name, G2Name, numSub);
+    string resultFile = resultsFolder+subId;
+
+    bool NA = measure->getName() == "invalid" or
+              not fileExists(resultFile);
+    double score;
+    if (NA) score = -1;
+    else {
+        Alignment A = Alignment::loadMapping(resultFile);
+        score = measure->eval(A);
+    }
+    return score;
+}
 
 void Experiment::collectResults() {
-    allResults = vector<ResultTuple> (0);
+    resultMap.clear(); //init the map empty
 
-    //data = vector<vector<vector<double> > > (measures.size(), vector<vector<double> > (methods.size(), vector<double> (npairs, -1)));
     map<string, Graph> graphs;
     loadGraphs(graphs);
 
     for (auto pair : networkPairs) {
-        string g1Name = pair[0];
-        string g2Name = pair[1];
-        Graph* G1 = &graphs[g1Name];
-        Graph* G2 = &graphs[g2Name];
+        string G1Name = pair[0];
+        string G2Name = pair[1];
+        Graph* G1 = &graphs[G1Name];
+        Graph* G2 = &graphs[G2Name];
         Timer T;
         T.start();
-        cerr << "("+g1Name+", "+g2Name+")";
+        cerr << "("+G1Name+", "+G2Name+") ";
 
         for (string measureName : measures) {
             Measure* measure = loadMeasure(G1, G2, measureName);
             for (string method : methods) {
                 for (uint numSub = 0; numSub < nSubs; numSub++) {
-                    string subId = getSubId(method, g1Name, g2Name, numSub);
-                    string resultFile = resultsFolder+subId;
-
-                    bool NA = measure->getName() == "invalid" or
-                              not fileExists(resultFile);
-                    double score;
-                    if (NA) score = 1;
-                    else {
-                        Alignment A = Alignment::loadMapping(resultFile);
-                        score = measure->eval(A);
-                    }
-                    ResultTuple T(measureName, method, g1Name, g2Name, numSub, score, NA);
-                    allResults.push_back(T);                        
+                    string resultKey = getResultId(method, G1Name, G2Name, numSub, measureName);
+                    double score = computeScore(method, G1Name, G2Name, numSub, measure);
+                    resultMap[resultKey] = score;
                 }
             }
             delete measure;
@@ -230,19 +235,26 @@ void Experiment::collectResults() {
 
 //to be called after collectResults
 void Experiment::saveResults() {
+    //savePlainResults();
+    //saveHumanReadableResults();
+    //saveResultsForPlots();
+
     ofstream fout;
     fout.open(allResultsFile.c_str());
 
-    sort(allResults.begin(), allResults.end());
-    for (auto T : allResults) {
-        fout<<T.measure<<" ";
-        fout<<T.G1Name<<" ";
-        fout<<T.G2Name<<" ";
-        fout<<T.method<<" ";
-        fout<<T.numSub<<" ";
-        if (T.NA) fout<<"NA";
-        else fout<<T.score;
-        fout<<endl;
+    for (string measure : measures) {
+        for (auto pair : networkPairs) {
+            string G1Name = pair[0];
+            string G2Name = pair[1];
+            for (string method : methods) {
+                for (uint numSub = 0; numSub < nSubs; numSub++) {
+                    double score = getScore(method, G1Name, G2Name, numSub, measure);
+                    fout << measure << " " << G1Name << " ";
+                    fout << G2Name << " " << method << " ";
+                    fout << numSub << " " << score << endl;
+                }
+            }
+        }
     }
 }
 
