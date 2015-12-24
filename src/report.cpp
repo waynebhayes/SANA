@@ -3,6 +3,7 @@
 #include "measures/EdgeCorrectness.hpp"
 #include "measures/InducedConservedStructure.hpp"
 #include "measures/SymmetricSubstructureScore.hpp"
+#include "utils/utils.hpp"
 
 void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
   const MeasureCombination& M, Method* method, ofstream& stream) {
@@ -75,10 +76,24 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
     + G1Name + "_" + G2Name + "_" + method->getName() + method->fileNameSuffix(A);
     addUniquePostfixToFilename(reportFile, ".txt");
     reportFile += ".txt";
+  }else{
+    string location = reportFile.substr(0, reportFile.find_last_of("/"));
+    uint lastPos = 0;
+    while(not folderExists(location)){//Making each of the folders, one by one.
+      createFolder(location.substr(0, location.find("/", lastPos)));
+      lastPos = location.find("/", location.find("/", lastPos)+1);
+    }
   }
 
   ofstream outfile;
   outfile.open(reportFile.c_str());
+  
+  if(not outfile.is_open()){
+    cerr << "Problem saving file to specified location. Saving to sana program file." << endl;
+    reportFile = reportFile.substr(reportFile.find_last_of("/")+1);
+    outfile.open(reportFile.c_str());
+  }
+
   cerr << "Saving report as \"" << reportFile << "\"" << endl;
   A.write(outfile);
   makeReport(G1, G2, A, M, method, outfile);
