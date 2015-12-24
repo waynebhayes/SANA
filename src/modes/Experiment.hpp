@@ -9,6 +9,23 @@
 
 using namespace std;
 
+struct ResultTuple {
+    string measure;
+    string method;
+    string G1Name;
+    string G2Name;
+    uint numSub;
+    double score;
+    bool NA; //not applicable; check that this
+            //is false before using the score
+
+    ResultTuple();
+
+    ResultTuple(string measure, string method,
+        string G1Name, string G2Name,
+        uint numSub, double score, bool NA);
+};
+
 class Experiment : public Mode {
 public:
     Experiment();
@@ -51,6 +68,13 @@ private:
     string subCommand(string method, string G1Name, string G2Name, uint subNum);
     void makeSubmissions();
     void printSubmissions();
+
+    vector<ResultTuple> allResults;
+    string allResultsFile;
+    void loadGraphs(map<string,Graph>& graphs);
+    void collectResults();
+    void saveResults();
+    bool allRunsFinished();
 };
 
 
