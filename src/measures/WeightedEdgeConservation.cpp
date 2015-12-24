@@ -1,5 +1,6 @@
 #include "WeightedEdgeConservation.hpp"
 #include <vector>
+#include <iostream>
 #include "Measure.hpp"
 #include "localMeasures/LocalMeasure.hpp"
 #include "../Graph.hpp"

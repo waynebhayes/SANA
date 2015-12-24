@@ -12,7 +12,7 @@ class SANA: public Method {
 
 public:
     SANA(Graph* G1, Graph* G2,
-        double T_initial, double T_decay, double t, MeasureCombination* MC);
+        double TInitial, double TDecay, double t, MeasureCombination* MC);
     ~SANA();
 
     Alignment run();
@@ -24,8 +24,8 @@ public:
 
     //set temperature schedule automatically
     void setTemperatureScheduleAutomatically();
-    void setT_INITIALAutomatically();
-    void setT_DECAYAutomatically();
+    void setTInitialAutomatically();
+    void setTDecayAutomatically();
 
 
 
@@ -55,25 +55,25 @@ private:
 
 
     //temperature schedule
-    double T_initial;
-    double T_decay;
+    double TInitial;
+    double TDecay;
     double minutes;
-    const double T_initialScaling = 0.00004;
-    const double T_decayScaling = 0.00000001;
+    const double TInitialScaling = 0.00004;
+    const double TDecayScaling = 0.00000001;
 
     double T;
-    double temperatureFunction(double iter, double T_initial, double T_decay);
+    double temperatureFunction(double iter, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double T);
-    //to compute T_initial automatically
-    //returns a value of T_INITIAL such that the temperature is random
-    double searchT_INITIAL();
-    double scoreForT_INITIAL(double T_initial);
-    bool isRandomT_INITIAL(double T_initial, double highThresholdScore, double lowThresholdScore);
+    //to compute TInitial automatically
+    //returns a value of TInitial such that the temperature is random
+    double searchTInitial();
+    double scoreForTInitial(double TInitial);
+    bool isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore);
     double scoreRandom();
-    //to compute T_decay automatically
-    //returns a value of lambda such that with this T_initial, temperature reaches
+    //to compute TDecay automatically
+    //returns a value of lambda such that with this TInitial, temperature reaches
     //0 after a certain number of minutes
-    double searchT_decay(double T_initial, double minutes);
+    double searchTDecay(double TInitial, double minutes);
 
     bool initializedIterPerSecond;
     double iterPerSecond;

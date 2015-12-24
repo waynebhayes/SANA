@@ -65,19 +65,19 @@ Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombin
 
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
 
-    double T_initial = 0;
+    double TInitial = 0;
     if (args.strings["-tinitial"] != "auto") {
-        T_initial = stod(args.strings["-tinitial"]);
+        TInitial = stod(args.strings["-tinitial"]);
     }
 
-    double T_decay = 0;
+    double TDecay = 0;
     if (args.strings["-tdecay"] != "auto") {
-        T_decay = stod(args.strings["-tdecay"]);
+        TDecay = stod(args.strings["-tdecay"]);
     }
 
     double minutes = args.doubles["-t"];
 
-    Method* sana = new SANA(&G1, &G2, T_initial, T_decay, minutes, &M);
+    Method* sana = new SANA(&G1, &G2, TInitial, TDecay, minutes, &M);
     if (args.bools["-restart"]) {
         double tnew = args.doubles["-tnew"];
         uint iterperstep = args.doubles["-iterperstep"];
@@ -87,10 +87,10 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         ((SANA*) sana)->enableRestartScheme(tnew, iterperstep, numcand, tcand, tfin);
     }
     if (args.strings["-tinitial"] == "auto") {
-        ((SANA*) sana)->setT_INITIALAutomatically();
+        ((SANA*) sana)->setTInitialAutomatically();
     }
     if (args.strings["-tdecay"] == "auto") {
-        ((SANA*) sana)->setT_DECAYAutomatically();
+        ((SANA*) sana)->setTDecayAutomatically();
     }
     return sana;
 }

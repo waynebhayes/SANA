@@ -28,7 +28,7 @@
 using namespace std;
 
 SANA::SANA(Graph* G1, Graph* G2,
-    double T_initial, double T_decay, double t, MeasureCombination* MC):
+    double TInitial, double TDecay, double t, MeasureCombination* MC):
     Method(G1, G2, "SANA_"+MC->toString())
 {
     //data structures for the networks
@@ -50,8 +50,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
     //temperature schedule
-    this->T_initial = T_initial;
-    this->T_decay = T_decay;
+    this->TInitial = TInitial;
+    this->TDecay = TDecay;
     minutes = t;
     initializedIterPerSecond = false;
 
@@ -103,7 +103,13 @@ SANA::SANA(Graph* G1, Graph* G2,
 
     //to evaluate local measures incrementally
     needLocal = localWeight > 0;
-    if (needLocal) sims = MC->getAggregatedLocalSims();
+    if (needLocal) {
+        sims = MC->getAggregatedLocalSims();
+        localWeight = 1; //the values in the sim matrix 'sims'
+                         //have already been scaled by the weight
+    } else {
+        localWeight = 0;
+    }
 
 
     //other execution options
@@ -140,8 +146,8 @@ Alignment SANA::run() {
 
 void SANA::describeParameters(ostream& sout) {
     sout << "Temperature schedule:" << endl;
-    sout << "T_initial: " << T_initial << endl;
-    sout << "T_decay: " << T_decay << endl;
+    sout << "T_initial: " << TInitial << endl;
+    sout << "T_decay: " << TDecay << endl;
 
     sout << "Optimize: " << endl;
     MC->printWeights(sout);
@@ -181,8 +187,8 @@ void SANA::enableRestartScheme(double minutesNewAlignments, uint iterationsPerSt
     }
 }
 
-double SANA::temperatureFunction(double iter, double T_initial, double T_decay) {
-    return T_initialScaling * T_initial * (constantTemp ? 1 : exp(-T_decay*T_decayScaling*iter));
+double SANA::temperatureFunction(double iter, double TInitial, double TDecay) {
+    return TInitialScaling * TInitial * (constantTemp ? 1 : exp(-TDecay*TDecayScaling*iter));
 }
 
 double SANA::acceptingProbability(double energyInc, double T) {
@@ -222,10 +228,9 @@ void SANA::initDataStructures(const Alignment& startA) {
     }
 
     if (needWec) {
-        wecSum = 0;
-        for (uint i = 0; i < n1; i++) {
-            wecSum += wecSims[i][A[i]];
-        }
+        Measure* wec = MC->getMeasure("wec");
+        double wecScore = wec->eval(A);
+        wecSum = wecScore*2*g1Edges;
     }
 
     currentScore = eval(startA);
@@ -254,7 +259,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
     setInterruptSignal();
 
     for (; ; iter++) {
-        T = temperatureFunction(iter, T_initial, T_decay);
+        T = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
             return A;
         }
@@ -303,7 +308,7 @@ void SANA::performChange() {
     double newCurrentScore = 0;
     newCurrentScore += ecWeight * (newAligEdges/g1Edges);
     newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
-    newCurrentScore += (newLocalScoreSum/n1);
+    newCurrentScore += localWeight * (newLocalScoreSum/n1);
     newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 
     energyInc = newCurrentScore-currentScore;
@@ -343,8 +348,9 @@ void SANA::performSwap() {
     double newCurrentScore = 0;
     newCurrentScore += ecWeight * (newAligEdges/g1Edges);
     newCurrentScore += s3Weight * (newAligEdges/(g1Edges+inducedEdges-newAligEdges));
-    newCurrentScore += (newLocalScoreSum/n1);
+    newCurrentScore += localWeight * (newLocalScoreSum/n1);
     newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+
     energyInc = newCurrentScore-currentScore;
 
     if (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T)) {
@@ -535,19 +541,19 @@ uint SANA::getHighestIndex() const {
 
 
 void SANA::setTemperatureScheduleAutomatically() {
-    setT_INITIALAutomatically();
-    setT_DECAYAutomatically();
+    setTInitialAutomatically();
+    setTDecayAutomatically();
 }
 
-void SANA::setT_INITIALAutomatically() {
-    T_initial = searchT_INITIAL();
+void SANA::setTInitialAutomatically() {
+    TInitial = searchTInitial();
 }
 
-void SANA::setT_DECAYAutomatically() {
-    T_decay = searchT_decay(T_initial, minutes);
+void SANA::setTDecayAutomatically() {
+    TDecay = searchTDecay(TInitial, minutes);
 }
 
-double SANA::searchT_INITIAL() {
+double SANA::searchTInitial() {
     const double NUM_SAMPLES_RANDOM = 100;
     const double HIGH_THRESHOLD_P = 0.999999;
     const double LOW_THRESHOLD_P = 0.99;
@@ -570,14 +576,14 @@ double SANA::searchT_INITIAL() {
     cerr << LOW_THRESHOLD_P << " of random runs have a score <= " << lowThresholdScore << endl;
     cerr << HIGH_THRESHOLD_P << " of random runs have a score <= " << highThresholdScore << endl;
 
-    double lowerBoundT_INITIAL = 0;
-    double upperBoundT_INITIAL = 1;
-    while (not isRandomT_INITIAL(upperBoundT_INITIAL, highThresholdScore, lowThresholdScore)) {
+    double lowerBoundTInitial = 0;
+    double upperBoundTInitial = 1;
+    while (not isRandomTInitial(upperBoundTInitial, highThresholdScore, lowThresholdScore)) {
         cerr << endl;
-        upperBoundT_INITIAL *= 2;
+        upperBoundTInitial *= 2;
     }
     cerr << endl;
-    if (upperBoundT_INITIAL > 1) lowerBoundT_INITIAL = upperBoundT_INITIAL/2;
+    if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/2;
 
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
@@ -585,46 +591,46 @@ double SANA::searchT_INITIAL() {
 
     uint count = 0;
     T.start();
-    while (lowerBoundT_INITIAL < upperBoundT_INITIAL and
+    while (lowerBoundTInitial < upperBoundTInitial and
            count <= 10) {
         //search in log space
-        double lowerBoundT_INITIALLog = log2(lowerBoundT_INITIAL+1);
-        double upperBoundT_INITIALLog = log2(upperBoundT_INITIAL+1);
-        double midT_INITIALLog = (lowerBoundT_INITIALLog+upperBoundT_INITIALLog)/2.;
-        double midT_INITIAL = exp2(midT_INITIALLog)-1;
+        double lowerBoundTInitialLog = log2(lowerBoundTInitial+1);
+        double upperBoundTInitialLog = log2(upperBoundTInitial+1);
+        double midTInitialLog = (lowerBoundTInitialLog+upperBoundTInitialLog)/2.;
+        double midTInitial = exp2(midTInitialLog)-1;
 
         //we prefer false negatives (random scores classified as non-random)
         //than false positives (non-random scores classified as random)
         cerr << "Test " << count << " (" << T.elapsedString() << "): ";
         count++;
-        if (isRandomT_INITIAL(midT_INITIAL, highThresholdScore, lowThresholdScore)) {
-            upperBoundT_INITIAL = midT_INITIAL;
+        if (isRandomTInitial(midTInitial, highThresholdScore, lowThresholdScore)) {
+            upperBoundTInitial = midTInitial;
             cerr << " (random behavior)";
         }
         else {
-            lowerBoundT_INITIAL = midT_INITIAL;
+            lowerBoundTInitial = midTInitial;
             cerr << " (NOT random behavior)";
         }
-        cerr << " New range: (" << lowerBoundT_INITIAL << ", " << upperBoundT_INITIAL << ")" << endl;
+        cerr << " New range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
     }
     //return the top of the range
-    cerr << "Final range: (" << lowerBoundT_INITIAL << ", " << upperBoundT_INITIAL << ")" << endl;
-    cerr << "Final T_initial: " << upperBoundT_INITIAL << endl;
-    return upperBoundT_INITIAL;
+    cerr << "Final range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
+    cerr << "Final TInitial: " << upperBoundTInitial << endl;
+    return upperBoundTInitial;
 }
 
 //takes a random alignment, lets it run for a certain number
-//of iterations (ITERATIONS) with fixed temperature T_initial
+//of iterations (ITERATIONS) with fixed temperature TInitial
 //and returns its score
-double SANA::scoreForT_INITIAL(double T_initial) {
+double SANA::scoreForTInitial(double TInitial) {
     uint ITERATIONS = 10000.+100.*n1+10.*n2+n1*n2*0.1; //heuristic value
 
     double oldIterationsPerStep = this->iterationsPerStep;
-    double oldT_INITIAL = this->T_initial;
+    double oldTInitial = this->TInitial;
     bool oldRestart = restart;
 
     this->iterationsPerStep = ITERATIONS;
-    this->T_initial = T_initial;
+    this->TInitial = TInitial;
     constantTemp = true;
     enableTrackProgress = false;
     restart = false;
@@ -632,7 +638,7 @@ double SANA::scoreForT_INITIAL(double T_initial) {
     long long unsigned int iter = 0;
     simpleRun(Alignment::random(n1, n2), 0, iter);
     this->iterationsPerStep = oldIterationsPerStep;
-    this->T_initial = oldT_INITIAL;
+    this->TInitial = oldTInitial;
     constantTemp = false;
     enableTrackProgress = true;
     restart = oldRestart;
@@ -640,18 +646,18 @@ double SANA::scoreForT_INITIAL(double T_initial) {
     return currentScore;
 }
 
-bool SANA::isRandomT_INITIAL(double T_initial, double highThresholdScore, double lowThresholdScore) {
+bool SANA::isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore) {
     const double NUM_SAMPLES = 5;
 
-    double score = scoreForT_INITIAL(T_initial);
-    cerr << "T_initial = " << T_initial << ", score = " << score;
+    double score = scoreForTInitial(TInitial);
+    cerr << "T_initial = " << TInitial << ", score = " << score;
     //quick filter all the scores that are obviously not random
     if (score > highThresholdScore) return false;
     if (score < lowThresholdScore) return true;
     //make sure that alignments that passed the first test are truly random
     //(among NUM_SAMPLES runs, at least one of them has a p-value smaller than LOW_THRESHOLD_P)
     for (uint i = 0; i < NUM_SAMPLES; i++) {
-        if (scoreForT_INITIAL(T_initial) <= lowThresholdScore) return true;
+        if (scoreForTInitial(TInitial) <= lowThresholdScore) return true;
     }
     return false;
 }
@@ -721,7 +727,7 @@ vector<double> SANA::energyIncSample() {
     return EIncs;
 }
 
-double SANA::searchT_decay(double T_initial, double minutes) {
+double SANA::searchTDecay(double TInitial, double minutes) {
 
     vector<double> EIncs = energyIncSample();
     cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
@@ -752,7 +758,7 @@ double SANA::searchT_decay(double T_initial, double minutes) {
     cerr << "Final epsilon: " << epsilon << endl;
     double iter_t = minutes*60*getIterPerSecond();
 
-    double lambda = log((T_initial*T_initialScaling)/epsilon)/(iter_t*T_decayScaling);
+    double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
     cerr << "Final T_decay: " << lambda << endl;
     return lambda;
 }
