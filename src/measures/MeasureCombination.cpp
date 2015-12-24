@@ -16,7 +16,9 @@ double MeasureCombination::eval(const Alignment& A) const {
     uint n = measures.size();
     double total = 0;
     for (uint i = 0; i < n; i++) {
-        if (weights[i] > 0) total += measures[i]->eval(A) * weights[i];
+        if (weights[i] > 0) {
+            total += measures[i]->eval(A) * weights[i];
+        }
     }
     return total;
 }
