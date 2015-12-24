@@ -20,6 +20,8 @@ public:
     static bool fulfillsPrereqs(Graph* G1, Graph* G2);
 
 private:
+    static const string biogridGOFile;
+    
     vector<double> countWeights;
     void initSimMatrix();
 
