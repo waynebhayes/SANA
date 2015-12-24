@@ -363,7 +363,7 @@ void TabuSearch::performChange(ushort source, uint newTargetIndex) {
     double newCurrentScore = 0;
     newCurrentScore += ecWeight * (newAligEdges/g1Edges);
     newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
-    newCurrentScore += localWeight * (newLocalScoreSum/n1);
+    newCurrentScore += (newLocalScoreSum/n1);
     newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 
     if (newCurrentScore > nScore) {
@@ -401,7 +401,7 @@ void TabuSearch::performSwap(ushort source1, ushort source2) {
     double newCurrentScore = 0;
     newCurrentScore += ecWeight * (newAligEdges/g1Edges);
     newCurrentScore += s3Weight * (newAligEdges/(g1Edges+inducedEdges-newAligEdges));
-    newCurrentScore += localWeight * (newLocalScoreSum/n1);
+    newCurrentScore += (newLocalScoreSum/n1);
     newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 
     if (newCurrentScore > nScore) {

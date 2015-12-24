@@ -303,7 +303,7 @@ void SANA::performChange() {
     double newCurrentScore = 0;
     newCurrentScore += ecWeight * (newAligEdges/g1Edges);
     newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
-    newCurrentScore += localWeight * (newLocalScoreSum/n1);
+    newCurrentScore += (newLocalScoreSum/n1);
     newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 
     energyInc = newCurrentScore-currentScore;
@@ -343,10 +343,10 @@ void SANA::performSwap() {
     double newCurrentScore = 0;
     newCurrentScore += ecWeight * (newAligEdges/g1Edges);
     newCurrentScore += s3Weight * (newAligEdges/(g1Edges+inducedEdges-newAligEdges));
-    newCurrentScore += localWeight * (newLocalScoreSum/n1);
+    newCurrentScore += (newLocalScoreSum/n1);
     newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
-
     energyInc = newCurrentScore-currentScore;
+
     if (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T)) {
         A[source1] = target2;
         A[source2] = target1;
@@ -462,7 +462,7 @@ void SANA::trackProgress(long long unsigned int i) {
     if (not enableTrackProgress) return;
     bool printDetails = false;
     bool printScores = false;
-    bool checkScores = false;
+    bool checkScores = true;
     cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
     cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << endl;
     if (not (printDetails or printScores or checkScores)) return;
@@ -686,7 +686,7 @@ long long unsigned int SANA::hillClimbingIterations(long long unsigned int idleC
         if (abs(oldScore-currentScore) < 0.00001) idleCount++;
         else idleCount = 0;
         if (idleCount == idleCountTarget) {
-            return  iter - idleCount;
+            return  (iter+1) - idleCount;
         }
     }
     return iter; //dummy return to shut compiler warning
@@ -766,6 +766,9 @@ double SANA::getIterPerSecond() {
 
 void SANA::initIterPerSecond() {
     long long unsigned int iter = hillClimbingIterations(500000+searchSpaceSizeLog());
+    if (iter == 0) {
+        throw runtime_error("hill climbing stagnated after 0 iterations");
+    }
     double res = iter/timer.elapsed();
     cerr << "SANA does " << to_string(res) << " iterations per second" << endl;
     
