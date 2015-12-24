@@ -1,11 +1,9 @@
 60
 2 first
 -tinitial auto -tdecay auto -wecnodesim graphletlgraal -objfuntype beta -beta 1
-lgraal hubalign sanalg sanaec sanas3
+lgraal hubalign sanalg sanaec sanas3 random
 biogrid
-s3 lccs ec wec seq gocov go1 go2 go3 go4 go5 go6 go7 go8 go9
-
-# biogrid dataset with beta 1 (biology only)
+s3 lccs ec wec importance sequence gocov go1 go2 go3 go4 go5 go6 go7 go8 go9
 
 #line 1: execution time per run
 #line 2: number of submissions per method/network pair combination and
