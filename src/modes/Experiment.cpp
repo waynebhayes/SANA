@@ -1,6 +1,7 @@
 #include "Experiment.hpp"
 #include <iostream>
 #include <algorithm>
+#include <sstream>
 #include "../utils/utils.hpp"
 #include "../utils/Timer.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
@@ -35,7 +36,10 @@ void Experiment::run(ArgumentParser& args) {
     experFolder = "experiments/"+experName+"/";
     experFile = experFolder+experName+".exp";
     checkFileExists(experFile);
-    allResultsFile = experFolder+"allresults.txt";
+
+    plainResultsFile = experFolder+"plainResults.txt";
+    humanReadableResultsFile = experFolder+"humanReadableResults.txt";
+    forPlotResultsFile = experFolder+"forPlotResults.csv";
 
     initSubfolders();
     initData();
@@ -186,6 +190,21 @@ double Experiment::getScore(string method, string G1Name, string G2Name,
     return resultMap[key];
 }
 
+double Experiment::getAverageScore(string method, string G1Name,
+    string G2Name, string measure) {
+    double total = 0;
+    uint count = 0;
+    for (uint numSub = 0; numSub < nSubs; numSub++) {
+        double score = getScore(method, G1Name, G2Name, numSub, measure);
+        if (score != -1) {
+            total += score;
+            count++;
+        } 
+    }
+    if (count > 0) return total/count;
+    return -1;
+}
+
 double Experiment::computeScore(string method, string G1Name,
         string G2Name, uint numSub, Measure* measure) {
 
@@ -235,13 +254,14 @@ void Experiment::collectResults() {
 
 //to be called after collectResults
 void Experiment::saveResults() {
-    //savePlainResults();
-    //saveHumanReadableResults();
-    //saveResultsForPlots();
+    savePlainResults();
+    saveHumanReadableResults();
+    saveResultsForPlots();
+}
 
+void Experiment::savePlainResults() {
     ofstream fout;
-    fout.open(allResultsFile.c_str());
-
+    fout.open(plainResultsFile.c_str());
     for (string measure : measures) {
         for (auto pair : networkPairs) {
             string G1Name = pair[0];
@@ -256,6 +276,124 @@ void Experiment::saveResults() {
             }
         }
     }
+}
+
+string doubleToPrettyString(double x) {
+    stringstream ss;
+    ss.setf(ios::fixed);
+    ss.precision(6);
+    ss << x;
+    string s;
+    ss >> s;
+    if (s.substr(s.size()-7) == ".000000") {
+        s = s.substr(0, s.size()-7);
+    }
+    return s;
+}
+
+void addAverageToLastRow(vector<vector<string> >& table) {
+    table.push_back(vector<string> (table[0].size()));
+    uint n = table.size();
+    table[n-1][0] = "AVG";
+    table[n-1][1] = "";
+    for (uint j = 2; j < table[0].size(); j++) {
+        double sum = 0;
+        uint count = 0;
+        for (uint i = 1; i < n-1; i++) {
+            double value = stod(table[i][j]);
+            if (value != -1) {
+                sum += value;
+                count++;
+            }
+        }
+        if (count==0) {
+            table[n-1][j] = "-1";
+        } else {
+            table[n-1][j] = to_string(sum/count);
+        }
+    }
+}
+
+struct RankComp {
+    vector<double> const *scores;
+    RankComp(vector<double> const *scores) {
+        this->scores = scores;
+    }
+    bool operator() (uint i, uint j) {
+        double score1 = (*scores)[i];
+        double score2 = (*scores)[j];
+        if (score1 == -1) return false;
+        if (score2 == -1) return true;
+        return score1 > score2;
+    }
+};
+
+void scoresToRankings(vector<string>& row) {
+    uint n = row.size()-2;
+    vector<double> scores(n);
+    for (uint i = 0; i < n; i++) scores[i] = stod(row[i+2]);
+    vector<uint> indices(n);
+    for (uint i = 0; i < n; i++) indices[i] = i;
+    sort(indices.begin(), indices.end(), RankComp(&scores));
+    int nextRank = 1;
+    for (uint i = 0; i < n; i++) {
+        if (i > 0 and
+            scores[indices[i]] != scores[indices[i-1]]) {
+            nextRank = i+1;
+        }
+        row[indices[i]+2] = intToString(nextRank);
+    }
+}
+
+void Experiment::saveHumanReadableResults() {
+    ofstream fout(humanReadableResultsFile.c_str());
+
+    vector<vector<vector<string> > > tables;
+    for (uint i = 0; i < measures.size(); i++) {
+        vector<vector<string> > table(networkPairs.size()+1,
+            vector<string> (methods.size()+2));
+
+        fout << "Measure: " << measures[i] << endl;
+        table[0][0] = "G1";
+        table[0][1] = "G2";
+        for (uint j = 0; j < methods.size(); j++) {
+            table[0][j+2] = methods[j];
+        }
+        for (uint j = 0; j < networkPairs.size(); j++) {
+            string G1Name = networkPairs[j][0];
+            string G2Name = networkPairs[j][1];
+            table[j+1][0] = G1Name;
+            table[j+1][1] = G2Name;
+            for (uint k = 0; k < methods.size(); k++) {
+                double score =
+                    getAverageScore(methods[k], G1Name, G2Name, measures[i]);
+                table[j+1][k+2] = doubleToPrettyString(score);
+            }
+        }
+        tables.push_back(table);
+        addAverageToLastRow(table);
+        printTable(table, 1, fout);
+        fout << endl << endl;
+    }
+
+    fout << endl << "=== rankings ===" << endl;
+    
+    for (uint i = 0; i < measures.size(); i++) {
+        vector<vector<string> > &table = tables[i];
+        fout << "Measure: " << measures[i] << endl;
+        for (uint j = 1; j < table.size(); j++) {
+            scoresToRankings(table[j]);
+        }
+        addAverageToLastRow(table);
+        printTable(table, 1, fout);
+        fout << endl << endl;
+    }
+
+    fout.close();
+}
+
+void Experiment::saveResultsForPlots() {
+
 }
 
 string Experiment::getName() {
