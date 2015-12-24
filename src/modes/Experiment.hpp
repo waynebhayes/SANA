@@ -23,7 +23,6 @@ public:
     static Measure* loadMeasure(Graph* G1, Graph* G2, string name);
 
 private:
-    const int PRECISION_DECIMALS = 6;
     static const string methodArgsFile;
     static const string datasetsFile;
     string experName;
@@ -55,17 +54,26 @@ private:
     void printSubmissions();
 
     map<string,double> resultMap;
-    string allResultsFile;
+    string plainResultsFile;
+    string humanReadableResultsFile;
+    string forPlotResultsFile;
+
 
     void loadGraphs(map<string,Graph>& graphs);
     void collectResults();
     void saveResults();
+    void savePlainResults();
+    void saveHumanReadableResults();
+    void saveResultsForPlots();
+
     bool allRunsFinished();
 
     string getResultId(string method, string G1Name,
         string G2Name, uint numSub, string measure);
     double getScore(string method, string G1Name,
         string G2Name, uint numSub, string measure);
+    double getAverageScore(string method, string G1Name,
+        string G2Name, string measure);
     double computeScore(string method, string G1Name,
         string G2Name, uint numSub, Measure* measure);
 
