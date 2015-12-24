@@ -1,11 +1,9 @@
 60
 3 first
 -tinitial auto -tdecay auto -wecnodesim graphletlgraal
-lgraal hubalign sanalg sanaec
+lgraal hubalign sanalg sanaec random
 syeast
-nc s3 lccs ec wec
-
-#synthetic yeast dataset with beta 0
+nc s3 lccs ec wec importance
 
 #line 1: execution time per run
 #line 2: number of submissions per method/network pair combination and
