@@ -18,3 +18,7 @@ double NodeCorrectness::eval(const Alignment& A) {
     }
     return (double) count / A.size();
 }
+
+bool NodeCorrectness::fulfillsPrereqs(Graph* G1, Graph* G2) {
+    return G1->sameNodeNames(*G2);
+}

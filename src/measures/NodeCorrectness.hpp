@@ -9,6 +9,8 @@ public:
     virtual ~NodeCorrectness();
     double eval(const Alignment& A);
 
+    static bool fulfillsPrereqs(Graph* G1, Graph* G2);
+    
 private:
     Alignment trueA;
 
