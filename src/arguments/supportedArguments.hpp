@@ -54,6 +54,8 @@ vector<string> boolArgs = {
 "-dbg", //each mode might have a different use for the dbg flag
         //e.g., in experiments if -dbg is found, the runs are
         //not actually sent to the cluster, only printed
+"-collect", //for experiment mode, aggregate all the results
+            //(use when all runs have finished)
 };
 
 vector<string> vectorArgs = {
