@@ -10,6 +10,8 @@ const string HubAlignWrapper::hubalignProgram = "./HubAlign/HubAlign";
 HubAlignWrapper::HubAlignWrapper(Graph* G1, Graph* G2, double alpha): Method(G1, G2, "HubAlign"),
     alpha(alpha), g1Name(G1->getName()), g2Name(G2->getName()) {
 
+    createFolder("sequence");
+    createFolder("sequence/bitscores");
     similarityFile = "sequence/bitscores/" + g1Name + "_" + g2Name + ".bitscores";
 
     //rand int used to avoid collision between parallel runs
@@ -49,7 +51,12 @@ void HubAlignWrapper::generateEdgeListFile(int graphNum) {
 void HubAlignWrapper::generateAlignment() {
     //in hubalign alpha is the fraction of topology
     double reversedAlpha = 1 - alpha;
-    
+
+    //hubalign has a bug where it doesn't work if it
+    //tries to optimize only sequence, hence this
+    //ad hoc fix
+    if (reversedAlpha == 0) reversedAlpha = 0.01;
+
     exec("chmod +x "+hubalignProgram);
     string cmd = hubalignProgram + " " + g1EdgeListFile + " " + g2EdgeListFile;
     cmd += " -l 0.1 -a " + to_string(reversedAlpha);
@@ -70,6 +77,7 @@ void HubAlignWrapper::deleteAuxFiles() {
 Alignment HubAlignWrapper::run() {
     if (alpha > 0 and not fileExists(similarityFile)) {
         Sequence sequence(G1, G2);
+
         sequence.generateBitscoresFile(similarityFile);
     }
     generateEdgeListFile(1);
