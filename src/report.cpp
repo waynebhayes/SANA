@@ -78,10 +78,12 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
     reportFile += ".txt";
   }else{
     string location = reportFile.substr(0, reportFile.find_last_of("/"));
-    uint lastPos = 0;
-    while(not folderExists(location)){//Making each of the folders, one by one.
-      createFolder(location.substr(0, location.find("/", lastPos)));
-      lastPos = location.find("/", location.find("/", lastPos)+1);
+    if (location != reportFile) {
+      uint lastPos = 0;
+      while(not folderExists(location)){//Making each of the folders, one by one.
+        createFolder(location.substr(0, location.find("/", lastPos)));
+        lastPos = location.find("/", location.find("/", lastPos)+1);
+      }
     }
   }
 
