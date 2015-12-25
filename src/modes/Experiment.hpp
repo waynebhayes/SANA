@@ -43,6 +43,9 @@ private:
     vector<vector<string>> networkPairs;
     vector<string> measures;
 
+    vector<string> plotMethods;
+    vector<string> plotMeasures;
+
     void initSubfolders();
     void initData();
 

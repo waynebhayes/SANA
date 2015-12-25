@@ -10,6 +10,7 @@ WeightedEdgeConservation::WeightedEdgeConservation(Graph* G1, Graph* G2, LocalMe
 }
 
 WeightedEdgeConservation::~WeightedEdgeConservation() {
+    //delete nodeSim; not sure if necessary
 }
 
 LocalMeasure* WeightedEdgeConservation::getNodeSimMeasure() {
