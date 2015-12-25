@@ -95,6 +95,9 @@ double totalGenericWeight(ArgumentParser& args) {
 }
 
 double getWeight(string measureName, Graph& G1, Graph& G2, ArgumentParser& args) {
+    string method = args.strings["-method"];
+    if (method == "random") return 0;
+
     string objFunType = args.strings["-objfuntype"];
     if (objFunType == "generic") {
         double weight = args.doubles["-"+measureName];
@@ -103,7 +106,6 @@ double getWeight(string measureName, Graph& G1, Graph& G2, ArgumentParser& args)
         double alpha = getAlpha(G1, G2, args);
         
         string topMeasure;
-        string method = args.strings["-method"];
         if (method == "sana" or method == "tabu") {
             topMeasure = args.strings["-topmeasure"];
         } else if (method == "lgraal") topMeasure = "wec";

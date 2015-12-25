@@ -29,7 +29,6 @@ const string Experiment::methodArgsFile = "experiments/methods.cnf";
 const string Experiment::datasetsFile = "experiments/datasets.cnf";
 
 void Experiment::run(ArgumentParser& args) {
-    cerr<<methodArgsFile<<endl;
     checkFileExists(methodArgsFile);
     checkFileExists(datasetsFile);
     experName = args.strings["-experiment"];
@@ -83,9 +82,21 @@ void Experiment::initData() {
     subPolicy = data[1][1];
     experArgs = data[2];
     methods = data[3];
+    plotMethods = vector<string> (0);
+    for (string& method : methods) {
+        uint n = method.size();
+        if (method[n-1] == '*') method = method.substr(0, n-1);
+        else plotMethods.push_back(method);
+    }
     dataset = data[4][0];
     networkPairs = getNetworkPairs(dataset);
     measures = data[5];
+    plotMeasures = vector<string> (0);
+    for (string& measure : measures) {
+        uint n = measure.size();
+        if (measure[n-1] == '*') measure = measure.substr(0, n-1);
+        else plotMeasures.push_back(measure);
+    }
 }
 
 void Experiment::makeSubmissions() {
@@ -156,6 +167,7 @@ string Experiment::subCommand(string method, string G1Name, string G2Name, uint 
     command += " -qsuboutfile " + outsFolder+subId+".out";
     command += " -qsuberrfile " + errsFolder+subId+".err";
     command += " -qsubscriptfile " + scriptsFolder+subId+".sh";
+
     return command;
 }
 
@@ -393,7 +405,55 @@ void Experiment::saveHumanReadableResults() {
 }
 
 void Experiment::saveResultsForPlots() {
+    ofstream fout(forPlotResultsFile.c_str());
 
+    //headers
+    bool firstCol = true;
+    for (string method : plotMethods) {
+        for (string measure : plotMeasures) {
+            if (firstCol) firstCol = false;
+            else fout << ",";
+            fout << method+measure;
+        }
+    }
+    fout << endl;
+
+    //data, one row per network pair
+    for (auto pair : networkPairs) {
+        string G1Name = pair[0];
+        string G2Name = pair[1];
+        firstCol = true;
+        for (string method : plotMethods) {
+            for (string measure : plotMeasures) {
+                double score = getAverageScore(method, G1Name, G2Name, measure);
+                if (score < 0 or score > 1) {
+                    throw runtime_error("invalid score: "+to_string(score));
+                }
+                if (firstCol) firstCol = false;
+                else fout << ",";
+                fout << to_string(score);
+            }
+        }
+        fout << endl;
+    }
+
+    //averages
+    firstCol = true;
+    for (string method : plotMethods) {
+        for (string measure : plotMeasures) {
+            double scoreSum = 0;
+            for (auto pair : networkPairs) {
+                string G1Name = pair[0];
+                string G2Name = pair[1];
+                double score = getAverageScore(method, G1Name, G2Name, measure);
+                scoreSum += score;
+            }
+            if (firstCol) firstCol = false;
+            else fout << ",";
+            fout << scoreSum/networkPairs.size();
+        }
+    }
+    fout << endl;
 }
 
 string Experiment::getName() {
@@ -460,10 +520,14 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
     if (name == "graphletlgraal") {
         return new GraphletLGraal(G1, G2);
     }
-    if (name == "wec") {
-        cerr << "Warning: the local measure of 'wec' might be ";
-        cerr << "different than the one used in the experiment" << endl;
+    if (name == "wecgraphletlgraal") {
         LocalMeasure* wecNodeSim = new GraphletLGraal(G1, G2);
+        return new WeightedEdgeConservation(G1, G2, wecNodeSim);
+    }
+    if (name == "wecnoded") {
+        cerr << "Warning: the weights of 'noded' might be ";
+        cerr << "different than the ones used in the experiment" << endl;
+        LocalMeasure* wecNodeSim = new NodeDensity(G1, G2, {0.1, 0.25, 0.5, 0.15});
         return new WeightedEdgeConservation(G1, G2, wecNodeSim);
     }
     if (name == "go1") {
