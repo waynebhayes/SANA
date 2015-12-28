@@ -1,9 +1,9 @@
 60
 2
 -tinitial auto -tdecay auto -wecnodesim graphletlgraal -objfuntype beta -beta 0
-lgraal hubalign sanalg sanaec sanas3 random
+lgraal hubalign sanalg sanaec sanas3 random*
 biogrid
-s3 lccs ec wecgraphletlgraal wecnoded graphletlgraal noded importance sequence gocov go1 go2 go3 go4 go5 go6 go7 go8 go9
+s3 lccs ec wecgraphletlgraal wecnoded* graphletlgraal* noded* importance* sequence* gocov* go1* go2* go3* go4* go5* go6* go7* go8* go9*
 
 # line 1: execution time per run
 # line 2: number of submissions per method/network pair combination

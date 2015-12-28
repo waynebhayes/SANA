@@ -58,6 +58,10 @@ double betaDerivedAlpha(string methodName, string G1Name, string G2Name, double 
 
     double topFactor = beta*topScore;
     double seqFactor = (1-beta)*seqScore;
+    cerr << "method: " << methodName << endl;
+    cerr << "G: " << G1Name << " " << G2Name << endl;
+    cerr << "beta: " << beta << endl;
+    cerr << "alpha: " << topFactor/(topFactor+seqFactor) << endl;
     return topFactor/(topFactor+seqFactor);
 }
 
@@ -177,7 +181,8 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 
     if (GoSimilarity::fulfillsPrereqs(&G1, &G2)) {
         if (shouldInit("go", G1, G2, args)) {
-            m = new GoSimilarity(&G1, &G2, args.vectors["-goweights"]);
+            m = new GoSimilarity(&G1, &G2,
+                args.vectors["-goweights"], args.doubles["-gofrac"]);
             double goWeight = getWeight("go", G1, G2, args);
             M.addMeasure(m, goWeight);
         }

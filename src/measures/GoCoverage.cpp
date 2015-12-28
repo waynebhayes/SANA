@@ -50,8 +50,8 @@ double GoCoverage::scoreUpperBound() {
 double GoCoverage::eval(const Alignment& A) {
     uint n1 = G1->getNumNodes();
 
-    vector<vector<uint> > goTermsG1 = GoSimilarity::loadGOTerms(*G1);
-    vector<vector<uint> > goTermsG2 = GoSimilarity::loadGOTerms(*G2);
+    vector<vector<uint> > goTermsG1 = GoSimilarity::loadGOTerms(*G1, 1);
+    vector<vector<uint> > goTermsG2 = GoSimilarity::loadGOTerms(*G2, 1);
     unordered_map<uint,uint> goCountG1 = GoSimilarity::getGoCounts(*G1);
     unordered_map<uint,uint> goCountG2 = GoSimilarity::getGoCounts(*G2);
 

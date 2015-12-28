@@ -22,6 +22,14 @@ public:
     //used by other modes
     static Measure* loadMeasure(Graph* G1, Graph* G2, string name);
 
+
+    void loadResultMap(string experName);
+
+
+    void updateSeqEntriesTopSeqScoreTable();
+    void updateTopEntriesTopSeqScoreTable();
+    void updateTopSeqScoreTable();
+    
 private:
     static const string methodArgsFile;
     static const string datasetsFile;
@@ -36,7 +44,6 @@ private:
 
     double t;
     uint nSubs;
-    string subPolicy;
     vector<string> experArgs;
     vector<string> methods;
     string dataset;
@@ -80,7 +87,15 @@ private:
     double computeScore(string method, string G1Name,
         string G2Name, uint numSub, Measure* measure);
 
-};
 
+
+    void initResults();
+    void updateTopSeqScoreTableEntry(string method,
+        string G1Name, string G2Name, double topScore,
+        double seqScore, string updateType);
+
+
+    void saveGoTermAveragesCSV();
+};
 
 #endif
