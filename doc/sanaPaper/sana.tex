@@ -2,25 +2,12 @@
 
 % todo
 
-% adapt conclusions about graphlet-based WEC being better than S3 and EC
-%section comparison with additional methods
-% compile from ubuntu
-
 % todo -- MAyBE
-% add comment about previous paper using simulated annealing in a related area (but very differently)
 % supplementary material (the Yeast Human dataset is introduced but barely mentioned) ?
 % shorten paper down to 7 pages (do references count?)
 % tables for complementary material with the values of k, lambda, and alpha used?
+%section comparison with additional methods
 
-% todo -- DONE
-% add comment about similarity between ec and s3 when |V1|=|V2|
-% comment about node ordering afecting results of hubalign and l-graal
-% comment about how plots show averages of 2-3 runs
-% comment about lgraal's execution time begin less than 1h
-% remove paragraph about restart scheme
-% mention that we use a method to find good  parameters for the tempertaure schedule automatically
-% comment aboult hubalign failing to optimize only seq
-% add ec plot line to biogridBeta05_ec
 
 
 %Things that can be removed from the paper
@@ -36,8 +23,12 @@
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
 \usepackage{float}
+
+% the following 2 is only necessary for windows
 \usepackage{epstopdf}
 \epstopdfsetup{update}
+
+
 %\usepackage{natbib}
 \newfloat{algorithm}{t}{lop}
 \makeatletter
@@ -453,7 +444,7 @@ We are very grateful to Tijana Milenkovi\'{c} and Vikram Saraph for directions o
 \paragraph{Funding} The research has been supported by the Balsells fellowship.
 
 \bibliographystyle{natbib}
-\bibliography{../Bibliography}
+\bibliography{Bibliography}
 
 \appendix
 
