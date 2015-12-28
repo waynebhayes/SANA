@@ -55,7 +55,7 @@ void HubAlignWrapper::generateAlignment() {
     //hubalign has a bug where it doesn't work if it
     //tries to optimize only sequence, hence this
     //ad hoc fix
-    if (reversedAlpha == 0) reversedAlpha = 0.01;
+    if (reversedAlpha == 0) reversedAlpha = 0.0001;
 
     exec("chmod +x "+hubalignProgram);
     string cmd = hubalignProgram + " " + g1EdgeListFile + " " + g2EdgeListFile;

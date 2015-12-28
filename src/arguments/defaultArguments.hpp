@@ -4,6 +4,7 @@ vector<string> defaultArguments = {
 "-nodedweights 4 0.1 0.25 0.5 0.15",
 "-edgedweights 4 0.1 0.25 0.5 0.15",
 "-goweights 1 1",
+"-gofrac 1",
 "-wecnodesim graphletlgraal",
 "-wavenodesim noded",
 "-tinitial 1",

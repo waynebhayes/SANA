@@ -299,7 +299,7 @@ void printLocalTopologicalSimilarities(Graph& G1, Graph& G2, bool BioGRIDNetwork
         complementProteins, nonComplementProteins, randomProteins);
 
     table[0][7] = "go counts";
-    GoSimilarity goSim(&G1, &G2, {1});
+    GoSimilarity goSim(&G1, &G2, {1}, 1);
     vector<vector<float> >* goSimMatrix = goSim.getSimMatrix();
     fillTableColumn(table, 7, goSimMatrix,
         complementProteins, nonComplementProteins, randomProteins);

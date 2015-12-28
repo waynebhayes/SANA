@@ -1,5 +1,7 @@
 #include "DebugMode.hpp"
 
+#include <algorithm>
+
 #include "../utils/utils.hpp"
 
 #include "../arguments/ArgumentParser.hpp"
@@ -8,6 +10,7 @@
 #include "../arguments/graphLoader.hpp"
 
 #include "../measures/MeasureCombination.hpp"
+#include "../measures/localMeasures/GoSimilarity.hpp"
 #include "../methods/Method.hpp"
 #include "../methods/SANA.hpp"
 #include "../Graph.hpp"
@@ -17,10 +20,14 @@
 
 void DebugMode::run(ArgumentParser& args) {
 
-
-  NormalMode::createFolders();
   Graph G1, G2;
   initGraphs(G1, G2, args);
+
+  GoSimilarity::leastFrequentGoTerms(G1, 0.5);
+  GoSimilarity::leastFrequentGoTerms(G2, 0.5);
+
+  exit(0);
+
   G1.saveInShuffledOrder("testfile.x");
   exit(0);
 

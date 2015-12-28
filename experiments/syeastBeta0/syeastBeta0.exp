@@ -3,7 +3,7 @@
 -tinitial auto -tdecay auto -wecnodesim graphletlgraal
 lgraal hubalign sanalg sanaec* random*
 syeast
-nc s3* lccs ec wecgraphletlgraal* wecnoded* graphletlgraal* noded* importance*
+nc s3 lccs ec wecgraphletlgraal* wecnoded* graphletlgraal* noded* importance*
 
 # line 1: execution time per run
 # line 2: number of submissions per method/network pair combination

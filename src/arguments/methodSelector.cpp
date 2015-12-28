@@ -46,7 +46,7 @@ Method* initHubAlign(Graph& G1, Graph& G2, ArgumentParser& args) {
         alpha = args.doubles["-alpha"];
     } else if (objFunType == "beta") {
         double beta = args.doubles["-beta"];
-        alpha = betaDerivedAlpha("lgraal", G1.getName(), G2.getName(), beta);
+        alpha = betaDerivedAlpha("hubalign", G1.getName(), G2.getName(), beta);
     } else {
         throw runtime_error("unknown value of -objfuntype: "+objFunType);
     }

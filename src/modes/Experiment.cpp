@@ -29,6 +29,11 @@ const string Experiment::methodArgsFile = "experiments/methods.cnf";
 const string Experiment::datasetsFile = "experiments/datasets.cnf";
 
 void Experiment::run(ArgumentParser& args) {
+    if (args.bools["-dbg"]) {
+        updateTopSeqScoreTable();
+        return;
+    }
+
     checkFileExists(methodArgsFile);
     checkFileExists(datasetsFile);
     experName = args.strings["-experiment"];
@@ -36,12 +41,20 @@ void Experiment::run(ArgumentParser& args) {
     experFile = experFolder+experName+".exp";
     checkFileExists(experFile);
 
-    plainResultsFile = experFolder+"plainResults.txt";
-    humanReadableResultsFile = experFolder+"humanReadableResults.txt";
-    forPlotResultsFile = experFolder+"forPlotResults.csv";
+
+    plainResultsFile = experFolder+experName+"PlainResults.txt";
+    humanReadableResultsFile = experFolder+experName+"HumanReadableResults.txt";
+    forPlotResultsFile = experFolder+experName+"ForPlotResults.csv";
 
     initSubfolders();
     initData();
+
+    if (args.bools["-updatecsv"]) {
+        loadResultMap(args.strings["-experiment"]);
+        saveResultsForPlots();
+        saveGoTermAveragesCSV();
+        return;
+    }
 
     bool collect = args.bools["-collect"] or allRunsFinished();
     if (collect) {
@@ -79,7 +92,6 @@ void Experiment::initData() {
     vector<vector<string>> data = fileToStringsByLines(experFile);
     t = stod(data[0][0]);
     nSubs = stoi(data[1][0]);
-    subPolicy = data[1][1];
     experArgs = data[2];
     methods = data[3];
     plotMethods = vector<string> (0);
@@ -197,7 +209,8 @@ double Experiment::getScore(string method, string G1Name, string G2Name,
 
     string key = getResultId(method, G1Name, G2Name, numSub, measure);
     if (resultMap.count(key) == 0) {
-        throw runtime_error("Score not found");
+        throw runtime_error("Score not found for "+method+" "+
+            G1Name+" "+G2Name+" "+intToString(numSub)+" "+measure);
     }
     return resultMap[key];
 }
@@ -413,7 +426,7 @@ void Experiment::saveResultsForPlots() {
         for (string measure : plotMeasures) {
             if (firstCol) firstCol = false;
             else fout << ",";
-            fout << method+measure;
+            fout << experName+"_"+method+"_"+measure;
         }
     }
     fout << endl;
@@ -530,85 +543,18 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
         LocalMeasure* wecNodeSim = new NodeDensity(G1, G2, {0.1, 0.25, 0.5, 0.15});
         return new WeightedEdgeConservation(G1, G2, wecNodeSim);
     }
-    if (name == "go1") {
+    if (name.size() == 3 and name[0] == 'g' and name[1] == 'o' and
+        name[2] >= '1' and name[2] <= '9') {
         if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            vector<double> weights(1, 1);
-            return new GoSimilarity(G1, G2, weights);
+            cerr << "Warning: the fraction of kept GO terms might be ";
+            cerr << "different than the ones used in the experiment" << endl;
+            uint k = name[2] - '0';        
+            vector<double> weights(k, 0);
+            weights[k-1] = 1;
+            return new GoSimilarity(G1, G2, weights, 0.5);
         } else {
             return new InvalidMeasure();
-        }
-    }
-    if (name == "go2") {
-        if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            vector<double> weights(2, 0);
-            weights[1] = 1;
-            return new GoSimilarity(G1, G2, weights);
-        } else {
-            return new InvalidMeasure();
-        }
-    }
-    if (name == "go3") {
-        if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            vector<double> weights(3, 0);
-            weights[2] = 1;
-            return new GoSimilarity(G1, G2, weights);
-        } else {
-            return new InvalidMeasure();
-        }
-    }
-    if (name == "go4") {
-        if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            vector<double> weights(4, 0);
-            weights[3] = 1;
-            return new GoSimilarity(G1, G2, weights);
-        } else {
-            return new InvalidMeasure();
-        }
-    }
-    if (name == "go5") {
-        if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            vector<double> weights(5, 0);
-            weights[4] = 1;
-            return new GoSimilarity(G1, G2, weights);
-        } else {
-            return new InvalidMeasure();
-        }
-    }
-    if (name == "go6") {
-        if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            vector<double> weights(6, 0);
-            weights[5] = 1;
-            return new GoSimilarity(G1, G2, weights);
-        } else {
-            return new InvalidMeasure();
-        }
-    }
-    if (name == "go7") {
-        if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            vector<double> weights(7, 0);
-            weights[6] = 1;
-            return new GoSimilarity(G1, G2, weights);
-        } else {
-            return new InvalidMeasure();
-        }
-    }
-    if (name == "go8") {
-        if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            vector<double> weights(8, 0);
-            weights[7] = 1;
-            return new GoSimilarity(G1, G2, weights);
-        } else {
-            return new InvalidMeasure();
-        }
-    }
-    if (name == "go9") {
-        if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            vector<double> weights(9, 0);
-            weights[8] = 1;
-            return new GoSimilarity(G1, G2, weights);
-        } else {
-            return new InvalidMeasure();
-        }
+        }            
     }
     if (name == "gocov") {
         if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
@@ -639,4 +585,180 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
         }
     }
     throw runtime_error("Unknown measure: "+name);
+}
+
+
+
+
+/////////////////////
+
+
+void Experiment::saveGoTermAveragesCSV() {
+    vector<string> goMeasures = {"go1","go2","go3","go4","go5","go6","go7","go8","go9"};
+
+    map<string, double> averages;
+
+    for (string method : plotMethods) {
+        for (string measure : goMeasures) {
+            double avg = 0;
+            for (auto pair : networkPairs) {
+                avg += getAverageScore(method, pair[0], pair[1], measure);
+            }
+            avg /= networkPairs.size();
+            averages[method+"_"+measure] = avg;
+        }
+    }
+
+    string goMeasuresFile = experFolder+experName+"GoTerms.csv";
+    ofstream fout(goMeasuresFile);
+
+    //headers
+    bool firstCol = true;
+    for (string method : plotMethods) {
+        if (firstCol) firstCol = false;
+        else fout << ",";
+        fout << experName+"GoTerms_"+method;
+    }
+    fout << endl;
+    //data
+    for (string measure : goMeasures) {
+        firstCol = true;
+        for (string method : plotMethods) {
+            if (firstCol) firstCol = false;
+            else fout << ",";
+            fout << averages[method+"_"+measure];
+        }
+        fout << endl;
+    }
+    //averages
+    firstCol = true;
+    for (string method : plotMethods) {
+        double avg = 0;
+        for (string measure : goMeasures) {
+            avg += averages[method+"_"+measure];
+        }
+        avg /= goMeasures.size();
+        if (firstCol) firstCol=false;
+        else fout << ",";
+        fout << avg;
+    }
+    fout << endl;
+}
+
+
+/////////////////
+
+
+
+void Experiment::initResults() {
+    resultMap.clear(); //init the map empty
+    vector<vector<string>> data = fileToStringsByLines(plainResultsFile);
+    for (vector<string> line : data) {
+        string method = line[3];
+        string G1Name = line[1];
+        string G2Name = line[2];
+        string measure = line[0];
+        uint numSub = stoi(line[4]);
+        string resultKey = getResultId(method, G1Name, G2Name, numSub, measure);
+        double score = stod(line[5]);
+        resultMap[resultKey] = score;
+    }
+}
+
+void Experiment::updateTopSeqScoreTableEntry(string method,
+    string G1Name, string G2Name, double topScore,
+    double seqScore, string updateType) {
+
+    string topSeqScoreTableFile = "topologySequenceScoreTable.cnf";
+
+    vector<vector<string>> table = fileToStringsByLines(topSeqScoreTableFile);
+    bool found = false;
+    for (vector<string>& line : table) {
+        if (line[0] == method and line[1] == G1Name and line[2] == G2Name) {
+            found = true;
+            if (updateType == "top") {
+                line[3] = to_string(topScore);
+            }
+            else if (updateType == "seq") line[4] = to_string(seqScore);
+            else throw runtime_error("invalid update type: "+updateType);
+        }
+    }
+    if (not found) {
+        vector<string> newLine(5);
+        newLine[0] = method;
+        newLine[1] = G1Name;
+        newLine[2] = G2Name;
+        if (updateType == "top") {
+            newLine[3] = to_string(topScore);
+            newLine[4] = "NA";
+        } else if (updateType == "seq") {
+            newLine[3] = "NA";
+            newLine[4] = to_string(seqScore);
+        } else throw runtime_error("invalid update type: "+updateType);
+        table.push_back(newLine);
+    }
+    ofstream fout(topSeqScoreTableFile.c_str());
+    for (vector<string> line : table) {
+        fout<<line[0]<<" "<<line[1]<<" "<<line[2]<<" "<<line[3]<<" "<<line[4]<<endl;
+    }
+}
+
+void Experiment::updateSeqEntriesTopSeqScoreTable() {
+    for (string method : methods) {
+        string renamedMethod = method;
+        if (method == "sanalg") renamedMethod = "sanawec";
+        for (auto pair : networkPairs) {
+            string G1Name = pair[0];
+            string G2Name = pair[1];
+            double seqScore = getAverageScore(method, G1Name, G2Name, "sequence");
+            updateTopSeqScoreTableEntry(renamedMethod, G1Name, G2Name,
+                -1, seqScore, "seq");
+        }
+    }
+}
+
+void Experiment::updateTopEntriesTopSeqScoreTable() {
+    for (string method : methods) {
+        string renamedMethod = method;
+        if (method == "sanalg") renamedMethod = "sanawec";
+        for (auto pair : networkPairs) {
+            string G1Name = pair[0];
+            string G2Name = pair[1];
+            string topMeasure;
+            if (method == "sanaec") topMeasure = "ec";
+            else if (method == "sanalg") topMeasure = "wecgraphletlgraal";
+            else if (method == "sanas3") topMeasure = "s3";
+            else if (method == "hubalign") topMeasure = "importance";
+            else if (method == "lgraal") topMeasure = "wecgraphletlgraal";
+            else if (method == "random") topMeasure = "ec";
+            else throw runtime_error("unexpected method: "+method); 
+            double topScore = getAverageScore(method, G1Name, G2Name, topMeasure);
+            updateTopSeqScoreTableEntry(renamedMethod, G1Name, G2Name,
+                topScore, -1, "top");
+        }
+    }
+}
+
+
+//the file with the plain results must exist and be complete
+void Experiment::loadResultMap(string experName) {
+    experFolder = "experiments/"+experName+"/";
+    experFile = experFolder+experName+".exp";
+    initData();
+    plainResultsFile = experFolder+experName+"PlainResults.txt";
+    initResults();
+}
+
+void Experiment::updateTopSeqScoreTable() {
+    cerr << 0;
+    Experiment exper;
+    cerr << 1;
+    exper.loadResultMap("biogridBeta0");
+    cerr << 2;
+    exper.updateTopEntriesTopSeqScoreTable();
+    cerr << 3;
+    exper.loadResultMap("biogridBeta1");
+    cerr << 4;
+    exper.updateSeqEntriesTopSeqScoreTable();
+    cerr << 5;
 }

@@ -41,6 +41,8 @@ vector<string> doubleArgs = {
 "-rewire", 
 "-tnew", "-iterperstep", "-numcand", "-tcand", "-tfin",
 "-seed",
+"-gofrac", //for GO similarity, fraction of GO term ocurrences
+           //corresponding to the least frequent terms to be kept
 "-qcount",
 "-ntabus", "-nneighbors",
 "-lgraaliter",
@@ -56,6 +58,10 @@ vector<string> boolArgs = {
         //not actually sent to the cluster, only printed
 "-collect", //for experiment mode, aggregate all the results
             //(use when all runs have finished)
+"-updatecsv" //for expermient mode, if the data has already
+             //been collected, instead of re-evaluating all the
+             //alignments it loads up the data and updates the
+             //csv output file
 };
 
 vector<string> vectorArgs = {
