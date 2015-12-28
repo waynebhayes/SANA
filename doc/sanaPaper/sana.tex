@@ -1,8 +1,27 @@
 \documentclass{bioinfo}
 
-%todo
+% todo
+
+% adapt conclusions about graphlet-based WEC being better than S3 and EC
+% section comparison with additional methods
+% compile from ubuntu
+
+% todo -- MAyBE
+% add comment about previous paper using simulated annealing in a related area (but very differently)
 % supplementary material (the Yeast Human dataset is introduced but barely mentioned) ?
 % shorten paper down to 7 pages (do references count?)
+% tables for complementary material with the values of k, lambda, and alpha used?
+
+% todo -- DONE
+% add comment about similarity between ec and s3 when |V1|=|V2|
+% comment about node ordering afecting results of hubalign and l-graal
+% comment about how plots show averages of 2-3 runs
+% comment about lgraal's execution time begin less than 1h
+% remove paragraph about restart scheme
+% mention that we use a method to find good  parameters for the tempertaure schedule automatically
+% comment aboult hubalign failing to optimize only seq
+% add ec plot line to biogridBeta05_ec
+
 
 %Things that can be removed from the paper
 
@@ -122,7 +141,7 @@ Among all the methods for aligning PPI networks, currently L-GRAAL \citep{LGRAAL
 
 \subsection{Our contributions}
 
-We present SANA (\textit{Simulated Annealing Network Aligner}), a search algorithm based on Simulated Annealing~\citep{SA1,SA2}, a metaheuristic randomized algorithm with a rich history of successful applications to many optimization problems across a wide variety of domains.
+We present SANA (\textit{Simulated Annealing Network Aligner}), a search algorithm based on Simulated Annealing~\citep{SA1,SA2}, a metaheuristic local search algorithm with a rich history of successful applications to many optimization problems across a wide variety of domains.
 %and show that it is effective, efficient, simple, and flexible.
 It shares many characteristics with MAGNA~\citep{MAGNA}, a genetic algorithm. Both can be used to optimize any objective function directly, and both can start with any alignment and then improve it. However, SANA converges to a good solution faster than most existing algorithms.
 It is conceptually simple to implement, although it has a few user-defined parameters that need to be optimized to get the best results. This can be done either manually by trial-and-error, or automatically~\citep{autosa}.
@@ -147,11 +166,12 @@ If we take a random alignment, called the \textit{initial solution}, we can impr
 Let $G_1=(V_1,E_1)$ and $G_2=(V_2,E_2)$ be two graphs (networks) with $|V_1|\leq|V_2|$. A pairwise global alignment $a$ (from this point simply alignment) from $G_1$ to $G_2$ is an injective function from $V_1$ to $V_2$. An objective function $f$ is a function from the set of all alignments to the closed range $[0,1]$.
 
 % algorithm
-The basic scheme of SANA is shown in Algorithm~\ref{alg:SANA}. The input consists of the two networks $G_1,G_2$, an objective function $f$, and a starting alignment (in the absence of one, SANA generates a random alignment), and a maximum execution time $t_{max}$. Since SANA is a generic search algorithm, $f$ can be any objective function. The output is an alignment $a$ that aims to optimize $f$---in our case, we {\it maximize} various topological and biological similarity measures rather than minimizing energy.
+The basic scheme of SANA is shown in Algorithm~\ref{alg:SANA}. The input consists of the two networks $G_1,G_2$, an objective function $f$, a starting alignment (in the absence of one, SANA generates a random alignment), and a maximum execution time $t_{max}$. Since SANA is a generic search algorithm, $f$ can be any objective function. The output is an alignment $a$ that aims to optimize $f$---in our case, we {\it maximize} various topological and biological similarity measures rather than minimizing energy.
 
 An important element of simulated annealing is the \textit{temperature schedule}, which determines the decline of the probability to accept a worse solution as the algorithm advances. The \textit{temperature} $T(i)$ is a control parameter which depends on the current iteration $i$. It is commonly defined as $T(i)=k\cdot e^{-\lambda\cdot i}$, where $k$ and $\lambda$ are empirically determined constants greater than zero~\citep{SA1}. The temperature is at its highest point at iteration 0 where $T(0)=k$, and approaches 0 asymptotically. The constant $\lambda$ determines how fast the temperature approaches 0.
 
-We define two types of neighbors among alignments: \textit{change} and \textit{swap} neighbors (see Figure~\ref{fig:operators}). Change neighbors differ only in one mapping, which has the same origin in $G_1$ but different destinations in $G_2$. Swap neighbors differ in exactly two mappings, which have the same sources but their images are exchanged. Together, the two types of neighbors allow SANA to explore the solution space completely: through a sequence of neighbors, it is possible to go from any alignment to any other alignment. In SANA when a random neighbor is generated (line 3 of Algorithm~\ref{alg:SANA}) the probability of choosing each type of neighbor is proportional to its \textit{branching factor}, i.e., the number of different neighbors of $a$ of that type. This way, all neighbors are equally likely.
+We define two types of neighbors among alignments: \textit{change} and \textit{swap} neighbors (see Figure~\ref{fig:operators}). Change neighbors differ only in one mapping, which has the same origin in $G_1$ but different destinations in $G_2$. Swap neighbors differ in exactly two mappings, which have the same sources but their images are exchanged. Together, the two types of neighbors allow SANA to explore the solution space completely: through a sequence of neighbors, it is possible to go from any alignment to any other alignment. In SANA when a random neighbor is generated (line 3 of Algorithm~\ref{alg:SANA}) the probability of choosing each type of neighbor is proportional to its \textit{branching factor}, i.e., the number of different neighbors of $a$ of that type. This way, all neighbors are equally likely. The idea of using swaps to improve the alignment is not new; it has been used before with other local search algorithms~\citep{PISwap,MAGNA}.
+
 
 In the algorithm, $\Delta E$ denotes the energy increment between the new and the current solution. The probability to accept a worse solution is $P(\Delta E, T(i)) = e^{\Delta E/T(i)}$. This probability decreases when the difference between $f(a)$ and $f(a')$ increases, and it also decreases as the temperature decreases.
 %We implement the fact that the neighbor is accepted with probability $P(\Delta E, T(i))$ by comparing this value with a uniformly distributed pseudorandom number in the range $(0,1)$ (represented by $\mbox{random}(0,1)$ in Algorithm~\ref{alg:SANA}) and only accepting the new solution if $P(\Delta E, T(i))$ is higher.
@@ -194,10 +214,9 @@ As shown in Figure~\ref{fig:parameters}, with appropriate values of $k$ and $\la
 \label{fig:parameters}
 \end{figure}
 
-Despite the capacity of simulated annealing to escape local maximums, the final result is still greatly conditioned by the initial stages of the process. Some initial starting points may be too far from any good solution, in the sense that it would take far too many individual changes or swaps (see Figure~\ref{fig:operators}) to get from the initial point to a good solution.
-Thus, in the absense of a starting alignment, SANA works in threes stages: (i) generate a large number of random starting alignments and run all of them for a short time; (ii) keep the best $K$, and run these a bit further; and (iii) choose the best of the $K$ to run to completion.  For now we tune these three stages by hand.
+%Despite the capacity of simulated annealing to escape local maximums, the final result is still greatly conditioned by the initial stages of the process. Some initial starting points may be too far from any good solution, in the sense that it would take far too many individual changes or swaps (see Figure~\ref{fig:operators}) to get from the initial point to a good solution.
+%Thus, in the absense of a starting alignment, SANA works in threes stages: (i) generate a large number of random starting alignments and run all of them for a short time; (ii) keep the best $K$, and run these a bit further; and (iii) choose the best of the $K$ to run to completion.  For now we tune these three stages by hand.
 
-The idea of using swaps to improve the alignment is not new; it has been used before with other local search algorithms~\citep{MAGNA,PISwap}.
 
 \subsection{Incremental evaluation}\label{implementation}
 
@@ -207,7 +226,7 @@ A SANA iteration consists of updating the temperature, generating a neighbor ali
 
 Evaluating whether an edge is covered requires constant time, so EC can be computed in time $O(|E_1|)$ by checking if each edge in $E_1$ belongs to $E_a$. In order to compute EC incrementally, we need to see how the set of covered edges changes between neighbor solutions. Assume that we know $E_a$ for some alignment $a$ and we need to know $E_{a'}$, where $a'$ is change neighbor of $a$. Let $u_1$ be the node in $G_1$ such that $a(u_1)\not= a'(u_1)$. Note that for any edge not incident to $u_1$, the image of its two endpoints has not changed, and thus whether it is covered by an edge in $G_2$ has not changed either. This means that we only need to check the edges incident to $u_1$. Therefore, the cost of computing $E_{a'}$ incrementally is $O(\mbox{degree}(u_1))$. The amortized cost of finding $E_{a'}$ for change neighbors is $O(|E_1|/|V_1|)$, the average degree of nodes in $G_1$. The case of swap neighbors is analogous, as we only need to consider the edges incident to the two swapped nodes. For sparse networks such as PPI networks, $|E_1|$ is typically within a small constant factor of $|V_1|$ (see table~\ref{networkTable}) so the practical amortized cost is constant.
 
-\emph{\textbf{Symmetric Substructure Score (S3)}} A drawback of edge coverage is that it does not penalize an alignment for mapping sparse regions of $G_1$ to dense regions in $G_2$. S3 corrects for this by penalizing the mapping of interactions in $G_1$ to non-interactions in $G_2$. Let $\Eb_a=\{(u_2,v_2)\in E_2 \mid \exists u_1,v_1 \in V_1 \wedge a(u_1)=u_2 \wedge a(v_1)=v_2\}$ denote the set of edges of the subgraph of $G_2$ induced by the nodes in the alignment $a$. Then, S3 is defined as: $S3(a)=\frac{|E_a|}{|E_1|+|\Eb_a|-|E_a|}$~\citep{MAGNA}.
+\emph{\textbf{Symmetric Substructure Score (S3)}}~\citep{MAGNA} A drawback of edge coverage is that it does not penalize an alignment for mapping sparse regions of $G_1$ to dense regions in $G_2$. S3 corrects for this by penalizing the mapping of interactions in $G_1$ to non-interactions in $G_2$. Let $\Eb_a=\{(u_2,v_2)\in E_2 \mid \exists u_1,v_1 \in V_1 \wedge a(u_1)=u_2 \wedge a(v_1)=v_2\}$ denote the set of edges of the subgraph of $G_2$ induced by the nodes in the alignment $a$. Then, S3 is defined as: $S3(a)=\frac{|E_a|}{|E_1|+|\Eb_a|-|E_a|}$.
 
 We have seen how to compute $E_{a'}$ incrementally. The set $\Eb_{a'}$ can also be computed similarly. Between change neighbors, if for instance $a(u_1)=u_2$ and $a'(u_1)=v_2$, all the edges incident to $u_2$ will not be in $\Eb_{a'}$, and the edges incident to $v_2$ may be in it. Between swap neighbors $a$ and $a''$, we have $\Eb_{a}=\Eb_{a''}$. Hence, the cost of computing $\Eb_{a'}$ incrementally is $O(\mbox{degree}(v)+\mbox{degree}(w))$, and the amortized cost is $O(|E_2|/|V_2|)$.
 
@@ -222,7 +241,7 @@ The WEC measure can be optimized incrementally by adapting the method used for E
 
 \emph{\textbf{Combinations}} Any weighted combination of the aforementioned objective functions can also be computed efficiently by computing each one incrementally and then multiplying their scores by the corresponding factor to obtain the final score.
 
-Incremental evaluation makes SANA scalable to very large PPI networks, as the cost of each step only depends on the average degree of nodes. SANA would not be suitable for objective functions that cannot be evaluated incrementally.
+Incremental evaluation makes SANA scalable to enormous PPI networks, as the cost of each step only depends on the average degree of nodes. SANA would not be suitable for objective functions that cannot be evaluated incrementally.
 
 %MAGNA, a network alignment method based on genetic algorithms, uses S3 as default objective function. In MAGNA, new alignments are generated by ``mixing'' two different alignments, as if the new alignment resulted as a combination of the genes of both parents. The new alignment borrows mappings from both parents, but it may have suffered an arbitrary number of changes from either of them, making it not possible to compute the score incrementally. Hence, MAGNA must pay the full cost of $O(|E_1|+|E_2|)$ each time. Incremental evaluation is what makes SANA more efficient and thus more effective, despite the fact that in each iteration of SANA the alignment can change only slightly.
 
@@ -288,13 +307,13 @@ Assuming there exists a correct alignment between $G_1$ and $G_2$, the {\it Node
 
 The \textit{common subgraph} of an alignment $a$ between $G_1$ and $G_2$ is the subgraph of $G_1$ that remains when considering only edges covered by the alignment: $CS_a=(V_1,E_a)$. A good alignment has a common subgraph with large connected regions. Let $CC_l=(V_l,E_l)$ be the largest connected component of $CS_a$. LCCS measures the size of $CC_l$ as the geometric mean of (i) the fraction of nodes in $CC_l$, $|V_l|/|V_1|$, and (ii) the fraction of edges in $CC_l$, $|E_l|/\min(|E_1|,|\Eb_a|)$~(Kuchaiev et al., 2010; more detail in Saraph and Milenkovi\'{c}, 2013).
 
-To assess {\it biological quality}, we measure common Gene Ontology (GO) terms~\citep{GOterms}. More precisely, we are interested in the fraction of aligned proteins sharing at least $k$ GO terms, for $k=1\ldots 9$. We denote this measure $\mbox{GO}_k$. Although ostensibly more sophisticated measures using GO terms exist, none has yet become dominant and we believe this simple, easy-to-interpret GO-based measure is the one of the best available at the moment.
+To assess {\it biological quality}, we measure common Gene Ontology (GO) terms~\citep{GOterms}. More precisely, we are interested in the fraction of aligned proteins sharing at least $k$ GO terms, for $k=1\ldots 9$. We denote this local measure $\mbox{GO}_k$. Some GO terms are very common, and thus aligning them does not have much significance. To account for this fact, for each network we removed the most common terms until no more than half of the total GO occurrences remained. Although ostensibly more sophisticated measures using GO terms exist, none has yet become dominant and we believe this simple, easy-to-interpret GO-based measure is the one of the best available at the moment.
 
 \subsection{Datasets}\label{datadescription}
 
 We attempt a comprehensive analysis by using three different datasets used by several previous studies.
 
-\emph{\textbf{Noisy yeast}} This dataset consists of six variations of a yeast PPI network~\citep{Collins01032007}. They all have the same set of nodes and vary only in the number of edges. The first network contains 8,323 interactions, and the other five are formed by progressively increasing the number of edges by 5, 10, 15, 20, and 25\% with lower-confidence interactions from the same experiment. We align the first network against each noisy variant. Since the underlying network is the same, we know the true node mapping. This dataset has been used by many previous authors~\citep{MAGNA,GHOST,WAVE,GREAT}.
+\emph{\textbf{Noisy yeast}} This dataset consists of six variations of a yeast PPI network~\citep{Collins01032007}. They all have the same set of nodes and vary only in the number of edges. The first network contains 8,323 interactions, and the other five are formed by progressively increasing the number of edges by 5, 10, 15, 20, and 25\% with lower-confidence interactions from the same experiment. We align the first network against itself and each noisy variant. Since the underlying network is the same, we know the true node mapping. This dataset has been used by many previous authors~\citep{MAGNA,GHOST,WAVE,GREAT}.
 
 \emph{\textbf{BioGRID dataset}} This dataset includes eight networks from the manually curated BioGRID database~\citep{Chatr-aryamontri01012013} (v3.2.101, June 2013). Among the six networks with lowest amount of edges, we align each pair of networks. We also align the two networks with more edges (SC and HS). This dataset was used in~\cite{LGRAAL}.
 
@@ -330,11 +349,9 @@ Human                              & H                   & 9,141                
 
 In order to keep our analysis brief and relevant we compare SANA only against the two currently best-performing methods: L-GRAAL~\citep{LGRAAL} and HubAlign~\citep{HubAlign}. \cite{LGRAAL} performed a thorough analysis demonstrating that for every target measure of interest, either L-GRAAL or HubAlign beat all other methods among GHOST, MI-GRAAL, SPINAL, NETAL, NATALIE, MAGNA, IsoRank, and PISwap (in the BioGRID dataset). Thus, we compare only against HubAlign and L-GRAAL.
 
-In L-GRAAL, we set an execution time limit of one hour and a limit of 1,000 iterations as in~\citep{LGRAAL}. We use default values for the remaining parameters of L-GRAAL and the parameters of HubAlign.
+We set a maximum execution time of one hour for all methods. In L-GRAAL, we set a limit of 1,000 iterations as in~\citep{LGRAAL}. We use default values for the remaining parameters of L-GRAAL and the parameters of HubAlign.
 
-For the biological comparison described below (\S \ref{bio}), we used the following SANA parameters: we set the total duration time to one hour, using 
-%values for beta=0.5 were ($t_1=20m, N=3\cdot 10^7, K=15, t_2=2m, t_3=10m$).
-a temperature schedule of $k=4\cdot 10^{-5}$ and $\lambda=10^{-8}$, which have been found empirically to provide decent results for the datasets we used. However, in general, significant trial and error is required to find a good set of parameters, and the other runs described herein used other values of these parameters. %Note that even better results could be obtained by optimizing the choice of parameters for each pair of networks, although we did not do this.
+For SANA, we need to set the constants $k$ and $\lambda$ of the temperature schedule, the optimal values for which change on a case by case basis depending on variables such as the network sizes or the objective function being evaluated. We use an automatized method to find suitable values automatically in a few minutes. It mimics what humans would do by trial-and-error. As initial temperature $k$, it searches for the lowest temperature such that the behavior at this temperature is still random. For the rate of decay $\lambda$, it searches for the slowest decay such that after $t_{max}$ time the temperature is practically zero. Although the details of this method are out of scope for this paper, we provide the chosen values for each case in the supplementary material.
 
 The objective function of SANA, HubAlign, and L-GRAAL is a combination of sequence similarity and a topological measure. A parameter $\alpha$ controls the weight of sequence similarity as opposed to topological similarity, with $\alpha=1$ using only sequence, and $\alpha=0$ using only topology:
 \begin{equation}
@@ -347,15 +364,19 @@ For the topological measure of SANA, we use one of the following: EC, S3, or the
 
 Our results suggest that L-GRAAL's objective function provides the best all-round measure of topology for alignment purposes. Moreover, using the same objective function as L-GRAAL illustrates how SANA is the key component in finding the best alignments when combined with any objective function. We denote the resulting method SANA-LG, whereas the variants in which the topological component of the objective function are S3 and EC are denoted SANA-S3 and SANA-EC, respectively.
 
+In the plots, we show the average score of three runs (in Figure~\ref{fig:syntheticyeast}) or two runs (in the remaining Figures). Moreover, to ensure fairness (specially when aligning a network to itself in the Noisy Yeast dataset), we randomly shuffle the ordering of the nodes and edges in the input network files before each run. Due to this, even deterministic methods such as HubAlign obtain a different score every time.
+
 \subsection{Topology only comparison}\label{top}
 
 In this section we concentrate on optimizing the topological quality of our alignments without regard to biology (thus $\alpha=0$).
 In Figure~\ref{fig:syntheticyeast} we see the topological scores obtained with the different methods in the Noisy Yeast dataset, where the true node mapping is known. SANA-LG shows more tolerance to noise, as its scores do not decline as quickly as we add noise. This is important because PPI networks tend to have high levels of noise, as the methods used to discover the interactions have an inherent high error rate.
 
+Note that when $G_1$ and $G_2$ have the same number of nodes, optimizing EC and S3 is equivalent. This is because all the nodes in $G_2$ are part of the alignment, and therefore $\Eb_a$, the set of edges in the subgraph of $G_2$ induced by the nodes in the alignment, is simply $E_2$ regardless of the alignment $a$. The only term in the formula of $S3$ that changes as a function of the alignment is $|E_a|$, the number of covered edges, just as in the formula of $EC$. Therefore, for this comparison we omit SANA-S3.
+
 \begin{figure}
 \centering
 \includegraphics[width=0.99\linewidth]{syeastBeta0.eps}
-\caption{Topological measure scores for the Noisy Yeast dataset when using $\alpha=0$. $G_1$ is always Y0 (no noise), and the $x$-axis corresponds to the amount of noise in $G_2$.}
+\caption{Topological measure scores for the Noisy Yeast dataset when using $\alpha=0$. $G_1$ is always Y0 (no noise), and the $x$-axis corresponds to the amount of noise in $\%$ in $G_2$. For SANA-EC we only show the averages for clarity.}
 \label{fig:syntheticyeast}
 \end{figure}
 
@@ -364,11 +385,11 @@ In Figure~\ref{fig:biogrid_alpha0} we see the topological scores of the BioGRID 
 \begin{figure}
 \centering
 \includegraphics[width=0.99\linewidth]{biogridBeta0.eps}
-\caption{Topological measure scores for the BioGRID dataset when using $\alpha=0$. Note that the networks are not sorted in any particular order, so the lines are only a visual aid. In addition to SANA-LG, the top plot shows that SANA-S3 is by far the best method for optimizing S3; similarly, the middle plot demonstrates that SANA-EC is the best at optimizing EC. We will demonstrate below that SANA-LG provides the best overall performance once biological relevance is also accounted for.}
+\caption{Topological measure scores for the BioGRID dataset when using $\alpha=0$. Note that the networks are not sorted in any particular order, so the lines are only a visual aid. The top plot shows that SANA-S3 is by far the best method for optimizing S3; similarly, the middle plot demonstrates that SANA-EC is the best at optimizing EC. For SANA-EC and SANA-S3 we only show the averages for clarity, except in their respective objective functions.}
 \label{fig:biogrid_alpha0}
 \end{figure}
 
-In Figure~\ref{fig:lgraalobjfuncomparison} we compare L-GRAAL's alignment strategy and SANA directly by showing the scores in their common objective function (with $\alpha=0$), and see that SANA is capable of optimizing L-GRAAL's objective function better than L-GRAAL itself. We can make similar comparisons with other methods. For instance, in the Yeast and Human dataset, MAGNA, which optimizes S3, obtains a S3 score of ${\sim}26\%$ (or ${\sim}20\%$ when starting with a random alignment) while SANA-S3 obtains scores of ${\sim}40\%$ when starting with a random alignment.
+In Figure~\ref{fig:lgraalobjfuncomparison} we compare L-GRAAL's alignment strategy and SANA directly by showing the scores in their common objective function, graphlet-based WEC (with $\alpha=0$), and see that SANA is capable of optimizing L-GRAAL's objective function better than L-GRAAL itself. We can make similar comparisons with other methods. For instance, in the Yeast and Human dataset, MAGNA, which optimizes S3, obtains a S3 score of ${\sim}26\%$ (or ${\sim}20\%$ when starting with a random alignment) while SANA-S3 obtains scores of ${\sim}40\%$ when starting with a random alignment.
 % A similar comparison optimizing HubAlign's topological importance-based measure is not possible because in HubAlign the objective function and the search algorithm complement each other: edge coverage is only enforced through the search algorithm. Thus, SANA does not obtain good alignments when optimizing only its objective function.
 
 \begin{figure}
@@ -380,18 +401,18 @@ In Figure~\ref{fig:lgraalobjfuncomparison} we compare L-GRAAL's alignment strate
 
 \subsection{Biological comparison}\label{bio}
 
-It has previously been shown that using sequence information alone to align pairs of nodes in different species produces alignments that have very low topological quality (comparable to random alignments), but that using graphlet-based topological information alone can recover significant biological information~\citep{GRAAL}. Since then it has also been shown that using both types of information can produce alignments that score reasonably well in both the topological and biological sense. However, balancing the two is not as simple as setting $\alpha=0.5$ in Equation~\ref{eq:alpha}. In particular, normalized sequence similarity scores tend to be very small (less than $0.1$ in general), whereas the topological scores tend to fill the range $[0,1]$. Using $\alpha=0.5$ would thus under-weigh sequence scores since they are so much smaller, in general, than topological scores.
+In the section we evaluate the methods' ability to find alignments that score well in both topology and sequence. It has previously been shown that using sequence information alone to align pairs of nodes in different species produces alignments that have very low topological quality (comparable to random alignments), but that using graphlet-based topological information alone can recover significant biological information~\citep{GRAAL}. Since then it has also been shown that using both types of information can produce alignments that score reasonably well in both the topological and biological sense. However, balancing the two is not as simple as setting $\alpha=0.5$ in Equation~\ref{eq:alpha} if the topological measure and sequence have different plausible ranges of scores. For instance, when SANA optimizes EC aligning RNorvegicus and Spombe, it obtains a EC score of 0.69 (Figure~\ref{fig:biogrid_alpha0}). However, when SANA optimizes sequence on the same pair of networks, it obtains a Sequence score of 0.057 (Figure~\ref{fig:biogrid_beta0,5}). This means that using $0.5T(a) + 0.5S(a)$ does not ``balance'' the two, because sequence scores are under-weighted due to their low value; a relatively small increase in EC would compensate for a large drop in Sequence.
 
-For this reason, we introduce a new balancing parameter called $\beta$ that accounts for differences between expected topological and sequence scores. For instance, $\beta=0.5$ means that topology and sequence are optimized at equal parts. Given a certain $\beta$, we can compute the $\alpha$ that achieves the right balance as
+For this reason, we introduce a new balancing parameter called $\beta$ that accounts for differences between expected topological and sequence scores. For instance, $\beta=0.5$ means that topology and sequence are optimized at equal parts. Given a certain $\beta$, we can compute the $\alpha$ that achieves the corresponding balance as
 $$\alpha = \frac{\beta\cdot S_{top}}{(1-\beta)\cdot S_{seq}+\beta\cdot S_{top}}$$
-where $S_{top}$ is the score of the method using $\alpha=0$, and $S_{seq}$ is the score of the method using $\alpha=1$. Since $S_{top}$ and $S_{seq}$ vary as a function of the input networks, we compute a different $\alpha$ for each method and network pair. Moreover, for non-deterministic methods such as SANA, we compute $S_{top}$ and $S_{seq}$ as the average of $10$ executions.
+where $S_{top}$ is the score of the method using $\alpha=0$, and $S_{seq}$ is the score of the method using $\alpha=1$, i.e.\ optimizing only sequence\footnote{HubAlign does not work properly when optimizing Sequence exclusively, so for this method we used $\alpha=0.9999$ to compute $S_{seq}$.}. Since $S_{top}$ and $S_{seq}$ vary as a function of the input networks, we compute a different $\alpha$ for each method and for each network pair. For instance, in the previous example of SANA-EC and RNorvegicus and SPombe, $\beta=0.5$ yields $\alpha=0.92$.
 
 In Figure~\ref{fig:biogrid_beta0,5} we see the topological scores of the methods in inter-species alignments when setting $\beta=0.5$. SANA-LG, HubAlign and L-GRAAL get similar results, except in LCCS, where SANA-LG is generally worse (see discussion below). As expected, SANA-EC and SANA-S3 dominate in their respective objective functions.
 
 \begin{figure}
 \centering
 \includegraphics[width=0.99\linewidth]{biogridBeta05.eps}
-\caption{Scores of the three topological target measures, S3, EC, and LCCS, in addition to graphlet-based WEC and Sequence (SEQ), for the BioGRID dataset when setting $\beta=0.5$. The WEC plot compares L-GRAAL's and SANA-LG's common topological objective function (it is analogous to Figure~\ref{fig:lgraalobjfuncomparison} but with $\beta=0.5$). The other plots include HubAlign, L-GRAAL, and three variations of SANA (SANA-LG, SANA-EC, SANA-S3), although for some plots we only included the average of some of them to avoid cluttering. In the SEQ plot, we have added SANA-SEQ, which optimizes Sequence alone (i.e., $\alpha=1$), to give a notion of the upper-bound of Sequence scores for SANA.}
+\caption{Scores of the three topological target measures, S3, EC, and LCCS, in addition to graphlet-based WEC and Sequence (SEQ), for the BioGRID dataset when setting $\beta=0.5$. The WEC plot compares L-GRAAL's and SANA-LG's common topological objective function (it is analogous to Figure~\ref{fig:lgraalobjfuncomparison} but with $\beta=0.5$). For SANA-EC and SANA-S3 we only show the averages for clarity, except in their respective objective functions. In the SEQ plot, we have added SANA-SEQ, which optimizes Sequence alone (i.e., $\alpha=1$), to give a notion of the upper-bound of Sequence scores for SANA.}
 \label{fig:biogrid_beta0,5}
 \end{figure}
 
@@ -406,7 +427,7 @@ Figure~\ref{fig:biogridgo} shows the biological quality of the alignments obtain
 
 \subsection{Running time}
 
-HubAlign, with a time complexity of $O(n^2\log n)$ is the fastest method. Its execution time for the largest pair of networks, \textit{SCerevisiae} and \textit{HSapiens}, was 33 minutes. In the case of SANA and L-GRAAL the maximum running time is a parameter specified by the user, which we set to one hour. For the runs from the biological comparison (where $\beta=0.5$), which are the most important, SANA's runtime was limited to 1 hour. For the other runs, more time was used, but we suspect a better choice of parameters would recover similar results in less time. This is an area of further research.
+HubAlign, with a time complexity of $O(n^2\log n)$ is the fastest method. Its execution time for the largest pair of networks, \textit{SCerevisiae} and \textit{HSapiens}, was 33 minutes. In the case of SANA and L-GRAAL the maximum running time is a parameter specified by the user, which we set to one hour. However, in some instances L-GRAAL finished earlier than that. By design, SANA always used the full allocated time.
 
 
 \subsection{Comparison with additional methods}
@@ -419,13 +440,13 @@ If the past 10 years of network alignment have proven anything, it is that the c
 
 We believe LCCS suffers an analogous shortcoming.  When LCCS values were low in the past, pushing them higher was a good thing.  But recent results suggest that LCCS values are close to being saturated. Eking out a larger LCCS is not hard today: one could, for example, perform a single ``swap'' operation (Figure~\ref{fig:operators}) that connects the two largest connected components of the common subgraphs with a single edge, thus creating a larger one, with minimal effect on all other measures. We even considered creating a version of SANA that explicitly optimizes LCCS to prove our point, but unfortunately LCCS cannot easily be incrementally calculated (\S \ref{implementation}), and so our hypothetical SANA-LCCS would take too long to run.  At this point, we believe that small differences in LCCS are best sacrificed in favor of better biological significance.  This is why we are not concerned that SANA-LG is not best in LCCS; we are happier that all versions of SANA produce better biological value than any other method while simultaneously producing comparable or better topological results in all measures except LCCS.
 
-It is clear that when SANA explicitly optimizes a particular objective function (EC, S3, or WEC), it does so better than any existing method. What is more interesting is that SANA-LG matches or beats all other methods in these measures while {\em simultaneously} doing significantly better in biological measures (SEQ and $GO_k$). This suggests that L-GRAAL's objective function, WEC, provides more biological significance than either EC or S3.
+It is clear that when SANA explicitly optimizes a particular objective function (EC, S3, or WEC), it does so better than any existing method. What is more interesting is that SANA-LG matches or beats all other methods in these measures while {\em simultaneously} doing significantly better in biological measures (SEQ and $GO_k$). %This suggests that L-GRAAL's objective function, WEC, provides more biological significance than either EC or S3.
 
-We believe that, for now, WEC based on graphlets is the best topological measure. Five years ago \citep{GRAAL} it was shown that graphlets alone are capable of recovering significant biological information. SANA-LG's sequence scores (Figure~\ref{fig:biogrid_beta0,5}) and GO coverage (Figure~\ref{fig:biogridgo}) outperform all other methods, including SANA-EC and SANA-S3, while remaining competitive in all other topological measures against non-SANA competitors. Note that in one case (SC-HS), L-GRAAL anomalously achieves a much better WEC score than SANA-LG. We note, however, that L-GRAAL also obtains anomalously \textit{low} biological scores in that case, as can be seen in the SEQ plot. This one case also scored badly in GO terms (not depicted). After verifying we used the correct input parameters, we are not sure why L-GRAAL anomalously seems to have focused on topology at the expense of biology in this one case.
+%We believe that, for now, WEC based on graphlets is the best topological measure. Five years ago \citep{GRAAL} it was shown that graphlets alone are capable of recovering significant biological information. SANA-LG's sequence scores (Figure~\ref{fig:biogrid_beta0,5}) and GO coverage (Figure~\ref{fig:biogridgo}) outperform all other methods, including SANA-EC and SANA-S3, while remaining competitive in all other topological measures against non-SANA competitors. %Note that in one case (SC-HS), L-GRAAL anomalously achieves a much better WEC score than SANA-LG. We note, however, that L-GRAAL also obtains anomalously \textit{low} biological scores in that case, as can be seen in the SEQ plot. This one case also scored badly in GO terms (not depicted). After verifying we used the correct input parameters, we are not sure why L-GRAAL anomalously seems to have focused on topology at the expense of biology in this one case.
 
-While SANA-S3 grossly outperforms all other methods in optimizing S3, its sequence and GO scores are slightly lower than SANA-LG (although SANA-S3 still outperforms all non-SANA methods in sequence and GO measures). This suggests again that graphlets provide the most comprehensive topological information capable of recovering biological information.
+While SANA-S3 grossly outperforms all other methods in optimizing S3, its sequence and GO scores are slightly lower than SANA-LG (although SANA-S3 still outperforms all non-SANA methods in sequence and GO measures). %This suggests again that graphlets provide the most comprehensive topological information capable of recovering biological information.
 
-In conclusion, we have introduced a new simulated annealing search algorithm that can optimize any objective function when performing network alignment.  We have shown that SANA optimizes any explicit objective function better than any existing method, and produces solutions that score better in virtually every way compared to existing solutions, and does so faster than current methods. We have also shown, so far as we know for the first time, that when compared on a level playing field, a graphlet-based topology measure produces better biological information than other topological scoring methods.
+In conclusion, we have introduced a new simulated annealing search algorithm that can optimize any objective function when performing network alignment.  We have shown that SANA optimizes any explicit objective function better than any existing method, and produces solutions that score better in virtually every way compared to existing solutions, and does so faster than current methods. %We have also shown, so far as we know for the first time, that when compared on a level playing field, a graphlet-based topology measure produces better biological information than other topological scoring methods.
 
 \subsection{EC is edge coverage, not edge ``correctness''}
 
