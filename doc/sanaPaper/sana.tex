@@ -101,7 +101,7 @@ Topological knowledge can be extracted in many forms. For example, the wiring pa
 There are a wide variety of network alignment methods. This diversity is motivated by the inherent computational complexity of network alignment: topologically speaking, one would like to find an alignment that maximizes the number of preserved interactions, i.e., interactions between proteins that are mapped to proteins that also interact. However, this problem is \textit{NP-hard} because it is a generalization of \textit{subgraph isomorphism}, which is \textit{NP-complete}~\citep{Cook:1971:CTP:800157.805047}. This means that no efficient algorithm is known. Thus, practical methods must rely on approximation and heuristic techniques; and when it comes to heuristic algorithms, the possibilities are endless but there is no obvious ``best option''.
 
 % mention previous methods
-In the biological network domain, work over the past few years has included IsoRank~\citep{Isorank}, the family of GRAAL algorithms (GRAAL~\citep{GRAAL}, H-GRAAL~\citep{HGRAAL}, C-GRAAL~\citep{CGRAAL}, MI-GRAAL~\citep{MIGRAAL}, L-GRAAL~\citep{LGRAAL}), NATALIE~\citep{NATALIE}, GHOST~\citep{GHOST}, NETAL~\citep{NETAL}, SPINAL~\citep{SPINAL}, MAGNA~\citep{MAGNA} and its successor MAGNA++~\citep{MAGNApp},  HubAlign~\citep{HubAlign}, and OptNetalign~\citep{optnetalign}. \cite{survey2015} did a survey of existing methods, datasets, and optimization measures.
+In the biological network domain, work over the past few years has included IsoRank~\citep{Isorank}, the family of GRAAL algorithms (GRAAL~\citep{GRAAL}, H-GRAAL~\citep{HGRAAL}, C-GRAAL~\citep{CGRAAL}, MI-GRAAL~\citep{MIGRAAL}, L-GRAAL~\citep{LGRAAL}), NATALIE~\citep{NATALIE}, GHOST~\citep{GHOST}, NETAL~\citep{NETAL}, SPINAL~\citep{SPINAL}, PISwap~\citep{PISwap} MAGNA~\citep{MAGNA} and its successor MAGNA++~\citep{MAGNApp},  HubAlign~\citep{HubAlign}, and OptNetalign~\citep{optnetalign}. \cite{survey2015} did a survey of existing methods, datasets, and optimization measures.
 
 % distinguish between obj functions and search algorithms
 % local vs global measures
@@ -147,7 +147,7 @@ If we take a random alignment, called the \textit{initial solution}, we can impr
 Let $G_1=(V_1,E_1)$ and $G_2=(V_2,E_2)$ be two graphs (networks) with $|V_1|\leq|V_2|$. A pairwise global alignment $a$ (from this point simply alignment) from $G_1$ to $G_2$ is an injective function from $V_1$ to $V_2$. An objective function $f$ is a function from the set of all alignments to the closed range $[0,1]$.
 
 % algorithm
-The basic scheme of SANA is shown in Algorithm~\ref{alg:SANA}. The input consists of the two networks $G_1,G_2$, an objective function $f$, and a starting alignment (in the absence of one, SANA generates a random alignment). The last input $S$ provides a stopping condition: a maximum number of iterations or execution time. Since SANA is a generic search algorithm, $f$ can be any objective function. The output is an alignment $a$ that aims to optimize $f$---in our case, we {\it maximize} various topological and biological similarity measures rather than minimizing energy.
+The basic scheme of SANA is shown in Algorithm~\ref{alg:SANA}. The input consists of the two networks $G_1,G_2$, an objective function $f$, and a starting alignment (in the absence of one, SANA generates a random alignment), and a maximum execution time $t_{max}$. Since SANA is a generic search algorithm, $f$ can be any objective function. The output is an alignment $a$ that aims to optimize $f$---in our case, we {\it maximize} various topological and biological similarity measures rather than minimizing energy.
 
 An important element of simulated annealing is the \textit{temperature schedule}, which determines the decline of the probability to accept a worse solution as the algorithm advances. The \textit{temperature} $T(i)$ is a control parameter which depends on the current iteration $i$. It is commonly defined as $T(i)=k\cdot e^{-\lambda\cdot i}$, where $k$ and $\lambda$ are empirically determined constants greater than zero~\citep{SA1}. The temperature is at its highest point at iteration 0 where $T(0)=k$, and approaches 0 asymptotically. The constant $\lambda$ determines how fast the temperature approaches 0.
 
@@ -159,10 +159,10 @@ In the algorithm, $\Delta E$ denotes the energy increment between the new and th
 \begin{algorithm}
 \caption{SANA}\label{alg:SANA}
 \begin{algorithmic}[1]
-\Input{$G_1,G_2,f,a_0,S$}
+\Input{$G_1,G_2,f,a_0,t_{max}$}
 \Output{$a$}
 \State Let $a=a_0, i=0$
-\While {not $S$}
+\While {$t_{exec}<t_{max}$}
 \State $a'\gets \mbox{random neighbor(a)}$
 \State $\Delta E \gets f(a')-f(a)$
 \If {$\Delta E \geq 0$} $a\gets a'$
@@ -196,6 +196,8 @@ As shown in Figure~\ref{fig:parameters}, with appropriate values of $k$ and $\la
 
 Despite the capacity of simulated annealing to escape local maximums, the final result is still greatly conditioned by the initial stages of the process. Some initial starting points may be too far from any good solution, in the sense that it would take far too many individual changes or swaps (see Figure~\ref{fig:operators}) to get from the initial point to a good solution.
 Thus, in the absense of a starting alignment, SANA works in threes stages: (i) generate a large number of random starting alignments and run all of them for a short time; (ii) keep the best $K$, and run these a bit further; and (iii) choose the best of the $K$ to run to completion.  For now we tune these three stages by hand.
+
+The idea of using swaps to improve the alignment is not new; it has been used before with other local search algorithms~\citep{MAGNA,PISwap}.
 
 \subsection{Incremental evaluation}\label{implementation}
 
@@ -326,7 +328,7 @@ Human                              & H                   & 9,141                
 
 \subsection{Compared methods and parameters}
 
-In order to keep our analysis brief and relevant we compare SANA only against the two currently best-performing methods: L-GRAAL~\citep{LGRAAL} and HubAlign~\citep{HubAlign}. \cite{LGRAAL} performed a thorough analysis demonstrating that for every target measure of interest, either L-GRAAL or HubAlign beat all other methods among GHOST, MI-GRAAL, SPINAL, NETAL, NATALIE, MAGNA, IsoRank, and PISWAP (in the BioGRID dataset). Thus, we compare only against HubAlign and L-GRAAL.
+In order to keep our analysis brief and relevant we compare SANA only against the two currently best-performing methods: L-GRAAL~\citep{LGRAAL} and HubAlign~\citep{HubAlign}. \cite{LGRAAL} performed a thorough analysis demonstrating that for every target measure of interest, either L-GRAAL or HubAlign beat all other methods among GHOST, MI-GRAAL, SPINAL, NETAL, NATALIE, MAGNA, IsoRank, and PISwap (in the BioGRID dataset). Thus, we compare only against HubAlign and L-GRAAL.
 
 In L-GRAAL, we set an execution time limit of one hour and a limit of 1,000 iterations as in~\citep{LGRAAL}. We use default values for the remaining parameters of L-GRAAL and the parameters of HubAlign.
 
@@ -352,7 +354,7 @@ In Figure~\ref{fig:syntheticyeast} we see the topological scores obtained with t
 
 \begin{figure}
 \centering
-\includegraphics[width=0.99\linewidth]{syntheticyeast_bw.eps}
+\includegraphics[width=0.99\linewidth]{syeastBeta0.eps}
 \caption{Topological measure scores for the Noisy Yeast dataset when using $\alpha=0$. $G_1$ is always Y0 (no noise), and the $x$-axis corresponds to the amount of noise in $G_2$.}
 \label{fig:syntheticyeast}
 \end{figure}
@@ -361,7 +363,7 @@ In Figure~\ref{fig:biogrid_alpha0} we see the topological scores of the BioGRID 
 
 \begin{figure}
 \centering
-\includegraphics[width=0.99\linewidth]{biogrid_alpha0_bw.eps}
+\includegraphics[width=0.99\linewidth]{biogridBeta0.eps}
 \caption{Topological measure scores for the BioGRID dataset when using $\alpha=0$. Note that the networks are not sorted in any particular order, so the lines are only a visual aid. In addition to SANA-LG, the top plot shows that SANA-S3 is by far the best method for optimizing S3; similarly, the middle plot demonstrates that SANA-EC is the best at optimizing EC. We will demonstrate below that SANA-LG provides the best overall performance once biological relevance is also accounted for.}
 \label{fig:biogrid_alpha0}
 \end{figure}
@@ -371,7 +373,7 @@ In Figure~\ref{fig:lgraalobjfuncomparison} we compare L-GRAAL's alignment strate
 
 \begin{figure}
 \centering
-\includegraphics[width=0.99\linewidth]{lgraalobjfuncomparison_bw.eps}
+\includegraphics[width=0.99\linewidth]{biogridBeta0wec.eps}
 \caption{Comparison between L-GRAAL alignment strategy and SANA at optimizing L-GRAAL objective function (graphlet-based WEC) when using $\alpha=0$. A similar graph appears if we compare SANA-S3 to MAGNA (which optimizes S3).}
 \label{fig:lgraalobjfuncomparison}
 \end{figure}
@@ -388,7 +390,7 @@ In Figure~\ref{fig:biogrid_beta0,5} we see the topological scores of the methods
 
 \begin{figure}
 \centering
-\includegraphics[width=0.99\linewidth]{biogrid_beta05_bw.eps}
+\includegraphics[width=0.99\linewidth]{biogridBeta05.eps}
 \caption{Scores of the three topological target measures, S3, EC, and LCCS, in addition to graphlet-based WEC and Sequence (SEQ), for the BioGRID dataset when setting $\beta=0.5$. The WEC plot compares L-GRAAL's and SANA-LG's common topological objective function (it is analogous to Figure~\ref{fig:lgraalobjfuncomparison} but with $\beta=0.5$). The other plots include HubAlign, L-GRAAL, and three variations of SANA (SANA-LG, SANA-EC, SANA-S3), although for some plots we only included the average of some of them to avoid cluttering. In the SEQ plot, we have added SANA-SEQ, which optimizes Sequence alone (i.e., $\alpha=1$), to give a notion of the upper-bound of Sequence scores for SANA.}
 \label{fig:biogrid_beta0,5}
 \end{figure}
@@ -397,7 +399,7 @@ Figure~\ref{fig:biogridgo} shows the biological quality of the alignments obtain
 
 \begin{figure}
 \centering
-\includegraphics[width=0.99\linewidth]{biogridgo_bw.eps}
+\includegraphics[width=0.99\linewidth]{biogridBeta05go.eps}
 \caption{Comparing the biological value of methods: average of each $\mbox{GO}_k$ scores among the 16 network pairs from the BioGRID dataset when using $\beta=0.5$. For example $k=1$ measures the fraction of aligned proteins that share 1 GO term; $k=9$ measures the fraction of aligned proteins that share 9 GO terms. Note that SANA-LG (using L-GRAAL's graphlet-based objective function) scores uniformly highest for all values of $k$.}
 \label{fig:biogridgo}
 \end{figure}
