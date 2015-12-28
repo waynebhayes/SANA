@@ -39,4 +39,11 @@ regression_test_baseline.txt
 run_output.txt
 
 sequence/scores
+
+experiments/*/errs/
+experiments/*/scripts/
+experiments/*/outs/
 experiments/*/results/
+
+go/
+sequence/
