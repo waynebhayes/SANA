@@ -1,21 +1,5 @@
 \documentclass{bioinfo}
 
-% todo
-
-% todo -- MAyBE
-% supplementary material (the Yeast Human dataset is introduced but barely mentioned) ?
-% shorten paper down to 7 pages (do references count?)
-% tables for complementary material with the values of k, lambda, and alpha used?
-%section comparison with additional methods
-
-
-
-%Things that can be removed from the paper
-
-%- Annealing
-%- Incremental evaluation of local measures
-%- Yeast and human dataset
-
 
 \usepackage{graphicx}
 \usepackage{verbatim}
@@ -23,10 +7,6 @@
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
 \usepackage{float}
-
-% the following 2 is only necessary for windows
-\usepackage{epstopdf}
-\epstopdfsetup{update}
 
 
 %\usepackage{natbib}
@@ -41,7 +21,6 @@
 \copyrightyear{2015}
 \pubyear{2015}
 
-%if you don't like E hat notation for the set of edges in G2 among the nodes in the aligment, you can change it here
 \newcommand{\Eb}{\hat{E}}
 
 \begin{document}
@@ -63,17 +42,16 @@ The alignment of biological networks has the potential to teach us as much about
 Sequence alignment can be optimally solved in polynomial time. In contrast, network alignment is $NP$-hard,
 meaning optimal solutions are impossible to find, and the quality of found alignments depend strongly upon the algorithm used
 to create them.
-Every network alignment algorithm consists of two orthogonal components: first, an objective function or measure $M$ that is used to evaluate the quality of any proposed alignment; and second, a search algorithm used to explore the exponentially large set of possible alignments in an effort to find ``good'' ones according to $M$.  Objective functions fall into many categories, including biological measures such as sequence similarity, as well as topological measures like graphlet similarity and edge coverage (possibly weighted). Algorithms to search the space of all possible alignments can be deterministic or stochastic, and many possibilities have been offered over the past decade. In this paper we introduce a new stochastic search algorithm called SANA: Simulated Annealing Network Aligner. We test it on several popular objective functions and demonstrate that it almost universally optimizes each one significantly better, and faster, than existing search algorithms.
-Finally, we compare several topological objective functions using SANA, and find that graphlet-based topology measures recover more biological information than other topological measures.
+Every network alignment algorithm consists of two orthogonal components: first, an objective function or measure $M$ that is used to evaluate the quality of any proposed alignment; and second, a search algorithm used to explore the exponentially large set of possible alignments in an effort to find ``good'' ones according to $M$.  Objective functions fall into many categories, including biological measures such as sequence similarity, as well as topological measures like graphlet similarity and edge coverage (possibly weighted). Algorithms to search the space of all possible alignments can be deterministic or stochastic, and many possibilities have been offered over the past decade. In this paper we introduce a new stochastic search algorithm called SANA: Simulated Annealing Network Aligner. We test it on several popular objective functions and demonstrate that it almost universally optimizes each one significantly better than existing search algorithms.
+Finally, we compare several topological objective functions using SANA.
 Software available at http://sana.ics.uci.edu.
 \begin{comment}
 Text version of the abstract:
 
 The alignment of biological networks has the potential to teach us as much about biology and disease as has sequence alignment.
-Sequence alignment can be optimally solved in polynomial time. In contrast, network alignment is NP-hard, meaning optimal solutions are impossible to find, and the quality of found alignments depend strongly upon the algorithm used
-to create them.
-Every network alignment algorithm consists of two orthogonal components: first, an objective function or measure M that is used to evaluate the quality of any proposed alignment; and second, a search algorithm used to explore the exponentially large set of possible alignments in an effort to find "good" ones according to M.  Objective functions fall into many categories, including biological measures such as sequence similarity, as well as topological measures like graphlet similarity and edge coverage (possibly weighted). Algorithms to search the space of all possible alignments can be deterministic or stochastic, and many possibilities have been offered over the past decade. In this paper we introduce a new stochastic search algorithm called SANA: Simulated Annealing Network Aligner. We test it on several popular objective functions and demonstrate that it almost universally optimizes each one significantly better, and faster, than existing search algorithms.
-Finally, we compare several topological objective functions using SANA, and find that graphlet-based topology measures recover more biological information than other topological measures.
+Sequence alignment can be optimally solved in polynomial time. In contrast, network alignment is NP-hard, meaning optimal solutions are impossible to find, and the quality of found alignments depend strongly upon the algorithm used to create them.
+Every network alignment algorithm consists of two orthogonal components: first, an objective function or measure M that is used to evaluate the quality of any proposed alignment; and second, a search algorithm used to explore the exponentially large set of possible alignments in an effort to find "good" ones according to M.  Objective functions fall into many categories, including biological measures such as sequence similarity, as well as topological measures like graphlet similarity and edge coverage (possibly weighted). Algorithms to search the space of all possible alignments can be deterministic or stochastic, and many possibilities have been offered over the past decade. In this paper we introduce a new stochastic search algorithm called SANA: Simulated Annealing Network Aligner. We test it on several popular objective functions and demonstrate that it almost universally optimizes each one significantly better than existing search algorithms.
+Finally, we compare several topological objective functions using SANA.
 \end{comment}
 \section{Contact:} \href{whayes@uci.edu}{whayes@uci.edu}
 \end{abstract}
@@ -443,17 +421,16 @@ We are very grateful to Tijana Milenkovi\'{c} and Vikram Saraph for directions o
 
 \paragraph{Funding} The research has been supported by the Balsells fellowship.
 
-\bibliographystyle{natbib}
-\bibliography{Bibliography}
-
 \appendix
 
-\section*{EC is edge coverage, not edge ``correctness''}
+\section*{Appendix: EC is edge coverage, not edge ``correctness''}
 
 When two pairs of aligned nodes both have an edge between them, we say that the edges are ``covered'' by each other.  Given that there are thousands of edges in both networks, this fact alone, for this particular pair, implies nothing ``correct'' about this particular alignment.  Furthermore, as Figure~\ref{fig:syntheticyeast} demonstrates, SAGA-LG is capable of maintaining virtually $100\%$ edge coverage even as the node correctness (and ``correctness'' here does have meaning) drops significantly.
 
 In other words, there is nothing ``correct'' about edge correctness. In fact, if one is aligning two cliques, every alignment has $100\%$ EC, even if every node and edge is in the wrong place. The second author (W. Hayes) was in the room when this term was coined for this measure, and at the time it did not occur to anybody that it would be possible that EC could stay so high while the value of the alignment diminished so significantly. It is time to rename this measure to a more meaningful name: edges can be covered independently of their ``correctness'', and so the word ``correct'' is misleading. In fact, EC is so incorrect that S3 was invented to replace it. It is time to stop calling it ``correct''. We are doing a disservice to the long-term community of network alignment scientists by maintaining such a misleading term.
 
+\bibliographystyle{natbib}
+\bibliography{Bibliography}
 
 
 
