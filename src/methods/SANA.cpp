@@ -398,9 +398,10 @@ Alignment SANA::simpleRun(const Alignment& startA, uint maxExecutionIterations,
         }
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
-       	    if (iter != 0 and iter > maxExecutionIterations) {
-                return A;
-            }
+       	    
+        }
+	if (iter != 0 and iter > maxExecutionIterations) {
+            return A;
         }
         SANAIteration();
     }
