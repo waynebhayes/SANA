@@ -38,6 +38,7 @@ vector<string> doubleArgs = {
 "-beta", //used when '-objfuntype' is "beta"
 
 "-t",
+"-i",
 "-rewire", 
 "-tnew", "-iterperstep", "-numcand", "-tcand", "-tfin",
 "-seed",
