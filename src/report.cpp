@@ -4,6 +4,7 @@
 #include "measures/InducedConservedStructure.hpp"
 #include "measures/SymmetricSubstructureScore.hpp"
 #include "utils/utils.hpp"
+#include "utils/randomSeed.hpp"
 
 void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
   const MeasureCombination& M, Method* method, ofstream& stream) {
@@ -23,6 +24,8 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
   method->describeParameters(stream);
 
   stream << endl << "execution time = " << method->getExecTime() << endl;
+
+  stream << endl << "Seed: " << getRandomSeed() << endl;
 
   stream << endl << "Scores:" << endl;
   M.printMeasures(A, stream);

@@ -75,9 +75,16 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         TDecay = stod(args.strings["-tdecay"]);
     }
 
-    double minutes = args.doubles["-t"];
+    Method* sana;
 
-    Method* sana = new SANA(&G1, &G2, TInitial, TDecay, minutes, &M);
+    if(args.doubles["-i"] > 0){
+        uint iterations = (uint)(args.doubles["-i"]);
+        sana = new SANA(&G1, &G2, TInitial, TDecay, iterations, &M);
+    }else{
+        double minutes = args.doubles["-t"];
+        sana = new SANA(&G1, &G2, TInitial, TDecay, minutes, &M);
+    }
+    
     if (args.bools["-restart"]) {
         double tnew = args.doubles["-tnew"];
         uint iterperstep = args.doubles["-iterperstep"];

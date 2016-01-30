@@ -54,7 +54,113 @@ SANA::SANA(Graph* G1, Graph* G2,
     this->TDecay = TDecay;
     minutes = t;
     initializedIterPerSecond = false;
+    
+    //data structures for the solution space search
+    uint ramificationChange = n1*(n2-n1);
+    uint ramificationSwap = n1*(n1-1)/2;
+    uint totalRamification = ramificationSwap + ramificationChange;
+    changeProbability = (double) ramificationChange/totalRamification;
 
+
+    //objective function
+    this->MC = MC;
+    ecWeight = MC->getWeight("ec");
+    s3Weight = MC->getWeight("s3");
+    try {
+        wecWeight = MC->getWeight("wec");
+    } catch(...) {
+        wecWeight = 0;
+    }
+    localWeight = MC->getSumLocalWeight();
+
+
+    //restart scheme
+    restart = false;
+
+
+    //to evaluate EC incrementally
+    needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0;
+
+
+    //to evaluate S3 incrementally
+    needInducedEdges = s3Weight > 0;
+
+
+    //to evaluate WEC incrementally
+    needWec = wecWeight > 0;
+    if (needWec) {
+        Measure* wec = MC->getMeasure("wec");
+        LocalMeasure* m = ((WeightedEdgeConservation*) wec)->getNodeSimMeasure();
+        vector<vector<float> >* wecSimsP = m->getSimMatrix();
+        wecSims = vector<vector<float> > (n1, vector<float> (n2, 0));
+        for (uint i = 0; i < n1; i++) {
+            for (uint j = 0; j < n2; j++) {
+                wecSims[i][j] = (*wecSimsP)[i][j];
+            }
+        }
+    }
+
+
+    //to evaluate local measures incrementally
+    needLocal = localWeight > 0;
+    if (needLocal) {
+        sims = MC->getAggregatedLocalSims();
+        localWeight = 1; //the values in the sim matrix 'sims'
+                         //have already been scaled by the weight
+    } else {
+        localWeight = 0;
+    }
+
+
+    //other execution options
+    constantTemp = false;
+    enableTrackProgress = true;
+    iterationsPerStep = 10000000;
+
+
+    //this does not need to be initialized here,
+    //but the space has to be reserved in the
+    //stack. it is initialized properly before
+    //running the algorithm
+    assignedNodesG2 = vector<bool> (n2);
+    unassignedNodesG2 = vector<ushort> (n2-n1);
+    A = vector<ushort> (n1);
+
+
+    //to track progress
+    //vector<double> eIncs = energyIncSample();
+    //avgEnergyInc = vectorMean(eIncs);
+    avgEnergyInc = -0.00001;
+}
+
+SANA::SANA(Graph* G1, Graph* G2,
+    double TInitial, double TDecay, uint i, MeasureCombination* MC):
+    Method(G1, G2, "SANA_"+MC->toString())
+{
+    //data structures for the networks
+    n1 = G1->getNumNodes();
+    n2 = G2->getNumNodes();
+    g1Edges = G1->getNumEdges();
+    G1->getAdjMatrix(G1AdjMatrix);
+    G2->getAdjMatrix(G2AdjMatrix);
+    G1->getAdjLists(G1AdjLists);
+    G2->getAdjLists(G2AdjLists);
+
+
+    //random number generation
+    random_device rd;
+    gen = mt19937(getRandomSeed());
+    G1RandomNode = uniform_int_distribution<>(0, n1-1);
+    G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
+    randomReal = uniform_real_distribution<>(0, 1);
+
+
+    //temperature schedule
+    this->TInitial = TInitial;
+    this->TDecay = TDecay;
+    maxIterations = i;
+    initializedIterPerSecond = false;
+    
     //data structures for the solution space search
     uint ramificationChange = n1*(n2-n1);
     uint ramificationSwap = n1*(n1-1)/2;
@@ -140,7 +246,11 @@ Alignment SANA::run() {
     if (restart) return runRestartPhases();
     else {
         long long unsigned int iter = 0;
-        return simpleRun(Alignment::random(n1, n2), minutes*60, iter);
+        if(maxIterations == 0){
+            return simpleRun(Alignment::random(n1, n2), minutes*60, iter);
+        }else{
+            return simpleRun(Alignment::random(n1, n2), maxIterations*100000000, iter);
+        }
     }
 }
 
@@ -266,6 +376,29 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
             if (iter != 0 and timer.elapsed() > maxExecutionSeconds) {
+                return A;
+            }
+        }
+        SANAIteration();
+    }
+    return A; //dummy return to shut compiler warning
+}
+
+Alignment SANA::simpleRun(const Alignment& startA, uint maxExecutionIterations,
+    long long unsigned int& iter) {
+
+    initDataStructures(startA);
+
+    setInterruptSignal();
+
+    for (; ; iter++) {
+        T = temperatureFunction(iter, TInitial, TDecay);
+        if (interrupt) {
+            return A;
+        }
+        if (iter%iterationsPerStep == 0) {
+            trackProgress(iter);
+       	    if (iter != 0 and iter > maxExecutionIterations) {
                 return A;
             }
         }
@@ -495,7 +628,7 @@ Alignment SANA::runRestartPhases() {
     newAlignmentsCount = 0;
     while (T.elapsed() < minutesNewAlignments*60) {
         long long unsigned int iter = 0;
-        Alignment A = simpleRun(Alignment::random(n1, n2), 0, iter);
+        Alignment A = simpleRun(Alignment::random(n1, n2), 0.0, iter);
         uint i = getLowestIndex();
         double lowestScore = candidatesScores[i];
         if (currentScore > lowestScore) {
@@ -550,7 +683,12 @@ void SANA::setTInitialAutomatically() {
 }
 
 void SANA::setTDecayAutomatically() {
-    TDecay = searchTDecay(TInitial, minutes);
+    if(maxIterations == 0){
+        TDecay = searchTDecay(TInitial, minutes);
+    }else{
+        TDecay = searchTDecay(TInitial, maxIterations);
+    }
+    
 }
 
 double SANA::searchTInitial() {
@@ -636,7 +774,7 @@ double SANA::scoreForTInitial(double TInitial) {
     restart = false;
 
     long long unsigned int iter = 0;
-    simpleRun(Alignment::random(n1, n2), 0, iter);
+    simpleRun(Alignment::random(n1, n2), 0.0, iter);
     this->iterationsPerStep = oldIterationsPerStep;
     this->TInitial = oldTInitial;
     constantTemp = false;
@@ -757,6 +895,42 @@ double SANA::searchTDecay(double TInitial, double minutes) {
     cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
     cerr << "Final epsilon: " << epsilon << endl;
     double iter_t = minutes*60*getIterPerSecond();
+
+    double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
+    cerr << "Final T_decay: " << lambda << endl;
+    return lambda;
+}
+
+double SANA::searchTDecay(double TInitial, uint iterations) {
+
+    vector<double> EIncs = energyIncSample();
+    cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
+
+    //find the temperature epsilon such that the expected number of these energy samples accepted is 1
+    //by bisection, since the expected number is monotically increasing in epsilon
+
+    //upper bound and lower bound of x
+    uint N = EIncs.size();
+    double ESum = vectorSum(EIncs);
+    double EMin = vectorMin(EIncs);
+    double EMax = vectorMax(EIncs);
+    double x_left = abs(EMax)/log(N);
+    double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
+    cerr << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
+
+    const uint NUM_ITER = 100;
+    for (uint i = 0; i < NUM_ITER; i++) {
+        double x_mid = (x_left + x_right)/2;
+        double y = expectedNumAccEInc(x_mid, EIncs);
+        if (y < 1) x_left = x_mid;
+        else if (y > 1) x_right = x_mid;
+        else break;
+    }
+
+    double epsilon = (x_left + x_right)/2;
+    cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
+    cerr << "Final epsilon: " << epsilon << endl;
+    double iter_t = iterations*100000000; 
 
     double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
     cerr << "Final T_decay: " << lambda << endl;

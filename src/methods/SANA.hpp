@@ -13,6 +13,8 @@ class SANA: public Method {
 public:
     SANA(Graph* G1, Graph* G2,
         double TInitial, double TDecay, double t, MeasureCombination* MC);
+    SANA(Graph* G1, Graph* G2,
+        double TInitial, double TDecay, uint i, MeasureCombination* MC);
     ~SANA();
 
     Alignment run();
@@ -57,7 +59,8 @@ private:
     //temperature schedule
     double TInitial;
     double TDecay;
-    double minutes;
+    double minutes = 0;
+    uint maxIterations = 0;
     const double TInitialScaling = 0.00004;
     const double TDecayScaling = 0.00000001;
 
@@ -74,6 +77,7 @@ private:
     //returns a value of lambda such that with this TInitial, temperature reaches
     //0 after a certain number of minutes
     double searchTDecay(double TInitial, double minutes);
+    double searchTDecay(double TInitial, uint iterations);
 
     bool initializedIterPerSecond;
     double iterPerSecond;
@@ -158,6 +162,8 @@ private:
 
     //algorithm
     Alignment simpleRun(const Alignment& A, double maxExecutionSeconds,
+        long long unsigned int& iter);
+    Alignment simpleRun(const Alignment& A, uint maxExecutionIterations,
         long long unsigned int& iter);
     double currentScore;
     double energyInc;
