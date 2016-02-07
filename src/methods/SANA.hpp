@@ -61,6 +61,7 @@ private:
     double TDecay;
     double minutes = 0;
     uint maxIterations = 0;
+    long long unsigned int iterationCount = 0;
     const double TInitialScaling = 0.00004;
     const double TDecayScaling = 0.00000001;
 
@@ -163,7 +164,7 @@ private:
     //algorithm
     Alignment simpleRun(const Alignment& A, double maxExecutionSeconds,
         long long unsigned int& iter);
-    Alignment simpleRun(const Alignment& A, uint maxExecutionIterations,
+    Alignment simpleRun(const Alignment& A, long long unsigned int maxExecutionIterations,
         long long unsigned int& iter);
     double currentScore;
     double energyInc;

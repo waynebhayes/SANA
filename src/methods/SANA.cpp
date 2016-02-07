@@ -249,7 +249,7 @@ Alignment SANA::run() {
         if(maxIterations == 0){
             return simpleRun(Alignment::random(n1, n2), minutes*60, iter);
         }else{
-            return simpleRun(Alignment::random(n1, n2), maxIterations*100000000, iter);
+            return simpleRun(Alignment::random(n1, n2), ((long long unsigned int)(maxIterations))*100000000, iter);
         }
     }
 }
@@ -263,9 +263,16 @@ void SANA::describeParameters(ostream& sout) {
     MC->printWeights(sout);
 
     sout << "Execution time: ";
-    if (restart) sout << minutesNewAlignments + minutesPerCandidate*numCandidates + minutesFinalist;
-    else sout << minutes;
-    sout << "m" << endl;
+    if (maxIterations == 0){
+        if (restart) {sout << minutesNewAlignments + minutesPerCandidate*numCandidates + minutesFinalist;}
+        else {sout << minutes;}
+        sout << "m" << endl;
+        sout << "Total Iterations Run: " << iterationCount << endl;
+    }else{
+        sout << "Planned Iterations Run: " << maxIterations << " sets of 100,000,000" << endl;
+        sout << "Total Iterations Run: " << iterationCount << endl;
+    }
+    
 
     if (restart) {
         sout << "Restart scheme:" << endl;
@@ -379,12 +386,13 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
                 return A;
             }
         }
+        iterationCount++; //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
         SANAIteration();
     }
     return A; //dummy return to shut compiler warning
 }
 
-Alignment SANA::simpleRun(const Alignment& startA, uint maxExecutionIterations,
+Alignment SANA::simpleRun(const Alignment& startA, long long unsigned int maxExecutionIterations,
     long long unsigned int& iter) {
 
     initDataStructures(startA);
@@ -400,9 +408,10 @@ Alignment SANA::simpleRun(const Alignment& startA, uint maxExecutionIterations,
             trackProgress(iter);
        	    
         }
-	if (iter != 0 and iter > maxExecutionIterations) {
+	    if (iter != 0 and iter > maxExecutionIterations) {
             return A;
         }
+        iterationCount++; //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
         SANAIteration();
     }
     return A; //dummy return to shut compiler warning
