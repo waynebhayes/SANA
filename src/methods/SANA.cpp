@@ -403,7 +403,6 @@ Alignment SANA::simpleRun(const Alignment& startA, long long unsigned int maxExe
             return A;
         }
         if (iter%iterationsPerStep == 0) {
-            cerr << iter << "  " << endl;
             trackProgress(iter);
         }
 	    if (iter != 0 and iter > maxExecutionIterations) {
