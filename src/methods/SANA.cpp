@@ -938,7 +938,7 @@ double SANA::searchTDecay(double TInitial, uint iterations) {
     double epsilon = (x_left + x_right)/2;
     cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
     cerr << "Final epsilon: " << epsilon << endl;
-    double iter_t = iterations*100000000; 
+    long long unsigned int iter_t = (long long unsigned int)(iterations)*100000000;
 
     double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
     cerr << "Final T_decay: " << lambda << endl;
