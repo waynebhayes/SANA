@@ -55,6 +55,7 @@ METHODS_SRC =                                           \
 	src/methods/SANA.cpp                                \
 	src/methods/TabuSearch.cpp                          \
 	src/methods/WeightedAlignmentVoter.cpp              \
+	src/methods/NETALWrapper.cpp						
 
 MODES_SRC = 											\
 	src/modes/AlphaEstimation.cpp                       \
@@ -95,7 +96,7 @@ $(MAIN): $(OBJS)
 #    $(CC) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<
 
 $(OBJDIR)/%.o: %.cpp
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(CC) -c $(INCLUDES) -o $@ $< $(CXXFLAGS)
 
 # TEST_SRC is anyting that ends in _UT (unit test)
