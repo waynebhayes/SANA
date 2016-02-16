@@ -326,6 +326,16 @@ void Graph::writeGraphEdgeListFormat(const string& fileName) {
     outfile.close();
 }
 
+void Graph::writeGraphEdgeListFormatNETAL(const string& fileName) {
+	ushort e = getNumEdges();
+	ofstream outfile;
+	outfile.open(fileName.c_str());
+	for (uint i = 0; i < e; i++) {
+		outfile << edgeList[i][0] << "\t" << edgeList[i][1] << endl;
+	}
+	outfile.close();
+}
+
 vector<ushort> Graph::numNodesAround(ushort node, ushort maxDist) const {
     uint n = getNumNodes();
     vector<ushort> distances(n, n);

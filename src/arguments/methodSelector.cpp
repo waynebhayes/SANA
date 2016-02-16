@@ -13,6 +13,7 @@
 #include "../methods/HillClimbing.hpp"
 #include "../methods/SANA.hpp"
 #include "../methods/RandomAligner.hpp"
+#include "../methods/NETALWrapper.hpp"
 
 using namespace std;
 
@@ -124,6 +125,8 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
         return initHubAlign(G1, G2, args);
     if (name == "tabu")
         return initTabuSearch(G1, G2, args, M);
+    if (name == "netal")
+        return new NETALWrapper(&G1, &G2);
     if (name == "sana")
         return initSANA(G1, G2, args, M);
     if (name == "hc")
