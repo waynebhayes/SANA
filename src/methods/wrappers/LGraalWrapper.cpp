@@ -3,7 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include "LGraalWrapper.hpp"
-#include "../measures/localMeasures/Sequence.hpp"
+#include "../../measures/localMeasures/Sequence.hpp"
 using namespace std;
 
 const string LGraalWrapper::GDVCounterProgram = "./LGRAAL/ncount4.exe";

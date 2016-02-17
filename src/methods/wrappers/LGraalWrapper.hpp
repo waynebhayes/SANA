@@ -5,7 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <iostream>
-#include "Method.hpp"
+#include "../Method.hpp"
 using namespace std;
 
 class LGraalWrapper: public Method {

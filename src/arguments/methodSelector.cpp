@@ -7,13 +7,13 @@
 #include "../methods/NoneMethod.hpp"
 #include "../methods/GreedyLCCS.hpp"
 #include "../methods/WeightedAlignmentVoter.hpp"
-#include "../methods/LGraalWrapper.hpp"
-#include "../methods/HubAlignWrapper.hpp"
 #include "../methods/TabuSearch.hpp"
 #include "../methods/HillClimbing.hpp"
 #include "../methods/SANA.hpp"
 #include "../methods/RandomAligner.hpp"
-#include "../methods/NETALWrapper.hpp"
+#include "../methods/wrappers/LGraalWrapper.hpp"
+#include "../methods/wrappers/HubAlignWrapper.hpp"
+#include "../methods/wrappers/NETALWrapper.hpp"
 
 using namespace std;
 
