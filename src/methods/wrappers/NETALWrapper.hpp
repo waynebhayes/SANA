@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include "Method.hpp"
+#include "../Method.hpp"
 using namespace std;
 
 class NETALWrapper: public Method {

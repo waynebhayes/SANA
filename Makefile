@@ -47,15 +47,18 @@ MEASUSES_SRCS = 				 						\
 METHODS_SRC =                                           \
 	src/methods/GreedyLCCS.cpp                          \
 	src/methods/HillClimbing.cpp                        \
-	src/methods/HubAlignWrapper.cpp                     \
-	src/methods/LGraalWrapper.cpp                       \
 	src/methods/Method.cpp                              \
 	src/methods/NoneMethod.cpp                          \
 	src/methods/RandomAligner.cpp                       \
 	src/methods/SANA.cpp                                \
 	src/methods/TabuSearch.cpp                          \
-	src/methods/WeightedAlignmentVoter.cpp              \
-	src/methods/NETALWrapper.cpp						
+	src/methods/WeightedAlignmentVoter.cpp              
+
+METHOD_WRAPERS_SRC =                                    \
+	src/methods/wrappers/HubAlignWrapper.cpp            \
+	src/methods/wrappers/LGraalWrapper.cpp              \
+	src/methods/wrappers/NETALWrapper.cpp						
+	
 
 MODES_SRC = 											\
 	src/modes/AlphaEstimation.cpp                       \
@@ -75,7 +78,7 @@ OTHER_SRC =                                             \
 	src/report.cpp
 
 
-SRCS = $(UTILS_SRC) $(MEASUSES_SRCS) $(METHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)
+SRCS = $(UTILS_SRC) $(MEASUSES_SRCS) $(METHODS_SRC) $(METHOD_WRAPERS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)
 OBJDIR = _objs
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 

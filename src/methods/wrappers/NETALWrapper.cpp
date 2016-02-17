@@ -2,7 +2,6 @@
 #include <iostream>
 #include <sstream>
 #include "NETALWrapper.hpp"
-#include "../measures/localMeasures/Sequence.hpp"
 
 using namespace std;
 

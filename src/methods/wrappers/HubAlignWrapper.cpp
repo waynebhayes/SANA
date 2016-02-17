@@ -1,7 +1,7 @@
 #include <vector>
 #include <iostream>
 #include "HubAlignWrapper.hpp"
-#include "../measures/localMeasures/Sequence.hpp"
+#include "../../measures/localMeasures/Sequence.hpp"
 
 using namespace std;
 
