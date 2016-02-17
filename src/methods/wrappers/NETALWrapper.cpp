@@ -5,7 +5,7 @@
 
 using namespace std;
 
-const string NETALWrapper::NETALProgram = "./NETAL/NETAL";
+const string NETALWrapper::NETALProgram = "./wrappedAlgorithms/NETAL/NETAL";
 
 NETALWrapper::NETALWrapper(Graph* G1, Graph* G2): Method(G1, G2, "NETAL"),
     g1Name(G1->getName()), g2Name(G2->getName()) {

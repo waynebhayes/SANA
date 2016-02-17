@@ -5,7 +5,7 @@
 
 using namespace std;
 
-const string HubAlignWrapper::hubalignProgram = "./HubAlign/HubAlign";
+const string HubAlignWrapper::hubalignProgram = "./wrappedAlgorithms/HubAlign/HubAlign";
 
 HubAlignWrapper::HubAlignWrapper(Graph* G1, Graph* G2, double alpha): Method(G1, G2, "HubAlign"),
     alpha(alpha), g1Name(G1->getName()), g2Name(G2->getName()) {
