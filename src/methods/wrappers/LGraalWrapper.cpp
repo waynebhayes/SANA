@@ -6,8 +6,8 @@
 #include "../../measures/localMeasures/Sequence.hpp"
 using namespace std;
 
-const string LGraalWrapper::GDVCounterProgram = "./LGRAAL/ncount4.exe";
-const string LGraalWrapper::lgraalProgram = "./LGRAAL/L-GRAAL.exe";
+const string LGraalWrapper::GDVCounterProgram = "./wrappedAlgorithms/LGRAAL/ncount4.exe";
+const string LGraalWrapper::lgraalProgram = "./wrappedAlgorithms/LGRAAL/L-GRAAL.exe";
 
 LGraalWrapper::LGraalWrapper(Graph* G1, Graph* G2, double alpha, uint iterlimit, uint timelimit):
     Method(G1, G2, "LGRAAL"), g1Name(G1->getName()), g2Name(G2->getName()), alpha(alpha),
