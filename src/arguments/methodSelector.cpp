@@ -14,6 +14,7 @@
 #include "../methods/wrappers/LGraalWrapper.hpp"
 #include "../methods/wrappers/HubAlignWrapper.hpp"
 #include "../methods/wrappers/NETALWrapper.hpp"
+#include "../methods/wrappers/MIGRAALWrapper.hpp"
 
 using namespace std;
 
@@ -109,7 +110,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (aligFile != "")
         return new NoneMethod(&G1, &G2, aligFile);
 
-    string name = args.strings["-method"];
+    string name = toLowerCase(args.strings["-method"]);
     string startAligName = args.strings["-startalignment"];
 
     if (name == "greedylccs")
@@ -127,6 +128,8 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
         return initTabuSearch(G1, G2, args, M);
     if (name == "netal")
         return new NETALWrapper(&G1, &G2);
+    if (name == "mi-graal" || name == "migraal")
+        return new MIGRAALWrapper(&G1, &G2);
     if (name == "sana")
         return initSANA(G1, G2, args, M);
     if (name == "hc")

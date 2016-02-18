@@ -57,7 +57,8 @@ METHODS_SRC =                                           \
 METHOD_WRAPERS_SRC =                                    \
 	src/methods/wrappers/HubAlignWrapper.cpp            \
 	src/methods/wrappers/LGraalWrapper.cpp              \
-	src/methods/wrappers/NETALWrapper.cpp						
+	src/methods/wrappers/NETALWrapper.cpp				\
+	src/methods/wrappers/MIGRAALWrapper.cpp		
 	
 
 MODES_SRC = 											\
