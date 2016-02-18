@@ -10,10 +10,6 @@ const string NETALWrapper::NETALProgram = "./wrappedAlgorithms/NETAL/NETAL";
 NETALWrapper::NETALWrapper(Graph* G1, Graph* G2): Method(G1, G2, "NETAL"),
     g1Name(G1->getName()), g2Name(G2->getName()) {
 
-    createFolder("sequence");
-    createFolder("sequence/bitscores");
-    similarityFile = "sequence/bitscores/" + g1Name + "_" + g2Name + ".bitscores";
-
     //rand int used to avoid collision between parallel runs
     //these files cannot be moved to the tmp/ folder
     g1EdgeListFile = "netaltmp1_"+g1Name+"_"+g2Name+"_"+intToString(randInt(0, 999999));
