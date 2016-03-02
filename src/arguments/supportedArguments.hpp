@@ -25,6 +25,7 @@ vector<string> stringArgs = {
 "-qsuboutfile",
 "-qsuberrfile",
 "-qsubscriptfile",
+"-wrappedArgs",
 };
 
 vector<string> doubleArgs = {

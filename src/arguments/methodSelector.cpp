@@ -15,6 +15,12 @@
 #include "../methods/wrappers/HubAlignWrapper.hpp"
 #include "../methods/wrappers/NETALWrapper.hpp"
 #include "../methods/wrappers/MIGRAALWrapper.hpp"
+#include "../methods/wrappers/GHOSTWrapper.hpp"
+#include "../methods/wrappers/PISwapWrapper.hpp"
+#include "../methods/wrappers/OptNetAlignWrapper.hpp"
+#include "../methods/wrappers/SPINALWrapper.hpp"
+#include "../methods/wrappers/GREATWrapper.hpp"
+#include "../methods/wrappers/NATILEWrapper.hpp"
 
 using namespace std;
 
@@ -113,6 +119,8 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     string name = toLowerCase(args.strings["-method"]);
     string startAligName = args.strings["-startalignment"];
 
+    string wrappedArgs = args.strings["-wrappedArgs"];
+
     if (name == "greedylccs")
         return new GreedyLCCS(&G1, &G2, startAligName);
     if (name == "wave") {
@@ -127,9 +135,21 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (name == "tabu")
         return initTabuSearch(G1, G2, args, M);
     if (name == "netal")
-        return new NETALWrapper(&G1, &G2);
+        return new NETALWrapper(&G1, &G2, wrappedArgs);
     if (name == "mi-graal" || name == "migraal")
-        return new MIGRAALWrapper(&G1, &G2);
+        return new MIGRAALWrapper(&G1, &G2, wrappedArgs);
+    if (name == "ghost")
+    	return new GHOSTWrapper(&G1, &G2, wrappedArgs);
+    if (name == "piswap")
+    	return new PISwapWrapper(&G1, &G2, wrappedArgs);
+    if (name == "optnetalign")
+		return new OptNetAlignWrapper(&G1, &G2, wrappedArgs);
+    if (name == "spinal")
+		return new SPINALWrapper(&G1, &G2, wrappedArgs);
+    if (name == "great")
+    	return new GREATWrapper(&G1, &G2, wrappedArgs);
+    if (name == "natile")
+    	return new NATILEWrapper(&G1, &G2, wrappedArgs);
     if (name == "sana")
         return initSANA(G1, G2, args, M);
     if (name == "hc")

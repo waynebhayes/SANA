@@ -5,49 +5,33 @@
 
 using namespace std;
 
-const string MIGRAALDIR = "wrappedAlgorithms/MI-GRAAL";
-const string NCOUNT = "ncount";
-const string MIGRAALBinary = "MI-GRAAL";
+const string MIGRAALDIR     = "wrappedAlgorithms/MI-GRAAL";
+const string CONVERTER      = "ncount";
+const string GHOSTBinary  = "MI-GRAAL";
 const string MIGRAALProgram = "./MI-GRAALRunner.py";
 
-MIGRAALWrapper::MIGRAALWrapper(Graph* G1, Graph* G2): Method(G1, G2, "MIGRAAL"),
-    g1Name(G1->getName()), g2Name(G2->getName()) {
-
-	//rand int used to avoid collision between parallel runs
-    //these files cannot be moved to the tmp/ folder
-    g1GWFile = "migraaltmp1_"+g1Name+"_"+g2Name+"_"+intToString(randInt(0, 999999));
-    g2GWFile = "migraaltmp2_"+g1Name+"_"+g2Name+"_"+intToString(randInt(0, 999999));
-
-    outputName = "res";
-
-    //this file cannot be moved to the tmp/ folder
-    alignmetFile = MIGRAALDIR + "/" + outputName + ".aln";
+MIGRAALWrapper::MIGRAALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "MIGRAAL", args) {
+	wrappedDir = "wrappedAlgorithms/MI-GRAAL";
+    outputName = g1FileName + "_" + g2FileName;
 }
 
-void MIGRAALWrapper::generateAlignment() {
-	exec("cd " + MIGRAALDIR + "; chmod +x " + NCOUNT + " " + MIGRAALBinary + " " + MIGRAALProgram);
+void MIGRAALWrapper::loadDefaultParameters() {
+	parameters = "-p 3";
+}
 
-    string cmd = "cd wrappedAlgorithms/MI-GRAAL; " + MIGRAALProgram
-    			+ " ../../" + g1GWFile + " ../../" + g2GWFile + " " + outputName + " " + "-p" + " 3";
-    cerr << "Executing " << cmd << endl;
+string MIGRAALWrapper::convertAndSaveGraph(Graph* graph, string name) {
+	graph->saveInGWFormat(name);
+	return name;
+}
+
+string MIGRAALWrapper::generateAlignment() {
+	exec("cd " + MIGRAALDIR + "; chmod +x " + CONVERTER + " " + GHOSTBinary + " " + MIGRAALProgram);
+
+    string cmd = "cd wrappedAlgorithms/MI-GRAAL; " +
+    				MIGRAALProgram + " " + g1File + " " + g2File + " " + outputName + " " + parameters;
     execPrintOutput(cmd);
-    cerr << "Done" << endl;
-}
 
-void MIGRAALWrapper::deleteAuxFiles() {
-    exec("rm " + g1GWFile + " " + g2GWFile);
-    exec("cd " + MIGRAALDIR + "; rm " + outputName + ".* " + "tmp*");
-}
-
-Alignment MIGRAALWrapper::run() {
-	G1->saveInGWFormat(g1GWFile);
-	G2->saveInGWFormat(g2GWFile);
-
-    generateAlignment();
-
-    Alignment A = loadAlignment(G1, G2, alignmetFile);
-    deleteAuxFiles();
-    return A;
+    return outputName + ".aln";
 }
 
 Alignment MIGRAALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
@@ -65,9 +49,7 @@ Alignment MIGRAALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     return Alignment(mapping);
 }
 
-void MIGRAALWrapper::describeParameters(ostream& stream) {
-}
-
-string MIGRAALWrapper::fileNameSuffix(const Alignment& A) {
-    return "";
+void MIGRAALWrapper::deleteAuxFiles() {
+    exec("cd " + MIGRAALDIR + ";rm " + g1File + " " + g2File);
+    exec("cd " + MIGRAALDIR + "; rm " + outputName + ".* " + "tmp*");
 }

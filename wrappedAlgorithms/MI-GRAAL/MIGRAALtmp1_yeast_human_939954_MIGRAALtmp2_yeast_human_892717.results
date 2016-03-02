@@ -1,0 +1,14 @@
+Alpha used: 1
+The following parameter was used: 3
+Signatures were used while building alignment
+Degrees were used while building alignment
+This is purely topological alignment
+Seed used for random number generator: 1456877311
+Graph1 has: 2390 nodes.
+Graph2 has: 9141 nodes.
+
+Graph1 has: 16127 edges.
+Graph2 has: 41456 edges.
+Node Correctness is: 0; which is 0% of nodes
+Edge Correctness is: 3239; which is 20.0843% of edges
+Interaction Correctness is: 0; which is 0% of edges

@@ -10,7 +10,7 @@
 class Method {
 public:
     Method(Graph* G1, Graph* G2, string name);
-    ~Method();
+    virtual ~Method();
     Alignment runAndPrintTime();
     virtual Alignment run() =0;
     virtual void describeParameters(ostream& stream) =0;
