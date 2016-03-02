@@ -5,45 +5,40 @@
 
 using namespace std;
 
-const string NETALWrapper::NETALProgram = "./wrappedAlgorithms/NETAL/NETAL";
+const string NETALProgram = "./NETAL";
 
-NETALWrapper::NETALWrapper(Graph* G1, Graph* G2): Method(G1, G2, "NETAL"),
-    g1Name(G1->getName()), g2Name(G2->getName()) {
-
-    //rand int used to avoid collision between parallel runs
-    //these files cannot be moved to the tmp/ folder
-    g1EdgeListFile = "netaltmp1_"+g1Name+"_"+g2Name+"_"+intToString(randInt(0, 999999));
-    g2EdgeListFile = "netaltmp2_"+g1Name+"_"+g2Name+"_"+intToString(randInt(0, 999999));
-
-    //this file cannot be moved to the tmp/ folder
-    alignmetFile = g1EdgeListFile + "-" + g2EdgeListFile + ".alignment";
+NETALWrapper::NETALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "NETAL", args) {
+	wrappedDir = "wrappedAlgorithms/NETAL";
 }
 
-void NETALWrapper::generateAlignment() {
-    exec("chmod +x "+NETALProgram);
-    string cmd = NETALProgram + " " + g1EdgeListFile + " " + g2EdgeListFile;
-    cerr << "Executing " << cmd << endl;
+// a: Alpha 0.0001
+// b:
+// c:
+// i: Iterations 2
+void NETALWrapper::loadDefaultParameters() {
+	parameters = "-a 0.0001 -b 0 -c 1 -i 2";
+}
+
+string NETALWrapper::convertAndSaveGraph(Graph* graph, string name) {
+	graph->writeGraphEdgeListFormatNETAL(name);
+	return name;
+}
+
+string NETALWrapper::generateAlignment() {
+    // Give the program execute permissions
+	exec("cd " + wrappedDir + "; chmod +x "+ NETALProgram);
+
+    // Run the program in the wrappedDir with the parameters
+    string cmd = "cd " + wrappedDir + ";" + NETALProgram + " " + g1File + " " + g2File + " " + parameters;
     execPrintOutput(cmd);
-    cerr << "Done" << endl;
-    exec("mv \\(" + g1EdgeListFile + "-" + g2EdgeListFile + "*.alignment " + g1EdgeListFile + "-" + g2EdgeListFile + ".alignment" );
+
+    // Rename the alignment file
+    string oldName = "\\(" + g1File + "-" + g2File + "*.alignment";
+    string newName = g1File + "-" + g2File + ".alignment";
+    exec("cd " + wrappedDir + "; mv " + oldName + " " + newName);
+
+    return wrappedDir + "/" + newName;
 }
-
-void NETALWrapper::deleteAuxFiles() {
-    string evalFile = "\\(" + g1EdgeListFile + "-" + g2EdgeListFile + "*.eval";
-    exec("rm " + g1EdgeListFile + " " + g2EdgeListFile + " " + evalFile + " " + alignmetFile);
-}
-
-Alignment NETALWrapper::run() {
-    G1->writeGraphEdgeListFormatNETAL(g1EdgeListFile);
-    G2->writeGraphEdgeListFormatNETAL(g2EdgeListFile);
-
-    generateAlignment();
-
-    Alignment A = loadAlignment(G1, G2, alignmetFile);
-    deleteAuxFiles();
-    return A;
-}
-
 
 Alignment NETALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     vector<string> lines = fileToStrings(fileName, true);
@@ -62,9 +57,9 @@ Alignment NETALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     return Alignment(mapping);
 }
 
-void NETALWrapper::describeParameters(ostream& stream) {
-}
+void NETALWrapper::deleteAuxFiles() {
+    string evalFile = "\\(" + g1File + "-" + g2File + "*.eval";
 
-string NETALWrapper::fileNameSuffix(const Alignment& A) {
-    return "";
+    exec("cd " + wrappedDir + "; rm " + g1File + " " + g2File + " " + alignmentFile +
+    		" " + evalFile + " simLog.txt alignmentDetails.txt" );
 }

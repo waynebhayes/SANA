@@ -55,11 +55,17 @@ METHODS_SRC =                                           \
 	src/methods/WeightedAlignmentVoter.cpp              
 
 METHOD_WRAPERS_SRC =                                    \
+	src/methods/wrappers/WrappedMethod.cpp				\
 	src/methods/wrappers/HubAlignWrapper.cpp            \
 	src/methods/wrappers/LGraalWrapper.cpp              \
 	src/methods/wrappers/NETALWrapper.cpp				\
-	src/methods/wrappers/MIGRAALWrapper.cpp		
-	
+	src/methods/wrappers/MIGRAALWrapper.cpp				\
+	src/methods/wrappers/GHOSTWrapper.cpp				\
+	src/methods/wrappers/PISwapWrapper.cpp				\
+	src/methods/wrappers/OptNetAlignWrapper.cpp			\
+	src/methods/wrappers/SPINALWrapper.cpp				\
+	src/methods/wrappers/GREATWrapper.cpp				\
+	src/methods/wrappers/NATILEWrapper.cpp
 
 MODES_SRC = 											\
 	src/modes/AlphaEstimation.cpp                       \

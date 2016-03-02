@@ -4,31 +4,18 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include "../Method.hpp"
+#include "WrappedMethod.hpp"
 using namespace std;
 
-class NETALWrapper: public Method {
+class NETALWrapper: public WrappedMethod {
 public:
-
-	NETALWrapper(Graph* G1, Graph* G2);
-    Alignment run();
-    void describeParameters(ostream& stream);
-    string fileNameSuffix(const Alignment& A);
+	NETALWrapper(Graph* G1, Graph* G2, string args);
 
 private:
-    
-    static const string NETALProgram;
-
-    string g1Name, g2Name;
-    string g1Folder, g2Folder;
-    string g1EdgeListFile, g2EdgeListFile;
-    string similarityFile;
-
-    string alignmetFile;
-
+    void loadDefaultParameters();
+    string convertAndSaveGraph(Graph* graph, string name);
+    string generateAlignment();
     Alignment loadAlignment(Graph* G1, Graph* G2, string fileName);
-
-    void generateAlignment();
     void deleteAuxFiles();
 };
 

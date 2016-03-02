@@ -4,30 +4,20 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include "../Method.hpp"
+#include "WrappedMethod.hpp"
 using namespace std;
 
-class MIGRAALWrapper: public Method {
+class MIGRAALWrapper: public WrappedMethod {
 public:
-
-	MIGRAALWrapper(Graph* G1, Graph* G2);
-    Alignment run();
-    void describeParameters(ostream& stream);
-    string fileNameSuffix(const Alignment& A);
+	MIGRAALWrapper(Graph* G1, Graph* G2, string args);
 
 private:
-    
-    string g1Name, g2Name;
-    string g1Folder, g2Folder;
-    string g1GWFile, g2GWFile;
-    string similarityFile;
+	string outputName;
 
-    string outputName;
-    string alignmetFile;
-
+    void loadDefaultParameters();
+    string convertAndSaveGraph(Graph* graph, string name);
+    string generateAlignment();
     Alignment loadAlignment(Graph* G1, Graph* G2, string fileName);
-
-    void generateAlignment();
     void deleteAuxFiles();
 };
 
