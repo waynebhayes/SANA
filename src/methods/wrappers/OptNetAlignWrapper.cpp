@@ -6,31 +6,27 @@
 using namespace std;
 
 const string CONVERTER = "python converter.py";
+const string PROGRAM   = "./optnetalign";
 
-OptNetAlignWrapper::OptNetAlignWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "GHOST", args) {
+OptNetAlignWrapper::OptNetAlignWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "OPTNETALIGN", args) {
 	wrappedDir = "wrappedAlgorithms/OptNetAlign";
 }
 
 void OptNetAlignWrapper::loadDefaultParameters() {
-	parameters = "";
+	parameters = "--ec --s3 --generations 2000 --outprefix --result";
 }
 
 string OptNetAlignWrapper::convertAndSaveGraph(Graph* graph, string name) {
-	string gwFile  = name + ".gw";
 	string txtFile = name + ".txt";
-
-	graph->saveInGWFormat(gwFile);
-	exec("mv " + gwFile + " " + wrappedDir);
-
-	exec("cd " + wrappedDir + "; chmod +x " + CONVERTER );
-
-	exec("cd " + wrappedDir + "; " + CONVERTER + " " + gwFile);
-	exec("mv " + wrappedDir + "/" + txtFile + " " + txtFile);
-
+	graph->writeGraphEdgeListFormat(txtFile);
 	return txtFile;
 }
 
 string OptNetAlignWrapper::generateAlignment() {
+	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
+	exec("cd " + wrappedDir + "; " + PROGRAM + " --net1 " +
+			g1File + " --net2 " + g2File + " " + parameters);
+
 	return " ";
 }
 
