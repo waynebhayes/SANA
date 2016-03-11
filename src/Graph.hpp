@@ -78,7 +78,9 @@ public:
     double getAverageDistance() const;
 
     void saveInGWFormat(string outputFile);
+    void saveInGWFormatWithNames(string outputFile);
     void saveInShuffledOrder(string outputFile);
+    void saveGraphletsAsSigs(string outputFile);
 
     Graph randomNodeInducedSubgraph(uint numNodes);
 

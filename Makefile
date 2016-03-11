@@ -65,7 +65,8 @@ METHOD_WRAPERS_SRC =                                    \
 	src/methods/wrappers/OptNetAlignWrapper.cpp			\
 	src/methods/wrappers/SPINALWrapper.cpp				\
 	src/methods/wrappers/GREATWrapper.cpp				\
-	src/methods/wrappers/NATILEWrapper.cpp
+	src/methods/wrappers/NATILEWrapper.cpp				\
+	src/methods/wrappers/GEDEVOWrapper.cpp
 
 MODES_SRC = 											\
 	src/modes/AlphaEstimation.cpp                       \

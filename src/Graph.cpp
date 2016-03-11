@@ -717,7 +717,6 @@ void writeGWEdges(ofstream& outfile, const vector<vector<ushort>>& edgeList) {
     for (uint i = 0; i < numEdges; i++) {
         outfile << edgeList[i][0]+1 << " " << edgeList[i][1]+1 << " 0 |{}|" << endl;
     }
-    outfile << endl;
 }
 
 void Graph::saveInGWFormat(string outputFile, const vector<string>& nodeNames,
@@ -768,6 +767,10 @@ void Graph::saveInGWFormat(string outputFile) {
     saveInGWFormat(outputFile, nodeNames, edgeList);
 }
 
+void Graph::saveInGWFormatWithNames(string outputFile) {
+	saveInGWFormat(outputFile, getNodeNames(), edgeList);
+}
+
 void Graph::saveInShuffledOrder(string outputFile) {
     uint numNodes = getNumNodes();
     map<ushort,string> index2Name = getIndexToNodeNameMap();
@@ -776,6 +779,22 @@ void Graph::saveInShuffledOrder(string outputFile) {
         nodeNames[i] = index2Name[i];
     }
     saveInGWFormatShuffled(outputFile, nodeNames, edgeList);
+}
+
+void Graph::saveGraphletsAsSigs(string outputFile) {
+    std::vector<std::vector<uint>> graphlets = computeGraphletDegreeVectors();
+    vector<string> nodeNames = getNodeNames();
+    ofstream out;
+    out.open(outputFile.c_str());
+     for (unsigned int i = 0; i < nodeNames.size(); i++) {
+         out << nodeNames[i] << "\t";
+         for (int j = 0; j < 73; j++) {
+             out << graphlets[i][j] << "\t";
+         }
+         out << std::endl;
+     }
+
+     out.close();
 }
 
 Graph Graph::randomNodeInducedSubgraph(uint numNodes) {

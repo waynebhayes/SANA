@@ -31,7 +31,7 @@ string MIGRAALWrapper::generateAlignment() {
     				MIGRAALProgram + " " + g1File + " " + g2File + " " + outputName + " " + parameters;
     execPrintOutput(cmd);
 
-    return outputName + ".aln";
+    return wrappedDir + "/" + outputName + ".aln";
 }
 
 Alignment MIGRAALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
