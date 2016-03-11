@@ -6,13 +6,15 @@
 using namespace std;
 
 const string CONVERTER = "python converter_to_gml.py";
+const string PROGRAM   = "spinal";
+const string OUTPUT_CONVERT  = "python spinal_output_converter.py";
 
 SPINALWrapper::SPINALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "SPINAL", args) {
 	wrappedDir = "wrappedAlgorithms/SPINAL";
 }
 
 void SPINALWrapper::loadDefaultParameters() {
-	parameters = "";
+	parameters = "-I -n";
 }
 
 string SPINALWrapper::convertAndSaveGraph(Graph* graph, string name) {
@@ -23,14 +25,16 @@ string SPINALWrapper::convertAndSaveGraph(Graph* graph, string name) {
 
 	exec("mv " + gwFile + " " + wrappedDir);
 
-	exec("cd " + wrappedDir + "; chmod +x " + CONVERTER );
-	exec("cd " + wrappedDir + "; " + CONVERTER + " " + gwFile);
+	execPrintOutput("cd " + wrappedDir + "; " + CONVERTER + " " + gwFile);
 	exec("mv " + wrappedDir + "/" + gmlFile + " " + gmlFile);
 
 	return gmlFile;
 }
 
 string SPINALWrapper::generateAlignment() {
+	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
+	exec("");
+
 	return " ";
 }
 

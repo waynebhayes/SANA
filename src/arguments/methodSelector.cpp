@@ -21,6 +21,8 @@
 #include "../methods/wrappers/SPINALWrapper.hpp"
 #include "../methods/wrappers/GREATWrapper.hpp"
 #include "../methods/wrappers/NATILEWrapper.hpp"
+#include "../methods/wrappers/GEDEVOWrapper.hpp"
+#include "../methods/wrappers/WAVEWrapper.hpp"
 
 using namespace std;
 
@@ -150,6 +152,10 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     	return new GREATWrapper(&G1, &G2, wrappedArgs);
     if (name == "natile")
     	return new NATILEWrapper(&G1, &G2, wrappedArgs);
+    if (name == "gedevo")
+		return new GEDEVOWrapper(&G1, &G2, wrappedArgs);
+    if (name == "wave")
+		return new WAVEWrapper(&G1, &G2, wrappedArgs);
     if (name == "sana")
         return initSANA(G1, G2, args, M);
     if (name == "hc")
