@@ -86,11 +86,42 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         }
     }
 
+    // Reading the locked nodes
+    vector<string> column1;
+    vector<string> column2;
+
+    string lockFileName = args.strings["-lock"];
+    if(lockFileName != ""){
+    	string lockFile = lockFileName + ".alig.txt";
+    	if(fileExists(lockFile)){
+    		checkFileExists(lockFile);
+    		cerr << "Locking the nodes in " << lockFile << endl;
+    		ifstream ifs(lockFile.c_str());
+    		string node;
+    		while(ifs >> node){
+    			column1.push_back(node);
+    			ifs >> node;
+    			column2.push_back(node);
+    		}
+    	}
+    	else{
+    		cerr << "Lock file (" << lockFile << ") does not exists!" << endl;
+    		throw runtime_error("Lock file not found: " + lockFile);
+    	}
+    }
+
+    //
+
     cerr << "Initializing graphs... ";
     Timer T;
     T.start();
     G1 = Graph::loadGraph(g1Name);
     G2 = Graph::loadGraph(g2Name);
+
+    // Setting the locks
+    G1.setLockedList(column1);
+    G2.setLockedList(column2);
+
 
     double rewiredFraction = args.doubles["-rewire"];
     if (rewiredFraction > 0) {

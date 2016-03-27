@@ -25,6 +25,7 @@ vector<string> stringArgs = {
 "-qsuboutfile",
 "-qsuberrfile",
 "-qsubscriptfile",
+"-lock"    // for locking mechanism
 };
 
 vector<string> doubleArgs = {
