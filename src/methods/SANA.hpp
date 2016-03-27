@@ -10,9 +10,6 @@
 
 class SANA: public Method {
 
-protected:
-	bool implementsLocking = true;
-
 public:
     SANA(Graph* G1, Graph* G2,
         double TInitial, double TDecay, double t, MeasureCombination* MC);
@@ -183,6 +180,7 @@ private:
 
     // Used to support locking
     Alignment getStartingAlignment();
+    bool implementsLocking(){ return true; }
 
 };
 

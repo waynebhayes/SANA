@@ -26,8 +26,8 @@ protected:
     Graph* G1;
     Graph* G2;
 
-    // TODO node finished yet
-    bool implementsLocking = false; // whether or not we can use -lock for that method default to false
+    // whether or not we can use -lock for that method default to false
+    virtual bool implementsLocking(){ return false; }
     string lockFileName = "";
 
 private:
