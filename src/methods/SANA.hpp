@@ -10,6 +10,9 @@
 
 class SANA: public Method {
 
+protected:
+	bool implementsLocking = true;
+
 public:
     SANA(Graph* G1, Graph* G2,
         double TInitial, double TDecay, double t, MeasureCombination* MC);
@@ -54,7 +57,8 @@ private:
     uniform_int_distribution<> G1RandomNode;
     uniform_int_distribution<> G2RandomUnassignedNode;
     uniform_real_distribution<> randomReal;
-
+    ushort G1RandomUnlockedNode();
+    ushort G2RandomUnlockedNode();
 
     //temperature schedule
     double TInitial;
@@ -176,6 +180,9 @@ private:
     //others
     Timer timer;
     void setInterruptSignal(); //allows the execution to be paused with Control+C
+
+    // Used to support locking
+    Alignment getStartingAlignment();
 
 };
 
