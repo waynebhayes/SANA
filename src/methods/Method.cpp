@@ -52,8 +52,7 @@ double Method::getExecTime() {
 void Method::setLockFile(string fileName){
 	if(fileName != "")
 	{
-		// TODO turn this on and fix it
-//		assert(implementsLocking);
+		assert(implementsLocking());
 		string lockFile = fileName + ".alig.txt";
 		if(fileExists(lockFile)){
 			lockFileName = lockFile;
