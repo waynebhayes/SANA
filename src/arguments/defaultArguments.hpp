@@ -12,7 +12,7 @@ vector<string> defaultArguments = {
 "-t 5",
 "-mode normal",
 "-method sana",
-"-ec 1",
+"-s3 1",
 "-lgraaliter 1000",
 "-objfuntype generic",
 "-tnew 3",

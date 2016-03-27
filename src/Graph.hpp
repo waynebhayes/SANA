@@ -58,6 +58,7 @@ public:
     void printStats(int numConnectedComponentsToPrint, ostream& stream) const;
 
     void writeGraphEdgeListFormat(const string& fileName);
+    void writeGraphEdgeListFormatNETAL(const string& fileName);
 
     void addRandomEdges(double addedEdgesProportion);
     void removeRandomEdges(double removedEdgesProportion);
@@ -77,7 +78,9 @@ public:
     double getAverageDistance() const;
 
     void saveInGWFormat(string outputFile);
+    void saveInGWFormatWithNames(string outputFile);
     void saveInShuffledOrder(string outputFile);
+    void saveGraphletsAsSigs(string outputFile);
 
     Graph randomNodeInducedSubgraph(uint numNodes);
 
