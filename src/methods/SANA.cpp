@@ -295,12 +295,12 @@ void SANA::describeParameters(ostream& sout) {
     sout << "Optimize: " << endl;
     MC->printWeights(sout);
 
-    sout << "Execution time: ";
+    
     if (maxIterations == 0){
+        sout << "Execution time: ";
         if (restart) {sout << minutesNewAlignments + minutesPerCandidate*numCandidates + minutesFinalist;}
         else {sout << minutes;}
         sout << "m" << endl;
-        sout << "Total Iterations Run: " << iterationCount << endl;
     }else{
         sout << "Planned Iterations Run: " << maxIterations << " sets of 100,000,000" << endl;
         sout << "Total Iterations Run: " << iterationCount << endl;
@@ -419,8 +419,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
             if (iter != 0 and timer.elapsed() > maxExecutionSeconds) {
                 return A;
             }
-        }
-        iterationCount++; //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
+        } //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
         SANAIteration();
     }
     return A; //dummy return to shut compiler warning
@@ -440,7 +439,6 @@ Alignment SANA::simpleRun(const Alignment& startA, long long unsigned int maxExe
         }
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
-       	    
         }
 	    if (iter != 0 and iter > maxExecutionIterations) {
             return A;
@@ -991,7 +989,7 @@ double SANA::searchTDecay(double TInitial, uint iterations) {
     double epsilon = (x_left + x_right)/2;
     cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
     cerr << "Final epsilon: " << epsilon << endl;
-    double iter_t = iterations*100000000; 
+    long long unsigned int iter_t = (long long unsigned int)(iterations)*100000000;
 
     double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
     cerr << "Final T_decay: " << lambda << endl;

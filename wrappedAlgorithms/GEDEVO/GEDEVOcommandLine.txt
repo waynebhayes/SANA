@@ -1,0 +1,51 @@
+GEDEVO v0.1 -- Builtin help:
+--groups <Gr0> <Gr1>     * Set network group names.
+
+--ntw <file>             * Read network file, NTW format.
+--sif <file> <GroupName> * Read network file, SIF format.
+--edgelist <file> <GroupName>  * Read network file, EDGELIST format.
+--edgelisth <file> <GroupName> * Read network file, EDGELISTH format.
+--grsig <file> <GroupName>     * Load a graphlet counts file.
+                                 The <GroupName> is one of those passed via
+                                 --groups, and must be specified.
+
+--blast <file>           * Read a matrix with BLAST scores.
+--blastmatrix <file>     * Read a matrix with BLAST scores.
+--blastpairlist <file>   * Read a BLAST scores matrix as 3-column pairs list.
+
+--pop <N>                * Number of new individuals per iteration.
+                           (default = 400)
+--threads <N>            * Number of threads to use.
+                           (default = number of CPU cores)
+--undirected             * Treat networks as undirected.
+--maxiter <N>            * Stop after N iterations.
+--maxsecs <N>            * Stop after N seconds.
+--maxsame <N>            * Stop after N iterations without
+                            any score improvement.
+--config <opt>=<value>   * Set internal config option, e.g.
+                           "--config weightGraphlets=0.5".
+                           Alternatively, use -c in short.
+                           The param=value block must not contain spaces.
+                           See README file for a list of supported options.
+--no-workfiles           * Do not dump matrices to disk for re-use.
+--no-prematch            * Do not assume that nodes with the same name
+                           (case sensitive!) in both networks should be
+                           always matched.
+--logfile <file>         * Save statistics to file. (default: no logging)
+--logiter <N>            * Save one log entry each N iterations.
+                           Note that the first 200 iterations are always
+                           logged regardless of this setting. (default = 10)
+State related:
+--resume <file>          * Load a state dump and continue working on it.
+                           Upon exit, this state file will be overwritten,
+                           unless --no-save is given.
+--create                 * By default, --resume aborts if the state file
+                           does not exist. Adding --create will resume a state
+                           if it exists, and create a new one otherwise.
+--save <file>            * Specify state file name. If not given, this is
+                           either the file name passed to --resume,
+                           or a file name derived from a timestamp.
+                           The name of the results file is this + ".matching".
+--autosave <N>           * Save state + results txt every N seconds.
+--no-save                * Do not save state before exiting, only results txt.
+--series                 * If used, autosave will create a new file every save.

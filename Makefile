@@ -47,14 +47,28 @@ MEASUSES_SRCS = 				 						\
 METHODS_SRC =                                           \
 	src/methods/GreedyLCCS.cpp                          \
 	src/methods/HillClimbing.cpp                        \
-	src/methods/HubAlignWrapper.cpp                     \
-	src/methods/LGraalWrapper.cpp                       \
 	src/methods/Method.cpp                              \
 	src/methods/NoneMethod.cpp                          \
 	src/methods/RandomAligner.cpp                       \
 	src/methods/SANA.cpp                                \
 	src/methods/TabuSearch.cpp                          \
-	src/methods/WeightedAlignmentVoter.cpp              \
+	src/methods/WeightedAlignmentVoter.cpp              
+
+METHOD_WRAPERS_SRC =                                    \
+	src/methods/wrappers/WrappedMethod.cpp				\
+	src/methods/wrappers/HubAlignWrapper.cpp            \
+	src/methods/wrappers/LGraalWrapper.cpp              \
+	src/methods/wrappers/NETALWrapper.cpp				\
+	src/methods/wrappers/MIGRAALWrapper.cpp				\
+	src/methods/wrappers/GHOSTWrapper.cpp				\
+	src/methods/wrappers/PISwapWrapper.cpp				\
+	src/methods/wrappers/OptNetAlignWrapper.cpp			\
+	src/methods/wrappers/SPINALWrapper.cpp				\
+	src/methods/wrappers/GREATWrapper.cpp				\
+	src/methods/wrappers/NATILEWrapper.cpp				\
+	src/methods/wrappers/GEDEVOWrapper.cpp				\
+	src/methods/wrappers/WAVEWrapper.cpp
+	
 
 MODES_SRC = 											\
 	src/modes/AlphaEstimation.cpp                       \
@@ -74,7 +88,7 @@ OTHER_SRC =                                             \
 	src/report.cpp
 
 
-SRCS = $(UTILS_SRC) $(MEASUSES_SRCS) $(METHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)
+SRCS = $(UTILS_SRC) $(MEASUSES_SRCS) $(METHODS_SRC) $(METHOD_WRAPERS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)
 OBJDIR = _objs
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
@@ -95,7 +109,7 @@ $(MAIN): $(OBJS)
 #    $(CC) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<
 
 $(OBJDIR)/%.o: %.cpp
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(CC) -c $(INCLUDES) -o $@ $< $(CXXFLAGS)
 
 # TEST_SRC is anyting that ends in _UT (unit test)
