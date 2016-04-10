@@ -90,9 +90,8 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     vector<string> column1;
     vector<string> column2;
 
-    string lockFileName = args.strings["-lock"];
-    if(lockFileName != ""){
-    	string lockFile = lockFileName + ".alig.txt";
+    string lockFile = args.strings["-lock"];
+    if(lockFile != ""){
     	if(fileExists(lockFile)){
     		checkFileExists(lockFile);
     		cerr << "Locking the nodes in " << lockFile << endl;
