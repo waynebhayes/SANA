@@ -949,7 +949,6 @@ bool Graph::sameNodeNames(const Graph& other) const {
 
 
 void Graph::setLockedList(vector<string>& nodes){
-	cerr << "SetLockedList , locked " << nodes.size() << endl;
 	map<string,ushort> nodeMap = getNodeNameToIndexMap();
 	const int size = nodeMap.size();
 	vector<bool> locked (size, false);

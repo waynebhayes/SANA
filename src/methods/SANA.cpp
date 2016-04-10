@@ -260,10 +260,8 @@ Alignment SANA::run() {
         long long unsigned int iter = 0;
 
         if(maxIterations == 0){
-            // return simpleRun(Alignment::random(n1, n2), minutes*60, iter);
         	return simpleRun(getStartingAlignment(), minutes*60, iter);
         }else{
-           // return simpleRun(Alignment::random(n1, n2), ((long long unsigned int)(maxIterations))*100000000, iter);
         	return simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter);
         }
     }

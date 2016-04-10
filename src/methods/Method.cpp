@@ -24,7 +24,6 @@ Alignment Method::runAndPrintTime() {
 
 // Stops the program if locked nodes have been moved
 void  Method::checkLockingBeforeReport(Alignment A){
-//	cerr << "checkLockingBeforeReport(A) " << endl;
 	if(lockFileName != "" and fileExists(lockFileName)){
 		checkFileExists(lockFileName);
 		map<string,ushort> g1_IndexMap = G1->getNodeNameToIndexMap();
@@ -53,13 +52,12 @@ void Method::setLockFile(string fileName){
 	if(fileName != "")
 	{
 		assert(implementsLocking());
-		string lockFile = fileName + ".alig.txt";
-		if(fileExists(lockFile)){
-			lockFileName = lockFile;
+		if(fileExists(fileName)){
+			lockFileName = fileName;
 		}
 		else{
-			cerr << "Lock file (" << lockFile << ") does not exists!" << endl;
-			throw runtime_error("Lock file not found: " + lockFile);
+			cerr << "Lock file (" << fileName << ") does not exists!" << endl;
+			throw runtime_error("Lock file not found: " + fileName);
 		}
 	}
 }
