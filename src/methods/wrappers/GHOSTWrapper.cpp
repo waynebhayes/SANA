@@ -12,7 +12,7 @@ GHOSTWrapper::GHOSTWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1,
 	wrappedDir = "wrappedAlgorithms/GHOST";
 }
 
-// -wrappedArgs "matcher nneighbors nneighbors beta ratio searchiter"
+// -wrappedArgs "matcher nneighbors beta ratio searchiter"
 void GHOSTWrapper::loadDefaultParameters() {
 	parameters = "linear all 1.0 8.0 10";
 }

@@ -1,5 +1,6 @@
+import sys
 if __name__ == "__main__":
-    output = input("Enter path to spinal output file: ")
+    output = sys.argv[1]
     in_file = open(output, 'r')
     out_string = ""
     for i in range(2):
