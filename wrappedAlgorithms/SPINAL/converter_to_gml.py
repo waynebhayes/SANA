@@ -1,6 +1,7 @@
 from collections import defaultdict
+import sys
 if __name__ == "__main__":
-    file_name = input("Enter path to .gw file: ")
+    file_name = sys.argv[1]
     file = open(file_name, 'r')
     out_file_name = file_name.rstrip('.gw') + '.gml'
     out = open(out_file_name, 'w')

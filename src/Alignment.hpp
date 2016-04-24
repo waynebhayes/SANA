@@ -11,6 +11,7 @@ public:
 
     static Alignment loadEdgeList(Graph* G1, Graph* G2, string fileName);
     static Alignment loadPartialEdgeList(Graph* G1, Graph* G2, string fileName);
+    static Alignment sanaOutloadEdgeList(Graph* G1, Graph* G2, string fileName);
     static Alignment loadMapping(string fileName);
     //returns a random alignment from a graph with
     //nodes 0..n1-1 to a graph with nodes 0..n2-1,
@@ -51,6 +52,8 @@ public:
     bool isCorrectlyDefined(const Graph& G1, const Graph& G2);
 
     void printDefinitionErrors(const Graph& G1, const Graph& G2);
+
+    static Alignment randomAlignmentWithLocking(Graph* G1, Graph* G2);
 
 private:
 
