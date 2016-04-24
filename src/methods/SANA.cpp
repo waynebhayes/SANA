@@ -242,17 +242,48 @@ SANA::SANA(Graph* G1, Graph* G2,
 SANA::~SANA() {
 }
 
+
+Alignment SANA::getStartingAlignment(){
+	if(lockFileName != ""){
+		cerr << "Start with locking " << lockFileName << endl;
+		return Alignment::loadPartialEdgeList(G1,G2, lockFileName );
+	}
+	else{
+		cerr << "Start Without locking" << endl;
+		return Alignment::random(n1, n2);
+	}
+}
+
 Alignment SANA::run() {
     if (restart) return runRestartPhases();
     else {
         long long unsigned int iter = 0;
+
         if(maxIterations == 0){
-            return simpleRun(Alignment::random(n1, n2), minutes*60, iter);
+        	return simpleRun(getStartingAlignment(), minutes*60, iter);
         }else{
-            return simpleRun(Alignment::random(n1, n2), ((long long unsigned int)(maxIterations))*100000000, iter);
+        	return simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter);
         }
     }
 }
+
+
+ushort SANA::G1RandomUnlockedNode(){
+	ushort node;
+	do{
+		node =  G1RandomNode(gen);
+	}while(G1->lockedList[node]);
+	return node;
+}
+ushort SANA::G2RandomUnlockedNode(){
+	ushort node;
+	do{
+		node =  G2RandomUnassignedNode(gen);
+	}while(G2->lockedList[unassignedNodesG2[node]]);
+	return node;
+
+}
+
 
 void SANA::describeParameters(ostream& sout) {
     sout << "Temperature schedule:" << endl;
@@ -297,7 +328,8 @@ void SANA::enableRestartScheme(double minutesNewAlignments, uint iterationsPerSt
     this->minutesPerCandidate = minutesPerCandidate;
     this->minutesFinalist = minutesFinalist;
 
-    candidates = vector<Alignment> (numCandidates, Alignment::random(n1, n2));
+    // candidates = vector<Alignment> (numCandidates, Alignment::random(n1, n2));
+    candidates = vector<Alignment> (numCandidates, getStartingAlignment());
     candidatesScores = vector<double> (numCandidates, 0);
     for (uint i = 0; i < numCandidates; i++) {
         candidatesScores[i] = eval(candidates[i]);
@@ -421,10 +453,15 @@ void SANA::SANAIteration() {
 }
 
 void SANA::performChange() {
-    ushort source = G1RandomNode(gen);
+    ushort source = G1RandomUnlockedNode(); // G1RandomNode(gen);
     ushort oldTarget = A[source];
-    uint newTargetIndex = G2RandomUnassignedNode(gen);
+
+    uint newTargetIndex =  G2RandomUnlockedNode();
     ushort newTarget = unassignedNodesG2[newTargetIndex];
+
+    assert(!G1->lockedList[source]);
+    assert(!G2->lockedList[newTarget]);
+
 
     int newAligEdges = -1; //dummy initialization to shut compiler warnings
     if (needAligEdges) {
@@ -468,8 +505,16 @@ void SANA::performChange() {
 }
 
 void SANA::performSwap() {
-    ushort source1 = G1RandomNode(gen), source2 = G1RandomNode(gen);
+    ushort source1 =  G1RandomUnlockedNode(); // G1RandomNode(gen);
+    ushort source2 =  G1RandomUnlockedNode(); // G1RandomNode(gen);
     ushort target1 = A[source1], target2 = A[source2];
+
+    assert(G1->lockedList.size()>source1 and
+    		!G1->lockedList[source1]);
+    assert(G1->lockedList.size()>source2 and
+    		!G1->lockedList[source2]);
+//    assert(!G2->lockedList[target1]);
+//    assert(!G2->lockedList[target2]);
 
     int newAligEdges = -1; //dummy initialization to shut compiler warnings
     if (needAligEdges) {
@@ -636,7 +681,8 @@ Alignment SANA::runRestartPhases() {
     newAlignmentsCount = 0;
     while (T.elapsed() < minutesNewAlignments*60) {
         long long unsigned int iter = 0;
-        Alignment A = simpleRun(Alignment::random(n1, n2), 0.0, iter);
+         // Alignment A = simpleRun(Alignment::random(n1, n2), 0.0, iter);
+        Alignment A = simpleRun(getStartingAlignment(), 0.0, iter);
         uint i = getLowestIndex();
         double lowestScore = candidatesScores[i];
         if (currentScore > lowestScore) {
@@ -782,7 +828,8 @@ double SANA::scoreForTInitial(double TInitial) {
     restart = false;
 
     long long unsigned int iter = 0;
-    simpleRun(Alignment::random(n1, n2), 0.0, iter);
+    // simpleRun(Alignment::random(n1, n2), 0.0, iter);
+    simpleRun(getStartingAlignment(), 0.0, iter);
     this->iterationsPerStep = oldIterationsPerStep;
     this->TInitial = oldTInitial;
     constantTemp = false;
@@ -809,6 +856,7 @@ bool SANA::isRandomTInitial(double TInitial, double highThresholdScore, double l
 }
 
 double SANA::scoreRandom() {
+	// TODO should I replace this as well?  getStartingAlignment()
     return eval(Alignment::random(n1, n2));
 }
 
@@ -820,7 +868,8 @@ double SANA::searchSpaceSizeLog() {
 }
 
 long long unsigned int SANA::hillClimbingIterations(long long unsigned int idleCountTarget) {
-    Alignment startA = Alignment::random(n1, n2);
+    // Alignment startA = Alignment::random(n1, n2);
+	Alignment startA = getStartingAlignment();
     long long unsigned int iter = 0;
 
     cerr << "We consider that SANA has stagnated if it goes ";

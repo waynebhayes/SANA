@@ -52,6 +52,16 @@ Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName) 
     for (ushort i = 0; i < mapList.size(); i++) {
         string nodeG1 = mapList[i][0];
         string nodeG2 = mapList[i][1];
+
+        if(mapG1.find(nodeG1) == mapG1.end()){
+        	cerr << nodeG1 << " not in G1 " << G1->getName()  << endl;
+        	continue;
+        }
+        if (mapG2.find(nodeG2) == mapG2.end()){
+        	cerr << nodeG2 << " not in G2 " << G2->getName() << endl;
+        	continue;
+        }
+
         A[mapG1[nodeG1]] = mapG2[nodeG2];
     }
     vector<bool> G2AssignedNodes(n2, false);
@@ -67,6 +77,7 @@ Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName) 
         }
     }
     Alignment alig(A);
+    alig.printDefinitionErrors(*G1, *G2);
     assert(alig.isCorrectlyDefined(*G1, *G2));
     return alig;
 }

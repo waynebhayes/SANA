@@ -88,6 +88,10 @@ public:
 
     bool sameNodeNames(const Graph& other) const;
 
+    // For locking
+    void setLockedList(vector<string>& nodes);
+    vector<bool> lockedList;
+
 
 private:
 
