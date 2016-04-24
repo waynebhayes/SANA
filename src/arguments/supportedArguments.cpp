@@ -28,7 +28,7 @@ vector<string> stringArgs = {
 "-qsuberrfile",
 "-qsubscriptfile",
 "-wrappedArgs",
-"-lock"    // for locking mechanism
+"-lock",    // for locking mechanism
 "-alignFile",			// Used in analysis mode
 };
 
