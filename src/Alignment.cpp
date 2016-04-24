@@ -82,42 +82,6 @@ Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName) 
 	return alig;
 }
 
-Alignment Alignment::randomAlignmentWithLocking(Graph* G1, Graph* G2){
-	assert(G1->getLockedCount() == G2->getLockedCount());
-
-	map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
-	map<string,ushort> g2_IndexMap = G2->getNodeNameToIndexMap();
-	uint n1 = G1->getNumNodes();
-	uint n2 = G2->getNumNodes();
-
-	vector<ushort> A(n1, n2); //n2 used to note invalid value
-	for (ushort i = 0; i < n1; i++) {
-		if(!G1->isLocked(i))
-			continue;
-		string node1 = g1_NameMap[i];
-		string node2 = G1->getLockedTo(i);
-		uint node2Index = g2_IndexMap[node2];
-		A[i] = node2Index;
-	}
-	vector<bool> G2AssignedNodes(n2, false);
-	for (uint i = 0; i < n1; i++) {
-		if (A[i] != n2) G2AssignedNodes[A[i]] = true;
-	}
-	for (uint i = 0; i < n1; i++) {
-		if (A[i] == n2) {
-			int j = randMod(n2);
-			while (G2AssignedNodes[j]) j = randMod(n2);
-			A[i] = j;
-			G2AssignedNodes[j] = true;
-		}
-	}
-	Alignment alig(A);
-	alig.printDefinitionErrors(*G1, *G2);
-	assert(alig.isCorrectlyDefined(*G1, *G2));
-	return alig;
-}
-
-
 Alignment Alignment::loadMapping(string fileName) {
 	if (not fileExists(fileName)) {
 		throw runtime_error("Starting alignment file "+fileName+" not found");
@@ -287,3 +251,40 @@ void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) {
 		G2AssignedNodes[A[i]] = true;
 	}
 }
+
+Alignment Alignment::randomAlignmentWithLocking(Graph* G1, Graph* G2){
+	assert(G1->getLockedCount() == G2->getLockedCount());
+
+	map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
+	map<string,ushort> g2_IndexMap = G2->getNodeNameToIndexMap();
+	uint n1 = G1->getNumNodes();
+	uint n2 = G2->getNumNodes();
+
+	vector<ushort> A(n1, n2); //n2 used to note invalid value
+	for (ushort i = 0; i < n1; i++) {
+		if(!G1->isLocked(i))
+			continue;
+		string node1 = g1_NameMap[i];
+		string node2 = G1->getLockedTo(i);
+		uint node2Index = g2_IndexMap[node2];
+		A[i] = node2Index;
+	}
+	vector<bool> G2AssignedNodes(n2, false);
+	for (uint i = 0; i < n1; i++) {
+		if (A[i] != n2) G2AssignedNodes[A[i]] = true;
+	}
+	for (uint i = 0; i < n1; i++) {
+		if (A[i] == n2) {
+			int j = randMod(n2);
+			while (G2AssignedNodes[j]) j = randMod(n2);
+			A[i] = j;
+			G2AssignedNodes[j] = true;
+		}
+	}
+	Alignment alig(A);
+	alig.printDefinitionErrors(*G1, *G2);
+	assert(alig.isCorrectlyDefined(*G1, *G2));
+	return alig;
+}
+
+
