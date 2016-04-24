@@ -60,7 +60,10 @@ string Graph::getName() const {
 Graph::Graph() :
     edgeList(vector<vector<ushort> > (0)),
     adjMatrix(vector<vector<bool> > (0)),
-    adjLists(vector<vector<ushort> > (0))
+    adjLists(vector<vector<ushort> > (0)),
+    lockedList(vector<bool> (0)),
+    lockedTo(vector<string>(0)),
+    lockedCount(0)
     {}
 
 Graph::Graph(const Graph& G) {
@@ -68,12 +71,20 @@ Graph::Graph(const Graph& G) {
     adjMatrix = vector<vector<bool> > (G.adjMatrix);
     adjLists = vector<vector<ushort> > (G.adjLists);
     connectedComponents = vector<vector<ushort> > (G.connectedComponents);
+    lockedList = vector<bool> (G.lockedList);
+    lockedTo = vector<string> (G.lockedTo);
+    lockedCount = G.lockedCount;
 }
 
 Graph::Graph(uint n, const vector<vector<ushort> > edges) {
     adjLists = vector<vector<ushort> > (n, vector<ushort> (0));
     adjMatrix = vector<vector<bool> > (n, vector<bool> (n, false));
     edgeList = edges;
+
+    lockedList = vector<bool> (n, false);
+    lockedTo = vector<string> (n, "");
+    lockedCount = 0;
+
     //only add edges preserved by alignment
     for (const auto& edge: edges) {
         ushort node1 = edge[0], node2 = edge[1];
@@ -158,6 +169,8 @@ void Graph::loadGwFile(const string& fileName) {
     adjLists = vector<vector<ushort> > (n, vector<ushort>(0));
     adjMatrix = vector<vector<bool> > (n, vector<bool>(n, false));
     edgeList = vector<vector<ushort> > (m, vector<ushort>(2));
+    lockedList = vector<bool> (n, false);
+    lockedTo = vector<string> (n, "");
 
     //read edges
     for (int i = 0; i < m; i++) {
@@ -948,17 +961,34 @@ bool Graph::sameNodeNames(const Graph& other) const {
 }
 
 
-void Graph::setLockedList(vector<string>& nodes){
+void Graph::setLockedList(vector<string>& nodes, vector<string> & pairs){
 	map<string,ushort> nodeMap = getNodeNameToIndexMap();
 	const int size = nodeMap.size();
 	vector<bool> locked (size, false);
+	vector<string> lockPairs (size, "");
 	for(uint i = 0; i < nodes.size(); i++){
 		ushort index = nodeMap[nodes[i]];
 		locked[index] = true;
+		lockPairs[index] = pairs[i];
 	}
 	lockedList = locked;
+	lockedTo = lockPairs;
+	lockedCount = nodes.size();
 }
 
+vector<bool>& Graph::getLockedList(){
+	return lockedList;
+}
+bool Graph::isLocked(uint index)
+{
+	return lockedList[index];
+}
 
+string Graph::getLockedTo(uint index){
+	return lockedTo[index];
+}
 
+int Graph::getLockedCount(){
+	return lockedCount;
+}
 
