@@ -48,13 +48,15 @@ private:
     vector<vector<ushort> > G1AdjLists;
     vector<vector<ushort> > G2AdjLists;
 
-
+    vector<ushort> unLockedNodesG1;
     //random number generation
     mt19937 gen;
     uniform_int_distribution<> G1RandomNode;
+    uniform_int_distribution<> G1RandomUnlockedNodeDist;
     uniform_int_distribution<> G2RandomUnassignedNode;
     uniform_real_distribution<> randomReal;
     ushort G1RandomUnlockedNode();
+    ushort G1RandomUnlockedNode_Fast();
     ushort G2RandomUnlockedNode();
 
     //temperature schedule
@@ -93,8 +95,9 @@ private:
     double changeProbability;
     vector<bool> assignedNodesG2;
     vector<ushort> unassignedNodesG2;
+//    vector<ushort> unLockedNodesG1;  // Don't add it here causes "corrupted double-linked list"
     vector<ushort> A;
-    //initializes all the necessary datastructures for a new run
+    //initializes all the necessary data structures for a new run
     void initDataStructures(const Alignment& startA);
 
 
@@ -181,7 +184,6 @@ private:
     // Used to support locking
     Alignment getStartingAlignment();
     bool implementsLocking(){ return true; }
-
 };
 
 #endif

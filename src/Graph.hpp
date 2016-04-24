@@ -89,9 +89,11 @@ public:
     bool sameNodeNames(const Graph& other) const;
 
     // For locking
-    void setLockedList(vector<string>& nodes);
-    vector<bool> lockedList;
-
+    void setLockedList(vector<string>& nodes, vector<string>& pairs);
+    vector<bool>& getLockedList();
+    bool isLocked(uint index);
+    string getLockedTo(uint index);
+    int getLockedCount();
 
 private:
 
@@ -103,6 +105,10 @@ private:
 
     //list of the nodes of each connected component, sorted from larger to smaller
     vector<vector<ushort> > connectedComponents;
+    vector<bool> lockedList;  // shows which nodes are locked
+    vector<string> lockedTo;  // name of node we lock to in other graph
+    int lockedCount = 0;
+
 
     void initConnectedComponents();
 

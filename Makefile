@@ -19,8 +19,9 @@ ARGUMENTS_SRC = 										\
 	src/arguments/modeSelector.cpp						\
 	src/arguments/measureSelector.cpp					\
 	src/arguments/methodSelector.cpp					\
-	src/arguments/graphLoader.cpp
-
+	src/arguments/graphLoader.cpp						\
+	src/arguments/supportedArguments.cpp
+	
 MEASUSES_SRCS = 				 						\
 	src/measures/EdgeCorrectness.cpp 					\
 	src/measures/GoAverage.cpp      					\
@@ -76,7 +77,8 @@ MODES_SRC = 											\
 	src/modes/ParameterEstimation.cpp                   \
 	src/modes/NormalMode.cpp							\
 	src/modes/DebugMode.cpp								\
-	src/modes/ClusterMode.cpp
+	src/modes/ClusterMode.cpp							\
+	src/modes/AnalysisMode.cpp
 
 
 OTHER_SRC =                                             \
