@@ -19,14 +19,20 @@ public:
     string getName();
     double getExecTime();
 
+    void setLockFile(string fileName);
+    void checkLockingBeforeReport(Alignment A);
+
 protected:
     Graph* G1;
     Graph* G2;
 
+    // whether or not we can use -lock for that method default to false
+    virtual bool implementsLocking(){ return false; }
+    string lockFileName = "";
+
 private:
     string name;
     double execTime;
-
 };
 
 #endif

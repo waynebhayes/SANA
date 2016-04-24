@@ -22,12 +22,13 @@ vector<string> stringArgs = {
 
 //for submissions to the cluster
 "-qmode", //mode of the submission (since the value of mode will be 'cluster')
-//the next 3 arguments are only read from the command line,
+//the next 3 arguments are read from the command line,
 //they should not appear in defaultArguments.hpp
 "-qsuboutfile",
 "-qsuberrfile",
 "-qsubscriptfile",
 "-wrappedArgs",
+"-lock"    // for locking mechanism
 "-alignFile",			// Used in analysis mode
 };
 

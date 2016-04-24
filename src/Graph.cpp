@@ -946,3 +946,19 @@ bool Graph::sameNodeNames(const Graph& other) const {
     set<string> s2(otherNames.begin(), otherNames.end());
     return s1 == s2;
 }
+
+
+void Graph::setLockedList(vector<string>& nodes){
+	map<string,ushort> nodeMap = getNodeNameToIndexMap();
+	const int size = nodeMap.size();
+	vector<bool> locked (size, false);
+	for(uint i = 0; i < nodes.size(); i++){
+		ushort index = nodeMap[nodes[i]];
+		locked[index] = true;
+	}
+	lockedList = locked;
+}
+
+
+
+

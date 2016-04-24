@@ -29,18 +29,12 @@ const string Experiment::methodArgsFile = "experiments/methods.cnf";
 const string Experiment::datasetsFile = "experiments/datasets.cnf";
 
 void Experiment::run(ArgumentParser& args) {
-    if (args.bools["-dbg"]) {
-        updateTopSeqScoreTable();
-        return;
-    }
-
     checkFileExists(methodArgsFile);
     checkFileExists(datasetsFile);
     experName = args.strings["-experiment"];
     experFolder = "experiments/"+experName+"/";
     experFile = experFolder+experName+".exp";
     checkFileExists(experFile);
-
 
     plainResultsFile = experFolder+experName+"PlainResults.txt";
     humanReadableResultsFile = experFolder+experName+"HumanReadableResults.txt";
@@ -49,25 +43,18 @@ void Experiment::run(ArgumentParser& args) {
     initSubfolders();
     initData();
 
-    if (args.bools["-updatecsv"]) {
-        loadResultMap(args.strings["-experiment"]);
-        saveResultsForPlots();
-        saveGoTermAveragesCSV();
-        return;
-    }
-
     bool collect = args.bools["-collect"] or allRunsFinished();
     if (collect) {
         collectResults();
         saveResults();
-        return;
     }
-
-    bool dbg = args.bools["-dbg"];
-    if (not dbg) {
-        makeSubmissions();        
-    } else {
-        printSubmissions();
+    else {
+        bool dbg = args.bools["-dbg"];
+        if (not dbg) {
+            makeSubmissions();
+        } else {
+            printSubmissions();
+        }
     }
 
 }
@@ -77,7 +64,7 @@ void Experiment::initSubfolders() {
     scriptsFolder = experFolder+"scripts/";
 
     //outsFolder and errsFolder must be absolute path
-    //because qsub requires it 
+    //because qsub requires it
     string projectFolder = ClusterMode::getProjectFolder();
     outsFolder = projectFolder+experFolder+"outs/";
     errsFolder = projectFolder+experFolder+"errs/";
@@ -224,7 +211,7 @@ double Experiment::getAverageScore(string method, string G1Name,
         if (score != -1) {
             total += score;
             count++;
-        } 
+        }
     }
     if (count > 0) return total/count;
     return -1;
@@ -402,7 +389,7 @@ void Experiment::saveHumanReadableResults() {
     }
 
     fout << endl << "=== rankings ===" << endl;
-    
+
     for (uint i = 0; i < measures.size(); i++) {
         vector<vector<string> > &table = tables[i];
         fout << "Measure: " << measures[i] << endl;
@@ -548,13 +535,13 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
         if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
             cerr << "Warning: the fraction of kept GO terms might be ";
             cerr << "different than the ones used in the experiment" << endl;
-            uint k = name[2] - '0';        
+            uint k = name[2] - '0';
             vector<double> weights(k, 0);
             weights[k-1] = 1;
             return new GoSimilarity(G1, G2, weights, 0.5);
         } else {
             return new InvalidMeasure();
-        }            
+        }
     }
     if (name == "gocov") {
         if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
@@ -568,7 +555,7 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
     }
     if (name == "nc") {
         if (NodeCorrectness::fulfillsPrereqs(G1, G2)) {
-            return new NodeCorrectness(Alignment::correctMapping(*G1, *G2));            
+            return new NodeCorrectness(Alignment::correctMapping(*G1, *G2));
         } else {
             return new InvalidMeasure();
         }
@@ -581,17 +568,34 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
     }
     if (name == "sequence") {
         if (Sequence::fulfillsPrereqs(G1, G2)) {
-            return new Sequence(G1, G2);  
+            return new Sequence(G1, G2);
         }
     }
     throw runtime_error("Unknown measure: "+name);
 }
 
 
-
-
-/////////////////////
-
+////////////////////////////////////////
+////////////////////////////////////////
+// The code below this point has a special function and is not
+// an integral part of the experiment module. it was written in
+// a rush. it should be factorized/rewritten/removed.
+//
+// the only relevant function here is "saveGoTermAveragesCSV()",
+// which currently does not have any way to be called from the command line
+// it is only relevant for experiments using beta as objective function.
+//
+// to understand what it does, recall that:
+// in general, when we want to plot some measure, we want to plot the score
+// for each network pair. However, with go-term measures, you might want to
+// plot the average score among all network pairs (this is how we did it
+// in the sana paper)
+//
+// this function creates a CSV file to be used for the GO measures plot.
+// the files is named expreimentGoTerms.csv
+// the columns are named after each method
+// there is one row for each go measure from go1 to go9
+// each row contains the score of each method in that measure
 
 void Experiment::saveGoTermAveragesCSV() {
     vector<string> goMeasures = {"go1","go2","go3","go4","go5","go6","go7","go8","go9"};
@@ -646,9 +650,51 @@ void Experiment::saveGoTermAveragesCSV() {
 }
 
 
-/////////////////
+////////////////////////////////////////
+////////////////////////////////////////
+// The code below this point has a special function and is not
+// an integral part of the experiment module. it was written in
+// a rush. it should be factorized/rewritten/removed.
+//
+// the only relevant function here is "updateTopSeqScoreTable()",
+// which currently does not have any way to be called from the command line
+// it is only relevant for experiments using beta as objective function.
+//
+// to understand what it does, recall that:
+// each entry of "topologySequenceScoreTable.cnf" consists of a
+// method identifier, two network names, a topology-only score,
+// and a biology-only score
+//
+// in order to use beta as objective function, with a given method
+// and network pair, there must be an entry in "topologySequenceScoreTable.cnf"
+// for that method and network pair.
+// the scores in the entry can then be used to convert a beta into an alpha.
+//
+// here is what it does:
+// it uses the results of two specific experiments,
+// biogridBeta0 and biogridBeta1, which optimize topology only
+// and biology only, respectively, in the biogrid dataset, to
+// update all the relevant entries in the "topologySequenceScoreTable.cnf" file
+//
+// hence, it expects that the file with the plain results
+// for these two experiments must exist and be complete
 
+void Experiment::updateTopSeqScoreTable() {
+    Experiment exper;
+    exper.loadResultMap("biogridBeta0");
+    exper.updateTopEntriesTopSeqScoreTable();
+    exper.loadResultMap("biogridBeta1");
+    exper.updateSeqEntriesTopSeqScoreTable();
+}
 
+//the file with the plain results must exist and be complete
+void Experiment::loadResultMap(string experName) {
+    experFolder = "experiments/"+experName+"/";
+    experFile = experFolder+experName+".exp";
+    initData();
+    plainResultsFile = experFolder+experName+"PlainResults.txt";
+    initResults();
+}
 
 void Experiment::initResults() {
     resultMap.clear(); //init the map empty
@@ -662,6 +708,42 @@ void Experiment::initResults() {
         string resultKey = getResultId(method, G1Name, G2Name, numSub, measure);
         double score = stod(line[5]);
         resultMap[resultKey] = score;
+    }
+}
+
+void Experiment::updateTopEntriesTopSeqScoreTable() {
+    for (string method : methods) {
+        string renamedMethod = method;
+        if (method == "sanalg") renamedMethod = "sanawec";
+        for (auto pair : networkPairs) {
+            string G1Name = pair[0];
+            string G2Name = pair[1];
+            string topMeasure;
+            if (method == "sanaec") topMeasure = "ec";
+            else if (method == "sanalg") topMeasure = "wecgraphletlgraal";
+            else if (method == "sanas3") topMeasure = "s3";
+            else if (method == "hubalign") topMeasure = "importance";
+            else if (method == "lgraal") topMeasure = "wecgraphletlgraal";
+            else if (method == "random") topMeasure = "ec";
+            else throw runtime_error("unexpected method: "+method);
+            double topScore = getAverageScore(method, G1Name, G2Name, topMeasure);
+            updateTopSeqScoreTableEntry(renamedMethod, G1Name, G2Name,
+                topScore, -1, "top");
+        }
+    }
+}
+
+void Experiment::updateSeqEntriesTopSeqScoreTable() {
+    for (string method : methods) {
+        string renamedMethod = method;
+        if (method == "sanalg") renamedMethod = "sanawec";
+        for (auto pair : networkPairs) {
+            string G1Name = pair[0];
+            string G2Name = pair[1];
+            double seqScore = getAverageScore(method, G1Name, G2Name, "sequence");
+            updateTopSeqScoreTableEntry(renamedMethod, G1Name, G2Name,
+                -1, seqScore, "seq");
+        }
     }
 }
 
@@ -701,64 +783,4 @@ void Experiment::updateTopSeqScoreTableEntry(string method,
     for (vector<string> line : table) {
         fout<<line[0]<<" "<<line[1]<<" "<<line[2]<<" "<<line[3]<<" "<<line[4]<<endl;
     }
-}
-
-void Experiment::updateSeqEntriesTopSeqScoreTable() {
-    for (string method : methods) {
-        string renamedMethod = method;
-        if (method == "sanalg") renamedMethod = "sanawec";
-        for (auto pair : networkPairs) {
-            string G1Name = pair[0];
-            string G2Name = pair[1];
-            double seqScore = getAverageScore(method, G1Name, G2Name, "sequence");
-            updateTopSeqScoreTableEntry(renamedMethod, G1Name, G2Name,
-                -1, seqScore, "seq");
-        }
-    }
-}
-
-void Experiment::updateTopEntriesTopSeqScoreTable() {
-    for (string method : methods) {
-        string renamedMethod = method;
-        if (method == "sanalg") renamedMethod = "sanawec";
-        for (auto pair : networkPairs) {
-            string G1Name = pair[0];
-            string G2Name = pair[1];
-            string topMeasure;
-            if (method == "sanaec") topMeasure = "ec";
-            else if (method == "sanalg") topMeasure = "wecgraphletlgraal";
-            else if (method == "sanas3") topMeasure = "s3";
-            else if (method == "hubalign") topMeasure = "importance";
-            else if (method == "lgraal") topMeasure = "wecgraphletlgraal";
-            else if (method == "random") topMeasure = "ec";
-            else throw runtime_error("unexpected method: "+method); 
-            double topScore = getAverageScore(method, G1Name, G2Name, topMeasure);
-            updateTopSeqScoreTableEntry(renamedMethod, G1Name, G2Name,
-                topScore, -1, "top");
-        }
-    }
-}
-
-
-//the file with the plain results must exist and be complete
-void Experiment::loadResultMap(string experName) {
-    experFolder = "experiments/"+experName+"/";
-    experFile = experFolder+experName+".exp";
-    initData();
-    plainResultsFile = experFolder+experName+"PlainResults.txt";
-    initResults();
-}
-
-void Experiment::updateTopSeqScoreTable() {
-    cerr << 0;
-    Experiment exper;
-    cerr << 1;
-    exper.loadResultMap("biogridBeta0");
-    cerr << 2;
-    exper.updateTopEntriesTopSeqScoreTable();
-    cerr << 3;
-    exper.loadResultMap("biogridBeta1");
-    cerr << 4;
-    exper.updateSeqEntriesTopSeqScoreTable();
-    cerr << 5;
 }

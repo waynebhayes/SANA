@@ -109,6 +109,9 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     if (args.strings["-tdecay"] == "auto") {
         ((SANA*) sana)->setTDecayAutomatically();
     }
+    if (args.strings["-lock"] != ""){
+    	sana->setLockFile(args.strings["-lock"] );
+    }
     return sana;
 }
 
