@@ -71,6 +71,22 @@ Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName) 
     return alig;
 }
 
+Alignment Alignment::sanaOutloadEdgeList(Graph* G1, Graph* G2, string fileName) {
+    vector<string> edges = fileToStrings(fileName);
+    vector<vector<string> > edgeList;
+    for (uint i = 0; i < edges.size()/2; i++) {
+    	if(edges[2*i] == "end_of_edgelist") {
+    		break; // "end_of_edgelist" separates sana.out's edge list from the analysis portion
+    	}
+    	vector<string> edge(2);
+
+        edge[0] = edges[2*i];
+        edge[1] = edges[2*i+1];
+
+        edgeList.push_back(edge);
+    }
+    return Alignment(G1, G2, edgeList);
+}
 Alignment Alignment::loadMapping(string fileName) {
     if (not fileExists(fileName)) {
         throw runtime_error("Starting alignment file "+fileName+" not found");

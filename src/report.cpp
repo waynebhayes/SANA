@@ -20,11 +20,12 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
   G2.printStats(numCCsToPrint, stream);
   stream << endl;
 
-  stream << "Method: " << method->getName() << endl;
-  method->describeParameters(stream);
+  if(method != NULL) {
+	  stream << "Method: " << method->getName() << endl;
+	  method->describeParameters(stream);
 
-  stream << endl << "execution time = " << method->getExecTime() << endl;
-
+	  stream << endl << "execution time = " << method->getExecTime() << endl;
+  }
   stream << endl << "Seed: " << getRandomSeed() << endl;
 
   stream << endl << "Scores:" << endl;
@@ -100,7 +101,8 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   }
 
   cerr << "Saving report as \"" << reportFile << "\"" << endl;
-  A.write(outfile);
+  A.writeEdgeList(&G1, &G2, outfile);
+  outfile << "end_of_edgelist" << endl;
   makeReport(G1, G2, A, M, method, outfile);
   outfile.close();
 }
