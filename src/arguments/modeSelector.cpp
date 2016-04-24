@@ -6,6 +6,7 @@
 #include "../modes/NormalMode.hpp"
 #include "../modes/ClusterMode.hpp"
 #include "../modes/Experiment.hpp"
+#include "../modes/AnalysisMode.hpp"
 
 #include "../utils/utils.hpp"
 
@@ -34,6 +35,8 @@ Mode* selectMode(ArgumentParser& args) {
         mode = new AlphaEstimation();
     } else if (name == "dbg") {
         mode = new DebugMode();
+    } else if (name == "analysis") {
+    	mode = new AnalysisMode();
     } else if (name == "normal") {
         mode = new NormalMode();
     } else {

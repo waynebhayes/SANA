@@ -32,16 +32,26 @@ string SPINALWrapper::convertAndSaveGraph(Graph* graph, string name) {
 }
 
 string SPINALWrapper::generateAlignment() {
-	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
-	exec("");
+	string alignName = "";
 
-	return " ";
+	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
+
+	unsigned int sFile = parameters.find("-ns");
+	if(sFile != parameters.npos) {
+		sFile += 5;
+		string simFile = parameters.substr(sFile, parameters.size() - parameters.find("-ns"));
+		parameters = parameters.substr(0, parameters.find("-ns"));
+		exec("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " " + simFile + " " + alignName + ".txt");
+	} else {
+		exec("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " " + alignName + ".txt");
+	}
+
+	exec("cd " + wrappedDir + "; " + OUTPUT_CONVERT + " " + alignName + ".txt");
+	return wrappedDir + "/" + alignName + ".aln";
 }
 
 Alignment SPINALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
-	//TODO replace
-    vector<ushort> mapping(G1->getNumNodes(), G2->getNumNodes());
-    return Alignment(mapping);
+    return Alignment::loadPartialEdgeList(G1, G2, fileName);
 }
 
 void SPINALWrapper::deleteAuxFiles() {
