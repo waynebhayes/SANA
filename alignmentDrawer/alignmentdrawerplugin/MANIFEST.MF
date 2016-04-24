@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Cytoscape-API-Compatibility: 3.0
+Cytoscape-App: research.AlignmentDrawerApp
+Cytoscape-App-Name: Alignment Drawer App
+Cytoscape-App-Version: 0.1
