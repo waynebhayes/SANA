@@ -19,7 +19,7 @@ experiments/*/results/
 
 
 *.csv
-
+*.align
 *.phr
 *.pin
 *.psq
