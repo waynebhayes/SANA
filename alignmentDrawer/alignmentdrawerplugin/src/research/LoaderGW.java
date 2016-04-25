@@ -182,6 +182,9 @@ public class LoaderGW implements CyNetworkReader, LoaderProtocol {
 //                                        + " - edge count stated in file doesn't match that have been made: "
 //                                        + num_edges + " != " + m_network.getEdgeCount());
                 }
+                NetworkDatabase db = NetworkDatabaseSingleton.get_instance();
+                AlignmentNetwork align_net = new AlignmentNetwork(m_network);
+                db.add_network_bindings(align_net, new Bindable(align_net, NetworkDatabase.BINDABLE_ID_NETWORK));
                 System.out.println(getClass() + " - Everything has been loaded.");
         }
 
