@@ -83,7 +83,7 @@ public class TaskHighlightNode implements Task {
                 List<NetworkRenderer.Batch> batches = new ArrayList<>();
                 batches.add(renderer.create_batch(desc, highlight_sha));
                 
-                Map<AlignmentNetwork, CyNetworkView> views = renderer.render(batches, view, tm);
+                Map<AlignmentNetwork, CyNetworkView> views = renderer.render(batches, view, true, tm);
                 renderer.commit(views, m_adapter.getCyNetworkViewManager());
         }
 
