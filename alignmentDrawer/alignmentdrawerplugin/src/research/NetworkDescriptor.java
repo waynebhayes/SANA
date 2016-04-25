@@ -17,8 +17,9 @@
  */
 package research;
 
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.cytoscape.model.CyEdge;
@@ -34,9 +35,9 @@ public class NetworkDescriptor {
         private final String m_style_name;
         private final AlignmentNetwork m_network;
 
-        private final Set<CyNode> m_nodes = new HashSet<>();
-        private final Set<CyEdge> m_edges = new HashSet<>();
-        private final List<NodeSignatureManager> m_node_sigs = new LinkedList<>();
+        private final LinkedHashSet<CyNode> m_nodes = new LinkedHashSet<>();
+        private final LinkedHashSet<CyEdge> m_edges = new LinkedHashSet<>();
+        private final ArrayList<NodeSignatureManager> m_node_sigs = new ArrayList<>();
 
         public NetworkDescriptor(AlignmentNetwork network) {
                 m_network = network;
@@ -64,7 +65,7 @@ public class NetworkDescriptor {
         public void select_by_belongings(Set<AlignmentNetwork> belnets,
                                          boolean is_complement,
                                          boolean with_neighbour_edges) {
-                Set<Long> belids = new HashSet<>();
+                HashSet<Long> belids = new HashSet<>();
                 for (AlignmentNetwork net : belnets) {
                         belids.add(net.get_suid());
                 }
