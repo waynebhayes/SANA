@@ -40,7 +40,6 @@ import org.cytoscape.view.model.CyNetworkViewManager;
 public class NetworkDatabase {
 
         private final HashMap<Long, Set<Bindable>> m_bindings;
-        private final CySwingAppAdapter m_app_adapter;
         private final CyNetworkManager m_network_mgr;
         private final CyNetworkViewManager m_netview_mgr;
         
@@ -110,14 +109,9 @@ public class NetworkDatabase {
         private void __store_database() {
                 ArrayList<Long> obsolete_uuids = new ArrayList<>();
                 
+                OUTTER_LOOP:
                 for (Long netuuid : m_bindings.keySet()) {
                         Long network_uuid = netuuid;
-                        if (null == m_network_mgr.getNetwork(network_uuid)) {
-                                System.out.println(getClass() + " - " + "Network " + network_uuid 
-                                                   + " has been destroyed refreshing bindings");
-                                obsolete_uuids.add(network_uuid);
-                                continue;
-                        }
                         String network_name = "";
                         Long networkg0_uuid = null;
                         Long networkg1_uuid = null;
@@ -127,7 +121,14 @@ public class NetworkDatabase {
                         for (Bindable bindable : bindables) {
                                 switch (bindable.get_id()) {
                                         case BINDABLE_ID_NETWORK:
-                                                network_name = ((AlignmentNetwork) bindable.get_binded()).get_suggested_name();
+                                                try {
+                                                        network_name = ((AlignmentNetwork) bindable.get_binded()).get_suggested_name();
+                                                } catch (NullPointerException ex) {
+                                                        System.out.println(getClass() + " - " + "Network " + network_uuid 
+                                                                        + " has been destroyed, refreshing bindings");
+                                                        obsolete_uuids.add(network_uuid);
+                                                        continue OUTTER_LOOP;
+                                                }
                                                 break;
                                         case BINDABLE_ID_NETWORK_G0:
                                                 networkg0_uuid = ((AlignmentNetwork) bindable.get_binded()).get_suid();
@@ -158,7 +159,6 @@ public class NetworkDatabase {
                 m_bindings = new HashMap<>();
                 m_network_mgr = app_adapter.getCyNetworkManager();
                 m_netview_mgr = app_adapter.getCyNetworkViewManager();
-                m_app_adapter = app_adapter;
                 __init_database_table(app_adapter.getCyTableManager(), app_adapter.getCyTableFactory());
                 __load_database();
         }

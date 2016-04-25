@@ -17,7 +17,6 @@
  */
 package research;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -137,7 +136,7 @@ public class TaskSwitchAlignmentView implements Task {
                         // Hide unaligned nodes/edges
                         NetworkRenderer.Shader sha_compl = renderer.create_shader(null, 0);
                         NetworkRenderer.Shader sha_align = renderer.create_shader(null, 255);
-;                       batches.add(renderer.create_batch(aligned_compl_desc, sha_compl));
+                        batches.add(renderer.create_batch(aligned_compl_desc, sha_compl));
                         batches.add(renderer.create_batch(aligned_desc, sha_align));
                 } else {
                         // Show everything

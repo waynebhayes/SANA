@@ -184,7 +184,7 @@ class DOSUTFFS extends Thread {
  */
 public class MenuShowAlignmentSwitch implements MenuProtocol {
 
-        private final String c_MenuName = "Show/Hide Computed Alignment";
+        private final String c_MenuName = "Show/Hide Alignment";
         private final String c_ParentMenuName = "Tools";
         private CytoscapeMenuService m_service;
 

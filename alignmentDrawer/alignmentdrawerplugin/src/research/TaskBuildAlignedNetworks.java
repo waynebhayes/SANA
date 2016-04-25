@@ -114,7 +114,6 @@ public class TaskBuildAlignedNetworks implements Task {
                 NetworkDatabase db = NetworkDatabaseSingleton.get_instance();
                 db.add_network_bindings(aligned, new Bindable(aligned, NetworkDatabase.BINDABLE_ID_NETWORK));
                 
-                // @fixme: have to abandon these bindings
                 for (CyNetworkView view : views) {
                         db.add_network_bindings(aligned, new Bindable(view, NetworkDatabase.BINDABLE_ID_VIEW));
                 }

@@ -50,13 +50,15 @@ public class TaskHighlightNode implements Task {
                 
                 NetworkDatabase db = NetworkDatabaseSingleton.get_instance();
                 CyNetwork curr_net = m_adapter.getCyApplicationManager().getCurrentNetwork();
+                if (curr_net == null)
+                        throw new Exception("You don't have any active network yet");
                 
                 AlignmentNetwork aligned_net = new AlignmentNetwork(curr_net);
                 CyNetworkView view = (CyNetworkView) db.get_network_binding(aligned_net, NetworkDatabase.BINDABLE_ID_VIEW).get_binded();
                 AlignmentNetwork g0 = (AlignmentNetwork) db.get_network_binding(aligned_net, NetworkDatabase.BINDABLE_ID_NETWORK_G0).get_binded();
                 AlignmentNetwork g1 = (AlignmentNetwork) db.get_network_binding(aligned_net, NetworkDatabase.BINDABLE_ID_NETWORK_G1).get_binded();
                 
-                System.out.println(getClass().toString() + " - Highlighting network: " + aligned_net.get_suggested_name() + 
+                System.out.println(getClass() + " - Highlighting network: " + aligned_net.get_suggested_name() + 
                                    ", with view: " + view + ", with node: " + m_sig);
                 
                 NetworkDescriptor desc = new NetworkDescriptor(aligned_net);
