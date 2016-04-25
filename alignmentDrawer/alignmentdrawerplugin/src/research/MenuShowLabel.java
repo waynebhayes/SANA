@@ -24,14 +24,15 @@ import org.cytoscape.work.TaskIterator;
 /**
  * @author Wen, Chifeng
  */
-public class MenuHighlighter implements MenuProtocol {
+public class MenuShowLabel implements MenuProtocol {
         
         private CytoscapeMenuService m_service = null;
         private CySwingAppAdapter m_adapter = null;
+        private boolean m_is2show = false;
         
         @Override
         public String get_menu_name() {
-                return "Node Highlighter";
+                return "Show/Hide Label";
         }
 
         @Override
@@ -41,8 +42,8 @@ public class MenuHighlighter implements MenuProtocol {
 
         @Override
         public void action_performed(ActionEvent e) {
-                String sig = Util.run_input_dialog("Highlighter", "Please input the node you want to highlight");
-                TaskHighlightNode task = new TaskHighlightNode(sig, m_adapter);
+                m_is2show = !m_is2show;
+                TaskShowLabel task = new TaskShowLabel(m_is2show, m_adapter);
                 m_adapter.getTaskManager().execute(new TaskIterator(task));
         }
 
@@ -50,5 +51,5 @@ public class MenuHighlighter implements MenuProtocol {
         public void set_menu_service(CytoscapeMenuService service) {
                 m_service = service;
                 m_adapter = m_service.get_adapter();
-        }       
+        }      
 }

@@ -42,6 +42,7 @@ public class AlignmentDrawerApp extends AbstractCySwingApp {
                 menu.install_protocol(new MenuComputeAlignedNetwork());
                 menu.install_protocol(new MenuShowAlignmentSwitch());
                 menu.install_protocol(new MenuHighlighter());
+                menu.install_protocol(new MenuShowLabel());
                 
                 NetworkDatabaseSingleton.init(adapter);
                 System.out.println(getClass() + " - AlignmentDrawerAPP is ready to go...");

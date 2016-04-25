@@ -40,9 +40,9 @@ public class NetworkRenderer {
         public class Shader {
                 public final Color m_color;
                 public final Integer m_transparency;
-                public final boolean m_2show_label;
+                public final Boolean m_2show_label;
                 
-                public Shader(Color c, Integer t, boolean show_label) {
+                public Shader(Color c, Integer t, Boolean show_label) {
                         m_color = c;
                         m_transparency = t;
                         m_2show_label = show_label;
@@ -79,7 +79,11 @@ public class NetworkRenderer {
         }
         
         public Shader create_shader(Color c, Integer t) {
-                return new Shader(c, t, true);
+                return new Shader(c, t, null);
+        }
+        
+        public Shader create_shader(boolean show_label) {
+                return new Shader(null, null, show_label);
         }
         
         public Batch create_batch(NetworkDescriptor desc, Shader shader) {
@@ -141,10 +145,15 @@ public class NetworkRenderer {
                                         if (shader.m_transparency != null)
                                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_TRANSPARENCY, 
                                                                             shader.m_transparency);
-                                        if (shader.m_2show_label) {
+                                        if (shader.m_2show_label != null && shader.m_2show_label == true) {
                                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_WIDTH, c_NodeEnlargedWidth);
                                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_HEIGHT, c_NodeEnlargedHeight);
                                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_LABEL, shortened_name);
+                                                node_view.setVisualProperty(BasicVisualLexicon.NODE_LABEL_FONT_SIZE, 14);
+                                        } else {
+                                                node_view.setVisualProperty(BasicVisualLexicon.NODE_WIDTH, c_NodeWidth);
+                                                node_view.setVisualProperty(BasicVisualLexicon.NODE_HEIGHT, c_NodeHeight);
+                                                node_view.setVisualProperty(BasicVisualLexicon.NODE_LABEL, null);
                                         }
                                 }
                                 k ++;
