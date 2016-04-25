@@ -92,7 +92,7 @@ public class NetworkRenderer {
                 return new Batch(desc, shader);
         }
         
-        public Map<AlignmentNetwork, CyNetworkView> render(List<Batch> batches, CyNetworkView custom_view, boolean render2custom_, TaskMonitor tm) {
+        public Map<AlignmentNetwork, CyNetworkView> render(List<Batch> batches, CyNetworkView custom_view, boolean render2custom, TaskMonitor tm) {
                 if (custom_view == null && m_view_fact == null) {
                         return null;
                 }
@@ -105,7 +105,7 @@ public class NetworkRenderer {
                         AlignmentNetwork align_net = desc.get_alignment_network();
                         
                         CyNetworkView view;
-                        if (render2custom_) {
+                        if (render2custom && custom_view != null) {
                                 view = custom_view;
                         } else {
                                 view = uniqueness.get(align_net);
@@ -129,8 +129,9 @@ public class NetworkRenderer {
                         Shader shader = batch.m_shader;
                         int k = 0;
                         for (CyNode node : net_nodes) {
-                                String formal_name = net_node_sigs.get(k).toString();
-                                String shortened_name=  net_node_sigs.get(k).toSimplifiedString();
+                                NodeSignatureManager sigs = net_node_sigs.get(k ++);
+                                String formal_name = sigs.toString();
+                                String shortened_name = sigs.toSimplifiedString();
                                 View<CyNode> node_view = view.getNodeView(node);
                                 View<CyNode> custom_node_view = custom_view != null ? custom_view.getNodeView(node) : null;
                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_WIDTH, c_NodeWidth);
@@ -170,7 +171,6 @@ public class NetworkRenderer {
                                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_LABEL, null);
                                         }
                                 }
-                                k ++;
                                 Util.advance_progress(tm, j, total);
                         }
                         // Decorate edges
