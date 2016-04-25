@@ -204,10 +204,12 @@ public class NetworkRenderer {
         public void commit(Map<AlignmentNetwork, CyNetworkView> views, CyNetworkViewManager view_mgr) {
                 // Clear old views
                 for (AlignmentNetwork align_net : views.keySet()) {
+                        CyNetworkView new_view = views.get(align_net);
                         if (view_mgr.viewExists(align_net.get_network())) {
                                 Collection<CyNetworkView> old_views = view_mgr.getNetworkViews(align_net.get_network());
                                 for (CyNetworkView old_view : old_views) {
-                                        view_mgr.destroyNetworkView(old_view);
+                                        if (old_view != new_view)
+                                                view_mgr.destroyNetworkView(old_view);
                                 }
                         }
                 }
