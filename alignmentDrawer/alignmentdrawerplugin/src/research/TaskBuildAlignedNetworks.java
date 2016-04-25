@@ -18,10 +18,10 @@
 package research;
 
 import java.awt.Color;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.cytoscape.app.swing.CySwingAppAdapter;
 import org.cytoscape.model.CyNetwork;
@@ -100,21 +100,19 @@ public class TaskBuildAlignedNetworks implements Task {
                 
                 // Apply visual style to the network
                 // Then put new network and its view to the manager
-                Collection<CyNetworkView> views = renderer.render(batches, null, tm);
-                renderer.commit(views);
-                
                 CyNetworkManager network_mgr = m_adapter.getCyNetworkManager();
                 CyNetworkViewManager view_mgr = m_adapter.getCyNetworkViewManager();
                 
                 network_mgr.addNetwork(aligned.get_network());
-                for (CyNetworkView view : views) {
-                        view_mgr.addNetworkView(view);
-                }
+                
+                Map<AlignmentNetwork, CyNetworkView> views = renderer.render(batches, null, tm);
+                renderer.commit(views, view_mgr);
+
                 // Put the aligned network to local database
                 NetworkDatabase db = NetworkDatabaseSingleton.get_instance();
                 db.add_network_bindings(aligned, new Bindable(aligned, NetworkDatabase.BINDABLE_ID_NETWORK));
                 
-                for (CyNetworkView view : views) {
+                for (CyNetworkView view : views.values()) {
                         db.add_network_bindings(aligned, new Bindable(view, NetworkDatabase.BINDABLE_ID_VIEW));
                 }
                 

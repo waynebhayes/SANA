@@ -21,11 +21,13 @@ import java.awt.Color;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.cytoscape.model.CyEdge;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.view.model.CyNetworkView;
 import org.cytoscape.view.model.CyNetworkViewFactory;
+import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.view.model.View;
 import org.cytoscape.view.presentation.property.BasicVisualLexicon;
 import org.cytoscape.view.presentation.property.NodeShapeVisualProperty;
@@ -70,9 +72,9 @@ public class NetworkRenderer {
                 m_view_fact = view_fact;
         }
         
-        public NetworkRenderer() {
-                m_view_fact = null;
-        }
+//        public NetworkRenderer() {
+//                m_view_fact = null;
+//        }
         
         public Shader create_shader(Color c, Integer t, boolean show_label) {
                 return new Shader(c, t, show_label);
@@ -90,30 +92,23 @@ public class NetworkRenderer {
                 return new Batch(desc, shader);
         }
         
-        public Collection<CyNetworkView> render(List<Batch> batches, CyNetworkView custom_view, TaskMonitor tm) {
+        public Map<AlignmentNetwork, CyNetworkView> render(List<Batch> batches, CyNetworkView custom_view, TaskMonitor tm) {
                 if (custom_view == null && m_view_fact == null) {
                         return null;
                 }
                 // Keep track of views
-                HashMap<Long, CyNetworkView> uniqueness = new HashMap<>();
-                if (custom_view != null) {
-                        uniqueness.put(Long.MIN_VALUE, custom_view);
-                }
+                HashMap<AlignmentNetwork, CyNetworkView> uniqueness = new HashMap<>();
+
                 // process batches
                 for (Batch batch : batches) {
                         NetworkDescriptor desc = batch.m_desc;
                         AlignmentNetwork align_net = desc.get_alignment_network();
                         
                         CyNetworkView view;
-                        if (custom_view == null) {
-                                Long network_id = align_net.get_network().getSUID();
-                                view = uniqueness.get(network_id);
-                                if (view == null) {
-                                        view = m_view_fact.createNetworkView(align_net.get_network());
-                                        uniqueness.put(network_id, view);
-                                }
-                        } else {
-                                view = custom_view;
+                        view = uniqueness.get(align_net);
+                        if (view == null) {
+                                view = m_view_fact.createNetworkView(align_net.get_network());
+                                uniqueness.put(align_net, view);
                         }
 
                         tm.setTitle("Rendering Alignemnt Network");
@@ -133,6 +128,7 @@ public class NetworkRenderer {
                                 String formal_name = net_node_sigs.get(k).toString();
                                 String shortened_name=  net_node_sigs.get(k).toSimplifiedString();
                                 View<CyNode> node_view = view.getNodeView(node);
+                                View<CyNode> custom_node_view = custom_view != null ? custom_view.getNodeView(node) : null;
                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_WIDTH, c_NodeWidth);
                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_HEIGHT, c_NodeHeight);
                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_BORDER_WIDTH, 0.0);
@@ -142,9 +138,23 @@ public class NetworkRenderer {
                                         if (shader.m_color != null)
                                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_FILL_COLOR, 
                                                                             shader.m_color);
+                                        else {
+                                                if (custom_node_view != null) {
+                                                        // Use custom view's property if possible.
+                                                        node_view.setVisualProperty(BasicVisualLexicon.NODE_FILL_COLOR, 
+                                                                custom_node_view.getVisualProperty(BasicVisualLexicon.NODE_FILL_COLOR));
+                                                }
+                                        }
                                         if (shader.m_transparency != null)
                                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_TRANSPARENCY, 
                                                                             shader.m_transparency);
+                                        else {
+                                                if (custom_node_view != null) {
+                                                        // Use custom view's property if possible.
+                                                        node_view.setVisualProperty(BasicVisualLexicon.NODE_TRANSPARENCY, 
+                                                                custom_node_view.getVisualProperty(BasicVisualLexicon.NODE_TRANSPARENCY));
+                                                }
+                                        }
                                         if (shader.m_2show_label != null && shader.m_2show_label == true) {
                                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_WIDTH, c_NodeEnlargedWidth);
                                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_HEIGHT, c_NodeEnlargedHeight);
@@ -176,19 +186,33 @@ public class NetworkRenderer {
                                 Util.advance_progress(tm, j, total);
                         }
                 }
-                return uniqueness.values();
+                return uniqueness;
         }
         
-        public Collection<CyNetworkView> render(List<Batch> batches) {
+        public Map<AlignmentNetwork, CyNetworkView> render(List<Batch> batches) {
                 return render(batches, null, null);
         }
         
-        public Collection<CyNetworkView> render(List<Batch> batches, CyNetworkView view) {
+        public Map<AlignmentNetwork, CyNetworkView> render(List<Batch> batches, CyNetworkView view) {
                 return render(batches, view, null);
         }
         
-        public void commit(Collection<CyNetworkView> views) {
-                for (CyNetworkView view : views) {
+        public void commit(Map<AlignmentNetwork, CyNetworkView> views, CyNetworkViewManager view_mgr) {
+                // Clear old views
+                for (AlignmentNetwork align_net : views.keySet()) {
+                        if (view_mgr.viewExists(align_net.get_network())) {
+                                Collection<CyNetworkView> old_views = view_mgr.getNetworkViews(align_net.get_network());
+                                for (CyNetworkView old_view : old_views) {
+                                        view_mgr.destroyNetworkView(old_view);
+                                }
+                        }
+                }
+                // Add new views
+                for (CyNetworkView view : views.values()) {
+                        view_mgr.addNetworkView(view);
+                }
+                // update network view
+                for (CyNetworkView view : views.values()) {
                         view.updateView();
                 }
         }

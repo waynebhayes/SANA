@@ -19,9 +19,9 @@ package research;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.cytoscape.app.swing.CySwingAppAdapter;
 import org.cytoscape.model.CyNetwork;
@@ -78,13 +78,13 @@ public class TaskHighlightNode implements Task {
                 highlight_set.add(sig_mgr2);
                 desc.select_by_signatures(highlight_set);
                 
-                NetworkRenderer renderer = new NetworkRenderer();
+                NetworkRenderer renderer = new NetworkRenderer(m_adapter.getCyNetworkViewFactory());
                 NetworkRenderer.Shader highlight_sha = renderer.create_shader(Color.MAGENTA, 255);
                 List<NetworkRenderer.Batch> batches = new ArrayList<>();
                 batches.add(renderer.create_batch(desc, highlight_sha));
                 
-                Collection<CyNetworkView> views = renderer.render(batches, view, tm);
-                renderer.commit(views);
+                Map<AlignmentNetwork, CyNetworkView> views = renderer.render(batches, view, tm);
+                renderer.commit(views, m_adapter.getCyNetworkViewManager());
         }
 
         @Override
