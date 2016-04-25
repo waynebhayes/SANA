@@ -18,8 +18,8 @@
 package research;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.cytoscape.app.swing.CySwingAppAdapter;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.view.model.CyNetworkView;
@@ -58,13 +58,13 @@ public class TaskShowLabel implements Task {
                 NetworkDescriptor desc = new NetworkDescriptor(aligned_net);
                 desc.select_all();
                 
-                NetworkRenderer renderer = new NetworkRenderer();
+                NetworkRenderer renderer = new NetworkRenderer(m_adapter.getCyNetworkViewFactory());
                 NetworkRenderer.Shader label_sha = renderer.create_shader(m_is2show);
                 List<NetworkRenderer.Batch> batches = new ArrayList<>();
                 batches.add(renderer.create_batch(desc, label_sha));
                 
-                Collection<CyNetworkView> views = renderer.render(batches, view, tm);
-                renderer.commit(views);
+                Map<AlignmentNetwork, CyNetworkView> views = renderer.render(batches, view, tm);
+                renderer.commit(views, m_adapter.getCyNetworkViewManager());
         }
 
         @Override
