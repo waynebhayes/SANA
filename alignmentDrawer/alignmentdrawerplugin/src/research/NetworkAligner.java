@@ -19,7 +19,6 @@ package research;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.cytoscape.model.CyEdge;
@@ -28,6 +27,7 @@ import org.cytoscape.model.CyRow;
 import org.cytoscape.model.CyTable;
 import org.cytoscape.model.CyTableFactory;
 import org.cytoscape.work.TaskMonitor;
+import research.NodeSignatureManager.NodeSignature;
 
 /**
  * Aligning networks from given data
@@ -81,8 +81,8 @@ public class NetworkAligner {
                 m_size++;
         }
         
-        public String the_only_element_in(Set<String> set) {
-                return set.iterator().next();
+        public String the_only_element_in(ArrayList<NodeSignature> set) {
+                return set.get(0).id;
         }
         
         public void align_networks_from_data(AlignmentNetwork network0, AlignmentNetwork network1,
@@ -112,7 +112,7 @@ public class NetworkAligner {
                 for (AlignmentNetwork.NodeIterator i = network0.NodeIterator(); i.hasNext(); ) {
                         String real_sig = i.next();
                         sig_mgr.override_with(real_sig);
-                        String plain_sig = the_only_element_in(sig_mgr.get_all_ids());
+                        String plain_sig = the_only_element_in(sig_mgr.get_all_node_signatures());
                         String val = network0_1.get(plain_sig);
                         if (val != null) {
                                 network0_1.remove(plain_sig);
@@ -122,7 +122,7 @@ public class NetworkAligner {
                 for (AlignmentNetwork.NodeIterator i = network1.NodeIterator(); i.hasNext(); ) {
                         String real_sig = i.next();
                         sig_mgr.override_with(real_sig);
-                        String plain_sig = the_only_element_in(sig_mgr.get_all_ids());
+                        String plain_sig = the_only_element_in(sig_mgr.get_all_node_signatures());
                         String key = network0_1.getKey(plain_sig);
                         if (key != null) {
                                 network0_1.removeValue(plain_sig);
