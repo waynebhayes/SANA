@@ -121,6 +121,7 @@ public class TaskBuildAlignedNetworks implements Task {
                 
                 db.add_network_bindings(aligned, new Bindable(g0, NetworkDatabase.BINDABLE_ID_NETWORK_G0));
                 db.add_network_bindings(aligned, new Bindable(g1, NetworkDatabase.BINDABLE_ID_NETWORK_G1));
+                db.update();
 
                 tm.setProgress(1.0);
                 tm.setStatusMessage("Finished aligning networks...");

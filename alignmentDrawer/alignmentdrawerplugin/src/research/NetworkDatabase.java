@@ -17,6 +17,7 @@
  */
 package research;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -107,8 +108,16 @@ public class NetworkDatabase {
         }
         
         private void __store_database() {
+                ArrayList<Long> obsolete_uuids = new ArrayList<>();
+                
                 for (Long netuuid : m_bindings.keySet()) {
                         Long network_uuid = netuuid;
+                        if (null == m_network_mgr.getNetwork(network_uuid)) {
+                                System.out.println(getClass() + " - " + "Network " + network_uuid 
+                                                   + " has been destroyed refreshing bindings");
+                                obsolete_uuids.add(network_uuid);
+                                continue;
+                        }
                         String network_name = "";
                         Long networkg0_uuid = null;
                         Long networkg1_uuid = null;
@@ -139,6 +148,10 @@ public class NetworkDatabase {
                         row.set(c_AttriNetworkG1, networkg1_uuid);
                         row.set(c_AttriNetworkView, networkview_uuid);
                 }
+                
+                for (Long obselete_uuid : obsolete_uuids) {
+                        m_bindings.remove(obselete_uuid);
+                }
         }
 
         public NetworkDatabase(CySwingAppAdapter app_adapter) {
@@ -161,6 +174,9 @@ public class NetworkDatabase {
                         new_set.add(bindable);
                         m_bindings.put(network.get_suid(), new_set);
                 }
+        }
+        
+        public void update() {
                 __store_database();
         }
 
