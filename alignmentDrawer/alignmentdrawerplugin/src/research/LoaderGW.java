@@ -51,6 +51,7 @@ public class LoaderGW implements CyNetworkReader, LoaderProtocol {
 
         private CyNetworkViewFactory m_network_view_fact = null;
         private CyNetworkFactory m_network_fact = null;
+        private String m_filename = "";
         private InputStream m_istream = null;
         private CyNetwork m_network = null;
         private boolean m_is_canceled = false;
@@ -100,7 +101,7 @@ public class LoaderGW implements CyNetworkReader, LoaderProtocol {
                 if (m_network_fact == null) {
                         throw new Exception("Have not given a network factory");
                 }
-                String namespace = m_istream.toString();
+                String namespace = m_filename;
                 AlignmentNetwork network_mgr = new AlignmentNetwork(m_network_fact, namespace);
 
                 // keeep track of progress
@@ -217,6 +218,11 @@ public class LoaderGW implements CyNetworkReader, LoaderProtocol {
         @Override
         public void set_input_stream(InputStream s) {
                 m_istream = s;
+        }
+        
+        @Override
+        public void set_file_name(String filename) {
+                m_filename = filename;
         }
 
         @Override

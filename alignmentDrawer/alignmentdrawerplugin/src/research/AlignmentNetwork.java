@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import org.cytoscape.model.CyEdge;
 import org.cytoscape.model.CyIdentifiable;
 import org.cytoscape.model.CyNetwork;
@@ -44,8 +43,6 @@ public class AlignmentNetwork {
         private final String c_EdgeSignature1Slot = "AlignEdgeSig1";
         private final String c_NetworkNamespaceSlot = "NetworkNamespace";
         private CyNetwork m_network = null;
-
-        static public final String c_AlignmentBindableId = "AlignmentNetworkBindable";
 
         private boolean build_node_attributes(CyNetwork network) {
                 boolean is_compatible = true;

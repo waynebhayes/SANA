@@ -30,7 +30,7 @@ public class AlignmentDrawerApp extends AbstractCySwingApp {
         public AlignmentDrawerApp(CySwingAppAdapter adapter) {
                 super(adapter);
                 System.out.println(getClass() + " - Initializing AlignmentDrawerAPP...");
-
+                
                 CytoscapeLoaderService loader = new CytoscapeLoaderService(adapter);
                 LoaderGW gw_loader = new LoaderGW();
                 LoaderSANAAlign sana_loader = new LoaderSANAAlign();
@@ -42,7 +42,8 @@ public class AlignmentDrawerApp extends AbstractCySwingApp {
                 menu.install_protocol(new MenuComputeAlignedNetwork());
                 menu.install_protocol(new MenuShowAlignmentSwitch());
                 menu.install_protocol(new MenuHighlighter());
-
+                
+                NetworkDatabaseSingleton.init(adapter);
                 System.out.println(getClass() + " - AlignmentDrawerAPP is ready to go...");
         }
 }

@@ -52,9 +52,9 @@ public class TaskHighlightNode implements Task {
                 CyNetwork curr_net = m_adapter.getCyApplicationManager().getCurrentNetwork();
                 
                 AlignmentNetwork aligned_net = new AlignmentNetwork(curr_net);
-                CyNetworkView view = (CyNetworkView) db.get_network_binding(aligned_net, CyNetworkView.class.getName()).get_binded();
-                AlignmentNetwork g0 = (AlignmentNetwork) db.get_network_binding(aligned_net, AlignmentNetwork.c_AlignmentBindableId + "_g0").get_binded();
-                AlignmentNetwork g1 = (AlignmentNetwork) db.get_network_binding(aligned_net, AlignmentNetwork.c_AlignmentBindableId + "_g1").get_binded();
+                CyNetworkView view = (CyNetworkView) db.get_network_binding(aligned_net, NetworkDatabase.BINDABLE_ID_VIEW).get_binded();
+                AlignmentNetwork g0 = (AlignmentNetwork) db.get_network_binding(aligned_net, NetworkDatabase.BINDABLE_ID_NETWORK_G0).get_binded();
+                AlignmentNetwork g1 = (AlignmentNetwork) db.get_network_binding(aligned_net, NetworkDatabase.BINDABLE_ID_NETWORK_G1).get_binded();
                 
                 System.out.println(getClass().toString() + " - Highlighting network: " + aligned_net.get_suggested_name() + 
                                    ", with view: " + view + ", with node: " + m_sig);

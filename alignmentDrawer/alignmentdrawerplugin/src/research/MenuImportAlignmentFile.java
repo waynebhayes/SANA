@@ -95,6 +95,7 @@ public class MenuImportAlignmentFile implements MenuProtocol {
                 if (file != null) {
                         try {
                                 FileInputStream stream = new FileInputStream(file.getPath());
+                                m_sana_align.set_file_name(file.getName());
                                 m_sana_align.set_input_stream(stream);
                                 m_sana_align.set_loader_service(new CytoscapeLoaderService(m_adapter));
                                 m_sana_align.override_data_name(file.getName());

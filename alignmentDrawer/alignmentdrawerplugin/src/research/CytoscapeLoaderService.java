@@ -49,6 +49,7 @@ class LoaderInputStreamFactory implements InputStreamTaskFactory {
 
         @Override
         public TaskIterator createTaskIterator(InputStream in, String string) {
+                m_protocol.set_file_name(string);
                 m_protocol.set_input_stream(in);
                 m_protocol.set_loader_service(m_service);
                 return new TaskIterator(m_protocol);
