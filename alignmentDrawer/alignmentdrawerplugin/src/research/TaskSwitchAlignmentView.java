@@ -144,7 +144,7 @@ public class TaskSwitchAlignmentView implements Task {
                         batches.add(renderer.create_batch(aligned_compl_desc, sha_compl));
                 }
 
-                Map<AlignmentNetwork, CyNetworkView> views = renderer.render(batches, bindings.view, tm);
+                Map<AlignmentNetwork, CyNetworkView> views = renderer.render(batches, bindings.view, true, tm);
                 renderer.commit(views, m_adapter.getCyNetworkViewManager());
                 System.out.println(getClass() + " - Finished switching alignment view...");
         }
@@ -201,7 +201,7 @@ public class TaskSwitchAlignmentView implements Task {
                 batches.add(renderer.create_batch(g0_complement_desc, sha_g0));
                 batches.add(renderer.create_batch(g1_complement_desc, sha_g1));
                         
-                Map<AlignmentNetwork, CyNetworkView> views = renderer.render(batches, bindings.view, tm);
+                Map<AlignmentNetwork, CyNetworkView> views = renderer.render(batches, bindings.view, true, tm);
                 renderer.commit(views, m_adapter.getCyNetworkViewManager());
 
                 System.out.println(getClass() + " - Finished switching alignment view...");

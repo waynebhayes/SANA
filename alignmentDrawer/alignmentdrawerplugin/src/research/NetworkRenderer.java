@@ -92,7 +92,7 @@ public class NetworkRenderer {
                 return new Batch(desc, shader);
         }
         
-        public Map<AlignmentNetwork, CyNetworkView> render(List<Batch> batches, CyNetworkView custom_view, TaskMonitor tm) {
+        public Map<AlignmentNetwork, CyNetworkView> render(List<Batch> batches, CyNetworkView custom_view, boolean render2custom_, TaskMonitor tm) {
                 if (custom_view == null && m_view_fact == null) {
                         return null;
                 }
@@ -105,10 +105,14 @@ public class NetworkRenderer {
                         AlignmentNetwork align_net = desc.get_alignment_network();
                         
                         CyNetworkView view;
-                        view = uniqueness.get(align_net);
-                        if (view == null) {
-                                view = m_view_fact.createNetworkView(align_net.get_network());
-                                uniqueness.put(align_net, view);
+                        if (render2custom_) {
+                                view = custom_view;
+                        } else {
+                                view = uniqueness.get(align_net);
+                                if (view == null) {
+                                        view = m_view_fact.createNetworkView(align_net.get_network());
+                                        uniqueness.put(align_net, view);
+                                }
                         }
 
                         tm.setTitle("Rendering Alignemnt Network");
@@ -190,11 +194,11 @@ public class NetworkRenderer {
         }
         
         public Map<AlignmentNetwork, CyNetworkView> render(List<Batch> batches) {
-                return render(batches, null, null);
+                return render(batches, null, false, null);
         }
         
         public Map<AlignmentNetwork, CyNetworkView> render(List<Batch> batches, CyNetworkView view) {
-                return render(batches, view, null);
+                return render(batches, view, true, null);
         }
         
         public void commit(Map<AlignmentNetwork, CyNetworkView> views, CyNetworkViewManager view_mgr) {

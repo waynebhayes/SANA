@@ -105,7 +105,7 @@ public class TaskBuildAlignedNetworks implements Task {
                 
                 network_mgr.addNetwork(aligned.get_network());
                 
-                Map<AlignmentNetwork, CyNetworkView> views = renderer.render(batches, null, tm);
+                Map<AlignmentNetwork, CyNetworkView> views = renderer.render(batches, null, false, tm);
                 renderer.commit(views, view_mgr);
 
                 // Put the aligned network to local database
