@@ -1,6 +1,9 @@
 # CytoscapeAlignmentDrawer
 An alignment drawing app for cytoscape. To install this app, you will need Cytoscape 3.0+. Detailed instructions can be seen at: http://wiki.cytoscape.org/Cytoscape_3/UserManual/AppManager. To build this software, you will need apache ANT build tool installed, then use make command under the root directory (where the Makefile sits in) to build the java bytecode.
 
+# Show/hide labels 2016-4-24
+![alt tag](screenshots/show-labels.png)
+
 # Node highlighting 2016-4-15
 ![alt tag](screenshots/node-highlighter.png)
 
