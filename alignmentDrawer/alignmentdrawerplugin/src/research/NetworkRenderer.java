@@ -40,10 +40,12 @@ public class NetworkRenderer {
         public class Shader {
                 public final Color m_color;
                 public final Integer m_transparency;
+                public final boolean m_2show_label;
                 
-                public Shader(Color c, Integer t) {
+                public Shader(Color c, Integer t, boolean show_label) {
                         m_color = c;
                         m_transparency = t;
+                        m_2show_label = show_label;
                 }
         }
         
@@ -60,6 +62,8 @@ public class NetworkRenderer {
         private final CyNetworkViewFactory m_view_fact;
         private final Double c_NodeWidth = 12.0;
         private final Double c_NodeHeight = 12.0;
+        private final Double c_NodeEnlargedWidth = 50.0;
+        private final Double c_NodeEnlargedHeight = 50.0;
         private final NodeShape c_NodeShape = NodeShapeVisualProperty.ELLIPSE;
         
         public NetworkRenderer(CyNetworkViewFactory view_fact) {
@@ -70,8 +74,12 @@ public class NetworkRenderer {
                 m_view_fact = null;
         }
         
+        public Shader create_shader(Color c, Integer t, boolean show_label) {
+                return new Shader(c, t, show_label);
+        }
+        
         public Shader create_shader(Color c, Integer t) {
-                return new Shader(c, t);
+                return new Shader(c, t, true);
         }
         
         public Batch create_batch(NetworkDescriptor desc, Shader shader) {
@@ -118,13 +126,14 @@ public class NetworkRenderer {
                         Shader shader = batch.m_shader;
                         int k = 0;
                         for (CyNode node : net_nodes) {
+                                String formal_name = net_node_sigs.get(k).toString();
+                                String shortened_name=  net_node_sigs.get(k).toSimplifiedString();
                                 View<CyNode> node_view = view.getNodeView(node);
                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_WIDTH, c_NodeWidth);
                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_HEIGHT, c_NodeHeight);
                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_BORDER_WIDTH, 0.0);
                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_SHAPE, c_NodeShape);
-                                node_view.setVisualProperty(BasicVisualLexicon.NODE_TOOLTIP, 
-                                                            net_node_sigs.get(k ++).toString());
+                                node_view.setVisualProperty(BasicVisualLexicon.NODE_TOOLTIP, formal_name);
                                 if (shader != null) {
                                         if (shader.m_color != null)
                                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_FILL_COLOR, 
@@ -132,7 +141,13 @@ public class NetworkRenderer {
                                         if (shader.m_transparency != null)
                                                 node_view.setVisualProperty(BasicVisualLexicon.NODE_TRANSPARENCY, 
                                                                             shader.m_transparency);
+                                        if (shader.m_2show_label) {
+                                                node_view.setVisualProperty(BasicVisualLexicon.NODE_WIDTH, c_NodeEnlargedWidth);
+                                                node_view.setVisualProperty(BasicVisualLexicon.NODE_HEIGHT, c_NodeEnlargedHeight);
+                                                node_view.setVisualProperty(BasicVisualLexicon.NODE_LABEL, shortened_name);
+                                        }
                                 }
+                                k ++;
                                 Util.advance_progress(tm, j, total);
                         }
                         // Decorate edges

@@ -124,4 +124,12 @@ public class NodeSignatureManager {
                 }
                 return s.toString();
         }
+
+        public String toSimplifiedString() {
+                StringBuilder s = new StringBuilder();
+                for (String id : m_node_id.values()) {
+                        s.append(id).append(COMMA);
+                }
+                return s.toString();
+        }
 }
