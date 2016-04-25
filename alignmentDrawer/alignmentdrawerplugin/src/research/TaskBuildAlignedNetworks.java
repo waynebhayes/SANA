@@ -18,7 +18,6 @@
 package research;
 
 import java.awt.Color;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -113,15 +112,15 @@ public class TaskBuildAlignedNetworks implements Task {
                 }
                 // Put the aligned network to local database
                 NetworkDatabase db = NetworkDatabaseSingleton.get_instance();
-                db.add_network_bindings(aligned, new Bindable(aligned, AlignmentNetwork.c_AlignmentBindableId));
+                db.add_network_bindings(aligned, new Bindable(aligned, NetworkDatabase.BINDABLE_ID_NETWORK));
                 
                 // @fixme: have to abandon these bindings
                 for (CyNetworkView view : views) {
-                        db.add_network_bindings(aligned, new Bindable(view, CyNetworkView.class.getName()));
+                        db.add_network_bindings(aligned, new Bindable(view, NetworkDatabase.BINDABLE_ID_VIEW));
                 }
                 
-                db.add_network_bindings(aligned, new Bindable(g0, AlignmentNetwork.c_AlignmentBindableId + "_g0"));
-                db.add_network_bindings(aligned, new Bindable(g1, AlignmentNetwork.c_AlignmentBindableId + "_g1"));
+                db.add_network_bindings(aligned, new Bindable(g0, NetworkDatabase.BINDABLE_ID_NETWORK_G0));
+                db.add_network_bindings(aligned, new Bindable(g1, NetworkDatabase.BINDABLE_ID_NETWORK_G1));
 
                 tm.setProgress(1.0);
                 tm.setStatusMessage("Finished aligning networks...");

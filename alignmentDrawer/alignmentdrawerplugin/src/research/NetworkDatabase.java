@@ -19,22 +19,138 @@ package research;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import org.cytoscape.app.swing.CySwingAppAdapter;
+import org.cytoscape.model.CyNetwork;
+import org.cytoscape.model.CyNetworkManager;
+import org.cytoscape.model.CyRow;
+import org.cytoscape.model.CyTable;
+import org.cytoscape.model.CyTableFactory;
+import org.cytoscape.model.CyTableManager;
+import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.model.CyNetworkViewManager;
 
 /**
- * Manage all storing data for the networks
+ * Manage all persistent data for the networks
  *
- * @author davis
+ * @author Wen, Chifeng
  */
 public class NetworkDatabase {
 
         private final HashMap<Long, Set<Bindable>> m_bindings;
-
-        NetworkDatabase() {
-                m_bindings = new HashMap<>();
+        private final CySwingAppAdapter m_app_adapter;
+        private final CyNetworkManager m_network_mgr;
+        private final CyNetworkViewManager m_netview_mgr;
+        
+        private static final String NETWORKDB_TABLE = "__NetworkDBTable";
+        private final String c_PrimaryKey = "NetworkUUID";
+        private final String c_AttriNetworkName = "NetworkName";
+        private final String c_AttriNetworkG0 = "NetworkG0UUID";
+        private final String c_AttriNetworkG1 = "NetworkG1UUID";
+        private final String c_AttriNetworkView = "NetworkViewUUID";
+        private CyTable m_dbtable;
+        
+        public static final String BINDABLE_ID_NETWORK = "__NetworkBindable";
+        public static final String BINDABLE_ID_NETWORK_G0 = "__NetworkBindableg0";
+        public static final String BINDABLE_ID_NETWORK_G1 = "__NetworkBindableg1";
+        public static final String BINDABLE_ID_VIEW = "__NetworkBindableView";
+        
+        private void __init_database_table(CyTableManager tablemgr, CyTableFactory table_fact) {
+                Set<CyTable> tables = tablemgr.getGlobalTables();
+                CyTable glb_table = null;
+                for (CyTable table : tables) {
+                        if (table.getTitle().equals(NETWORKDB_TABLE)) {
+                                glb_table = table;
+                                break;
+                        }
+                }
+                if (glb_table == null) {
+                        // The table has not existed yet.
+                        m_dbtable = table_fact.createTable(NETWORKDB_TABLE, c_PrimaryKey, Long.class, true, true);
+                        m_dbtable.createColumn(c_AttriNetworkName, String.class, true);
+                        m_dbtable.createColumn(c_AttriNetworkG0, Long.class, true);
+                        m_dbtable.createColumn(c_AttriNetworkG1, Long.class, true);
+                        m_dbtable.createColumn(c_AttriNetworkView, Long.class, true);
+                }
+        }
+        
+        private void __load_database() {
+                List<CyRow> rows = m_dbtable.getAllRows();
+                for (CyRow row : rows) {
+                        Long network_uuid = row.get(c_PrimaryKey, Long.class);
+                        String network_name = row.get(c_AttriNetworkName, String.class);
+                        Long networkg0_uuid = row.get(c_AttriNetworkG0, Long.class);
+                        Long networkg1_uuid = row.get(c_AttriNetworkG1, Long.class);
+                        Long networkview_uuid = row.get(c_AttriNetworkView, Long.class);
+                        
+                        CyNetwork net, netg0 = null, netg1 = null;
+                        CyNetworkView netview = null;
+                        if (network_uuid != null) net = m_network_mgr.getNetwork(network_uuid);
+                        else {
+                                System.out.println(getClass() + " - " + "Such network " + network_name + " doesn't exists.");
+                                continue;
+                        }
+                        if (networkg0_uuid != null) netg0 = m_network_mgr.getNetwork(networkg0_uuid);
+                        if (networkg1_uuid != null) netg1 = m_network_mgr.getNetwork(networkg1_uuid);
+                        if (networkview_uuid != null) netview = m_netview_mgr.getNetworkViews(net).iterator().next();
+                        
+                        AlignmentNetwork align_net = new AlignmentNetwork(net);
+                        add_network_bindings(align_net, new Bindable(align_net, BINDABLE_ID_NETWORK));
+                        if (netg0 != null) 
+                                add_network_bindings(align_net, new Bindable(new AlignmentNetwork(netg0), BINDABLE_ID_NETWORK_G0));
+                        if (netg1 != null) 
+                                add_network_bindings(align_net, new Bindable(new AlignmentNetwork(netg1), BINDABLE_ID_NETWORK_G1));
+                        if (netview != null)
+                                add_network_bindings(align_net, new Bindable(netview, BINDABLE_ID_VIEW));
+                }
+        }
+        
+        private void __store_database() {
+                for (Long netuuid : m_bindings.keySet()) {
+                        Long network_uuid = netuuid;
+                        String network_name = "";
+                        Long networkg0_uuid = null;
+                        Long networkg1_uuid = null;
+                        Long networkview_uuid = null;
+                        
+                        Set<Bindable> bindables = m_bindings.get(netuuid);
+                        for (Bindable bindable : bindables) {
+                                switch (bindable.get_id()) {
+                                        case BINDABLE_ID_NETWORK:
+                                                network_name = ((AlignmentNetwork) bindable.get_binded()).get_suggested_name();
+                                                break;
+                                        case BINDABLE_ID_NETWORK_G0:
+                                                networkg0_uuid = ((AlignmentNetwork) bindable.get_binded()).get_suid();
+                                                break;
+                                        case BINDABLE_ID_NETWORK_G1:
+                                                networkg1_uuid = ((AlignmentNetwork) bindable.get_binded()).get_suid();
+                                                break;
+                                        case BINDABLE_ID_VIEW:
+                                                networkview_uuid = ((CyNetworkView) bindable.get_binded()).getSUID();
+                                                break;
+                                }
+                        }
+                        
+                        CyRow row = m_dbtable.getRow(network_uuid);
+                        row.set(c_PrimaryKey, network_uuid);
+                        row.set(c_AttriNetworkName, network_name);
+                        row.set(c_AttriNetworkG0, networkg0_uuid);
+                        row.set(c_AttriNetworkG1, networkg1_uuid);
+                        row.set(c_AttriNetworkView, networkview_uuid);
+                }
         }
 
-        void add_network_bindings(AlignmentNetwork network, Bindable bindable) {
+        public NetworkDatabase(CySwingAppAdapter app_adapter) {
+                m_bindings = new HashMap<>();
+                m_network_mgr = app_adapter.getCyNetworkManager();
+                m_netview_mgr = app_adapter.getCyNetworkViewManager();
+                m_app_adapter = app_adapter;
+                __init_database_table(app_adapter.getCyTableManager(), app_adapter.getCyTableFactory());
+                __load_database();
+        }
+
+        public void add_network_bindings(AlignmentNetwork network, Bindable bindable) {
                 Set<Bindable> s = m_bindings.get(network.get_suid());
                 if (s != null) {
                         // has this network already
@@ -45,9 +161,10 @@ public class NetworkDatabase {
                         new_set.add(bindable);
                         m_bindings.put(network.get_suid(), new_set);
                 }
+                __store_database();
         }
 
-        Bindable get_network_binding(AlignmentNetwork network, String bindable_id) {
+        public Bindable get_network_binding(AlignmentNetwork network, String bindable_id) {
                 Set<Bindable> bindables = m_bindings.get(network.get_suid());
                 if (bindables != null) {
                         for (Bindable b : bindables) {

@@ -47,6 +47,7 @@ public class LoaderSANAAlign implements LoaderProtocol, CyTableReader {
         private CyTableFactory m_table_fact = null;
         private CyTable m_table = null;
         private NetworkAligner m_aligner = null;
+        private String m_filename = "";
         private InputStream m_istream = null;
         private String m_data_name_override = "";
 
@@ -72,7 +73,7 @@ public class LoaderSANAAlign implements LoaderProtocol, CyTableReader {
                 if (m_aligner == null) {
                         throw new Exception("Object NetworkAligner is not constructed yet");
                 }
-                m_aligner.set_data_name(m_data_name_override + "<" + m_istream.toString() + ">");
+                m_aligner.set_data_name(m_data_name_override + "<" + m_filename + ">");
                 String[] lines = Util.extract_lines_from_stream(m_istream);
 
                 // keep track of progress
@@ -141,6 +142,11 @@ public class LoaderSANAAlign implements LoaderProtocol, CyTableReader {
         public void set_input_stream(InputStream s) {
                 m_istream = s;
         }
+        
+        @Override
+        public void set_file_name(String filename) {
+                m_filename = filename;
+        }
 
         @Override
         public void set_loader_service(CytoscapeLoaderService service) {
@@ -148,5 +154,4 @@ public class LoaderSANAAlign implements LoaderProtocol, CyTableReader {
                 m_aligner = new NetworkAligner(m_table_fact);
                 m_table = m_aligner.get_data();
         }
-
 }

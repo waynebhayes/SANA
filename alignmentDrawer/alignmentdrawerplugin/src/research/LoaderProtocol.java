@@ -33,6 +33,8 @@ public interface LoaderProtocol extends Task {
 //        public void             set_network_factory(CyNetworkFactory fact);
 //        public void             set_network_view_factory(CyNetworkViewFactory fact);
 //        public void             set_table_factory(CyTableFactory fact);
+        
+        public void set_file_name(String filename);
 
         public void set_loader_service(CytoscapeLoaderService service);
 

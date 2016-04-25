@@ -30,11 +30,12 @@ public class NetworkDatabaseSingleton {
 
         private NetworkDatabaseSingleton() {
         }
+        
+        public static void init(CySwingAppAdapter appadapter) {
+                m_database = new NetworkDatabase(appadapter);
+        }
 
         public static NetworkDatabase get_instance() throws Exception {
-                if (m_database == null) {
-                        m_database = new NetworkDatabase();
-                }
                 return m_database;
         }
 }

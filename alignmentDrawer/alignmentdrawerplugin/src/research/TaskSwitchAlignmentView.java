@@ -98,12 +98,9 @@ public class TaskSwitchAlignmentView implements Task {
                         throw new Exception(getClass() + " - doesn't have record of: " + network.getSUID());
                 }
 
-                Bindable b_g0_network = db.get_network_binding(align_net,
-                                                               AlignmentNetwork.c_AlignmentBindableId + "_g0");
-                Bindable b_g1_network = db.get_network_binding(align_net,
-                                                               AlignmentNetwork.c_AlignmentBindableId + "_g1");
-                Bindable b_network_view = db.get_network_binding(align_net,
-                                                                 CyNetworkView.class.getName());
+                Bindable b_g0_network = db.get_network_binding(align_net, NetworkDatabase.BINDABLE_ID_NETWORK_G0);
+                Bindable b_g1_network = db.get_network_binding(align_net, NetworkDatabase.BINDABLE_ID_NETWORK_G1);
+                Bindable b_network_view = db.get_network_binding(align_net, NetworkDatabase.BINDABLE_ID_VIEW);
                 AlignmentNetwork g0 = (AlignmentNetwork) b_g0_network.get_binded();
                 AlignmentNetwork g1 = (AlignmentNetwork) b_g1_network.get_binded();
                 CyNetworkView view = (CyNetworkView) b_network_view.get_binded();
