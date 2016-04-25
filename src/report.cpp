@@ -92,17 +92,20 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   }
 
   ofstream outfile;
-  outfile.open(reportFile.c_str());
-  
+  ofstream alignfile;
+  outfile.open((reportFile + ".out").c_str());
+  alignfile.open((reportFile + ".align").c_str());  
+
   if(not outfile.is_open()){
     cerr << "Problem saving file to specified location. Saving to sana program file." << endl;
     reportFile = reportFile.substr(reportFile.find_last_of("/")+1);
     outfile.open(reportFile.c_str());
   }
 
-  cerr << "Saving report as \"" << reportFile << "\"" << endl;
-  A.writeEdgeList(&G1, &G2, outfile);
-  outfile << "end_of_edgelist" << endl;
+  cerr << "Saving report as \"" << reportFile << ".out\"" << endl;
+  A.write(outfile);
+  A.writeEdgeList(&G1, &G2, alignfile);
   makeReport(G1, G2, A, M, method, outfile);
   outfile.close();
+  alignfile.close();
 }
