@@ -1,5 +1,5 @@
-#ifndef NATILEWRAPPER_HPP
-#define NATILEWRAPPER_HPP
+#ifndef NATAILEWRAPPER_HPP
+#define NATALIEWRAPPER_HPP
 
 #include <string>
 #include <vector>
@@ -7,9 +7,9 @@
 #include "WrappedMethod.hpp"
 using namespace std;
 
-class NATILEWrapper: public WrappedMethod {
+class NATALIEWrapper: public WrappedMethod {
 public:
-	NATILEWrapper(Graph* G1, Graph* G2, string args);
+	NATALIEWrapper(Graph* G1, Graph* G2, string args);
 
 private:
     void loadDefaultParameters();
