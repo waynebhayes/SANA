@@ -1,28 +1,28 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
-#include "NATILEWrapper.hpp"
+#include "NATALIEWrapper.hpp"
 
 using namespace std;
 
 const string CONVERTER = "";
 const string PROGRAM = "./natalie";
 
-NATILEWrapper::NATILEWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "NATALIE", args) {
+NATALIEWrapper::NATALIEWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "NATALIE", args) {
 	wrappedDir = "wrappedAlgorithms/NATALIE";
 }
 
-void NATILEWrapper::loadDefaultParameters() {
+void NATALIEWrapper::loadDefaultParameters() {
 	parameters = "-r 1";
 }
 
-string NATILEWrapper::convertAndSaveGraph(Graph* graph, string name) {
+string NATALIEWrapper::convertAndSaveGraph(Graph* graph, string name) {
 	name = name + ".gw";
 	graph->saveInGWFormat(name);
 	return name;
 }
 
-string NATILEWrapper::generateAlignment() {
+string NATALIEWrapper::generateAlignment() {
     exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
 
     string output = "out";
@@ -38,10 +38,10 @@ string NATILEWrapper::generateAlignment() {
 	return " ";
 }
 
-Alignment NATILEWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+Alignment NATALIEWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     return Alignment::loadPartialEdgeList(G1, G2, fileName);
 }
 
-void NATILEWrapper::deleteAuxFiles() {
+void NATALIEWrapper::deleteAuxFiles() {
     exec("cd " + wrappedDir + "; rm " + g1File + " " + g2File);
 }

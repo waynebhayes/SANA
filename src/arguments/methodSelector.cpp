@@ -20,7 +20,7 @@
 #include "../methods/wrappers/OptNetAlignWrapper.hpp"
 #include "../methods/wrappers/SPINALWrapper.hpp"
 #include "../methods/wrappers/GREATWrapper.hpp"
-#include "../methods/wrappers/NATILEWrapper.hpp"
+#include "../methods/wrappers/NATALIEWrapper.hpp"
 #include "../methods/wrappers/GEDEVOWrapper.hpp"
 #include "../methods/wrappers/WAVEWrapper.hpp"
 
@@ -153,8 +153,8 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
 		return new SPINALWrapper(&G1, &G2, wrappedArgs);
     if (name == "great")
     	return new GREATWrapper(&G1, &G2, wrappedArgs);
-    if (name == "natile")
-    	return new NATILEWrapper(&G1, &G2, wrappedArgs);
+    if (name == "natalie")
+    	return new NATALIEWrapper(&G1, &G2, wrappedArgs);
     if (name == "gedevo")
 		return new GEDEVOWrapper(&G1, &G2, wrappedArgs);
     if (name == "wave")

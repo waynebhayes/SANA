@@ -21,7 +21,7 @@ vector<string> defaultArguments = {
 "-tcand 1",
 "-tfin 3",
 "-qcount 1",
-"-o sana.out",
+"-o sana",
 "-ntabus 300",
 "-nneighbors 50",
 "-qmode normal",
