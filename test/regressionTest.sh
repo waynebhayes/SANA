@@ -6,11 +6,10 @@ args="
   -seed 10000
   -g1 yeast
   -g2 human
-  -nodedweights 4 0.1 0.25 0.5 0.15
-  -edgedweights 4 0.1 0.25 0.5 0.15
+  -nodecweights 4 0.1 0.25 0.5 0.15
+  -edgecweights 4 0.1 0.25 0.5 0.15
   -goweights 1 1
   -wecnodesim graphletlgraal
-  -wavenodesim noded
   -tinitial 1
   -tdecay 1
   -t 1

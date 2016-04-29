@@ -16,8 +16,8 @@
 #include "../measures/localMeasures/GoSimilarity.hpp"
 #include "../measures/localMeasures/Importance.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
-#include "../measures/localMeasures/NodeDensity.hpp"
-#include "../measures/localMeasures/EdgeDensity.hpp"
+#include "../measures/localMeasures/NodeCount.hpp"
+#include "../measures/localMeasures/EdgeCount.hpp"
 #include "../measures/localMeasures/Graphlet.hpp"
 #include "../measures/localMeasures/GraphletLGraal.hpp"
 #include "../Alignment.hpp"
@@ -504,15 +504,15 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
     if (name == "lccs") {
         return new LargestCommonConnectedSubgraph(G1, G2);
     }
-    if (name == "noded") {
-        cerr << "Warning: the weights of 'noded' might be ";
+    if (name == "nodec") {
+        cerr << "Warning: the weights of 'nodec' might be ";
         cerr << "different than the ones used in the experiment" << endl;
-        return new NodeDensity(G1, G2, {0.1, 0.25, 0.5, 0.15});
+        return new NodeCount(G1, G2, {0.1, 0.25, 0.5, 0.15});
     }
-    if (name == "edged") {
-        cerr << "Warning: the weights of 'edged' might be ";
+    if (name == "edgec") {
+        cerr << "Warning: the weights of 'edgec' might be ";
         cerr << "different than the ones used in the experiment" << endl;
-        return new EdgeDensity(G1, G2, {0.1, 0.25, 0.5, 0.15});
+        return new EdgeCount(G1, G2, {0.1, 0.25, 0.5, 0.15});
     }
     if (name == "graphlet") {
         return new Graphlet(G1, G2);
@@ -524,10 +524,10 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
         LocalMeasure* wecNodeSim = new GraphletLGraal(G1, G2);
         return new WeightedEdgeConservation(G1, G2, wecNodeSim);
     }
-    if (name == "wecnoded") {
-        cerr << "Warning: the weights of 'noded' might be ";
+    if (name == "wecnodec") {
+        cerr << "Warning: the weights of 'nodec' might be ";
         cerr << "different than the ones used in the experiment" << endl;
-        LocalMeasure* wecNodeSim = new NodeDensity(G1, G2, {0.1, 0.25, 0.5, 0.15});
+        LocalMeasure* wecNodeSim = new NodeCount(G1, G2, {0.1, 0.25, 0.5, 0.15});
         return new WeightedEdgeConservation(G1, G2, wecNodeSim);
     }
     if (name.size() == 3 and name[0] == 'g' and name[1] == 'o' and

@@ -7,8 +7,8 @@
 #include "utils/Timer.hpp"
 #include "utils/utils.hpp"
 #include "measures/localMeasures/Graphlet.hpp"
-#include "measures/localMeasures/NodeDensity.hpp"
-#include "measures/localMeasures/EdgeDensity.hpp"
+#include "measures/localMeasures/NodeCount.hpp"
+#include "measures/localMeasures/EdgeCount.hpp"
 #include "measures/localMeasures/Importance.hpp"
 #include "measures/localMeasures/Sequence.hpp"
 #include "measures/localMeasures/GoSimilarity.hpp"
@@ -275,15 +275,15 @@ void printLocalTopologicalSimilarities(Graph& G1, Graph& G2, bool BioGRIDNetwork
     fillTableColumn(table, 2, graphletSimMatrix,
         complementProteins, nonComplementProteins, randomProteins);
     table[0][3] = "node density";
-    NodeDensity nodeDensitySim(&G1, &G2, {0,0,1});
-    vector<vector<float> >* nodeDensitySimMatrix = nodeDensitySim.getSimMatrix();
-    fillTableColumn(table, 3, nodeDensitySimMatrix,
+    NodeCount NodeCountSim(&G1, &G2, {0,0,1});
+    vector<vector<float> >* NodeCountSimMatrix = NodeCountSim.getSimMatrix();
+    fillTableColumn(table, 3, NodeCountSimMatrix,
         complementProteins, nonComplementProteins, randomProteins);
 
     table[0][4] = "edge density";
-    EdgeDensity edgeDensitySim(&G1, &G2, {0,0,1});
-    vector<vector<float> >* edgeDensitySimMatrix = edgeDensitySim.getSimMatrix();
-    fillTableColumn(table, 4, edgeDensitySimMatrix,
+    EdgeCount EdgeCountSim(&G1, &G2, {0,0,1});
+    vector<vector<float> >* EdgeCountSimMatrix = EdgeCountSim.getSimMatrix();
+    fillTableColumn(table, 4, EdgeCountSimMatrix,
         complementProteins, nonComplementProteins, randomProteins);
 
     table[0][5] = "importance";

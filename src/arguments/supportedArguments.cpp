@@ -35,7 +35,7 @@ vector<string> stringArgs = {
 vector<string> doubleArgs = {
 //objective function weights. used when '-objfuntype' is "generic"
 "-ec", "-s3", "-wec",
-"-importance", "-noded", "-edged",
+"-importance", "-nodec", "-edgec",
 "-graphlet", "-graphletlgraal",
 "-sequence", "-go",
 
@@ -72,7 +72,7 @@ vector<string> boolArgs = {
 };
 
 vector<string> vectorArgs = {
-"-nodedweights",
-"-edgedweights",
+"-nodecweights",
+"-edgecweights",
 "-goweights"
 };
