@@ -58,6 +58,7 @@ private:
     ushort G1RandomUnlockedNode();
     ushort G1RandomUnlockedNode_Fast();
     ushort G2RandomUnlockedNode();
+    ushort G2RandomUnlockedNode_Fast();
 
     //temperature schedule
     double TInitial;

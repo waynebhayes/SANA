@@ -47,7 +47,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 	random_device rd;
 	gen = mt19937(getRandomSeed());
 	G1RandomNode = uniform_int_distribution<>(0, n1-1);
-	G1RandomUnlockedNodeDist = uniform_int_distribution<>(0, n1 - G1->getLockedCount() -1);
+	uint G1UnLockedCount = n1 - G1->getLockedCount() -1;
+	G1RandomUnlockedNodeDist = uniform_int_distribution<>(0, G1UnLockedCount);
 	G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
 	randomReal = uniform_real_distribution<>(0, 1);
 
@@ -154,7 +155,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 	random_device rd;
 	gen = mt19937(getRandomSeed());
 	G1RandomNode = uniform_int_distribution<>(0, n1-1);
-	G1RandomUnlockedNodeDist = uniform_int_distribution<>(0, n1- G1->getLockedCount() -1);
+	uint G1UnLockedCount = n1 - G1->getLockedCount() -1;
+	G1RandomUnlockedNodeDist = uniform_int_distribution<>(0, G1UnLockedCount);
 	G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
 	randomReal = uniform_real_distribution<>(0, 1);
 
@@ -271,7 +273,7 @@ Alignment SANA::run() {
 }
 
 
-ushort SANA::G1RandomUnlockedNode_Fast(){
+inline ushort SANA::G1RandomUnlockedNode_Fast(){
 	ushort index = G1RandomUnlockedNodeDist(gen);
 	return unLockedNodesG1[index];
 }
@@ -285,12 +287,17 @@ ushort SANA::G1RandomUnlockedNode(){
 //	return node;
 }
 ushort SANA::G2RandomUnlockedNode(){
-	ushort node;
-	do{
-		node =  G2RandomUnassignedNode(gen);
-	}while(G2->isLocked(unassignedNodesG2[node]));
-	return node;
+	return G2RandomUnlockedNode_Fast();
+//	ushort node;
+//	do{
+//		node =  G2RandomUnassignedNode(gen);
+//	}while(G2->isLocked(unassignedNodesG2[node]));
+//	return node;
+}
 
+inline ushort SANA::G2RandomUnlockedNode_Fast(){
+	ushort node =  G2RandomUnassignedNode(gen);
+	return node;
 }
 
 
@@ -481,8 +488,8 @@ void SANA::performChange() {
 	uint newTargetIndex =  G2RandomUnlockedNode();
 	ushort newTarget = unassignedNodesG2[newTargetIndex];
 
-	assert(!G1->isLocked(source));
-	assert(!G2->isLocked(newTarget));
+//	assert(!G1->isLocked(source));
+//	assert(!G2->isLocked(newTarget));
 
 	int newAligEdges = -1; //dummy initialization to shut compiler warnings
 	if (needAligEdges) {
@@ -530,8 +537,8 @@ void SANA::performSwap() {
 	ushort source2 =  G1RandomUnlockedNode(); // G1RandomNode(gen);
 	ushort target1 = A[source1], target2 = A[source2];
 
-	assert(!G1->isLocked(source1));
-	assert(!G1->isLocked(source2));
+	//	assert(!G1->isLocked(source1));
+	//	assert(!G1->isLocked(source2));
 	//    assert(!G2->isLocked(target1));
 	//    assert(!G2->isLocked(target2));
 
