@@ -102,7 +102,7 @@ There are optional arguments and mandatory arguments. The mandatory arguments ha
 \item String arguments: the value is a string. For instance, \texttt{-g1 yeast}
 \item Double arguments: the value is a number. For instance, \texttt{-alpha 0.5}
 \item Bool arguments: they are always optional and they don't have a value. For instance, \texttt{-restart}.
-\item Vector arguments: the value is a sequence of numbers. The first number indicates the size of the sequence, and the following numbers are the elements. For instance, \texttt{-nodedweights 4 0.1 0.25 0.5 0.15}
+\item Vector arguments: the value is a sequence of numbers. The first number indicates the size of the sequence, and the following numbers are the elements. For instance, \texttt{-nodecweights 4 0.1 0.25 0.5 0.15}
 \end{itemize}
 
 Next, we show the list of arguments\footnote{Some arguments for advanced functions have been omitted. The full list can be found in \texttt{src/main.cpp}}. For each argument, if and only if they are mandatory, we show its default value next to it. We show the type of the value in parentheses.
@@ -140,14 +140,14 @@ In SAGA, the objective function can be any weighted combination of measures amon
 \item\texttt{-s3 0} (double): weight of S3.
 \item\texttt{-graphlet 0} (double): weight of Graphlet similarity.
 \item\texttt{-graphletlgraal 0} (double): weight of Graphlet similarity, as defined in L-GRAAL.
-\item\texttt{-noded 0} (double): weight of Node density.
-\item\texttt{-edged 0} (double): weight of Edge density.
+\item\texttt{-nodec 0} (double): weight of Node density.
+\item\texttt{-edgec 0} (double): weight of Edge density.
 \item\texttt{-importance 0} (double): weight of Importance.
 \item\texttt{-wec 0} (double): weight of WEC.
 \item\texttt{-sequence 0} (double): weight of Sequence similarity (in SAGA, the contribution of Sequence similarity is tuned through the \texttt{-alpha} argument, not this).
-\item\texttt{-nodedweights 4 0.1 0.25 0.5 0.15} (vector): weights $w$ of the Node density measure. They are automatically scaled to 1.
-\item\texttt{-edgedweights 4 0.1 0.25 0.5 0.15} (vector): weights $w$ of the Edge density measure. They are automatically scaled to 1.
-\item\texttt{-wecnodesim noded} (string): local measure used to weight the edges in the WEC measure.
+\item\texttt{-nodecweights 4 0.1 0.25 0.5 0.15} (vector): weights $w$ of the Node density measure. They are automatically scaled to 1.
+\item\texttt{-edgecweights 4 0.1 0.25 0.5 0.15} (vector): weights $w$ of the Edge density measure. They are automatically scaled to 1.
+\item\texttt{-wecnodesim nodec} (string): local measure used to weight the edges in the WEC measure.
 \end{itemize}
 \subsubsection*{Other measures}
 \begin{itemize}
@@ -202,7 +202,7 @@ Stores the output in \texttt{x}.
 \item[Different node density weights]
 \begin{verbatim}
 
-./saga -nodedweights 3 0 0 1
+./saga -nodecweights 3 0 0 1
 \end{verbatim}
 \item[Networks from the Noisy yeast dataset]
 \begin{verbatim}
@@ -228,7 +228,7 @@ The networks are named \texttt{0syn}, \texttt{5syn}, \texttt{10syn}, \texttt{15s
 \item[Objective function combination]
 \begin{verbatim}
 
-./saga -ec 1 -ics 0.5 -s3 3 -graphlet 1 -edged 0.5
+./saga -ec 1 -ics 0.5 -s3 3 -graphlet 1 -edgec 0.5
 \end{verbatim}
 \item[$\mbox{GO}_5$ measure as objective function]
 \begin{verbatim}
@@ -336,9 +336,9 @@ Its attributes are a name and two graphs. While measures (e.g., EC) ``exist'' in
 
 \item \texttt{Importance.*pp} Subclass of \texttt{LocalMeasure}. Importance measure used in HubAlign.
 
-\item \texttt{EdgeDensity.*pp} Subclass of \texttt{LocalMeasure}.
+\item \texttt{EdgeCount.*pp} Subclass of \texttt{LocalMeasure}.
 
-\item \texttt{NodeDensity.*pp} Subclass of \texttt{LocalMeasure}.
+\item \texttt{NodeCount.*pp} Subclass of \texttt{LocalMeasure}.
 
 \item \texttt{Sequence.*pp} Subclass of \texttt{LocalMeasure}. It uses BLAST bit-scores.
 

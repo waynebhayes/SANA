@@ -144,7 +144,7 @@ Practical tips and things to watch out for:
 \item The collection phase loads and evaluates all the alignments from zero. Thus, if it is wished to evaluate a newly added measure, or if one of the measures being evaluated changes somehow, it is not necessary to rerun the methods, it suffices to add it to the experiment file and rerun the collection phase.
 \item When measures are evaluated, they are constructed directly from the code in the \verb|loadMeasure| function in the \verb|Experiment| class, \textbf{ignoring all the common and method-specific arguments}. For example, the Node Density measure is created as follows:
 \begin{verbatim}
-new NodeDensity(G1, G2, {0.1, 0.25, 0.5, 0.15});
+new NodeCount(G1, G2, {0.1, 0.25, 0.5, 0.15});
 \end{verbatim}
 Thus, if for example there was a method in \verb|methods.cnf| that optimizes Node Density with a different set of weights, the score obtained by the method and the score evaluated during the collect phase would be different. This can lead to bugs and I wished to fix it, however it is not simple to change. Hence, for now, a warning message is printed each time some argument could have affected a measure being evaluated.
 \end{itemize}

@@ -1,16 +1,14 @@
+#include "NodeCount.hpp"
 #include <vector>
 #include <iostream>
-#include "EdgeDensity.hpp"
 
-using namespace std;
-
-EdgeDensity::EdgeDensity(Graph* G1, Graph* G2, const vector<double>& distWeights) : LocalMeasure(G1, G2, "edged") {
+NodeCount::NodeCount(Graph* G1, Graph* G2, const vector<double>& distWeights) : LocalMeasure(G1, G2, "nodec") {
     vector<double> normWeights(distWeights);
     normalizeWeights(normWeights);
     this->distWeights = normWeights;
 
     string fileName = autogenMatricesFolder+G1->getName()+"_"+
-        G2->getName()+"_edged_"+to_string(normWeights.size());
+        G2->getName()+"_nodec_"+to_string(normWeights.size());
     for (double w : normWeights)
         fileName += "_" + extractDecimals(w, 3);
     fileName += ".bin";
@@ -18,20 +16,20 @@ EdgeDensity::EdgeDensity(Graph* G1, Graph* G2, const vector<double>& distWeights
     loadBinSimMatrix(fileName);
 }
 
-void EdgeDensity::initSimMatrix() {
+void NodeCount::initSimMatrix() {
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     uint k = distWeights.size();
     vector<vector<ushort> > densities1 (n1, vector<ushort> (k+1));
     vector<vector<ushort> > densities2 (n2, vector<ushort> (k+1));
     for (ushort i = 0; i < n1; i++) {
-        densities1[i] = G1->numEdgesAround(i, k);
+        densities1[i] = G1->numNodesAround(i, k);
         for (ushort j = 1; j < k; j++) {
             densities1[i][j] += densities1[i][j-1];
         } 
     }
     for (ushort i = 0; i < n2; i++) {
-        densities2[i] = G2->numEdgesAround(i, k);
+        densities2[i] = G2->numNodesAround(i, k);
         for (ushort j = 1; j < k; j++) {
             densities2[i][j] += densities2[i][j-1];
         }
@@ -53,5 +51,6 @@ void EdgeDensity::initSimMatrix() {
     }
 }
 
-EdgeDensity::~EdgeDensity() {
+NodeCount::~NodeCount() {
 }
+

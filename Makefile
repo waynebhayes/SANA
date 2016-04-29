@@ -35,14 +35,14 @@ MEASUSES_SRCS = 				 						\
 	src/measures/ShortestPathConservation.cpp           \
 	src/measures/SymmetricSubstructureScore.cpp         \
 	src/measures/WeightedEdgeConservation.cpp           \
-	src/measures/localMeasures/EdgeDensity.cpp          \
+	src/measures/localMeasures/EdgeCount.cpp            \
 	src/measures/localMeasures/GenericLocalMeasure.cpp  \
 	src/measures/localMeasures/GoSimilarity.cpp         \
 	src/measures/localMeasures/Graphlet.cpp             \
 	src/measures/localMeasures/GraphletLGraal.cpp       \
 	src/measures/localMeasures/Importance.cpp           \
 	src/measures/localMeasures/LocalMeasure.cpp         \
-	src/measures/localMeasures/NodeDensity.cpp          \
+	src/measures/localMeasures/NodeCount.cpp          \
 	src/measures/localMeasures/Sequence.cpp
 
 METHODS_SRC =                                           \
