@@ -45,6 +45,7 @@ MEASUSES_SRCS = 				 						\
 	src/measures/localMeasures/LocalMeasure.cpp         \
 	src/measures/localMeasures/NodeCount.cpp            \
 	src/measures/localMeasures/Sequence.cpp				\
+	src/measures/localMeasures/GraphletCosine.cpp
 
 METHODS_SRC =                                           \
 	src/methods/GreedyLCCS.cpp                          \
