@@ -20,6 +20,7 @@
 #include "../measures/localMeasures/EdgeCount.hpp"
 #include "../measures/localMeasures/Graphlet.hpp"
 #include "../measures/localMeasures/GraphletLGraal.hpp"
+#include "../measures/localMeasures/GraphletCosine.hpp"
 #include "../Alignment.hpp"
 #include "../utils/Timer.hpp"
 #include "ClusterMode.hpp"
@@ -520,6 +521,8 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
     if (name == "graphletlgraal") {
         return new GraphletLGraal(G1, G2);
     }
+    if (name == "graphletcoseine")
+    	return new GraphletCosine(G1, G2);
     if (name == "wecgraphletlgraal") {
         LocalMeasure* wecNodeSim = new GraphletLGraal(G1, G2);
         return new WeightedEdgeConservation(G1, G2, wecNodeSim);

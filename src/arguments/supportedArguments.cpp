@@ -38,6 +38,7 @@ vector<string> doubleArgs = {
 "-importance", "-nodec", "-edgec",
 "-graphlet", "-graphletlgraal",
 "-sequence", "-go",
+"-graphletcosine",
 
 "-alpha", //used when '-objfuntype' is "alpha"
 "-beta", //used when '-objfuntype' is "beta"

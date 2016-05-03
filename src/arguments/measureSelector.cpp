@@ -19,6 +19,7 @@
 #include "../measures/localMeasures/Sequence.hpp"
 #include "../measures/localMeasures/Graphlet.hpp"
 #include "../measures/localMeasures/GraphletLGraal.hpp"
+#include "../measures/localMeasures/GraphletCosine.hpp"
 
 using namespace std;
 
@@ -88,7 +89,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableMeasures = {
         "ec","s3","wec","nodec","edgec","go","importance",
-        "sequence","graphlet","graphletlgraal"
+        "sequence","graphlet","graphletlgraal", "graphletcosine"
     };
     double total = 0;
     for (uint i = 0; i < optimizableMeasures.size(); i++) {
@@ -222,6 +223,12 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
         double graphletLgraalWeight = getWeight("graphletlgraal", G1, G2, args);
         M.addMeasure(m, graphletLgraalWeight);
     }
+
+    if (shouldInit("graphletcosine", G1, G2, args)) {
+	   m = new GraphletCosine(&G1, &G2);
+	   double graphletWeight = getWeight("graphletcosine", G1, G2, args);
+	   M.addMeasure(m, graphletWeight);
+   }
 
     double wecWeight = getWeight("wec", G1, G2, args);    
     if (detRep or wecWeight > 0) {
