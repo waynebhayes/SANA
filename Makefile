@@ -20,7 +20,8 @@ ARGUMENTS_SRC = 										\
 	src/arguments/measureSelector.cpp					\
 	src/arguments/methodSelector.cpp					\
 	src/arguments/graphLoader.cpp						\
-	src/arguments/supportedArguments.cpp
+	src/arguments/supportedArguments.cpp				\
+	src/arguments/defaultArguments.cpp
 	
 MEASUSES_SRCS = 				 						\
 	src/measures/EdgeCorrectness.cpp 					\
@@ -42,8 +43,8 @@ MEASUSES_SRCS = 				 						\
 	src/measures/localMeasures/GraphletLGraal.cpp       \
 	src/measures/localMeasures/Importance.cpp           \
 	src/measures/localMeasures/LocalMeasure.cpp         \
-	src/measures/localMeasures/NodeCount.cpp          \
-	src/measures/localMeasures/Sequence.cpp
+	src/measures/localMeasures/NodeCount.cpp            \
+	src/measures/localMeasures/Sequence.cpp				\
 
 METHODS_SRC =                                           \
 	src/methods/GreedyLCCS.cpp                          \

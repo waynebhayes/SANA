@@ -21,12 +21,15 @@ Alignment loadAlignment(int format, string file, Graph &G1, Graph &G2) {
 	case 2:
 		return Alignment::loadEdgeList(&G1, &G2, file);
 	case 3:
-		return Alignment::loadPartialEdgeList(&G1, &G2, file);
+		return Alignment::loadPartialEdgeList(&G1, &G2, file, true);
+	case 4:
+		return Alignment::loadPartialEdgeList(&G1, &G2, file, false);
 	default:
 		cerr << "Unsupported alignment format. The following are supported" << endl
 			 << "1: sana.out format" << endl
 			 << "2: edge list format" << endl
-			 << "3: partial edge list format" << endl;
+			 << "3: partial edge list format" << endl
+			 << "4: partial edge list format using numbers instead of names" << endl;;
 		exit(-1);
 	}
 }

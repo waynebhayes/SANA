@@ -62,9 +62,9 @@ string GEDEVOWrapper::generateAlignment() {
 }
 
 Alignment GEDEVOWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
-    return Alignment::loadPartialEdgeList(G1, G2, fileName);
+    return Alignment::loadPartialEdgeList(G1, G2, fileName, true);
 }
 
 void GEDEVOWrapper::deleteAuxFiles() {
-    exec("cd " + wrappedDir + "; rm " + g1File + " " + g2File + "*.gw" + "*.algn");
+    exec("cd " + wrappedDir + "; rm " + g1File + " " + g2File + " *.gw" + " *.algn");
 }

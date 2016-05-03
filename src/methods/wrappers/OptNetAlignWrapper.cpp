@@ -13,7 +13,7 @@ OptNetAlignWrapper::OptNetAlignWrapper(Graph* G1, Graph* G2, string args): Wrapp
 }
 
 void OptNetAlignWrapper::loadDefaultParameters() {
-	parameters = "--ec --s3 --generations 2000 --outprefix --result";
+	parameters = "--ec --generations 2000";
 }
 
 string OptNetAlignWrapper::convertAndSaveGraph(Graph* graph, string name) {
@@ -23,17 +23,19 @@ string OptNetAlignWrapper::convertAndSaveGraph(Graph* graph, string name) {
 }
 
 string OptNetAlignWrapper::generateAlignment() {
+	string outputname = "out";
+	exec("cd " + wrappedDir + "/src; make optnetalignubuntu; mv optnetalign ../");
 	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
-	exec("cd " + wrappedDir + "; " + PROGRAM + " --net1 " +
-			g1File + " --net2 " + g2File + " " + parameters);
+	execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " --net1 " +
+			g1File + " --net2 " + g2File + " " + parameters + " --outprefix " + outputname);
 
-	return " ";
+	outputname += "_0.aln";
+
+	return wrappedDir + "/" + outputname;
 }
 
 Alignment OptNetAlignWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
-	//TODO replace
-    vector<ushort> mapping(G1->getNumNodes(), G2->getNumNodes());
-    return Alignment(mapping);
+	return Alignment::loadPartialEdgeList(G1, G2, fileName, false);
 }
 
 void OptNetAlignWrapper::deleteAuxFiles() {

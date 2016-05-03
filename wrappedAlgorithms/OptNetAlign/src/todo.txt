@@ -1,0 +1,40 @@
+add more checks to arg parsing
+
+start thinking about how to combine alignments from the Pareto front
+to create local ones. Should try to take from the best representatives of
+the whole front-- might want to look at distance in alignment space as well
+as objective space to do so.
+
+add logging of mean and max over time for plotting purposes
+
+make sure asserts are turned off in optimized version
+
+write tests for v1Unaligned being correct after all modifying ops.
+
+consider abandoning size optimization if total alignment optimization
+performance continues to be much better. Instead, might want to do partiality
+as a post-processing step of extracting high-confidence sub-alignments.
+
+try ACO. 
+
+add the ability to specify a list of fitnesses to dominate as a stopping condition.
+Maybe go another 10000 generations after dominating the last one.
+
+add seed-and-extend with random restart
+
+add an alternative crowding distance calculator that uses alignment space distances
+
+add the ability to load all alignments in a given directory as the initial population.
+Just do a non-dominated sort on them after loading them, then take popsize many of them
+as the first population.
+
+try getting rid of edge set in Network class. Not really used anymore, except in slow ICS, which
+is used to initialize conserved count.
+
+figure out why best s3denom is always reported as 0
+
+add swapping alnMask values to local search when partial alignment is enabled
+
+REFACTORING
+-----------
+clean up the Makefile. Currently hideous.
