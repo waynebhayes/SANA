@@ -37,7 +37,7 @@ Alignment Alignment::loadEdgeList(Graph* G1, Graph* G2, string fileName) {
 	return Alignment(G1, G2, edgeList);
 }
 
-Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName) {
+Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, bool byName) {
 	vector<string> edges = fileToStrings(fileName);
 	vector<vector<string> > mapList(edges.size()/2, vector<string> (2));
 	for (uint i = 0; i < edges.size()/2; i++) {
@@ -53,16 +53,20 @@ Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName) 
 		string nodeG1 = mapList[i][0];
 		string nodeG2 = mapList[i][1];
 
-		if(mapG1.find(nodeG1) == mapG1.end()){
-			cerr << nodeG1 << " not in G1 " << G1->getName()  << endl;
-			continue;
-		}
-		if (mapG2.find(nodeG2) == mapG2.end()){
-			cerr << nodeG2 << " not in G2 " << G2->getName() << endl;
-			continue;
-		}
+		if (byName) {
+			if(mapG1.find(nodeG1) == mapG1.end()){
+				cerr << nodeG1 << " not in G1 " << G1->getName()  << endl;
+				continue;
+			}
+			if (mapG2.find(nodeG2) == mapG2.end()){
+				cerr << nodeG2 << " not in G2 " << G2->getName() << endl;
+				continue;
+			}
 
-		A[mapG1[nodeG1]] = mapG2[nodeG2];
+			A[mapG1[nodeG1]] = mapG2[nodeG2];
+		} else {
+			A[atoi(nodeG1.c_str())] = atoi(nodeG2.c_str());
+		}
 	}
 	vector<bool> G2AssignedNodes(n2, false);
 	for (uint i = 0; i < n1; i++) {

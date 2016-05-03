@@ -6,7 +6,7 @@
 using namespace std;
 
 const string CONVERTER = "python converter_to_gml.py";
-const string PROGRAM   = "spinal";
+const string PROGRAM   = "./spinal";
 const string OUTPUT_CONVERT  = "python spinal_output_converter.py";
 
 SPINALWrapper::SPINALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "SPINAL", args) {
@@ -32,26 +32,24 @@ string SPINALWrapper::convertAndSaveGraph(Graph* graph, string name) {
 }
 
 string SPINALWrapper::generateAlignment() {
-	string alignName = "";
+	string alignName = "align";
 
 	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
-
 	unsigned int sFile = parameters.find("-ns");
-	if(sFile != parameters.npos) {
+	if(sFile < parameters.size()) {
 		sFile += 5;
 		string simFile = parameters.substr(sFile, parameters.size() - parameters.find("-ns"));
 		parameters = parameters.substr(0, parameters.find("-ns"));
-		exec("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " " + simFile + " " + alignName + ".txt");
+		execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " " + simFile + " " + alignName + ".txt");
 	} else {
-		exec("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " " + alignName + ".txt");
+		execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " " + alignName + ".txt");
 	}
-
 	exec("cd " + wrappedDir + "; " + OUTPUT_CONVERT + " " + alignName + ".txt");
 	return wrappedDir + "/" + alignName + ".aln";
 }
 
 Alignment SPINALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
-    return Alignment::loadPartialEdgeList(G1, G2, fileName);
+    return Alignment::loadPartialEdgeList(G1, G2, fileName, false);
 }
 
 void SPINALWrapper::deleteAuxFiles() {

@@ -251,7 +251,7 @@ SANA::~SANA() {
 
 Alignment SANA::getStartingAlignment(){
 	if(lockFileName != ""){
-		//	return Alignment::loadPartialEdgeList(G1,G2, lockFileName);
+		//	return Alignment::loadPartialEdgeList(G1,G2, lockFileName, true);
 		return Alignment::randomAlignmentWithLocking(G1,G2);
 	}
 	else{
