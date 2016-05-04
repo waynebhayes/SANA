@@ -37,9 +37,6 @@ experiments/*/results/
 *.snm
 *.toc
 
-doc/temperatureScheduleReport/temperatureScheduleReport.pdf
-doc/userManual/userManual.pdf
-doc/sanaPaper/sana.pdf
 
 sana.out
 
