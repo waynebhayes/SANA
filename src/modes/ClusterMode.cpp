@@ -5,15 +5,6 @@
 
 using namespace std;
 
-
-string ClusterMode::getProjectFolder() {
-  string projectFolder = "/extra/wayne0/preserve/nmamano/sana/";
-  if (not folderExists(projectFolder)) {
-    throw runtime_error("Project folder not found: "+projectFolder);
-  }
-  return projectFolder;
-}
-
 string ClusterMode::getName(void) {
     return "ClusterMode";
 }
@@ -32,6 +23,10 @@ uint ClusterMode::getOArgValueIndex(const vector<string>& argv) {
 }
 
 void ClusterMode::run(ArgumentParser& args) {
+  if (args.strings["-outfolder"] == "") {
+	  cerr << "Specify an output folder to use" << endl;
+	  exit(-1);
+  }
 
   scriptFileNameArg = args.strings["-qsubscriptfile"];
   outFileName = args.strings["-qsuboutfile"];
@@ -48,7 +43,7 @@ void ClusterMode::run(ArgumentParser& args) {
   if (not sameOutFile) {
     //easy case, identical submits
     for (int i = 0; i < submitCount; i++) {
-      submitToCluster(args.originalArgv);
+      submitToCluster(args.originalArgv, args.strings["-outfolder"]);
     }
   } else {
     //otherwise, we append a unique suffix to the value of
@@ -57,7 +52,7 @@ void ClusterMode::run(ArgumentParser& args) {
     for (int i = 0; i < submitCount; i++) {
       vector<string> vargs(args.originalArgv);
       vargs[outFileIndex] += "_"+intToString(i+1);
-      submitToCluster(vargs);
+      submitToCluster(vargs, args.strings["-outfolder"]);
     }
   }
 }
@@ -70,8 +65,8 @@ string ClusterMode::getQsubCommand(const string& scriptFile) {
   return cmd;
 }
 
-void ClusterMode::submitToCluster(const vector<string>& argv) {
-  string scriptFile = makeScript(argv);
+void ClusterMode::submitToCluster(const vector<string>& argv, string dir) {
+  string scriptFile = makeScript(argv, dir);
   exec("chmod +x " + scriptFile);
   exec(getQsubCommand(scriptFile));
 }
@@ -86,7 +81,7 @@ string ClusterMode::getScriptFileName() {
   return scriptFile;
 }
 
-string ClusterMode::makeScript(const vector<string>& argv) {
+string ClusterMode::makeScript(const vector<string>& argv, string dir) {
   string scriptFile = getScriptFileName();
 
   //mode to be used in the cluster
@@ -94,7 +89,7 @@ string ClusterMode::makeScript(const vector<string>& argv) {
 
   ofstream fout(scriptFile.c_str());
   fout << "#!/bin/bash" << endl;
-  fout << "cd " << getProjectFolder() << endl;
+  fout << "cd " << dir << endl;
 
   //add all the same arguments, but:
   //replace the value of -mode for the value of -qmode

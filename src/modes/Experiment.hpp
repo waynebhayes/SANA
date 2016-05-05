@@ -53,15 +53,15 @@ private:
     vector<string> plotMethods;
     vector<string> plotMeasures;
 
-    void initSubfolders();
+    void initSubfolders(string projectFolder);
     void initData();
 
     static vector<string> getMethodArgs(string method);
     static vector<vector<string>> getNetworkPairs(string dataset);
     string getSubId(string method, string G1Name, string G2Name, uint subNum);
-    string subCommand(string method, string G1Name, string G2Name, uint subNum);
-    void makeSubmissions();
-    void printSubmissions();
+    string createCommand(string method, string G1Name, string G2Name, uint numSub, bool shouldSubmitToCluster);
+    void makeSubmissions(bool shouldSubmitToCluster);
+    void printSubmissions(bool shouldSubmitToCluster);
 
     map<string,double> resultMap;
     string plainResultsFile;

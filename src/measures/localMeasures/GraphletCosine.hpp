@@ -10,10 +10,6 @@ public:
 private:
     void initSimMatrix();
 
-    vector<double> getNumbersOfAffectedOrbits();
-    vector<double> getOrbitWeights();
-    double getOrbitWeightSum();
-
     const uint NUM_ORBITS = 73;
 };
 
