@@ -30,6 +30,11 @@ const string Experiment::methodArgsFile = "experiments/methods.cnf";
 const string Experiment::datasetsFile = "experiments/datasets.cnf";
 
 void Experiment::run(ArgumentParser& args) {
+	if (args.strings["-outfolder"] == "") {
+		cerr << "Specify an output folder to use using -outfolder" << endl;
+		exit(-1);
+	}
+
     checkFileExists(methodArgsFile);
     checkFileExists(datasetsFile);
     experName = args.strings["-experiment"];
@@ -41,7 +46,7 @@ void Experiment::run(ArgumentParser& args) {
     humanReadableResultsFile = experFolder+experName+"HumanReadableResults.txt";
     forPlotResultsFile = experFolder+experName+"ForPlotResults.csv";
 
-    initSubfolders();
+    initSubfolders(args.strings["-outfolder"]);
     initData();
 
     bool collect = args.bools["-collect"] or allRunsFinished();
@@ -52,21 +57,20 @@ void Experiment::run(ArgumentParser& args) {
     else {
         bool dbg = args.bools["-dbg"];
         if (not dbg) {
-            makeSubmissions();
+            makeSubmissions(!args.bools["-local"]);
         } else {
-            printSubmissions();
+            printSubmissions(!args.bools["-local"]);
         }
     }
 
 }
 
-void Experiment::initSubfolders() {
+void Experiment::initSubfolders(string projectFolder) {
     resultsFolder = experFolder+"results/";
     scriptsFolder = experFolder+"scripts/";
 
     //outsFolder and errsFolder must be absolute path
     //because qsub requires it
-    string projectFolder = ClusterMode::getProjectFolder();
     outsFolder = projectFolder+experFolder+"outs/";
     errsFolder = projectFolder+experFolder+"errs/";
 
@@ -99,13 +103,13 @@ void Experiment::initData() {
     }
 }
 
-void Experiment::makeSubmissions() {
+void Experiment::makeSubmissions(bool shouldSubmitToCluster) {
     for (string method: methods) {
         for (const auto& pair: networkPairs) {
             for (uint i = 0; i < nSubs; i++) {
-                string cmd = subCommand(method, pair[0], pair[1], i);
+                string cmd = createCommand(method, pair[0], pair[1], i, shouldSubmitToCluster);
                 string subId = getSubId(method, pair[0], pair[1], i);
-                string resultFile = resultsFolder+subId;
+                string resultFile = resultsFolder+subId + ".out";
                 if (not fileExists(resultFile)) {
                     cerr << "SUBMIT "+subId << endl;
                     execWithoutPrintingErr(cmd);
@@ -117,13 +121,13 @@ void Experiment::makeSubmissions() {
     }
 }
 
-void Experiment::printSubmissions() {
+void Experiment::printSubmissions(bool shouldSubmitToCluster) {
     for (string method: methods) {
         for (const auto& pair: networkPairs) {
             for (uint i = 0; i < nSubs; i++) {
-                string cmd = subCommand(method, pair[0], pair[1], i);
+                string cmd = createCommand(method, pair[0], pair[1], i, shouldSubmitToCluster);
                 string subId = getSubId(method, pair[0], pair[1], i);
-                string resultFile = resultsFolder+subId;
+                string resultFile = resultsFolder+subId + ".out";
                 if (not fileExists(resultFile)) {
                     cout << "SUBMIT "+subId << endl;
                 } else {
@@ -140,7 +144,7 @@ bool Experiment::allRunsFinished() {
         for (const auto& pair: networkPairs) {
             for (uint i = 0; i < nSubs; i++) {
                 string subId = getSubId(method, pair[0], pair[1], i);
-                string resultFile = resultsFolder+subId;
+                string resultFile = resultsFolder+subId+".out";
                 if (not fileExists(resultFile)) {
                     return false;
                 }
@@ -155,20 +159,29 @@ string Experiment::getSubId(string method, string G1Name, string G2Name, uint nu
     return method+"_"+G1Name+"_"+G2Name+"_"+intToString(numSub);
 }
 
-string Experiment::subCommand(string method, string G1Name, string G2Name, uint numSub) {
-    string command = "./sana -mode cluster -qmode normal";
-    command += " -g1 " + G1Name + " -g2 " + G2Name;
-    command += " -t " + to_string(t);
-    for (string arg: getMethodArgs(method)) command += " " + arg;
-    for (string arg: experArgs) command += " " + arg;
+string Experiment::createCommand(string method, string G1Name, string G2Name, uint numSub, bool shouldSubmitToCluster) {
+	string command = "./sana ";
+	if(shouldSubmitToCluster) {
+		command += "-mode cluster -qmode normal";
+	} else {
+		command += "-mode normal";
+	}
 
-    string subId = getSubId(method, G1Name, G2Name, numSub);
-    command += " -o " + resultsFolder+subId;
-    command += " -qsuboutfile " + outsFolder+subId+".out";
-    command += " -qsuberrfile " + errsFolder+subId+".err";
-    command += " -qsubscriptfile " + scriptsFolder+subId+".sh";
+	command += " -g1 " + G1Name + " -g2 " + G2Name;
+	command += " -t " + to_string(t);
+	for (string arg: getMethodArgs(method)) command += " " + arg;
+	for (string arg: experArgs) command += " " + arg;
 
-    return command;
+	string subId = getSubId(method, G1Name, G2Name, numSub);
+	command += " -o " + resultsFolder+subId;
+
+	if(shouldSubmitToCluster) {
+		command += " -qsuboutfile " + outsFolder+subId+".out";
+		command += " -qsuberrfile " + errsFolder+subId+".err";
+		command += " -qsubscriptfile " + scriptsFolder+subId+".sh";
+	}
+
+	return command;
 }
 
 void Experiment::loadGraphs(map<string, Graph>& graphs) {
@@ -222,7 +235,7 @@ double Experiment::computeScore(string method, string G1Name,
         string G2Name, uint numSub, Measure* measure) {
 
     string subId = getSubId(method, G1Name, G2Name, numSub);
-    string resultFile = resultsFolder+subId;
+    string resultFile = resultsFolder+subId+".out";
 
     bool NA = measure->getName() == "invalid" or
               not fileExists(resultFile);
@@ -521,8 +534,9 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
     if (name == "graphletlgraal") {
         return new GraphletLGraal(G1, G2);
     }
-    if (name == "graphletcoseine")
+    if (name == "graphletcoseine") {
     	return new GraphletCosine(G1, G2);
+    }
     if (name == "wecgraphletlgraal") {
         LocalMeasure* wecNodeSim = new GraphletLGraal(G1, G2);
         return new WeightedEdgeConservation(G1, G2, wecNodeSim);

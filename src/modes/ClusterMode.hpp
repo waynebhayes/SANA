@@ -12,12 +12,11 @@ using namespace std;
 class ClusterMode : public Mode {
 public:
     void run(ArgumentParser& args);
-    void submitToCluster(const vector<string>& argv);
+    void submitToCluster(const vector<string>& argv, string dir);
     string getName();
-    static string getProjectFolder();
 private:
     string getScriptFileName();
-    string makeScript(const vector<string>& argv);
+    string makeScript(const vector<string>& argv, string dir);
     string getQModeArgValue(const vector<string>& argv);
     uint getOArgValueIndex(const vector<string>& argv);
     string getQsubCommand(const string& scriptFile);
