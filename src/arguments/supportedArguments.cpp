@@ -12,6 +12,7 @@ vector<string> stringArgs = {
 "-truealignment",
 "-wecnodesim", "-wavenodesim",
 "-experiment",
+"-outfolder",
 "-paramestimation",
 "-objfuntype", //can be "generic", "alpha", "beta"
                //generic: use '-ec','-s3',...
@@ -61,6 +62,7 @@ vector<string> boolArgs = {
 "-detailedreport",
 "-nodetabus",
 "-submit",
+"-local",	// submits experiments locally
 "-dbg", //each mode might have a different use for the dbg flag
         //e.g., in experiments if -dbg is found, the runs are
         //not actually sent to the cluster, only printed
