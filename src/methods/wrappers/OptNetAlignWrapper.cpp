@@ -13,7 +13,7 @@ OptNetAlignWrapper::OptNetAlignWrapper(Graph* G1, Graph* G2, string args): Wrapp
 }
 
 void OptNetAlignWrapper::loadDefaultParameters() {
-	parameters = "--ec --generations 2000";
+	parameters = "--total --s3 --nthreads 24 --cxrate 0.05 --cxswappb 0.75 --mutrate 0.05 --mutswappb 0.0001 --oneobjrate 0.75 --dynparams --popsize 2000 --generations 1000000000 --hillclimbiters 10000 --timelimit 360 --finalstats";
 }
 
 string OptNetAlignWrapper::convertAndSaveGraph(Graph* graph, string name) {
@@ -24,8 +24,8 @@ string OptNetAlignWrapper::convertAndSaveGraph(Graph* graph, string name) {
 
 string OptNetAlignWrapper::generateAlignment() {
 	string outputname = "out";
-	exec("cd " + wrappedDir + "/src; make optnetalignubuntu; mv optnetalign ../");
-	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
+	//exec("cd " + wrappedDir + "/src; make optnetalignubuntu; mv optnetalign ../");
+	//exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
 	execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " --net1 " +
 			g1File + " --net2 " + g2File + " " + parameters + " --outprefix " + outputname);
 
