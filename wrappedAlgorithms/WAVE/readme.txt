@@ -14,3 +14,4 @@ arg3: 	similarity file
 
 arg4:	output file
 	Users can assign a name to output file. The alignment got by WAVE will be stored in this file.
+
