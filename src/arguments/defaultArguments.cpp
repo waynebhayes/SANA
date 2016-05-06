@@ -27,5 +27,4 @@ vector<string> defaultArguments = {
 "-ntabus 300",
 "-nneighbors 50",
 "-qmode normal",
-"-local false",
 };
