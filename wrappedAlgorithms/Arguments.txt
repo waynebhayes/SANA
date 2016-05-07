@@ -1,4 +1,4 @@
-GEDEVO: --maxsecs <seconds> --blastpairlist [3 columns] --pop [400] --threads <N>
+GEDEVO: --maxsecs <seconds> --blastpairlist [3 columns] --pop [400] --threads <N> [recommended runtime is "--maxsame 3000"]
 
 GHOST: -p <numThreads> -x <all-vs-all blast e-scores> -alpha [alpha*topo + (1-alpha)seq]
 
