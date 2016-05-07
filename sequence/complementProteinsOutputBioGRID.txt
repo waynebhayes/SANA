@@ -1,0 +1,116 @@
+The yeast network contains 199 of the 200 complementary yeast proteins.
+The yeast network contains 224 of the 224 non-complementary yeast proteins.
+The human network contains 188 of the 200 complementary human proteins.
+The human network contains 214 of the 224 non-complementary human proteins.
+
+188 of the 200 pairs of complementary proteins appear in both networks.
+214 of the 224 pairs of non-complementary proteins appear in both networks.
+
+experiments/saga_seq2/SCerevisiae_HSapiens_saga_alpha1.txt
+Complementary homolog proteins aligned: 142/188 (75.5319%)
+Non-complementary homolog proteins aligned: 134/214 (62.6168%)
+
+experiments/saga_seq2/SCerevisiae_HSapiens_saga_alpha1.txt_2
+Complementary homolog proteins aligned: 153/188 (81.383%)
+Non-complementary homolog proteins aligned: 156/214 (72.8972%)
+
+experiments/saga_seq2/SCerevisiae_HSapiens_saga_alpha1.txt_3
+Complementary homolog proteins aligned: 166/188 (88.2979%)
+Non-complementary homolog proteins aligned: 153/214 (71.4953%)
+
+experiments/saga_seq2/SCerevisiae_HSapiens_saga_alpha1.txt_4
+Complementary homolog proteins aligned: 173/188 (92.0213%)
+Non-complementary homolog proteins aligned: 172/214 (80.3738%)
+
+experiments/saga_seq2/SCerevisiae_HSapiens_saga_alpha1.txt_5
+Complementary homolog proteins aligned: 175/188 (93.0851%)
+Non-complementary homolog proteins aligned: 171/214 (79.9065%)
+
+experiments/saga_seq2/SCerevisiae_HSapiens_saga_alpha1.txt_6
+Complementary homolog proteins aligned: 76/188 (40.4255%)
+Non-complementary homolog proteins aligned: 69/214 (32.243%)
+
+experiments/saga_seq2/SCerevisiae_HSapiens_saga_alpha1.txt_7
+Complementary homolog proteins aligned: 119/188 (63.2979%)
+Non-complementary homolog proteins aligned: 98/214 (45.7944%)
+
+experiments/saga_seq2/SCerevisiae_HSapiens_saga_alpha1.txt_8
+Complementary homolog proteins aligned: 161/188 (85.6383%)
+Non-complementary homolog proteins aligned: 164/214 (76.6355%)
+
+experiments/saga_seq2/SCerevisiae_HSapiens_saga_alpha1.txt_9
+Complementary homolog proteins aligned: 169/188 (89.8936%)
+Non-complementary homolog proteins aligned: 172/214 (80.3738%)
+
+experiments/saga_s3_auto/SCerevisiae_HSapiens_saga_alpha0.txt
+Complementary homolog proteins aligned: 131/188 (69.6809%)
+Non-complementary homolog proteins aligned: 119/214 (55.6075%)
+
+experiments/saga_s3_alpha0/SCerevisiae_HSapiens_saga_alpha0.txt
+Complementary homolog proteins aligned: 0/188 (0%)
+Non-complementary homolog proteins aligned: 0/214 (0%)
+
+experiments/saga_s3_alpha0/SCerevisiae_HSapiens_saga_alpha0.txt_2
+Complementary homolog proteins aligned: 0/188 (0%)
+Non-complementary homolog proteins aligned: 0/214 (0%)
+
+experiments/saga_s3_alpha0/SCerevisiae_HSapiens_saga_alpha0.txt_3
+Complementary homolog proteins aligned: 1/188 (0.531915%)
+Non-complementary homolog proteins aligned: 0/214 (0%)
+
+experiments/saga_s3_alpha0/SCerevisiae_HSapiens_saga_alpha0.txt_4
+Complementary homolog proteins aligned: 0/188 (0%)
+Non-complementary homolog proteins aligned: 0/214 (0%)
+
+experiments/saga_s3_alpha0/SCerevisiae_HSapiens_saga_alpha0.txt_5
+Complementary homolog proteins aligned: 1/188 (0.531915%)
+Non-complementary homolog proteins aligned: 0/214 (0%)
+
+experiments/saga_s3_alpha0/SCerevisiae_HSapiens_saga_alpha0.txt_6
+Complementary homolog proteins aligned: 0/188 (0%)
+Non-complementary homolog proteins aligned: 0/214 (0%)
+
+experiments/saga_s3_alpha0/SCerevisiae_HSapiens_saga_alpha0.txt_7
+Complementary homolog proteins aligned: 1/188 (0.531915%)
+Non-complementary homolog proteins aligned: 0/214 (0%)
+
+experiments/saga_s3_alpha0/SCerevisiae_HSapiens_saga_alpha0.txt_8
+Complementary homolog proteins aligned: 0/188 (0%)
+Non-complementary homolog proteins aligned: 0/214 (0%)
+
+experiments/saga_s3_alpha0/SCerevisiae_HSapiens_saga_alpha0.txt_9
+Complementary homolog proteins aligned: 0/188 (0%)
+Non-complementary homolog proteins aligned: 0/214 (0%)
+
+experiments/saga_ec_auto/SCerevisiae_HSapiens_saga_alpha0.txt
+Complementary homolog proteins aligned: 146/188 (77.6596%)
+Non-complementary homolog proteins aligned: 125/214 (58.4112%)
+
+experiments/saga_lgraal_auto/SCerevisiae_HSapiens_saga_alpha0.txt
+Complementary homolog proteins aligned: 136/188 (72.3404%)
+Non-complementary homolog proteins aligned: 122/214 (57.0093%)
+
+experiments/hubalign_alpha0,9999/SCerevisiae_HSapiens_hubalign_alpha0.9999.txt
+Complementary homolog proteins aligned: 176/188 (93.617%)
+Non-complementary homolog proteins aligned: 171/214 (79.9065%)
+
+experiments/hubalign_auto/SCerevisiae_HSapiens_hubalign_alpha0.txt
+Complementary homolog proteins aligned: 137/188 (72.8723%)
+Non-complementary homolog proteins aligned: 128/214 (59.8131%)
+
+experiments/hubalign_alpha0/SCerevisiae_HSapiens_hubalign_alpha0.txt
+Complementary homolog proteins aligned: 0/188 (0%)
+Non-complementary homolog proteins aligned: 0/214 (0%)
+
+experiments/lgraal_alpha1/SCerevisiae_HSapiens_lgraal_alpha1.txt
+Complementary homolog proteins aligned: 174/188 (92.5532%)
+Non-complementary homolog proteins aligned: 173/214 (80.8411%)
+
+experiments/lgraal_auto/SCerevisiae_HSapiens_lgraal_alpha0.txt
+Complementary homolog proteins aligned: 6/188 (3.19149%)
+Non-complementary homolog proteins aligned: 2/214 (0.934579%)
+
+experiments/lgraal_alpha0/SCerevisiae_HSapiens_lgraal_alpha0.txt
+Complementary homolog proteins aligned: 0/188 (0%)
+Non-complementary homolog proteins aligned: 0/214 (0%)
+
