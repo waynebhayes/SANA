@@ -13,7 +13,7 @@ NATALIEWrapper::NATALIEWrapper(Graph* G1, Graph* G2, string args): WrappedMethod
 }
 
 void NATALIEWrapper::loadDefaultParameters() {
-	parameters = "-r 1";
+	parameters = "-r 1 -t 300";
 }
 
 string NATALIEWrapper::convertAndSaveGraph(Graph* graph, string name) {
