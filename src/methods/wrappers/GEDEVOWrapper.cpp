@@ -10,12 +10,13 @@ const string PROGRAM   = "gedevo";
 const string OUTPUT_CONVERTER = "python GEDEVOoutput.py";
 
 
+
 GEDEVOWrapper::GEDEVOWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "GEDEVO", args) {
 	wrappedDir = "wrappedAlgorithms/GEDEVO";
 }
 
 void GEDEVOWrapper::loadDefaultParameters() {
-	parameters = "--maxsecs 500";
+	parameters = "--maxsecs 500 --threads 1 --pop 400";
 }
 
 string GEDEVOWrapper::convertAndSaveGraph(Graph* graph, string name) {
