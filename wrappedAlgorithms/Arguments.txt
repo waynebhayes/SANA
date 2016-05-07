@@ -8,7 +8,7 @@ MAGNA++: -o [output prefix] -m [S3, EC, ICS] -a [alpha balancing node+edge NOT s
 
 MI-GRAAL: -l [lambda, importance of SEQ] -q [sequence file]
 
-NATALIE: -beta [0=SEQ 1=TOPO] -n [iterations default infinite] -t [seconds]
+NATALIE: -r 1 -beta [0=SEQ 1=TOPO] -n [iterations default infinite] -t [seconds default infinite]
 
 OptNetAlign: --total [no unaligned nodes] --popsize [defaut 100] --generations [100?] --bitscores [3 column] --evalues [3 column] --blastsum [boolean, objective] --ics --ec --s3 --nthreads [N] --timelimit [minutes] --s3variant
 
