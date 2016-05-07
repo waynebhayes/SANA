@@ -8,15 +8,14 @@ using namespace std;
 const string CONVERTER = "python GWtoNTW.py";
 const string PROGRAM   = "gedevo";
 const string OUTPUT_CONVERTER = "python GEDEVOoutput.py";
-
-
+const string GLOBAL_PARAMETERS = "--undirected";
 
 GEDEVOWrapper::GEDEVOWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "GEDEVO", args) {
 	wrappedDir = "wrappedAlgorithms/GEDEVO";
 }
 
 void GEDEVOWrapper::loadDefaultParameters() {
-	parameters = "--maxsecs 500 --threads 1 --pop 400";
+	parameters = "--maxsame 3000 --threads 24 --pop 400"; // maxsame 3000 is what they recommend, runtime many hours
 }
 
 string GEDEVOWrapper::convertAndSaveGraph(Graph* graph, string name) {
