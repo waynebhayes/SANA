@@ -14,7 +14,7 @@ GHOSTWrapper::GHOSTWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1,
 
 // -wrappedArgs "matcher nneighbors beta ratio searchiter"
 void GHOSTWrapper::loadDefaultParameters() {
-	parameters = "linear all 1.0 8.0 10";
+	parameters = "linear all 1.0 8.0 10 -p 1 -alpha 1"; // alpha = only topo
 }
 
 string GHOSTWrapper::convertAndSaveGraph(Graph* graph, string name) {
