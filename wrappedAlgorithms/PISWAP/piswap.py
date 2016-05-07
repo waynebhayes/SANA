@@ -3,12 +3,12 @@ import PSB2009_3opt_2 as psb09
 import matching as match
 import sys
 
-if len(sys.argv) < 3:
-	print("Need two input files")
+if len(sys.argv) < 4:
+	print("Need three input files: g1, g2, sim")
 else:
 	G = psb09.getGraph(sys.argv[1]) #input network1
 	G2 = psb09.getGraph(sys.argv[2])#input network2
-	GS = psb09.graphScores("pairwise_sequence_similarity_of_network1_and_2.evals")
+	GS = psb09.graphScores(sys.argv[3])
 
 	#input pairwise sequence similarity of network1 and 2.
 	M0 = match.max_weight_matching(GS) #run hungorian algorithm to produce initial alignment
