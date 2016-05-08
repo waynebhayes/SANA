@@ -128,7 +128,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
 
     if (name == "greedylccs")
         return new GreedyLCCS(&G1, &G2, startAligName);
-    if (name == "wave") {
+    if (name == "waveSim") {
         LocalMeasure* waveNodeSim = 
             (LocalMeasure*) M.getMeasure(args.strings["-wavenodesim"]);
         return new WeightedAlignmentVoter(&G1, &G2, waveNodeSim);

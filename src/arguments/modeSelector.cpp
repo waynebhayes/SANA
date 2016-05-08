@@ -7,12 +7,14 @@
 #include "../modes/ClusterMode.hpp"
 #include "../modes/Experiment.hpp"
 #include "../modes/AnalysisMode.hpp"
+#include "../modes/SimilarityMode.hpp"
 
 #include "../utils/utils.hpp"
 
 bool validMode(string name) {
     vector<string> validModes = {
-        "cluster", "exp", "param", "alpha", "dbg", "normal"
+        "cluster", "exp", "param", "alpha", "dbg",
+        "normal", "analysis", "similarity",
     };
     for (string s : validModes) {
         if (s == name) return true;
@@ -37,6 +39,8 @@ Mode* selectMode(ArgumentParser& args) {
         mode = new DebugMode();
     } else if (name == "analysis") {
     	mode = new AnalysisMode();
+    } else if (name == "similarity") {
+    	mode = new SimilarityMode();
     } else if (name == "normal") {
         mode = new NormalMode();
     } else {
