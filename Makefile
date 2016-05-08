@@ -80,7 +80,8 @@ MODES_SRC = 											\
 	src/modes/NormalMode.cpp							\
 	src/modes/DebugMode.cpp								\
 	src/modes/ClusterMode.cpp							\
-	src/modes/AnalysisMode.cpp
+	src/modes/AnalysisMode.cpp							\
+	src/modes/SimilarityMode.cpp
 
 
 OTHER_SRC =                                             \
@@ -153,5 +154,8 @@ depend: $(SRCS)
 	makedepend $(INCLUDES) $^
 
 
-
+# Here is the targets for making the wrappedAlgorithms
+optnetalign:
+	cd wrappedAlgorithms/OptNetAlign/src; make optnetalignubuntu; chmod +x optnetalign; cp optnetalign ../
+	
 

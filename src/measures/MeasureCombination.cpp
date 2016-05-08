@@ -178,6 +178,18 @@ vector<vector<float> > MeasureCombination::getAggregatedLocalSims() const {
     return combinedSims;
 }
 
+int MeasureCombination::getNumberOfLocalMeasures() const {
+	int localMeasureCount = 0;
+	for (uint i = 0; i < numMeasures(); i++) {
+		Measure* m = measures[i];
+		double w = weights[i];
+		if (w > 0 and m->isLocal()) {
+			localMeasureCount++;
+		}
+	}
+	return localMeasureCount;
+}
+
 double MeasureCombination::getSumLocalWeight() const {
     double res = 0;
     for (uint i = 0; i < numMeasures(); i++) {

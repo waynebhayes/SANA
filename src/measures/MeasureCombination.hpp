@@ -25,6 +25,7 @@ public:
 
     double getSumLocalWeight() const;
     vector<vector<float> > getAggregatedLocalSims() const;
+    int getNumberOfLocalMeasures() const;
 
 private:
     vector<Measure*> measures;
