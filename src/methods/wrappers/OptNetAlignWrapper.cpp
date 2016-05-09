@@ -5,7 +5,6 @@
 
 using namespace std;
 
-const string CONVERTER = "python converter.py";
 const string PROGRAM   = "./optnetalign";
 const string GLOBAL_PARAMETERS = "--total --cxrate 0.05 --cxswappb 0.75 --mutrate 0.05 --mutswappb 0.0001 --oneobjrate 0.75 --dynparams --generations 1000000000 --hillclimbiters 10000 --finalstats";
 
@@ -27,7 +26,7 @@ string OptNetAlignWrapper::generateAlignment() {
 	string outputname = "out";
 	//exec("cd " + wrappedDir + "/src; make optnetalignubuntu; mv optnetalign ../");
 	//exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
-	execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " --net1 " +
+	execPrintOutput("cd " + wrappedDir + "; tail -n +2 "+g1File+">/tmp/x$$; mv /tmp/x$$ "+g1File+";tail -n +2 "+g2File+">/tmp/x$$; mv /tmp/x$$ "+g2File+"; " + PROGRAM + " --net1 " +
 			g1File + " --net2 " + g2File + " " + GLOBAL_PARAMETERS + " " + parameters + " --outprefix " + outputname);
 
 	outputname += "_0.aln";
