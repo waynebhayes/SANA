@@ -1,1 +1,5 @@
-# Just Added to make the folder
+# Eveything else should be okay, just run this to recompile NATALIE
+
+cd build
+cmake ..
+make
