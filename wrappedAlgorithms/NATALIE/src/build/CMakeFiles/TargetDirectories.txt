@@ -1,0 +1,4 @@
+/home/pasha/Downloads/natalie/build/CMakeFiles/analyze.dir
+/home/pasha/Downloads/natalie/build/CMakeFiles/demo.dir
+/home/pasha/Downloads/natalie/build/CMakeFiles/make-graphs.dir
+/home/pasha/Downloads/natalie/build/CMakeFiles/natalie.dir

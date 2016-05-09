@@ -1,0 +1,2 @@
+make
+./natalie -i 1 -if1 5 -if2 5 -g1 SPombe.gw -g2 RNorvegicus.gw -o OUTPUT -v 3 -of 10
