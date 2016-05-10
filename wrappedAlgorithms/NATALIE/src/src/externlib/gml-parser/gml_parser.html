@@ -1,0 +1,524 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<title>A Sample Parser for GML</title>
+<!-- Changed by: Marcus Raitner,  6-Jun-1997 -->
+</head>
+
+<body bgcolor="#FFFFFF">
+
+<h1 align=center>A Sample Parser for GML</h1>
+
+<p align=center>
+<table cellspacing="10" align="center">
+
+<tr>
+<td align=center>
+Marcus Raitner<br>
+Lehrstuhl f&uuml;r Theoretische Informatik<br>
+Universit&auml;t Passau<br>
+94032 Passau<br>
+<tt><a href="mailto:raitner@fmi.uni-passau.de">raitner@fmi.uni-passau.de</a>
+</tt>
+</td>
+
+<td align=center>
+Michael Himsolt<br>
+Lehrstuhl f&uuml;r Theoretische Informatik<br>
+Universit&auml;t Passau<br>
+94032 Passau<br>
+<tt><a href="mailto:himsolt@fmi.uni-passau.de">himsolt@fmi.uni-passau.de</a> 
+</tt>
+</td>
+
+</table>
+
+
+<h2><strong>Table of Contents</strong></h2>
+
+<ol>
+<li><a href="#Introduction">Introduction</a>
+<li><a href="#scanner">Scanner</a>
+ <ol>
+ <li><code><a href="#GML_scanner">GML_scanner</a></code> procedure
+ <li><code><a href="#GML_token">GML_token</a></code> structure
+ <li><code><a href="#GML_value">GML_value</a></code> enumeration (scanner related 
+ entries)
+ <li><code><a href="#GML_tok_val">GML_tok_val</a></code> structure
+ </ol>
+<li><a href="#parser">Parser</a>
+ <ol>
+ <li><code><a href="#GML_parser">GML_parser</a></code> procedure
+ <li><code><a href="#GML_stat">GML_stat</a></code> structure
+ <li><code><a href="#GML_pair">GML_pair</a></code> structure
+ <li><code><a href="#GML_value">GML_value</a></code> enumeration (parser related 
+ entries)
+ <li><code><a href="#GML_pair_val">GML_pair_val</a></code> structure
+ <li><code><a href="#GML_free_list">GML_free_list</a></code> procedure
+ <li><code><a href="#GML_print_list">GML_print_list</a></code> procedure
+ </ol>
+<li><a href="#Error">Error Handling</a>
+ <ol>
+ <li><code><a href="#GML_init">GML_init</a></code> procedure
+ <li><code><a href="#GML_error">GML_error</a></code> structure
+ <li><code><a href="#GML_error_value">GML_error</a></code> enumeration
+ </ol>
+<li><a href="#examples">Examples</a>
+<ol>
+<li><code><a href="#GML_demo">gml_demo</a></code> programm
+</ol>
+</ol>
+
+<hr> <!-- ============================================================= -->
+
+<h2><a name="Introduction">Introduction</a></h2>
+
+<p><dfn><a 
+href="http://www.fmi.uni-passau.de/Graphlet/GML">GML</a></dfn>, the 
+<strong>G</strong>raph <strong>M</strong>odelling 
+<strong>L</strong>anguage, is a portable file format for graphs.  GML 
+has been developed as part of the <a 
+href="http://www.fmi.uni-passau.de/Graphlet">Graphlet</a> system, and 
+has been implemented in several other systems, including <a 
+href="http://www.mpi-sb.mpg.de/LEDA/leda.html">LEDA</a>, <a 
+href="unknown">GraVis</a> and <a href="unknown">VGJ</a>.
+</p>
+
+<p>This document describes a sample scanner and parser for GML.  
+Unlike other implementations, this one uses ANSI C and does not rely 
+on external tools such as <code>lex</code> and <code>yacc</code>.  
+This implementation is also designed to be highly portable and can be
+used as a library.</p>
+
+
+<hr> <!-- ============================================================= -->
+
+<h2><a name="Scanner">Scanner</a></h2>
+
+
+<p>The procedure <code>GML_scanner</code> implements 
+the scanner for GML files:</p>
+
+<blockquote>
+<code>struct GML_token <a name="GML_scanner">GML_scanner</a> (FILE* 
+file);</code>
+</blockquote>
+
+<p><code>GML_scanner</code> reads the next input token from 
+<code>file</code> and returns it in a <code>GML_token</code> 
+structure.  <code>file</code> must be open for read access; the caller 
+is responsible for opening anc closing the file.</p>
+
+<p>The type <code>GML_token</code> is defined as follows:</p>
+
+<blockquote>
+<pre>struct <a name="GML_token">GML_token</a> { 
+    GML_value kind;
+    union tok_val value;
+};</pre>
+</blockquote>
+
+<p>Where <code>kind</code> determines the type of the token and 
+<code>value</code> is <!-- well, what do you think it is ?  --> its value.  
+<code>kind</code> is of type <code>GML_value</code>, which is listed in Table 
+1.</p>
+
+<table border="1" width="100%" bgcolor="#FAEBD7">
+
+<tr>
+<td><code>GML_KEY</code><br></td>
+<td>token is the name of a key<br></td>
+<td>data in <code>value.string</code></td>
+</tr>
+
+<tr>
+<td><code>GML_INT</code><br></td>
+<td>token is integer number<br></td>
+<td>data in <code>value.integer</code></td>
+</tr>
+
+<tr>
+<td><code>GML_DOUBLE</code><br></td>
+<td>token is floating point number<br></td>
+<td>data in <code>value.floating</code></td>
+</tr>
+
+<tr>
+<td><code>GML_STRING</code><br></td>
+<td>token is a string<br></td>
+<td>data in <code>value.string</code></td>
+</tr>
+
+<tr>
+<td><code>GML_L_BRACKET</code><br></td>
+<td>token is left bracket<br></td>
+<td>no data in <code>value</code></td>
+</tr>
+
+<tr>
+<td><code>GML_R_BARCKET</code><br></td>
+<td>token is right bracket<br></td>
+<td>no data in <code>value</code></td>
+</tr>
+
+<tr>
+<td><code>GML_END</code><br></td>
+<td><code>EOF</code> was reached (<code>value</code> undefined)<br></td>
+<td>no data in <code>value</code></td>
+</tr>
+
+<tr>
+<td><code>GML_ERROR</code><br></td>
+<td>error occured while parsing<br></td>
+<td>additional information in <code>value.error</code></td>
+</tr>
+
+<caption align="bottom"><em>Table 1.</em> Enumeration 
+<code>GML_value</code>, scanner related entries </caption>
+
+</table>
+    
+    
+<p>The <code>value</code> field in <code>GML_token</code> is of type 
+<code>GML_tok_val</code>, which is defined as follows:</p>
+
+<blockquote>
+<pre>union <a name="GML_tok_val">GML_tok_val</a> {
+    long integer;          // used with GML_INT
+    double floating;       // used with GML_DOUBLE
+    char* string;          // used with GML_STRING, GML_KEY
+    struct GML_error err;  // used with GML_ERROR
+};
+</pre>
+</blockquote>
+
+
+<hr> <!-- ============================================================= -->
+
+
+<h2>Parser</h2>
+
+<p>The procedure <code><a href="GML_parser">GML_parser</a></code> 
+implements the parser for GML files:</p>
+
+<blockquote>
+<pre>struct GML_pair* <a name="GML_parser">GML_parser</a> (FILE* file,
+    struct GML_stat* stat,
+    int mode);
+</pre>
+</blockquote>
+
+<p>Input parameters for <code>GML_parser</code> are the 
+<code>file</code>, a pointer to a <code>GML_stat</code> structure and 
+and the operations <code>mode</code>.  <code>file</code> must be open 
+for reading; the caller is responsible for opening and closing the 
+file.  <code>stat</code> must point to a structure of type 
+<code>GML_stat</code>, which is defined as follows:
+
+<blockquote>
+<pre><a name=GML_stat>struct GML_stat</a> {
+    struct GML_error err;
+    struct GML_list_elem* key_list;
+};
+</pre>
+</blockquote>
+
+The variable <code>err</code> is used to report errors (for information on 
+<code>GML_error</code> see <a href="#GML_error">below</a>)
+If an error occurs during parsing, 
+<code>stat->err.err_num</code> is set to the corresponding error 
+code, and additional information is written into the data 
+structure pointed to by <code>stat->err</code>. If no error occurs, then 
+<code>stat->err.err_num</code> has the value <code>GML_OK</code>.
+<code>mode</code> is almost always <code>0</code>.
+The other field in <code>GML_stat</code> is <code>key_list</code>, a 
+pointer to a singly linked list of the strings used for keys. You can access 
+the first key-string with <code>key_list->key</code> and the next node with
+<code>key_list->next</code>. </p>
+
+<p>The parameter <code>mode</code> needs further clarification. 
+<code>GML_parser</code> parses lists recursively.  Therefore, A 
+closing square bracket (<tt>]</tt>) means the end of a list in a 
+recusive call and a syntax error (<code>GML_TOO_MANY_BRACKETS</code>) 
+at the top level.  Therefore, <code>mode</code> is used to 
+discriminate between the top level (<code>mode == 0</code>) and a 
+recursion step (<code>mode == 1</code>).  <code>0</code> at the top 
+level and and 1 in a recursion step.</p>
+
+<p><code>GML_parser</code> returns a structure of type
+<code>GML_pair</code>, which is defined as follows:</p>
+
+<blockquote>
+<pre>struct <a name="GML_pair">GML_pair</a> {
+    char* key;
+    GML_value kind;
+    union pair_val value;
+    struct GML_pair* next;
+};
+</pre>
+</blockquote>
+
+<p>Each object in a <code>GML_pair</code> structure corresponds to a 
+key-value pair in the GML file, where <code>key</code> is a pointer to 
+the key, and <code>kind</code> and <code>value</code> hold the value.  
+For example, the sequence &quot;id 42&quot; translates into a 
+<code>GML_pair structure</code> where <code>key</code> is "id", 
+<code>kind</code> is <code>GML_INT</code> and 
+<code>value.integer</code> is <em>42</em>.  <code>next</code> 
+implements GML lists.  <code>next</code> is a pointer to the next 
+element within the current in the list, or <code>NULL</code> if there 
+are no more elements in the
+list.</p>
+
+<p>The field <code>kind</code> determines which of the fields in 
+<code>value</code> is used.  <code>kind</code> is of type 
+<code>GML_value</code>, which is listed in Table 2.</p>
+
+<table border="1" width="100%" bgcolor="#FAEBD7">
+
+<tr>
+<td><code>GML_INT</code><br></td>
+<td><code>value</code> is a integer number<br></td>
+<td>data in <code>value.integer</code></td>
+</tr>
+
+<tr>
+<td><code>GML_DOUBLE</code><br></td>
+<td><code>value</code> is a floating point number<br></td>
+<td>data in <code>value.floating</code></td>
+</tr>
+
+<tr>
+<td><code>GML_STRING</code><br></td>
+<td><code>value</code> is a string<br></td>
+<td>data in <code>value.string</code></td>
+</tr>
+
+<tr>
+<td><code>GML_LIST</code><br></td>
+<td><code>value</code> is a list of <em>key-value</em> pairs<br></td>
+<td>data in <code>value.list</code></td>
+</tr>
+
+<caption align="bottom"><em>Table 2.</em> Enumeration <code><a 
+name="GML_value">GML_value</a></code>, parser related entries </caption>
+
+</table>
+
+
+<p>The data structure <code>GML_pair_val</code> is defined as
+follows:</p>
+
+<blockquote>
+<pre>union <a name="GML_pair_val">GML_pair_val</a> {
+    long integer;          // kind is GML_INT
+    double floating;       // kind is GML_DOUBLE
+    char* string;          // kind is GML_STRING
+    struct GML_pair* list; // kind is GML_LIST
+};
+</pre>
+</blockquote>
+
+  
+<p><strong>Note:</strong> <code>string</code> contains no characters with
+ASCII code greater than 127 because these are converted into the 
+<strong>iso8859-1</strong>-format.  See the <a 
+href="http://www.fmi.uni-passau.de/Graphlet/GML">GML Manual</a> for details.
+</p>
+
+<p>The following auxiliary procedures are defined for
+<code>GML_pair</code>:</p>
+
+<blockquote>
+<code>void <a name="GML_free_list">GML_free_list</a> (struct GML_pair* list, struct GML_list_elem* key_list)</code>
+</blockquote>
+
+<p>Frees recursivly all storage allocated for <code>list</code> and for 
+<code>key_list</code> (which is decribed <a href="#GML_stat"> above</a>).</p>
+
+<blockquote>
+<code>void <a name="GML_print_list">GML_print_list</a> (struct GML_pair* list, int level)</code>
+</blockquote>
+
+<p>Writes <code>list</code> to <code>stdout</code>, using <code>level</code>
+for indentation.  This meant for debugging only.</p>
+
+
+<hr> <!-- ====================================================================== -->
+
+<h2><a name="Error">Error Handling</a></h2>
+
+<p>The currently read line and column are stored in the global
+variables <code>GML_line</code> and <code>GML_column</code>. If you
+are interested in <em>where</em> an error occured, you should call 
+
+<blockquote>
+<pre>void <a name="GML_init">GML_init</a> ()</pre>
+</blockquote>
+
+before calling parser or scanner the first time. It will set
+both variables to 1.
+
+
+<p>The procedures <code><a href="#GML_scanner">GML_scanner</a></code> and 
+<code><a href="#GML_parser">GML_parser</a></code> read until they find an 
+error, or an end of file.  If the parser encounters 
+an error, it returns the GML structure parsed so far and provides error 
+information in its <code>error</code> parameter.
+The structure <code>GML_error</code> reports scanner and parser errors:</p>
+
+<blockquote>
+<pre>struct <a name="GML_error">GML_error</a> {
+    GML_error_value err_num;
+    int line;
+    int column;
+};
+</pre>
+</blockquote>
+
+
+<p><code>line</code> is the input line in which the error
+occured, and <code>column</code> is the corresponding column.
+Both line and column start at 1.  <code>err_num</code> is of type
+<code>GT_error_value</code>, which is listed in Table 3.</p>
+
+<table border="1" width="100%" bgcolor="#FAEBD7">
+
+<caption align="bottom"><em>Table 3.</em> Enumeration 
+<code><a name="GML_error_value">GT_error_value</a></code> </caption>
+
+<tr>
+<td nowrap><code>GML_UNEXPECTED</code><br></td>
+<td>unexpected charcter was found</td>
+</tr>
+
+<tr>
+<td nowrap><code>GML_SYNTAX</code><br></td>
+<td>Broken <em>key-value</em> structure</td>
+</tr>
+
+<tr>
+<td nowrap><code>GML_PREMATURE_EOF</code><br></td>
+<td>End of file encountered while reading a string</td>
+</tr>
+
+<tr>
+<td nowrap><code>GML_TOO_MANY_DIGITS</code><br></td>
+<td>A number has too many digits (that is, more than 1024 in the current 
+implementation).</td>
+</tr>
+
+<tr>
+<td nowrap><code>GML_OPEN_BRACKET</code><br></td>
+<td>At least one bracket not closed at <code>EOF</code></td>
+</tr>
+
+<tr>
+<td nowrap><code>GML_OK</code><br></td>
+<td>No errors occured</td>
+</tr>
+</table>
+
+<hr> <!-- ====================================================================== -->
+
+<h2><a name="Examples">Examples</a></h2>
+
+<p>The following example
+reads a GML file (filename is specified in the command line) and writes the 
+parsed <em>key-value</em> pairs and the list of keys to <code>standard 
+output</code>.
+</p>
+
+<p><pre><a name="GML_demo">#include "gml_parser.h"</a>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+void print_keys (struct GML_list_elem* list) {
+    
+    while (list) {
+        printf ("%s\n", list->key);
+        list = list->next;
+    }
+}
+
+void main (int argc, char* argv[]) {
+  
+    struct GML_pair* list;
+    struct GML_stat* stat=(struct GML_stat*)malloc(sizeof(struct GML_stat));
+    stat->key_list = NULL;
+
+    if (argc != 2) printf ("Usage: gml_demo &lt;gml_file&gt; \n");
+    else {
+        FILE* file = fopen (argv[1], "r");
+        if (file == 0) printf ("\n No such file: %s", argv[1]);
+        else {
+            GML_init ();
+            list = GML_parser (file, stat, 0);
+
+            if (stat->err.err_num != GML_OK) {
+                printf ("An error occured while reading line %d column
+                %d of %s:\n", stat->err.line, stat->err.column, argv[1]);
+                
+                switch (stat->err.err_num) {
+                case GML_UNEXPECTED:
+                    printf ("UNEXPECTED CHARACTER");
+                    break;
+                    
+                case GML_SYNTAX:
+                    printf ("SYNTAX ERROR"); 
+                    break;
+                    
+                case GML_PREMATURE_EOF:
+                    printf ("PREMATURE EOF IN STRING");
+                    break;
+                    
+                case GML_TOO_MANY_DIGITS:
+                    printf ("NUMBER WITH TOO MANY DIGITS");
+                    break;
+                    
+                case GML_OPEN_BRACKET:
+                    printf ("OPEN BRACKETS LEFT AT EOF");
+                    break;
+                    
+                case GML_TOO_MANY_BRACKETS:
+                    printf ("TOO MANY CLOSING BRACKETS");
+                    break;
+                
+                default:
+                    break;
+                }
+                
+                printf ("\n");
+            }      
+            GML_print_list (list, 0);
+            printf ("Keys used in %s: \n", argv[1]);
+            print_keys (stat->key_list);
+            GML_free_list (list, stat->key_list);
+        }
+    }
+}
+</pre>
+<hr>
+
+<address>
+<a href="mailto:raitner@fmi.uni-passau.de">Marcus Raitner</a>,
+<a href="http://www.fmi.uni-passau.de/~himsolt">Michael Himsolt</a>
+</address>
+
+</body>
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: html
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:0
+sgml-indent-data:nil
+sgml-parent-document:nil
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->
+
