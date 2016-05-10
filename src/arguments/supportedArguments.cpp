@@ -55,6 +55,7 @@ vector<string> doubleArgs = {
 "-ntabus", "-nneighbors",
 "-lgraaliter",
 "-alignFormat",				// Used in analysis mode
+"-simFormat",				// Used in similarity mode
 };
 
 vector<string> boolArgs = {
