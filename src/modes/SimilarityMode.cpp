@@ -15,7 +15,6 @@ void SimilarityMode::run(ArgumentParser& args) {
 
     MeasureCombination M;
     initMeasures(M, G1, G2, args);
-
     if(M.getNumberOfLocalMeasures() == 0) {
     	cerr << "ERROR: need at least one local measure to produce similarity matrix." << endl;
     	exit(-1);
@@ -23,12 +22,12 @@ void SimilarityMode::run(ArgumentParser& args) {
 
     vector<vector <float> > sim = M.getAggregatedLocalSims();
 
-    saveSimilarityMatrix(sim, args.strings["-o"] + ".sim");
+    saveSimilarityMatrix(sim, G1, G2, args.strings["-o"] + ".sim", args.doubles["-simFormat"]);
 
     cout << "Finished. Saved similarity file as " << (args.strings["-o"] + ".sim") << endl;
 }
 
-void SimilarityMode::saveSimilarityMatrix(vector<vector <float> > sim, string file) {
+void SimilarityMode::saveSimilarityMatrix(vector<vector <float> > sim, Graph &G1, Graph &G2, string file, int format) {
 	ofstream outfile;
 	outfile.open(file.c_str());
 
@@ -37,11 +36,25 @@ void SimilarityMode::saveSimilarityMatrix(vector<vector <float> > sim, string fi
 		exit(-1);
 	}
 
-	for(uint i = 0; i < sim.size(); ++i) {
-		for(uint j = 0; j < sim[i].size(); ++j) {
-			outfile << i << " " << j << " " << sim[i][j] << endl;
-		}
+	switch(format) {
+		case 0:
+			for(uint i = 0; i < sim.size(); ++i) {
+				for(uint j = 0; j < sim[i].size(); ++j) {
+					outfile << i << " " << j << " " << sim[i][j] << endl;
+				}
+			}
+		break;
+		case 1:
+			map<ushort,string> g1Map = G1.getIndexToNodeNameMap();
+			map<ushort,string>  g2Map = G2.getIndexToNodeNameMap();
+			for(uint i = 0; i < sim.size(); ++i) {
+				for(uint j = 0; j < sim[i].size(); ++j) {
+					outfile << g1Map[i] << " " << g2Map[j] << " " << sim[i][j] << endl;
+				}
+			}
+		break;
 	}
+	outfile.close();
 }
 
 string SimilarityMode::getName(void) {

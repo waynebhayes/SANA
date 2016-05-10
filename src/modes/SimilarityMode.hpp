@@ -11,7 +11,7 @@ class SimilarityMode : public Mode {
 public:
     void run(ArgumentParser& args);
     std::string getName(void);
-    void saveSimilarityMatrix(vector<vector <float> > sim, string file);
+    void saveSimilarityMatrix(vector<vector <float> > sim, Graph &G1, Graph &G2, string file, int format);
 };
 
 #endif /* SIMIlARITYMODE_HPP_ */
