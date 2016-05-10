@@ -1,0 +1,7 @@
+Version number: master-f3cf902
+Successfully parsed 'yeast.gw': contains 2390 nodes and 16127 edges
+Successfully parsed 'human.gw': contains 9141 nodes and 41456 edges
+Successfully parsed 'matching graph': contains 21846990 matching edges
+Using scoring function Average
+Using beta = 1
+Min-max normalization of matching edges in the range [0, 0]
