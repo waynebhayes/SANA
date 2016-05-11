@@ -25,10 +25,9 @@ string NATALIEWrapper::convertAndSaveGraph(Graph* graph, string name) {
 string NATALIEWrapper::generateAlignment() {
     exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
 
-    string output = "out";
     string cmd = " -g1 " + g1File +
     			 " -g2 " + g2File +
-    			 " -o " + output +
+    			 " -o " + alignmentFileName +
     			 " -if1 5" +
     			 " -if2 5" +
     			 " " + parameters;

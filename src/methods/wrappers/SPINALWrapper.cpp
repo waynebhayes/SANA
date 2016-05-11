@@ -32,20 +32,18 @@ string SPINALWrapper::convertAndSaveGraph(Graph* graph, string name) {
 }
 
 string SPINALWrapper::generateAlignment() {
-	string alignName = "align";
-
 	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
 	unsigned int sFile = parameters.find("-ns");
 	if(sFile < parameters.size()) {
 		sFile += 5;
 		string simFile = parameters.substr(sFile, parameters.size() - parameters.find("-ns"));
 		parameters = parameters.substr(0, parameters.find("-ns"));
-		execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " " + simFile + " " + alignName + ".txt");
+		execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " " + simFile + " " + alignmentFileName + ".txt");
 	} else {
-		execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " " + alignName + ".txt");
+		execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " " + alignmentFileName + ".txt");
 	}
-	exec("cd " + wrappedDir + "; " + OUTPUT_CONVERT + " " + alignName + ".txt");
-	return wrappedDir + "/" + alignName + ".aln";
+	exec("cd " + wrappedDir + "; " + OUTPUT_CONVERT + " " + alignmentFileName + ".txt");
+	return wrappedDir + "/" + alignmentFileName + ".aln";
 }
 
 Alignment SPINALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {

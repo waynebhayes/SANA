@@ -34,10 +34,9 @@ string NETALWrapper::generateAlignment() {
 
     // Rename the alignment file
     string oldName = "\\(" + g1File + "-" + g2File + "*.alignment";
-    string newName = g1File + "-" + g2File + ".alignment";
-    exec("cd " + wrappedDir + "; mv " + oldName + " " + newName);
+    exec("cd " + wrappedDir + "; mv " + oldName + " " + alignmentFileName);
 
-    return wrappedDir + "/" + newName;
+    return wrappedDir + "/" + alignmentFileName;
 }
 
 Alignment NETALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
