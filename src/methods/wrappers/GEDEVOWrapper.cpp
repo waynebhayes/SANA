@@ -36,10 +36,9 @@ string GEDEVOWrapper::generateAlignment() {
 	G1->saveGraphletsAsSigs(wrappedDir + "/" + g1Sigs);
 	G2->saveGraphletsAsSigs(wrappedDir + "/" + g2Sigs);
 
-	string outputFile = "out";
 	string newOutputFile = g1FileName + "_" + g2FileName + ".algn";
 
-	string cmd = "--save " + outputFile + " --no-save --groups " +
+	string cmd = "--save " + alignmentFileName + " --no-save --groups " +
 			g1FileName + " " + g2FileName +
 			" --ntw " + g1File +
 			" --ntw " + g2File +
@@ -53,10 +52,10 @@ string GEDEVOWrapper::generateAlignment() {
 	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
 	execPrintOutput("cd " + wrappedDir + "; " + "./" + PROGRAM + " " + cmd);
 
-	exec("cd " + wrappedDir + ";" + OUTPUT_CONVERTER + " " + outputFile + ".matching " + newOutputFile);
+	exec("cd " + wrappedDir + ";" + OUTPUT_CONVERTER + " " + alignmentFileName + ".matching " + newOutputFile);
 
     exec("cd " + wrappedDir + "; rm " + g1Sigs + " " + g2Sigs);
-    exec("cd " + wrappedDir + "; rm " + outputFile + ".matching");
+    exec("cd " + wrappedDir + "; rm " + alignmentFileName + ".matching");
 
 	return wrappedDir + "/" + newOutputFile;
 }

@@ -23,15 +23,11 @@ string OptNetAlignWrapper::convertAndSaveGraph(Graph* graph, string name) {
 }
 
 string OptNetAlignWrapper::generateAlignment() {
-	string outputname = "out";
-	//exec("cd " + wrappedDir + "/src; make optnetalignubuntu; mv optnetalign ../");
-	//exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
 	execPrintOutput("cd " + wrappedDir + "; tail -n +2 "+g1File+">/tmp/x$$; mv /tmp/x$$ "+g1File+";tail -n +2 "+g2File+">/tmp/x$$; mv /tmp/x$$ "+g2File+"; " + PROGRAM + " --net1 " +
-			g1File + " --net2 " + g2File + " " + GLOBAL_PARAMETERS + " " + parameters + " --outprefix " + outputname);
+			g1File + " --net2 " + g2File + " " + GLOBAL_PARAMETERS + " " + parameters + " --outprefix " + alignmentFileName);
+	alignmentFileName += "_0.aln";
 
-	outputname += "_0.aln";
-
-	return wrappedDir + "/" + outputname;
+	return wrappedDir + "/" + alignmentFileName;
 }
 
 Alignment OptNetAlignWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {

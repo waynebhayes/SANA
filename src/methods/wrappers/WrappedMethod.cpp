@@ -8,7 +8,7 @@ WrappedMethod::WrappedMethod(Graph* G1, Graph* G2, string name, string args): Me
     //these files cannot be moved to the tmp/ folder
     g1FileName = name + "tmp1_" + g1Name + "_" + g2Name + "_" + intToString(randInt(0, 999999));
     g2FileName = name + "tmp2_" + g1Name + "_" + g2Name + "_" + intToString(randInt(0, 999999));
-
+    alignmentFileName = name + "align_" + g1Name + "_" + g2Name + "_" + intToString(randInt(0, 999999));
     parameters = args;
 }
 

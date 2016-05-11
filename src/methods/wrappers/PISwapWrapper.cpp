@@ -25,11 +25,10 @@ string PISwapWrapper::convertAndSaveGraph(Graph* graph, string name) {
 }
 
 string PISwapWrapper::generateAlignment() {
-	string outputname = g1FileName + "_" + g2FileName + ".aln";
 	exec("cd " + wrappedDir + "; " + PISwapBinary + " " +  g1File + " " + g2File + " " + parameters);
-	exec("cd " + wrappedDir + "; " + alignmentconverter + " match_output.txt " + outputname);
+	exec("cd " + wrappedDir + "; " + alignmentconverter + " match_output.txt " + alignmentFileName);
 
-	return wrappedDir + "/" + outputname;
+	return wrappedDir + "/" + alignmentFileName;
 }
 
 Alignment PISwapWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {

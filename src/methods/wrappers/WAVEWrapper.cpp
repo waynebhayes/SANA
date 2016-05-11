@@ -23,12 +23,10 @@ string WAVEWrapper::convertAndSaveGraph(Graph* graph, string name) {
 }
 
 string WAVEWrapper::generateAlignment() {
-	string output = "out.algn";
-
 	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
-	exec("cd " + wrappedDir + "; " + PROGRAM + " " + g1File + " " + g2File + " " + parameters + " " + output);
+	exec("cd " + wrappedDir + "; " + PROGRAM + " " + g1File + " " + g2File + " " + parameters + " " + alignmentFileName);
 
-	return wrappedDir + "/" + output;
+	return wrappedDir + "/" + alignmentFileName;
 }
 
 Alignment WAVEWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {

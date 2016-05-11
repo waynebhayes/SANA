@@ -12,7 +12,6 @@ const string MIGRAALProgram = "./MI-GRAALRunner.py";
 
 MIGRAALWrapper::MIGRAALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "MIGRAAL", args) {
 	wrappedDir = "wrappedAlgorithms/MI-GRAAL";
-    outputName = g1FileName + "_" + g2FileName;
 }
 
 void MIGRAALWrapper::loadDefaultParameters() {
@@ -28,10 +27,10 @@ string MIGRAALWrapper::generateAlignment() {
 	exec("cd " + MIGRAALDIR + "; chmod +x " + CONVERTER + " " + GHOSTBinary + " " + MIGRAALProgram);
 
     string cmd = "cd wrappedAlgorithms/MI-GRAAL; " +
-    				MIGRAALProgram + " " + g1File + " " + g2File + " " + outputName + " " + parameters;
+    				MIGRAALProgram + " " + g1File + " " + g2File + " " + alignmentFileName + " " + parameters;
     execPrintOutput(cmd);
 
-    return wrappedDir + "/" + outputName + ".aln";
+    return wrappedDir + "/" + alignmentFileName + ".aln";
 }
 
 Alignment MIGRAALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
