@@ -13,7 +13,9 @@
 #include "../measures/NodeCorrectness.hpp"
 
 #include "../measures/localMeasures/NodeCount.hpp"
+#include "../measures/localMeasures/NodeDensity.hpp"
 #include "../measures/localMeasures/EdgeCount.hpp"
+#include "../measures/localMeasures/EdgeDensity.hpp"
 #include "../measures/localMeasures/GoSimilarity.hpp"
 #include "../measures/localMeasures/Importance.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
@@ -88,7 +90,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableMeasures = {
-        "ec","s3","wec","nodec","edgec","go","importance",
+        "ec","s3","wec","nodec","noded","edgec","edged","go","importance",
         "sequence","graphlet","graphletlgraal", "graphletcosine"
     };
     double total = 0;
@@ -173,10 +175,22 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
         M.addMeasure(m, nodecWeight);
     }
 
+    if (shouldInit("noded", G1, G2, args)) {
+        m = new NodeDensity(&G1, &G2, args.doubles["-maxDist"]);
+        double nodedWeight = getWeight("noded", G1, G2, args);
+        M.addMeasure(m, nodedWeight);
+    }
+
     if (shouldInit("edgec", G1, G2, args)) {
         m = new EdgeCount(&G1, &G2, args.vectors["-edgecweights"]);
         double edgecWeight = getWeight("edgec", G1, G2, args);
         M.addMeasure(m, edgecWeight);
+    }
+
+    if (shouldInit("edged", G1, G2, args)) {
+        m = new EdgeDensity(&G1, &G2, args.doubles["-maxDist"]);
+        double edgedWeight = getWeight("edged", G1, G2, args);
+        M.addMeasure(m, edgedWeight);
     }
 
     if (GoSimilarity::fulfillsPrereqs(&G1, &G2)) {

@@ -36,11 +36,11 @@ vector<string> stringArgs = {
 vector<string> doubleArgs = {
 //objective function weights. used when '-objfuntype' is "generic"
 "-ec", "-s3", "-wec",
-"-importance", "-nodec", "-edgec",
+"-importance", "-nodec", "-noded", "-edgec", "-edged",
 "-graphlet", "-graphletlgraal",
 "-sequence", "-go",
 "-graphletcosine",
-
+"-maxDist", // used for -edged and -noded
 "-alpha", //used when '-objfuntype' is "alpha"
 "-beta", //used when '-objfuntype' is "beta"
 
