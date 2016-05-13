@@ -14,7 +14,7 @@ GHOSTWrapper::GHOSTWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1,
 
 // -wrappedArgs "matcher nneighbors beta ratio searchiter"
 void GHOSTWrapper::loadDefaultParameters() {
-	parameters = "linear all 1.0 8.0 10 -p 1 -alpha 1"; // alpha = only topo
+	parameters = "linear all 1.0 8.0 10"; // do not modify these, they are hard-coded parsed below
 }
 
 string GHOSTWrapper::convertAndSaveGraph(Graph* graph, string name) {
@@ -24,9 +24,11 @@ string GHOSTWrapper::convertAndSaveGraph(Graph* graph, string name) {
 	graph->saveInGWFormat(gwFile);
 
 	exec("mv " + gwFile + " " + wrappedDir);
-	exec("cd " + wrappedDir + "; chmod +x " + CONVERTER);
-	exec("cd " + wrappedDir + "; " + CONVERTER + " --convert " + gwFile + " --output " + gexfFile);
+	exec("cd " + wrappedDir + " && chmod +x " + CONVERTER);
+	exec("bash -c \"cd " + wrappedDir + " && " + CONVERTER + " --convert " + gwFile + " --output " + gexfFile + "\" 2>/dev/null");
 	exec("mv " + wrappedDir + "/" + gexfFile + " " + gexfFile);
+	exec("cd " + wrappedDir + " && cp SIGS/" + G1->getName() + ".sig.gz " + g1TmpName + ".sig.gz 2>/dev/null");
+	exec("cd " + wrappedDir + " && cp SIGS/" + G2->getName() + ".sig.gz " + g2TmpName + ".sig.gz 2>/dev/null");
 
 	return gexfFile;
 }
@@ -46,6 +48,8 @@ void GHOSTWrapper::createCfgFile(string cfgFileName) {
 	outfile << "[main]" << endl;
 	outfile << "network1: " << g1File << endl;
 	outfile << "network2: " << g2File << endl;
+	outfile << "sigs1: " << g1TmpName << ".sig.gz" << endl;
+	outfile << "sigs2: " << g2TmpName << ".sig.gz" << endl;
 	outfile << "matcher: "  << matcher << endl;
 	outfile << "nneighbors: "  << nneighbors << endl;
 	outfile << "beta: " << beta << endl;
@@ -56,7 +60,7 @@ void GHOSTWrapper::createCfgFile(string cfgFileName) {
 }
 
 string GHOSTWrapper::generateAlignment() {
-	cfgFile = g1FileName + ".cfg";
+	cfgFile = g1TmpName + ".cfg";
 	createCfgFile(wrappedDir + "/" + cfgFile);
 
 	execPrintOutput("cd " + wrappedDir + "; " + GHOSTBinary + " -c " + cfgFile);

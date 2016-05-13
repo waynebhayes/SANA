@@ -519,7 +519,7 @@ vector<vector<uint> > Graph::computeGraphletDegreeVectors() {
     uint n = getNumNodes();
     uint m = getNumEdges();
 
-    string fileName = "tmp/compute_dgvs.txt";
+    string fileName = "tmp/compute_dgvs" + intToString(randInt(0, 2100000000)) + ".txt";
     ofstream fout(fileName.c_str());
     fout << n << " " << m << endl;
     for (uint i = 0; i < m; i++) {
@@ -775,7 +775,7 @@ void Graph::saveInGWFormat(string outputFile) {
     uint numNodes = getNumNodes();
     vector<string> nodeNames(numNodes);
     for (uint i = 0; i < numNodes; i++) {
-        nodeNames[i] = "node"+intToString(i+1);
+        nodeNames[i] = "node"+intToString(i);
     }
     saveInGWFormat(outputFile, nodeNames, edgeList);
 }

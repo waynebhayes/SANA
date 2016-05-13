@@ -26,7 +26,7 @@ string NETALWrapper::convertAndSaveGraph(Graph* graph, string name) {
 
 string NETALWrapper::generateAlignment() {
     // Give the program execute permissions
-	exec("cd " + wrappedDir + "; chmod +x "+ NETALProgram);
+    exec("cd " + wrappedDir + "; chmod +x "+ NETALProgram);
 
     // Run the program in the wrappedDir with the parameters
     string cmd = "cd " + wrappedDir + ";" + NETALProgram + " " + g1File + " " + g2File + " " + parameters;
@@ -34,9 +34,9 @@ string NETALWrapper::generateAlignment() {
 
     // Rename the alignment file
     string oldName = "\\(" + g1File + "-" + g2File + "*.alignment";
-    exec("cd " + wrappedDir + "; mv " + oldName + " " + alignmentFileName);
+    exec("cd " + wrappedDir + "; mv " + oldName + " " + alignmentTmpName);
 
-    return wrappedDir + "/" + alignmentFileName;
+    return wrappedDir + "/" + alignmentTmpName;
 }
 
 Alignment NETALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {

@@ -18,11 +18,11 @@ public:
 protected:
     string parameters;
 
-    string g1FileName, g2FileName;
+    string g1TmpName, g2TmpName;
 
     string g1File, g2File;
     string alignmentFile;
-    string alignmentFileName;
+    string alignmentTmpName;
 
     string wrappedDir;
 

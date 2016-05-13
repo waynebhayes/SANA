@@ -218,7 +218,8 @@ bool folderExists(string folderName) {
 void createFolder(string folderName) {
     if (not folderExists(folderName)) {
         int res = mkdir(folderName.c_str(), ACCESSPERMS);
-        if (res == -1) throw runtime_error("error creating directory " + folderName + " ("+strerror(errno)+")");
+	// race condition: if somebody else created it in the meantime (EEXIST), it is OK.
+        if (res == -1 && errno != EEXIST) throw runtime_error("error creating directory " + folderName + " (errno "+to_string(errno)+", "+strerror(errno)+")");
     }
 }
 
