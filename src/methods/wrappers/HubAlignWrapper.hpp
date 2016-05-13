@@ -26,7 +26,7 @@ private:
     string g1EdgeListFile, g2EdgeListFile;
     string similarityFile;
 
-    string alignmetFile;
+    string alignmentFile;
 
     void generateEdgeListFile(int graphNum);
     void generateAlignment();
