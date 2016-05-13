@@ -1,14 +1,15 @@
 #include "WrappedMethod.hpp"
 
 WrappedMethod::WrappedMethod(Graph* G1, Graph* G2, string name, string args): Method(G1, G2, name) {
-	string g1Name = G1->getName();
-	string g2Name = G2->getName();
+    string g1Name = G1->getName();
+    string g2Name = G2->getName();
 
-	//rand int used to avoid collision between parallel runs
+    //rand int used to avoid collision between parallel runs
     //these files cannot be moved to the tmp/ folder
-    g1FileName = name + "tmp1_" + g1Name + "_" + g2Name + "_" + intToString(randInt(0, 999999));
-    g2FileName = name + "tmp2_" + g1Name + "_" + g2Name + "_" + intToString(randInt(0, 999999));
-    alignmentFileName = name + "align_" + g1Name + "_" + g2Name + "_" + intToString(randInt(0, 999999));
+    string TMP = "_tmp" + intToString(randInt(0, 2100000000)) + "_";
+    g1TmpName = name + TMP + g1Name;
+    g2TmpName = name + TMP + g2Name;
+    alignmentTmpName = name + TMP + "align_" + g1Name + "_" + g2Name + "_";
     parameters = args;
 }
 
@@ -18,14 +19,14 @@ void WrappedMethod::moveFilesToWrappedDir() {
 }
 
 Alignment WrappedMethod::run() {
-	if(parameters == "") {
-		loadDefaultParameters();
-	}
+    if(parameters == "") {
+	loadDefaultParameters();
+    }
 
-	g1File = convertAndSaveGraph(G1, g1FileName);
-	g2File = convertAndSaveGraph(G2, g2FileName);
+    g1File = convertAndSaveGraph(G1, g1TmpName);
+    g2File = convertAndSaveGraph(G2, g2TmpName);
 
-	moveFilesToWrappedDir();
+    moveFilesToWrappedDir();
 
     alignmentFile = generateAlignment();
 

@@ -33,14 +33,13 @@ string GREATWrapper::generateAlignment() {
 	exec("cd " + wrappedDir + "; chmod +x *.sh");
 	exec("cd " + wrappedDir + "/src; chmod +x *");
 
-	exec("cd " + wrappedDir + "; count.sh " + g1FileName);
-	exec("cd " + wrappedDir + "; count.sh " + g2FileName);
+	exec("cd " + wrappedDir + "; count.sh " + g1TmpName);
+	exec("cd " + wrappedDir + "; count.sh " + g2TmpName);
 
 	string script = scripts[atoi(parameters.substr(0, 1).c_str())];
 	string alpha = parameters.substr(2, 2);
 
-	string options = "echo \"" + g1FileName + "\n" + g2FileName + "\n" + alpha + "\n" + "\" | ";
-
+	string options = "echo \"" + g1TmpName + "\n" + g2TmpName + "\n" + alpha + "\n" + "\" | ";
 
 	return " ";
 }

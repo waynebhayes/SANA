@@ -15,7 +15,7 @@ GEDEVOWrapper::GEDEVOWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G
 }
 
 void GEDEVOWrapper::loadDefaultParameters() {
-	parameters = "--maxsame 3000 --threads 24 --pop 400"; // maxsame 3000 is what they recommend, runtime many hours
+	parameters = "--maxsame 3000 --pop 400"; // maxsame 3000 is what they recommend, runtime many hours
 }
 
 string GEDEVOWrapper::convertAndSaveGraph(Graph* graph, string name) {
@@ -31,17 +31,17 @@ string GEDEVOWrapper::convertAndSaveGraph(Graph* graph, string name) {
 }
 
 string GEDEVOWrapper::generateAlignment() {
-	string g1Sigs = g1FileName + ".sigs";
-	string g2Sigs = g2FileName + ".sigs";
+	string g1Sigs = g1TmpName + ".sigs";
+	string g2Sigs = g2TmpName + ".sigs";
 	G1->saveGraphletsAsSigs(wrappedDir + "/" + g1Sigs);
 	G2->saveGraphletsAsSigs(wrappedDir + "/" + g2Sigs);
 
-	string cmd = "--save " + alignmentFileName + " --no-save --groups " +
-			g1FileName + " " + g2FileName +
+	string cmd = "--save " + alignmentTmpName + " --no-save --groups " +
+			g1TmpName + " " + g2TmpName +
 			" --ntw " + g1File +
 			" --ntw " + g2File +
-			" --grsig " + g1Sigs + " " + g1FileName +
-			" --grsig " + g2Sigs + " " + g2FileName +
+			" --grsig " + g1Sigs + " " + g1TmpName +
+			" --grsig " + g2Sigs + " " + g2TmpName +
 			" --no-workfiles --undirected" +
 			" " + parameters;
 
@@ -50,12 +50,12 @@ string GEDEVOWrapper::generateAlignment() {
 	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
 	execPrintOutput("cd " + wrappedDir + "; " + "./" + PROGRAM + " " + cmd);
 
-	exec("cd " + wrappedDir + ";" + OUTPUT_CONVERTER + " " + alignmentFileName + ".matching " + alignmentFileName);
+	exec("cd " + wrappedDir + ";" + OUTPUT_CONVERTER + " " + alignmentTmpName + ".matching " + alignmentTmpName);
 
     exec("cd " + wrappedDir + "; rm " + g1Sigs + " " + g2Sigs);
-    exec("cd " + wrappedDir + "; rm " + alignmentFileName + ".matching");
+    exec("cd " + wrappedDir + "; rm " + alignmentTmpName + ".matching");
 
-	return wrappedDir + "/" + alignmentFileName;
+	return wrappedDir + "/" + alignmentTmpName;
 }
 
 Alignment GEDEVOWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {

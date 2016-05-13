@@ -8,8 +8,8 @@ const string MAGNADIR     = "wrappedAlgorithms/MAGNA++";
 const string MAGNABinary = "./MAGNA++";
 
 MagnaWrapper::MagnaWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "MAGNA", args) {
-	wrappedDir = "wrappedAlgorithms/MAGNA++";
-    outputName = g1FileName + "_" + g2FileName;
+    wrappedDir = "wrappedAlgorithms/MAGNA++";
+    outputName = g1TmpName + "_" + g2TmpName;
 }
 
 void MagnaWrapper::loadDefaultParameters() {
@@ -17,9 +17,7 @@ void MagnaWrapper::loadDefaultParameters() {
 }
 
 string MagnaWrapper::convertAndSaveGraph(Graph* graph, string name) {
-	string gwFile = name + ".gw";
-	graph->saveInGWFormat(gwFile);
-	exec("mv " + gwFile + " " + wrappedDir);
+	graph->saveInGWFormat(name);
 	return name;
 }
 
@@ -27,7 +25,7 @@ string MagnaWrapper::generateAlignment() {
 	exec("cd " + MAGNADIR + "; chmod +x " + MAGNABinary);
 	cout << g1File << " " << g2File << endl;
     string cmd = "cd wrappedAlgorithms/MAGNA++; " +
-    				MAGNABinary + " -G" + g1File + ".gw -H" + g2File + ".gw -o" + outputName + " " + parameters;
+    				MAGNABinary + " -G" + g1File + " -H" + g2File + " -o" + outputName + " " + parameters;
     execPrintOutput(cmd);
 
     return outputName + ".aln";

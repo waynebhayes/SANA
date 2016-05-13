@@ -27,10 +27,10 @@ string MIGRAALWrapper::generateAlignment() {
 	exec("cd " + MIGRAALDIR + "; chmod +x " + CONVERTER + " " + GHOSTBinary + " " + MIGRAALProgram);
 
     string cmd = "cd wrappedAlgorithms/MI-GRAAL; " +
-    				MIGRAALProgram + " " + g1File + " " + g2File + " " + alignmentFileName + " " + parameters;
+    				MIGRAALProgram + " " + g1File + " " + g2File + " " + alignmentTmpName + " " + parameters;
     execPrintOutput(cmd);
 
-    return wrappedDir + "/" + alignmentFileName + ".aln";
+    return wrappedDir + "/" + alignmentTmpName + ".aln";
 }
 
 Alignment MIGRAALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {

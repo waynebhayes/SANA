@@ -27,7 +27,7 @@ string NATALIEWrapper::generateAlignment() {
 
     string cmd = " -g1 " + g1File +
     			 " -g2 " + g2File +
-    			 " -o " + alignmentFileName +
+    			 " -o " + alignmentTmpName +
     			 " -if1 5" +
     			 " -if2 5" +
     			 " " + parameters;

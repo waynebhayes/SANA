@@ -24,9 +24,9 @@ string WAVEWrapper::convertAndSaveGraph(Graph* graph, string name) {
 
 string WAVEWrapper::generateAlignment() {
 	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
-	exec("cd " + wrappedDir + "; " + PROGRAM + " " + g1File + " " + g2File + " " + parameters + " " + alignmentFileName);
+	exec("cd " + wrappedDir + "; " + PROGRAM + " " + g1File + " " + g2File + " " + parameters + " " + alignmentTmpName);
 
-	return wrappedDir + "/" + alignmentFileName;
+	return wrappedDir + "/" + alignmentTmpName;
 }
 
 Alignment WAVEWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
