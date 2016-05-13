@@ -13,13 +13,18 @@ HubAlignWrapper::HubAlignWrapper(Graph* G1, Graph* G2, double alpha): Method(G1,
     createFolder("sequence");
     createFolder("sequence/bitscores");
     similarityFile = "sequence/bitscores/" + g1Name + "_" + g2Name + ".bitscores";
-
+#if 1 // TEMPORRAY CODE UNTIL WE INHERIT FROM WrappedMethod
+    string TMP = "_tmp" + intToString(randInt(0, 2100000000)) + "_";
+    string g1TmpName = "HubAlign" + TMP + g1Name;
+    string g2TmpName = "HubAlign" + TMP + g2Name;
+    string alignmentTmpName = "HubAlign" + TMP + "align_" + g1Name + "_" + g2Name + "_";
+#endif
     //rand int used to avoid collision between parallel runs
     //these files cannot be moved to the tmp/ folder
-    g1EdgeListFile = "hubaligntmp1_"+g1Name+"_"+g2Name+"_"+intToString(randInt(0, 999999));
-    g2EdgeListFile = "hubaligntmp2_"+g1Name+"_"+g2Name+"_"+intToString(randInt(0, 999999));
+    g1EdgeListFile = g1TmpName;
+    g2EdgeListFile = g2TmpName;
     //this file cannot be moved to the tmp/ folder
-    alignmetFile = g1EdgeListFile + "-" + g2EdgeListFile + ".alignment";
+    alignmetFile = alignmentTmpName + ".alignment";
 }
 
 void HubAlignWrapper::generateEdgeListFile(int graphNum) {

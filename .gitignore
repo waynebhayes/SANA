@@ -43,11 +43,4 @@ sana.out
 regression_test_baseline.txt
 run_output.txt
 
-wrappedAlgorithms/GEDEVO/GEDEVOtmp*
-wrappedAlgorithms/GHOST/GHOSTtmp*
-wrappedAlgorithms/MI-GRAAL/MIGRAALtmp*
-wrappedAlgorithms/MI-GRAAL/tmp*
-wrappedAlgorithms/NATALIE/NATALIEtmp*
-wrappedAlgorithms/NETAL/NETALtmp*
-wrappedAlgorithms/OptNetAlign/OPTNETALIGNtmp*
-
+wrappedAlgorithms/*/*tmp*
