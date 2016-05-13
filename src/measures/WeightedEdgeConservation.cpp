@@ -33,6 +33,6 @@ double WeightedEdgeConservation::eval(const Alignment& A) {
     }
     //normalization factor to ensure 0 <= score <= 1
     //note that it is not part of the original WEC defined in WAVE
-   // score /= (2*G1->getNumEdges());
+    score /= (2*G1->getNumEdges()); // Commenting it out breaks our duplication of LGRAAL, but may need to go when comparing to WAVE
     return score;
 }
