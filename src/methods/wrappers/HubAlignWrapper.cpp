@@ -5,7 +5,8 @@
 
 using namespace std;
 
-const string HubAlignWrapper::hubalignProgram = "./wrappedAlgorithms/HubAlign/HubAlign";
+const string wrappedDir = "wrappedAlgorithms/HubAlign/";
+const string HubAlignWrapper::hubalignProgram = "./HubAlign";
 
 HubAlignWrapper::HubAlignWrapper(Graph* G1, Graph* G2, double alpha): Method(G1, G2, "HubAlign"),
     alpha(alpha), g1Name(G1->getName()), g2Name(G2->getName()) {
@@ -17,14 +18,14 @@ HubAlignWrapper::HubAlignWrapper(Graph* G1, Graph* G2, double alpha): Method(G1,
     string TMP = "_tmp" + intToString(randInt(0, 2100000000)) + "_";
     string g1TmpName = "HubAlign" + TMP + g1Name;
     string g2TmpName = "HubAlign" + TMP + g2Name;
-    string alignmentTmpName = "HubAlign" + TMP + "align_" + g1Name + "_" + g2Name + "_";
+    string alignmentTmpName = g1TmpName+"-"+g2TmpName;
 #endif
     //rand int used to avoid collision between parallel runs
     //these files cannot be moved to the tmp/ folder
     g1EdgeListFile = g1TmpName;
     g2EdgeListFile = g2TmpName;
     //this file cannot be moved to the tmp/ folder
-    alignmetFile = alignmentTmpName + ".alignment";
+    alignmentFile = alignmentTmpName + ".alignment";
 }
 
 void HubAlignWrapper::generateEdgeListFile(int graphNum) {
@@ -47,7 +48,7 @@ void HubAlignWrapper::generateEdgeListFile(int graphNum) {
     randomShuffle(edgeListNames);
 
     string file = graphNum == 1 ? g1EdgeListFile : g2EdgeListFile;
-    writeDataToFile(edgeListNames, file, true);
+    writeDataToFile(edgeListNames, wrappedDir+file, true);
 }
 
 //Examples of executions of HubAlign (if alpha==1 sim file is not needed)
@@ -62,8 +63,7 @@ void HubAlignWrapper::generateAlignment() {
     //ad hoc fix
     if (reversedAlpha == 0) reversedAlpha = 0.0001;
 
-    exec("chmod +x "+hubalignProgram);
-    string cmd = hubalignProgram + " " + g1EdgeListFile + " " + g2EdgeListFile;
+    string cmd = "cd "+wrappedDir+";"+hubalignProgram + " " + g1EdgeListFile + " " + g2EdgeListFile;
     cmd += " -l 0.1 -a " + to_string(reversedAlpha);
     cmd += " -d 10 ";
     if (reversedAlpha < 1) {
@@ -76,7 +76,7 @@ void HubAlignWrapper::generateAlignment() {
 
 void HubAlignWrapper::deleteAuxFiles() {
     string evalFile = g1EdgeListFile + "-" + g2EdgeListFile + ".eval";
-    exec("rm " + g1EdgeListFile + " " + g2EdgeListFile + " " + evalFile + " " + alignmetFile);
+    //exec("cd "+wrappedDir+";rm " + g1EdgeListFile + " " + g2EdgeListFile + " " + evalFile + " " + alignmentFile);
 }
 
 Alignment HubAlignWrapper::run() {
@@ -89,7 +89,7 @@ Alignment HubAlignWrapper::run() {
     generateEdgeListFile(2);
 
     generateAlignment();
-    Alignment A = Alignment::loadEdgeList(G1, G2, alignmetFile);
+    Alignment A = Alignment::loadEdgeList(G1, G2, wrappedDir+alignmentFile);
     deleteAuxFiles();
     return A;
 }
