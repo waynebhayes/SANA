@@ -10,7 +10,7 @@ using namespace std;
 class WrappedMethod: public Method {
 public:
 
-	WrappedMethod(Graph* G1, Graph* G2, string name, string args);
+    WrappedMethod(Graph* G1, Graph* G2, string name, string args);
     Alignment run();
     void describeParameters(ostream& stream);
     string fileNameSuffix(const Alignment& A);

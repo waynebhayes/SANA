@@ -800,6 +800,7 @@ double SANA::searchTInitial() {
 		cerr << endl;
 		upperBoundTInitial *= 2;
 	}
+	upperBoundTInitial *= 2;	// one more doubling just to be sure
 	cerr << endl;
 	if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/2;
 
@@ -809,7 +810,7 @@ double SANA::searchTInitial() {
 
 	uint count = 0;
 	T.start();
-	while (lowerBoundTInitial < upperBoundTInitial and
+	while (fabs(lowerBoundTInitial - upperBoundTInitial)/lowerBoundTInitial > 0.05 and
 			count <= 10) {
 		//search in log space
 		double lowerBoundTInitialLog = log2(lowerBoundTInitial+1);
