@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <string>
 #include "WrappedMethod.hpp"
 using namespace std;
 
