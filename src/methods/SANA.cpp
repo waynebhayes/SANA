@@ -802,7 +802,7 @@ double SANA::searchTInitial() {
 	}
 	upperBoundTInitial *= 2;	// one more doubling just to be sure
 	cerr << endl;
-	if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/2;
+	if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/4;
 
 	uint n1 = G1->getNumNodes();
 	uint n2 = G2->getNumNodes();
