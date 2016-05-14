@@ -17,34 +17,35 @@ void MagnaWrapper::loadDefaultParameters() {
 }
 
 string MagnaWrapper::convertAndSaveGraph(Graph* graph, string name) {
-	graph->saveInGWFormat(name);
-	return name;
+	graph->saveInGWFormat(name + ".gw");
+	return name + ".gw";
 }
 
 string MagnaWrapper::generateAlignment() {
 	exec("cd " + MAGNADIR + "; chmod +x " + MAGNABinary);
 	cout << g1File << " " << g2File << endl;
     string cmd = "cd wrappedAlgorithms/MAGNA++; " +
-    				MAGNABinary + " -G" + g1File + " -H" + g2File + " -o" + outputName + " " + parameters;
+    				MAGNABinary + " -G " + g1File + " -H " + g2File + " -o " + outputName + " " + parameters;
     execPrintOutput(cmd);
-
-    return outputName + ".aln";
+    return outputName + "_final_alignment.txt";
 }
 
 Alignment MagnaWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
-	vector<string> words = fileToStrings(fileName);
+	vector<string> words = fileToStrings(MAGNADIR + "/" + fileName, false);
     vector<ushort> mapping(G1->getNumNodes(), G2->getNumNodes());
-
+    
     for (uint i = 0; i < words.size(); i+=2) {
     	string node1 = words[i];
     	string node2 = words[i+1];
     	cout << node1 << " " << node2 << endl;
-        mapping[atoi(node1.c_str()) - 1] = atoi(node2.c_str()) - 1;
+    	node1 = node1.substr(4, node1.length()-4);
+    	node2 = node2.substr(4, node2.length()-4);
+    	mapping[stoul(node1,nullptr)] = stoul(node2,nullptr);
     }
     return Alignment(mapping);
 }
 
 void MagnaWrapper::deleteAuxFiles() {
-    exec("cd " + MAGNADIR + ";rm " + g1File + " " + g2File);
-    exec("cd " + MAGNADIR + "; rm " + outputName + ".* " + "tmp*");
+    exec("cd " + MAGNADIR + ";rm " + g1File + " " + g2File );
+    exec("cd " + MAGNADIR + "; rm " + outputName + "*");
 }
