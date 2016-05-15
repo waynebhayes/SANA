@@ -16,9 +16,9 @@ LGraalWrapper::LGraalWrapper(Graph* G1, Graph* G2, double alpha, uint iterlimit,
     g2Folder = "networks/" + g2Name + "/";
 #if 1 // TEMPORRAY CODE UNTIL WE INHERIT FROM WrappedMethod
     string TMP = "_tmp" + intToString(randInt(0, 2100000000)) + "_";
-    string g1TmpName = "HubAlign" + TMP + g1Name;
-    string g2TmpName = "HubAlign" + TMP + g2Name;
-    string alignmentTmpName = "HubAlign" + TMP + "align_" + g1Name + "_" + g2Name + "_";
+    string g1TmpName = "LGRAAL" + TMP + g1Name;
+    string g2TmpName = "LGRAAL" + TMP + g2Name;
+    string alignmentTmpName = "LGRAAL" + TMP + "align_" + g1Name + "_" + g2Name + "_";
 #endif
     g1NetworkFile = "tmp/"+g1TmpName+".gw";
     g2NetworkFile = "tmp/"+g2TmpName+".gw";
@@ -75,11 +75,13 @@ string LGraalWrapper::generateDummySimilarityFile() {
 }
 
 void LGraalWrapper::generateAlignment() {
-    exec("chmod +x "+lgraalProgram);
+    //exec("chmod +x "+lgraalProgram);
     //Example, when aligning RNorvegicus and SPombe:
     //./L-GRAAL -Q RNorvegicus.gw -T SPombe.gw -q RNorvegicus.ndump2 -t SPombe.ndump2 -B blast_evalues.txt -o my_output
-    string cmd = lgraalProgram + " -Q " + g1NetworkFile + " -T " + g2NetworkFile;
-    cmd += " -q " + g1GDVFile + " -t " + g2GDVFile;
+    // L-GRAAL expects the network with the fewer EDGES to be first, not fewer nodes.  Sometimes it's backwards.
+    int swap = (G1->getNumEdges() > G2->getNumEdges());
+    string cmd = lgraalProgram + " -Q " + (swap?g2NetworkFile:g1NetworkFile) + " -T " + (swap?g1NetworkFile:g2NetworkFile);
+    cmd += " -q " + (swap?g2GDVFile:g1GDVFile) + " -t " + (swap?g1GDVFile:g2GDVFile);
     cmd += " -B " + similarityFile + " -o " + lgraalOutputFile;
     cmd += " -I " + intToString(iterlimit) + " -L " + to_string(timelimit);
     cmd += " -a " + to_string(alpha);

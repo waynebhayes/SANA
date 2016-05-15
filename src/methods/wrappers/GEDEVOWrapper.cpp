@@ -31,31 +31,31 @@ string GEDEVOWrapper::convertAndSaveGraph(Graph* graph, string name) {
 }
 
 string GEDEVOWrapper::generateAlignment() {
-	string g1Sigs = g1TmpName + ".sigs";
-	string g2Sigs = g2TmpName + ".sigs";
-	G1->saveGraphletsAsSigs(wrappedDir + "/" + g1Sigs);
-	G2->saveGraphletsAsSigs(wrappedDir + "/" + g2Sigs);
+    string g1Sigs = g1TmpName + ".sigs";
+    string g2Sigs = g2TmpName + ".sigs";
+    G1->saveGraphletsAsSigs(wrappedDir + "/" + g1Sigs);
+    G2->saveGraphletsAsSigs(wrappedDir + "/" + g2Sigs);
 
-	string cmd = "--save " + alignmentTmpName + " --no-save --groups " +
-			g1TmpName + " " + g2TmpName +
-			" --ntw " + g1File +
-			" --ntw " + g2File +
-			" --grsig " + g1Sigs + " " + g1TmpName +
-			" --grsig " + g2Sigs + " " + g2TmpName +
-			" --no-workfiles --undirected" +
-			" " + parameters;
+    string cmd = "--save " + alignmentTmpName + " --no-save --groups " +
+		    g1TmpName + " " + g2TmpName +
+		    " --ntw " + g1File +
+		    " --ntw " + g2File +
+		    " --grsig " + g1Sigs + " " + g1TmpName +
+		    " --grsig " + g2Sigs + " " + g2TmpName +
+		    " --no-workfiles --undirected" +
+		    " " + parameters;
 
-	cout << "\n\n\nrunning with: \"" + cmd + "\"" << endl << flush;
+    cout << "\n\n\nrunning with: \"" + cmd + "\"" << endl << flush;
 
-	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
-	execPrintOutput("cd " + wrappedDir + "; " + "./" + PROGRAM + " " + cmd);
+    exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
+    execPrintOutput("cd " + wrappedDir + "; " + "./" + PROGRAM + " " + cmd);
 
-	exec("cd " + wrappedDir + ";" + OUTPUT_CONVERTER + " " + alignmentTmpName + ".matching " + alignmentTmpName);
+    exec("cd " + wrappedDir + ";" + OUTPUT_CONVERTER + " " + alignmentTmpName + ".matching " + alignmentTmpName);
 
     exec("cd " + wrappedDir + "; rm " + g1Sigs + " " + g2Sigs);
     exec("cd " + wrappedDir + "; rm " + alignmentTmpName + ".matching");
 
-	return wrappedDir + "/" + alignmentTmpName;
+    return wrappedDir + "/" + alignmentTmpName;
 }
 
 Alignment GEDEVOWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
@@ -63,5 +63,5 @@ Alignment GEDEVOWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
 }
 
 void GEDEVOWrapper::deleteAuxFiles() {
-    exec("cd " + wrappedDir + "; rm " + g1File + " " + g2File + " *.gw" + " *.algn");
+    exec("cd " + wrappedDir + "; rm -f " + g1File + " " + g2File + " *.gw" + " *.algn");
 }

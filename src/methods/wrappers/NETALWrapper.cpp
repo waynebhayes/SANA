@@ -34,7 +34,7 @@ string NETALWrapper::generateAlignment() {
 
     // Rename the alignment file
     string oldName = "\\(" + g1File + "-" + g2File + "*.alignment";
-    exec("cd " + wrappedDir + "; mv " + oldName + " " + alignmentTmpName);
+    exec("cd " + wrappedDir + "; mv 2>/dev/null " + oldName + " " + alignmentTmpName);
 
     return wrappedDir + "/" + alignmentTmpName;
 }
