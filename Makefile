@@ -1,7 +1,7 @@
 CC = g++
 
 #CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g
-CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3
+CXXFLAGS = -static -Bstatic -U__STRICT_ANSI__ -Wall -std=c++11 -O3
 
 INCLUDES =
 LFLAGS =
@@ -144,7 +144,7 @@ test: $(OBJDIR)/test/$(tg).o $(GTEST_OBJS) $(TEST_DEPENDS)
 $(GTEST_OBJS):
 	cd test/gtest && make
 
-clean: clear_cache
+clean: #clear_cache
 	$(RM) -rf $(OBJDIR)
 	$(RM) $(MAIN)
 

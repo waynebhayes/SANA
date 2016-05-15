@@ -13,7 +13,7 @@ OptNetAlignWrapper::OptNetAlignWrapper(Graph* G1, Graph* G2, string args): Wrapp
 }
 
 void OptNetAlignWrapper::loadDefaultParameters() {
-	parameters = "--s3 --nthreads 1 --popsize 1 --timelimit 5";
+	parameters = "--s3 --nthreads 1 --popsize 1 --timelimit 60";
 }
 
 string OptNetAlignWrapper::convertAndSaveGraph(Graph* graph, string name) {

@@ -36,6 +36,9 @@ experiments/*/results/
 *.nav
 *.snm
 *.toc
+wrappedAlgorithms/PISWAP/networkx/*.pyc
+wrappedAlgorithms/PISWAP/networkx/*/*.pyc
+wrappedAlgorithms/PISWAP/networkx/*/*/*.pyc
 
 
 sana.out
@@ -44,3 +47,4 @@ regression_test_baseline.txt
 run_output.txt
 
 wrappedAlgorithms/*/*tmp*
+wrappedAlgorithms/*/*.alig*
