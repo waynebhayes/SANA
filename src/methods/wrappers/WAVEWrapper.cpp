@@ -5,7 +5,7 @@
 
 using namespace std;
 
-const string PROGRAM = "./WAVE";
+const string PROGRAM = "./run-WAVE.sh";
 
 WAVEWrapper::WAVEWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "WAVE", args) {
 	wrappedDir = "wrappedAlgorithms/WAVE";
@@ -18,19 +18,19 @@ void WAVEWrapper::loadDefaultParameters() {
 }
 
 string WAVEWrapper::convertAndSaveGraph(Graph* graph, string name) {
-	graph->writeGraphEdgeListFormat(name);
+	graph->saveInGWFormatWithNames(name);
 	return name;
 }
 
 string WAVEWrapper::generateAlignment() {
-	exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
-	exec("cd " + wrappedDir + "; " + PROGRAM + " " + g1File + " " + g2File + " " + parameters + " " + alignmentTmpName);
+	// exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
+	exec("cd " + wrappedDir + "; " + PROGRAM + " " + g1File + " " + g2File + " " + "../../" + parameters + " " + alignmentTmpName);
 
-	return wrappedDir + "/" + alignmentTmpName;
+	return wrappedDir + "/" + alignmentTmpName + ".align";
 }
 
 Alignment WAVEWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
-    return Alignment::loadEdgeList(G1, G2, fileName);
+    return Alignment::loadPartialEdgeList(G1, G2, fileName, true);
 }
 
 void WAVEWrapper::deleteAuxFiles() {

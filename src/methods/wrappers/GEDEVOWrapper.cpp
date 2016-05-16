@@ -47,7 +47,7 @@ string GEDEVOWrapper::generateAlignment() {
 
     cout << "\n\n\nrunning with: \"" + cmd + "\"" << endl << flush;
 
-    exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
+    // exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
     execPrintOutput("cd " + wrappedDir + "; " + "./" + PROGRAM + " " + cmd);
 
     exec("cd " + wrappedDir + ";" + OUTPUT_CONVERTER + " " + alignmentTmpName + ".matching " + alignmentTmpName);
