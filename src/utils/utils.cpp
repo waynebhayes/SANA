@@ -224,6 +224,7 @@ void createFolder(string folderName) {
 }
 
 string exec(string cmd) {
+    cerr << "exec(" + cmd + ");" << endl;
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) throw "Error executing " + cmd;
     char buffer[128];
