@@ -12,6 +12,19 @@ Before you start using resnik.py as a script, here are several things you must c
       in the annotation corpora provided by the Gene Ontology Consortium listed here:
     http://geneontology.org/page/download-annotations
 
+How to Use resnik.py
+--------------------
+
+Call it via the command-line : python resnik.py [OPTION] [FILE]
+Use -h to get full list of arguments
+
+Required arguments
+--------------------
+-g1,-g2         Graphs
+-ga1,-ga2       Annotation Corpora
+-ont            Ontology file
+-al
+
 
 
 
