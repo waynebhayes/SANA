@@ -11,11 +11,13 @@
 #include "../measures/GoCoverage.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/NodeCorrectness.hpp"
+#include "../measures/ShortestPathConservation.hpp"
 
 #include "../measures/localMeasures/NodeCount.hpp"
 #include "../measures/localMeasures/NodeDensity.hpp"
 #include "../measures/localMeasures/EdgeCount.hpp"
 #include "../measures/localMeasures/EdgeDensity.hpp"
+#include "../measures/localMeasures/ExternalSimMatrix.hpp"
 #include "../measures/localMeasures/GoSimilarity.hpp"
 #include "../measures/localMeasures/Importance.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
@@ -90,8 +92,8 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableMeasures = {
-        "ec","s3","wec","nodec","noded","edgec","edged","go","importance",
-        "sequence","graphlet","graphletlgraal", "graphletcosine"
+        "ec","s3","wec","nodec","noded","edgec","edged", "esim", "go","importance",
+        "sequence","graphlet","graphletlgraal", "graphletcosine", "spc"
     };
     double total = 0;
     for (uint i = 0; i < optimizableMeasures.size(); i++) {
@@ -193,6 +195,12 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
         M.addMeasure(m, edgedWeight);
     }
 
+    if (shouldInit("esim", G1, G2, args)) {
+        m = new ExternalSimMatrix(&G1, &G2, args.strings["-simFile"], args.doubles["-simFormat"]);
+        double esimWeight = getWeight("esim", G1, G2, args);
+        M.addMeasure(m, esimWeight);
+    }
+
     if (GoSimilarity::fulfillsPrereqs(&G1, &G2)) {
         if (shouldInit("go", G1, G2, args)) {
             m = new GoSimilarity(&G1, &G2,
@@ -259,10 +267,11 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
         M.addMeasure(m);
     }
 
-    //commented because it requires distance matrices,
-    //which can take hours to compute:
-    // m = new ShortestPathConservation(&G1, &G2);
-    // M.addMeasure(m);
+    if (shouldInit("spc", G1, G2, args)) {
+	   m = new ShortestPathConservation(&G1, &G2);
+	   double spcWeight = getWeight("spc", G1, G2, args);
+	   M.addMeasure(m, spcWeight);
+   }
 
     //not necessary, as getWeight returns normalized weight:
     // M.normalize();

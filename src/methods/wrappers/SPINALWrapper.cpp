@@ -21,7 +21,7 @@ string SPINALWrapper::convertAndSaveGraph(Graph* graph, string name) {
 	string gwFile  = name + ".gw";
 	string gmlFile = name + ".gml";
 
-	graph->saveInGWFormat(gwFile);
+	graph->saveInGWFormatWithNames(gwFile);
 
 	exec("mv " + gwFile + " " + wrappedDir);
 

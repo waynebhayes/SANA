@@ -19,7 +19,7 @@ void MIGRAALWrapper::loadDefaultParameters() {
 }
 
 string MIGRAALWrapper::convertAndSaveGraph(Graph* graph, string name) {
-	graph->saveInGWFormat(name);
+	graph->saveInGWFormatWithNames(name);
 	return name;
 }
 

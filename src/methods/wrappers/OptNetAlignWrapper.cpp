@@ -6,14 +6,14 @@
 using namespace std;
 
 const string PROGRAM   = "./optnetalign";
-const string GLOBAL_PARAMETERS = "--total --cxrate 0.05 --cxswappb 0.75 --mutrate 0.05 --mutswappb 0.0001 --oneobjrate 0.75 --dynparams --generations 1000000000 --hillclimbiters 10000 --finalstats --verbose";
+const string GLOBAL_PARAMETERS = " --total --cxrate 0.05 --cxswappb 0.75 --mutrate 0.05 --mutswappb 0.0001 --oneobjrate 0.75 --dynparams --generations 1000000000 --hillclimbiters 10000 --finalstats --verbose --s3 --nthreads 1 ";
 
 OptNetAlignWrapper::OptNetAlignWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "OPTNETALIGN", args) {
 	wrappedDir = "wrappedAlgorithms/OptNetAlign";
 }
 
 void OptNetAlignWrapper::loadDefaultParameters() {
-	parameters = "--s3 --nthreads 1 --popsize 1 --timelimit 60";
+	parameters = "";
 }
 
 string OptNetAlignWrapper::convertAndSaveGraph(Graph* graph, string name) {

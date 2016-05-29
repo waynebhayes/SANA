@@ -12,6 +12,7 @@ class Graph {
 public:
 
     static Graph loadGraph(string name);
+    static Graph multGraph(string name, uint path);
 
 
     static void saveInGWFormat(string outputFile, const vector<string>& nodeNames,
@@ -46,6 +47,7 @@ public:
     //http://www.algorithmic-solutions.info/leda_guide/graphs/leda_native_graph_fileformat.html
     //note: it does not parse correctly files with comments or blank lines.
     void loadGwFile(const string& fileName);
+    void multGwFile(const string& fileName, uint path);
 
     //nodes are relabeled so that the new i-th node is the node nodes[i]-th in this
     Graph nodeInducedSubgraph(const vector<ushort>& nodes) const;

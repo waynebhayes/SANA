@@ -21,7 +21,7 @@ string GHOSTWrapper::convertAndSaveGraph(Graph* graph, string name) {
 	string gwFile   = name + ".gw";
 	string gexfFile = name + ".gexf";
 
-	graph->saveInGWFormat(gwFile);
+	graph->saveInGWFormatWithNames(gwFile);
 
 	exec("mv " + gwFile + " " + wrappedDir);
 	exec("cd " + wrappedDir + " && chmod +x " + CONVERTER);
@@ -55,6 +55,7 @@ void GHOSTWrapper::createCfgFile(string cfgFileName) {
 	outfile << "beta: " << beta << endl;
 	outfile << "ratio: " << ratio << endl;
 	outfile << "searchiter: " << searchiter << endl;
+	outfile << "dumpDistances: true " << endl;
 
 	outfile.close();
 }

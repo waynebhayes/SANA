@@ -21,9 +21,10 @@ the network definitions are parsed and the necessary network files are created.
 
  */
 void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
-	string fg1 = args.strings["-fg1"], fg2 = args.strings["-fg2"];
+	string fg1 = args.strings["-fg1"], fg2 = args.strings["-fg2"], path1 = args.strings["-pathmap1"], path2 = args.strings["-pathmap2"];
 	createFolder("networks");
 	string g1Name, g2Name;
+	uint p1 = 1, p2 = 1;
 	if (fg1 != "") {
 		g1Name = extractFileNameNoExtension(fg1);
 	} else {
@@ -35,6 +36,13 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 		g2Name = args.strings["-g2"];
 	}
 
+	if (path1 != "") {
+		p1 = atoi(path1.c_str());
+	}
+
+	if (path2 != "") {
+		p2 = atoi(path2.c_str());
+	}
 	string g1Folder, g2Folder;
 	g1Folder = "networks/"+g1Name;
 	g2Folder = "networks/"+g2Name;
@@ -114,10 +122,19 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	cerr << "Initializing graphs... " << endl;
 	Timer T;
 	T.start();
-	G1 = Graph::loadGraph(g1Name);
-	G2 = Graph::loadGraph(g2Name);
+	if (p1 == 1 && p2 == 1){
+		G1 = Graph::loadGraph(g1Name);
+		G2 = Graph::loadGraph(g2Name);
+	}
 
+	else{
 
+		G1 = Graph::multGraph(g1Name, p1);
+		G2 = Graph::multGraph(g2Name, p2);
+
+	}
+
+	cout << "completed if block" << endl;
 	// Getting Valid locks
 	if(lockFile != "")
 		cerr << "Initializing locking... with lock file " + lockFile << endl;

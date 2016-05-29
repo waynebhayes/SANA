@@ -8,7 +8,7 @@ using namespace std;
 const string CONVERTER = "python GWtoNTW.py";
 const string PROGRAM   = "gedevo";
 const string OUTPUT_CONVERTER = "python GEDEVOoutput.py";
-const string GLOBAL_PARAMETERS = "--undirected";
+const string GLOBAL_PARAMETERS = " --undirected --no-prematch ";
 
 GEDEVOWrapper::GEDEVOWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "GEDEVO", args) {
 	wrappedDir = "wrappedAlgorithms/GEDEVO";
@@ -42,7 +42,7 @@ string GEDEVOWrapper::generateAlignment() {
 		    " --ntw " + g2File +
 		    " --grsig " + g1Sigs + " " + g1TmpName +
 		    " --grsig " + g2Sigs + " " + g2TmpName +
-		    " --no-workfiles --undirected" +
+		    " --no-workfiles --undirected --no-prematch " +
 		    " " + parameters;
 
     cout << "\n\n\nrunning with: \"" + cmd + "\"" << endl << flush;
