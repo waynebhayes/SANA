@@ -19,6 +19,7 @@
 #include "utils/Timer.hpp"
 #include "computeGraphlets.hpp"
 #include "utils/utils.hpp"
+#include "SparseMatrix.h"
 using namespace std;
 
 Graph Graph::loadGraph(string name) {
@@ -28,6 +29,13 @@ Graph Graph::loadGraph(string name) {
     return g;
 }
 
+Graph Graph::multGraph(string name, uint path) {
+    Graph g;
+    g.multGwFile("networks/"+name+"/"+name+".gw", path);
+    cout << "graph made" << endl;
+    g.name = name;
+    return g;
+}
 //transform format
 void Graph::edgeList2gw(string fin, string fout) {
     vector<string> nodes = removeDuplicates(fileToStrings(fin));
@@ -190,6 +198,99 @@ void Graph::loadGwFile(const string& fileName) {
         adjLists[node1].push_back(node2);
         adjLists[node2].push_back(node1);
     }
+    infile.close();
+    initConnectedComponents();
+}
+
+void Graph::multGwFile(const string& fileName, uint path) {
+    //this function could be improved to deal with blank lines and comments
+    stringstream errorMsg;
+
+    ifstream infile(fileName.c_str());
+    string line;
+    //ignore header
+    for (int i = 0; i < 4; i++) getline(infile, line);
+    //read number of nodes
+    int n;
+    getline(infile, line);
+    istringstream iss(line);
+    if (!(iss >> n) or n <= 0) {
+        errorMsg << "Failed to read node number: " << line;
+        throw runtime_error(errorMsg.str().c_str());
+    }
+    //read (and ditch) nodes
+    string node;
+    for (int i = 0; i < n; i++) {
+        getline(infile, line);
+        istringstream iss(line);
+        if (!(iss >> node)) {
+            errorMsg << "Failed to read node " << i << " of " << n << ": " << line << " (" << node << ")";
+            throw runtime_error(errorMsg.str().c_str());
+        }
+    }
+    //read number of edges
+    int m;
+    getline(infile, line);
+    istringstream iss2(line);
+    if (!(iss2 >> m)) {
+        errorMsg << "Failed to read edge number: " << line;
+        throw runtime_error(errorMsg.str().c_str());
+    }
+    SparseMatrix<int> sparse_graph1(n);
+    SparseMatrix<int> sparse_graph2(n);
+
+    adjLists = vector<vector<ushort> > (n, vector<ushort>(0));
+    adjMatrix = vector<vector<bool> > (n, vector<bool>(n, false));
+    //edgeList = vector<vector<ushort> > (m, vector<ushort>(2));
+    lockedList = vector<bool> (n, false);
+    lockedTo = vector<string> (n, "");
+
+    //read edges
+    for (int i = 0; i < m; i++) {
+        getline(infile, line);
+        istringstream iss(line);
+        int node1, node2;
+        if (!(iss >> node1 >> node2)) {
+            errorMsg << "Failed to read edge: " << line;
+            throw runtime_error(errorMsg.str().c_str());
+        }
+        sparse_graph1.set(1,node1,node2);
+        sparse_graph2.set(1,node1,node2);
+    }
+    for(uint i=1; i<path ; i++){
+        SparseMatrix<int> final = sparse_graph2.multiply(sparse_graph1);
+        for(int k=1;k<=n;k++){
+            for(int j=1;j<= n;j++){
+                sparse_graph2.set(final.get(k,j),k,j);
+            }
+        }
+    }
+    int elements = 0;
+    for(int k=1;k<=n;k++){
+            for(int j=1;j<= n;j++){
+                if(sparse_graph2.get(k,j) > 0){
+                    elements++;
+                }
+            }
+    }
+
+
+    edgeList = vector<vector<ushort> > (elements, vector<ushort>(2));
+    int count = 0;
+    for(int i=1;i<=n;i++){
+        for(int j=1;j<= n;j++){
+            if(sparse_graph2.get(i,j) > 0){
+                adjMatrix[i-1][j-1] = true;
+                adjMatrix[j-1][i-1] = true;
+                adjLists[i-1].push_back(j-1);
+                adjLists[j-1].push_back(i-1);
+                edgeList[count][0] = i-1;
+                edgeList[count][1] = j-1;
+                count++;
+            }
+        }
+    }
+
     infile.close();
     initConnectedComponents();
 }
@@ -519,7 +620,7 @@ vector<vector<uint> > Graph::computeGraphletDegreeVectors() {
     uint n = getNumNodes();
     uint m = getNumEdges();
 
-    string fileName = "tmp/compute_dgvs" + intToString(randInt(0, 2100000000)) + ".txt";
+    string fileName = "tmp/compute_dgvs.txt";
     ofstream fout(fileName.c_str());
     fout << n << " " << m << endl;
     for (uint i = 0; i < m; i++) {

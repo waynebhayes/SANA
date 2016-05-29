@@ -18,8 +18,8 @@ void WAVEWrapper::loadDefaultParameters() {
 }
 
 string WAVEWrapper::convertAndSaveGraph(Graph* graph, string name) {
-	graph->saveInGWFormatWithNames(name);
-	return name;
+	graph->saveInGWFormatWithNames(name + ".gw");
+	return name+".gw";
 }
 
 string WAVEWrapper::generateAlignment() {
@@ -34,5 +34,5 @@ Alignment WAVEWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
 }
 
 void WAVEWrapper::deleteAuxFiles() {
-    exec("cd " + wrappedDir + "; rm " + g1File + " " + g2File);
+    //exec("cd " + wrappedDir + "; rm " + g1File + " " + g2File);
 }

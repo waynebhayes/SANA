@@ -24,6 +24,8 @@
 #include "../methods/wrappers/GEDEVOWrapper.hpp"
 #include "../methods/wrappers/WAVEWrapper.hpp"
 #include "../methods/wrappers/MagnaWrapper.hpp"
+#include "../methods/Dijkstra.hpp"
+
 
 using namespace std;
 
@@ -140,6 +142,8 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
         return initHubAlign(G1, G2, args);
     if (name == "tabu")
         return initTabuSearch(G1, G2, args, M);
+    if (name == "dijkstra")
+       	return new Dijkstra(&G1, &G2, &M);
     if (name == "netal")
         return new NETALWrapper(&G1, &G2, wrappedArgs);
     if (name == "mi-graal" || name == "migraal")
@@ -170,6 +174,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
         return new NoneMethod(&G1, &G2, startAligName);
     if (name == "magna")
     	return new MagnaWrapper(&G1, &G2, wrappedArgs);
+
  
 
     throw runtime_error("Error: unknown method: " + name);

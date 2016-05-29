@@ -244,6 +244,7 @@ string execWithoutPrintingErr(string cmd) {
 
 void execPrintOutput(string cmd) {
     cmd += " 2>&1";
+    cerr << "exec(" + cmd + ");" << endl;
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) throw "Error executing " + cmd;
     char buffer[128];

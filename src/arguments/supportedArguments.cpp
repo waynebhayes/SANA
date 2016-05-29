@@ -6,6 +6,7 @@ vector<string> stringArgs = {
 "-method",
 "-mode",
 "-o",
+"-pathmap1", "-pathmap2",
 "-eval",
 "-tinitial", "-tdecay",
 "-startalignment",
@@ -31,12 +32,13 @@ vector<string> stringArgs = {
 "-wrappedArgs",
 "-lock",    // for locking mechanism
 "-alignFile",			// Used in analysis mode
+"-simFile",
 };
 
 vector<string> doubleArgs = {
 //objective function weights. used when '-objfuntype' is "generic"
-"-ec", "-s3", "-wec",
-"-importance", "-nodec", "-noded", "-edgec", "-edged",
+"-ec", "-s3", "-wec",  "-spc",
+"-importance", "-nodec", "-noded", "-edgec", "-edged", "-esim",
 "-graphlet", "-graphletlgraal",
 "-sequence", "-go",
 "-graphletcosine",

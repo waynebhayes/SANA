@@ -22,7 +22,7 @@ void GREATWrapper::loadDefaultParameters() {
 }
 
 string GREATWrapper::convertAndSaveGraph(Graph* graph, string name) {
-	graph->saveInGWFormat(name + ".gw");
+	graph->saveInGWFormatWithNames(name + ".gw");
 	return name + ".gw";
 }
 

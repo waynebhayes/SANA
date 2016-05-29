@@ -25,8 +25,8 @@ string PISwapWrapper::convertAndSaveGraph(Graph* graph, string name) {
 }
 
 string PISwapWrapper::generateAlignment() {
-	exec("cd " + wrappedDir + "; " + PISwapBinary + " " +  g1File + " " + g2File + " " + parameters);
-	exec("cd " + wrappedDir + "; " + alignmentconverter + " match_output.txt " + alignmentTmpName);
+	execPrintOutput("cd " + wrappedDir + "; " + PISwapBinary + " " +  g1File + " " + g2File + " ../../" + parameters);
+	execPrintOutput("cd " + wrappedDir + "; " + alignmentconverter + " match_output.txt " + alignmentTmpName);
 
 	return wrappedDir + "/" + alignmentTmpName;
 }
