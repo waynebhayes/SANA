@@ -1,7 +1,7 @@
 CC = g++
 
 #CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g
-CXXFLAGS = -static -Bstatic -U__STRICT_ANSI__ -Wall -std=c++11 -O3
+CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-ggdb -static -Bstatic
 
 INCLUDES =
 LFLAGS =
@@ -38,6 +38,7 @@ MEASUSES_SRCS = 				 						\
 	src/measures/WeightedEdgeConservation.cpp           \
 	src/measures/localMeasures/EdgeCount.cpp            \
 	src/measures/localMeasures/EdgeDensity.cpp          \
+	src/measures/localMeasures/ExternalSimMatrix.cpp    \
 	src/measures/localMeasures/GenericLocalMeasure.cpp  \
 	src/measures/localMeasures/GoSimilarity.cpp         \
 	src/measures/localMeasures/Graphlet.cpp             \
@@ -57,7 +58,8 @@ METHODS_SRC =                                           \
 	src/methods/RandomAligner.cpp                       \
 	src/methods/SANA.cpp                                \
 	src/methods/TabuSearch.cpp                          \
-	src/methods/WeightedAlignmentVoter.cpp              
+	src/methods/WeightedAlignmentVoter.cpp  			\
+	src/methods/Dijkstra.cpp            
 
 METHOD_WRAPERS_SRC =                                    \
 	src/methods/wrappers/WrappedMethod.cpp				\
@@ -145,7 +147,7 @@ $(GTEST_OBJS):
 	cd test/gtest && make
 
 clean: #clear_cache
-	$(RM) -rf $(OBJDIR)
+	$(RM) -rf $(OBJDIR)/src
 	$(RM) $(MAIN)
 
 clear_cache:
