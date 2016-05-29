@@ -31,6 +31,9 @@ cat "$4.NameId.txt" "$3" | awk 'NF==4&&/NameIdMap G1/{num1[$3]=$4}
 ./WAVE "`basename $1 .gw`.el" "`basename $2 .gw`.el" "$4.sims" "$4"
 
 #Translate back into names to return named alignment.
-cat "$4.NameId.txt" "$4" | awk 'NF==4&&/NameIdMap G1/{name[$4]=$3}
-        NF==4&&/NameIdMap G2/{name[$4]=$3}
-        NF==2{print name[$1], name[$2]}' > "$4.align"
+cat "$4.NameId.txt" "$4" | awk 'NF==4&&/NameIdMap G1/{name1[$4]=$3}
+        NF==4&&/NameIdMap G2/{name2[$4]=$3}
+        NF==2{print name1[$1], name2[$2]}' > "$4.align"
+
+echo "Assuming (big assumption!!) same names = correct alignment, below is the NC (node correctness):"
+awk '$1==$2{n++}END{print n/NR}' "$4.align"

@@ -8,7 +8,7 @@ def convertOutput(inPath, outPath):
     counter = 0
     for line in lines:
         splitLine = line.split()
-        outFile.write(splitLine[0][1] + '\t' + splitLine[1][1])
+        outFile.write(splitLine[0] + '\t' + splitLine[1])
         if counter != len(lines)-1:
             outFile.write('\n')
         counter = counter+1
