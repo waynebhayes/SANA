@@ -28,14 +28,14 @@
 using namespace std;
 
 SANA::SANA(Graph* G1, Graph* G2,
-		double TInitial, double TDecay, double t, MeasureCombination* MC):
+		double TInitial, double TDecay, double t, MeasureCombination* MC, string& objectiveScore):
     		Method(G1, G2, "SANA_"+MC->toString())
 {
 	//data structures for the networks
 	n1 = G1->getNumNodes();
 	n2 = G2->getNumNodes();
 	g1Edges = G1->getNumEdges();
-
+	score = objectiveScore;
 
 	G1->getAdjMatrix(G1AdjMatrix);
 	G2->getAdjMatrix(G2AdjMatrix);
@@ -138,13 +138,15 @@ SANA::SANA(Graph* G1, Graph* G2,
 }
 
 SANA::SANA(Graph* G1, Graph* G2,
-		double TInitial, double TDecay, uint i, MeasureCombination* MC):
+		double TInitial, double TDecay, uint i, MeasureCombination* MC, string& objectiveScore):
     		Method(G1, G2, "SANA_"+MC->toString())
 {
 	//data structures for the networks
 	n1 = G1->getNumNodes();
 	n2 = G2->getNumNodes();
 	g1Edges = G1->getNumEdges();
+	score = objectiveScore;
+	
 	G1->getAdjMatrix(G1AdjMatrix);
 	G2->getAdjMatrix(G2AdjMatrix);
 	G1->getAdjLists(G1AdjLists);
@@ -512,14 +514,9 @@ void SANA::performChange() {
 	}
 
 	double newCurrentScore = 0;
-	newCurrentScore += ecWeight * (newAligEdges/g1Edges);
-	newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
-	newCurrentScore += localWeight * (newLocalScoreSum/n1);
-	newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newCurrentScore);
 
-	energyInc = newCurrentScore-currentScore;
-
-	if (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T)) {
+	if (makeChange) {
 		A[source] = newTarget;
 		unassignedNodesG2[newTargetIndex] = oldTarget;
 		assignedNodesG2[oldTarget] = false;
@@ -558,14 +555,9 @@ void SANA::performSwap() {
 	}
 
 	double newCurrentScore = 0;
-	newCurrentScore += ecWeight * (newAligEdges/g1Edges);
-	newCurrentScore += s3Weight * (newAligEdges/(g1Edges+inducedEdges-newAligEdges));
-	newCurrentScore += localWeight * (newLocalScoreSum/n1);
-	newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newCurrentScore);
 
-	energyInc = newCurrentScore-currentScore;
-
-	if (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T)) {
+	if (makeChange) {
 		A[source1] = target2;
 		A[source2] = target1;
 		aligEdges = newAligEdges;
@@ -573,6 +565,88 @@ void SANA::performSwap() {
 		wecSum = newWecSum;
 		currentScore = newCurrentScore;
 	}
+}
+
+double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double& newCurrentScore) {
+	bool makeChange = false;
+	
+	if(score == "sum") {
+		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
+		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+		newCurrentScore += localWeight * (newLocalScoreSum/n1);
+		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+
+		energyInc = newCurrentScore-currentScore;
+		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
+	}
+	else if(score == "product") {
+		newCurrentScore = 1;
+		newCurrentScore *= ecWeight * (newAligEdges/g1Edges);
+		newCurrentScore *= s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+		newCurrentScore *= localWeight * (newLocalScoreSum/n1);
+		newCurrentScore *= wecWeight * (newWecSum/(2*g1Edges));
+		
+		energyInc = newCurrentScore-currentScore;
+		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
+	}
+	else if(score == "max") {
+		double deltaEnergy = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),
+									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges))))),
+								 max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
+									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+
+		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
+		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+		newCurrentScore += localWeight * (newLocalScoreSum/n1);
+		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+		
+		energyInc = newCurrentScore - currentScore;
+		makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc/T);
+	}
+	else if(score == "min") {
+		double deltaEnergy = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),
+									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges))))),
+								 min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
+									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+		
+		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
+		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+		newCurrentScore += localWeight * (newLocalScoreSum/n1);
+		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+		
+		energyInc = newCurrentScore - currentScore;
+		makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(newCurrentScore/T);
+	}
+	else if(score == "inverse") {
+		newCurrentScore += ecWeight/(newAligEdges/g1Edges);
+		newCurrentScore += s3Weight/(newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+		newCurrentScore += localWeight/(newLocalScoreSum/n1);
+		newCurrentScore += wecWeight/(newWecSum/(2*g1Edges));
+
+		energyInc = newCurrentScore-currentScore;
+		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
+	}
+	else if(score == "maxFactor") {
+		double maxScore = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),
+									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges))))),
+								 max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
+									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+									 
+		double minScore = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),
+									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges))))),
+								 min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
+									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+
+		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
+		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+		newCurrentScore += localWeight * (newLocalScoreSum/n1);
+		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+		
+		energyInc = newCurrentScore - currentScore;
+		makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc/T);
+	}
+
+	return makeChange;
 }
 
 int SANA::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
