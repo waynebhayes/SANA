@@ -28,4 +28,5 @@ vector<string> defaultArguments = {
 "-nneighbors 50",
 "-qmode normal",
 "-simFormat 1",
+"-score sum",
 };

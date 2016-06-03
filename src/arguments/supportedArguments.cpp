@@ -33,6 +33,7 @@ vector<string> stringArgs = {
 "-lock",    // for locking mechanism
 "-alignFile",			// Used in analysis mode
 "-simFile",
+"-score",
 };
 
 vector<string> doubleArgs = {

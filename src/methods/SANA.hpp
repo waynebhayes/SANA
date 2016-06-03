@@ -12,9 +12,9 @@ class SANA: public Method {
 
 public:
     SANA(Graph* G1, Graph* G2,
-        double TInitial, double TDecay, double t, MeasureCombination* MC);
+        double TInitial, double TDecay, double t, MeasureCombination* MC, string& objectiveScore);
     SANA(Graph* G1, Graph* G2,
-        double TInitial, double TDecay, uint i, MeasureCombination* MC);
+        double TInitial, double TDecay, uint i, MeasureCombination* MC, string& objectiveScore);
     ~SANA();
 
     Alignment run();
@@ -105,11 +105,12 @@ private:
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A);
+    double scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double& newCurrentScore);
     double ecWeight;
     double s3Weight;
     double wecWeight;
     double localWeight;
-
+    string score;
 
     //restart scheme
     bool restart;
