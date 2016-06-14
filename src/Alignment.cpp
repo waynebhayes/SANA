@@ -291,4 +291,21 @@ Alignment Alignment::randomAlignmentWithLocking(Graph* G1, Graph* G2){
 	return alig;
 }
 
+void Alignment::reIndexBefore_Iterations(map<ushort, ushort> reIndexMap){
+	vector<ushort> resA = vector<ushort> (A.size());
+	for(uint i=0; i< A.size();i++){
+		ushort b = reIndexMap[i];
+		resA[b] = A[i];
+	}
+	A = resA;
+}
+
+void Alignment::reIndexAfter_Iterations(map<ushort, ushort> reIndexMap){
+	vector<ushort> resA = vector<ushort> (A.size());
+	for(uint i=0; i< A.size();i++){
+		resA[i] = A[reIndexMap[i]];
+	}
+	A = resA;
+}
+
 

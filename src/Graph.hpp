@@ -93,9 +93,14 @@ public:
     // For locking
     void setLockedList(vector<string>& nodes, vector<string>& pairs);
     vector<bool>& getLockedList();
-    bool isLocked(uint index);
+    bool isLocked(uint index) const;
     string getLockedTo(uint index);
     int getLockedCount();
+
+    map<ushort, ushort> getLocking_ReIndexMap() const;
+    map<ushort, ushort> getLocking_ReverseReIndexMap() const;
+
+    void reIndexGraph(map<ushort, ushort> reIndexMap);  // Changes the node indexes according to the map
 
 private:
 
@@ -107,6 +112,10 @@ private:
 
     //list of the nodes of each connected component, sorted from larger to smaller
     vector<vector<ushort> > connectedComponents;
+
+
+    // NOTE: these don't change after reIndexing G1 (method #3 of locking),
+    // and they are used to reIndex the graph to normal at the end.
     vector<bool> lockedList;  // shows which nodes are locked
     vector<string> lockedTo;  // name of node we lock to in other graph
     int lockedCount = 0;

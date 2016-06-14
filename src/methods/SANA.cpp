@@ -253,8 +253,9 @@ SANA::~SANA() {
 
 Alignment SANA::getStartingAlignment(){
 	if(lockFileName != ""){
-		//	return Alignment::loadPartialEdgeList(G1,G2, lockFileName, true);
-		return Alignment::randomAlignmentWithLocking(G1,G2);
+		Alignment randomAlig = Alignment::randomAlignmentWithLocking(G1,G2);
+		randomAlig.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
+		return randomAlig;
 	}
 	else{
 		return Alignment::random(n1, n2);
@@ -275,21 +276,27 @@ Alignment SANA::run() {
 }
 
 
+// Used for method #2 of locking
 inline ushort SANA::G1RandomUnlockedNode_Fast(){
 	ushort index = G1RandomUnlockedNodeDist(gen);
 	return unLockedNodesG1[index];
 }
 
-ushort SANA::G1RandomUnlockedNode(){
-	return G1RandomUnlockedNode_Fast();
+inline ushort SANA::G1RandomUnlockedNode(){
+	return G1RandomUnlockedNodeDist(gen); // method #3
+//	return G1RandomUnlockedNode_Fast(); Method #2
+
+// Method #1
 //	ushort node;
 //	do{
 //		node =  G1RandomNode(gen);
 //	}while(G1->isLocked(node));
 //	return node;
 }
-ushort SANA::G2RandomUnlockedNode(){
-	return G2RandomUnlockedNode_Fast();
+inline ushort SANA::G2RandomUnlockedNode(){
+	return G2RandomUnlockedNode_Fast(); // Method #2 and #3
+
+//  Method #1
 //	ushort node;
 //	do{
 //		node =  G2RandomUnassignedNode(gen);
@@ -484,7 +491,7 @@ void SANA::SANAIteration() {
 }
 
 void SANA::performChange() {
-	ushort source = G1RandomUnlockedNode(); // G1RandomNode(gen);
+	ushort source = G1RandomUnlockedNode();
 	ushort oldTarget = A[source];
 
 	uint newTargetIndex =  G2RandomUnlockedNode();
@@ -530,14 +537,9 @@ void SANA::performChange() {
 }
 
 void SANA::performSwap() {
-	ushort source1 =  G1RandomUnlockedNode(); // G1RandomNode(gen);
-	ushort source2 =  G1RandomUnlockedNode(); // G1RandomNode(gen);
+	ushort source1 =  G1RandomUnlockedNode();
+	ushort source2 =  G1RandomUnlockedNode();
 	ushort target1 = A[source1], target2 = A[source2];
-
-	//	assert(!G1->isLocked(source1));
-	//	assert(!G1->isLocked(source2));
-	//    assert(!G2->isLocked(target1));
-	//    assert(!G2->isLocked(target2));
 
 	int newAligEdges = -1; //dummy initialization to shut compiler warnings
 	if (needAligEdges) {
@@ -957,7 +959,6 @@ bool SANA::isRandomTInitial(double TInitial, double highThresholdScore, double l
 }
 
 double SANA::scoreRandom() {
-	// TODO should I replace this as well?  getStartingAlignment()
 	//    return eval(Alignment::random(n1, n2));
 	return eval(Alignment::randomAlignmentWithLocking(G1,G2));
 }
