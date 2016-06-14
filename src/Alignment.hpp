@@ -54,6 +54,11 @@ public:
 
     static Alignment randomAlignmentWithLocking(Graph* G1, Graph* G2);
 
+
+    // These two reIndex the alignment based on the reIndex Map from G1
+    void reIndexBefore_Iterations(map<ushort, ushort> reIndexMap);
+    void reIndexAfter_Iterations(map<ushort, ushort> reverseReIndexMap);
+
 private:
 
     vector<ushort> A;

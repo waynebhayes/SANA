@@ -18,7 +18,15 @@ Alignment Method::runAndPrintTime() {
     Alignment A = run();
     execTime = T.elapsed();
     cerr << "Executed " << name << " in " << T.elapsedString() << endl;
+
+    // Re Index back to normal (Method #3 of locking)
+    if(G1->getLockedCount() > 0){
+     	G1->reIndexGraph(G1->getLocking_ReverseReIndexMap());
+      	A.reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
+    }
+
     checkLockingBeforeReport(A);
+
     return A;
 }
 

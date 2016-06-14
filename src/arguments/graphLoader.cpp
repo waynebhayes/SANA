@@ -163,6 +163,8 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	G1.setLockedList(validLocksG1, validLocksG2);
 	G2.setLockedList(validLocksG2, validLocksG1);
 
+	// Method #3 of locking
+	G1.reIndexGraph(G1.getLocking_ReIndexMap());
 
 	double rewiredFraction = args.doubles["-rewire"];
 	if (rewiredFraction > 0) {

@@ -1080,7 +1080,7 @@ void Graph::setLockedList(vector<string>& nodes, vector<string> & pairs){
 vector<bool>& Graph::getLockedList(){
 	return lockedList;
 }
-bool Graph::isLocked(uint index)
+bool Graph::isLocked(uint index) const
 {
 	return lockedList[index];
 }
@@ -1092,4 +1092,76 @@ string Graph::getLockedTo(uint index){
 int Graph::getLockedCount(){
 	return lockedCount;
 }
+
+/**
+ * Puts the unlocked nodes at beginning and the locked ones at the end
+ *
+ * For example if we have nodes 1,2,3,4,5 with 3,5 being locked they get reIndexed to
+ * 1,2,3,4,5 -> 1,2,5,3,4
+ */
+map<ushort, ushort> Graph::getLocking_ReIndexMap() const{
+	map<ushort, ushort> result;
+	int n = getNumNodes();
+	int unlockedIndex = 0;
+	int lockedIndex = n-1;
+	for(int i=0; i<n; i++){
+		if(isLocked(i))
+			result[i] = lockedIndex--;
+		else
+			result[i] = unlockedIndex++;
+	}
+	assert(lockedIndex == n - lockedCount - 1  and unlockedIndex == n - lockedCount);
+	return result;
+}
+
+
+map<ushort, ushort> Graph::getLocking_ReverseReIndexMap() const {
+    map<ushort,ushort> reverse = getLocking_ReIndexMap();
+    map<ushort,ushort> res;
+    for (const auto &nameIndexPair : reverse ) {
+        res[nameIndexPair.second] = nameIndexPair.first;
+    }
+    return res;
+}
+
+void Graph::reIndexGraph(map<ushort, ushort> reIndexMap){
+	uint n = getNumNodes();
+	// Adj Matrix
+	vector<vector<bool> > adjMatrixCopy (n, vector<bool> (n));
+	for (uint i = 0; i < n; i++) {
+	     for (uint j = 0; j < n; j++){
+	      	ushort a = reIndexMap[i];
+	       	ushort b = reIndexMap[j];
+	       	adjMatrixCopy[a][b] = adjMatrix[i][j];
+	     }
+	 }
+	adjMatrix = adjMatrixCopy;
+
+	// Adj List
+	vector<vector<ushort> > adjListsCopy(n, vector<ushort> (0));
+	for (uint i = 0; i < n; i++) {
+	   for(uint j= 0; j < adjLists[i].size(); j++){
+		   ushort a = reIndexMap[i];
+		   ushort b = reIndexMap[adjLists[i][j]];
+		   adjListsCopy[a].push_back(b);
+	   }
+	 }
+	adjLists = adjListsCopy;
+
+
+	// Edge List
+	uint m = edgeList.size();
+	for(uint i = 0; i < m; i++){
+		edgeList[i][0] = reIndexMap[edgeList[i][0]];
+		edgeList[i][1] = reIndexMap[edgeList[i][1]];
+	}
+
+
+	initConnectedComponents();
+}
+
+
+
+
+
 
