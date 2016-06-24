@@ -510,10 +510,27 @@ Note: since $G_1$ and $G_2$ are already protected attributes of \texttt{Measure}
 \subsection{Adding a new method}
 This requires creating a subclass of \texttt{Method}. It is necessary to implement the constructor, \texttt{run()}, \texttt{describeParameters()} and \texttt{fileNameSuffix()} (see Section~\ref{methods}). Similar to \texttt{Measure}, the constructor of \texttt{Method} expects the networks and a name for the new method.
 
-Once the new class has been created, in order to be able to use it, there must be some modifications made in the file \texttt{main.cpp}:
+Once the new class has been created, in order to be able to use it, there must be some modifications made in the file \texttt{methodSelector.cpp}:
 \begin{itemize}
 \item Include the header file.
 \item In the function \texttt{initMethod(...)}, add a new if case, which compares the variable \texttt{name} to the name of the method and returns a new instance of the method, e.g.:
+\begin{verbatim}
+if (name == "random") {
+  return new RandomAligner(&G1, &G2);
+}
+\end{verbatim}
+\end{itemize}
+Once this is done, you can execute the new method with \texttt{./sana -method name}.
+
+Note: since $G_1$ and $G_2$ are already protected attributes of \texttt{Method}, it is not necessary for the subclasses to have them as their own attributes.
+
+\subsection{Adding a new wrapper method}
+This requires creating a subclass of \texttt{WrapperMethod}. It is necessary to implement the constructor, \texttt{generateAlignment()}, \texttt{loadDefaultParameters()} and \texttt{loadAlignment()} (see Section~\ref{methods}). Similar to \texttt{Measure}, the constructor of \texttt{Method} expects the networks and a name for the new method.
+
+Once the new class has been created, in order to be able to use it, there must be some modifications made in the file \texttt{methodSelector.cpp}:
+\begin{itemize}
+\item Include the header file.
+\item In the function \texttt{initMethod(...)}, add a new if case, which compares the variable \texttt{name} to the name of the wrapper method and returns a new instance of the method, e.g.:
 \begin{verbatim}
 if (name == "random") {
   return new RandomAligner(&G1, &G2);
