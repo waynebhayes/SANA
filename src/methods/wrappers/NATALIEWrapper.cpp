@@ -29,11 +29,11 @@ string NATALIEWrapper::generateAlignment() {
     string outFile = alignmentTmpName + "-1.tsv";
     string cmd = GLOBAL_PARAMETERS + " -g1 " + g1File +
     			 " -g2 " + g2File +
-    			 " -o " + alignmentTmpName +
+    			 " -o " + alignmentTmpName + " -of 9 " +
     			 " -if1 5" +
     			 " -if2 5" +
-    			 " " + parameters + ";";
-    cmd = cmd + "awk '/	typeM	/{print $1,$3}' " + alignmentTmpName + "-1.sif >" + outFile;
+    			 " " + parameters;
+    cmd = cmd + "; sed 's/,/	/g' " + alignmentTmpName + "-1.csv >" + outFile;
 
     execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " " + cmd);
 

@@ -59,6 +59,6 @@ Alignment NETALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
 void NETALWrapper::deleteAuxFiles() {
     string evalFile = "\\(" + g1File + "-" + g2File + "*.eval";
 
-    exec("cd " + wrappedDir + "; rm " + g1File + " " + g2File + " " + alignmentFile +
+    exec("cd " + wrappedDir + "; rm " + g1File + " " + g2File + " ../../" + alignmentFile +
     		" " + evalFile + " simLog.txt alignmentDetails.txt" );
 }
