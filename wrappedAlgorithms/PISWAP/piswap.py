@@ -11,7 +11,7 @@ else:
 	GS = psb09.graphScores(sys.argv[3])
 
 	#input pairwise sequence similarity of network1 and 2.
-	M0 = match.max_weight_matching(GS) #run hungorian algorithm to produce initial alignment
+	M0 = match.max_weight_matching(GS) #run hungarian algorithm to produce initial alignment
 	(S, M) = psb09.processOnce(G, G2, M0, 0.6, 200) #run PISwap
 
 	#output the alignment result
