@@ -441,11 +441,12 @@ void Graph::writeGraphEdgeListFormat(const string& fileName) {
 }
 
 void Graph::writeGraphEdgeListFormatNETAL(const string& fileName) {
-	ushort e = getNumEdges();
+	uint e = getNumEdges();
+cout << "THIS GRAPH HAS NUMEDGES = " << e << endl;
 	ofstream outfile;
 	outfile.open(fileName.c_str());
 	for (uint i = 0; i < e; i++) {
-		outfile << edgeList[i][0] << "\t" << edgeList[i][1] << endl;
+	    outfile << edgeList[i][0] << "\t" << edgeList[i][1] << endl;
 	}
 	outfile.close();
 }
