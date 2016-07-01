@@ -1,9 +1,11 @@
 #include "Dijkstra.hpp"
 #include "../utils/utils.hpp"
 
+#define CODE 0  // set to 1 if you actually want your code include rather than just function prototypes
+
 Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC) :
 			Method(G1, G2, "Dijkstra_"+MC->toString()) {
-
+#if CODE
 	this->G1 = G1;
 	this->G2 = G2;
 	this->MC = MC;
@@ -25,6 +27,7 @@ Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC) :
 	
 	sims = MC->getAggregatedLocalSims();
 	//sim_matrix = & sims;
+#endif
 }
 
 /* Helper functions */
@@ -39,6 +42,7 @@ Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC) :
  * future: consider moving the reject loop to the subroutine
  * if there are no valid seeds, the subroutine should throw an error
  */
+#if CODE
 std::pair <ushort, ushort> Djikstra::get_seed(Graph* G1, Graph* G2){
 	//only one seed at a time
 	return best_pair(seed_queue);
@@ -50,10 +54,12 @@ std::pair <ushort, ushort> Djikstra::get_seed(Graph* G1, Graph* G2){
 		G2_exclude.find(std::get<1>(seed_pair)) != G2_exclude.end() );
 	*/
 }
+#endif
 
 /*
  * This function uses the same exclusion set for all priority queues.
  */
+#if CODE
 std::pair <ushort, ushort> Djikstra::best_pair(SkipList * pq){
 	std::pair <ushort, ushort> curr_pair;
 	do{
@@ -63,11 +69,13 @@ std::pair <ushort, ushort> Djikstra::best_pair(SkipList * pq){
 		G2_exclude.find(std::get<1>(curr_pair)) != G2_exclude.end() );
 	return curr_pair;
 }
+#endif
 
 /* 
  * side effects: this function adds a node to the respective exclusion sets
  * of each graph and adds the pair to the output set.  
 */
+#if CODE
 void Djikstra::update_neighbors(std::pair <ushort, ushort> & seed_pair,
 	vector<ushort> & seed1_adj, vector<ushort> & seed2_adj ){
 	//exclude the seed nodes from future consideration
@@ -92,7 +100,9 @@ void Djikstra::update_neighbors(std::pair <ushort, ushort> & seed_pair,
 		//neighbor_queue.enqueue(sim_value, node_pair)
 	}
 }
+#endif
 
+#if CODE
 vector<std::pair<double, std::pair<ushort,ushort>>> Djikstra::best_neighbors(vector<ushort> & G1_neighbors, vector<ushort> & G2_neighbors){
 	double temp_delta = 0;
 	vector std::pair<ushort,ushort> out;
@@ -125,6 +135,7 @@ vector<std::pair<double, std::pair<ushort,ushort>>> Djikstra::best_neighbors(vec
 	}
 	return out;
 }
+#endif
 
 /*
  * this simulates the set difference of an 
@@ -133,6 +144,7 @@ vector<std::pair<double, std::pair<ushort,ushort>>> Djikstra::best_neighbors(vec
  * which are not already aligned.  
  */
 vector<ushort> exclude_nodes(vector<ushort> & v_in, std::unordered_set<ushort> exclusion_set){
+#if CODE
 	vector<ushort> v_out;
 	v_out.reserve(v_in.size()); //minimize reallocations by reserving space in advance
 	//|v_out| <= |v_in|
@@ -142,10 +154,12 @@ vector<ushort> exclude_nodes(vector<ushort> & v_in, std::unordered_set<ushort> e
 		}
 	}
 	return v_out;
+#endif
 }
 /* End Helper Functions */
 
 Alignment Dijkstra::run() {
+#if CODE
 	// Put all code here
 
 	// sims[x][y] will give you how similar node x in G1 is to node y in G2 with 0 being the not at all similar
@@ -181,6 +195,7 @@ Alignment Dijkstra::run() {
 	}
 
 	return outputA;
+#endif
 }
 
 
@@ -191,6 +206,5 @@ void Dijkstra::describeParameters(ostream& stream) {
 string Dijkstra::fileNameSuffix(const Alignment& A) {
 	return "_" + extractDecimals(MC->eval(A),3);
 }
-
 Dijkstra::~Dijkstra() {}
 
