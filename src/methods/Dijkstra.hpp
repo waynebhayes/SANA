@@ -16,6 +16,7 @@
 #include "../utils/randomSeed.hpp"
 
 using namespace std;
+typedef unsigned short ushort;
 
 class Dijkstra: public Method {
 
@@ -52,9 +53,9 @@ private:
 	string outputAName;
 	int max_nodes;
 	
-	std::unordered_set<std::ushort> G1_exclude;
-	std::unordered_set<std::ushort> G2_exclude;	
-	std::unordered_set<std::ushort> current_neighbors;
+	std::unordered_set<ushort> G1_exclude;
+	std::unordered_set<ushort> G2_exclude;	
+	std::unordered_set<ushort> current_neighbors;
 	
 	vector<vector<float> >* sim_matrix;
 	//SkipList seed_queue;

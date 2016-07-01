@@ -58,7 +58,7 @@ METHODS_SRC =                                           \
 	src/methods/RandomAligner.cpp                       \
 	src/methods/SANA.cpp                                \
 	src/methods/TabuSearch.cpp                          \
-	src/methods/WeightedAlignmentVoter.cpp  			\
+	src/methods/WeightedAlignmentVoter.cpp  	\
 	src/methods/Dijkstra.cpp            
 
 METHOD_WRAPERS_SRC =                                    \
