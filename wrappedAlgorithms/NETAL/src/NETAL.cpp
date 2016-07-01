@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
             //random alignment
             else
             {
-                int edgeNum; //percent of randome edges should be removed
+                int edgeNum; //percent of random edges should be removed
                 
                 for( int i = 1; i < nn; i++ )
                 {
@@ -223,7 +223,6 @@ int main(int argc, char* argv[])
                     outputFile << "==============================================================================" << endl;
                 }
             }
-
         }
     }
     catch(exception &e)
