@@ -1,3 +1,9 @@
+#!/bin/sh
+die(){ echo "$@" >&2; exit 1;
+}
+[ -f "$1" ] || die "no such file '$1'"
+
+cat << EOF
 from __future__ import print_function
 import PSB2009_3opt_2 as psb09
 import matching as match
@@ -11,7 +17,11 @@ else:
 	GS = psb09.graphScores(sys.argv[3])
 
 	#input pairwise sequence similarity of network1 and 2.
-	M0 = match.max_weight_matching(GS) #run hungarian algorithm to produce initial alignment
+EOF
+
+./align2match.sh "$1"
+
+cat << EOF
 	(S, M) = psb09.processOnce(G, G2, M0, 0.6, 200) #run PISwap
 
 	#output the alignment result
@@ -19,3 +29,4 @@ else:
 	for node in M:
 	 print(node+" "+M[node], file = F)
 	F.close()
+EOF

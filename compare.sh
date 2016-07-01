@@ -39,13 +39,13 @@ elif echo $M | grep -q -i '^natalie$'; then
     Margs=''
     Sargs=' -s3 0 -ec 1 '
     Sseq=" -s3 0.05 -sequence 0.9 "
-    Mseq=" -s3 0.05 -sequence 0.9 -wrappedArgs \" -gm sequence/bitscores/${G1}_${G2}.bitscores -t 60000 \"";
+    Mseq=" -s3 0.05 -sequence 0.9 -wrappedArgs \" -gm sequence/NATALIE/${G1}_${G2}.seqSim -t 600 \"";
 elif echo $M | grep -q -i '^optnetalign$'; then
     Tcmp=m/3; Tmin=10; Tmax=60
     Margs="-wrappedArgs \" --timelimit 60 \"";
     Sargs=' -s3 1 -ec 0 '
     Sseq=" -s3 0.05 -sequence 0.9 "
-    Mseq=" -s3 0.05 -sequence 0.9 -wrappedArgs \" --blastsum --bitscores sequence/wayneScores/${G1}_${G2}.bitscores --timelimit 120 \"";
+    Mseq=" -s3 0.05 -sequence 0.9 -wrappedArgs \" --timelimit 60 --nthreads 16 --blastsum --bitscores sequence/wayneScores/${G1}_${G2}.bitscores \"";
 elif echo $M | grep -q -i '^netal$'; then
     Margs=
     Sargs=' -s3 0 -ec 1 '
