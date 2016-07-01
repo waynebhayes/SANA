@@ -8,14 +8,16 @@ using namespace std;
 const string CONVERTER = "python GWtoNTW.py";
 const string PROGRAM   = "gedevo";
 const string OUTPUT_CONVERTER = "python GEDEVOoutput.py";
-const string GLOBAL_PARAMETERS = " --undirected --no-prematch ";
+const string GLOBAL_PARAMETERS = " --undirected --no-prematch --pop 400 ";
+
+//ARGUMENTS: --maxsecs <seconds> --blastpairlist [3 columns] --pop [400] --threads <N> [recommended runtime is "--maxsame 3000"]
 
 GEDEVOWrapper::GEDEVOWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "GEDEVO", args) {
 	wrappedDir = "wrappedAlgorithms/GEDEVO";
 }
 
 void GEDEVOWrapper::loadDefaultParameters() {
-	parameters = "--maxsame 3000 --pop 400"; // maxsame 3000 is what they recommend, runtime many hours
+	parameters = "--maxsame 3000"; // maxsame 3000 is what they recommend, runtime many hours
 }
 
 string GEDEVOWrapper::convertAndSaveGraph(Graph* graph, string name) {
@@ -36,13 +38,13 @@ string GEDEVOWrapper::generateAlignment() {
     G1->saveGraphletsAsSigs(wrappedDir + "/" + g1Sigs);
     G2->saveGraphletsAsSigs(wrappedDir + "/" + g2Sigs);
 
-    string cmd = "--save " + alignmentTmpName + " --no-save --groups " +
+    string cmd = GLOBAL_PARAMETERS + " --save " + alignmentTmpName + " --no-save --groups " +
 		    g1TmpName + " " + g2TmpName +
 		    " --ntw " + g1File +
 		    " --ntw " + g2File +
 		    " --grsig " + g1Sigs + " " + g1TmpName +
 		    " --grsig " + g2Sigs + " " + g2TmpName +
-		    " --no-workfiles --undirected --no-prematch " +
+		    " --no-workfiles " +
 		    " " + parameters;
 
     cout << "\n\n\nrunning with: \"" + cmd + "\"" << endl << flush;
