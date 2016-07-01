@@ -54,8 +54,8 @@ string GEDEVOWrapper::generateAlignment() {
 
     exec("cd " + wrappedDir + ";" + OUTPUT_CONVERTER + " " + alignmentTmpName + ".matching " + alignmentTmpName);
 
-    exec("cd " + wrappedDir + "; rm " + g1Sigs + " " + g2Sigs);
-    exec("cd " + wrappedDir + "; rm " + alignmentTmpName + ".matching");
+    //exec("cd " + wrappedDir + "; rm " + g1Sigs + " " + g2Sigs);
+    //exec("cd " + wrappedDir + "; rm " + alignmentTmpName + ".matching");
 
     return wrappedDir + "/" + alignmentTmpName;
 }
@@ -65,5 +65,5 @@ Alignment GEDEVOWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
 }
 
 void GEDEVOWrapper::deleteAuxFiles() {
-    exec("cd " + wrappedDir + "; rm -f " + g1File + " " + g2File + " *.gw" + " *.algn");
+    //exec("cd " + wrappedDir + "; rm -f " + g1File + " " + g2File + " *.gw" + " *.algn");
 }
