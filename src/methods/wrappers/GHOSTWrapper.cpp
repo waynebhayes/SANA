@@ -63,9 +63,11 @@ void GHOSTWrapper::createCfgFile(string cfgFileName) {
 string GHOSTWrapper::generateAlignment() {
 	cfgFile = g1TmpName + ".cfg";
 	createCfgFile(wrappedDir + "/" + cfgFile);
+	string af = g1TmpName+"_vs_"+g2TmpName;
 
 	execPrintOutput("cd " + wrappedDir + "; " + GHOSTBinary + " -c " + cfgFile);
-	return " ";
+	execPrintOutput("cd " + wrappedDir + "; int2string.sh 0 2 "+ af + ".af ../../networks/yeast/yeast.gw ../../networks/human/human.gw > " + af + ".align");
+	return af + ".align";
 }
 
 Alignment GHOSTWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {

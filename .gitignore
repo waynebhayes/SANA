@@ -36,10 +36,10 @@ experiments/*/results/
 *.nav
 *.snm
 *.toc
+*.pyc
 wrappedAlgorithms/PISWAP/networkx/*.pyc
 wrappedAlgorithms/PISWAP/networkx/*/*.pyc
 wrappedAlgorithms/PISWAP/networkx/*/*/*.pyc
-
 
 sana.out
 
