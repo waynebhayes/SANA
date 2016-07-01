@@ -15,10 +15,10 @@ class Network
 	typedef map<int, list<int>, less<int> > MapInt2List;
 	typedef map<int, string, less<int> > MapInt2Name;
     
-	MapInt2Name mNames;
-	MapString2Int mapName;
     
 public:
+	MapString2Int mapName;
+	MapInt2Name mNames;
 	int **neighbor; //neighbor of each node of the network
 	int size; //number of nodes
 	int maxDeg; //maximum degree of the network

@@ -139,9 +139,6 @@ void Alignment::setSimilarities(int iteration, double bb, double cc)
     // If we want to initiate the similarities by biological similarity values such as blast
 	if( bb > 0 )
 	{
-        
-        cout << "Initializing the similarity values from a file" << endl;
-        
 		float *sim1 = new float[network1.size];
 		float *sim2 = new float[network2.size];
 
@@ -150,13 +147,9 @@ void Alignment::setSimilarities(int iteration, double bb, double cc)
 		for(int i=0; i<network2.size; i++)
 			sim2[ i ] = 0;
 
-
-
 		string line;
 		string token;
 		int id1, id2;
-
-
 
 		string f1,f2,f3;
 
@@ -165,6 +158,13 @@ void Alignment::setSimilarities(int iteration, double bb, double cc)
 		f1.append(network1.name);
 		f1.append(".val");
 		ifstream file1(f1.c_str());
+		if(file1)
+			cout << "reading normalization for network 1 from file " << f1 << endl;
+		else
+		{
+			cerr << "cannot open file:" << f1 <<endl;
+			exit(1);
+		}
 
 		while (getline(file1, line))
 		{
@@ -204,6 +204,14 @@ void Alignment::setSimilarities(int iteration, double bb, double cc)
 		f2.append(".val");
 
 		ifstream file2(f2.c_str());
+		if(file2)
+		    cout << "reading normalization for network 2 from file " << f2 << endl;
+		else
+		{
+			cerr << "cannot open file:" << f2 <<endl;
+			exit(1);
+		}
+
 
 		while (getline(file2, line))
 		{
@@ -250,6 +258,14 @@ void Alignment::setSimilarities(int iteration, double bb, double cc)
 		}
 
 		ifstream file3(f3.c_str());
+		if(file3)
+			cout << "reading sims for both networks from file " << f3 << endl;
+		else
+		{
+			cerr << "cannot open file:" << f3 <<endl;
+			exit(1);
+		}
+
 
 		while (getline(file3, line))
 		{
@@ -337,15 +353,39 @@ void Alignment::setSimilarities(int iteration, double bb, double cc)
 	// 	m << endl;
 	// }
 
-	ofstream m1( "matrix.txt");
-	ifstream h( "human.txt");
-	ifstream y( "yeast.txt");
+	string nameBoth;
+	nameBoth = network1.name;
+	nameBoth.append("-");
+	nameBoth.append(network2.name);
+	nameBoth.append(".netal.sim");
+#if PRODUCE_SIMFILE
+	cout << "Saving NETAL similarities to file: " << nameBoth <<endl;
+	ofstream m1(nameBoth.c_str());
+	if(!m1)
+	{
+		cerr << "cannot open file: "<<nameBoth <<endl;
+		exit(1);
+	}
+#endif
+	ifstream y( network1.name );
+	if(!y)
+	{
+		cerr << "cannot open file: "<<network1.name <<endl;
+		exit(1);
+	}
+
+	ifstream h( network2.name);
+	if(!h)
+	{
+		cerr << "cannot open file: " <<network2.name<<endl;
+		exit(1);
+	}
 
 	string line1;
 	string line2;
 
-	std::vector<string> human;
 	std::vector<string> yeast;
+	std::vector<string> human;
 
 	while (getline(h, line1)){
 		human.push_back(line1);
@@ -354,13 +394,14 @@ void Alignment::setSimilarities(int iteration, double bb, double cc)
 	while (getline(y, line2)){
 		yeast.push_back(line2);
 	}
-
+#if PRODUCE_SIMFILE
 	for(int i =0; i < network1.size; i++){
 		for(int j=0; j < network2.size; j++){
-			m1 << human[i].substr(2,human[i].length() - 4) << " " << yeast[j].substr(2,yeast[j].length()-4) << " " << similarity[i][j] << endl;
+			//m1 << human[i].substr(2,human[i].length() - 4) << " " << yeast[j].substr(2,yeast[j].length()-4) << " " << similarity[i][j] << endl;
+			m1 << network1.mNames[i] << " " << network2.mNames[j] << similarity[i][j] << endl;
 		}
 	}
-    
+#endif
     for(int j=0; j<network1.size; j++)
     {
         delete [] tempSim[j];
@@ -410,7 +451,7 @@ void Alignment::align(double aa)
 	}
 	ofstream detailFile( "alignmentDetails.txt");
 
-    // Assigning similarity between nodes of two netwroks just based on their degrees
+    // Assigning similarity between nodes of two networks just based on their degrees
 	for(int i=0; i<network1.size; i++)
 		for(int j=0; j<network2.size; j++)
 		{
