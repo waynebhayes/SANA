@@ -42,7 +42,9 @@ string NETALWrapper::generateAlignment() {
 Alignment NETALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     vector<string> lines = fileToStrings(fileName, true);
     string word;
-    vector<ushort> mapping(G1->getNumNodes(), G2->getNumNodes());
+    int n1= G1->getNumNodes();
+    int n2= G2->getNumNodes();
+    vector<ushort> mapping(n1, n2);
 
     for (uint i = 0; i < lines.size(); ++i) {
     	istringstream line(lines[i]);
@@ -50,7 +52,7 @@ Alignment NETALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
         while (line >> word) words.push_back(word);
 
         if (words.size() == 3) {
-        	mapping[atoi(words[0].c_str())] = atoi(words[2].c_str());
+	    mapping[atoi(words[0].c_str())] = atoi(words[2].c_str());
         }
     }
     return Alignment(mapping);
