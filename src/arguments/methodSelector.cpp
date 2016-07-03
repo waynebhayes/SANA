@@ -126,7 +126,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
 
     string name = toLowerCase(args.strings["-method"]);
     string startAligName = args.strings["-startalignment"];
-
+    double alpha = args.doubles["-alpha"];
     string wrappedArgs = args.strings["-wrappedArgs"];
 
     if (name == "greedylccs")
@@ -151,7 +151,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (name == "ghost")
     	return new GHOSTWrapper(&G1, &G2, wrappedArgs);
     if (name == "piswap")
-    	return new PISwapWrapper(&G1, &G2, wrappedArgs);
+    	return new PISwapWrapper(&G1, &G2, alpha, startAligName, wrappedArgs);
     if (name == "optnetalign")
 		return new OptNetAlignWrapper(&G1, &G2, wrappedArgs);
     if (name == "spinal")
