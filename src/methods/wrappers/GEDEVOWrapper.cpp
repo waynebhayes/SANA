@@ -7,7 +7,7 @@ using namespace std;
 
 const string CONVERTER = "python GWtoNTW.py";
 const string PROGRAM   = "gedevo";
-const string OUTPUT_CONVERTER = "python GEDEVOoutput.py";
+const string OUTPUT_CONVERTER = "./GEDEVOoutput.sh";
 const string GLOBAL_PARAMETERS = " --undirected --no-prematch --pop 400 ";
 
 //ARGUMENTS: --maxsecs <seconds> --blastpairlist [3 columns] --pop [400] --threads <N> [recommended runtime is "--maxsame 3000"]
