@@ -10,7 +10,7 @@ using namespace std;
 class PISwapWrapper: public WrappedMethod {
 public:
 
-	PISwapWrapper(Graph* G1, Graph* G2, string args);
+    PISwapWrapper(Graph* G1, Graph* G2, double alpha, string startingAlignment, string args);
 
 private:
     void loadDefaultParameters();
@@ -18,6 +18,8 @@ private:
     string generateAlignment();
     Alignment loadAlignment(Graph* G1, Graph* G2, string fileName);
     void deleteAuxFiles();
+    string startingAligName;
+    double alpha;
 };
 
 #endif
