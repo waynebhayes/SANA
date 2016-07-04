@@ -27,8 +27,8 @@ string GHOSTWrapper::convertAndSaveGraph(Graph* graph, string name) {
 	exec("cd " + wrappedDir + " && chmod +x " + CONVERTER);
 	exec("bash -c \"cd " + wrappedDir + " && " + CONVERTER + " --convert " + gwFile + " --output " + gexfFile + "\" 2>/dev/null");
 	exec("mv " + wrappedDir + "/" + gexfFile + " " + gexfFile);
-	exec("cd " + wrappedDir + " && cp SIGS/" + G1->getName() + ".sig.gz " + g1TmpName + ".sig.gz 2>/dev/null");
-	exec("cd " + wrappedDir + " && cp SIGS/" + G2->getName() + ".sig.gz " + g2TmpName + ".sig.gz 2>/dev/null");
+	exec("cd " + wrappedDir + " && ln -s SIGS/" + G1->getName() + ".sig.gz " + g1TmpName + ".sig.gz 2>/dev/null");
+	exec("cd " + wrappedDir + " && ln -s SIGS/" + G2->getName() + ".sig.gz " + g2TmpName + ".sig.gz 2>/dev/null");
 
 	return gexfFile;
 }
@@ -55,7 +55,7 @@ void GHOSTWrapper::createCfgFile(string cfgFileName) {
 	outfile << "beta: " << beta << endl;
 	outfile << "ratio: " << ratio << endl;
 	outfile << "searchiter: " << searchiter << endl;
-	outfile << "dumpDistances: true " << endl;
+	// outfile << "dumpDistances: true " << endl; // to dump huge 3-column nxm matrix of all-by-all node similarities
 
 	outfile.close();
 }
@@ -64,14 +64,16 @@ string GHOSTWrapper::generateAlignment() {
 	cfgFile = g1TmpName + ".cfg";
 	createCfgFile(wrappedDir + "/" + cfgFile);
 	string af = g1TmpName+"_vs_"+g2TmpName;
+	string name1 = G1->getName();
+	string name2 = G2->getName();
 
 	execPrintOutput("cd " + wrappedDir + "; " + GHOSTBinary + " -c " + cfgFile);
-	execPrintOutput("cd " + wrappedDir + "; int2string.sh 0 2 "+ af + ".af ../../networks/yeast/yeast.gw ../../networks/human/human.gw > " + af + ".align");
-	return af + ".align";
+	execPrintOutput("cd " + wrappedDir + "; int2string.sh 0 2 ../../networks/"+name1+"/"+name1+".gw ../../networks/"+name2+"/"+name2+".gw "+ af + ".af > " + af + ".align");
+	return wrappedDir + "/" + af + ".align";
 }
 
 Alignment GHOSTWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
-    return Alignment::loadEdgeList(G1,G2,fileName);
+    return Alignment::loadPartialEdgeList(G1,G2,fileName, true); // true = byName
 }
 
 void GHOSTWrapper::deleteAuxFiles() {
