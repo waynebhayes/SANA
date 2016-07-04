@@ -51,9 +51,9 @@ elif echo $M | grep -q -i '^netal$'; then
     Margs=
     Sargs=' -s3 0.4 -ec 0.6 '
 elif echo $M | grep -q -i '^gedevo$'; then
-    Margs=" --maxsecs 3600 "
+    Margs=" -wrappedArgs \"--maxsecs 3600 --threads 4 \""
     Sargs=' -s3 0 -ec 1 '
-    Mseq=" -wrappedArgs \"--maxsecs 3600 --blastpairlist sequence/bitscores/${G1}-${G2}.bitscores\""
+    Mseq=" -wrappedArgs \"--maxsecs 3600 --threads 4 --blastpairlist sequence/bitscores/${G1}-${G2}.bitscores\""
     Sseq=" -ec .5 -s3 0.5 -sequence 0.5 "
 elif echo $M | grep -q -i '^wave$'; then
     Margs=" -wrappedArgs sims/graphlet/$G1-$G2.sim "
@@ -69,7 +69,7 @@ elif echo $M | grep -q -i '^piswap$'; then
 elif echo $M | grep -q -i '^ghost$'; then
     Tcmp=m/10; Tmin=10; Tmax=60
     Margs=""
-    Sargs=''
+    Sargs='-ec 0.65 -s3 0.35'
 else
     die "unknown method $M"
 fi
@@ -79,15 +79,15 @@ fi
 set -x
 if $SEQ; then
     DIR=Mseq
-    eval ./sana -method $M $Mseq  -g1 $G1 -g2 $G2 -o $DIR/$M/$G1-$G2 >$DIR/$M/$G1-$G2.stdout 2>$DIR/$M/$G1-$G2.stderr
+    eval ./sana.$M -method $M $Mseq  -g1 $G1 -g2 $G2 -o $DIR/$M/$G1-$G2 >$DIR/$M/$G1-$G2.stdout 2>$DIR/$M/$G1-$G2.stderr
 else
     DIR=M
-    #eval ./sana -method $M "$Margs" -g1 $G1 -g2 $G2 -o $DIR/$M/$G1-$G2 >$DIR/$M/$G1-$G2.stdout 2>$DIR/$M/$G1-$G2.stderr
+    eval ./sana.$M -method $M "$Margs" -g1 $G1 -g2 $G2 -o $DIR/$M/$G1-$G2 >$DIR/$M/$G1-$G2.stdout 2>$DIR/$M/$G1-$G2.stderr
 fi
 T="MAX($Tmin,MIN($Tcmp,$Tmax))"
 T=`grep -i 'execution time' $DIR/$M/$G1-$G2.out | wawk '{m=$NF/60; print '"$T"'}'`
 if $SEQ; then
-    eval ./sana -t $T -tinitial auto -tdecay auto $Sseq  -g1 $G1 -g2 $G2 -o $DIR/$M/sana.$G1-$G2 >$DIR/$M/sana.$G1-$G2.stdout 2>$DIR/$M/sana.$G1-$G2.stderr
+    eval ./sana.$M -t $T -tinitial auto -tdecay auto $Sseq  -g1 $G1 -g2 $G2 -o $DIR/$M/sana.$G1-$G2 >$DIR/$M/sana.$G1-$G2.stdout 2>$DIR/$M/sana.$G1-$G2.stderr
 else
-    ./sana -t $T -tinitial auto -tdecay auto $Sargs -g1 $G1 -g2 $G2 -o $DIR/$M/sana.$G1-$G2 >$DIR/$M/sana.$G1-$G2.stdout 2>$DIR/$M/sana.$G1-$G2.stderr
+    ./sana.$M -t $T -tinitial auto -tdecay auto $Sargs -g1 $G1 -g2 $G2 -o $DIR/$M/sana.$G1-$G2 >$DIR/$M/sana.$G1-$G2.stdout 2>$DIR/$M/sana.$G1-$G2.stderr
 fi
