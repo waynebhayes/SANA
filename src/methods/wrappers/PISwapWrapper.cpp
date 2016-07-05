@@ -43,7 +43,7 @@ string PISwapWrapper::generateAlignment() {
 }
 
 Alignment PISwapWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
-    return Alignment::loadEdgeList(G1, G2, fileName);
+    return Alignment::loadEdgeListUnordered(G1, G2, fileName);
 }
 
 void PISwapWrapper::deleteAuxFiles() {

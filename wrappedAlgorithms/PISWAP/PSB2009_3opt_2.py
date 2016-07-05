@@ -783,9 +783,9 @@ def findObjective2(G1, G2, M0):
 def processOnce(graph1, graph2, graphS, M0, alpha, c):
     # wrapper for a single run of the main algorithm
     if graph1.number_of_edges() > graph2.number_of_edges():
-        return mainAlgo(graph2, graph1, graphS,  M0, alpha, c, Type = float, override = True)
+        return mainAlgo(graph2, graph1, graphS,  M0, alpha, c, Type = float, override = False)
     else:
-        return mainAlgo(graph1, graph2, graphS,  M0, alpha, c, Type = float, override = True)
+        return mainAlgo(graph1, graph2, graphS,  M0, alpha, c, Type = float, override = False)
 
 def findHomologene(Homologs0, Homologs1, Synonyms, mapping):
     # finds all homologs in a mapping based on a synonym dictionary
