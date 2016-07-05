@@ -14,6 +14,7 @@ int main(int argc, char* argv[]) {
     if(args.doubles["-seed"] != 0) {
         setSeed(args.doubles["-seed"]);
     }
+    system("hostname -f >&2");
 
     args.writeArguments();
 
