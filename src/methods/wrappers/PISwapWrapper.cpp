@@ -8,26 +8,21 @@ using namespace std;
 const string CONVERTER = "";
 const string PISwapSeqBinary = "python piswap.py";
 const string alignmentconverter = "python convertOutput.py";
-const string pyCreator = "gen-piswap-noseq.sh";
-const string usingAlignmentPyName = "piswapNoSeq.py";
-const string PISwapNoSeqBinary = "python " + usingAlignmentPyName;
+const string pyCreator = "gen-piswap-nohungarian.sh";
+const string usingAlignmentPyName = "piswap-nohungarian.py";
+const string PISwapNoHungarianBinary = "python " + usingAlignmentPyName;
 
 PISwapWrapper::PISwapWrapper(Graph* G1, Graph* G2, double alpha, string startingAlignment, string args): WrappedMethod(G1, G2, "PISWAP", args) {
     startingAligName = startingAlignment;
     this->alpha = alpha;
-    if(startingAligName != "" and args != ""){
-        cerr << "ERROR: You have specified wrappedargs and a starting alignment for PISWAP. Please only do one or the other; the starting alignment for using topology or the wrappedargs for a sequence file." << endl;
-        exit(-1);
-    }
     wrappedDir = "wrappedAlgorithms/PISWAP";
 }
 
 void PISwapWrapper::loadDefaultParameters() {
-    if(startingAligName == ""){
-        cerr << "ERROR: PISWAP needs a similarity file (using sequence) or an input .align file (not using sequence). Use -wrappedArgs \"similarityFile\" to specify the similarity file or -startalignment \".align file\" to specify the starting alignment file." << endl;
-        exit(-1);
-        parameters = "";
-    }
+    cerr << "ERROR: PISWAP needs a similarity file (using sequence) whether or not you are optimizing using sequence or using the Hungarian algorithm. Use -wrappedArgs \"similarityFile\" to specify the similarity file. An additional starting alignment file can be specified with -startalignment \".align file\" to simply improve an alignment and not use the Hungarian algorithm. Also make sure to specify alpha, 1 is all topology and 0 is all sequence." << endl;
+    exit(-1);
+    parameters = "";
+    
 }
 
 string PISwapWrapper::convertAndSaveGraph(Graph* graph, string name) {
@@ -37,10 +32,10 @@ string PISwapWrapper::convertAndSaveGraph(Graph* graph, string name) {
 
 string PISwapWrapper::generateAlignment() {
     if(startingAligName == ""){
-        execPrintOutput("cd " + wrappedDir + "; " + PISwapSeqBinary + " " +  g1File + " " + g2File + " ../../" + parameters);
+        execPrintOutput("cd " + wrappedDir + "; " + PISwapSeqBinary + " " +  g1File + " " + g2File + " ../../" + parameters + " " + to_string(alpha));
     }else{
         execPrintOutput("cd " + wrappedDir + "; ./" + pyCreator + " ../../" + startingAligName + " > " + usingAlignmentPyName);
-        execPrintOutput("cd " + wrappedDir + "; " + PISwapNoSeqBinary + " " + g1File + " " + g2File); 
+        execPrintOutput("cd " + wrappedDir + "; " + PISwapNoHungarianBinary + " " + g1File + " " + g2File + " ../../" + parameters + " " + to_string(alpha)); 
     }
     execPrintOutput("cd " + wrappedDir + "; " + alignmentconverter + " match_output.txt " + alignmentTmpName);
 
