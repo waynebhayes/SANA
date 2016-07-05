@@ -1,7 +1,4 @@
 #from matlab import WriteMatrix
-import os
-import sys
-sys.path.append("/home/alyssamt/PISWAP/networkx-1.7/")
 import networkx as nx
 from matching import *
 from numpy import *
@@ -29,6 +26,7 @@ from numpy import *
 def graphScores(filename, factor = 1, Type = lambda x:float(x)):
     # parses a file of scores and then
     # creates a weighted graph (NetworkX)
+    print("Get graphScore ...")
     f = open(filename,"r")
     g = f.readlines()
     f.close()
@@ -39,6 +37,7 @@ def graphScores(filename, factor = 1, Type = lambda x:float(x)):
     G = nx.Graph()
     for i in range(len(values)):
         G.add_edge(names1[i], names2[i],{'weight':values[i]})
+        #print(names1[i] + " " + names2[i] + " weight: " + str(values[i]))
     return G
 
 def getGraph(filename):
@@ -58,29 +57,32 @@ def getGraph(filename):
         G.remove_edges_from(Q)
     return G
 
-def mainAlgo(G1, G2, M0, alpha, c, Type = float, override = False, factor = 2):
+def mainAlgo(G1, G2, Gs, M0, alpha, c, Type = float, override = True, factor = 2):
     # computes a matching by the Chindelevitch-Shou algorithm
     # NOTE: assumes that the graph G1 has fewer edges than G2!
     # preprocessing: identify nodes belonging to each species
-    
-    #V = Gs.nodes()
+    print("Start main algorithm...")
+    count = 0
+    for i in M0:
+        count += 1
+    print("edge: " + str(count))
+    V = Gs.nodes()
     sp1 = G1.nodes()[0][:2]
     sp2 = G2.nodes()[0][:2]
-    #for node in V:
-    #    if not (node in G1.nodes() or node in G2.nodes()):
+    for node in V:
+        if not (node in G1.nodes() or node in G2.nodes()):
             # identify the node by the first two letters (temporary hack)
-    #        if node.startswith(sp1):
-    #            G1.add_node(node)
-    #        elif node.startswith(sp2):
-    #            G2.add_node(node)
-    #        else:
-    #            print("Failed to identify correct species for " + node + "!")
-    #print("Completed node identification")
+            if node.startswith(sp1):
+                G1.add_node(node)
+            elif node.startswith(sp2):
+                G2.add_node(node)
+            else:
+                print("Failed to identify correct species for " + node + "!")
+    print("Completed node identification")
     V1 = G1.nodes()
     N1 = G1.number_of_nodes()
     V2 = G2.nodes()
     N2 = G2.number_of_nodes()
-    (Gs,T2) = calTopological(G1, G2, M0)
     X = {}  # holds the indices keyed by the nodes of G1
     for i in range(N1):
         X[V1[i]] = i     
@@ -104,7 +106,7 @@ def mainAlgo(G1, G2, M0, alpha, c, Type = float, override = False, factor = 2):
             preferX[node] = order[:c]
     print("Completed step 1")
     (s,t) = findObjective(G1, G2, Gs, M0)
-    print("Initial S-value is " + str(T2))
+    print("Initial S-value is " + str(s))
     print("Initial T-value is " + str(t))
     if override:
         ratio = float(s*factor)/t
@@ -120,30 +122,23 @@ def mainAlgo(G1, G2, M0, alpha, c, Type = float, override = False, factor = 2):
     for edge in Gs.edges():
         (j,k) = edge
         val = Gs.edge[j][k]['weight']
-        if j in X:
+        if j in X and k in Y:
             S[X[j],Y[k]] = val
         else:
             S[X[k],Y[j]] = val
     T = empty([N1,N2], int)   # contains the t-values
     for edge in E:
         (i,j) = edge
-        if i in G1 and j in G2:
-            for u in G1.neighbors(i):
-                for v in G2.neighbors(j):
-                    T[X[u], Y[v]] += 1
+        for u in G1.neighbors(i):
+            for v in G2.neighbors(j):
+                T[X[u], Y[v]] += 1
     print("Completed step 2")
     Swap = {} # contains the possible edges to swap with, along with their values
     
     for edge in E:
         Swap[edge] = []
         (x,y) = edge
-        try: X[x]
-        except KeyError:
-                continue
         xi = X[x]
-        try: Y[y]
-        except KeyError:
-                continue
         yi = Y[y]
         try: preferX[y]
         except KeyError:
@@ -185,11 +180,15 @@ def mainAlgo(G1, G2, M0, alpha, c, Type = float, override = False, factor = 2):
     print("Completed step 3")
     niter = 0
     bestSwaps = [Swap[z][0] for z in Swap if Swap[z]]
-    print(str(bestSwaps))
     temp =["","","","","","","","","",""]
+    #temp[0] = ""
+    #temp[1] = ""
     flag = 0; 
     while(bestSwaps):
         # update the number of iterations
+        #brainma721
+        if niter > 550:
+		    break
         niter += 1
         bestSwap = max(bestSwaps, key = lambda z:z[6])
         print("The objective function increased by " + str(bestSwap[6]) + " at iteration " + str(niter))
@@ -211,8 +210,16 @@ def mainAlgo(G1, G2, M0, alpha, c, Type = float, override = False, factor = 2):
                 break
             for index in range(9):
                 temp[index] = temp[index+1]
+            #if flag == 0 and current_swap == temp[1]:
+                #flag+=1
+            #elif flag == 1 and current_swap == temp[1]:
+                #flag+=1
+                #break
+            #elif flag == 1 and current_swap != temp[1]:
+                #flag = 0
+            #temp[1] = temp[0]
             temp[9] = current_swap
-            print("Swapping edges " + str(edge0) + " and " + str(edge1))
+            print(current_swap)
             # updating the matching
             M[x] = v
             M[v] = x
@@ -398,7 +405,7 @@ def mainAlgo(G1, G2, M0, alpha, c, Type = float, override = False, factor = 2):
                                             qi = Y[q]
                                             loss3 = (beta*(S[ui,yi] + S[ii,ji] + S[pi,qi]) + 2*alpha*(T[ui,yi] + T[ii,ji] + T[pi,qi]))/3
                                             gain3_1 = (beta*(S[ui,qi] + S[ii,yi] + S[pi,ji]) + 2*alpha*(T[ui,qi] + T[ii,yi] + T[pi,ji]))/3
-                                            gain3_2 = (beta*(S[ui,ji] + S[ii,qi] + S[pi,yi]) + 2*alpha*(T[ui,ji] + T[ii,qi] + T[pi,yi]))/3
+                                            #gain3_2 = (beta*(S[ui,ji] + S[ii,qi] + S[pi,yi]) + 2*alpha*(T[ui,ji] + T[ii,qi] + T[pi,yi]))/3
                                             #loss2_2 = beta*(S[ui,yi] + S[pi,qi]) + 2*alpha*(T[ui,yi] + T[pi,qi])
                                             #gain2_2 = beta*(S[ui,qi] + S[pi,yi]) + 2*alpha*(T[ui,qi] + T[pi,yi])
                                             if gain3_1 > loss3:
@@ -433,8 +440,16 @@ def mainAlgo(G1, G2, M0, alpha, c, Type = float, override = False, factor = 2):
                 break
             for index in range(9):
                 temp[index] = temp[index+1]
+            #if flag == 0 and current_swap == temp[1]:
+                #flag+=1
+            #elif flag == 1 and current_swap == temp[1]:
+                #flag+=1
+                #break
+            #elif flag == 1 and current_swap != temp[1]:
+                #flag = 0
+            #temp[1] = temp[0]
             temp[9] = current_swap
-            print("Swapping edges " + str(edge0) + " and " + str(edge1)+ "and" + str(edge2) +"=>"+ str(newEdge0)+ "and" +str (newEdge1) + "and" +str(newEdge2))
+            print(current_swap)
             # updating the matching
             M[x] = ny
             M[ny] = x
@@ -731,21 +746,6 @@ def mainAlgo(G1, G2, M0, alpha, c, Type = float, override = False, factor = 2):
          
     return (w, M)   # no further improvement is possible!
 
-#def findObjective(G1, G2, Gs, M0):
-    # computes the value of the objective function:
-    # S = total weight of matching, T = # conserved edges
-#    (S,T) = (0,0)
-#    for i in M0:
-#        if i in G1:
-#            j = M0[i]
-#            S+=Gs.edge[i][j]['weight']
-#            for u in G1.neighbors(i):
-#                if u in M0:
-#                    v = M0[u]
-#                    if G2.has_edge(j,v):
-#                        T+=1
-#    return (S,T)
-
 def findObjective(G1, G2, Gs, M0):
     # computes the value of the objective function:
     # S = total weight of matching, T = # conserved edges
@@ -765,36 +765,6 @@ def findObjective(G1, G2, Gs, M0):
                         T+=1
     return (S,T)
 
-def calTopological(G1, G2, M0):
-    node2s = {}
-    Gs = nx.Graph()
-    T2 = 0
-    min = 9999999
-    for node in M0:
-        node2s[M0[node]] = node
-    for node in M0:
-        if node in G1:
-            for node2 in node2s:
-                if node2 in G2:
-                    T=0
-                    for neighb1 in G1.neighbors(node):
-                        if neighb1 in M0:
-                            neighb2 = M0[neighb1]
-                            if G2.has_edge(node2, neighb2):
-                                T+=1
-                                T2+=1
-                        #print("node1: "+str(node)+" neighb1: "+str(neighb1)+" node2: "+str(node2)+" neighb2: "+ str(neighb2)+" "+ str(T))
-                    if T > 0:
-                        Gs.add_edge(node, node2,{'weight':T})
-            #if T <= min:
-            #    min = T
-            #    mnode = node
-            #    mnode2 = node2
-            #if Gs.number_of_edges() > 200000:
-            #    Gs.remove_edge(mnode,mnode2)
-            #print ("Number of edges:"+str(Gs.number_of_edges()))	
-    return (Gs,T2)
-
 def findObjective2(G1, G2, M0):
     # computes the value of the objective function:
     # S = total weight of matching, T = # conserved edges
@@ -810,12 +780,12 @@ def findObjective2(G1, G2, M0):
                         T+=1
     return T
     
-def processOnce(graph1, graph2, M0, alpha, c):
+def processOnce(graph1, graph2, graphS, M0, alpha, c):
     # wrapper for a single run of the main algorithm
     if graph1.number_of_edges() > graph2.number_of_edges():
-        return mainAlgo(graph2, graph1,  M0, alpha, c, Type = float, override = False)
+        return mainAlgo(graph2, graph1, graphS,  M0, alpha, c, Type = float, override = True)
     else:
-        return mainAlgo(graph1, graph2,  M0, alpha, c, Type = float, override = False)
+        return mainAlgo(graph1, graph2, graphS,  M0, alpha, c, Type = float, override = True)
 
 def findHomologene(Homologs0, Homologs1, Synonyms, mapping):
     # finds all homologs in a mapping based on a synonym dictionary
