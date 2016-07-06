@@ -430,7 +430,7 @@ void Graph::computeDistanceMatrix(vector<vector<short> >& dist) const {
 //Node ids should be between 0 and n-1
 void Graph::writeGraphEdgeListFormat(const string& fileName) {
     ushort n = getNumNodes();
-    ushort e = getNumEdges();
+    uint e = getNumEdges();
     ofstream outfile;
     outfile.open(fileName.c_str());
     outfile << n << " " << e << endl;
@@ -442,7 +442,7 @@ void Graph::writeGraphEdgeListFormat(const string& fileName) {
 
 void Graph::writeGraphEdgeListFormatPISWAP(const string& fileName) {
     ofstream outfile;
-    ushort e = getNumEdges();
+    uint e = getNumEdges();
     vector<string> nodeNames = getNodeNames();
     outfile.open(fileName.c_str());
     outfile << "INTERACTOR_A INTERACTOR_B" << endl;
