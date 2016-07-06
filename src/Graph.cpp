@@ -430,7 +430,7 @@ void Graph::computeDistanceMatrix(vector<vector<short> >& dist) const {
 //Node ids should be between 0 and n-1
 void Graph::writeGraphEdgeListFormat(const string& fileName) {
     ushort n = getNumNodes();
-    ushort e = getNumEdges();
+    uint e = getNumEdges();
     ofstream outfile;
     outfile.open(fileName.c_str());
     outfile << n << " " << e << endl;
@@ -442,7 +442,7 @@ void Graph::writeGraphEdgeListFormat(const string& fileName) {
 
 void Graph::writeGraphEdgeListFormatPISWAP(const string& fileName) {
     ofstream outfile;
-    ushort e = getNumEdges();
+    uint e = getNumEdges();
     vector<string> nodeNames = getNodeNames();
     outfile.open(fileName.c_str());
     outfile << "INTERACTOR_A INTERACTOR_B" << endl;
@@ -453,14 +453,14 @@ void Graph::writeGraphEdgeListFormatPISWAP(const string& fileName) {
 }
 
 void Graph::writeGraphEdgeListFormatNETAL(const string& fileName) {
-	uint e = getNumEdges();
-cout << "THIS GRAPH HAS NUMEDGES = " << e << endl;
-	ofstream outfile;
-	outfile.open(fileName.c_str());
-	for (uint i = 0; i < e; i++) {
-	    outfile << edgeList[i][0] << "\t" << edgeList[i][1] << endl;
-	}
-        outfile.close();
+    uint e = getNumEdges();
+    cout << "THIS GRAPH HAS NUMEDGES = " << e << endl;
+    ofstream outfile;
+    outfile.open(fileName.c_str());
+    for (uint i = 0; i < e; i++) {
+        outfile << edgeList[i][0] << "\t" << edgeList[i][1] << endl;
+    }
+    outfile.close();
 }
 
 vector<ushort> Graph::numNodesAround(ushort node, ushort maxDist) const {

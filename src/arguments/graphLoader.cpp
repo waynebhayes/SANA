@@ -134,7 +134,6 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 
 	}
 
-	cout << "completed if block" << endl;
 	// Getting Valid locks
 	if(lockFile != "")
 		cerr << "Initializing locking... with lock file " + lockFile << endl;

@@ -10,6 +10,7 @@ class Alignment {
 public:
 
     static Alignment loadEdgeList(Graph* G1, Graph* G2, string fileName);
+    static Alignment loadEdgeListUnordered(Graph* G1, Graph* G2, string fileName);
     static Alignment loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, bool byName);
     static Alignment loadMapping(string fileName);
     //returns a random alignment from a graph with

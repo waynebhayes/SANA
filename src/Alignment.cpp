@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 #include "Alignment.hpp"
 #include "Graph.hpp"
 #include "utils/utils.hpp"
@@ -35,6 +36,23 @@ Alignment Alignment::loadEdgeList(Graph* G1, Graph* G2, string fileName) {
 		edgeList[i][1] = edges[2*i+1];
 	}
 	return Alignment(G1, G2, edgeList);
+}
+
+Alignment Alignment::loadEdgeListUnordered(Graph* G1, Graph* G2, string fileName) {
+	vector<string> edges = fileToStrings(fileName);
+	vector<vector<string> > edgeList(edges.size()/2, vector<string> (2));
+	vector<string> G1Names = G1->getNodeNames();
+	for (uint i = 0; i < edges.size()/2; i++){ //G1 is always edgeList[i][0], not 1.
+		if(find(G1Names.begin(), G1Names.end(), edges[2*i]) != G1Names.end()){ //if G1 contains the nodename edges[2*i].  If this is false, G2 must contain it and edges[2*i+1] must be in G1.
+			edgeList[i][0] = edges[2*i];
+			edgeList[i][1] = edges[2*i+1];
+		}else{
+			edgeList[i][0] = edges[2*i+1];
+			edgeList[i][1] = edges[2*i];
+		}
+	}
+	return Alignment(G1, G2, edgeList);
+
 }
 
 Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, bool byName) {
