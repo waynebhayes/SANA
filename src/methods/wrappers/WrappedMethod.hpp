@@ -19,7 +19,7 @@ protected:
     string parameters;
 
     string g1TmpName, g2TmpName;
-
+    string g1Name, g2Name;
     string g1File, g2File;
     string alignmentFile;
     string alignmentTmpName;

@@ -24,6 +24,7 @@
 #include "../methods/wrappers/GEDEVOWrapper.hpp"
 #include "../methods/wrappers/WAVEWrapper.hpp"
 #include "../methods/wrappers/MagnaWrapper.hpp"
+#include "../methods/wrappers/PINALOGWrapper.hpp"
 #include "../methods/Dijkstra.hpp"
 
 
@@ -174,7 +175,8 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
         return new NoneMethod(&G1, &G2, startAligName);
     if (name == "magna")
     	return new MagnaWrapper(&G1, &G2, wrappedArgs);
-
+    if (name == "pinalog")
+        return new PINALOGWrapper(&G1, &G2, wrappedArgs);
  
 
     throw runtime_error("Error: unknown method: " + name);

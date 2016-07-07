@@ -27,6 +27,9 @@ string NETALWrapper::convertAndSaveGraph(Graph* graph, string name) {
 string NETALWrapper::generateAlignment() {
     // Give the program execute permissions
     exec("cd " + wrappedDir + "; chmod +x "+ NETALProgram);
+    exec("cd " + wrappedDir + "; ln -s sequence/" + g1Name + "-" + g1Name + ".val " + g1File + "-" + g1File + ".val");
+    exec("cd " + wrappedDir + "; ln -s sequence/" + g2Name + "-" + g2Name + ".val " + g2File + "-" + g2File + ".val");
+    exec("cd " + wrappedDir + "; ln -s sequence/" + g1Name + "-" + g2Name + ".val " + g1File + "-" + g2File + ".val");
 
     // Run the program in the wrappedDir with the parameters
     string cmd = "cd " + wrappedDir + ";" + NETALProgram + " " + g1File + " " + g2File + " " + parameters;
