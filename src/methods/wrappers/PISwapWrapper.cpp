@@ -9,7 +9,7 @@ const string CONVERTER = "";
 const string PISwapSeqBinary = "python piswap.py";
 const string alignmentconverter = "python convertOutput.py";
 const string pyCreator = "gen-piswap-nohungarian.sh";
-const string usingAlignmentPyName = "piswap-nohungarian.py";
+const string usingAlignmentPyName = "piswap-nohungarian";
 const string PISwapNoHungarianBinary = "python " + usingAlignmentPyName;
 
 PISwapWrapper::PISwapWrapper(Graph* G1, Graph* G2, double alpha, string startingAlignment, string args): WrappedMethod(G1, G2, "PISWAP", args) {
@@ -34,8 +34,8 @@ string PISwapWrapper::generateAlignment() {
     if(startingAligName == ""){
         execPrintOutput("cd " + wrappedDir + "; " + PISwapSeqBinary + " " +  g1File + " " + g2File + " ../../" + parameters + " " + to_string(alpha));
     }else{
-        execPrintOutput("cd " + wrappedDir + "; ./" + pyCreator + " ../../" + startingAligName + " > " + usingAlignmentPyName);
-        execPrintOutput("cd " + wrappedDir + "; " + PISwapNoHungarianBinary + " " + g1File + " " + g2File + " ../../" + parameters + " " + to_string(alpha)); 
+        execPrintOutput("cd " + wrappedDir + "; ./" + pyCreator + " ../../" + startingAligName + " > " + usingAlignmentPyName + TMP + ".py");
+        execPrintOutput("cd " + wrappedDir + "; " + PISwapNoHungarianBinary + TMP + ".py " + g1File + " " + g2File + " ../../" + parameters + " " + to_string(alpha)); 
     }
     execPrintOutput("cd " + wrappedDir + "; " + alignmentconverter + " match_output.txt " + alignmentTmpName);
 
@@ -47,5 +47,5 @@ Alignment PISwapWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
 }
 
 void PISwapWrapper::deleteAuxFiles() {
-    exec("cd " + wrappedDir + "; rm " + g1File + " " + g2File);
+    exec("cd " + wrappedDir + "; rm -f " + g1File + " " + g2File + " " + usingAlignmentPyName + TMP + ".py " + usingAlignmentPyName + TMP + ".pyc");
 }//probably the plan is to create a new piswap.py based on inputs no matter what.

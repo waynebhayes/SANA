@@ -23,6 +23,7 @@ protected:
     string g1File, g2File;
     string alignmentFile;
     string alignmentTmpName;
+    string TMP;
 
     string wrappedDir;
 
