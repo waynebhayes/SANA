@@ -6,7 +6,7 @@ WrappedMethod::WrappedMethod(Graph* G1, Graph* G2, string name, string args): Me
 
     //rand int used to avoid collision between parallel runs
     //these files cannot be moved to the tmp/ folder
-    string TMP = "_tmp" + intToString(randInt(0, 2100000000)) + "_";
+    TMP = "_tmp" + intToString(randInt(0, 2100000000)) + "_";
     g1TmpName = name + TMP + g1Name;
     g2TmpName = name + TMP + g2Name;
     alignmentTmpName = name + TMP + "align_" + g1Name + "_" + g2Name + "_";
