@@ -463,6 +463,18 @@ void Graph::writeGraphEdgeListFormatNETAL(const string& fileName) {
     outfile.close();
 }
 
+void Graph::writeGraphEdgeListFormatPINALOG(const string& fileName){
+    ofstream outfile;
+    uint e = getNumEdges();
+    vector<string> nodeNames = getNodeNames();
+    outfile.open(fileName.c_str());
+    for (uint i = 0; i < e; i++) {
+        outfile << nodeNames[edgeList[i][0]] << "\t" << nodeNames[edgeList[i][1]] << endl;
+    }
+    outfile.close();
+}
+
+
 vector<ushort> Graph::numNodesAround(ushort node, ushort maxDist) const {
     uint n = getNumNodes();
     vector<ushort> distances(n, n);
@@ -923,6 +935,7 @@ void Graph::saveGraphletsAsSigs(string outputFile) {
 
      out.close();
 }
+
 
 Graph Graph::randomNodeInducedSubgraph(uint numNodes) {
     uint n = getNumNodes();

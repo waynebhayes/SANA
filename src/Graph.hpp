@@ -62,6 +62,7 @@ public:
     void writeGraphEdgeListFormat(const string& fileName);
     void writeGraphEdgeListFormatNETAL(const string& fileName);
     void writeGraphEdgeListFormatPISWAP(const string& fileName);
+    void writeGraphEdgeListFormatPINALOG(const string& fileName);
 
     void addRandomEdges(double addedEdgesProportion);
     void removeRandomEdges(double removedEdgesProportion);
