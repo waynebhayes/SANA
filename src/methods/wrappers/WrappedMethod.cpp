@@ -1,8 +1,8 @@
 #include "WrappedMethod.hpp"
 
 WrappedMethod::WrappedMethod(Graph* G1, Graph* G2, string name, string args): Method(G1, G2, name) {
-    string g1Name = G1->getName();
-    string g2Name = G2->getName();
+    g1Name = G1->getName();
+    g2Name = G2->getName();
 
     //rand int used to avoid collision between parallel runs
     //these files cannot be moved to the tmp/ folder
