@@ -75,7 +75,8 @@ METHOD_WRAPERS_SRC =                                    \
 	src/methods/wrappers/NATALIEWrapper.cpp				\
 	src/methods/wrappers/GEDEVOWrapper.cpp				\
 	src/methods/wrappers/MagnaWrapper.cpp				\
-	src/methods/wrappers/WAVEWrapper.cpp
+	src/methods/wrappers/WAVEWrapper.cpp				\
+	src/methods/wrappers/PINALOGWrapper.cpp
 	
 
 MODES_SRC = 											\
