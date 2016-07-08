@@ -9,7 +9,8 @@ const string CONVERTER = "python converter_to_gml.py";
 const string PROGRAM   = "./spinal";
 const string OUTPUT_CONVERT  = "python spinal_output_converter.py";
 
-SPINALWrapper::SPINALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "SPINAL", args) {
+SPINALWrapper::SPINALWrapper(Graph* G1, Graph* G2, double alpha, string args): WrappedMethod(G1, G2, "SPINAL", args) {
+	this->alpha = alpha;
 	wrappedDir = "wrappedAlgorithms/SPINAL";
 }
 
@@ -24,7 +25,7 @@ string SPINALWrapper::convertAndSaveGraph(Graph* graph, string name) {
 	graph->saveInGWFormatWithNames(gwFile);
 
 	exec("mv " + gwFile + " " + wrappedDir);
-
+	//cout << "wrappedDir inside of SPINALWRAPPER: " << wrappedDir << endl;
 	execPrintOutput("cd " + wrappedDir + "; " + CONVERTER + " " + gwFile);
 	exec("mv " + wrappedDir + "/" + gmlFile + " " + gmlFile);
 
@@ -36,9 +37,9 @@ string SPINALWrapper::generateAlignment() {
 	unsigned int sFile = parameters.find("-ns");
 	if(sFile < parameters.size()) {
 		sFile += 5;
-		string simFile = parameters.substr(sFile, parameters.size() - parameters.find("-ns"));
-		parameters = parameters.substr(0, parameters.find("-ns"));
-		execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " " + simFile + " " + alignmentTmpName + ".txt");
+		string simFile = parameters.substr(sFile-1, parameters.size() - parameters.find("-ns"));
+		parameters = parameters.substr(0, parameters.find("-ns")+3);
+		execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " ../../" + simFile + " " + alignmentTmpName + ".txt " + to_string(alpha));
 	} else {
 		execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " " + parameters + " " + g1File + " " + g2File + " " + alignmentTmpName + ".txt");
 	}

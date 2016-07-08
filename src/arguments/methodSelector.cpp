@@ -156,7 +156,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (name == "optnetalign")
 		return new OptNetAlignWrapper(&G1, &G2, wrappedArgs);
     if (name == "spinal")
-		return new SPINALWrapper(&G1, &G2, wrappedArgs);
+		return new SPINALWrapper(&G1, &G2, alpha, wrappedArgs);
     if (name == "great")
     	return new GREATWrapper(&G1, &G2, wrappedArgs);
     if (name == "natalie")
