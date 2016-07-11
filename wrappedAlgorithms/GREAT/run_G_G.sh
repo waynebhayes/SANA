@@ -1,4 +1,4 @@
-
+#!/bin/sh
 # Gets both networks and alpha parameter form user
 echo "Usage: networkA networkB alpha_parameter"
 echo  
