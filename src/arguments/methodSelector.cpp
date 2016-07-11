@@ -25,8 +25,8 @@
 #include "../methods/wrappers/WAVEWrapper.hpp"
 #include "../methods/wrappers/MagnaWrapper.hpp"
 #include "../methods/wrappers/PINALOGWrapper.hpp"
+#include "../methods/wrappers/SANAPISWAPWrapper.hpp"
 #include "../methods/Dijkstra.hpp"
-
 
 using namespace std;
 
@@ -177,7 +177,8 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     	return new MagnaWrapper(&G1, &G2, wrappedArgs);
     if (name == "pinalog")
         return new PINALOGWrapper(&G1, &G2, wrappedArgs);
- 
+    if (name == "sanapluspiswap")
+        return new SANAPISWAPWrapper(&G1, &G2, args, M);
 
     throw runtime_error("Error: unknown method: " + name);
 }
