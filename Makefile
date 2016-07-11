@@ -1,7 +1,7 @@
 CC = g++
 
-#CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g
-CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-ggdb -static -Bstatic
+#CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g3
+CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-ggdb -Bstatic #-static
 
 INCLUDES =
 LFLAGS =
@@ -76,8 +76,8 @@ METHOD_WRAPERS_SRC =                                    \
 	src/methods/wrappers/GEDEVOWrapper.cpp				\
 	src/methods/wrappers/MagnaWrapper.cpp				\
 	src/methods/wrappers/WAVEWrapper.cpp				\
-	src/methods/wrappers/PINALOGWrapper.cpp
-	
+	src/methods/wrappers/PINALOGWrapper.cpp				\
+	src/methods/wrappers/SANAPISWAPWrapper.cpp			\
 
 MODES_SRC = 											\
 	src/modes/AlphaEstimation.cpp                       \
