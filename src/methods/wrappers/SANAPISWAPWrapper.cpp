@@ -23,7 +23,7 @@ SANAPISWAPWrapper::SANAPISWAPWrapper(Graph* G1, Graph* G2, ArgumentParser args, 
     intermediateAlignment = outfile.substr(0, location+1) + "SANA_PrePISWAP_" + outfile.substr(location+1);
 
     cout << "Saving intermediate alignment file to " << intermediateAlignment << endl;
-    double alpha = 1-args.doubles["-alpha"];
+    double alpha = args.doubles["-alpha"];
     string wrappedArgs = args.strings["-wrappedArgs"];
 
     piswapMethod = new PISwapWrapper(Graph1, Graph2, alpha, intermediateAlignment + ".align", wrappedArgs);

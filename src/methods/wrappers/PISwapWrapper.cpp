@@ -14,7 +14,7 @@ const string PISwapNoHungarianBinary = "python " + usingAlignmentPyName;
 
 PISwapWrapper::PISwapWrapper(Graph* G1, Graph* G2, double alpha, string startingAlignment, string args): WrappedMethod(G1, G2, "PISWAP", args) {
     startingAligName = startingAlignment;
-    this->alpha = alpha;
+    this->alpha = 1-alpha;
     wrappedDir = "wrappedAlgorithms/PISWAP";
 }
 
