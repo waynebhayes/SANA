@@ -1,6 +1,6 @@
 gwA="networks/"$1".gw"
 countA="orbits/"$1"_count"
-python src/rename.py gwA
+python src/rename.py $gwA
 src/ecount $gwA $countA
 dumpA=$countA".ndump2"
 ecountA="orbits/"$1"_count.ecounts"

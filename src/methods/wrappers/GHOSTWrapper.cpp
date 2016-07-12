@@ -7,14 +7,15 @@ using namespace std;
 
 const string CONVERTER = "./bio-graph";
 const string GHOSTBinary = "./GHOST";
+const string GLOBAL_PARAMETERS = "linear all 1.0 8.0 10"; // do not modify these, they are hard-coded parsed below
 
 GHOSTWrapper::GHOSTWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "GHOST", args) {
 	wrappedDir = "wrappedAlgorithms/GHOST";
+	parameters = args;
 }
 
 // -wrappedArgs "matcher nneighbors beta ratio searchiter"
 void GHOSTWrapper::loadDefaultParameters() {
-	parameters = "linear all 1.0 8.0 10"; // do not modify these, they are hard-coded parsed below
 }
 
 string GHOSTWrapper::convertAndSaveGraph(Graph* graph, string name) {
@@ -34,13 +35,14 @@ string GHOSTWrapper::convertAndSaveGraph(Graph* graph, string name) {
 }
 
 void GHOSTWrapper::createCfgFile(string cfgFileName) {
+	vector<string> G_PARAMS = split(GLOBAL_PARAMETERS, ' ');
 	vector<string> params = split(parameters, ' ');
 
-	matcher    = params[0];
-	nneighbors = params[1];
-	beta       = params[2];
-	ratio      = params[3];
-	searchiter = params[4];
+	matcher    = G_PARAMS[0];
+	nneighbors = G_PARAMS[1];
+	beta       = G_PARAMS[2];
+	ratio      = G_PARAMS[3];
+	searchiter = G_PARAMS[4];
 
 	ofstream outfile;
 	outfile.open(cfgFileName.c_str());
@@ -56,6 +58,11 @@ void GHOSTWrapper::createCfgFile(string cfgFileName) {
 	outfile << "ratio: " << ratio << endl;
 	outfile << "searchiter: " << searchiter << endl;
 	// outfile << "dumpDistances: true " << endl; // to dump huge 3-column nxm matrix of all-by-all node similarities
+	for(uint i=0;i<params.size();i+=2) {
+	    if(params[i][0] == '-')
+		params[i].erase(0,1);
+	    outfile << params[i] << ": " << params[i+1] << endl;
+	}
 
 	outfile.close();
 }
