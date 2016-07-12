@@ -25,6 +25,8 @@ private:
 	string ratio;
 	string searchiter;
 	string cfgFile;
+	string alpha;
+	string SeqScores;
 };
 
 #endif
