@@ -454,7 +454,6 @@ void Graph::writeGraphEdgeListFormatPISWAP(const string& fileName) {
 
 void Graph::writeGraphEdgeListFormatNETAL(const string& fileName) {
     uint e = getNumEdges();
-    cout << "THIS GRAPH HAS NUMEDGES = " << e << endl;
     ofstream outfile;
     outfile.open(fileName.c_str());
     for (uint i = 0; i < e; i++) {
