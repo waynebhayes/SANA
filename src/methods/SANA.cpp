@@ -318,7 +318,6 @@ void SANA::describeParameters(ostream& sout) {
 	sout << "Optimize: " << endl;
 	MC->printWeights(sout);
 
-
 	if (maxIterations == 0){
 		sout << "Execution time: ";
 		if (restart) {sout << minutesNewAlignments + minutesPerCandidate*numCandidates + minutesFinalist;}
