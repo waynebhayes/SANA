@@ -1,4 +1,7 @@
 #!/bin/sh
+# Uses some of wayne's crazy scripts.
+PATH=/home/wayne/bin:$PATH
+export PATH
 die(){ echo "$USAGE" >&2;
 echo "FATAL ERROR: $@" >&2; exit 1
 }
