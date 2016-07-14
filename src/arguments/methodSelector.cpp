@@ -178,7 +178,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     	return new MagnaWrapper(&G1, &G2, wrappedArgs);
     if (name == "pinalog")
         return new PINALOGWrapper(&G1, &G2, wrappedArgs);
-    if (name == "sanapluspiswap")
+    if (name == "sana+piswap")
         return new SANAPISWAPWrapper(&G1, &G2, args, M);
     if (name == "newgedevo")
         return new NewGEDEVOWrapper(&G1, &G2, wrappedArgs);
