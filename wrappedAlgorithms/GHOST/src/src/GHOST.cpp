@@ -174,6 +174,12 @@ int main(int argc, char** argv)
     if(string(argv[i]) == "-p")
       if((i+1)<argc)
         c.numProcessors = atoi(argv[i+1]);
+    if(string(argv[i]) == "-alpha")
+      if((i+1)<argc)
+        c.alpha = atof(argv[i+1]);
+    if(string(argv[i]) == "-x")
+      if((i+1)<argc)
+        c.SeqScores = argv[i+1];
   }
 
   if(c.Ggraph == "" || c.Hgraph == "") // required input
