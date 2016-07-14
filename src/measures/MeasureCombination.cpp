@@ -48,7 +48,7 @@ void MeasureCombination::printWeights(ostream& ofs) const {
     uint n = measures.size();
     for (uint i = 0; i < n; i++) {
         if (weights[i] > 0) {
-            ofs << measures[i]->getName();
+            ofs << "weight " << measures[i]->getName();
             ofs << ": " << weights[i] << endl;
         }
     }
