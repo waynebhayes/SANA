@@ -1,15 +1,11 @@
 #!/bin/sh
 # Gets both networks and alpha parameter form user
-echo "Usage: networkA networkB alpha_parameter"
-echo  
-echo "The networks must have extension .gw, but do not place that in the parameter"
+networkA="$1"
+networkB="$2"
+shift 2
+# alphas are on remainder of command line.
 
-read networkA 
-read networkB
-
-read -a arr
-
-for i in "${arr[@]}"
+for i in "$@"
 do
     alpha=$i
     #makes the directories
