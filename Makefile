@@ -78,7 +78,7 @@ METHOD_WRAPERS_SRC =                                    \
 	src/methods/wrappers/WAVEWrapper.cpp				\
 	src/methods/wrappers/PINALOGWrapper.cpp				\
 	src/methods/wrappers/SANAPISWAPWrapper.cpp			\
-	src/methods/wrappers/NewGEDEVOWrapper.cpp			\
+	src/methods/wrappers/CytoGEDEVOWrapper.cpp			\
 
 MODES_SRC = 											\
 	src/modes/AlphaEstimation.cpp                       \

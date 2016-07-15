@@ -32,3 +32,4 @@ The alpha parameter should be between 0 and 1, where 0 is just edge-GDC, and 1 i
 Alpha parameters should be entered as follows:
 alpha = 0 should be inputted as 00
 alpha = 1 should be inputted as 10
+

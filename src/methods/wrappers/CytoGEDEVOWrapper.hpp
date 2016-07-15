@@ -1,5 +1,5 @@
-#ifndef NEWGEDEVOWRAPPER_HPP
-#define NEWGEDEVOWRAPPER_HPP
+#ifndef CYTOGEDEVOWRAPPER_HPP
+#define CYTOGEDEVOWRAPPER_HPP
 
 #include <string>
 #include <vector>
@@ -8,9 +8,9 @@
 
 using namespace std;
 
-class NewGEDEVOWrapper: public WrappedMethod {
+class CytoGEDEVOWrapper: public WrappedMethod {
 public:
-	NewGEDEVOWrapper(Graph* G1, Graph* G2, string args);
+	CytoGEDEVOWrapper(Graph* G1, Graph* G2, string args);
 
 private:
     void loadDefaultParameters();
