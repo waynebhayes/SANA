@@ -26,7 +26,7 @@
 #include "../methods/wrappers/MagnaWrapper.hpp"
 #include "../methods/wrappers/PINALOGWrapper.hpp"
 #include "../methods/wrappers/SANAPISWAPWrapper.hpp"
-#include "../methods/wrappers/NewGEDEVOWrapper.hpp"
+#include "../methods/wrappers/CytoGEDEVOWrapper.hpp"
 #include "../methods/Dijkstra.hpp"
 
 using namespace std;
@@ -180,8 +180,8 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
         return new PINALOGWrapper(&G1, &G2, wrappedArgs);
     if (name == "sana+piswap")
         return new SANAPISWAPWrapper(&G1, &G2, args, M);
-    if (name == "newgedevo")
-        return new NewGEDEVOWrapper(&G1, &G2, wrappedArgs);
+    if (name == "cytogedevo")
+        return new CytoGEDEVOWrapper(&G1, &G2, wrappedArgs);
 
     throw runtime_error("Error: unknown method: " + name);
 }

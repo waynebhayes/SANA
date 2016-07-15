@@ -33,8 +33,9 @@ string GREATWrapper::generateAlignment() {
 	exec("cd " + wrappedDir + "; chmod +x *.sh");
 	exec("cd " + wrappedDir + "/src; chmod +x *");
 
-	exec("cd " + wrappedDir + "; count.sh " + g1TmpName);
-	exec("cd " + wrappedDir + "; count.sh " + g2TmpName);
+	// Assume edge counts have been run previously -- they take FOROVER and can be re-used
+	// exec("cd " + wrappedDir + "; count.sh " + g1TmpName);
+	// exec("cd " + wrappedDir + "; count.sh " + g2TmpName);
 
 	string script = scripts[atoi(parameters.substr(0, 1).c_str())];
 	string alpha = parameters.substr(2, 2);
