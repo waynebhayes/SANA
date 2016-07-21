@@ -44,14 +44,17 @@ elif echo $M | grep -q -i '^l-*graal$'; then
     Sseq=" -s3 0 -objfuntype alpha -topmeasure wec -wecnodesim graphletlgraal -wec 1 -alpha 0.$alpha -sequence 0.$alpha"
 elif echo $M | grep -q -i '^mi-*graal$'; then
     M=migraal
-    Margs=
+    Margs="-wrappedArgs '-p 1'"
     Sargs=' -s3 1 -ec 0 '
+    Mseq="-wrappedArgs '-p 17 -q sequence/bitscore/${G1}_${G2}.bitscore'"
+    Sseq=' -s3 1 -ec 0 -sequence 1'
 elif echo $M | grep -q -i '^magna+*$'; then
     M=magna
     Margs=
     Sargs=''
-    Sseq=" -s3 0.05 -sequence 0.9 "
-    Mseq=" -s3 0.05 -sequence 0.9 -wrappedArgs \"-d sequence/bitscores/${G1}_${G2}.bitscores -a 0.1 -t 4 \""; # alpha=1 for all topo, 0 for all sequence
+    beta=`parse "1-0.$alpha"`
+    Mseq=" -s3 $beta -sequence 0.$alpha -wrappedArgs \"-d sequence/bitscores/${G1}_${G2}.bitscores -a $beta -t 4 \""; # our beta is their -a=1 for all topo, 0 for all sequence
+    Sseq=" -s3 $beta -sequence 0.$alpha "
 elif echo $M | grep -q -i '^natalie$'; then
     Margs=" -wrappedArgs \" -gm ../../sequence/evalue/${G1}_${G2}_blast.out -t 30000 -beta 1 -sf 5 \""; # beta 1 means topo only, sf5=EC
     Sargs=' -s3 0 -ec 1 '
@@ -68,6 +71,12 @@ elif echo $M | grep -q -i '^netal$'; then
     Tcmp='2*m'; Tmin=10; Tmax=30
     Margs=
     Sargs=' -s3 0.4 -ec 0.6 '
+elif echo $M | grep -q -i '^newgedevo$'; then
+    Tcmp=m/9; Tmin=10; Tmax=30
+    Margs=" -wrappedArgs \"--maxsecs 30000 --threads 8 \""
+    Sargs=' -s3 0.35 -ec 0.65 '
+    Mseq=" -wrappedArgs \"--maxsecs 3600 --threads 4 --blastpairlist sequence/bitscores/${G1}-${G2}.bitscores\""
+    Sseq=" -ec .5 -s3 0.5 -sequence 0.5 "
 elif echo $M | grep -q -i '^gedevo$'; then
     Tcmp=m/9; Tmin=10; Tmax=30
     Margs=" -wrappedArgs \"--maxsecs 36000 --threads 8 \""
@@ -80,7 +89,8 @@ elif echo $M | grep -q -i '^wave$'; then
 elif echo $M | grep -q -i '^spinal$'; then
     Margs=""
     Sargs=''
-    Mseq=" -sequence 1 -ec 1 -alpha 0.5 -wrappedArgs \"-I -ns sequence/SPINAL/${G1}-${G2}\""
+    beta=`parse "1-0.$alpha/10"`
+    Mseq=" -sequence $beta -ec 0.$alpha -alpha 0.$alpha -wrappedArgs \"-I -ns sequence/SPINAL/${G1}-${G2}\""
     Sseq=" -ec 1 -sequence 300 "
     Tcmp=m; Tmin=3; Tmax=20
 elif echo $M | grep -q -i '^ghost$'; then
