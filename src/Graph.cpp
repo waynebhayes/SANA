@@ -331,6 +331,7 @@ void Graph::initConnectedComponents() {
             connectedComponents[i][j] = (*aux[i])[j];
         }
     }
+    for(uint i = 0; i < aux.size();++i) delete aux[i];
 }
 
 uint Graph::numNodeInducedSubgraphEdges(const vector<ushort>& subgraphNodes) const {
