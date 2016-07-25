@@ -1,11 +1,11 @@
 #!/bin/sh
-die() { echo "FATAL ERROR: $@" >&2; exit 1
+die() { echo "$USAGE" >&2; echo "FATAL ERROR: $@" >&2; exit 1
 }
 
 SEQ=false
 FORCE=false
 
-USAGE="$0 [-seq <ialpha_digit>] [-f] otherAligner g1 g2"
+USAGE="USAGE: $0 [-seq <ialpha_digit>] [-f] otherAligner g1 g2"
 ialpha=0
 while :; do
     case "$1" in
