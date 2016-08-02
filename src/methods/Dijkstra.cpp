@@ -6,7 +6,8 @@ using get_time = std::chrono::steady_clock;
 
 Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC) :
   Method(G1, G2, "Dijkstra_"+MC->toString()),
-  delta(0.00),//delta(0.05 + EPSILON), 
+  //delta(0.00),
+  delta(0.15 + EPSILON), 
   seed_queue(delta, true, G1_exclude, G2_exclude), 
   neighbor_queue(delta, true, G1_exclude, G2_exclude),
   nodes_aligned(0)
@@ -124,24 +125,18 @@ std::pair <ushort, ushort> Dijkstra::best_pair(SkipList & pq) throw(QueueEmptyEx
  * of each graph and adds the pair to the output set.  
  */
 void Dijkstra::update_neighbors(std::pair <ushort, ushort> & seed_pair){
-  //std::cout << "update neighbors" << std::endl;
   //exclude the seed nodes from future consideration
-  //std::cout << "excluding nodes" << std::endl;
   G1_exclude.insert(seed_pair.first);
   G2_exclude.insert(seed_pair.second);
-  //std::cout << "excluding nodes done" << std::endl;
   //add the pair to the alignment
-  //std::cout << "output" << std::endl;
-  //std::cout << std::get<0>(seed_pair) << "," << std::get<1>(seed_pair) << std::endl;
   A[seed_pair.first] = seed_pair.second;
   nodes_aligned += 1;
   std::cout << "nodes aligned" << nodes_aligned << std::endl;
-  //std::cout << "output done" << std::endl;
+
   //set difference
-  //std::cout << "set diff" << std::endl;
   vector<ushort> G1_neighbors = exclude_nodes(G1AdjLists[seed_pair.first], G1_exclude);
   vector<ushort> G2_neighbors = exclude_nodes(G2AdjLists[seed_pair.second], G2_exclude);
-  //std::cout << "set diff done" << std::endl;
+
   //if there are no neighbors, we can skip the matrix search 
   if(G1_neighbors.empty() || G2_neighbors.empty()){
     return;
@@ -219,7 +214,7 @@ Alignment Dijkstra::run() {
   while(nodes_aligned < max_nodes){
     auto start = get_time::now();
     try{
-      std::cout << "seed phase" << std::endl;
+      //std::cout << "seed phase" << std::endl;
       //seed phase
       std::pair <ushort, ushort> seed_pair = best_pair(seed_queue);
       update_neighbors(seed_pair);
@@ -231,11 +226,11 @@ Alignment Dijkstra::run() {
 
     auto end = get_time::now();
     auto diff = end - start;
-    std::cout << "(" << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count()<< "ms)" << "\t";//<< std::endl;
-    seed_queue.showCounter();
+    //std::cout << "seed time(" << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count()<< "ms)" << "\t";//<< std::endl;
+    //seed_queue.showCounter();
 
     while(!neighbor_queue.empty()){
-      std::cout << "extend phase" << std::endl;
+      //std::cout << "extend phase" << std::endl;
       start = get_time::now();
       try{
 	std::pair <ushort, ushort> neighbor_pair = best_pair(neighbor_queue);
@@ -247,14 +242,16 @@ Alignment Dijkstra::run() {
       //std::cout << "picked neighbor: (" << neighbor_pair.first << ", " << neighbor_pair.second << ")" << std::endl;
       end = get_time::now();
       diff = end - start;
-      std::cout << "(" << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count()<< "ms)" << std::endl;
+      //std::cout << "(" << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count()<< "ms)" << std::endl;
     }
 
   }
+  seed_queue.perf();
+  /*
   for(uint i = 0; i < A.size();++i){
     std::cout << i << ": " << A[i] << std::endl;
   }
-  
+  */
   return Alignment(A);
 }
 
