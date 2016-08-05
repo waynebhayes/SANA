@@ -59,6 +59,7 @@ vector<string> doubleArgs = {
 "-lgraaliter",
 "-alignFormat",				// Used in analysis mode
 "-simFormat",				// Used in similarity mode
+"-dijkstradelta"
 };
 
 vector<string> boolArgs = {
