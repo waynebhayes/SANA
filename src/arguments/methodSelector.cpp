@@ -69,6 +69,14 @@ Method* initHubAlign(Graph& G1, Graph& G2, ArgumentParser& args) {
     return new HubAlignWrapper(&G1, &G2, alpha);
 }
 
+Method* initDijkstra(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
+    double delta = args.doubles["-dijkstradelta"];
+    if(delta < 0.0 || delta > 1.0){
+	throw runtime_error("generic objective function not supported for HubAlign"); 
+    }
+    return new Dijkstra(&G1, &G2, &M, delta);
+}
+
 Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
 
     double minutes = args.doubles["-t"];
@@ -145,7 +153,8 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (name == "tabu")
         return initTabuSearch(G1, G2, args, M);
     if (name == "dijkstra")
-       	return new Dijkstra(&G1, &G2, &M);
+        return initDijkstra(G1, G2, args, M);
+      //return new Dijkstra(&G1, &G2, &M);
     if (name == "netal")
         return new NETALWrapper(&G1, &G2, wrappedArgs);
     if (name == "mi-graal" || name == "migraal")

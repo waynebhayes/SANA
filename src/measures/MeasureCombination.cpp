@@ -10,6 +10,9 @@ MeasureCombination::MeasureCombination(){
 }
 
 MeasureCombination::~MeasureCombination() {
+  for(auto m: measures){
+    delete m;
+  }
 }
 
 double MeasureCombination::eval(const Alignment& A) const {
