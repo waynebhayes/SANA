@@ -33,8 +33,13 @@ M1=`awk 'NF==1{n++}END{print n}' networks/$G1/$G1.gw`
 M2=`awk 'NF==1{n++}END{print n}' networks/$G2/$G2.gw`
 
 if echo $M | grep -q -i '^hubalign$'; then
+    Tcmp=m; Tmin=3; Tmax=20
     Margs=' -s3 0 -importance 1 -objfuntype alpha '
     Sargs=' -s3 0.002 -importance 1 '
+    Mseq=" -s3 0 -objfuntype alpha -alpha 0.$ialpha -sequence 0.$ialpha "
+    alpha=`parse "0.9+0.$ialpha/10"`
+    beta=`parse "1-$alpha"`
+    Sseq=" -s3 $beta -importance 0.0 -sequence $alpha"
 elif echo $M | grep -q -i '^l-*graal$'; then
     M=lgraal
     TL=`parse "($M1+$M2)/120"`
