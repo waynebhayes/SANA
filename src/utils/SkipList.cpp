@@ -49,30 +49,7 @@ void SkipNode::debug(int limit){
     }
   }
 }
-/*
-  SkipList::SkipList()
-  :_isMaxHeap(false), length(0), level(0), delta(0.0 + EPSILON),
-  left_exclude(std::unordered_set<ushort>), right_exclude(std::unordered_set<ushort>){
-  //this->head created automatically, no initialization needed
-  rng.seed(std::random_device()());
-  this->debug();
-  }
 
-  SkipList::SkipList(float delta)
-  :_isMaxHeap(false), length(0), level(0), delta(delta + EPSILON),
-  left_exclude(std::unordered_set<ushort>), right_exclude(std::unordered_set<ushort>){
-  rng.seed(std::random_device()());
-  this->debug();
-  }
-
-  SkipList::SkipList(float delta, bool setMaxHeap)
-  :_isMaxHeap(setMaxHeap), length(0), level(0), delta(delta + EPSILON),
-  left_exclude(std::unordered_set<ushort>), right_exclude(std::unordered_set<ushort>){
-  rng.seed(std::random_device()());
-  this->debug();
-  insert_time -= insert_time;
-  }
-*/
 SkipList::SkipList(float delta, bool setMaxHeap, std::unordered_set<ushort> & lex, std::unordered_set<ushort> & rex)
   :_isMaxHeap(setMaxHeap), length(0), level(0), delta(delta + EPSILON),
    left_exclude(lex), right_exclude(rex){
@@ -225,15 +202,20 @@ std::pair<ushort,ushort> SkipList::pop_uniform(){
     float tail = curr->key + this->delta;
     
     uint n = 0;
+    while(curr && curr->key <= tail){
+      if(random_int(++n) == 0){
+	choice = curr;
+      }
+      curr = curr->forward[0];
+    }
+    /*
     while(curr->forward[0] && curr->forward[0]->key <= tail){
       curr = curr->forward[0];
-      //std::uniform_int_distribution<int> uni(0,++n); 
-      //if(uni(rng) == 0){
       if(random_int(++n) == 0){
 	choice = curr;
       }
     }
-    
+    */
     result = choice->value;
     removeNode(choice);
     ++miss_counter; //count misses in a row
@@ -242,47 +224,106 @@ std::pair<ushort,ushort> SkipList::pop_uniform(){
     }
   }while(left_exclude.find(result.first) != left_exclude.end() ||
 	 right_exclude.find(result.second) != right_exclude.end());
-  /*
-    if(left_exclude.find(result.first) != left_exclude.end() ||
-    right_exclude.find(result.second) != right_exclude.end()){
-    ++miss_counter;
-    
-    return this->pop_uniform();
-    }
-  */
+
   miss_counter = 0; //reset after a hit
   this->debug();
   return result;
 }
 
 std::pair<ushort,ushort> SkipList::pop_distr(){
-  if(this->empty()){
-    throw QueueEmptyException();
-  }
+  std::cout << "pop distr" << this->length << std::endl;
   std::pair<ushort,ushort> result;
-  if(this->length == 1){
-    result = this->head.forward[0]->value;
-    removeNode(this->head.forward[0]);
-    return result;
-  }
-	
-  SkipNode * curr = &(this->head);
-  float start = this->head.forward[0]->key;
-  std::uniform_real_distribution<float> uni(start,start+this->delta);
-  float pick_value = uni(rng);
-  for(int i = this->level - 1; i >= 0; --i){
-    while(curr->forward[i] && (curr->forward[i]->key <= pick_value)){
-      curr = curr->forward[i];
-      if(curr->key == pick_value){
-	result = curr->value;
-	removeNode(curr);
-	return result;
+  SkipNode * curr;
+  SkipNode * choice = this->head.forward[0];
+  do{
+    if(this->empty()){
+      throw QueueEmptyException();
+    }
+    curr = this->head.forward[0];
+    float start = this->head.forward[0]->key;
+    std::uniform_real_distribution<float> uni(start,start+this->delta);
+    float pick_value = uni(rng);
+    for(int i = this->level - 1; i >= 0; --i){
+      while(curr->forward[i] && (curr->forward[i]->key <= pick_value)){
+	curr = curr->forward[i];
       }
     }
-  }
-  result = curr->value;
-  removeNode(curr);
+    if(!curr->forward[0] || curr->forward[0]->key > start+this->delta){
+      choice = curr;
+    }else{ //resevoir sample
+      int n = 0;
+      while(curr && curr->key <= start+this->delta){
+	if(random_int(++n) == 0){
+	  choice = curr;
+	}
+	curr = curr->forward[0];
+      }
+    }
+
+    result = choice->value;
+    removeNode(choice);
+    ++miss_counter; //count misses in a row
+    if(miss_counter > SkipList::CLEANUP_THRESH){
+      this->cleanup();
+    }
+  }while(left_exclude.find(result.first) != left_exclude.end() ||
+	 right_exclude.find(result.second) != right_exclude.end());
+  miss_counter = 0;
   return result;
+  /*
+
+
+  SkipNode * choice = NULL;
+  do{
+    if(this->empty()){
+      throw QueueEmptyException();
+    }
+    
+    if(this->length == 1){
+      result = this->head.forward[0]->value;
+      removeNode(this->head.forward[0]);
+      return result;
+    }else{
+      choice = this->head.forward[0];
+      float start = this->head.forward[0]->key;
+      std::uniform_real_distribution<float> uni(start,start+this->delta);
+      float pick_value = uni(rng);
+      for(int i = this->level - 1; i >= 0; --i){
+	while(curr->forward[i] && (curr->forward[i]->key <= pick_value)){
+	  curr = curr->forward[i];
+	  if(curr->key <= pick_value){
+	    choice = curr;
+
+
+	      result = choice->value;
+	      std::cout << "result (" << result.first << ", " << result.second << ")" << std::endl;
+	      removeNode(curr);
+
+	      if(left_exclude.find(result.first) == left_exclude.end() ||
+	      right_exclude.find(result.second) == right_exclude.end()){
+	      return result;
+	      }
+	  }
+	}
+      }
+      curr = choice->forward[0];
+      //if(!curr || curr->key > pick_value){
+      result = choice->value;      
+      //}else{
+      //resevoir sample
+      
+      //}
+      ++miss_counter; //count misses in a row
+      if(miss_counter > SkipList::CLEANUP_THRESH){
+	this->cleanup();
+      }
+    }
+  }while(left_exclude.find(result.first) != left_exclude.end() ||
+	 right_exclude.find(result.second) != right_exclude.end());
+  miss_counter = 0; //reset after a hit
+  removeNode(choice);
+  return result;
+  */
 }
 bool SkipList::isMaxHeap(){
   return _isMaxHeap;
@@ -328,51 +369,6 @@ void SkipList::cleanup(){
       update[i]->forward[i] = forward[i];
     }
   }
-  /*
-  for(int i = 0; i < this->head.height; ++i){
-    this->head.forward[i] = NULL;
-  }
-  this->length = 0;
-  while(curr){
-    if(left_exclude.find(curr->value.first) == left_exclude.end() &&
-       right_exclude.find(curr->value.second) == right_exclude.end()){
-      this->insert(curr->key, curr->value);
-    }
-    prev = curr;
-    curr = curr->forward[0];
-    delete prev;
-  }
-  */
-
-  /*
-    std::vector<SkipNode *> live(this->length);
-    SkipNode * update[SkipNode::MAX_LEVEL];
-    for(int i = 0; i < SkipNode::MAX_LEVEL; ++i){
-    update[i] = NULL;
-    }
-  
-    this->length = 0;
-    while(curr){
-    if(left_exclude.find(curr->value.first) == left_exclude.end() &&
-    right_exclude.find(curr->value.second) == right_exclude.end()){
-    live.push_back(curr);
-    }else{
-    prev = curr;
-    curr = curr->forward[0];
-    delete prev;
-    }
-    }
-
-    this->length = live.size();
-    for(auto it = live.rbegin(); it != live.rend(); ++it){
-    for(int i = 0; i < SkipNode::MAX_LEVEL; ++i){
-    (*it)->forward[i] = update[i];
-    }
-    for(int i = 0; i < (*it)->height; ++i){
-    update[i] = (*it);
-    }
-    }
-  */
 
   std::cout << "new size=" << this->length << std::endl;
   auto stop = std::chrono::steady_clock::now();
@@ -387,18 +383,14 @@ void SkipList::serialize(std::string fname){
   std::cout << "start serialize " << this->length << std::endl;
   auto start = get_time::now();
   std::ofstream out(fname, std::ofstream::out);
-  std::vector<SkipNode *> nodes;
-  nodes.reserve(this->length);
+  out << this->length << std::endl;
   SkipNode * curr = this->head.forward[0];
   while(curr){
-    nodes.push_back(curr);
+    //std::cout << "writing" << curr->key << " " << curr->value.first << " " << curr->value.second << " " << curr->height << std::endl;
+    out << curr->key << " " << curr->value.first << " " << curr->value.second << " " << curr->height << std::endl;
     curr = curr->forward[0];
   }
-  for(auto rit = nodes.rbegin(); rit != nodes.rend(); ++rit){
-    //std::cout << (*rit)->key << " " << (*rit)->value.first << " " << (*rit)->value.second << " " << (*rit)->height << std::endl;
-    out << (*rit)->key << " " << (*rit)->value.first << " " << (*rit)->value.second << " " << (*rit)->height << std::endl;
-  }
-  //serialize_helper(this->head.forward[0], out);
+
   auto stop = get_time::now();
   auto diff = stop - start;
   cleanup_time += std::chrono::duration_cast<std::chrono::milliseconds>(diff);
@@ -406,22 +398,12 @@ void SkipList::serialize(std::string fname){
   out.close();
 }
 
-void SkipList::serialize_helper(SkipNode * curr, std::ofstream & out){
-  std::cout << "helper" << std::endl;
-  if(curr != NULL){
-    std::cout << "on node" << curr->key << " " << curr->value.first << " " << curr->value.second << " " << curr->height << std::endl;
-    serialize_helper(curr->forward[0], out);
-    std::cout << "writing value" << std::endl;
-    std::cout << curr->key << " " << curr->value.first << " " << curr->value.second << " " << curr->height << std::endl;
-    out << curr->key << " " << curr->value.first << " " << curr->value.second << " " << curr->height << std::endl;
-  }
-}
 
 bool SkipList::deserialize(std::string fname){
   std::cout << "deserialize " << fname << std::endl;
   SkipNode * update[SkipNode::MAX_LEVEL];
   for(int i = 0; i < SkipNode::MAX_LEVEL; ++i){
-    update[i] = NULL;
+    update[i] = &(this->head);
   }
 
   std::ifstream file(fname, std::ifstream::in);
@@ -429,22 +411,23 @@ bool SkipList::deserialize(std::string fname){
     std::cerr << "no file found" << std::endl;
     return false;
   }
-
   ushort height = 1, n1 = 0, n2 = 0;
   float sim = 1;
+  
+  file >> this->length;
+  std::cout << "length " << this->length << std::endl;
   while(file >> sim >> n1 >> n2 >> height){
     std::cout << "node" << sim << "\t" << n1 << " " << n2 << " " << height << std::endl; 
-    //SkipNode * curr = new SkipNode(height, sim, n1, n2, update);
     SkipNode * curr = new SkipNode(height, sim, std::make_pair(n1, n2));
     for(int i = 0; i < height; ++i){
-      curr->forward[i] = update[i];
+      update[i]->forward[i] = curr;
       update[i] = curr;
     }
-    this->length++;
   }
-  for(int i = 0; i < this->head.height; ++i){
-    this->head.forward[i] = update[i];
+  for(int i = 0; i < SkipNode::MAX_LEVEL; ++i){
+    update[i]->forward[i] = NULL;
   }
+  
   return true;
 }
 
@@ -551,18 +534,7 @@ void SkipList::test(){
 
 void SkipList::debug(){
   //std::cout << "length " << this->length << std::endl;
-  /*
-    std::cout << "head " << std::endl;
-    head.debug(16);
-  */
 }
-/*
-  int main(int argc, char **argv){
-  std::cout << "running skiplist test" << std::endl;
-  SkipList::test();
-  std::cout << "skiplist test completed" << std::endl;
-  }
-*/
 
 void SkipList::perf(){
   std::cout << "insert time (" << this->insert_time.count() << "ms)" << std::endl;
