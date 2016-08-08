@@ -21,6 +21,9 @@ public:
 
     void setLockFile(string fileName);
     void checkLockingBeforeReport(Alignment A);
+    void checkNodeTypesBeforeReport(Alignment A);
+
+    map<ushort,ushort> getReverseMap(const map<ushort,ushort> reverse) const;
 
 protected:
     Graph* G1;

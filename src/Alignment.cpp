@@ -309,6 +309,84 @@ Alignment Alignment::randomAlignmentWithLocking(Graph* G1, Graph* G2){
 	return alig;
 }
 
+
+Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
+        assert(G1->getLockedCount() == G2->getLockedCount());
+
+        map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
+        map<string,ushort> g2_IndexMap = G2->getNodeNameToIndexMap();
+        uint n1 = G1->getNumNodes();
+        uint n2 = G2->getNumNodes();
+
+        vector<ushort> G2_UnlockedGeneIndexes;
+        vector<ushort> G2_UnlockedRNAIndexes;
+        for(ushort i=0;i<n2;i++){
+            if(G2->isLocked(i))
+                continue;
+            if(G2->nodeTypes[i] == "gene")
+                G2_UnlockedGeneIndexes.push_back(i);
+            else if(G2->nodeTypes[i] == "miRNA")
+                G2_UnlockedRNAIndexes.push_back(i);
+        }
+
+        cerr << G2_UnlockedGeneIndexes.size() << endl;
+        cerr << G2_UnlockedRNAIndexes.size() << endl;
+
+        vector<ushort> A(n1, n2); //n2 used to note invalid value
+        for (ushort i = 0; i < n1; i++) {
+            // Aligns all the locked nodes together
+            if(!G1->isLocked(i))
+                continue;
+            string node1 = g1_NameMap[i];
+            string node2 = G1->getLockedTo(i);
+            uint node2Index = g2_IndexMap[node2];
+            if(G1->nodeTypes[i] != G2-> nodeTypes[node2Index]){
+                cerr << "Invalid lock -- cannot lock a gene to a miRNA " << node1 <<  ", " << node2 << endl;
+            }
+            assert (G1->nodeTypes[i] == G2-> nodeTypes[node2Index]);
+            A[i] = node2Index;
+        }
+        vector<bool> G2AssignedNodes(n2, false);
+        for (uint i = 0; i < n1; i++) {
+            if (A[i] != n2)
+                G2AssignedNodes[A[i]] = true;
+        }
+
+        for (uint i = 0; i < n1; i++) {
+            if (A[i] == n2) {
+                if(G1->nodeTypes[i] == "gene"){
+                    int randSize = G2_UnlockedGeneIndexes.size();
+                    int j = randMod(randSize);
+                    while (G2AssignedNodes[G2_UnlockedGeneIndexes[j]])
+                        j = randMod(randSize);
+                    A[i] = G2_UnlockedGeneIndexes[j];
+                    G2AssignedNodes[G2_UnlockedGeneIndexes[j]] = true;
+                }
+                else if(G1->nodeTypes[i] == "miRNA"){
+                    int randSize = G2_UnlockedRNAIndexes.size();
+                    int j = randMod(randSize);
+                    while (G2AssignedNodes[G2_UnlockedRNAIndexes[j]])
+                        j = randMod(randSize);
+                    A[i] = G2_UnlockedRNAIndexes[j];
+                    G2AssignedNodes[G2_UnlockedRNAIndexes[j]] = true;
+                }
+
+            }
+        }
+
+        for (uint i = 0; i < n1; i++) {
+            assert (G1->nodeTypes[i] == G2-> nodeTypes[A[i]]);
+        }
+
+        Alignment alig(A);
+        alig.printDefinitionErrors(*G1, *G2);
+        assert(alig.isCorrectlyDefined(*G1, *G2));
+        return alig;
+}
+
+
+
+
 void Alignment::reIndexBefore_Iterations(map<ushort, ushort> reIndexMap){
 	vector<ushort> resA = vector<ushort> (A.size());
 	for(uint i=0; i< A.size();i++){
@@ -325,5 +403,7 @@ void Alignment::reIndexAfter_Iterations(map<ushort, ushort> reIndexMap){
 	}
 	A = resA;
 }
+
+
 
 

@@ -50,6 +50,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 	uint G1UnLockedCount = n1 - G1->getLockedCount() -1;
 	G1RandomUnlockedNodeDist = uniform_int_distribution<>(0, G1UnLockedCount);
 	G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
+	G1RandomUnlockedGeneDist = uniform_int_distribution<>(0, G1->unlockedGeneCount - 1);
+	G1RandomUnlockedmiRNADist = uniform_int_distribution<>(0, G1->unlockedmiRNACount - 1);
 	randomReal = uniform_real_distribution<>(0, 1);
 
 
@@ -160,6 +162,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 	uint G1UnLockedCount = n1 - G1->getLockedCount() -1;
 	G1RandomUnlockedNodeDist = uniform_int_distribution<>(0, G1UnLockedCount);
 	G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
+    G1RandomUnlockedGeneDist = uniform_int_distribution<>(0, G1->unlockedGeneCount - 1);
+    G1RandomUnlockedmiRNADist = uniform_int_distribution<>(0, G1->unlockedmiRNACount - 1);
 	randomReal = uniform_real_distribution<>(0, 1);
 
 
@@ -252,7 +256,12 @@ SANA::~SANA() {
 
 
 Alignment SANA::getStartingAlignment(){
-	if(lockFileName != ""){
+    if(G1->hasNodeTypes()){
+        Alignment randomAlig = Alignment::randomAlignmentWithNodeType(G1,G2);
+        randomAlig.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
+        return randomAlig;
+    }
+    else if(lockFileName != ""){
 		Alignment randomAlig = Alignment::randomAlignmentWithLocking(G1,G2);
 		randomAlig.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
 		return randomAlig;
@@ -283,25 +292,49 @@ inline ushort SANA::G1RandomUnlockedNode_Fast(){
 }
 
 inline ushort SANA::G1RandomUnlockedNode(){
-	return G1RandomUnlockedNodeDist(gen); // method #3
-//	return G1RandomUnlockedNode_Fast(); Method #2
+    return G1RandomUnlockedNodeDist(gen); // method #3
+            //  return G1RandomUnlockedNode_Fast(); Method #2
 
-// Method #1
-//	ushort node;
-//	do{
-//		node =  G1RandomNode(gen);
-//	}while(G1->isLocked(node));
-//	return node;
+            // Method #1
+            //  ushort node;
+            //  do{
+            //      node =  G1RandomNode(gen);
+            //  }while(G1->isLocked(node));
+            //  return node;
 }
-inline ushort SANA::G2RandomUnlockedNode(){
-	return G2RandomUnlockedNode_Fast(); // Method #2 and #3
 
-//  Method #1
-//	ushort node;
-//	do{
-//		node =  G2RandomUnassignedNode(gen);
-//	}while(G2->isLocked(unassignedNodesG2[node]));
-//	return node;
+// Gives a random unlocked nodes with the same type as source1
+inline ushort SANA::G1RandomUnlockedNode(uint source1){
+    if(!nodesHaveType){
+        return G1RandomUnlockedNodeDist(gen);
+    }
+    else{
+        bool isGene = source1 < (uint) G1->unlockedGeneCount;
+        if(isGene)
+            return G1RandomUnlockedGeneDist(gen);
+        else
+            return G1->unlockedGeneCount + G1RandomUnlockedmiRNADist(gen);
+    }
+}
+inline ushort SANA::G2RandomUnlockedNode(uint target1){
+    if(!nodesHaveType){
+        return G2RandomUnlockedNode_Fast(); // Method #2 and #3
+
+                //  Method #1
+                //  ushort node;
+                //  do{
+                //      node =  G2RandomUnassignedNode(gen);
+                //  }while(G2->isLocked(unassignedNodesG2[node]));
+                //  return node;
+    }
+    else
+    {
+        ushort node;
+        do{
+            node = G2RandomUnlockedNode_Fast(); // gives back unlocked G2 node
+        }while(G2->nodeTypes[target1] != G2->nodeTypes[unassignedNodesG2[node]]);
+        return node;
+    }
 }
 
 inline ushort SANA::G2RandomUnlockedNode_Fast(){
@@ -396,7 +429,7 @@ void SANA::initDataStructures(const Alignment& startA) {
 		}
 	}
 	assert(index == unlockedG1);
-
+	nodesHaveType = G1->hasNodeTypes();
 
 	if (needAligEdges) {
 		aligEdges = startA.numAlignedEdges(*G1, *G2);
@@ -493,11 +526,16 @@ void SANA::performChange() {
 	ushort source = G1RandomUnlockedNode();
 	ushort oldTarget = A[source];
 
-	uint newTargetIndex =  G2RandomUnlockedNode();
+	uint newTargetIndex =  G2RandomUnlockedNode(oldTarget);
 	ushort newTarget = unassignedNodesG2[newTargetIndex];
 
 //	assert(!G1->isLocked(source));
 //	assert(!G2->isLocked(newTarget));
+
+//	bool G1Gene = source < G1->unlockedGeneCount;
+//	bool G2Gene =  G2->nodeTypes[newTarget] == "gene";
+//	assert((G1Gene && G2Gene) || (!G1Gene && !G2Gene));
+
 
 	int newAligEdges = -1; //dummy initialization to shut compiler warnings
 	if (needAligEdges) {
@@ -537,8 +575,24 @@ void SANA::performChange() {
 
 void SANA::performSwap() {
 	ushort source1 =  G1RandomUnlockedNode();
-	ushort source2 =  G1RandomUnlockedNode();
+	ushort source2 =  G1RandomUnlockedNode(source1);
 	ushort target1 = A[source1], target2 = A[source2];
+
+	if(!(source1 >= 0 and source1 < G1->getNumNodes()) || !(source2 >= 0 and source2 < G1->getNumNodes())){
+	    cerr << source1 << "   " << source2 << endl;
+	    cerr << G1->getNumNodes() << endl;
+	}
+//	assert(source1 >= 0 and source1 < G1->getNumNodes());
+//	assert(source2 >= 0 and source2 < G1->getNumNodes());
+//
+//	bool s1Gene = source1 < G1->unlockedGeneCount;
+//    bool s2Gene = source2 < G1->unlockedGeneCount;
+//    if(not((s1Gene && s2Gene) || (!s1Gene && !s2Gene))){
+//        cerr << source1 << " " << source2 << endl;
+//        cerr << G1->unlockedGeneCount << "   " << G1->getNumNodes() << endl;
+//    }
+//    assert((s1Gene && s2Gene) || (!s1Gene && !s2Gene));
+
 
 	int newAligEdges = -1; //dummy initialization to shut compiler warnings
 	if (needAligEdges) {
