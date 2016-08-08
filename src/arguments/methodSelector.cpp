@@ -74,7 +74,8 @@ Method* initDijkstra(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinat
     if(delta < 0.0 || delta > 1.0){
 	throw runtime_error("generic objective function not supported for HubAlign"); 
     }
-    return new Dijkstra(&G1, &G2, &M, delta);
+    // return new Dijkstra(&G1, &G2, &M, delta); Was getting compile errors because constructor does not exist
+    return new Dijkstra(&G1, &G2, &M);
 }
 
 Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {

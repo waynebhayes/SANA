@@ -2,6 +2,7 @@
 #define GRAPH_H
 #include <string>
 #include <vector>
+#include<set>
 #include <utility>
 #include <unordered_set>
 #include "utils/utils.hpp"
@@ -100,9 +101,21 @@ public:
     int getLockedCount();
 
     map<ushort, ushort> getLocking_ReIndexMap() const;
-    map<ushort, ushort> getLocking_ReverseReIndexMap() const;
+    map<ushort, ushort> getNodeTypes_ReIndexMap() const;
 
     void reIndexGraph(map<ushort, ushort> reIndexMap);  // Changes the node indexes according to the map
+
+    // nodes-have-types
+    void setNodeTypes(set<string> genes, set<string> miRNAs);
+    string getNodeType(uint i);
+    bool hasNodeTypes();
+
+    // nodes-have-types -- TODO make them private later
+    vector<string> nodeTypes;
+    uint geneCount = 0;
+    uint miRNACount = 0;
+    int unlockedGeneCount = -1;
+    int unlockedmiRNACount = -1;
 
 private:
 
@@ -122,6 +135,7 @@ private:
     vector<string> lockedTo;  // name of node we lock to in other graph
     int lockedCount = 0;
 
+    void updateUnlockedGeneCount();
 
     void initConnectedComponents();
 

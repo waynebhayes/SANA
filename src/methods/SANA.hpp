@@ -49,15 +49,19 @@ private:
     vector<vector<ushort> > G2AdjLists;
 
     vector<ushort> unLockedNodesG1;
+    bool nodesHaveType = false;
     //random number generation
     mt19937 gen;
     uniform_int_distribution<> G1RandomNode;
     uniform_int_distribution<> G1RandomUnlockedNodeDist;
     uniform_int_distribution<> G2RandomUnassignedNode;
     uniform_real_distribution<> randomReal;
+    uniform_int_distribution<> G1RandomUnlockedGeneDist;
+    uniform_int_distribution<> G1RandomUnlockedmiRNADist;
     ushort G1RandomUnlockedNode();
+    ushort G1RandomUnlockedNode(uint source1); // used in nodes-have-type because
     ushort G1RandomUnlockedNode_Fast();
-    ushort G2RandomUnlockedNode();
+    ushort G2RandomUnlockedNode(uint target1);
     ushort G2RandomUnlockedNode_Fast();
 
     //temperature schedule
@@ -96,7 +100,6 @@ private:
     double changeProbability;
     vector<bool> assignedNodesG2;
     vector<ushort> unassignedNodesG2;
-//    vector<ushort> unLockedNodesG1;  // Don't add it here causes "corrupted double-linked list"
     vector<ushort> A;
     //initializes all the necessary data structures for a new run
     void initDataStructures(const Alignment& startA);

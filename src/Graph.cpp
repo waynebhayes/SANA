@@ -71,7 +71,8 @@ Graph::Graph() :
     adjLists(vector<vector<ushort> > (0)),
     lockedList(vector<bool> (0)),
     lockedTo(vector<string>(0)),
-    lockedCount(0)
+    lockedCount(0),
+    nodeTypes(vector<string>(0))
     {}
 
 Graph::Graph(const Graph& G) {
@@ -80,8 +81,11 @@ Graph::Graph(const Graph& G) {
     adjLists = vector<vector<ushort> > (G.adjLists);
     connectedComponents = vector<vector<ushort> > (G.connectedComponents);
     lockedList = vector<bool> (G.lockedList);
+    nodeTypes = vector<string> (G.nodeTypes);
     lockedTo = vector<string> (G.lockedTo);
     lockedCount = G.lockedCount;
+    geneCount = G.geneCount;
+    miRNACount = G.miRNACount;
 }
 
 Graph::Graph(uint n, const vector<vector<ushort> > edges) {
@@ -92,6 +96,8 @@ Graph::Graph(uint n, const vector<vector<ushort> > edges) {
     lockedList = vector<bool> (n, false);
     lockedTo = vector<string> (n, "");
     lockedCount = 0;
+
+    nodeTypes = vector<string> (n, "");
 
     //only add edges preserved by alignment
     for (const auto& edge: edges) {
@@ -179,6 +185,9 @@ void Graph::loadGwFile(const string& fileName) {
     edgeList = vector<vector<ushort> > (m, vector<ushort>(2));
     lockedList = vector<bool> (n, false);
     lockedTo = vector<string> (n, "");
+    nodeTypes = vector<string> (n, "");
+
+    geneCount = miRNACount = 0;
 
     //read edges
     for (int i = 0; i < m; i++) {
@@ -244,6 +253,7 @@ void Graph::multGwFile(const string& fileName, uint path) {
     //edgeList = vector<vector<ushort> > (m, vector<ushort>(2));
     lockedList = vector<bool> (n, false);
     lockedTo = vector<string> (n, "");
+    nodeTypes = vector<string> (n, "");
 
     //read edges
     for (int i = 0; i < m; i++) {
@@ -1101,6 +1111,7 @@ void Graph::setLockedList(vector<string>& nodes, vector<string> & pairs){
 	lockedList = locked;
 	lockedTo = lockPairs;
 	lockedCount = nodes.size();
+	updateUnlockedGeneCount();
 }
 
 vector<bool>& Graph::getLockedList(){
@@ -1141,13 +1152,43 @@ map<ushort, ushort> Graph::getLocking_ReIndexMap() const{
 }
 
 
-map<ushort, ushort> Graph::getLocking_ReverseReIndexMap() const {
-    map<ushort,ushort> reverse = getLocking_ReIndexMap();
-    map<ushort,ushort> res;
-    for (const auto &nameIndexPair : reverse ) {
-        res[nameIndexPair.second] = nameIndexPair.first;
+/** This is used for -nodes-have-types,
+ *   -- it also support locking so if both locking and  nodes-have-types is turned on this reIndexing is used
+ *
+ *   Reindexing as following order:
+ *         gene, miRNA, Locked gene or miRNA
+ *
+ */
+map<ushort, ushort> Graph::getNodeTypes_ReIndexMap() const{
+    map<ushort, ushort> result;
+    int n = getNumNodes();
+    int unlocked_gene_count = 0;
+    int unlocked_miRNA_count = 0;
+    for(int i=0;i<n;i++){
+        if(!isLocked(i)){
+            if(nodeTypes[i] == "gene")
+                unlocked_gene_count++;
+            else if (nodeTypes[i] == "miRNA")
+                unlocked_miRNA_count++;
+        }
     }
-    return res;
+    assert (unlocked_gene_count + unlocked_miRNA_count == n - lockedCount);
+
+    int lockedIndex = n-1;
+    int unlocked_gene_index = 0;
+    int unlocked_miRNA_index = unlocked_gene_count;
+    for(int i=0;i<n;i++){
+        if(isLocked(i))
+            result[i] = lockedIndex--;
+        else if(nodeTypes[i] == "gene")
+            result[i] = unlocked_gene_index++;
+        else if(nodeTypes[i] == "miRNA")
+            result[i] = unlocked_miRNA_index++;
+    }
+    assert(lockedIndex == n - lockedCount - 1
+         and unlocked_gene_index == unlocked_gene_count
+         and unlocked_miRNA_index == n - lockedCount );
+    return result;
 }
 
 void Graph::reIndexGraph(map<ushort, ushort> reIndexMap){
@@ -1186,8 +1227,47 @@ void Graph::reIndexGraph(map<ushort, ushort> reIndexMap){
 	initConnectedComponents();
 }
 
+void Graph::setNodeTypes(set<string> genes, set<string> miRNAs){
+    vector<string> names = this->getNodeNames();
 
+    this->geneCount = genes.size();
+    this->miRNACount = miRNAs.size();
 
+    for(uint i=0; i < names.size(); i++){
+        if(genes.find(names[i]) != genes.end()){
+            nodeTypes[i] = "gene";
+        }
+        else if(miRNAs.find(names[i]) != miRNAs.end()){
+            nodeTypes[i] = "miRNA";
+        }
+        else{
+            // THIS should not happen
+            cerr << "No node type for " << names[i] << " (index= " << i << " )" << endl;
+            nodeTypes[i] = "none";
+        }
+    }
+    updateUnlockedGeneCount();
+}
 
+bool Graph::hasNodeTypes(){
+    return geneCount > 0 || miRNACount > 0;
+}
 
+string Graph::getNodeType(uint i){
+    return nodeTypes[i];
+}
+
+void Graph::updateUnlockedGeneCount(){
+   unlockedGeneCount = 0;
+   unlockedmiRNACount = 0;
+   int n = getNumNodes();
+   for(int i=0;i<n;i++){
+       if(!isLocked(i)){
+           if(nodeTypes[i] == "gene")
+               unlockedGeneCount++;
+           else if(nodeTypes[i] == "miRNA")
+               unlockedmiRNACount++;
+       }
+   }
+}
 

@@ -73,10 +73,12 @@ vector<string> boolArgs = {
         //not actually sent to the cluster, only printed
 "-collect", //for experiment mode, aggregate all the results
             //(use when all runs have finished)
-"-updatecsv" //for expermient mode, if the data has already
+"-updatecsv", //for expermient mode, if the data has already
              //been collected, instead of re-evaluating all the
              //alignments it loads up the data and updates the
              //csv output file
+"-nodes-have-types" // Used when the nodes in inpupt graph have types
+                    // Added for handling gene-miRNA networks, currently only functional with these networks
 };
 
 vector<string> vectorArgs = {

@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <set>
 
 #include "graphLoader.hpp"
 #include "../utils/Timer.hpp"
@@ -126,13 +127,50 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 		G1 = Graph::loadGraph(g1Name);
 		G2 = Graph::loadGraph(g2Name);
 	}
-
 	else{
-
 		G1 = Graph::multGraph(g1Name, p1);
 		G2 = Graph::multGraph(g2Name, p2);
-
 	}
+
+	// For "-nodes-have-types"
+	if(args.bools["-nodes-have-types"]){
+	    cerr << "Initializing the node types" << endl;
+	    if(!fileExists(fg1)){
+	        cerr << "fg1 (" << fg1 << ") file does not exists!" << endl;
+	        throw runtime_error("fg1 (" + fg1 + ") file does not exists!");
+	    }
+	    if(!fileExists(fg1)){
+	        cerr << "fg2 (" << fg2 << ") file does not exists!" << endl;
+	        throw runtime_error("fg1 (" + fg2 + ") file does not exists!");
+	    }
+
+	    set<string> genesG1, genesG2;
+	    set<string> miRNAsG1, miRNAsG2;
+
+	    ifstream ifs1(fg1.c_str());
+	    string node;
+	    // We have edgelists, first column gene, second is miRNA
+	    // GENE miRNA
+	    while(ifs1 >> node){
+	         genesG1.insert(node);
+	         ifs1 >> node;
+	         miRNAsG1.insert(node);
+	    }
+
+	    // Same for fg2
+	    ifstream ifs2(fg2.c_str());
+	    while(ifs2 >> node){
+	        genesG2.insert(node);
+	        ifs2 >> node;
+	        miRNAsG2.insert(node);
+	    }
+
+	    G1.setNodeTypes(genesG1, miRNAsG1);
+	    G2.setNodeTypes(genesG2, miRNAsG2);
+	}
+
+
+
 
 	// Getting Valid locks
 	if(lockFile != "")
@@ -163,7 +201,13 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	G2.setLockedList(validLocksG2, validLocksG1);
 
 	// Method #3 of locking
-	G1.reIndexGraph(G1.getLocking_ReIndexMap());
+	if(args.bools["-nodes-have-types"]){
+	    G1.reIndexGraph(G1.getNodeTypes_ReIndexMap());
+	}
+	else{
+	    G1.reIndexGraph(G1.getLocking_ReIndexMap());
+	}
+
 
 	double rewiredFraction = args.doubles["-rewire"];
 	if (rewiredFraction > 0) {
