@@ -35,11 +35,6 @@ public:
 
 class SkipList{
 public:
-  /*
-  SkipList();
-  SkipList(float delta);
-  SkipList(float delta, bool setMaxHeap);
-  */
   SkipList(float delta, bool setMaxHeap,
 	   std::unordered_set<ushort> & lex, std::unordered_set<ushort> & rex);
   ~SkipList();

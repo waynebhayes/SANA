@@ -23,7 +23,7 @@ using namespace std;
 class Dijkstra: public Method {
 
 public:
-  Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC);
+  Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC, double delta);
 	
   ~Dijkstra();
 
@@ -40,8 +40,8 @@ private:
   uint n1;
   uint n2;
 
-  vector<vector<bool> > G1AdjMatrix;
-  vector<vector<bool> > G2AdjMatrix;
+  //vector<vector<bool> > G1AdjMatrix;
+  //vector<vector<bool> > G2AdjMatrix;
   vector<vector<ushort> > G1AdjLists;
   vector<vector<ushort> > G2AdjLists;
 

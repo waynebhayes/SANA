@@ -4,10 +4,11 @@
 
 using get_time = std::chrono::steady_clock;
 
-Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC) :
+Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC, double d) :
   Method(G1, G2, "Dijkstra_"+MC->toString()),
+  delta(d),
   //delta(0.00),
-  delta(0.15 + EPSILON), 
+  //delta(0.05 + EPSILON), 
   seed_queue(delta, true, G1_exclude, G2_exclude), 
   neighbor_queue(delta, true, G1_exclude, G2_exclude),
   nodes_aligned(0)
@@ -23,8 +24,8 @@ Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC) :
   //that can be aligned
   max_nodes = n1 < n2 ? n1 : n2;
 	
-  G1->getAdjMatrix(G1AdjMatrix);
-  G2->getAdjMatrix(G2AdjMatrix);
+  //G1->getAdjMatrix(G1AdjMatrix);
+  //G2->getAdjMatrix(G2AdjMatrix);
   G1->getAdjLists(G1AdjLists);
   G2->getAdjLists(G2AdjLists);
 
@@ -39,13 +40,14 @@ Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC) :
 void Dijkstra::make_seed_queue(){
   std::string fname = G1->getName() + G2->getName() + ".dijkstra";
   std::cout << "graph " << fname << std::endl;
-  /*
+  
   if(seed_queue.deserialize(fname)){
     std::cout << "loading from file" << std::endl;
     return;
   }
-  */
+  
   std::cout << "make seed queue begin" << std::endl;
+  std::cout << "delta = " << this->delta << std::endl;
   auto start = get_time::now();
   /*
   uint block = 32;
@@ -89,8 +91,9 @@ void Dijkstra::make_seed_queue(){
   auto diff = end - start;
   std::cout << "time = (" << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count()<< "ms)" << std::endl;
   seed_queue.perf();
-  //seed_queue.serialize(fname);
-  //std::cout << "serialize done" << std::endl;
+  seed_queue.serialize(fname);
+  std::cout << "serialize done" << std::endl;
+  exit(0);
 }
 
 /*
@@ -106,7 +109,7 @@ void Dijkstra::make_seed_queue(){
 
 std::pair <ushort, ushort> Dijkstra::best_pair(SkipList & pq) throw(QueueEmptyException){
   //std::cout << "best pair" << std::endl;
-  return pq.pop_uniform();
+  return pq.pop_distr();
   /*
   std::pair <ushort, ushort> curr_pair;
   do{
