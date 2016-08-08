@@ -329,9 +329,6 @@ Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
                 G2_UnlockedRNAIndexes.push_back(i);
         }
 
-        cerr << G2_UnlockedGeneIndexes.size() << endl;
-        cerr << G2_UnlockedRNAIndexes.size() << endl;
-
         vector<ushort> A(n1, n2); //n2 used to note invalid value
         for (ushort i = 0; i < n1; i++) {
             // Aligns all the locked nodes together

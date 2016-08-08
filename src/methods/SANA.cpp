@@ -578,10 +578,10 @@ void SANA::performSwap() {
 	ushort source2 =  G1RandomUnlockedNode(source1);
 	ushort target1 = A[source1], target2 = A[source2];
 
-	if(!(source1 >= 0 and source1 < G1->getNumNodes()) || !(source2 >= 0 and source2 < G1->getNumNodes())){
-	    cerr << source1 << "   " << source2 << endl;
-	    cerr << G1->getNumNodes() << endl;
-	}
+//	if(!(source1 >= 0 and source1 < G1->getNumNodes()) || !(source2 >= 0 and source2 < G1->getNumNodes())){
+//	    cerr << source1 << "   " << source2 << endl;
+//	    cerr << G1->getNumNodes() << endl;
+//	}
 //	assert(source1 >= 0 and source1 < G1->getNumNodes());
 //	assert(source2 >= 0 and source2 < G1->getNumNodes());
 //
