@@ -1,6 +1,3 @@
-#include <vector>
-#include <iostream>
-#include <sstream>
 #include "GREATWrapper.hpp"
 
 using namespace std;

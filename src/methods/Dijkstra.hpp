@@ -9,14 +9,14 @@
 #include <algorithm>
 #include <random>
 
-#include "../utils/SkipList.hpp"
+
 #include <chrono>
 
 #include "Method.hpp"
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
-#include "../utils/randomSeed.hpp"
+#include "../utils/SkipList.hpp"
 
 using namespace std;
 
@@ -71,7 +71,7 @@ private:
   std::pair <ushort, ushort> get_seed(Graph* G1, Graph* G2);
   std::pair <ushort, ushort> best_pair(SkipList & pq) throw(QueueEmptyException);
   void update_neighbors(std::pair <ushort, ushort> & seed_pair);
-  void best_neighbors(vector<ushort> & G1_neighbors, vector<ushort> & G2_neighbors);
+  void best_neighbors(std::pair <ushort, ushort> & seed_pair, vector<ushort> & G1_neighbors, vector<ushort> & G2_neighbors);
   vector<ushort> exclude_nodes(vector<ushort> & v_in, std::unordered_set<ushort> & exclusion_set);
 
 };

@@ -1,10 +1,6 @@
 #ifndef MAGNAWRAPPER_HPP
 #define MAGNAWRAPPER_HPP
 
-#include <string>
-#include <vector>
-#include <iostream>
-#include <string>
 #include "WrappedMethod.hpp"
 using namespace std;
 

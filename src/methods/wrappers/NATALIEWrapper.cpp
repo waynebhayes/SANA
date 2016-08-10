@@ -1,6 +1,3 @@
-#include <vector>
-#include <iostream>
-#include <sstream>
 #include "NATALIEWrapper.hpp"
 
 using namespace std;

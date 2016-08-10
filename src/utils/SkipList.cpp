@@ -417,7 +417,7 @@ bool SkipList::deserialize(std::string fname){
   file >> this->length;
   std::cout << "length " << this->length << std::endl;
   while(file >> sim >> n1 >> n2 >> height){
-    std::cout << "node" << sim << "\t" << n1 << " " << n2 << " " << height << std::endl; 
+    //std::cout << "node" << sim << "\t" << n1 << " " << n2 << " " << height << std::endl; 
     SkipNode * curr = new SkipNode(height, sim, std::make_pair(n1, n2));
     for(int i = 0; i < height; ++i){
       update[i]->forward[i] = curr;

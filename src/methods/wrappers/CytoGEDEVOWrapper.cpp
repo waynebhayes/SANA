@@ -1,6 +1,3 @@
-#include <vector>
-#include <iostream>
-#include <sstream>
 #include "CytoGEDEVOWrapper.hpp"
 
 using namespace std;

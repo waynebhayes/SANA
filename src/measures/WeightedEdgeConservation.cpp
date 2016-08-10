@@ -1,9 +1,4 @@
 #include "WeightedEdgeConservation.hpp"
-#include <vector>
-#include <iostream>
-#include "Measure.hpp"
-#include "localMeasures/LocalMeasure.hpp"
-#include "../Graph.hpp"
 
 WeightedEdgeConservation::WeightedEdgeConservation(Graph* G1, Graph* G2, LocalMeasure* m) : Measure(G1, G2, "wec") {
     nodeSim = m;

@@ -1,13 +1,4 @@
 #include "SANAPISWAPWrapper.hpp"
-#include "../SANA.hpp"
-#include "PISwapWrapper.hpp"
-#include "../../arguments/methodSelector.hpp"
-#include "../../arguments/ArgumentParser.hpp"
-#include "../../report.hpp"
-
-#include <iostream>
-#include <string>
-#include <cassert>
 
 using namespace std;
 

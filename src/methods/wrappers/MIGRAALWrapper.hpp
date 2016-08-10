@@ -1,9 +1,6 @@
 #ifndef MIGRAALWRAPPER_HPP
 #define MIGRAALWRAPPER_HPP
 
-#include <string>
-#include <vector>
-#include <iostream>
 #include "WrappedMethod.hpp"
 using namespace std;
 
