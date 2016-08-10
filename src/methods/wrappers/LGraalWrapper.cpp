@@ -1,7 +1,3 @@
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include "LGraalWrapper.hpp"
 #include "../../measures/localMeasures/Sequence.hpp"
 using namespace std;

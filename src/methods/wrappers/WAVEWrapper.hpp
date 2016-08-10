@@ -1,9 +1,6 @@
 #ifndef WAVEWRAPPER_HPP
 #define WAVEWRAPPER_HPP
 
-#include <string>
-#include <vector>
-#include <iostream>
 #include "WrappedMethod.hpp"
 using namespace std;
 

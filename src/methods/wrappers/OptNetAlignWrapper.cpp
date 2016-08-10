@@ -1,6 +1,3 @@
-#include <vector>
-#include <iostream>
-#include <sstream>
 #include "OptNetAlignWrapper.hpp"
 
 using namespace std;

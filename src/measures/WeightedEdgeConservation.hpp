@@ -1,7 +1,10 @@
 #ifndef WEIGHTEDEDGECONSERVATION_HPP
 #define WEIGHTEDEDGECONSERVATION_HPP
+#include <vector>
+#include <iostream>
 #include "Measure.hpp"
 #include "localMeasures/LocalMeasure.hpp"
+#include "../Graph.hpp"
 
 class WeightedEdgeConservation: public Measure {
 public:
