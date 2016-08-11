@@ -7,6 +7,8 @@
 
 using namespace std;
 
+//see the header file for description of each function
+
 vector<bool> GraphetteOrbit::bits_vector(int decimal_number, int num_nodes)
 {
 	int num_possible_edges = (num_nodes*(num_nodes-1)) / 2;
@@ -76,6 +78,7 @@ void GraphetteOrbit::getCycles(std::vector<uint>& permutation, std::vector<uint>
 	vector<bool> visited(permutation.size(), false);
 	for(uint i = 0; i < permutation.size(); i++){
 		if(not visited[i]){
+			//finding out each cycle at a time
 			vector<uint> cycle;
 			followTrail(permutation, cycle, i, i, visited);
 			uint minOrbit = orbit[cycle[0]];
@@ -96,18 +99,26 @@ void GraphetteOrbit::followTrail(std::vector<uint>& permutation, std::vector<uin
 }
 
 void GraphetteOrbit::getOrbits(int num_nodes, int decimal_number, vector<vector<uint> >& saveOrbits){
+	
+	//setting up the AdjMatrix representation for the graphette
 	vector<bool> bits = bits_vector(decimal_number, num_nodes);
 	vector<bool> column(num_nodes, 0);
 	vector<vector<bool> > AdjMatrix(num_nodes, column);
 	GraphetteOrbit::setAdjMatrix(bits, AdjMatrix);
 	vector<uint> permutation, orbit;
+	
+	//initially,the permutation is (0, 1, ..., num_nodes-1)
+	//and each node is in its own orbit. we'll merge orbits later 
 	for(int i = 0; i < num_nodes; i++){
 		permutation.push_back(i);
 		orbit.push_back(i);
 	}
 	while( next_permutation(permutation.begin(), permutation.end()) ){
+		
+		//Just a speed up; ruling out searching into unnecessary permutations
 		if(not GraphetteOrbit::suitable(permutation, AdjMatrix)) continue;
 
+		//setting up a new matrix to apply the permutation
 		vector<vector<bool> > NewAdjMatrix(num_nodes, column); //To store AdjMatrix after permutation
 		for(uint i = 0; i < AdjMatrix.size(); i++){
 			for(int j = i+1; j < AdjMatrix[i].size(); j++){
@@ -117,11 +128,18 @@ void GraphetteOrbit::getOrbits(int num_nodes, int decimal_number, vector<vector<
 			}
 		}
 		vector<bool> nbits;
+
+		//determining the decimal representation of the graphette
+		//after applying the permutation
+		//if the decimal representation is same as the original,
+		//then we have found an automorphism
 		GraphetteOrbit::getBits(nbits, NewAdjMatrix);
 		int ndecimal = GraphetteOrbit::toDecimal(nbits);
 		if(decimal_number == ndecimal)
+			//determining and applying permutation cycles of this permutation
 			GraphetteOrbit::getCycles(permutation, orbit);
 	}
+	//saving orbits
 	saveOrbits.clear();
 	for(int orbitId = 0; orbitId < num_nodes; orbitId++){
 		vector<uint> temp;
