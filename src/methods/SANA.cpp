@@ -17,6 +17,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
+	
 
 #include "SANA.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
@@ -25,6 +26,8 @@
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
 #include "../utils/NormalDistribution.hpp"
+
+#define FIXED_DECAY_SCHEDULE 1
 using namespace std;
 
 SANA::SANA(Graph* G1, Graph* G2,
@@ -50,8 +53,6 @@ SANA::SANA(Graph* G1, Graph* G2,
 	uint G1UnLockedCount = n1 - G1->getLockedCount() -1;
 	G1RandomUnlockedNodeDist = uniform_int_distribution<>(0, G1UnLockedCount);
 	G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
-	G1RandomUnlockedGeneDist = uniform_int_distribution<>(0, G1->unlockedGeneCount - 1);
-	G1RandomUnlockedmiRNADist = uniform_int_distribution<>(0, G1->unlockedmiRNACount - 1);
 	randomReal = uniform_real_distribution<>(0, 1);
 
 
@@ -60,6 +61,13 @@ SANA::SANA(Graph* G1, Graph* G2,
 	this->TDecay = TDecay;
 	minutes = t;
 	initializedIterPerSecond = false;
+	vector<double> tau {0.99, 0.985, 0.96, 0.955, 0.95, 0.942, 0.939, 0.934, 0.928, 0.92, 0.918, 0.911, 0.906, 0.901, 0.896,
+			   0.891, 0.885, 0.879, 0.873, 0.867, 0.86, 0.853, 0.846, 0.838, 0.83, 0.822, 0.81, 0.804, 0.794, 0.784,
+			   0.774, 0.763, 0.752, 0.741, 0.728, 0.716, 0.703, 0.69, 0.676, 0.662, 0.647, 0.632, 0.616, 0.6, 0.584,
+			   0.567, 0.549, 0.531, 0.514, 0.495, 0.477, 0.458, 0.438, 0.412, 0.4, 0.381, 0.361, 0.342, 0.322, 0.303, 
+			   0.284, 0.264, 0.246, 0.228, 0.21, 0.193, 0.177, 0.161, 0.145, 0.131, 0.117, 0.104, 0.092, 0.081, 0.07, 
+		       0.061, 0.052, 0.044, 0.0375, 0.031, 0.026, 0.0212, 0.0172, 0.0138, 0.0109, 0.0085, 0.0065, 0.005, 0.0037, 
+			   0.0027, 0.0019, 0.0014, 0.0005, 0.0001, 0.0000739, 0.0000342, 0.000008, 0.0000054, 0.000000739, 0.00000000359, 0.000000000734};
 
 	//data structures for the solution space search
 	uint ramificationChange = n1*(n2-n1);
@@ -162,8 +170,6 @@ SANA::SANA(Graph* G1, Graph* G2,
 	uint G1UnLockedCount = n1 - G1->getLockedCount() -1;
 	G1RandomUnlockedNodeDist = uniform_int_distribution<>(0, G1UnLockedCount);
 	G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
-    G1RandomUnlockedGeneDist = uniform_int_distribution<>(0, G1->unlockedGeneCount - 1);
-    G1RandomUnlockedmiRNADist = uniform_int_distribution<>(0, G1->unlockedmiRNACount - 1);
 	randomReal = uniform_real_distribution<>(0, 1);
 
 
@@ -256,12 +262,7 @@ SANA::~SANA() {
 
 
 Alignment SANA::getStartingAlignment(){
-    if(G1->hasNodeTypes()){
-        Alignment randomAlig = Alignment::randomAlignmentWithNodeType(G1,G2);
-        randomAlig.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
-        return randomAlig;
-    }
-    else if(lockFileName != ""){
+	if(lockFileName != ""){
 		Alignment randomAlig = Alignment::randomAlignmentWithLocking(G1,G2);
 		randomAlig.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
 		return randomAlig;
@@ -292,49 +293,25 @@ inline ushort SANA::G1RandomUnlockedNode_Fast(){
 }
 
 inline ushort SANA::G1RandomUnlockedNode(){
-    return G1RandomUnlockedNodeDist(gen); // method #3
-            //  return G1RandomUnlockedNode_Fast(); Method #2
+	return G1RandomUnlockedNodeDist(gen); // method #3
+//	return G1RandomUnlockedNode_Fast(); Method #2
 
-            // Method #1
-            //  ushort node;
-            //  do{
-            //      node =  G1RandomNode(gen);
-            //  }while(G1->isLocked(node));
-            //  return node;
+// Method #1
+//	ushort node;
+//	do{
+//		node =  G1RandomNode(gen);
+//	}while(G1->isLocked(node));
+//	return node;
 }
+inline ushort SANA::G2RandomUnlockedNode(){
+	return G2RandomUnlockedNode_Fast(); // Method #2 and #3
 
-// Gives a random unlocked nodes with the same type as source1
-inline ushort SANA::G1RandomUnlockedNode(uint source1){
-    if(!nodesHaveType){
-        return G1RandomUnlockedNodeDist(gen);
-    }
-    else{
-        bool isGene = source1 < (uint) G1->unlockedGeneCount;
-        if(isGene)
-            return G1RandomUnlockedGeneDist(gen);
-        else
-            return G1->unlockedGeneCount + G1RandomUnlockedmiRNADist(gen);
-    }
-}
-inline ushort SANA::G2RandomUnlockedNode(uint target1){
-    if(!nodesHaveType){
-        return G2RandomUnlockedNode_Fast(); // Method #2 and #3
-
-                //  Method #1
-                //  ushort node;
-                //  do{
-                //      node =  G2RandomUnassignedNode(gen);
-                //  }while(G2->isLocked(unassignedNodesG2[node]));
-                //  return node;
-    }
-    else
-    {
-        ushort node;
-        do{
-            node = G2RandomUnlockedNode_Fast(); // gives back unlocked G2 node
-        }while(G2->nodeTypes[target1] != G2->nodeTypes[unassignedNodesG2[node]]);
-        return node;
-    }
+//  Method #1
+//	ushort node;
+//	do{
+//		node =  G2RandomUnassignedNode(gen);
+//	}while(G2->isLocked(unassignedNodesG2[node]));
+//	return node;
 }
 
 inline ushort SANA::G2RandomUnlockedNode_Fast(){
@@ -429,7 +406,7 @@ void SANA::initDataStructures(const Alignment& startA) {
 		}
 	}
 	assert(index == unlockedG1);
-	nodesHaveType = G1->hasNodeTypes();
+
 
 	if (needAligEdges) {
 		aligEdges = startA.numAlignedEdges(*G1, *G2);
@@ -526,16 +503,11 @@ void SANA::performChange() {
 	ushort source = G1RandomUnlockedNode();
 	ushort oldTarget = A[source];
 
-	uint newTargetIndex =  G2RandomUnlockedNode(oldTarget);
+	uint newTargetIndex =  G2RandomUnlockedNode();
 	ushort newTarget = unassignedNodesG2[newTargetIndex];
 
 //	assert(!G1->isLocked(source));
 //	assert(!G2->isLocked(newTarget));
-
-//	bool G1Gene = source < G1->unlockedGeneCount;
-//	bool G2Gene =  G2->nodeTypes[newTarget] == "gene";
-//	assert((G1Gene && G2Gene) || (!G1Gene && !G2Gene));
-
 
 	int newAligEdges = -1; //dummy initialization to shut compiler warnings
 	if (needAligEdges) {
@@ -575,24 +547,8 @@ void SANA::performChange() {
 
 void SANA::performSwap() {
 	ushort source1 =  G1RandomUnlockedNode();
-	ushort source2 =  G1RandomUnlockedNode(source1);
+	ushort source2 =  G1RandomUnlockedNode();
 	ushort target1 = A[source1], target2 = A[source2];
-
-//	if(!(source1 >= 0 and source1 < G1->getNumNodes()) || !(source2 >= 0 and source2 < G1->getNumNodes())){
-//	    cerr << source1 << "   " << source2 << endl;
-//	    cerr << G1->getNumNodes() << endl;
-//	}
-//	assert(source1 >= 0 and source1 < G1->getNumNodes());
-//	assert(source2 >= 0 and source2 < G1->getNumNodes());
-//
-//	bool s1Gene = source1 < G1->unlockedGeneCount;
-//    bool s2Gene = source2 < G1->unlockedGeneCount;
-//    if(not((s1Gene && s2Gene) || (!s1Gene && !s2Gene))){
-//        cerr << source1 << " " << source2 << endl;
-//        cerr << G1->unlockedGeneCount << "   " << G1->getNumNodes() << endl;
-//    }
-//    assert((s1Gene && s2Gene) || (!s1Gene && !s2Gene));
-
 
 	int newAligEdges = -1; //dummy initialization to shut compiler warnings
 	if (needAligEdges) {
@@ -1079,75 +1035,123 @@ vector<double> SANA::energyIncSample() {
 }
 
 double SANA::searchTDecay(double TInitial, double minutes) {
+	
+	if (FIXED_DECAY_SCHEDULE){
+		// tau is a vector holding our "ideal" decay values at (tau is time rescaled to the interval [0,1])
+		// after finding the value of tau, if the current P(bad) is significantly larger or smaller than tau, then
+		// we compute the geometric mean of tau and the current TDecay and set TDecay to that value 
+		double runTime_to_tau = (timer.elapsed()/minutes*60) * 100; 
+		runTime_to_tau = trunc(runTime_to_tau);
+		if (iterationCount == 0 || abs(acceptingProbability(avgEnergyInc, T) - tau[runTime_to_tau] <= .05)) {
+			double lambda = (log(pow(10.0, -6.5) / TInitial)) / -minutes; 
+			return lambda;
+		} else {
+			if (runTime_to_tau >= 1)
+				this->TDecay = sqrt((this->TDecay)*(tau[101])); 
+			else	
+				this->TDecay = sqrt((this->TDecay)*(tau[runTime_to_tau]));
+			return 1.0; 
+		}
+	} 
+	
+	else {
+	
+		vector<double> EIncs = energyIncSample();
+		cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
-	vector<double> EIncs = energyIncSample();
-	cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
+		//find the temperature epsilon such that the expected number of these energy samples accepted is 1
+		//by bisection, since the expected number is monotically increasing in epsilon
 
-	//find the temperature epsilon such that the expected number of these energy samples accepted is 1
-	//by bisection, since the expected number is monotically increasing in epsilon
+		//upper bound and lower bound of x
+		uint N = EIncs.size();
+		double ESum = vectorSum(EIncs);
+		double EMin = vectorMin(EIncs);
+		double EMax = vectorMax(EIncs);
+		double x_left = abs(EMax)/log(N);
+		double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
+		cerr << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
 
-	//upper bound and lower bound of x
-	uint N = EIncs.size();
-	double ESum = vectorSum(EIncs);
-	double EMin = vectorMin(EIncs);
-	double EMax = vectorMax(EIncs);
-	double x_left = abs(EMax)/log(N);
-	double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
-	cerr << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
+		const uint NUM_ITER = 100;
+		for (uint i = 0; i < NUM_ITER; i++) {
+			double x_mid = (x_left + x_right)/2;
+			double y = expectedNumAccEInc(x_mid, EIncs);
+			if (y < 1) x_left = x_mid;
+			else if (y > 1) x_right = x_mid;
+			else break;
+		}
 
-	const uint NUM_ITER = 100;
-	for (uint i = 0; i < NUM_ITER; i++) {
-		double x_mid = (x_left + x_right)/2;
-		double y = expectedNumAccEInc(x_mid, EIncs);
-		if (y < 1) x_left = x_mid;
-		else if (y > 1) x_right = x_mid;
-		else break;
+		double epsilon = (x_left + x_right)/2;
+		cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
+		cerr << "Final epsilon: " << epsilon << endl;
+		double iter_t = minutes*60*getIterPerSecond();
+
+		double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
+		
+		cerr << "Final T_decay: " << lambda << endl;
+		
+		return lambda;
 	}
-
-	double epsilon = (x_left + x_right)/2;
-	cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
-	cerr << "Final epsilon: " << epsilon << endl;
-	double iter_t = minutes*60*getIterPerSecond();
-
-	double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
-	cerr << "Final T_decay: " << lambda << endl;
-	return lambda;
+	
 }
 
 double SANA::searchTDecay(double TInitial, uint iterations) {
+	
+	
+	if (FIXED_DECAY_SCHEDULE){
+		// tau is a vector holding our "ideal" decay values at (tau is time rescaled to the interval [0,1])
+		// after finding the value of tau, if the current P(bad) is significantly larger or smaller than tau, then
+		// we compute the geometric mean of tau and the current TDecay and set TDecay to that value 
+		double runTime_to_tau = (timer.elapsed()/minutes*60) * 100; 
+		runTime_to_tau = trunc(runTime_to_tau);
+		if (iterationCount == 0 || abs(acceptingProbability(avgEnergyInc, T) - tau[runTime_to_tau] <= .05)) {
+			double lambda = (log(pow(10.0, -6.5) / TInitial)) / -minutes; 
+			return lambda;
+		} else {
+			if (runTime_to_tau >= 1)
+				this->TDecay = sqrt((this->TDecay)*(tau[101])); 
+			else	
+				this->TDecay = sqrt((this->TDecay)*(tau[runTime_to_tau]));
+			return 1.0; 
+		}
+	} 
+	
+	else{
+		vector<double> EIncs = energyIncSample();
+		cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
-	vector<double> EIncs = energyIncSample();
-	cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
+		//find the temperature epsilon such that the expected number of these energy samples accepted is 1
+		//by bisection, since the expected number is monotically increasing in epsilon
 
-	//find the temperature epsilon such that the expected number of these energy samples accepted is 1
-	//by bisection, since the expected number is monotically increasing in epsilon
+		//upper bound and lower bound of x
+		uint N = EIncs.size();
+		double ESum = vectorSum(EIncs);
+		double EMin = vectorMin(EIncs);
+		double EMax = vectorMax(EIncs);
+		double x_left = abs(EMax)/log(N);
+		double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
+		cerr << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
 
-	//upper bound and lower bound of x
-	uint N = EIncs.size();
-	double ESum = vectorSum(EIncs);
-	double EMin = vectorMin(EIncs);
-	double EMax = vectorMax(EIncs);
-	double x_left = abs(EMax)/log(N);
-	double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
-	cerr << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
+		const uint NUM_ITER = 100;
+		for (uint i = 0; i < NUM_ITER; i++) {
+			double x_mid = (x_left + x_right)/2;
+			double y = expectedNumAccEInc(x_mid, EIncs);
+			if (y < 1) x_left = x_mid;
+			else if (y > 1) x_right = x_mid;
+			else break;
+		}
 
-	const uint NUM_ITER = 100;
-	for (uint i = 0; i < NUM_ITER; i++) {
-		double x_mid = (x_left + x_right)/2;
-		double y = expectedNumAccEInc(x_mid, EIncs);
-		if (y < 1) x_left = x_mid;
-		else if (y > 1) x_right = x_mid;
-		else break;
+		double epsilon = (x_left + x_right)/2;
+		cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
+		cerr << "Final epsilon: " << epsilon << endl;
+		long long unsigned int iter_t = (long long unsigned int)(iterations)*100000000;
+
+		double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
+		
+		cerr << "Final T_decay: " << lambda << endl;
+		
+		return lambda;
 	}
-
-	double epsilon = (x_left + x_right)/2;
-	cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
-	cerr << "Final epsilon: " << epsilon << endl;
-	long long unsigned int iter_t = (long long unsigned int)(iterations)*100000000;
-
-	double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
-	cerr << "Final T_decay: " << lambda << endl;
-	return lambda;
+	
 }
 
 double SANA::getIterPerSecond() {
