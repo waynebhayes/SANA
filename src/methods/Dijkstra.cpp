@@ -31,6 +31,7 @@ Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC, double d) :
 
   sims = MC->getAggregatedLocalSims();
 
+  make_seed_queue();
 }
 
 /* Helper functions */
@@ -45,41 +46,9 @@ void Dijkstra::make_seed_queue(){
   }
   */
   std::cout << "make seed queue begin" << std::endl;
-  std::cout << "delta = " << this->delta << std::endl;
   auto start = get_time::now();
-  /*
-  uint block = 32;
-  uint i = 0, j = 0;
-  for(i = 0; i < (sims.size() / block) * block; i+=block){
-    for(uint r = 0; r < block; ++r){
-      for(j = 0; j < (sims[i+r].size() / block) * block; j+=block){
-	for(uint k = 0; k < block;++k){
-	  seed_queue.insert(sims[i+r][j+k], 
-			    std::make_pair(i+r,j+k));
-	}
-      }      
-      for(; j < sims[i].size(); ++j){
-	  seed_queue.insert(sims[i+r][j], 
-			    std::make_pair(i+r,j));
-      }
-    }
-  }
   
-  for(; i < sims.size(); ++i){
-    for(j = 0; j < (sims[i].size() / block) * block; j+=block){
-      for(uint k = 0; k < block;++k){
-	  seed_queue.insert(sims[i][j+k], 
-			    std::make_pair(i,j+k));
-      }
-    }
-    for(; j < sims[i].size(); ++j){
-	  seed_queue.insert(sims[i][j], 
-			    std::make_pair(i,j));
-    }
-  }
-  */
-  
-  for(unsigned int i = 0; i < sims.size(); ++i){
+ for(unsigned int i = 0; i < sims.size(); ++i){
     for(unsigned int j = 0; j < sims[i].size(); ++j){
       seed_queue.insert(sims[i][j], std::make_pair(i,j));
     }
@@ -105,7 +74,7 @@ void Dijkstra::make_seed_queue(){
  */
 
 std::pair <ushort, ushort> Dijkstra::best_pair(SkipList & pq) throw(QueueEmptyException){
-  return pq.pop_uniform();
+  return pq.pop_reservoir();
 }
 
 /* 
@@ -119,7 +88,7 @@ void Dijkstra::update_neighbors(std::pair <ushort, ushort> & seed_pair){
   //add the pair to the alignment
   A[seed_pair.first] = seed_pair.second;
   nodes_aligned += 1;
-  std::cout << "nodes aligned" << nodes_aligned << std::endl;
+  std::cout << "nodes aligned" << nodes_aligned << "\r" << std::flush; //<< std::endl;
 
   //set difference
   vector<ushort> G1_neighbors = exclude_nodes(G1AdjLists[seed_pair.first], G1_exclude);
@@ -198,8 +167,6 @@ Alignment Dijkstra::run() {
   G1_exclude.clear();
   G2_exclude.clear();
 
-  make_seed_queue();
-
   std::cout << "Dijkstra begin: max_nodes= " << max_nodes << std::endl;
   while(nodes_aligned < max_nodes){
     auto start = get_time::now();
@@ -217,7 +184,6 @@ Alignment Dijkstra::run() {
     auto end = get_time::now();
     auto diff = end - start;
     //std::cout << "seed time(" << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count()<< "ms)" << "\t";//<< std::endl;
-    //seed_queue.showCounter();
 
     while(!neighbor_queue.empty()){
       //std::cout << "extend phase" << std::endl;
