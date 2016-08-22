@@ -53,8 +53,7 @@ void SkipNode::debug(int limit){
 SkipList::SkipList(float delta, bool setMaxHeap, std::unordered_set<ushort> & lex, std::unordered_set<ushort> & rex)
   :_isMaxHeap(setMaxHeap), length(0), level(0), delta(delta + EPSILON),
    left_exclude(lex), right_exclude(rex){
-  //srand(std::random_device()());
-  rng.seed(std::random_device()());
+  rng.seed(getRandomSeed());
   this->debug();
   miss_counter = 0;
   insert_time -= insert_time;
@@ -190,7 +189,7 @@ uint SkipList::random_int(uint n){
  * this function cannot be called recursively due to stack overflow 
  * for seeds > 2300
  */
-std::pair<ushort,ushort> SkipList::pop_uniform(){
+std::pair<ushort,ushort> SkipList::pop_reservoir(){
   std::pair<ushort,ushort> result;
   do{
     if(this->empty()){
@@ -208,14 +207,7 @@ std::pair<ushort,ushort> SkipList::pop_uniform(){
       }
       curr = curr->forward[0];
     }
-    /*
-    while(curr->forward[0] && curr->forward[0]->key <= tail){
-      curr = curr->forward[0];
-      if(random_int(++n) == 0){
-	choice = curr;
-      }
-    }
-    */
+
     result = choice->value;
     removeNode(choice);
     ++miss_counter; //count misses in a row
@@ -333,7 +325,6 @@ void SkipList::cleanup(){
   miss_counter = 0;
   auto start = std::chrono::steady_clock::now();
   std::cout << "old size=" << this->length << std::endl;
-  //SkipNode * prev = &(this->head);
   SkipNode * curr = this->head.forward[0];
   
   SkipNode * update[SkipNode::MAX_LEVEL];
@@ -539,9 +530,4 @@ void SkipList::debug(){
 void SkipList::perf(){
   std::cout << "insert time (" << this->insert_time.count() << "ms)" << std::endl;
   std::cout << "cleanup time (" << this->cleanup_time.count() << "ms)" << std::endl;
-}
-
-void SkipList::showCounter(){
-  std::cout << "counter=" << this->miss_counter << std::endl;
-  this->miss_counter = 0;
 }
