@@ -157,22 +157,34 @@ void normalizeWeights(vector<double>& weights) {
 
 vector<string> fileToStrings(const string& fileName, bool asLines) {
     checkFileExists(fileName);
-    ifstream ifs(fileName.c_str());
+    uint fileNameLen = fileName.size();
+    FILE *fp;
+    char buf[10240], pipe = 0;
+    if(fileName.substr(fileNameLen-3,3) == ".gz"){
+	pipe=1;
+	cerr << "fileToStrings: decompressing using gunzip: " << fileName << endl;
+	string unzip_cmd = "gunzip < " + fileName;
+	fp = popen(unzip_cmd.c_str(), "r");
+    } else if(fileName.substr(fileNameLen-3,3) == ".xz"){
+	pipe=1;
+	cerr << "fileToStrings: decompressing using xzcat: " << fileName << endl;
+	string unzip_cmd = "xzcat < " + fileName;
+	fp = popen(unzip_cmd.c_str(), "r");
+    } else fp=fopen(fileName.c_str(),"r");
     vector<string> result(0);
     if(asLines) {
-        string line;
-        while (getline(ifs, line)) result.push_back(line);
+        while (fgets(buf, sizeof(buf), fp)){string line(buf); result.push_back(line);}
     }
     else {
-        string word;
-        while (ifs >> word) result.push_back(word);
+        while (fscanf(fp, "%s", buf)>0){string word(buf); result.push_back(word);}
     }
-    ifs.close();
+    if(pipe) pclose(fp);
+    else fclose(fp);
     return result;
 }
 
 vector<vector<string> > fileToStringsByLines(const string& fileName) {
-checkFileExists(fileName);
+    checkFileExists(fileName);
     ifstream ifs(fileName.c_str());
     vector<vector<string> > result(0);
     string line;
