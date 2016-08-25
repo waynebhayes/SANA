@@ -167,6 +167,17 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 
 	    G1.setNodeTypes(genesG1, miRNAsG1);
 	    G2.setNodeTypes(genesG2, miRNAsG2);
+
+	    // Currently we have these constraints
+	    if(not (genesG1.size() < genesG2.size())){
+	        cerr << "g1 should have less genes " << genesG1.size() << " v.s. " + genesG2.size() ;
+	        throw runtime_error("g1 should have less genes ");
+	    }
+	    if(not (miRNAsG1.size() < miRNAsG2.size())){
+	        cerr << "g1 should have less miRNAs " << miRNAsG1.size() << " v.s. " + miRNAsG2.size() ;
+	        throw runtime_error("g1 should have less miRNAs ");
+	    }
+
 	}
 
 
