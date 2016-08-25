@@ -18,7 +18,7 @@ Network::Network(char *nam)
 		ifstream networkFile(fileName.c_str());
         if(!networkFile) //there is not such file
         {
-            cerr << "Error: file " << fileName << " doesn't exist"<<endl;
+            cout << "Error: file doesn't exist"<<endl;
             exit (1);
         }
         
@@ -35,7 +35,7 @@ Network::Network(char *nam)
             
             if(token.length()==0) //the input node is incorrect
             {
-                cerr << "Error: No node in first column of file " << fileName <<endl;
+                cout << "Error: No node in first column" <<endl;
                 exit (1);
             }
             
@@ -53,7 +53,7 @@ Network::Network(char *nam)
             
             if(token.length()==0)//the input node is incorrect
             {
-                cerr << "Error: No node in second column" <<endl;
+                cout << "Error: No node in second column" <<endl;
                 exit (1);
             }
             if(token.at(token.length()-1)==13)
