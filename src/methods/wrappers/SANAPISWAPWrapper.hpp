@@ -1,10 +1,13 @@
 #ifndef SANAPISWAPWRAPPER_HPP
 #define SANAPISWAPWRAPPER_HPP
 
-#include <string>
+#include <cassert>
+
 #include "WrappedMethod.hpp"
 #include "../../arguments/ArgumentParser.hpp"
 #include "../../measures/MeasureCombination.hpp"
+#include "../../arguments/methodSelector.hpp"
+#include "../../report.hpp"
 #include "../SANA.hpp"
 #include "PISwapWrapper.hpp"
 

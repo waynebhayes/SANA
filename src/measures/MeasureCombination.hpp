@@ -1,8 +1,12 @@
 #ifndef MEASURECOMBINATION_HPP
 #define MEASURECOMBINATION_HPP
+
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <iostream>
+#include <algorithm>
+
 #include "Measure.hpp"
 
 class MeasureCombination {

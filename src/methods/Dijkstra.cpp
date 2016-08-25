@@ -4,10 +4,9 @@
 
 using get_time = std::chrono::steady_clock;
 
-Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC) :
+Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC, double d) :
   Method(G1, G2, "Dijkstra_"+MC->toString()),
-  //delta(0.00),
-  delta(0.15 + EPSILON), 
+  delta(d),
   seed_queue(delta, true, G1_exclude, G2_exclude), 
   neighbor_queue(delta, true, G1_exclude, G2_exclude),
   nodes_aligned(0)
@@ -23,8 +22,8 @@ Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC) :
   //that can be aligned
   max_nodes = n1 < n2 ? n1 : n2;
 	
-  G1->getAdjMatrix(G1AdjMatrix);
-  G2->getAdjMatrix(G2AdjMatrix);
+  //G1->getAdjMatrix(G1AdjMatrix);
+  //G2->getAdjMatrix(G2AdjMatrix);
   G1->getAdjLists(G1AdjLists);
   G2->getAdjLists(G2AdjLists);
 
@@ -32,6 +31,7 @@ Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC) :
 
   sims = MC->getAggregatedLocalSims();
 
+  make_seed_queue();
 }
 
 /* Helper functions */
@@ -47,39 +47,8 @@ void Dijkstra::make_seed_queue(){
   */
   std::cout << "make seed queue begin" << std::endl;
   auto start = get_time::now();
-  /*
-  uint block = 32;
-  uint i = 0, j = 0;
-  for(i = 0; i < (sims.size() / block) * block; i+=block){
-    for(uint r = 0; r < block; ++r){
-      for(j = 0; j < (sims[i+r].size() / block) * block; j+=block){
-	for(uint k = 0; k < block;++k){
-	  seed_queue.insert(sims[i+r][j+k], 
-			    std::make_pair(i+r,j+k));
-	}
-      }      
-      for(; j < sims[i].size(); ++j){
-	  seed_queue.insert(sims[i+r][j], 
-			    std::make_pair(i+r,j));
-      }
-    }
-  }
   
-  for(; i < sims.size(); ++i){
-    for(j = 0; j < (sims[i].size() / block) * block; j+=block){
-      for(uint k = 0; k < block;++k){
-	  seed_queue.insert(sims[i][j+k], 
-			    std::make_pair(i,j+k));
-      }
-    }
-    for(; j < sims[i].size(); ++j){
-	  seed_queue.insert(sims[i][j], 
-			    std::make_pair(i,j));
-    }
-  }
-  */
-  
-  for(unsigned int i = 0; i < sims.size(); ++i){
+ for(unsigned int i = 0; i < sims.size(); ++i){
     for(unsigned int j = 0; j < sims[i].size(); ++j){
       seed_queue.insert(sims[i][j], std::make_pair(i,j));
     }
@@ -99,25 +68,13 @@ void Dijkstra::make_seed_queue(){
  * the node for G2 in position 1
  * this function depends on a priority queue
  * to determine the best pair, which can be very slow.
- * future: consider moving the reject loop to the subroutine
+ * the priority queue must handle the reject loop 
  * if the priority queue is empty, it should throw an error
  * This function uses the same exclusion set for all priority queues.
  */
 
 std::pair <ushort, ushort> Dijkstra::best_pair(SkipList & pq) throw(QueueEmptyException){
-  //std::cout << "best pair" << std::endl;
-  return pq.pop_uniform();
-  /*
-  std::pair <ushort, ushort> curr_pair;
-  do{
-    curr_pair = pq.pop_uniform();
-    //std::cout << "pop = " << curr_pair.first << ", " << curr_pair.second << std::endl;
-    //curr_pair = pq.pop();
-  }while(!pq.empty() && (G1_exclude.find(curr_pair.first) != G1_exclude.end() ||
-			 G2_exclude.find(curr_pair.second) != G2_exclude.end()) );
-  //std::cout << "picked seed (" << curr_pair.first << ", " << curr_pair.second << ")" << std::endl;
-  return curr_pair;
-  */
+  return pq.pop_reservoir();
 }
 
 /* 
@@ -131,7 +88,7 @@ void Dijkstra::update_neighbors(std::pair <ushort, ushort> & seed_pair){
   //add the pair to the alignment
   A[seed_pair.first] = seed_pair.second;
   nodes_aligned += 1;
-  std::cout << "nodes aligned" << nodes_aligned << std::endl;
+  std::cout << "nodes aligned" << nodes_aligned << "\r" << std::flush; //<< std::endl;
 
   //set difference
   vector<ushort> G1_neighbors = exclude_nodes(G1AdjLists[seed_pair.first], G1_exclude);
@@ -143,11 +100,10 @@ void Dijkstra::update_neighbors(std::pair <ushort, ushort> & seed_pair){
   }
 	
   //add the possible neighbors to the neighbor_queue
-  best_neighbors(G1_neighbors, G2_neighbors);
+  best_neighbors(seed_pair, G1_neighbors, G2_neighbors);
 }
 
-void Dijkstra::best_neighbors(vector<ushort> & G1_neighbors, vector<ushort> & G2_neighbors){
-  vector<std::pair<double, std::pair<ushort,ushort>>> out;
+void Dijkstra::best_neighbors(std::pair <ushort, ushort> & seed_pair, vector<ushort> & G1_neighbors, vector<ushort> & G2_neighbors){
   vector<vector<double> > small_matrix (G1_neighbors.size(), vector<double> (G2_neighbors.size()));
 	
   /*
@@ -158,11 +114,15 @@ void Dijkstra::best_neighbors(vector<ushort> & G1_neighbors, vector<ushort> & G2
     }
     }
   */
-  double max_sim = -1;
+  float max_sim = -1;
+  float seed_sim = sims[seed_pair.first][seed_pair.second];
+  double seed_w = 0.5;
+  double node_w = 1 - seed_w;
   for(unsigned int i = 0; i < G1_neighbors.size(); ++i){
     for(unsigned int j = 0; j < G2_neighbors.size(); ++j){
-      small_matrix[i][j] = sims[G1_neighbors[i]] [G2_neighbors[j]];
-      if(sims[G1_neighbors[i]] [G2_neighbors[j]] > max_sim){
+      //small_matrix[i][j] = sims[G1_neighbors[i]] [G2_neighbors[j]];
+      small_matrix[i][j] = sims[G1_neighbors[i]] [G2_neighbors[j]] * node_w + seed_sim * seed_w;
+      if(small_matrix[i][j] > max_sim){
 	max_sim = sims[G1_neighbors[i]] [G2_neighbors[j]];
       }
     }
@@ -199,7 +159,6 @@ vector<ushort> Dijkstra::exclude_nodes(vector<ushort> & v_in, std::unordered_set
 /* End Helper Functions */
 
 Alignment Dijkstra::run() {
-  // Put all code here
   
   // sims[x][y] will give you how similar node x in G1 is to node y in G2 with 0 being the not at all similar
 
@@ -207,8 +166,6 @@ Alignment Dijkstra::run() {
 
   G1_exclude.clear();
   G2_exclude.clear();
-
-  make_seed_queue();
 
   std::cout << "Dijkstra begin: max_nodes= " << max_nodes << std::endl;
   while(nodes_aligned < max_nodes){
@@ -227,7 +184,6 @@ Alignment Dijkstra::run() {
     auto end = get_time::now();
     auto diff = end - start;
     //std::cout << "seed time(" << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count()<< "ms)" << "\t";//<< std::endl;
-    //seed_queue.showCounter();
 
     while(!neighbor_queue.empty()){
       //std::cout << "extend phase" << std::endl;

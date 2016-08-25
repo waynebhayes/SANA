@@ -1,9 +1,6 @@
 #ifndef GHOSTWRAPPER_HPP
 #define GHOSTWRAPPER_HPP
 
-#include <string>
-#include <vector>
-#include <iostream>
 #include "WrappedMethod.hpp"
 using namespace std;
 

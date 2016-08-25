@@ -1,5 +1,3 @@
-#include <vector>
-#include <iostream>
 #include "MagnaWrapper.hpp"
 
 using namespace std;

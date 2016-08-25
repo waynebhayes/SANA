@@ -1,8 +1,3 @@
-#include <sstream>
-#include <string>
-#include <fstream>
-#include <iostream>
-#include <algorithm>
 #include "MeasureCombination.hpp"
 #include "localMeasures/LocalMeasure.hpp"
 

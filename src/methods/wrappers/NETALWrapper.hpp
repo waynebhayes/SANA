@@ -1,9 +1,6 @@
 #ifndef NETALWRAPPER_HPP
 #define NETALWRAPPER_HPP
 
-#include <string>
-#include <vector>
-#include <iostream>
 #include "WrappedMethod.hpp"
 using namespace std;
 
