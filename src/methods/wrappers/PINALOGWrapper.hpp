@@ -1,9 +1,6 @@
 #ifndef PINALOGWRAPPER_HPP_
 #define PINALOGWRAPPER_HPP_
 
-#include <string>
-#include <vector>
-#include <iostream>
 #include "WrappedMethod.hpp"
 using namespace std;
 

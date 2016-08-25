@@ -72,10 +72,9 @@ Method* initHubAlign(Graph& G1, Graph& G2, ArgumentParser& args) {
 Method* initDijkstra(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
     double delta = args.doubles["-dijkstradelta"];
     if(delta < 0.0 || delta > 1.0){
-	throw runtime_error("generic objective function not supported for HubAlign"); 
+        throw runtime_error("Dijkstra:delta not in valid range [0.0,1.0)");
     }
-    // return new Dijkstra(&G1, &G2, &M, delta); Was getting compile errors because constructor does not exist
-    return new Dijkstra(&G1, &G2, &M);
+    return new Dijkstra(&G1, &G2, &M, delta); 
 }
 
 Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {

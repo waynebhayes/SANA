@@ -8,6 +8,8 @@
 #include <exception>
 #include <unordered_set>
 
+#include "randomSeed.hpp"
+
 #include <chrono>
 
 class QueueEmptyException : public std::exception{
@@ -35,37 +37,31 @@ public:
 
 class SkipList{
 public:
-  /*
-  SkipList();
-  SkipList(float delta);
-  SkipList(float delta, bool setMaxHeap);
-  */
   SkipList(float delta, bool setMaxHeap,
 	   std::unordered_set<ushort> & lex, std::unordered_set<ushort> & rex);
   ~SkipList();
 	
-  void removeNode(SkipNode * n);
+
   void insert(float similarity, std::pair<ushort,ushort> entry);
   bool empty();
-  std::pair<ushort,ushort> pop_uniform();
+  std::pair<ushort,ushort> pop_reservoir();
   std::pair<ushort,ushort> pop_distr();
   bool isMaxHeap();
 
-  void test();
   void debug();
   void perf();
-  void showCounter();
 
   void serialize(std::string fname);
   bool deserialize(std::string fname);
 
 protected:
   int random_height(void);
-  void serialize_helper(SkipNode * curr, std::ofstream & out);
   uint random_int(uint n); 
 
 private:
+  void removeNode(SkipNode * n);
   void cleanup();
+  void test();
 
   bool _isMaxHeap;
   long length;

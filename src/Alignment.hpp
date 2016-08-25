@@ -1,7 +1,13 @@
 #ifndef ALIGNMENT_HPP
 #define ALIGNMENT_HPP
+
 #include <string>
 #include <vector>
+#include <sstream>
+#include <iostream>
+#include <cassert>
+#include <algorithm>
+
 #include "Graph.hpp"
 #include "utils/utils.hpp"
 using namespace std;
