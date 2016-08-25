@@ -10,6 +10,10 @@ int main(int arg, char* argv[])
 	chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
 	
 	int k = atoi(argv[1]);
+	if(k>=8) {
+	    cerr << "you choose k >= 8; this will require at least 600GB of RAM. Aborting.\n";
+	    exit(1);
+	}
 
 	ofstream fcanon("list"+to_string(k)+".txt"), fmap("canon_map"+to_string(k)+".txt");
 
