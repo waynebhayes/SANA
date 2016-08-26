@@ -66,6 +66,13 @@ SANA::SANA(Graph* G1, Graph* G2,
 	uint ramificationSwap = n1*(n1-1)/2;
 	uint totalRamification = ramificationSwap + ramificationChange;
 	changeProbability = (double) ramificationChange/totalRamification;
+	tau = vector<double> {0.99, 0.985, 0.96, 0.955, 0.95, 0.942, 0.939, 0.934, 0.928, 0.92, 0.918, 0.911, 0.906, 0.901, 0.896,
+			   0.891, 0.885, 0.879, 0.873, 0.867, 0.86, 0.853, 0.846, 0.838, 0.83, 0.822, 0.81, 0.804, 0.794, 0.784,
+			   0.774, 0.763, 0.752, 0.741, 0.728, 0.716, 0.703, 0.69, 0.676, 0.662, 0.647, 0.632, 0.616, 0.6, 0.584,
+			   0.567, 0.549, 0.531, 0.514, 0.495, 0.477, 0.458, 0.438, 0.412, 0.4, 0.381, 0.361, 0.342, 0.322, 0.303, 
+			   0.284, 0.264, 0.246, 0.228, 0.21, 0.193, 0.177, 0.161, 0.145, 0.131, 0.117, 0.104, 0.092, 0.081, 0.07, 
+		       0.061, 0.052, 0.044, 0.0375, 0.031, 0.026, 0.0212, 0.0172, 0.0138, 0.0109, 0.0085, 0.0065, 0.005, 0.0037, 
+			   0.0027, 0.0019, 0.0014, 0.0005, 0.0001, 0.0000739, 0.0000342, 0.000008, 0.0000054, 0.000000739, 0.00000000359, 0.000000000734};
 
 
 	//objective function
@@ -82,6 +89,9 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 	//restart scheme
 	restart = false;
+	
+	//temperature decay dynamically 
+	dynamic_tdecay = false; 
 
 
 	//to evaluate EC incrementally
@@ -178,6 +188,13 @@ SANA::SANA(Graph* G1, Graph* G2,
 	uint ramificationSwap = n1*(n1-1)/2;
 	uint totalRamification = ramificationSwap + ramificationChange;
 	changeProbability = (double) ramificationChange/totalRamification;
+	tau = vector<double> {0.99, 0.985, 0.96, 0.955, 0.95, 0.942, 0.939, 0.934, 0.928, 0.92, 0.918, 0.911, 0.906, 0.901, 0.896,
+			   0.891, 0.885, 0.879, 0.873, 0.867, 0.86, 0.853, 0.846, 0.838, 0.83, 0.822, 0.81, 0.804, 0.794, 0.784,
+			   0.774, 0.763, 0.752, 0.741, 0.728, 0.716, 0.703, 0.69, 0.676, 0.662, 0.647, 0.632, 0.616, 0.6, 0.584,
+			   0.567, 0.549, 0.531, 0.514, 0.495, 0.477, 0.458, 0.438, 0.412, 0.4, 0.381, 0.361, 0.342, 0.322, 0.303, 
+			   0.284, 0.264, 0.246, 0.228, 0.21, 0.193, 0.177, 0.161, 0.145, 0.131, 0.117, 0.104, 0.092, 0.081, 0.07, 
+		       0.061, 0.052, 0.044, 0.0375, 0.031, 0.026, 0.0212, 0.0172, 0.0138, 0.0109, 0.0085, 0.0065, 0.005, 0.0037, 
+			   0.0027, 0.0019, 0.0014, 0.0005, 0.0001, 0.0000739, 0.0000342, 0.000008, 0.0000054, 0.000000739, 0.00000000359, 0.000000000734};
 
 
 	//objective function
@@ -812,6 +829,7 @@ void SANA::trackProgress(long long unsigned int i) {
 	bool checkScores = true;
 	cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
 	cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << endl;
+
 	if (not (printDetails or printScores or checkScores)) return;
 	Alignment Al(A);
 	if (printDetails) cerr << " (" << Al.numAlignedEdges(*G1, *G2) << ", " << G2->numNodeInducedSubgraphEdges(A) << ")";
@@ -826,6 +844,24 @@ void SANA::trackProgress(long long unsigned int i) {
 			cerr << "internal error: incrementally computed score (" << currentScore;
 			cerr << ") is not correct (" << realScore << ")" << endl;
 		}
+	}
+	if (dynamic_tdecay) { // Code for estimating dynamic TDecay 
+		//The dynamic method uses linear interpolation to obtain an 
+		//an "ideal" P(bad) as a basis for SANA runs. If the current P(bad)
+		//is significantly different from out "ideal" P(bad), then decay is either 
+		//"sped up" or "slowed down"
+		int NSteps = 100; 
+		double fractional_time = (timer.elapsed()/(minutes*60)); 
+		double lowIndex = floor(NSteps*fractional_time);
+		double highIndex = ceil(NSteps*fractional_time);
+		double betweenFraction = NSteps*fractional_time - lowIndex;
+		double PLow = tau[lowIndex];
+		double PHigh = tau[highIndex]; 
+		
+		double PBetween = PLow + betweenFraction * (PHigh - PLow);
+		
+		if (abs(acceptingProbability(avgEnergyInc, T) - PBetween) >= .05)
+			TDecay = sqrt((TDecay)*((log(pow(10.0, -6.5) / TInitial)) / -minutes)); 
 	}
 }
 
@@ -1167,5 +1203,9 @@ void SANA::initIterPerSecond() {
 
 	initializedIterPerSecond = true;
 	iterPerSecond = res;
-
 }
+
+void SANA::setDynamicTDecay() {
+	dynamic_tdecay = true; 	
+}
+

@@ -28,6 +28,10 @@ public:
     void setTemperatureScheduleAutomatically();
     void setTInitialAutomatically();
     void setTDecayAutomatically();
+	
+	//set temperature decay dynamically 
+	void setDynamicTDecay(); 
+
 
 
 
@@ -72,6 +76,10 @@ private:
     long long unsigned int iterationCount = 0;
     const double TInitialScaling = 0.00004;
     const double TDecayScaling = 0.00000001;
+	//to compute TDecay dynamically 
+	//vector holds "ideal" temperature values at certain execution times 
+	bool dynamic_tdecay;
+	vector<double> tau; 
 
     double T;
     double temperatureFunction(double iter, double TInitial, double TDecay);
