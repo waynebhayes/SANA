@@ -170,12 +170,14 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 
 	    // Currently we have these constraints
 	    if(not (genesG1.size() < genesG2.size())){
-	        cerr << "g1 should have less genes " << genesG1.size() << " v.s. " + genesG2.size() ;
-	        throw runtime_error("g1 should have less genes ");
+	        cerr << "g1 should have less genes  than g2 " << endl;
+	        cerr << "! " <<  genesG1.size() << " < " << genesG2.size() << endl;
+	        throw runtime_error("g1 should have less genes than g2 \n ");
 	    }
 	    if(not (miRNAsG1.size() < miRNAsG2.size())){
-	        cerr << "g1 should have less miRNAs " << miRNAsG1.size() << " v.s. " + miRNAsG2.size() ;
-	        throw runtime_error("g1 should have less miRNAs ");
+	        cerr << "g1 should have less miRNAs than g2 " << endl;
+	        cerr << "! " <<  miRNAsG1.size() << " < " << miRNAsG2.size() << endl;
+	        throw runtime_error("g1 should have less miRNAs than g2\n ");
 	    }
 
 	}
