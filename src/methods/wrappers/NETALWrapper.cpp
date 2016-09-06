@@ -2,7 +2,7 @@
 
 using namespace std;
 
-const string NETALProgram = "./NETAL.sh";
+const string NETALProgram = "./NETAL";
 
 NETALWrapper::NETALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "NETAL", args) {
 	wrappedDir = "wrappedAlgorithms/NETAL";
