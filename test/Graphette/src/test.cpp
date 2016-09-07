@@ -23,7 +23,7 @@ void printAdjMatrix(ushort numNodes_, HalfMatrix& adjMatrix_){
 
 int main(int arg, char*argv[]){
 	uint n = atoi(argv[1]);
-	string filename = "maps/list"+to_string(n)+".txt";
+	string filename = "data/list"+to_string(n)+".txt";
 	ifstream fin(filename);
 	uint num;
 	fin >> num;
