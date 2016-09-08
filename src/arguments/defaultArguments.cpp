@@ -29,4 +29,5 @@ vector<string> defaultArguments = {
 "-qmode normal",
 "-simFormat 1",
 "-score sum",
+"-sec 0",
 };

@@ -47,6 +47,7 @@ private:
     uint n1;
     uint n2;
     double g1Edges; //stored as double because it appears in division
+    double g2Edges; //stored as double because it appears in division
     vector<vector<bool> > G1AdjMatrix;
     vector<vector<bool> > G2AdjMatrix;
     vector<vector<ushort> > G1AdjLists;
@@ -120,6 +121,7 @@ private:
     double ecWeight;
     double s3Weight;
     double wecWeight;
+    double secWeight;
     double localWeight;
     string score;
 
@@ -147,7 +149,10 @@ private:
     int aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
     int aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
 
-
+    //to evaluate EC incrementally
+    bool needSec;
+    double secSum;
+   
     //to evaluate S3 incrementally
     bool needInducedEdges;
     int inducedEdges;
