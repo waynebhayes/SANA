@@ -6,6 +6,7 @@
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/InducedConservedStructure.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
+#include "../measures/SymmetricEdgeCoverage.hpp"
 #include "../measures/LargestCommonConnectedSubgraph.hpp"
 #include "../measures/GoAverage.hpp"
 #include "../measures/GoCoverage.hpp"
@@ -92,7 +93,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableMeasures = {
-        "ec","s3","wec","nodec","noded","edgec","edged", "esim", "go","importance",
+        "ec","s3","sec","wec","nodec","noded","edgec","edged", "esim", "go","importance",
         "sequence","graphlet","graphletlgraal", "graphletcosine", "spc"
     };
     double total = 0;
@@ -167,6 +168,9 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 
     m = new LargestCommonConnectedSubgraph(&G1, &G2);
     M.addMeasure(m);
+
+    m = new SymmetricEdgeCoverage(&G1, &G2);
+    M.addMeasure(m, getWeight("sec", G1, G2, args));
 
     //local measures must be initialized before wec,
     //as wec uses one of the local measures

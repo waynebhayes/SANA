@@ -23,6 +23,7 @@
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/NodeCorrectness.hpp"
+#include "../measures/SymmetricEdgeCoverage.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
 #include "../utils/NormalDistribution.hpp"
 using namespace std;
@@ -35,6 +36,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	n1 = G1->getNumNodes();
 	n2 = G2->getNumNodes();
 	g1Edges = G1->getNumEdges();
+	g2Edges = G2->getNumEdges();
 	score = objectiveScore;
 
 	G1->getAdjMatrix(G1AdjMatrix);
@@ -79,6 +81,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	this->MC = MC;
 	ecWeight = MC->getWeight("ec");
 	s3Weight = MC->getWeight("s3");
+	secWeight = MC->getWeight("sec");
 	try {
 		wecWeight = MC->getWeight("wec");
 	} catch(...) {
@@ -95,7 +98,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
 	//to evaluate EC incrementally
-	needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0;
+	needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0;
 
 
 	//to evaluate S3 incrementally
@@ -104,6 +107,11 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 	//to evaluate WEC incrementally
 	needWec = wecWeight > 0;
+	
+	//to evaluate SEC incrementally
+	needSec = secWeight > 0;
+	
+	
 	if (needWec) {
 		Measure* wec = MC->getMeasure("wec");
 		LocalMeasure* m = ((WeightedEdgeConservation*) wec)->getNodeSimMeasure();
@@ -157,6 +165,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	n1 = G1->getNumNodes();
 	n2 = G2->getNumNodes();
 	g1Edges = G1->getNumEdges();
+	g2Edges = G2->getNumEdges();
 	score = objectiveScore;
 	
 	G1->getAdjMatrix(G1AdjMatrix);
@@ -201,6 +210,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	this->MC = MC;
 	ecWeight = MC->getWeight("ec");
 	s3Weight = MC->getWeight("s3");
+	secWeight = MC->getWeight("sec");
 	try {
 		wecWeight = MC->getWeight("wec");
 	} catch(...) {
@@ -214,7 +224,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
 	//to evaluate EC incrementally
-	needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0;
+	needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0;
 
 
 	//to evaluate S3 incrementally
@@ -448,7 +458,7 @@ void SANA::initDataStructures(const Alignment& startA) {
 	assert(index == unlockedG1);
 	nodesHaveType = G1->hasNodeTypes();
 
-	if (needAligEdges) {
+	if (needAligEdges or needSec) {
 		aligEdges = startA.numAlignedEdges(*G1, *G2);
 	}
 
@@ -468,9 +478,8 @@ void SANA::initDataStructures(const Alignment& startA) {
 		double wecScore = wec->eval(A);
 		wecSum = wecScore*2*g1Edges;
 	}
-
+    
 	currentScore = eval(startA);
-
 	timer.start();
 }
 
@@ -489,9 +498,8 @@ void SANA::setInterruptSignal() {
 
 Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
 		long long unsigned int& iter) {
-
+    
 	initDataStructures(startA);
-
 	setInterruptSignal();
 
 	for (; ; iter++) {
@@ -555,7 +563,7 @@ void SANA::performChange() {
 
 
 	int newAligEdges = -1; //dummy initialization to shut compiler warnings
-	if (needAligEdges) {
+	if (needAligEdges or needSec) {
 		newAligEdges = aligEdges + aligEdgesIncChangeOp(source, oldTarget, newTarget);
 	}
 
@@ -573,7 +581,8 @@ void SANA::performChange() {
 	if (needWec) {
 		newWecSum = wecSum + WECIncChangeOp(source, oldTarget, newTarget);
 	}
-
+	
+	
 	double newCurrentScore = 0;
 	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newCurrentScore);
 
@@ -612,7 +621,7 @@ void SANA::performSwap() {
 
 
 	int newAligEdges = -1; //dummy initialization to shut compiler warnings
-	if (needAligEdges) {
+	if (needAligEdges or needSec) {
 		newAligEdges = aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2);
 	}
 
@@ -645,6 +654,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 	if(score == "sum") {
 		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
 		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 
@@ -656,18 +666,21 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore *= ecWeight * (newAligEdges/g1Edges);
 		newCurrentScore *= s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore *= localWeight * (newLocalScoreSum/n1);
+		newCurrentScore *= secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore *= wecWeight * (newWecSum/(2*g1Edges));
 		
 		energyInc = newCurrentScore-currentScore;
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
 	}
 	else if(score == "max") {
-		double deltaEnergy = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),
-									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges))))),
+		double deltaEnergy = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
+									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
+									 secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
 								 max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
 									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
 
 		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
+		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
@@ -676,13 +689,15 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc/T);
 	}
 	else if(score == "min") {
-		double deltaEnergy = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),
-									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges))))),
+		double deltaEnergy = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
+									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
+									 secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
 								 min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
 									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
 		
 		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
 		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 		
@@ -691,6 +706,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 	}
 	else if(score == "inverse") {
 		newCurrentScore += ecWeight/(newAligEdges/g1Edges);
+		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += s3Weight/(newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore += localWeight/(newLocalScoreSum/n1);
 		newCurrentScore += wecWeight/(newWecSum/(2*g1Edges));
@@ -699,17 +715,20 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
 	}
 	else if(score == "maxFactor") {
-		double maxScore = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),
-									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges))))),
-								 max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
+		double maxScore = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
+									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
+									 secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
+							  max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
 									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
 									 
-		double minScore = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),
-									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges))))),
-								 min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
+		double minScore = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
+									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
+									 secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
+							  min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
 									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
 
 		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
+		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
@@ -832,11 +851,14 @@ void SANA::trackProgress(long long unsigned int i) {
 
 	if (not (printDetails or printScores or checkScores)) return;
 	Alignment Al(A);
-	if (printDetails) cerr << " (" << Al.numAlignedEdges(*G1, *G2) << ", " << G2->numNodeInducedSubgraphEdges(A) << ")";
+	//original one is commented out for testing sec 
+	//if (printDetails) cerr << " (" << Al.numAlignedEdges(*G1, *G2) << ", " << G2->numNodeInducedSubgraphEdges(A) << ")";
+	if (printDetails) cerr << "Al.numAlignedEdges = " << Al.numAlignedEdges(*G1, *G2) << ", g1Edges = " <<g1Edges<< " ,g2Edges = "<<g2Edges<< endl;
 	if (printScores) {
 		SymmetricSubstructureScore S3(G1, G2);
 		EdgeCorrectness EC(G1, G2);
-		cerr << "S3: " << S3.eval(Al) << "  EC: " << EC.eval(Al) << endl;
+		SymmetricEdgeCoverage SEC(G1,G2);
+		cerr << "S3: " << S3.eval(Al) << "  EC: " << EC.eval(Al) << "  SEC: " << SEC.eval(Al) <<endl;
 	}
 	if (checkScores) {
 		double realScore = eval(Al);
