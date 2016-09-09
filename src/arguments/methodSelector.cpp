@@ -135,8 +135,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
  
     string aligFile = args.strings["-eval"];
     if (aligFile != "")
-        return new NoneMethod(&G1, &G2, aligFile);
-
+        return new NoneMethod(&G1, &G2, aligFile);	
     string name = toLowerCase(args.strings["-method"]);
     string startAligName = args.strings["-startalignment"];
     double alpha = args.doubles["-alpha"];
