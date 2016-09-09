@@ -30,6 +30,7 @@ public:
     double getSumLocalWeight() const;
     vector<vector<float> > getAggregatedLocalSims() const;
     int getNumberOfLocalMeasures() const;
+    void rebalanceWeight(string& input);
 
 private:
     vector<Measure*> measures;

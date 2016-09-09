@@ -58,3 +58,16 @@ void LocalMeasure::writeSimsWithNames(string outfile) {
         }
     }
 }
+
+double LocalMeasure::balanceWeight(){ //outputs the weight this measure should be multiplied by to scale kind of close to 0 through 1
+    double totalSim = 0;
+    uint simNumber = 0;
+    for(uint i = 0; i < sims.size(); i++){
+        for(uint j = 0; j < sims[i].size(); j++){
+            totalSim += sims[i][j];
+            simNumber++;
+        }
+    }
+    double averageSim = totalSim/simNumber;
+    return .5/averageSim; //average sim is scaled to one half
+}

@@ -1,5 +1,9 @@
 #include "MeasureCombination.hpp"
 #include "localMeasures/LocalMeasure.hpp"
+#include <sstream>
+#include <algorithm>
+#include <iterator>
+#include <string>
 
 MeasureCombination::MeasureCombination(){
 }
@@ -35,6 +39,33 @@ double MeasureCombination::eval(const string& measureName, const Alignment& A) c
 void MeasureCombination::addMeasure(Measure* m, double weight) {
     measures.push_back(m);
     weights.push_back(weight);
+}
+
+void MeasureCombination::rebalanceWeight(string& input){
+    istringstream iss(input);
+    vector<string> split{istream_iterator<string>{iss},istream_iterator<string>{}};
+    
+    for(uint i = 0; i < split.size(); i++){
+        string name = split[i];
+        int rebalancePos = -1;
+        for(uint i = 0; i < measures.size(); i++){
+            if(measures[i]->getName() == name){
+                rebalancePos = i;
+            }
+        }
+
+        if(rebalancePos == -1)
+            throw runtime_error(name + " is not a measure that is being optimized.");
+
+        if(!measures[rebalancePos]->isLocal())
+            throw runtime_error(name + " is not a local measure.  You can only balance local measures.");
+
+        double newWeight = weights[rebalancePos]*measures[rebalancePos]->balanceWeight();
+
+        cerr << "Rebalancing " << name << " from weight = " << weights[rebalancePos] << " to weight = " << newWeight << "." << endl;
+
+        weights[rebalancePos]=newWeight;
+    }
 }
 
 void MeasureCombination::addMeasure(Measure* m) {

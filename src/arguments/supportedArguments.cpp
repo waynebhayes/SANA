@@ -34,6 +34,7 @@ vector<string> stringArgs = {
 "-alignFile",			// Used in analysis mode
 "-simFile",
 "-score",
+"-balance",
 };
 
 vector<string> doubleArgs = {
