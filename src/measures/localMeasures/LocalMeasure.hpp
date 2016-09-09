@@ -10,6 +10,7 @@ public:
     bool isLocal();
     vector<vector<float> >* getSimMatrix();
     void writeSimsWithNames(string outfile);
+    double balanceWeight();
 
 protected:
     void loadBinSimMatrix(string simMatrixFileName);

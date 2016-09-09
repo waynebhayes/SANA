@@ -251,10 +251,10 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     }
 
     if (shouldInit("graphletcosine", G1, G2, args)) {
-	   m = new GraphletCosine(&G1, &G2);
-	   double graphletWeight = getWeight("graphletcosine", G1, G2, args);
-	   M.addMeasure(m, graphletWeight);
-   }
+        m = new GraphletCosine(&G1, &G2);
+        double graphletWeight = getWeight("graphletcosine", G1, G2, args);
+        M.addMeasure(m, graphletWeight);
+    }
 
     double wecWeight = getWeight("wec", G1, G2, args);    
     if (detRep or wecWeight > 0) {
@@ -272,10 +272,14 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     }
 
     if (shouldInit("spc", G1, G2, args)) {
-	   m = new ShortestPathConservation(&G1, &G2);
-	   double spcWeight = getWeight("spc", G1, G2, args);
-	   M.addMeasure(m, spcWeight);
-   }
+        m = new ShortestPathConservation(&G1, &G2);
+        double spcWeight = getWeight("spc", G1, G2, args);
+        M.addMeasure(m, spcWeight);
+    }
+    
+    if (args.strings["-balance"] != ""){
+        M.rebalanceWeight(args.strings["-balance"]);
+    }
 
     //not necessary, as getWeight returns normalized weight:
     // M.normalize();
