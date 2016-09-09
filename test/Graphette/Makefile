@@ -7,11 +7,11 @@ INCLUDES =
 LFLAGS =
 LIBS =
 
-OTHER_SRC =                                         \
+OTHER_SRC =                                             \
 	src/HalfMatrix.cpp                                  \
 	src/Graphette.cpp                                   \
+	src/distanceMatrix.cpp                              \
 	src/test.cpp                                        \
-
 
 
 SRCS = $(OTHER_SRC)
