@@ -87,7 +87,7 @@ private:
     double acceptingProbability(double energyInc, double T);
     //to compute TInitial automatically
     //returns a value of TInitial such that the temperature is random
-    double searchTInitial();
+    double searchTInitial(), simpleSearchTInitial();
     double scoreForTInitial(double TInitial);
     bool isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore);
     double scoreRandom();
@@ -102,7 +102,7 @@ private:
     double getIterPerSecond();
     void initIterPerSecond();
 
-    vector<double> energyIncSample();
+    vector<double> energyIncSample(double temp = 0.0);
     double expectedNumAccEInc(double temp, const vector<double>& energyIncSample);
 
     //data structures for the solution space search
