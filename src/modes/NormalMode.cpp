@@ -8,7 +8,7 @@
 #include "../arguments/graphLoader.hpp"
 
 #include "../report.hpp"
-
+#include <iostream>
 void NormalMode::run(ArgumentParser& args) {
     createFolders();
     Graph G1, G2;
@@ -16,7 +16,6 @@ void NormalMode::run(ArgumentParser& args) {
 
     MeasureCombination M;
     initMeasures(M, G1, G2, args);
-
     Method* method;
     method = initMethod(G1, G2, args, M);
     Alignment A = method->runAndPrintTime();
