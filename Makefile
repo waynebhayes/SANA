@@ -35,6 +35,7 @@ MEASUSES_SRCS = 				 						\
 	src/measures/NodeCorrectness.cpp                    \
 	src/measures/ShortestPathConservation.cpp           \
 	src/measures/SymmetricSubstructureScore.cpp         \
+        src/measures/SymmetricEdgeCoverage.cpp              \
 	src/measures/WeightedEdgeConservation.cpp           \
 	src/measures/localMeasures/EdgeCount.cpp            \
 	src/measures/localMeasures/EdgeDensity.cpp          \
