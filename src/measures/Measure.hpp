@@ -14,7 +14,7 @@ public:
     virtual double eval(const Alignment& A) =0;
     string getName();
     virtual bool isLocal();
-    virtual double balanceWeight();
+    virtual double balanceWeight() {return 0;};
 
 protected:
     Graph* G1;
