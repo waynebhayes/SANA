@@ -6,11 +6,17 @@ SymmetricEdgeCoverage::SymmetricEdgeCoverage(Graph* G1, Graph* G2) : Measure(G1,
 
 SymmetricEdgeCoverage::~SymmetricEdgeCoverage() {
 }
-
+// These are mutually exclusive!
+#define EQUAL_WEIGHT_PER_NETWORK 1
+#define EQUAL_WEIGHT_PER_EDGE 0
 double SymmetricEdgeCoverage::eval(const Alignment& A) {
-    double result = (double) A.numAlignedEdges(*G1, *G2)/G1->getNumEdges();
+    double result = 0.0;
+#if EQUAL_WEIGHT_PER_NETWORK
+    result = (double) A.numAlignedEdges(*G1, *G2)/G1->getNumEdges();
     result += (double) A.numAlignedEdges(*G1, *G2)/G2->getNumEdges();
     result = result/2;
-
+#elif EQUAL_WEIGHT_PER_EDGE
+    result = 2.0*A.numAlignedEdges(*G1, *G2)/(double)(G1->getNumEdges()+G2->getNumEdges());
+#endif
     return result;
 }
