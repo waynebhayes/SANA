@@ -946,7 +946,8 @@ void SANA::setTemperatureScheduleAutomatically() {
 }
 
 void SANA::setTInitialAutomatically() {
-	TInitial = searchTInitial();
+	// TInitial = searchTInitial(); // Nil's code using fancy statistics
+	TInitial = simpleSearchTInitial(); // Wayne's simplistic "make it bigger!!" code
 }
 
 void SANA::setTDecayAutomatically() {
@@ -1086,8 +1087,8 @@ long long unsigned int SANA::hillClimbingIterations(long long unsigned int idleC
 	Alignment startA = getStartingAlignment();
 	long long unsigned int iter = 0;
 
-	cerr << "We consider that SANA has stagnated if it goes ";
-	cerr << idleCountTarget << " without improving" << endl;
+	//cerr << "We consider that SANA has stagnated if it goes ";
+	//cerr << idleCountTarget << " without improving" << endl;
 
 	initDataStructures(startA);
 	T = 0;
@@ -1117,16 +1118,16 @@ double SANA::expectedNumAccEInc(double temp, const vector<double>& energyIncSamp
 
 //returns a sample of energy increments, with size equal to the number of iterations per second
 //after hill climbing
-vector<double> SANA::energyIncSample() {
+vector<double> SANA::energyIncSample(double temp) {
 
-	initIterPerSecond(); //this runs HC, so it updates the values
+	getIterPerSecond(); //this runs HC, so it updates the values
 	//of A and currentScore (besides iterPerSecond)
 
 	double iter = iterPerSecond;
-	cout << "Hill climbing score: " << currentScore << endl;
+	//cout << "Hill climbing score: " << currentScore << endl;
 	//generate a sample of energy increments, with size equal to the number of iterations per second
 	vector<double> EIncs(0);
-	T = 0;
+	T = temp;
 	for (uint i = 0; i < iter; i++) {
 		SANAIteration();
 		if (energyInc < 0) {
@@ -1134,6 +1135,22 @@ vector<double> SANA::energyIncSample() {
 		}
 	}
 	return EIncs;
+}
+
+double SANA::simpleSearchTInitial() {
+	T = 1e-6;
+	double pBad;
+	do {
+	    T *= 2;
+	    cerr << "Trying TInitial " << T;
+	    vector<double> EIncs = energyIncSample(T);
+	    uint nBad = 0;
+	    for(uint i=0; i<EIncs.size();i++)
+		nBad += (randomReal(gen) <= exp(EIncs[i]/T));
+	    pBad = (double)nBad/EIncs.size();
+	    cerr << " p(Bad) = " << pBad << endl;
+	} while(pBad < 1);
+	return T;
 }
 
 double SANA::searchTDecay(double TInitial, double minutes) {
