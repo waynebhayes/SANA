@@ -28,6 +28,8 @@
 #include "../utils/NormalDistribution.hpp"
 using namespace std;
 
+static double SANAtime;
+
 SANA::SANA(Graph* G1, Graph* G2,
 		double TInitial, double TDecay, double t, MeasureCombination* MC, string& objectiveScore):
     		Method(G1, G2, "SANA_"+MC->toString())
@@ -68,7 +70,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	uint ramificationSwap = n1*(n1-1)/2;
 	uint totalRamification = ramificationSwap + ramificationChange;
 	changeProbability = (double) ramificationChange/totalRamification;
-	tau = vector<double> {0.99, 0.985, 0.96, 0.955, 0.95, 0.942, 0.939, 0.934, 0.928, 0.92, 0.918, 0.911, 0.906, 0.901, 0.896,
+	tau = vector<double> {1, 0.985, 0.97, 0.96, 0.95, 0.942, 0.939, 0.934, 0.928, 0.92, 0.918, 0.911, 0.906, 0.901, 0.896,
 			   0.891, 0.885, 0.879, 0.873, 0.867, 0.86, 0.853, 0.846, 0.838, 0.83, 0.822, 0.81, 0.804, 0.794, 0.784,
 			   0.774, 0.763, 0.752, 0.741, 0.728, 0.716, 0.703, 0.69, 0.676, 0.662, 0.647, 0.632, 0.616, 0.6, 0.584,
 			   0.567, 0.549, 0.531, 0.514, 0.495, 0.477, 0.458, 0.438, 0.412, 0.4, 0.381, 0.361, 0.342, 0.322, 0.303, 
@@ -152,9 +154,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
 	//to track progress
-	//vector<double> eIncs = energyIncSample();
-	//avgEnergyInc = vectorMean(eIncs);
-	avgEnergyInc = -0.00001;
+	vector<double> eIncs = energyIncSample();
 }
 
 SANA::SANA(Graph* G1, Graph* G2,
@@ -273,9 +273,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
 	//to track progress
-	//vector<double> eIncs = energyIncSample();
-	//avgEnergyInc = vectorMean(eIncs);
-	avgEnergyInc = -0.00001;
+	vector<double> eIncs = energyIncSample();
 }
 
 SANA::~SANA() {
@@ -421,7 +419,8 @@ void SANA::enableRestartScheme(double minutesNewAlignments, uint iterationsPerSt
 }
 
 double SANA::temperatureFunction(double iter, double TInitial, double TDecay) {
-	return TInitialScaling * TInitial * (constantTemp ? 1 : exp(-TDecay*TDecayScaling*iter));
+	SANAtime = TDecayScaling*iter;
+	return TInitialScaling * TInitial * (constantTemp ? 1 : exp(-TDecay*SANAtime));
 }
 
 double SANA::acceptingProbability(double energyInc, double T) {
@@ -882,8 +881,22 @@ void SANA::trackProgress(long long unsigned int i) {
 		
 		double PBetween = PLow + betweenFraction * (PHigh - PLow);
 		
-		if (abs(acceptingProbability(avgEnergyInc, T) - PBetween) >= .05)
-			TDecay = sqrt((TDecay)*((log(pow(10.0, -6.5) / TInitial)) / -minutes)); 
+		// if the ratio if off by more than a few percent, adjust.
+		double ratio = acceptingProbability(avgEnergyInc, T) / PBetween;
+		if (abs(1-ratio) >= .01 &&
+		    (ratio < 1 || SANAtime > .2)) // don't speed it up too soon
+		{
+		    //cerr << "avgEnergyInc " << avgEnergyInc << " TInitialScaling " << TInitialScaling << " TInitial " << TInitial << " PBetween " << PBetween << " TDecayScaling " << TDecayScaling << " SANAtime " << SANAtime << endl;
+		    double shouldBe;
+		    shouldBe = -log(avgEnergyInc/(TInitialScaling*TInitial*log(PBetween)))/(SANAtime);
+		    if(SANAtime==0 || shouldBe != shouldBe || shouldBe <= 0) 
+			shouldBe = TDecay * (ratio >= 0 ? ratio*ratio : 0.5);
+		    cerr << "TDecay " << TDecay << " too ";
+		    cerr << (ratio < 1 ? "fast" : "slow") << " shouldBe " << shouldBe;
+		    TDecay = sqrt(TDecay * shouldBe); // geometric mean
+		    //TDecay = (TDecay + shouldBe)/2; // arithmetic mean
+		    cerr << "; try " << TDecay << endl;
+		}
 	}
 }
 
@@ -946,8 +959,8 @@ void SANA::setTemperatureScheduleAutomatically() {
 }
 
 void SANA::setTInitialAutomatically() {
-	// TInitial = searchTInitial(); // Nil's code using fancy statistics
-	TInitial = simpleSearchTInitial(); // Wayne's simplistic "make it bigger!!" code
+	TInitial = searchTInitial(); // Nil's code using fancy statistics
+	//TInitial = simpleSearchTInitial(); // Wayne's simplistic "make it bigger!!" code
 }
 
 void SANA::setTDecayAutomatically() {
@@ -956,7 +969,7 @@ void SANA::setTDecayAutomatically() {
 	}else{
 		TDecay = searchTDecay(TInitial, maxIterations);
 	}
-
+	//TDecay /= 2; // always seems too fast; dynamic TDecay will fix it.
 }
 
 double SANA::searchTInitial() {
@@ -1134,22 +1147,23 @@ vector<double> SANA::energyIncSample(double temp) {
 			EIncs.push_back(energyInc);
 		}
 	}
+	avgEnergyInc = vectorMean(EIncs);
 	return EIncs;
 }
 
 double SANA::simpleSearchTInitial() {
-	T = 1e-6;
+	T = .5e-6;
 	double pBad;
 	do {
 	    T *= 2;
-	    cerr << "Trying TInitial " << T;
 	    vector<double> EIncs = energyIncSample(T);
-	    uint nBad = 0;
-	    for(uint i=0; i<EIncs.size();i++)
-		nBad += (randomReal(gen) <= exp(EIncs[i]/T));
-	    pBad = (double)nBad/EIncs.size();
+	    cerr << "Trying TInitial " << T;
+	    //uint nBad = 0;
+	    //for(uint i=0; i<EIncs.size();i++)
+		//nBad += (randomReal(gen) <= exp(EIncs[i]/T));
+	    pBad = exp(avgEnergyInc/T); // (double)nBad/(EIncs.size());
 	    cerr << " p(Bad) = " << pBad << endl;
-	} while(pBad < 1);
+	} while(pBad < 0.9999999); // How close to 1? I pulled this out of my ass.
 	return T;
 }
 
