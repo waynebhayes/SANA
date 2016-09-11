@@ -89,12 +89,14 @@ Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombin
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
 
     double TInitial = 0;
-    if (args.strings["-tinitial"] != "auto") {
+    if (args.strings["-tinitial"] != "deprecated") {
+	throw runtime_error("Error: -tinitial and -tdecay are deprecated, probability schedule is now entirely automated");
         TInitial = stod(args.strings["-tinitial"]);
     }
 
     double TDecay = 0;
-    if (args.strings["-tdecay"] != "auto") {
+    if (args.strings["-tdecay"] != "deprecated") {
+	throw runtime_error("Error: -tinitial and -tdecay are deprecated, probability schedule is now entirely automated");
         TDecay = stod(args.strings["-tdecay"]);
     }
 
@@ -122,9 +124,9 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     if (args.strings["-tdecay"] == "auto") {
         ((SANA*) sana)->setTDecayAutomatically();
     }
-	if (args.bools["-dynamictdecay"]) {
-		((SANA*) sana)->setDynamicTDecay();
-	} 
+    if (args.bools["-dynamictdecay"]) {
+	((SANA*) sana)->setDynamicTDecay();
+    } 
     if (args.strings["-lock"] != ""){
     	sana->setLockFile(args.strings["-lock"] );
     }
