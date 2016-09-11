@@ -48,9 +48,9 @@ void MeasureCombination::rebalanceWeight(string& input){
     for(uint i = 0; i < split.size(); i++){
         string name = split[i];
         int rebalancePos = -1;
-        for(uint i = 0; i < measures.size(); i++){
-            if(measures[i]->getName() == name){
-                rebalancePos = i;
+        for(uint j = 0; j < measures.size(); j++){
+            if(measures[j]->getName() == name){
+                rebalancePos = j;
             }
         }
 
@@ -60,12 +60,27 @@ void MeasureCombination::rebalanceWeight(string& input){
         if(!measures[rebalancePos]->isLocal())
             throw runtime_error(name + " is not a local measure.  You can only balance local measures.");
 
-        double newWeight = weights[rebalancePos]*measures[rebalancePos]->balanceWeight();
+        double newWeight = weights[rebalancePos]*(measures[rebalancePos]->balanceWeight());
 
-        cerr << "Rebalancing " << name << " from weight = " << weights[rebalancePos] << " to weight = " << newWeight << "." << endl;
+        cerr << "Rebalancing " << name << " from weight = " << weights[rebalancePos] << " to weight = " << newWeight << ".  This will be renormalized with the other weights before SANA begins." << endl;
 
         weights[rebalancePos]=newWeight;
     }
+    normalize();
+}
+
+void MeasureCombination::rebalanceWeight(){
+    cerr << "Rebalancing all local measures." << endl;
+    for(uint i = 0; i < measures.size(); i++){
+        if(measures[i]->isLocal()){
+            double newWeight = weights[i]*(measures[i]->balanceWeight());
+            
+            cerr << "Rebalancing " << measures[i]->getName() << " from weight = " << weights[i] << " to weight = " << newWeight << ".  This will be renormalized with the other weights before SANA begins." << endl;
+            
+            weights[i] = newWeight;
+        }
+    }
+    normalize();
 }
 
 void MeasureCombination::addMeasure(Measure* m) {

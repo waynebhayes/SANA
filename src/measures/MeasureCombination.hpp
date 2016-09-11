@@ -31,6 +31,7 @@ public:
     vector<vector<float> > getAggregatedLocalSims() const;
     int getNumberOfLocalMeasures() const;
     void rebalanceWeight(string& input);
+    void rebalanceWeight();
 
 private:
     vector<Measure*> measures;

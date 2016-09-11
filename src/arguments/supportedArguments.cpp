@@ -80,7 +80,8 @@ vector<string> boolArgs = {
              //csv output file
 "-nodes-have-types", // Used when the nodes in inpupt graph have types
                     // Added for handling gene-miRNA networks, currently only functional with these networks
-"-dynamictdecay"
+"-dynamictdecay",
+"-balance-all"
 };
 
 vector<string> vectorArgs = {
