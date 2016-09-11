@@ -28,7 +28,7 @@
 #include "../utils/NormalDistribution.hpp"
 using namespace std;
 
-static double SANAtime;
+static double SANAtime, pBad=1;
 
 SANA::SANA(Graph* G1, Graph* G2,
 		double TInitial, double TDecay, double t, MeasureCombination* MC, string& objectiveScore):
@@ -70,13 +70,18 @@ SANA::SANA(Graph* G1, Graph* G2,
 	uint ramificationSwap = n1*(n1-1)/2;
 	uint totalRamification = ramificationSwap + ramificationChange;
 	changeProbability = (double) ramificationChange/totalRamification;
-	tau = vector<double> {1, 0.985, 0.97, 0.96, 0.95, 0.942, 0.939, 0.934, 0.928, 0.92, 0.918, 0.911, 0.906, 0.901, 0.896,
-			   0.891, 0.885, 0.879, 0.873, 0.867, 0.86, 0.853, 0.846, 0.838, 0.83, 0.822, 0.81, 0.804, 0.794, 0.784,
-			   0.774, 0.763, 0.752, 0.741, 0.728, 0.716, 0.703, 0.69, 0.676, 0.662, 0.647, 0.632, 0.616, 0.6, 0.584,
-			   0.567, 0.549, 0.531, 0.514, 0.495, 0.477, 0.458, 0.438, 0.412, 0.4, 0.381, 0.361, 0.342, 0.322, 0.303, 
-			   0.284, 0.264, 0.246, 0.228, 0.21, 0.193, 0.177, 0.161, 0.145, 0.131, 0.117, 0.104, 0.092, 0.081, 0.07, 
-		       0.061, 0.052, 0.044, 0.0375, 0.031, 0.026, 0.0212, 0.0172, 0.0138, 0.0109, 0.0085, 0.0065, 0.005, 0.0037, 
-			   0.0027, 0.0019, 0.0014, 0.0005, 0.0001, 0.0000739, 0.0000342, 0.000008, 0.0000054, 0.000000739, 0.00000000359, 0.000000000734};
+	tau = vector<double> {
+	    1.000, 0.985, 0.970, 0.960, 0.950, 0.942, 0.939, 0.934, 0.928, 0.920,
+	    0.918, 0.911, 0.906, 0.901, 0.896, 0.891, 0.885, 0.879, 0.873, 0.867,
+	    0.860, 0.853, 0.846, 0.838, 0.830, 0.822, 0.810, 0.804, 0.794, 0.784,
+	    0.774, 0.763, 0.752, 0.741, 0.728, 0.716, 0.703, 0.690, 0.676, 0.662,
+	    0.647, 0.632, 0.616, 0.600, 0.584, 0.567, 0.549, 0.531, 0.514, 0.495,
+	    0.477, 0.458, 0.438, 0.412, 0.400, 0.381, 0.361, 0.342, 0.322, 0.303, 
+	    0.284, 0.264, 0.246, 0.228, 0.210, 0.193, 0.177, 0.161, 0.145, 0.131,
+	    0.117, 0.104, 0.092, 0.081, 0.070, 0.061, 0.052, 0.044, 0.0375, 0.031,
+	    0.026, 0.0212, 0.0172, 0.0138, 0.011, 0.008, 0.006, 0.005, 0.004, 0.003,
+	    0.002, 0.001, 0.0003, 0.0001, 3e-5, 1e-6, 0, 0, 0, 0,
+	    0};
 
 
 	//objective function
@@ -424,7 +429,8 @@ double SANA::temperatureFunction(double iter, double TInitial, double TDecay) {
 }
 
 double SANA::acceptingProbability(double energyInc, double T) {
-	return energyInc >= 0 ? 1 : exp(energyInc/T);
+	//return energyInc >= 0 ? 1 : exp(energyInc/T);
+	return energyInc >= 0 ? 1 : pBad;
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
@@ -873,13 +879,15 @@ void SANA::trackProgress(long long unsigned int i) {
 		//"sped up" or "slowed down"
 		int NSteps = 100; 
 		double fractional_time = (timer.elapsed()/(minutes*60)); 
-		double lowIndex = floor(NSteps*fractional_time);
-		double highIndex = ceil(NSteps*fractional_time);
+		double lowIndex = fmax(0,floor(NSteps*fractional_time));
+		double highIndex = fmin(NSteps,ceil(NSteps*fractional_time));
 		double betweenFraction = NSteps*fractional_time - lowIndex;
 		double PLow = tau[lowIndex];
 		double PHigh = tau[highIndex]; 
 		
 		double PBetween = PLow + betweenFraction * (PHigh - PLow);
+		pBad = PBetween;
+		return;
 		
 		// if the ratio if off by more than a few percent, adjust.
 		double ratio = acceptingProbability(avgEnergyInc, T) / PBetween;
@@ -959,7 +967,7 @@ void SANA::setTemperatureScheduleAutomatically() {
 }
 
 void SANA::setTInitialAutomatically() {
-	TInitial = searchTInitial(); // Nil's code using fancy statistics
+	//TInitial = searchTInitial(); // Nil's code using fancy statistics
 	//TInitial = simpleSearchTInitial(); // Wayne's simplistic "make it bigger!!" code
 }
 
