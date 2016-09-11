@@ -279,6 +279,8 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     
     if (args.strings["-balance"] != ""){
         M.rebalanceWeight(args.strings["-balance"]);
+    }else if (args.bools["-balance-all"]){
+        M.rebalanceWeight();
     }
 
     //not necessary, as getWeight returns normalized weight:
