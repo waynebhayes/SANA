@@ -89,14 +89,12 @@ Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombin
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
 
     double TInitial = 0;
-    if (args.strings["-tinitial"] != "deprecated") {
-	throw runtime_error("Error: -tinitial and -tdecay are deprecated, probability schedule is now entirely automated");
+    if (args.strings["-tinitial"] != "auto") {
         TInitial = stod(args.strings["-tinitial"]);
     }
 
     double TDecay = 0;
-    if (args.strings["-tdecay"] != "deprecated") {
-	throw runtime_error("Error: -tinitial and -tdecay are deprecated, probability schedule is now entirely automated");
+    if (args.strings["-tdecay"] != "auto") {
         TDecay = stod(args.strings["-tdecay"]);
     }
 
