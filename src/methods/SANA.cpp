@@ -28,7 +28,7 @@
 #include "../utils/NormalDistribution.hpp"
 using namespace std;
 
-static double SANAtime, pBad=1;
+static double SANAtime;
 
 SANA::SANA(Graph* G1, Graph* G2,
 		double TInitial, double TDecay, double t, MeasureCombination* MC, string& objectiveScore):
@@ -429,8 +429,8 @@ double SANA::temperatureFunction(double iter, double TInitial, double TDecay) {
 }
 
 double SANA::acceptingProbability(double energyInc, double T) {
-	//return energyInc >= 0 ? 1 : exp(energyInc/T);
-	return energyInc >= 0 ? 1 : pBad;
+	return energyInc >= 0 ? 1 : exp(energyInc/T);
+	//return energyInc >= 0 ? 1 : pBad;
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
@@ -879,15 +879,15 @@ void SANA::trackProgress(long long unsigned int i) {
 		//"sped up" or "slowed down"
 		int NSteps = 100; 
 		double fractional_time = (timer.elapsed()/(minutes*60)); 
-		double lowIndex = fmax(0,floor(NSteps*fractional_time));
-		double highIndex = fmin(NSteps,ceil(NSteps*fractional_time));
+		//double lowIndex = fmax(0,floor(NSteps*fractional_time));
+		//double highIndex = fmin(NSteps,ceil(NSteps*fractional_time));
+		double lowIndex = floor(NSteps*fractional_time);
+		double highIndex = ceil(NSteps*fractional_time);
 		double betweenFraction = NSteps*fractional_time - lowIndex;
 		double PLow = tau[lowIndex];
 		double PHigh = tau[highIndex]; 
 		
 		double PBetween = PLow + betweenFraction * (PHigh - PLow);
-		pBad = PBetween;
-		return;
 		
 		// if the ratio if off by more than a few percent, adjust.
 		double ratio = acceptingProbability(avgEnergyInc, T) / PBetween;
@@ -967,7 +967,7 @@ void SANA::setTemperatureScheduleAutomatically() {
 }
 
 void SANA::setTInitialAutomatically() {
-	//TInitial = searchTInitial(); // Nil's code using fancy statistics
+	TInitial = searchTInitial(); // Nil's code using fancy statistics
 	//TInitial = simpleSearchTInitial(); // Wayne's simplistic "make it bigger!!" code
 }
 
