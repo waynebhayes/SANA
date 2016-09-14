@@ -157,8 +157,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
 	//to track progress
-	//vector<double> eIncs = energyIncSample();
-	avgEnergyInc = -0.00001;
+	vector<double> eIncs = energyIncSample();
+	//avgEnergyInc = -0.00001;
 }
 
 SANA::SANA(Graph* G1, Graph* G2,
@@ -277,8 +277,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
 	//to track progress
-	//vector<double> eIncs = energyIncSample();
-	avgEnergyInc = -0.00001;
+	vector<double> eIncs = energyIncSample();
+	//avgEnergyInc = -0.00001;
 }
 
 SANA::~SANA() {
