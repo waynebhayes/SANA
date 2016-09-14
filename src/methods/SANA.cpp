@@ -28,8 +28,6 @@
 #include "../utils/NormalDistribution.hpp"
 using namespace std;
 
-static double SANAtime;
-
 SANA::SANA(Graph* G1, Graph* G2,
 		double TInitial, double TDecay, double t, MeasureCombination* MC, string& objectiveScore):
     		Method(G1, G2, "SANA_"+MC->toString())
@@ -159,7 +157,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
 	//to track progress
-	vector<double> eIncs = energyIncSample();
+	//vector<double> eIncs = energyIncSample();
+	avgEnergyInc = -0.00001;
 }
 
 SANA::SANA(Graph* G1, Graph* G2,
@@ -278,7 +277,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
 	//to track progress
-	vector<double> eIncs = energyIncSample();
+	//vector<double> eIncs = energyIncSample();
+	avgEnergyInc = -0.00001;
 }
 
 SANA::~SANA() {
