@@ -81,7 +81,8 @@ private:
 	//vector holds "ideal" temperature values at certain execution times 
 	bool dynamic_tdecay;
 	vector<double> tau; 
-
+    double SANAtime;
+    
     double T;
     double temperatureFunction(double iter, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double T);
