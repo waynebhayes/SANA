@@ -13,7 +13,8 @@ UTILS_SRC = 											\
 	src/utils/Timer.cpp									\
 	src/utils/utils.cpp									\
 	src/utils/randomSeed.cpp							\
-	src/utils/SkipList.cpp
+	src/utils/SkipList.cpp								\
+	src/utils/LinearRegression.cpp
 ARGUMENTS_SRC = 										\
 	src/arguments/ArgumentParser.cpp					\
 	src/arguments/modeSelector.cpp						\
