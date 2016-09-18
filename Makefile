@@ -3,6 +3,7 @@ CC = g++
 #CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g3
 CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-pg -ggdb -Bstatic #-static
 
+
 INCLUDES =
 LFLAGS =
 LIBS =
