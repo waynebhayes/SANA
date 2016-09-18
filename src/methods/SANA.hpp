@@ -54,6 +54,7 @@ private:
     vector<vector<ushort> > G1AdjLists;
     vector<vector<ushort> > G2AdjLists;
 
+    void initTau(void);
     vector<ushort> unLockedNodesG1;
     bool nodesHaveType = false;
     //random number generation
