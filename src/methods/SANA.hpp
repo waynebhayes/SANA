@@ -27,6 +27,7 @@ public:
     //set temperature schedule automatically
     void setTemperatureScheduleAutomatically();
     void setTInitialAutomatically();
+    void setTInitialAutomaticallyStats();
     void setTDecayAutomatically();
 	
 	//set temperature decay dynamically 
@@ -203,6 +204,15 @@ private:
     // Used to support locking
     Alignment getStartingAlignment();
     bool implementsLocking(){ return true; }
+
+    double pForTInitial(double TInitial);
+    double getPforTInitial(const Alignment& startA, double maxExecutionSeconds,
+        long long unsigned int& iter);
+    double findTInitial();
+    string getFolder();
+    string haveFolder();
+    string wrdir(const std::string& file);
+    tuple<int, double, int, double, double, double> regress(double start, double end, int amount);
 };
 
 #endif

@@ -89,7 +89,7 @@ Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombin
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
 
     double TInitial = 0;
-    if (args.strings["-tinitial"] != "auto") {
+    if (args.strings["-tinitial"] != "auto_stats" && args.strings["-tinitial"] != "auto") {
         TInitial = stod(args.strings["-tinitial"]);
     }
 
@@ -118,6 +118,9 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     }
     if (args.strings["-tinitial"] == "auto") {
         ((SANA*) sana)->setTInitialAutomatically();
+    }
+    if (args.strings["-tinitial"] == "auto_stats") {
+        ((SANA*) sana)->setTInitialAutomaticallyStats();
     }
     if (args.strings["-tdecay"] == "auto") {
         ((SANA*) sana)->setTDecayAutomatically();

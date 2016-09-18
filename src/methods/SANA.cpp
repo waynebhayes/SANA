@@ -26,6 +26,7 @@
 #include "../measures/SymmetricEdgeCoverage.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
 #include "../utils/NormalDistribution.hpp"
+#include "../utils/LinearRegression.hpp"
 using namespace std;
 
 SANA::SANA(Graph* G1, Graph* G2,
@@ -967,6 +968,11 @@ void SANA::setTemperatureScheduleAutomatically() {
 }
 
 void SANA::setTInitialAutomatically() {
+	TInitial = findTInitial(); // Nil's code using fancy statistics
+	//TInitial = simpleSearchTInitial(); // Wayne's simplistic "make it bigger!!" code
+}
+
+void SANA::setTInitialAutomaticallyStats() {
 	TInitial = searchTInitial(); // Nil's code using fancy statistics
 	//TInitial = simpleSearchTInitial(); // Wayne's simplistic "make it bigger!!" code
 }
@@ -1044,6 +1050,7 @@ double SANA::searchTInitial() {
 	//return the top of the range
 	cerr << "Final range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
 	cerr << "Final TInitial: " << upperBoundTInitial << endl;
+	cerr << "Final P(Bad): " << pForTInitial(upperBoundTInitial) << endl;
 	return upperBoundTInitial;
 }
 
@@ -1065,7 +1072,7 @@ double SANA::scoreForTInitial(double TInitial) {
 
 	long long unsigned int iter = 0;
 	// simpleRun(Alignment::random(n1, n2), 0.0, iter);
-	simpleRun(getStartingAlignment(), 0.0, iter);
+	simpleRun(getStartingAlignment(), (long long unsigned int) 100000, iter);
 	this->iterationsPerStep = oldIterationsPerStep;
 	this->TInitial = oldTInitial;
 	constantTemp = false;
@@ -1073,6 +1080,252 @@ double SANA::scoreForTInitial(double TInitial) {
 	restart = oldRestart;
 
 	return currentScore;
+}
+
+double SANA::findTInitial(){
+	
+	map<double, double> cache;
+	std::ifstream infile(wrdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
+	double a, b, c;
+	cout.precision(17);
+	cout << fixed;
+	while (infile >> a >> b)
+	{
+	    cache[a] = b;
+	}
+	infile.close();
+	ofstream outfile(wrdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt", std::ofstream::out | std::ofstream::app);
+	outfile.precision(17);
+	map<double, pair<double, double>> firstMap;
+	map<double, double> firstChart;
+	map<double, double> firstCoor;
+	vector<double> tempList;
+	double chunksize = 1;
+	for(double i = -10; i <= 10.0; i = i + chunksize){
+		double score;
+		if(cache.find(pow(10, i)) != cache.end()){
+			score = cache[pow(10, i)];
+		}else{
+			score = scoreForTInitial(pow(10, i));
+			outfile << pow(10, i) << " " << score << endl;
+		}
+		firstMap[score] = std::make_pair(pow(10, i), i);
+		firstChart[pow(10, i)] = score;
+		firstCoor[i] = score;
+		tempList.push_back(i);
+	}
+	LinearRegression obj;
+    obj.setup(firstChart);
+    tuple<int, double, int, double, double, double> result = obj.start();
+    int ilow = get<0>(result);
+    int ihigh = get<2>(result);
+    double scorelow = get<1>(result);
+    double scorehigh = get<3>(result);
+    double tlow = firstMap[scorelow].first;
+    double thigh = firstMap[scorehigh].first;
+    double elow = firstMap[scorelow].second;
+    double ehigh = firstMap[scorehigh].second;
+    map<double, pair<double, double>> secondMap;
+	map<double, double> secondChart;
+	map<double, double> secondCoor;
+    double difference = ehigh - elow;
+    double multiple = difference / 30;
+    cout << multiple << endl;
+    int dex = 0;
+	for(double i = -10; i <= 10; i = i + multiple){
+		dex++;
+		double score;
+		if(i > elow && i < ehigh){
+			if(cache.find(pow(10, i)) != cache.end()){
+				score = cache[pow(10, i)];
+			}else{
+				score = scoreForTInitial(pow(10, i));
+			}
+			outfile << pow(10, i) << " " << score << endl;
+			secondMap[score] = std::make_pair(pow(10, i), i);
+			secondChart[pow(10, i)] = score;
+		}else{
+
+		}
+	}
+	secondMap.insert(firstMap.begin(), firstMap.end());
+	secondChart.insert(firstChart.begin(), firstChart.end());
+	
+	outfile.close();
+	LinearRegression ob;
+    ob.setup(secondChart);
+    result = ob.start();
+    ilow = get<0>(result);
+    ihigh = get<2>(result);
+    cout << "ilow is " << ilow << " ";
+    cout << "ihigh is " << ihigh << endl;
+    scorelow = get<1>(result);
+    scorehigh = get<3>(result);
+    cout << "scorelow is " << scorelow << " ";
+    cout << "scorehigh is " << scorehigh << endl;
+    tlow = secondMap[scorelow].first;
+    thigh = secondMap[scorehigh].first;
+    cout << "tlow is " << tlow << " ";
+    cout << "thigh is  " << thigh << endl;
+    elow = secondMap[scorelow].second;
+    ehigh = secondMap[scorehigh].second;
+    cout << "elow is " << elow << " ";
+    cout << "ehigh is " << ehigh << endl;
+    scorelow = get<4>(result);
+    scorehigh = get<5>(result);
+	double exp = ehigh;
+	double temp = pow(10, exp);
+	double p = pForTInitial(pow(10, exp));
+	cout << "Starting P Test" << " ";
+	cout << p << endl;
+	cout << "tInitial" << " ";
+	cout << pow(10, exp) << endl;
+	if(p < 0.985){
+		double left = exp;
+		double right = exp + 0.2;
+		double itemp = pow(10, right);
+		double ip = pForTInitial(pow(10, right));
+		while(ip < 0.985){
+			if( ip < 0.995 && ip > 0.985 ){
+		    	ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
+		    	auth.precision(8);
+		    	auth << fixed;
+		    	auth << G1->getName() << "_" << G2->getName() << " T Initial: " << pow(10, left) << " P Value: " << ip << endl;
+		    	auth.close();
+				return pow(10, left);
+			}
+			left = left + 0.2;
+			right = right + 0.2;
+			itemp = pow(10, left);
+			ip = pForTInitial(pow(10, left));
+			cout << "pre left " << left << " right " << right << " " << ip << endl;
+			if( ip < 0.995 && ip > 0.985 ) {
+		    	ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
+		    	auth.precision(8);
+		    	auth << fixed;
+		    	auth << G1->getName() << "_" << G2->getName() << " T Initial: " << pow(10, left) << " P Value: " << ip << endl;
+		    	auth.close();
+				return pow(10, left);
+			}
+			
+		}
+		cout << "left " << pForTInitial(pow(10, left)) << " " << left << " right " << pForTInitial(pow(10, right)) << " " << right << endl;
+		double current = ( right + left ) / 2;
+		double currentp = pForTInitial(current);
+		while(currentp > 0.995 || currentp < 0.985){
+			cout << current << " " << currentp << endl;
+
+			if(currentp > 0.995){
+				right = current;
+				current = ( right + left ) / 2;
+				currentp = pForTInitial(pow(10, current));
+			}
+			if(currentp < 0.985){
+				left = current;
+				current = ( right + left ) / 2;
+				currentp = pForTInitial(pow(10, current));
+			}
+		}
+		ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
+    	auth.precision(8);
+    	auth << fixed;
+    	auth << G1->getName() << "_" << G2->getName() << " T Initial: " << pow(10, current) << " P Value: " << currentp << endl;
+    	auth.close();
+		return temp;
+	}
+	ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
+	auth.precision(8);
+	auth << fixed;
+	auth << G1->getName() << "_" << G2->getName() << " T Initial: " << temp << " P Value: " << p << endl;
+	auth.close();
+	cout << "This TInitial " << temp << endl;
+	return temp;
+}
+
+string SANA::getFolder(){
+	stringstream ss;
+	ss << "mkdir -p " << "catch" << "/" << MC->toString() << "/";
+	system(ss.str().c_str());
+	stringstream sf;
+	sf << "catch" << "/" << MC->toString() << "/";
+	return sf.str();
+}
+
+string SANA::haveFolder(){
+	stringstream ss;
+	//ss << "catch/" << G1->getName() << "_" << G2->getName() << "/" << MC.toString() << "/";
+	ss << "catch" << "/" << MC->toString() << "/";
+	return ss.str();
+}
+
+string SANA::wrdir(const std::string& file){
+	stringstream ss;
+	ss << "mkdir -p " << getFolder() << file << "/";
+	system(ss.str().c_str());
+	stringstream sf;
+	sf << getFolder() << file << "/";
+	return sf.str();
+}
+
+double SANA::pForTInitial(double TInitial) {
+
+	// T = TInitial;
+	// double pBad;
+	// vector<double> EIncs = energyIncSample(T);
+ //    cerr << "Trying TInitial " << T;
+ //    //uint nBad = 0;
+ //    //for(uint i=0; i<EIncs.size();i++)
+	// //nBad += (randomReal(gen) <= exp(EIncs[i]/T));
+ //    pBad = exp(avgEnergyInc/T); // (double)nBad/(EIncs.size());
+ //    cerr << " p(Bad) = " << pBad << endl;
+	// return pBad;
+
+	uint ITERATIONS = 10000.+100.*n1+10.*n2+n1*n2*0.1; //heuristic value
+
+	double oldIterationsPerStep = this->iterationsPerStep;
+	double oldTInitial = this->TInitial;
+	bool oldRestart = restart;
+
+	this->iterationsPerStep = ITERATIONS;
+	this->TInitial = TInitial;
+	constantTemp = true;
+	enableTrackProgress = true;
+	restart = false;
+
+	long long unsigned int iter = 0;
+	// simpleRun(Alignment::random(n1, n2), 0.0, iter);
+	double result = getPforTInitial(getStartingAlignment(), 0.0, iter);
+	this->iterationsPerStep = oldIterationsPerStep;
+	this->TInitial = oldTInitial;
+	constantTemp = false;
+	enableTrackProgress = true;
+	restart = oldRestart;
+
+	return result;
+}
+
+double SANA::getPforTInitial(const Alignment& startA, double maxExecutionSeconds,
+		long long unsigned int& iter) {
+
+	double result = 0.0;
+	initDataStructures(startA);
+
+	setInterruptSignal();
+
+	for (; ; iter++) {
+		T = temperatureFunction(iter, TInitial, TDecay);
+		if (interrupt) {
+			return result;
+		}
+		if (iter%iterationsPerStep == 0) {
+			result = acceptingProbability(avgEnergyInc, T);
+			if (iter != 0 and timer.elapsed() > maxExecutionSeconds) {
+				return result;
+			}
+		} //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
+		SANAIteration();
+	}
+	return result; //dummy return to shut compiler warning
 }
 
 bool SANA::isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore) {
