@@ -961,17 +961,17 @@ uint SANA::getHighestIndex() const {
 
 
 void SANA::setTemperatureScheduleAutomatically() {
-	setTInitialAutomatically();
+	setTInitialByLinearRegression();
 	setTDecayAutomatically();
 }
 
-void SANA::setTInitialAutomatically() {
-	TInitial = findTInitial(); // Nil's code using fancy statistics
+void SANA::setTInitialByLinearRegression() {
+	TInitial = findTInitialByLinearRegression(); // Nil's code using fancy statistics
 	//TInitial = simpleSearchTInitial(); // Wayne's simplistic "make it bigger!!" code
 }
 
-void SANA::setTInitialAutomaticallyStats() {
-	TInitial = searchTInitial(); // Nil's code using fancy statistics
+void SANA::setTInitialByStatisticalTest() {
+	TInitial = searchTInitialByStatisticalTest(); // Nil's code using fancy statistics
 	//TInitial = simpleSearchTInitial(); // Wayne's simplistic "make it bigger!!" code
 }
 
@@ -984,7 +984,7 @@ void SANA::setTDecayAutomatically() {
 	//TDecay /= 2; // always seems too fast; dynamic TDecay will fix it.
 }
 
-double SANA::searchTInitial() {
+double SANA::searchTInitialByStatisticalTest() {
 	const double NUM_SAMPLES_RANDOM = 100;
 	const double HIGH_THRESHOLD_P = 0.999999;
 	const double LOW_THRESHOLD_P = 0.99;
@@ -1080,40 +1080,40 @@ double SANA::scoreForTInitial(double TInitial) {
 	return currentScore;
 }
 
-double SANA::findTInitial(){
+double SANA::findTInitialByLinearRegression(){
 	
-	map<double, double> cache;
-	std::ifstream infile(wrdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
-	double a, b, c;
-	cout.precision(17);
-	cout << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes\n";
-	cout << fixed;
-	while (infile >> a >> b)
-	{
-	    cache[a] = b;
+    map<double, double> cache;
+    std::ifstream infile(wrdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
+    double a, b;
+    cout.precision(17);
+    cout << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes\n";
+    cout << fixed;
+    while (infile >> a >> b)
+    {
+	cache[a] = b;
+    }
+    infile.close();
+    ofstream outfile(wrdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt", std::ofstream::out | std::ofstream::app);
+    outfile.precision(17);
+    map<double, pair<double, double>> firstMap;
+    map<double, double> firstChart;
+    map<double, double> firstCoor;
+    vector<double> tempList;
+    double chunksize = 1;
+    for(double i = -10; i <= 10.0; i = i + chunksize){
+	double score;
+	if(cache.find(pow(10, i)) != cache.end()){
+	    score = cache[pow(10, i)];
+	}else{
+	    score = scoreForTInitial(pow(10, i));
+	    outfile << pow(10, i) << " " << score << endl;
 	}
-	infile.close();
-	ofstream outfile(wrdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt", std::ofstream::out | std::ofstream::app);
-	outfile.precision(17);
-	map<double, pair<double, double>> firstMap;
-	map<double, double> firstChart;
-	map<double, double> firstCoor;
-	vector<double> tempList;
-	double chunksize = 1;
-	for(double i = -10; i <= 10.0; i = i + chunksize){
-		double score;
-		if(cache.find(pow(10, i)) != cache.end()){
-			score = cache[pow(10, i)];
-		}else{
-			score = scoreForTInitial(pow(10, i));
-			outfile << pow(10, i) << " " << score << endl;
-		}
-		firstMap[score] = std::make_pair(pow(10, i), i);
-		firstChart[pow(10, i)] = score;
-		firstCoor[i] = score;
-		tempList.push_back(i);
-	}
-	LinearRegression obj;
+	firstMap[score] = std::make_pair(pow(10, i), i);
+	firstChart[pow(10, i)] = score;
+	firstCoor[i] = score;
+	tempList.push_back(i);
+    }
+    LinearRegression obj;
     obj.setup(firstChart);
     tuple<int, double, int, double, double, double> result = obj.start();
     int ilow = get<0>(result);
@@ -1125,33 +1125,33 @@ double SANA::findTInitial(){
     double elow = firstMap[scorelow].second;
     double ehigh = firstMap[scorehigh].second;
     map<double, pair<double, double>> secondMap;
-	map<double, double> secondChart;
-	map<double, double> secondCoor;
+    map<double, double> secondChart;
+    map<double, double> secondCoor;
     double difference = ehigh - elow;
     double multiple = difference / 30;
     cout << multiple << endl;
     int dex = 0;
-	for(double i = -10; i <= 10; i = i + multiple){
-		dex++;
-		double score;
-		if(i > elow && i < ehigh){
-			if(cache.find(pow(10, i)) != cache.end()){
-				score = cache[pow(10, i)];
-			}else{
-				score = scoreForTInitial(pow(10, i));
-			}
-			outfile << pow(10, i) << " " << score << endl;
-			secondMap[score] = std::make_pair(pow(10, i), i);
-			secondChart[pow(10, i)] = score;
+    for(double i = -10; i <= 10; i = i + multiple){
+	dex++;
+	double score;
+	if(i > elow && i < ehigh){
+		if(cache.find(pow(10, i)) != cache.end()){
+			score = cache[pow(10, i)];
 		}else{
-
+			score = scoreForTInitial(pow(10, i));
 		}
+		outfile << pow(10, i) << " " << score << endl;
+		secondMap[score] = std::make_pair(pow(10, i), i);
+		secondChart[pow(10, i)] = score;
+	}else{
+	    // Nothing?
 	}
-	secondMap.insert(firstMap.begin(), firstMap.end());
-	secondChart.insert(firstChart.begin(), firstChart.end());
-	
-	outfile.close();
-	LinearRegression ob;
+    }
+    secondMap.insert(firstMap.begin(), firstMap.end());
+    secondChart.insert(firstChart.begin(), firstChart.end());
+    
+    outfile.close();
+    LinearRegression ob;
     ob.setup(secondChart);
     result = ob.start();
     ilow = get<0>(result);
@@ -1172,73 +1172,73 @@ double SANA::findTInitial(){
     cout << "ehigh is " << ehigh << endl;
     scorelow = get<4>(result);
     scorehigh = get<5>(result);
-	double exp = ehigh;
-	double temp = pow(10, exp);
-	double p = pForTInitial(pow(10, exp));
-	cout << "Starting P Test" << " ";
-	cout << p << endl;
-	cout << "tInitial" << " ";
-	cout << pow(10, exp) << endl;
-	if(p < 0.985){
-		double left = exp;
-		double right = exp + 0.2;
-		double itemp = pow(10, right);
-		double ip = pForTInitial(pow(10, right));
-		while(ip < 0.985){
-			if( ip < 0.995 && ip > 0.985 ){
-		    	ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
-		    	auth.precision(8);
-		    	auth << fixed;
-		    	auth << G1->getName() << "_" << G2->getName() << " T Initial: " << pow(10, left) << " P Value: " << ip << endl;
-		    	auth.close();
-				return pow(10, left);
-			}
-			left = left + 0.2;
-			right = right + 0.2;
-			itemp = pow(10, left);
-			ip = pForTInitial(pow(10, left));
-			cout << "pre left " << left << " right " << right << " " << ip << endl;
-			if( ip < 0.995 && ip > 0.985 ) {
-		    	ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
-		    	auth.precision(8);
-		    	auth << fixed;
-		    	auth << G1->getName() << "_" << G2->getName() << " T Initial: " << pow(10, left) << " P Value: " << ip << endl;
-		    	auth.close();
-				return pow(10, left);
-			}
-			
-		}
-		cout << "left " << pForTInitial(pow(10, left)) << " " << left << " right " << pForTInitial(pow(10, right)) << " " << right << endl;
-		double current = ( right + left ) / 2;
-		double currentp = pForTInitial(current);
-		while(currentp > 0.995 || currentp < 0.985){
-			cout << current << " " << currentp << endl;
-
-			if(currentp > 0.995){
-				right = current;
-				current = ( right + left ) / 2;
-				currentp = pForTInitial(pow(10, current));
-			}
-			if(currentp < 0.985){
-				left = current;
-				current = ( right + left ) / 2;
-				currentp = pForTInitial(pow(10, current));
-			}
-		}
+    double exp = ehigh;
+    double temp = pow(10, exp);
+    double p = pForTInitial(pow(10, exp));
+    cout << "Starting P Test" << " ";
+    cout << p << endl;
+    cout << "tInitial" << " ";
+    cout << pow(10, exp) << endl;
+    if(p < 0.985){
+	double left = exp;
+	double right = exp + 0.2;
+	//double itemp = pow(10, right);
+	double ip = pForTInitial(pow(10, right));
+	while(ip < 0.985){
+	    if( 0.985 < ip && ip < 0.995 ){
 		ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
-    	auth.precision(8);
-    	auth << fixed;
-    	auth << G1->getName() << "_" << G2->getName() << " T Initial: " << pow(10, current) << " P Value: " << currentp << endl;
-    	auth.close();
-		return temp;
+		auth.precision(8);
+		auth << fixed;
+		auth << G1->getName() << "_" << G2->getName() << " T Initial: " << pow(10, left) << " P Value: " << ip << endl;
+		auth.close();
+		return pow(10, left);
+	    }
+	    left = left + 0.2;
+	    right = right + 0.2;
+	    //itemp = pow(10, left);
+	    ip = pForTInitial(pow(10, left));
+	    cout << "pre left " << left << " right " << right << " " << ip << endl;
+	    if( 0.985 < ip && ip < 0.995 ) {
+		ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
+		auth.precision(8);
+		auth << fixed;
+		auth << G1->getName() << "_" << G2->getName() << " T Initial: " << pow(10, left) << " P Value: " << ip << endl;
+		auth.close();
+		return pow(10, left);
+	    }
+		
+	}
+	cout << "left " << pForTInitial(pow(10, left)) << " " << left << " right " << pForTInitial(pow(10, right)) << " " << right << endl;
+	double current = ( right + left ) / 2;
+	double currentp = pForTInitial(current);
+	while(currentp > 0.995 || currentp < 0.985){
+	    cout << current << " " << currentp << endl;
+
+	    if(currentp > 0.995){
+		    right = current;
+		    current = ( right + left ) / 2;
+		    currentp = pForTInitial(pow(10, current));
+	    }
+	    if(currentp < 0.985){
+		    left = current;
+		    current = ( right + left ) / 2;
+		    currentp = pForTInitial(pow(10, current));
+	    }
 	}
 	ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
 	auth.precision(8);
 	auth << fixed;
-	auth << G1->getName() << "_" << G2->getName() << " T Initial: " << temp << " P Value: " << p << endl;
+	auth << G1->getName() << "_" << G2->getName() << " T Initial: " << pow(10, current) << " P Value: " << currentp << endl;
 	auth.close();
-	cout << "This TInitial " << temp << endl;
 	return temp;
+    }
+    ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
+    auth.precision(8);
+    auth << fixed;
+    auth << G1->getName() << "_" << G2->getName() << " T Initial: " << temp << " P Value: " << p << endl;
+    auth.close();
+    cout << "This TInitial " << temp << endl;
+    return temp;
 }
 
 string SANA::getFolder(){

@@ -89,7 +89,10 @@ Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombin
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
 
     double TInitial = 0;
-    if (args.strings["-tinitial"] != "auto_stats" && args.strings["-tinitial"] != "auto") {
+    // t_initial "auto" defaults to by-linear-regression
+    if (args.strings["-tinitial"] == "auto")
+	args.strings["-tinitial"] = "by-linear-regression";
+    if (args.strings["-tinitial"] != "by-linear-regression" && args.strings["-tinitial"] != "by-statistical-test") {
         TInitial = stod(args.strings["-tinitial"]);
     }
 
@@ -116,11 +119,11 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         double tfin = args.doubles["-tfin"];
         ((SANA*) sana)->enableRestartScheme(tnew, iterperstep, numcand, tcand, tfin);
     }
-    if (args.strings["-tinitial"] == "auto") {
-        ((SANA*) sana)->setTInitialAutomatically();
+    if (args.strings["-tinitial"] == "by-linear-regression") {
+        ((SANA*) sana)->setTInitialByLinearRegression();
     }
-    if (args.strings["-tinitial"] == "auto_stats") {
-        ((SANA*) sana)->setTInitialAutomaticallyStats();
+    if (args.strings["-tinitial"] == "by-statistical-test") {
+        ((SANA*) sana)->setTInitialByStatisticalTest();
     }
     if (args.strings["-tdecay"] == "auto") {
         ((SANA*) sana)->setTDecayAutomatically();

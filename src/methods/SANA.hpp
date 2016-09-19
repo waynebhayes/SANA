@@ -26,8 +26,8 @@ public:
 
     //set temperature schedule automatically
     void setTemperatureScheduleAutomatically();
-    void setTInitialAutomatically();
-    void setTInitialAutomaticallyStats();
+    void setTInitialByLinearRegression();
+    void setTInitialByStatisticalTest();
     void setTDecayAutomatically();
 	
 	//set temperature decay dynamically 
@@ -90,7 +90,7 @@ private:
     double acceptingProbability(double energyInc, double T);
     //to compute TInitial automatically
     //returns a value of TInitial such that the temperature is random
-    double searchTInitial(), simpleSearchTInitial();
+    double searchTInitialByStatisticalTest(), simpleSearchTInitial();
     double scoreForTInitial(double TInitial);
     bool isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore);
     double scoreRandom();
@@ -209,7 +209,7 @@ private:
     double pForTInitial(double TInitial);
     double getPforTInitial(const Alignment& startA, double maxExecutionSeconds,
         long long unsigned int& iter);
-    double findTInitial();
+    double findTInitialByLinearRegression();
     string getFolder();
     string haveFolder();
     string wrdir(const std::string& file);
