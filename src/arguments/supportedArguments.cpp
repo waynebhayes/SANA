@@ -49,7 +49,6 @@ vector<string> doubleArgs = {
 "-beta", //used when '-objfuntype' is "beta"
 
 "-t",
-"-i",
 "-rewire",
 "-tnew", "-iterperstep", "-numcand", "-tcand", "-tfin",
 "-seed",
@@ -81,7 +80,8 @@ vector<string> boolArgs = {
 "-nodes-have-types", // Used when the nodes in inpupt graph have types
                     // Added for handling gene-miRNA networks, currently only functional with these networks
 "-dynamictdecay",
-"-balance-all"
+"-balance-all",
+"-usingIterations" //interprets the -t option as specifying iterations
 };
 
 vector<string> vectorArgs = {

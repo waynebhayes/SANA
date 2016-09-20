@@ -45,7 +45,7 @@ void SANA::initTau(void) {
 }
 
 SANA::SANA(Graph* G1, Graph* G2,
-		double TInitial, double TDecay, double t, MeasureCombination* MC, string& objectiveScore):
+		double TInitial, double TDecay, double t, bool usingIterations, MeasureCombination* MC, string& objectiveScore):
     		Method(G1, G2, "SANA_"+MC->toString())
 {
 	//data structures for the networks
@@ -76,7 +76,13 @@ SANA::SANA(Graph* G1, Graph* G2,
 	//temperature schedule
 	this->TInitial = TInitial;
 	this->TDecay = TDecay;
-	minutes = t;
+	this->usingIterations = usingIterations;
+
+    if(this->usingIterations){
+        maxIterations = (uint)(t);
+    }else{
+        minutes = t;
+    }
 	initializedIterPerSecond = false;
 
 	//data structures for the solution space search
@@ -166,120 +172,6 @@ SANA::SANA(Graph* G1, Graph* G2,
 	//avgEnergyInc = -0.00001;
 }
 
-SANA::SANA(Graph* G1, Graph* G2,
-		double TInitial, double TDecay, uint i, MeasureCombination* MC, string& objectiveScore):
-    		Method(G1, G2, "SANA_"+MC->toString())
-{
-	//data structures for the networks
-	n1 = G1->getNumNodes();
-	n2 = G2->getNumNodes();
-	g1Edges = G1->getNumEdges();
-	g2Edges = G2->getNumEdges();
-	score = objectiveScore;
-	
-	G1->getAdjMatrix(G1AdjMatrix);
-	G2->getAdjMatrix(G2AdjMatrix);
-	G1->getAdjLists(G1AdjLists);
-	G2->getAdjLists(G2AdjLists);
-
-
-	//random number generation
-	random_device rd;
-	gen = mt19937(getRandomSeed());
-	G1RandomNode = uniform_int_distribution<>(0, n1-1);
-	uint G1UnLockedCount = n1 - G1->getLockedCount() -1;
-	G1RandomUnlockedNodeDist = uniform_int_distribution<>(0, G1UnLockedCount);
-	G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
-    G1RandomUnlockedGeneDist = uniform_int_distribution<>(0, G1->unlockedGeneCount - 1);
-    G1RandomUnlockedmiRNADist = uniform_int_distribution<>(0, G1->unlockedmiRNACount - 1);
-	randomReal = uniform_real_distribution<>(0, 1);
-
-
-	//temperature schedule
-	this->TInitial = TInitial;
-	this->TDecay = TDecay;
-	maxIterations = i;
-	initializedIterPerSecond = false;
-
-	//data structures for the solution space search
-	uint ramificationChange = n1*(n2-n1);
-	uint ramificationSwap = n1*(n1-1)/2;
-	uint totalRamification = ramificationSwap + ramificationChange;
-	changeProbability = (double) ramificationChange/totalRamification;
-
-	initTau();
-
-	//objective function
-	this->MC = MC;
-	ecWeight = MC->getWeight("ec");
-	s3Weight = MC->getWeight("s3");
-	secWeight = MC->getWeight("sec");
-	try {
-		wecWeight = MC->getWeight("wec");
-	} catch(...) {
-		wecWeight = 0;
-	}
-	localWeight = MC->getSumLocalWeight();
-
-
-	//restart scheme
-	restart = false;
-
-
-	//to evaluate EC incrementally
-	needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0;
-
-
-	//to evaluate S3 incrementally
-	needInducedEdges = s3Weight > 0;
-
-
-	//to evaluate WEC incrementally
-	needWec = wecWeight > 0;
-	if (needWec) {
-		Measure* wec = MC->getMeasure("wec");
-		LocalMeasure* m = ((WeightedEdgeConservation*) wec)->getNodeSimMeasure();
-		vector<vector<float> >* wecSimsP = m->getSimMatrix();
-		wecSims = vector<vector<float> > (n1, vector<float> (n2, 0));
-		for (uint i = 0; i < n1; i++) {
-			for (uint j = 0; j < n2; j++) {
-				wecSims[i][j] = (*wecSimsP)[i][j];
-			}
-		}
-	}
-
-
-	//to evaluate local measures incrementally
-	needLocal = localWeight > 0;
-	if (needLocal) {
-		sims = MC->getAggregatedLocalSims();
-		localWeight = 1; //the values in the sim matrix 'sims'
-		//have already been scaled by the weight
-	} else {
-		localWeight = 0;
-	}
-
-
-	//other execution options
-	constantTemp = false;
-	enableTrackProgress = true;
-	iterationsPerStep = 10000000;
-
-
-	//this does not need to be initialized here,
-	//but the space has to be reserved in the
-	//stack. it is initialized properly before
-	//running the algorithm
-	assignedNodesG2 = vector<bool> (n2);
-	unassignedNodesG2 = vector<ushort> (n2-n1);
-	A = vector<ushort> (n1);
-
-
-	//to track progress
-	vector<double> eIncs = energyIncSample();
-	//avgEnergyInc = -0.00001;
-}
-
 SANA::~SANA() {
 }
 
@@ -305,7 +197,7 @@ Alignment SANA::run() {
 	else {
 		long long unsigned int iter = 0;
 
-		if(maxIterations == 0){
+		if(usingIterations){
 			return simpleRun(getStartingAlignment(), minutes*60, iter);
 		}else{
 			return simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter);
@@ -380,14 +272,13 @@ void SANA::describeParameters(ostream& sout) {
 	sout << "Optimize: " << endl;
 	MC->printWeights(sout);
 
-	if (maxIterations == 0){
+	if (!usingIterations){
 		sout << "Execution time: ";
 		if (restart) {sout << minutesNewAlignments + minutesPerCandidate*numCandidates + minutesFinalist;}
 		else {sout << minutes;}
 		sout << "m" << endl;
 	}else{
-		sout << "Planned Iterations Run: " << maxIterations << " sets of 100,000,000" << endl;
-		sout << "Total Iterations Run: " << iterationCount << endl;
+		sout << "Iterations Run: " << maxIterations << "00,000,000" << endl; //it's in hundred millions
 	}
 
 
@@ -516,7 +407,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
 			if (iter != 0 and timer.elapsed() > maxExecutionSeconds) {
 				return A;
 			}
-		} //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
+		} 
 		SANAIteration();
 	}
 	return A; //dummy return to shut compiler warning
@@ -540,7 +431,6 @@ Alignment SANA::simpleRun(const Alignment& startA, long long unsigned int maxExe
 		if (iter != 0 and iter > maxExecutionIterations) {
 			return A;
 		}
-		iterationCount++; //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
 		SANAIteration();
 	}
 	return A; //dummy return to shut compiler warning
