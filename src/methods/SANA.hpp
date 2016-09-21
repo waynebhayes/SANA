@@ -12,9 +12,7 @@ class SANA: public Method {
 
 public:
     SANA(Graph* G1, Graph* G2,
-        double TInitial, double TDecay, double t, MeasureCombination* MC, string& objectiveScore);
-    SANA(Graph* G1, Graph* G2,
-        double TInitial, double TDecay, uint i, MeasureCombination* MC, string& objectiveScore);
+        double TInitial, double TDecay, double t, bool usingIterations, MeasureCombination* MC, string& objectiveScore);
     ~SANA();
 
     Alignment run();
@@ -75,8 +73,8 @@ private:
     double TInitial;
     double TDecay;
     double minutes = 0;
+    bool usingIterations;
     uint maxIterations = 0;
-    long long unsigned int iterationCount = 0;
     const double TInitialScaling = 0.00004;
     const double TDecayScaling = 0.00000001;
 	//to compute TDecay dynamically 
