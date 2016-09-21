@@ -103,13 +103,8 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 
     Method* sana;
 
-    if(args.doubles["-i"] > 0){
-        uint iterations = (uint)(args.doubles["-i"]);
-        sana = new SANA(&G1, &G2, TInitial, TDecay, iterations, &M, args.strings["-score"]);
-    }else{
-        double minutes = args.doubles["-t"];
-        sana = new SANA(&G1, &G2, TInitial, TDecay, minutes, &M, args.strings["-score"]);
-    }
+    double time = args.doubles["-t"];
+    sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"], &M, args.strings["-score"]);
     
     if (args.bools["-restart"]) {
         double tnew = args.doubles["-tnew"];
