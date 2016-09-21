@@ -22,7 +22,7 @@ public:
     vector<string> temperatures;
     LinearRegression();
     void setup(map<double, double> graph);
-    tuple<int, double, int, double, double, double> start();
+    tuple<int, double, double, int, double, double, double, double> run();
     double incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double sum, vector<double> &data);
     double* incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double values[], vector<double> &data);
     double linearLeastSquares(double sum, int n);
