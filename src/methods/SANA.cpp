@@ -195,24 +195,22 @@ Alignment SANA::getStartingAlignment(){
 }
 
 Alignment SANA::run() {
-	if (restart) return runRestartPhases();
+    if (restart) return runRestartPhases();
     else {
-		long long unsigned int iter = 0;
+        long long unsigned int iter = 0;
         Alignment* align;
-		if(!usingIterations){
-			align = new Alignment(simpleRun(getStartingAlignment(), minutes*60, iter));
-		}else{
-			align = new Alignment(simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter));
-		}
-
+        if(!usingIterations){
+            align = new Alignment(simpleRun(getStartingAlignment(), minutes*60, iter));
+        }else{
+            align = new Alignment(simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter));
+        }
         if (addHillClimbing){
             return hillClimbingAlignment();
         }else{
             return *align;
         }
-	}
+    }
 }
-
 
 // Used for method #2 of locking
 inline ushort SANA::G1RandomUnlockedNode_Fast(){
@@ -979,183 +977,100 @@ double SANA::scoreForTInitial(double TInitial) {
 }
 
 double SANA::findTInitialByLinearRegression(){
-	
-    map<double, double> cache;
-    std::ifstream infile(wrdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
-    double a, b;
-    cerr.precision(17);
-    cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes\n";
-    cerr << fixed;
-    while (infile >> a >> b)
-    {
-	cache[a] = b;
-    }
-    infile.close();
-    ofstream outfile(wrdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt", std::ofstream::out | std::ofstream::app);
-    outfile.precision(17);
-    map<double, pair<double, double>> firstMap;
-    map<double, double> firstChart;
-    map<double, double> firstCoor;
-    vector<double> tempList;
-    double chunksize = 1;
-    for(double i = -10; i <= 10.0; i = i + chunksize){
-	double score;
-	if(cache.find(pow(10, i)) != cache.end()){
-	    score = cache[pow(10, i)];
-	}else{
-	    score = scoreForTInitial(pow(10, i));
-	    outfile << pow(10, i) << " " << score << endl;
+	//Look for a cache file matching the measure and the graphs and fill the cache variable with the file
+	map<double, double> cache;
+	std::ifstream cacheFile(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
+	double a, b;
+	cout << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes\n";
+	//set the float precisison of the stream. This is needed whenever a file is written
+	cout << "Retrieving 50 Samples" << endl;
+	int progress = 0;
+	cout.precision(17);
+	cout << fixed;
+	while (cacheFile >> a >> b){
+		cache[a] = b;
 	}
-	firstMap[score] = std::make_pair(pow(10, i), i);
-	firstChart[pow(10, i)] = score;
-	firstCoor[i] = score;
-	tempList.push_back(i);
-    }
-    LinearRegression obj;
-    obj.setup(firstChart);
-    tuple<int, double, int, double, double, double> result = obj.start();
-    int ilow = get<0>(result);
-    int ihigh = get<2>(result);
-    double scorelow = get<1>(result);
-    double scorehigh = get<3>(result);
-    double tlow = firstMap[scorelow].first;
-    double thigh = firstMap[scorehigh].first;
-    double elow = firstMap[scorelow].second;
-    double ehigh = firstMap[scorehigh].second;
-    map<double, pair<double, double>> secondMap;
-    map<double, double> secondChart;
-    map<double, double> secondCoor;
-    double difference = ehigh - elow;
-    double multiple = difference / 30;
-    cerr << multiple << endl;
-    int dex = 0;
-    for(double i = -10; i <= 10; i = i + multiple){
-	dex++;
-	double score;
-	if(i > elow && i < ehigh){
-		if(cache.find(pow(10, i)) != cache.end()){
-			score = cache[pow(10, i)];
+	cacheFile.close();
+	//Make a file out stream to send scores to the cache file if the temperatures score isn't already there
+	ofstream cacheOutStream(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt", std::ofstream::out | std::ofstream::app);
+	cacheOutStream.precision(17);
+	cacheOutStream << fixed;
+	//Map that pairs temperatures (in log space) to scores, then we add the pairs already in the cache
+	map<double, double> scoreMap;
+	//start first instance of linear regression by filling the map with 20 pairs over 10E-10 to 10E!0
+	for(double i = -10.0; i < 10.0; i = i + 1.0){
+		if(cache.find(i) == cache.end()){
+			double score = scoreForTInitial(pow(10, i));
+			cacheOutStream << i << " " << score << endl;
+			scoreMap[i] = score;
 		}else{
-			score = scoreForTInitial(pow(10, i));
+			scoreMap[i] = cache[i];
 		}
-		outfile << pow(10, i) << " " << score << endl;
-		secondMap[score] = std::make_pair(pow(10, i), i);
-		secondChart[pow(10, i)] = score;
-	}else{
-	    // Nothing?
+		progress++;
+		cout << "\r" << progress << " of 50" << std::flush;
 	}
-    }
-    secondMap.insert(firstMap.begin(), firstMap.end());
-    secondChart.insert(firstChart.begin(), firstChart.end());
-    
-    outfile.close();
-    LinearRegression ob;
-    ob.setup(secondChart);
-    result = ob.start();
-    ilow = get<0>(result);
-    ihigh = get<2>(result);
-    cerr << "ilow is " << ilow << " ";
-    cerr << "ihigh is " << ihigh << endl;
-    scorelow = get<1>(result);
-    scorehigh = get<3>(result);
-    cerr << "scorelow is " << scorelow << " ";
-    cerr << "scorehigh is " << scorehigh << endl;
-    tlow = secondMap[scorelow].first;
-    thigh = secondMap[scorehigh].first;
-    cerr << "tlow is " << tlow << " ";
-    cerr << "thigh is  " << thigh << endl;
-    elow = secondMap[scorelow].second;
-    ehigh = secondMap[scorehigh].second;
-    cerr << "elow is " << elow << " ";
-    cerr << "ehigh is " << ehigh << endl;
-    scorelow = get<4>(result);
-    scorehigh = get<5>(result);
-    double exp = ehigh;
-    double temp = pow(10, exp);
-    double p = pForTInitial(pow(10, exp));
-    cerr << "Starting P Test" << " ";
-    cerr << p << endl;
-    cerr << "tInitial" << " ";
-    cerr << pow(10, exp) << endl;
-    if(p < 0.985){
-	double left = exp;
-	double right = exp + 0.2;
-	//double itemp = pow(10, right);
-	double ip = pForTInitial(pow(10, right));
-	while(ip < 0.985){
-	    if( 0.985 < ip && ip < 0.995 ){
-		ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
-		auth.precision(8);
-		auth << fixed;
-		auth << G1->getName() << "_" << G2->getName() << " T Initial: " << pow(10, left) << " P Value: " << ip << endl;
-		auth.close();
-		return pow(10, left);
-	    }
-	    left = left + 0.2;
-	    right = right + 0.2;
-	    //itemp = pow(10, left);
-	    ip = pForTInitial(pow(10, left));
-	    cerr << "pre left " << left << " right " << right << " " << ip << endl;
-	    if( 0.985 < ip && ip < 0.995 ) {
-		ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
-		auth.precision(8);
-		auth << fixed;
-		auth << G1->getName() << "_" << G2->getName() << " T Initial: " << pow(10, left) << " P Value: " << ip << endl;
-		auth.close();
-		return pow(10, left);
-	    }
-		
+	//actually perform the linear regression
+	LinearRegression linearRegression;
+	linearRegression.setup(scoreMap);
+	//The "run" linear regression function returns a tuple
+	tuple<int, double, double, int, double, double, double, double> regressionResult = linearRegression.run();
+	//pull the temperature bounds from the tuple and strech them a bit
+	double lowerEnd = get<1>(regressionResult) - 1.0;
+	double upperEnd = get<4>(regressionResult) + 1.0;
+	//fill the score map with 30 more pairs betweem the boundaries
+	for(double i = lowerEnd; i < upperEnd; i += (upperEnd - lowerEnd) / 30.0){
+		if(cache.find(i) == cache.end()){
+			double score = scoreForTInitial(pow(10, i));
+		    cacheOutStream << i << " " << score << endl;
+			scoreMap[i] = score;
+		}else{
+			scoreMap[i] = cache[i];
+		}
+		progress++;
+		cout << "\r" << progress << " of 50" << std::flush;
 	}
-	cerr << "left " << pForTInitial(pow(10, left)) << " " << left << " right " << pForTInitial(pow(10, right)) << " " << right << endl;
-	double current = ( right + left ) / 2;
-	double currentp = pForTInitial(current);
-	while(currentp > 0.995 || currentp < 0.985){
-	    cerr << current << " " << currentp << endl;
-
-	    if(currentp > 0.995){
-		    right = current;
-		    current = ( right + left ) / 2;
-		    currentp = pForTInitial(pow(10, current));
-	    }
-	    if(currentp < 0.985){
-		    left = current;
-		    current = ( right + left ) / 2;
-		    currentp = pForTInitial(pow(10, current));
-	    }
+	cout << endl;
+	//close the cahce file stream
+	cacheOutStream.close();
+	//run another linear regression instance
+	LinearRegression linearRegression2;
+	linearRegression2.setup(scoreMap);
+	regressionResult = linearRegression2.run();
+	cout << "lower index: " << get<0>(regressionResult) << " ";
+	cout << "upper index: " << get<3>(regressionResult) << endl;
+	cout << "lower temperature: " << pow(10, get<2>(regressionResult)) << " ";
+	cout << "higher temperature: " << pow(10, get<5>(regressionResult)) << endl;
+	cout << "line 1 height: " << get<6>(regressionResult) << " ";
+	cout << "line 3 height: " << get<7>(regressionResult) << endl;
+	double currentTemperature = get<5>(regressionResult);
+	cout << "Current Temperature " << pow(10, get<5>(regressionResult));
+	double currentPBad = pForTInitial(pow(10, get<5>(regressionResult)));
+	cout << " Current PBad " << currentPBad << endl;
+	//ncreasing temperature until an acceptable probability is reached
+	int iteration = 1;
+	cout << "Increasing temperature until an acceptable probability is reached. " << endl;
+	while(currentPBad < 0.985){
+		currentTemperature += 0.4;
+		currentPBad = pForTInitial(pow(10, currentTemperature));
+		cout << iteration << ": Temperature: " << pow(10, currentTemperature) << " PBad: " << currentPBad << endl;
+		iteration++;
 	}
-	ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
-	auth.precision(8);
-	auth << fixed;
-	auth << G1->getName() << "_" << G2->getName() << " T Initial: " << pow(10, current) << " P Value: " << currentp << endl;
-	auth.close();
-	return temp;
-    }
-    ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
-    auth.precision(8);
-    auth << fixed;
-    auth << G1->getName() << "_" << G2->getName() << " T Initial: " << temp << " P Value: " << p << endl;
-    auth.close();
-    cerr << "This TInitial " << temp << endl;
-    return temp;
+	cout << "Final Temperature: " <<  pow(10, currentTemperature) << " Final P(Bad): " << currentPBad << endl;
+	return pow(10, currentTemperature);
 }
 
 string SANA::getFolder(){
+	//create (if neccessary) and return the path of the measure combinations respcetive cache folder
 	stringstream ss;
-	ss << "mkdir -p " << "catch" << "/" << MC->toString() << "/";
+	ss << "mkdir -p " << "cache" << "/" << MC->toString() << "/";
 	system(ss.str().c_str());
 	stringstream sf;
-	sf << "catch" << "/" << MC->toString() << "/";
+	sf << "cache" << "/" << MC->toString() << "/";
 	return sf.str();
 }
 
-string SANA::haveFolder(){
-	stringstream ss;
-	//ss << "catch/" << G1->getName() << "_" << G2->getName() << "/" << MC.toString() << "/";
-	ss << "catch" << "/" << MC->toString() << "/";
-	return ss.str();
-}
-
-string SANA::wrdir(const std::string& file){
+string SANA::mkdir(const std::string& file){
+	//create (if neccessary) and return the path of a path folder in the cache
 	stringstream ss;
 	ss << "mkdir -p " << getFolder() << file << "/";
 	system(ss.str().c_str());
@@ -1317,7 +1232,7 @@ vector<double> SANA::energyIncSample(double temp) {
 	//of A and currentScore (besides iterPerSecond)
 
 	double iter = iterPerSecond;
-	//cerr << "Hill climbing score: " << currentScore << endl;
+	//cout << "Hill climbing score: " << currentScore << endl;
 	//generate a sample of energy increments, with size equal to the number of iterations per second
 	vector<double> EIncs(0);
 	T = temp;
