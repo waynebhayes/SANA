@@ -8,65 +8,65 @@ INCLUDES =
 LFLAGS =
 LIBS =
 
-UTILS_SRC = 									\
-	src/utils/NormalDistribution.cpp					\
-	src/utils/templateUtils.cpp						\
-	src/utils/Timer.cpp							\
-	src/utils/utils.cpp							\
-	src/utils/randomSeed.cpp						\
-	src/utils/SkipList.cpp							\
-	#src/utils/SeedMatrix.cpp						\
+UTILS_SRC = 								\
+	src/utils/NormalDistribution.cpp				\
+	src/utils/templateUtils.cpp					\
+	src/utils/Timer.cpp						\
+	src/utils/utils.cpp						\
+	src/utils/randomSeed.cpp					\
+	#src/utils/SkipList.cpp						\
+	#src/utils/SeedMatrix.cpp					\
 	src/utils/LinearRegression.cpp
 
-ARGUMENTS_SRC = 								\
-	src/arguments/ArgumentParser.cpp					\
-	src/arguments/modeSelector.cpp						\
-	src/arguments/measureSelector.cpp					\
-	src/arguments/methodSelector.cpp					\
-	src/arguments/graphLoader.cpp						\
-	src/arguments/supportedArguments.cpp					\
+ARGUMENTS_SRC = 							\
+	src/arguments/ArgumentParser.cpp				\
+	src/arguments/modeSelector.cpp					\
+	src/arguments/measureSelector.cpp				\
+	src/arguments/methodSelector.cpp				\
+	src/arguments/graphLoader.cpp					\
+	src/arguments/supportedArguments.cpp				\
 	src/arguments/defaultArguments.cpp
 
-MEASUSES_SRCS = 								\
-	src/measures/EdgeCorrectness.cpp 					\
-	src/measures/GoAverage.cpp      					\
-	src/measures/GoCoverage.cpp      					\
-	src/measures/InducedConservedStructure.cpp				\
-	src/measures/InvalidMeasure.cpp             				\
-	src/measures/LargestCommonConnectedSubgraph.cpp				\
-	src/measures/Measure.cpp						\
-	src/measures/MeasureCombination.cpp					\
-	src/measures/NodeCorrectness.cpp 			\
-	src/measures/ShortestPathConservation.cpp 		\
-	src/measures/SymmetricSubstructureScore.cpp 		\
-        src/measures/SymmetricEdgeCoverage.cpp 			\
-	src/measures/WeightedEdgeConservation.cpp           \
-	src/measures/localMeasures/EdgeCount.cpp            \
-	src/measures/localMeasures/EdgeDensity.cpp          \
-	src/measures/localMeasures/ExternalSimMatrix.cpp    \
-	src/measures/localMeasures/GenericLocalMeasure.cpp  \
-	src/measures/localMeasures/GoSimilarity.cpp         \
-	src/measures/localMeasures/Graphlet.cpp             \
-	src/measures/localMeasures/GraphletLGraal.cpp       \
-	src/measures/localMeasures/Importance.cpp           \
-	src/measures/localMeasures/LocalMeasure.cpp         \
-	src/measures/localMeasures/NodeCount.cpp            \
-	src/measures/localMeasures/NodeDensity.cpp          \
-	src/measures/localMeasures/Sequence.cpp					\
+MEASUSES_SRCS = 							\
+	src/measures/EdgeCorrectness.cpp 				\
+	src/measures/GoAverage.cpp      				\
+	src/measures/GoCoverage.cpp      				\
+	src/measures/InducedConservedStructure.cpp			\
+	src/measures/InvalidMeasure.cpp             			\
+	src/measures/LargestCommonConnectedSubgraph.cpp			\
+	src/measures/Measure.cpp					\
+	src/measures/MeasureCombination.cpp				\
+	src/measures/NodeCorrectness.cpp 				\
+	src/measures/ShortestPathConservation.cpp 			\
+	src/measures/SymmetricSubstructureScore.cpp 			\
+        src/measures/SymmetricEdgeCoverage.cpp 				\
+	src/measures/WeightedEdgeConservation.cpp 			\
+	src/measures/localMeasures/EdgeCount.cpp 			\
+	src/measures/localMeasures/EdgeDensity.cpp 			\
+	src/measures/localMeasures/ExternalSimMatrix.cpp 		\
+	src/measures/localMeasures/GenericLocalMeasure.cpp 		\
+	src/measures/localMeasures/GoSimilarity.cpp 			\
+	src/measures/localMeasures/Graphlet.cpp 			\
+	src/measures/localMeasures/GraphletLGraal.cpp 			\
+	src/measures/localMeasures/Importance.cpp 			\
+	src/measures/localMeasures/LocalMeasure.cpp 			\
+	src/measures/localMeasures/NodeCount.cpp 			\
+	src/measures/localMeasures/NodeDensity.cpp 			\
+	src/measures/localMeasures/Sequence.cpp				\
 	src/measures/localMeasures/GraphletCosine.cpp
 
-METHODS_SRC =   								\
-	src/methods/GreedyLCCS.cpp                          \
-	src/methods/HillClimbing.cpp                        \
-	src/methods/Method.cpp                              \
-	src/methods/NoneMethod.cpp                          \
-	src/methods/RandomAligner.cpp                       \
-	src/methods/SANA.cpp                                \
-	src/methods/TabuSearch.cpp                          \
-	src/methods/WeightedAlignmentVoter.cpp  	\
-	src/methods/Dijkstra.cpp 
+METHODS_SRC =   							\
+	src/methods/GreedyLCCS.cpp 					\
+	src/methods/HillClimbing.cpp    				\
+	src/methods/Method.cpp  					\
+	src/methods/NoneMethod.cpp 					\
+	src/methods/RandomAligner.cpp   				\
+	src/methods/SANA.cpp    					\
+	src/methods/TabuSearch.cpp 					\
+	src/methods/WeightedAlignmentVoter.cpp  			\
+	#src/methods/Dijkstra.cpp 
 
-METHOD_WRAPERS_SRC =    							\
+METHOD_WRAPERS_SRC =    						\
 	src/methods/wrappers/WrappedMethod.cpp				\
 	src/methods/wrappers/HubAlignWrapper.cpp 			\
 	src/methods/wrappers/LGraalWrapper.cpp  			\
@@ -85,14 +85,14 @@ METHOD_WRAPERS_SRC =    							\
 	src/methods/wrappers/SANAPISWAPWrapper.cpp			\
 	src/methods/wrappers/CytoGEDEVOWrapper.cpp			\
 
-MODES_SRC = 									\
-	src/modes/AlphaEstimation.cpp                       \
-	src/modes/Experiment.cpp                            \
-	src/modes/ParameterEstimation.cpp                   \
-	src/modes/NormalMode.cpp						\
-	src/modes/DebugMode.cpp							\
-	src/modes/ClusterMode.cpp						\
-	src/modes/AnalysisMode.cpp						\
+MODES_SRC = 								\
+	src/modes/AlphaEstimation.cpp 					\
+	src/modes/Experiment.cpp 					\
+	src/modes/ParameterEstimation.cpp 				\
+	src/modes/NormalMode.cpp					\
+	src/modes/DebugMode.cpp						\
+	src/modes/ClusterMode.cpp					\
+	src/modes/AnalysisMode.cpp					\
 	src/modes/SimilarityMode.cpp
 
 OTHER_SRC = 							\
