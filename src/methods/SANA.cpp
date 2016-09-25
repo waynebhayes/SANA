@@ -981,12 +981,12 @@ double SANA::findTInitialByLinearRegression(){
 	map<double, double> cache;
 	std::ifstream cacheFile(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
 	double a, b;
-	cout << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes\n";
+	cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes\n";
 	//set the float precisison of the stream. This is needed whenever a file is written
-	cout << "Retrieving 50 Samples" << endl;
+	cerr << "Retrieving 50 Samples" << endl;
 	int progress = 0;
-	cout.precision(17);
-	cout << fixed;
+	cerr.precision(17);
+	cerr << fixed;
 	while (cacheFile >> a >> b){
 		cache[a] = b;
 	}
@@ -1007,7 +1007,7 @@ double SANA::findTInitialByLinearRegression(){
 			scoreMap[i] = cache[i];
 		}
 		progress++;
-		cout << "\r" << progress << " of 50" << std::flush;
+		cerr << "\r" << progress << " of 50" << std::flush;
 	}
 	//actually perform the linear regression
 	LinearRegression linearRegression;
@@ -1027,35 +1027,35 @@ double SANA::findTInitialByLinearRegression(){
 			scoreMap[i] = cache[i];
 		}
 		progress++;
-		cout << "\r" << progress << " of 50" << std::flush;
+		cerr << "\r" << progress << " of 50" << std::flush;
 	}
-	cout << endl;
+	cerr << endl;
 	//close the cahce file stream
 	cacheOutStream.close();
 	//run another linear regression instance
 	LinearRegression linearRegression2;
 	linearRegression2.setup(scoreMap);
 	regressionResult = linearRegression2.run();
-	cout << "lower index: " << get<0>(regressionResult) << " ";
-	cout << "upper index: " << get<3>(regressionResult) << endl;
-	cout << "lower temperature: " << pow(10, get<2>(regressionResult)) << " ";
-	cout << "higher temperature: " << pow(10, get<5>(regressionResult)) << endl;
-	cout << "line 1 height: " << get<6>(regressionResult) << " ";
-	cout << "line 3 height: " << get<7>(regressionResult) << endl;
+	cerr << "lower index: " << get<0>(regressionResult) << " ";
+	cerr << "upper index: " << get<3>(regressionResult) << endl;
+	cerr << "lower temperature: " << pow(10, get<2>(regressionResult)) << " ";
+	cerr << "higher temperature: " << pow(10, get<5>(regressionResult)) << endl;
+	cerr << "line 1 height: " << get<6>(regressionResult) << " ";
+	cerr << "line 3 height: " << get<7>(regressionResult) << endl;
 	double currentTemperature = get<5>(regressionResult);
-	cout << "Current Temperature " << pow(10, get<5>(regressionResult));
+	cerr << "Current Temperature " << pow(10, get<5>(regressionResult));
 	double currentPBad = pForTInitial(pow(10, get<5>(regressionResult)));
-	cout << " Current PBad " << currentPBad << endl;
+	cerr << " Current PBad " << currentPBad << endl;
 	//ncreasing temperature until an acceptable probability is reached
 	int iteration = 1;
-	cout << "Increasing temperature until an acceptable probability is reached. " << endl;
+	cerr << "Increasing temperature until an acceptable probability is reached. " << endl;
 	while(currentPBad < 0.985){
 		currentTemperature += 0.4;
 		currentPBad = pForTInitial(pow(10, currentTemperature));
-		cout << iteration << ": Temperature: " << pow(10, currentTemperature) << " PBad: " << currentPBad << endl;
+		cerr << iteration << ": Temperature: " << pow(10, currentTemperature) << " PBad: " << currentPBad << endl;
 		iteration++;
 	}
-	cout << "Final Temperature: " <<  pow(10, currentTemperature) << " Final P(Bad): " << currentPBad << endl;
+	cerr << "Final Temperature: " <<  pow(10, currentTemperature) << " Final P(Bad): " << currentPBad << endl;
 	return pow(10, currentTemperature);
 }
 
@@ -1232,7 +1232,7 @@ vector<double> SANA::energyIncSample(double temp) {
 	//of A and currentScore (besides iterPerSecond)
 
 	double iter = iterPerSecond;
-	//cout << "Hill climbing score: " << currentScore << endl;
+	//cerr << "Hill climbing score: " << currentScore << endl;
 	//generate a sample of energy increments, with size equal to the number of iterations per second
 	vector<double> EIncs(0);
 	T = temp;
