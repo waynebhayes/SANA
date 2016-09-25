@@ -15,13 +15,15 @@ void LinearRegression::setup(map<double, double> graph){
     chart = graph;
 }
 
-tuple<int, double, int, double, double, double> LinearRegression::start(){
+tuple<int, double, double, int, double, double, double, double> LinearRegression::run(){
     SIZE = chart.size();
     vector<double> scores;
+    vector<double> temperatures;
     int indexx = 0;
 
     for (std::map<double, double>::iterator i = chart.begin(); i != chart.end(); i++)
 	{
+        temperatures.push_back(i->first);
 		scores.push_back(i->second);
 		indexx ++;
 	}
@@ -85,11 +87,7 @@ tuple<int, double, int, double, double, double> LinearRegression::start(){
     }
     bestJ = bestJ - 1;
     bestK = bestK + 1;
-    cout << "Smallest Error " << smallestError << endl;
-    cout << "BestJ " << bestJ << endl;
-    cout << "BestK " << bestK << endl;
-    cout << "Line 1 Height " << line1Height << endl << "Line 3 Height " << line3Height << endl;
-    return std::make_tuple(bestJ, scores[bestJ], bestK, scores[bestK], line1Height, line3Height);
+    return std::make_tuple(bestJ, scores[bestJ], temperatures[bestJ], bestK, scores[bestK], temperatures[bestK], line1Height, line3Height);
 }
 double LinearRegression::initialSum(int index1, int index2, vector<double> &data){
     double sum = 0;
