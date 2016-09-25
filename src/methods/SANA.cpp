@@ -45,7 +45,7 @@ void SANA::initTau(void) {
 }
 
 SANA::SANA(Graph* G1, Graph* G2,
-		double TInitial, double TDecay, double t, bool usingIterations, MeasureCombination* MC, string& objectiveScore):
+		double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore):
     		Method(G1, G2, "SANA_"+MC->toString())
 {
 	//data structures for the networks
@@ -170,6 +170,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 	//to track progress
 	vector<double> eIncs = energyIncSample();
 	//avgEnergyInc = -0.00001;
+    
+    this->addHillClimbing = addHillClimbing;
 }
 
 SANA::~SANA() {
@@ -194,14 +196,20 @@ Alignment SANA::getStartingAlignment(){
 
 Alignment SANA::run() {
 	if (restart) return runRestartPhases();
-	else {
+    else {
 		long long unsigned int iter = 0;
-
-		if(usingIterations){
-			return simpleRun(getStartingAlignment(), minutes*60, iter);
+        Alignment* align;
+		if(!usingIterations){
+			align = new Alignment(simpleRun(getStartingAlignment(), minutes*60, iter));
 		}else{
-			return simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter);
+			align = new Alignment(simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter));
 		}
+
+        if (addHillClimbing){
+            return hillClimbingAlignment();
+        }else{
+            return *align;
+        }
 	}
 }
 
@@ -975,9 +983,9 @@ double SANA::findTInitialByLinearRegression(){
     map<double, double> cache;
     std::ifstream infile(wrdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
     double a, b;
-    cout.precision(17);
-    cout << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes\n";
-    cout << fixed;
+    cerr.precision(17);
+    cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes\n";
+    cerr << fixed;
     while (infile >> a >> b)
     {
 	cache[a] = b;
@@ -1019,7 +1027,7 @@ double SANA::findTInitialByLinearRegression(){
     map<double, double> secondCoor;
     double difference = ehigh - elow;
     double multiple = difference / 30;
-    cout << multiple << endl;
+    cerr << multiple << endl;
     int dex = 0;
     for(double i = -10; i <= 10; i = i + multiple){
 	dex++;
@@ -1046,29 +1054,29 @@ double SANA::findTInitialByLinearRegression(){
     result = ob.start();
     ilow = get<0>(result);
     ihigh = get<2>(result);
-    cout << "ilow is " << ilow << " ";
-    cout << "ihigh is " << ihigh << endl;
+    cerr << "ilow is " << ilow << " ";
+    cerr << "ihigh is " << ihigh << endl;
     scorelow = get<1>(result);
     scorehigh = get<3>(result);
-    cout << "scorelow is " << scorelow << " ";
-    cout << "scorehigh is " << scorehigh << endl;
+    cerr << "scorelow is " << scorelow << " ";
+    cerr << "scorehigh is " << scorehigh << endl;
     tlow = secondMap[scorelow].first;
     thigh = secondMap[scorehigh].first;
-    cout << "tlow is " << tlow << " ";
-    cout << "thigh is  " << thigh << endl;
+    cerr << "tlow is " << tlow << " ";
+    cerr << "thigh is  " << thigh << endl;
     elow = secondMap[scorelow].second;
     ehigh = secondMap[scorehigh].second;
-    cout << "elow is " << elow << " ";
-    cout << "ehigh is " << ehigh << endl;
+    cerr << "elow is " << elow << " ";
+    cerr << "ehigh is " << ehigh << endl;
     scorelow = get<4>(result);
     scorehigh = get<5>(result);
     double exp = ehigh;
     double temp = pow(10, exp);
     double p = pForTInitial(pow(10, exp));
-    cout << "Starting P Test" << " ";
-    cout << p << endl;
-    cout << "tInitial" << " ";
-    cout << pow(10, exp) << endl;
+    cerr << "Starting P Test" << " ";
+    cerr << p << endl;
+    cerr << "tInitial" << " ";
+    cerr << pow(10, exp) << endl;
     if(p < 0.985){
 	double left = exp;
 	double right = exp + 0.2;
@@ -1087,7 +1095,7 @@ double SANA::findTInitialByLinearRegression(){
 	    right = right + 0.2;
 	    //itemp = pow(10, left);
 	    ip = pForTInitial(pow(10, left));
-	    cout << "pre left " << left << " right " << right << " " << ip << endl;
+	    cerr << "pre left " << left << " right " << right << " " << ip << endl;
 	    if( 0.985 < ip && ip < 0.995 ) {
 		ofstream auth("hist.txt", std::ofstream::out | std::ofstream::app);
 		auth.precision(8);
@@ -1098,11 +1106,11 @@ double SANA::findTInitialByLinearRegression(){
 	    }
 		
 	}
-	cout << "left " << pForTInitial(pow(10, left)) << " " << left << " right " << pForTInitial(pow(10, right)) << " " << right << endl;
+	cerr << "left " << pForTInitial(pow(10, left)) << " " << left << " right " << pForTInitial(pow(10, right)) << " " << right << endl;
 	double current = ( right + left ) / 2;
 	double currentp = pForTInitial(current);
 	while(currentp > 0.995 || currentp < 0.985){
-	    cout << current << " " << currentp << endl;
+	    cerr << current << " " << currentp << endl;
 
 	    if(currentp > 0.995){
 		    right = current;
@@ -1127,7 +1135,7 @@ double SANA::findTInitialByLinearRegression(){
     auth << fixed;
     auth << G1->getName() << "_" << G2->getName() << " T Initial: " << temp << " P Value: " << p << endl;
     auth.close();
-    cout << "This TInitial " << temp << endl;
+    cerr << "This TInitial " << temp << endl;
     return temp;
 }
 
@@ -1245,6 +1253,28 @@ double SANA::searchSpaceSizeLog() {
 	return n2*log(n2)-(n2-n1)*log(n2-n1)-n1;
 }
 
+Alignment SANA::hillClimbingAlignment(){
+    long long unsigned int iter = 0;
+    uint idleCountMax = 1000000; //arbitrarily chosen
+    uint idleCount = 0;
+    T = 0;
+    cerr << "Beginning Final Pure Hill Climbing Stage" << endl;
+    while(idleCount < idleCountMax){
+        if (iter%iterationsPerStep == 0) {
+            trackProgress(iter);
+        }
+        double oldScore = currentScore;
+        SANAIteration();
+        if(abs(oldScore-currentScore) < 0.00001){
+            idleCount++;
+        }else{
+            idleCount = 0;
+        }
+        iter++;
+    }
+    return A;
+}
+
 long long unsigned int SANA::hillClimbingIterations(long long unsigned int idleCountTarget) {
 	// Alignment startA = Alignment::random(n1, n2);
 	Alignment startA = getStartingAlignment();
@@ -1287,7 +1317,7 @@ vector<double> SANA::energyIncSample(double temp) {
 	//of A and currentScore (besides iterPerSecond)
 
 	double iter = iterPerSecond;
-	//cout << "Hill climbing score: " << currentScore << endl;
+	//cerr << "Hill climbing score: " << currentScore << endl;
 	//generate a sample of energy increments, with size equal to the number of iterations per second
 	vector<double> EIncs(0);
 	T = temp;

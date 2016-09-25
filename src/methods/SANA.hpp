@@ -12,7 +12,7 @@ class SANA: public Method {
 
 public:
     SANA(Graph* G1, Graph* G2,
-        double TInitial, double TDecay, double t, bool usingIterations, MeasureCombination* MC, string& objectiveScore);
+        double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore);
     ~SANA();
 
     Alignment run();
@@ -36,6 +36,7 @@ public:
 
     //returns the number of iterations until it stagnates when not using temperture
     long long unsigned int hillClimbingIterations(long long unsigned int idleCountTarget);
+    Alignment hillClimbingAlignment();
 
     //returns an approximation of the the logarithm in base e of the size of the search space
     double searchSpaceSizeLog();
@@ -114,6 +115,7 @@ private:
     //initializes all the necessary data structures for a new run
     void initDataStructures(const Alignment& startA);
 
+    bool addHillClimbing; //for post-run hill climbing
 
     //objective function
     MeasureCombination* MC;
