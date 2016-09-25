@@ -22,8 +22,7 @@ SkipNode::~SkipNode(){
 }
 
 /*
-  limit: number of levels to traverse 
-  prevents infinite loops 
+  limit: number of levels to traverse to prevent infinite loops 
   suggested maximum value: 16
 */
 void SkipNode::debug(int limit){
@@ -52,13 +51,16 @@ void SkipNode::debug(int limit){
 
 SkipList::SkipList(float delta, bool setMaxHeap, std::unordered_set<ushort> & lex, std::unordered_set<ushort> & rex)
   :_isMaxHeap(setMaxHeap), length(0), level(0), delta(delta + EPSILON),
-   left_exclude(lex), right_exclude(rex){
+   left_exclude(lex), right_exclude(rex)
+{
   rng.seed(getRandomSeed());
   this->debug();
   miss_counter = 0;
   insert_time -= insert_time;
   cleanup_time -= cleanup_time;
-  for(int i = 0; i < 1000; ++i){
+  pop_time -= pop_time;
+  cumulative_miss = 0;
+  for(int i = 0; i < 3000; ++i){
     std::uniform_int_distribution<int> rnd(0,i);
     uni.push_back(rnd);
   }
@@ -129,9 +131,11 @@ bool SkipList::empty(){
 }
 
 /*
- * super slow O(n*h) method
- * check every node for a pointer to this skipnode
- * if so, move it to the next node
+ * removes a node by reference 
+ * scan each level for the pointer to the given node
+ * skip over that node and descend to the next level
+ * shorten the search by restarting at the last node
+ * where the pointer was found 
  */
 void SkipList::removeNode(SkipNode * n){
   if(!n){
@@ -173,12 +177,9 @@ void SkipList::removeNode(SkipNode * n){
 }
 
 uint SkipList::random_int(uint n){
-  //std::cout << "cache size " << uni.size() << std::endl;
   if(n < uni.size()){
-    //std::cout << n << "in cache" << std::endl;
     return uni[n-1](rng);
   }else{
-    //std::cout << n << " not in cache" << std::endl;
     std::uniform_int_distribution<int> rnd(0,n);
     uni.push_back(rnd);
     return rnd(rng);
@@ -186,11 +187,59 @@ uint SkipList::random_int(uint n){
 }
 
 /*
- * this function cannot be called recursively due to stack overflow 
+ * this function cannot be recursive due to stack overflow 
  * for seeds > 2300
  */
 std::pair<ushort,ushort> SkipList::pop_reservoir(){
+  auto start = std::chrono::steady_clock::now();
   std::pair<ushort,ushort> result;
+  uint miss_counter = 0;
+
+  if(this->empty()){
+    throw QueueEmptyException();
+  }
+  SkipNode * choice = this->head.forward[0];
+  SkipNode * curr = choice;
+  float tail = curr->key + this->delta;
+  partial_cleanup(tail);
+  
+  while(left_exclude.find(result.first) != left_exclude.end() ||
+	right_exclude.find(result.second) != right_exclude.end()){
+    ++miss_counter;
+    if(miss_counter > SkipList::CLEANUP_THRESH){
+      this->cleanup();
+      cumulative_miss += miss_counter;
+      miss_counter = 0;
+    }
+    if(this->empty()){
+      throw QueueEmptyException();
+    }
+    //std::cout << "pop uniform" << std::endl;
+    choice = this->head.forward[0];
+    curr = choice;
+    tail = curr->key + this->delta;
+    
+    uint n = 0;
+    while(curr && curr->key <= tail){
+      if(random_int(++n) == 0){
+	choice = curr;
+      }
+      curr = curr->forward[0];
+    }
+
+    result = choice->value;
+    removeNode(choice);
+  }
+  --miss_counter;
+  cumulative_miss += miss_counter;
+  this->debug();
+  auto end = std::chrono::steady_clock::now();
+  pop_time += std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  return result;
+
+/*
+  std::pair<ushort,ushort> result;
+  uint miss_counter = 0;
   do{
     if(this->empty()){
       throw QueueEmptyException();
@@ -210,16 +259,20 @@ std::pair<ushort,ushort> SkipList::pop_reservoir(){
 
     result = choice->value;
     removeNode(choice);
-    ++miss_counter; //count misses in a row
+    ++miss_counter;
     if(miss_counter > SkipList::CLEANUP_THRESH){
       this->cleanup();
+      cumulative_miss += miss_counter;
+      miss_counter = 0;
     }
   }while(left_exclude.find(result.first) != left_exclude.end() ||
 	 right_exclude.find(result.second) != right_exclude.end());
-
-  miss_counter = 0; //reset after a hit
+  cumulative_miss += miss_counter;
   this->debug();
+  auto end = std::chrono::steady_clock::now();
+  pop_time += std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
   return result;
+*/
 }
 
 std::pair<ushort,ushort> SkipList::pop_distr(){
@@ -321,19 +374,19 @@ bool SkipList::isMaxHeap(){
   return _isMaxHeap;
 }
 
-void SkipList::cleanup(){
+void SkipList::partial_cleanup(float tail){
   miss_counter = 0;
   auto start = std::chrono::steady_clock::now();
-  std::cout << "old size=" << this->length << std::endl;
+  std::cout << "partial:old size=" << this->length << std::endl;
   SkipNode * curr = this->head.forward[0];
   
   SkipNode * update[SkipNode::MAX_LEVEL];
   SkipNode * forward[SkipNode::MAX_LEVEL];
   for(int i = 0; i < SkipNode::MAX_LEVEL; ++i){
     update[i] = &(this->head);
-    forward[i] = NULL;
+    forward[i] = this->head.forward[i];
   }
-  while(curr){
+  while(curr && curr->key <= tail){
     //if curr is alive, point to next living node
     if(left_exclude.find(curr->value.first) == left_exclude.end() &&
        right_exclude.find(curr->value.second) == right_exclude.end()){
@@ -355,6 +408,55 @@ void SkipList::cleanup(){
     }
   }
 
+  //tail for end of list
+  for(int i = 0; i < SkipNode::MAX_LEVEL; ++i){
+    if(update[i]){
+      update[i]->forward[i] = forward[i];
+    }
+  }
+
+  std::cout << "\tnew size=" << this->length << std::endl;
+  auto stop = std::chrono::steady_clock::now();
+  auto diff = stop - start;
+  cleanup_time += std::chrono::duration_cast<std::chrono::milliseconds>(diff);
+  std::cout << "cleanup time = (" << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count()<< "ms)" << std::endl;
+}
+
+void SkipList::cleanup(){
+  miss_counter = 0;
+  auto start = std::chrono::steady_clock::now();
+  std::cout << "full: old size=" << this->length << std::endl;
+  SkipNode * curr = this->head.forward[0];
+  
+  SkipNode * update[SkipNode::MAX_LEVEL];
+  SkipNode * forward[SkipNode::MAX_LEVEL];
+  for(int i = 0; i < SkipNode::MAX_LEVEL; ++i){
+    update[i] = &(this->head);
+    forward[i] = this->head.forward[i];
+  }
+  while(curr){
+    //if curr is alive, point to this (live) node
+    if(left_exclude.find(curr->value.first) == left_exclude.end() &&
+       right_exclude.find(curr->value.second) == right_exclude.end()){
+      for(int i = 0; i < curr->height; ++i){
+	update[i]->forward[i] = curr;
+	update[i] = curr;
+	forward[i] = curr->forward[i];
+      }
+      curr = curr->forward[0];
+    }else{ //if curr is dead, delete this node
+      this->length--;
+      for(int i = 0; i < curr->height; ++i){
+	forward[i] = curr->forward[i];
+      }
+      //prev = curr;
+      delete curr;
+      curr = forward[0];
+
+    }
+  }
+
+  //tail case for end of list
   for(int i = 0; i < SkipNode::MAX_LEVEL; ++i){
     if(update[i]){
       update[i]->forward[i] = forward[i];
@@ -530,4 +632,6 @@ void SkipList::debug(){
 void SkipList::perf(){
   std::cout << "insert time (" << this->insert_time.count() << "ms)" << std::endl;
   std::cout << "cleanup time (" << this->cleanup_time.count() << "ms)" << std::endl;
+  std::cout << "pop time (" << this->pop_time.count() << "ms)" << std::endl;
+  std::cout << "misses = " << this->cumulative_miss << std::endl;
 }
