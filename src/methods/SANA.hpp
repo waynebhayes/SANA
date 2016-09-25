@@ -212,7 +212,7 @@ private:
     double findTInitialByLinearRegression();
     string getFolder();
     string haveFolder();
-    string wrdir(const std::string& file);
+    string mkdir(const std::string& file);
     tuple<int, double, int, double, double, double> regress(double start, double end, int amount);
 };
 
