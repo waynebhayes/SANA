@@ -81,7 +81,8 @@ vector<string> boolArgs = {
                     // Added for handling gene-miRNA networks, currently only functional with these networks
 "-dynamictdecay",
 "-balance-all",
-"-usingIterations" //interprets the -t option as specifying iterations
+"-usingIterations", //interprets the -t option as specifying iterations
+"-add-hill-climbing"
 };
 
 vector<string> vectorArgs = {
