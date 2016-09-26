@@ -87,6 +87,7 @@ private:
     double T;
     double temperatureFunction(double iter, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double T);
+    double trueAcceptingProbability();
     //to compute TInitial automatically
     //returns a value of TInitial such that the temperature is random
     double searchTInitialByStatisticalTest(), simpleSearchTInitial();
@@ -193,6 +194,7 @@ private:
         long long unsigned int& iter);
     double currentScore;
     double energyInc;
+    vector<double> sampledProbability;
     void SANAIteration();
     void performChange();
     void performSwap();
