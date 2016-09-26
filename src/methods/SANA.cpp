@@ -329,6 +329,14 @@ double SANA::acceptingProbability(double energyInc, double T) {
 	//return energyInc >= 0 ? 1 : pBad;
 }
 
+double SANA::trueAcceptingProbability(){
+    uint total = 0;
+    for(uint i = 0; i < sampledProbability.size(); i++){
+        total += sampledProbability[i];    
+    }
+    return (double)(total)/sampledProbability.size();
+}
+
 void SANA::initDataStructures(const Alignment& startA) {
 	A = startA.getMapping();
 
@@ -560,6 +568,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 
 		energyInc = newCurrentScore-currentScore;
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
+        if(energyInc < 0){ //if it was a bad move, record decision
+            if(sampledProbability.size() == 1000000){
+                sampledProbability.erase(sampledProbability.begin());
+            }
+            sampledProbability.push_back(exp(energyInc/T));
+        }
 	}
 	else if(score == "product") {
 		newCurrentScore = 1;
@@ -571,6 +585,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		
 		energyInc = newCurrentScore-currentScore;
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
+        if(energyInc < 0){ //if it was a bad move, record decision
+            if(sampledProbability.size() == 1000000){
+                 sampledProbability.erase(sampledProbability.begin());
+            }
+            sampledProbability.push_back(exp(energyInc/T));
+        }
 	}
 	else if(score == "max") {
 		double deltaEnergy = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
@@ -587,6 +607,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		
 		energyInc = newCurrentScore - currentScore;
 		makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc/T);
+        if(deltaEnergy < 0){ //if it was a bad move, record decision
+            if(sampledProbability.size() == 1000000){
+                sampledProbability.erase(sampledProbability.begin());
+            }
+            sampledProbability.push_back(exp(energyInc/T));
+        }
 	}
 	else if(score == "min") {
 		double deltaEnergy = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
@@ -603,6 +629,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		
 		energyInc = newCurrentScore - currentScore;
 		makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(newCurrentScore/T);
+        if(deltaEnergy < 0){ //if it was a bad move, record decision
+            if(sampledProbability.size() == 1000000){
+                sampledProbability.erase(sampledProbability.begin());
+            }
+            sampledProbability.push_back(exp(newCurrentScore/T));
+        }
 	}
 	else if(score == "inverse") {
 		newCurrentScore += ecWeight/(newAligEdges/g1Edges);
@@ -613,6 +645,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 
 		energyInc = newCurrentScore-currentScore;
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
+        if(energyInc < 0){ //if it was a bad move, record decision
+            if(sampledProbability.size() == 1000000){
+                sampledProbability.erase(sampledProbability.begin());
+            }
+            sampledProbability.push_back(exp(energyInc/T));
+        }
 	}
 	else if(score == "maxFactor") {
 		double maxScore = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
@@ -635,6 +673,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		
 		energyInc = newCurrentScore - currentScore;
 		makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc/T);
+         if(maxScore < -1 * minScore){ //if it was a bad move, record decision
+             if(sampledProbability.size() == 1000000){
+                 sampledProbability.erase(sampledProbability.begin());
+             }
+             sampledProbability.push_back(exp(energyInc/T));
+         }
 	}
 
 	return makeChange;
@@ -747,7 +791,7 @@ void SANA::trackProgress(long long unsigned int i) {
 	bool printScores = false;
 	bool checkScores = true;
 	cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
-	cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << endl;
+	cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", sampled probability = " << trueAcceptingProbability() << endl;
 
 	if (not (printDetails or printScores or checkScores)) return;
 	Alignment Al(A);
