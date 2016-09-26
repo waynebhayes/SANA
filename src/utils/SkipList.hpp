@@ -60,6 +60,7 @@ protected:
 
 private:
   void removeNode(SkipNode * n);
+  void partial_cleanup(float tail);
   void cleanup();
   void test();
 
@@ -75,6 +76,8 @@ private:
   std::mt19937 rng;
   std::chrono::milliseconds insert_time;
   std::chrono::milliseconds cleanup_time;
+  std::chrono::milliseconds pop_time;
+  uint cumulative_miss;
   uint miss_counter;
   std::unordered_set<ushort> & left_exclude;
   std::unordered_set<ushort> & right_exclude;
