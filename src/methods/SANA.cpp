@@ -985,7 +985,7 @@ double SANA::findTInitialByLinearRegression(){
 	//set the float precisison of the stream. This is needed whenever a file is written
 	cerr << "Retrieving 50 Samples" << endl;
 	int progress = 0;
-	cerr.precision(17);
+	//cerr.precision(17);
 	cerr << fixed;
 	while (cacheFile >> a >> b){
 		cache[a] = b;
