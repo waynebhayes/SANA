@@ -14,8 +14,8 @@ UTILS_SRC = 								\
 	src/utils/Timer.cpp						\
 	src/utils/utils.cpp						\
 	src/utils/randomSeed.cpp					\
-	#src/utils/SkipList.cpp						\
-	#src/utils/SeedMatrix.cpp					\
+	src/utils/SkipList.cpp						\
+	src/utils/SeedMatrix.cpp					\
 	src/utils/LinearRegression.cpp
 
 ARGUMENTS_SRC = 							\
@@ -64,7 +64,7 @@ METHODS_SRC =   							\
 	src/methods/SANA.cpp    					\
 	src/methods/TabuSearch.cpp 					\
 	src/methods/WeightedAlignmentVoter.cpp  			\
-	#src/methods/Dijkstra.cpp 
+	src/methods/Dijkstra.cpp 
 
 METHOD_WRAPERS_SRC =    						\
 	src/methods/wrappers/WrappedMethod.cpp				\
