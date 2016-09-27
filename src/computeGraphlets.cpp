@@ -16,16 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
 
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <cassert>
-#include <ctime>
-#include <iostream>
-#include <fstream>
-#include <set>
-#include <unordered_map>
-#include <algorithm>
+#include "computeGraphlets.hpp"
 using namespace std;
 
 
@@ -760,7 +751,7 @@ void writeResults(int g=5) {
     fout.close();
 }
 
-vector<vector<uint> > computeGraphlets(int maxGraphletSize, string graphFileName) {
+std::vector<std::vector<uint> > computeGraphlets(int maxGraphletSize, string graphFileName) {
     if (!init(maxGraphletSize, graphFileName.c_str())) {
         throw "Could not initialize computeGraphlets";
     }

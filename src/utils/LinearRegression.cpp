@@ -2,7 +2,7 @@
 // Created by Hudson Hughes on 8/2/16.
 //
 #include <tuple>
-#include <vector>;
+#include <vector>
 #include "LinearRegression.hpp"
 using namespace std;
 
