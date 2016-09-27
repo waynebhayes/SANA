@@ -330,9 +330,9 @@ double SANA::acceptingProbability(double energyInc, double T) {
 }
 
 double SANA::trueAcceptingProbability(){
-    uint total = 0;
+    double total = 0;
     for(uint i = 0; i < sampledProbability.size(); i++){
-        total += sampledProbability[i];    
+        total += sampledProbability[i]; 
     }
     return (double)(total)/sampledProbability.size();
 }
@@ -569,7 +569,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		energyInc = newCurrentScore-currentScore;
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
         /*if(energyInc < 0){ //if it was a bad move, record decision
-            if(sampledProbability.size() == 1000000){
+            if(sampledProbability.size() == 10000){
                 sampledProbability.erase(sampledProbability.begin());
             }
             sampledProbability.push_back(exp(energyInc/T));
