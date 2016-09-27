@@ -21,7 +21,7 @@ public:
   float sim;
   ushort node;
   //bool operator < (const node_t & left, const node_t & right){
-  bool operator < (const node_t & right){
+  bool operator < (const node_t & right) const{
     return (this->sim < right.sim);
   }
 };
@@ -37,7 +37,7 @@ public:
   float top;
   uint start;
   uint end;
-  bool operator < (const seed_t & right){
+  bool operator < (const seed_t & right) const{
     return (this->top < right.top);
   }
   float getTop(){
