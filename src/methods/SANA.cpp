@@ -1031,7 +1031,7 @@ double SANA::findTInitialByLinearRegression(){
 	cerr << "Retrieving 50 Samples" << endl;
 	int progress = 0;
 	//cerr.precision(17);
-	cerr << fixed;
+	//cerr << fixed;
 	while (cacheFile >> a >> b){
 		cache[a] = b;
 	}
