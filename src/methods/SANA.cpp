@@ -1023,6 +1023,20 @@ double SANA::scoreForTInitial(double TInitial) {
 
 double SANA::findTInitialByLinearRegression(){
 	//Look for a cache file matching the measure and the graphs and fill the cache variable with the file
+	ifstream ifile(mkdir("template") + G1->getName() + "_" + G2->getName() + ".csv");
+	ifile.close();
+	if(!ifile.good()){
+		ofstream file(mkdir("template") + G1->getName() + "_" + G2->getName() + ".csv");
+		file.precision(17);
+		file << fixed;
+		file << "exp,temp,score" << endl;
+		cout << "working";
+		for(double i = -10; i < 10; i += 20.0/300.0){
+			file << i << "," << pow(10, i) << "," << scoreForTInitial(pow(10, i)) << endl;
+			cout << "\r" << i << flush;
+		}
+		file.close();
+	}
 	map<double, double> cache;
 	std::ifstream cacheFile(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
 	double a, b;
@@ -1031,7 +1045,7 @@ double SANA::findTInitialByLinearRegression(){
 	cerr << "Retrieving 50 Samples" << endl;
 	int progress = 0;
 	//cerr.precision(17);
-	//cerr << fixed;
+	cerr << fixed;
 	while (cacheFile >> a >> b){
 		cache[a] = b;
 	}
@@ -1052,7 +1066,7 @@ double SANA::findTInitialByLinearRegression(){
 			scoreMap[i] = cache[i];
 		}
 		progress++;
-		cerr << "\r" << progress << " of 50" << std::flush;
+		cerr << "\r" << progress << " of 60" << std::flush;
 	}
 	//actually perform the linear regression
 	LinearRegression linearRegression;
@@ -1060,10 +1074,10 @@ double SANA::findTInitialByLinearRegression(){
 	//The "run" linear regression function returns a tuple
 	tuple<int, double, double, int, double, double, double, double> regressionResult = linearRegression.run();
 	//pull the temperature bounds from the tuple and strech them a bit
-	double lowerEnd = get<1>(regressionResult) - 1.0;
-	double upperEnd = get<4>(regressionResult) + 1.0;
+	double lowerEnd = get<2>(regressionResult);
+	double upperEnd = get<5>(regressionResult);
 	//fill the score map with 30 more pairs betweem the boundaries
-	for(double i = lowerEnd; i < upperEnd; i += (upperEnd - lowerEnd) / 30.0){
+	for(double i = lowerEnd; i < upperEnd; i += (upperEnd - lowerEnd) / 40.0){
 		if(cache.find(i) == cache.end()){
 			double score = scoreForTInitial(pow(10, i));
 		    cacheOutStream << i << " " << score << endl;
@@ -1072,7 +1086,7 @@ double SANA::findTInitialByLinearRegression(){
 			scoreMap[i] = cache[i];
 		}
 		progress++;
-		cerr << "\r" << progress << " of 50" << std::flush;
+		cerr << "\r" << progress << " of 60" << std::flush;
 	}
 	cerr << endl;
 	//close the cahce file stream
@@ -1100,8 +1114,35 @@ double SANA::findTInitialByLinearRegression(){
 		cerr << iteration << ": Temperature: " << pow(10, currentTemperature) << " PBad: " << currentPBad << endl;
 		iteration++;
 	}
+	ofstream info(mkdir("output") + G1->getName() + "_" + G2->getName() + ".txt");
+	info << "lower_temperature " << pow(10, get<2>(regressionResult)) << endl;
+	info << "upper_temperature " << pow(10, get<5>(regressionResult)) << endl;
+	info << "lower_exp " << get<2>(regressionResult) << endl;
+	info << "upper_exp " << get<5>(regressionResult) << endl;
+	info << "line1height " << get<6>(regressionResult) << endl;
+	info << "line3height " << get<7>(regressionResult) << endl;
+	info << "p " << pForTInitial(pow(10, get<5>(regressionResult))) << endl;
+	info << "finaltemperature " << currentTemperature << endl;
+	info << "final_p " << currentPBad << endl;
+	info.close();
 	cerr << "Final Temperature: " <<  pow(10, currentTemperature) << " Final P(Bad): " << currentPBad << endl;
-	return pow(10, currentTemperature);
+
+	double x1 = get<2>(regressionResult);
+	double x2 = get<5>(regressionResult);
+	double y1 = get<6>(regressionResult);
+	double y2 = get<7>(regressionResult);
+
+	double slope = - abs ( (y1 - y2) / (x2 - x1) );
+	double B = y1 - slope * x1;
+	double xintercept = ( 0 - B ) / slope;
+
+	cout << "x intercept " << pow(10, xintercept) << endl;
+
+	ofstream tout("intercept/" + G1->getName() + "_" + G2->getName() + "_" + MC->toString() + ".csv", std::ofstream::out | std::ofstream::app);
+	tout << G1->getName() + "_" + G2->getName() << "," << "xintercept" << "," << pow(10, xintercept) << "," << pForTInitial(pow(10, xintercept)) << ",";
+	tout.close();
+
+	return pow(10, xintercept);
 }
 
 string SANA::getFolder(){
@@ -1121,6 +1162,16 @@ string SANA::mkdir(const std::string& file){
 	system(ss.str().c_str());
 	stringstream sf;
 	sf << getFolder() << file << "/";
+	return sf.str();
+}
+
+string SANA::crdir(const std::string& file){
+	//Make a new folder
+	stringstream ss;
+	ss << "mkdir -p " << file << "/";
+	system(ss.str().c_str());
+	stringstream sf;
+	sf << file << "/";
 	return sf.str();
 }
 
