@@ -172,6 +172,10 @@ SANA::SANA(Graph* G1, Graph* G2,
 	//avgEnergyInc = -0.00001;
     
     this->addHillClimbing = addHillClimbing;
+
+ //    ofstream header(mkdir("progress") + G1->getName() + "_" + G2->getName() + ".csv");
+	// header << "time,score,avgEnergyInc,T,pbad" << endl;
+	// header.close();
 }
 
 SANA::~SANA() {
@@ -793,7 +797,12 @@ void SANA::trackProgress(long long unsigned int i) {
 	cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
 	//cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", sampled probability = " << trueAcceptingProbability() << endl;
     cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << endl;
-    
+
+    // ofstream dump(mkdir("progress") + G1->getName() + "_" + G2->getName() + ".csv", std::ofstream::out | std::ofstream::app);
+    // dump.precision(4);
+    // dump << fixed;
+    // dump << timer.elapsed() << "," << currentScore << "," << avgEnergyInc << "," << T << "," << acceptingProbability(avgEnergyInc, T) << endl;
+    // dump.close();
 	if (not (printDetails or printScores or checkScores)) return;
 	Alignment Al(A);
 	//original one is commented out for testing sec 
@@ -1167,16 +1176,6 @@ string SANA::mkdir(const std::string& file){
 	system(ss.str().c_str());
 	stringstream sf;
 	sf << getFolder() << file << "/";
-	return sf.str();
-}
-
-string SANA::crdir(const std::string& file){
-	//Make a new folder
-	stringstream ss;
-	ss << "mkdir -p " << file << "/";
-	system(ss.str().c_str());
-	stringstream sf;
-	sf << file << "/";
 	return sf.str();
 }
 
