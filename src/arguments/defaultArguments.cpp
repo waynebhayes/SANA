@@ -10,7 +10,7 @@ vector<string> defaultArguments = {
 "-wecnodesim graphletlgraal",
 "-wavenodesim nodec",
 "-tinitial auto",
-"-tdecay 1",
+"-tdecay auto",
 "-t 5",
 "-mode normal",
 "-method sana",
