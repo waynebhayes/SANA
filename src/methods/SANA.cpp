@@ -990,6 +990,11 @@ double SANA::searchTInitialByStatisticalTest() {
 	cerr << "Final range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
 	cerr << "Final TInitial: " << upperBoundTInitial << endl;
 	cerr << "Final P(Bad): " << pForTInitial(upperBoundTInitial) << endl;
+
+	ofstream tout("stats/" + G1->getName() + "_" + G2->getName() + "_" + MC->toString() + ".csv", std::ofstream::out | std::ofstream::app);
+	tout << G1->getName() + "_" + G2->getName() << "," << "stats" << "," << pow(10, upperBoundTInitial) << "," << pForTInitial(pow(10, upperBoundTInitial)) << ",";
+	tout.close();
+
 	return upperBoundTInitial;
 }
 
@@ -1114,7 +1119,7 @@ double SANA::findTInitialByLinearRegression(){
 		cerr << iteration << ": Temperature: " << pow(10, currentTemperature) << " PBad: " << currentPBad << endl;
 		iteration++;
 	}
-	ofstream info(mkdir("output") + G1->getName() + "_" + G2->getName() + ".txt");
+	ofstream info(mkdir("outputIntercept") + G1->getName() + "_" + G2->getName() + ".txt");
 	info << "lower_temperature " << pow(10, get<2>(regressionResult)) << endl;
 	info << "upper_temperature " << pow(10, get<5>(regressionResult)) << endl;
 	info << "lower_exp " << get<2>(regressionResult) << endl;
@@ -1138,11 +1143,11 @@ double SANA::findTInitialByLinearRegression(){
 
 	cout << "x intercept " << pow(10, xintercept) << endl;
 
-	ofstream tout("intercept/" + G1->getName() + "_" + G2->getName() + "_" + MC->toString() + ".csv", std::ofstream::out | std::ofstream::app);
-	tout << G1->getName() + "_" + G2->getName() << "," << "xintercept" << "," << pow(10, xintercept) << "," << pForTInitial(pow(10, xintercept)) << ",";
+	ofstream tout("pbad/" + G1->getName() + "_" + G2->getName() + "_" + MC->toString() + ".csv", std::ofstream::out | std::ofstream::app);
+	tout << G1->getName() + "_" + G2->getName() << "," << "intercept" << "," << pow(10, currentTemperature) << "," << pForTInitial(pow(10, currentTemperature)) << ",";
 	tout.close();
 
-	return pow(10, xintercept);
+	return pow(10, currentTemperature);
 }
 
 string SANA::getFolder(){
