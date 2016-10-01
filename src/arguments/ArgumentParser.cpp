@@ -1,6 +1,7 @@
 #include <iostream>
 #include "ArgumentParser.hpp"
 #include "../utils/utils.hpp"
+#include "argumentDescriptions.hpp"
 using namespace std;
 
 ArgumentParser::ArgumentParser(
@@ -87,7 +88,8 @@ void ArgumentParser::initParsedValues(vector<string> vArg) {
     //check to see if there is a help argument
     for (string arg : vArg) {
         if (arg == "-h" or arg == "--help") {
-            cerr << "See the README to see the available arguments." << endl;
+            printAllArgumentDescriptions();
+            cerr << endl;
             exit(0);
         }
     }
