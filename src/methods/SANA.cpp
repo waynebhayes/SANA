@@ -1036,30 +1036,31 @@ double SANA::scoreForTInitial(double TInitial) {
 }
 
 double SANA::findTInitialByLinearRegression(){
+	//Create a file with a 300 sample estimate of the temperature-score relationship
+	// ifstream ifile(mkdir("template") + G1->getName() + "_" + G2->getName() + ".csv");
+	// if(!ifile.good()){
+	// 	ifile.close();
+	// 	ofstream file(mkdir("template") + G1->getName() + "_" + G2->getName() + ".csv");
+	// 	file.precision(17);
+	// 	file << scientific;
+	// 	file << "exp,temp,score" << endl;
+	// 	cout << "working";
+	// 	for(double i = -10; i < 10; i += 20.0/300.0){
+	// 		file << i << "," << pow(10, i) << "," << scoreForTInitial(pow(10, i)) << endl;
+	// 		cout << "\r" << i << flush;
+	// 	}
+	// 	file.close();
+	// }else ifile.close();
 	//Look for a cache file matching the measure and the graphs and fill the cache variable with the file
-	ifstream ifile(mkdir("template") + G1->getName() + "_" + G2->getName() + ".csv");
-	ifile.close();
-	if(!ifile.good()){
-		ofstream file(mkdir("template") + G1->getName() + "_" + G2->getName() + ".csv");
-		file.precision(17);
-		file << fixed;
-		file << "exp,temp,score" << endl;
-		cout << "working";
-		for(double i = -10; i < 10; i += 20.0/300.0){
-			file << i << "," << pow(10, i) << "," << scoreForTInitial(pow(10, i)) << endl;
-			cout << "\r" << i << flush;
-		}
-		file.close();
-	}
 	map<double, double> cache;
 	std::ifstream cacheFile(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
 	double a, b;
 	cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes\n";
 	//set the float precisison of the stream. This is needed whenever a file is written
-	cerr << "Retrieving 50 Samples" << endl;
+	cerr << "Retrieving 60 Samples" << endl;
 	int progress = 0;
 	//cerr.precision(17);
-	cerr << fixed;
+	cerr << scientific;
 	while (cacheFile >> a >> b){
 		cache[a] = b;
 	}
@@ -1067,7 +1068,7 @@ double SANA::findTInitialByLinearRegression(){
 	//Make a file out stream to send scores to the cache file if the temperatures score isn't already there
 	ofstream cacheOutStream(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt", std::ofstream::out | std::ofstream::app);
 	cacheOutStream.precision(17);
-	cacheOutStream << fixed;
+	cacheOutStream << scientific;
 	//Map that pairs temperatures (in log space) to scores, then we add the pairs already in the cache
 	map<double, double> scoreMap;
 	//start first instance of linear regression by filling the map with 20 pairs over 10E-10 to 10E!0
@@ -1080,7 +1081,7 @@ double SANA::findTInitialByLinearRegression(){
 			scoreMap[i] = cache[i];
 		}
 		progress++;
-		cerr << "\r" << progress << " of 60" << std::flush;
+		cerr << progress << "/60 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
 	}
 	//actually perform the linear regression
 	LinearRegression linearRegression;
@@ -1100,7 +1101,7 @@ double SANA::findTInitialByLinearRegression(){
 			scoreMap[i] = cache[i];
 		}
 		progress++;
-		cerr << "\r" << progress << " of 60" << std::flush;
+		cerr << progress << "/60 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
 	}
 	cerr << endl;
 	//close the cahce file stream
@@ -1118,7 +1119,7 @@ double SANA::findTInitialByLinearRegression(){
 	double currentTemperature = get<5>(regressionResult);
 	cerr << "Current Temperature " << pow(10, get<5>(regressionResult));
 	double currentPBad = pForTInitial(pow(10, get<5>(regressionResult)));
-	cerr << " Current PBad " << currentPBad << endl;
+	cerr << " Current P(Bad) " << currentPBad << endl;
 	//ncreasing temperature until an acceptable probability is reached
 	int iteration = 1;
 	cerr << "Increasing temperature until an acceptable probability is reached. " << endl;
@@ -1128,18 +1129,19 @@ double SANA::findTInitialByLinearRegression(){
 		cerr << iteration << ": Temperature: " << pow(10, currentTemperature) << " PBad: " << currentPBad << endl;
 		iteration++;
 	}
-	ofstream info(mkdir("outputIntercept") + G1->getName() + "_" + G2->getName() + ".txt");
+	ofstream info(mkdir("output") + G1->getName() + "_" + G2->getName() + ".txt");
 	info << "lower_temperature " << pow(10, get<2>(regressionResult)) << endl;
 	info << "upper_temperature " << pow(10, get<5>(regressionResult)) << endl;
 	info << "lower_exp " << get<2>(regressionResult) << endl;
 	info << "upper_exp " << get<5>(regressionResult) << endl;
-	info << "line1height " << get<6>(regressionResult) << endl;
-	info << "line3height " << get<7>(regressionResult) << endl;
-	info << "p " << pForTInitial(pow(10, get<5>(regressionResult))) << endl;
-	info << "finaltemperature " << currentTemperature << endl;
-	info << "final_p " << currentPBad << endl;
+	info << "line_1_height " << get<6>(regressionResult) << endl;
+	info << "line_3_height " << get<7>(regressionResult) << endl;
+	info << "starting_P(Bad) " << pForTInitial(pow(10, get<5>(regressionResult))) << endl;
+	info << "final_temperature_exp " << currentTemperature << endl;
+	info << "final_temperature " << pow(10, currentTemperature) << endl;
+	info << "final_P(Bad) " << currentPBad << endl;
 	info.close();
-	cerr << "Final Temperature: " <<  pow(10, currentTemperature) << " Final P(Bad): " << currentPBad << endl;
+	cerr << "final_temperature: " <<  pow(10, currentTemperature) << " Final P(Bad): " << currentPBad << endl;
 
 	double x1 = get<2>(regressionResult);
 	double x2 = get<5>(regressionResult);
@@ -1150,11 +1152,9 @@ double SANA::findTInitialByLinearRegression(){
 	double B = y1 - slope * x1;
 	double xintercept = ( 0 - B ) / slope;
 
-	cout << "x intercept " << pow(10, xintercept) << endl;
+	cerr << "x intercept " << pow(10, xintercept) << endl;
 
-	ofstream tout("pbad/" + G1->getName() + "_" + G2->getName() + "_" + MC->toString() + ".csv", std::ofstream::out | std::ofstream::app);
-	tout << G1->getName() + "_" + G2->getName() << "," << "intercept" << "," << pow(10, currentTemperature) << "," << pForTInitial(pow(10, currentTemperature)) << ",";
-	tout.close();
+	cerr << defaultfloat;
 
 	return pow(10, currentTemperature);
 }
