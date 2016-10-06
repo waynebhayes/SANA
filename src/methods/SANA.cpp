@@ -1154,7 +1154,7 @@ double SANA::findTInitialByLinearRegression(){
 
 	cerr << "x intercept " << pow(10, xintercept) << endl;
 
-	cerr << defaultfloat;
+	// cerr << defaultfloat; was getting comiple error
 
 	return pow(10, currentTemperature);
 }
