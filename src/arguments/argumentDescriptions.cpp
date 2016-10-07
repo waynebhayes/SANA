@@ -183,21 +183,21 @@ void printAllArgumentDescriptions()
 	getline(helpOutput, line);
 	while (line != "OPTIONS, ARGS, AND DESCRIPTIONS GO HERE.")
 	{
-		cerr << line << endl;
+		cout << line << endl;
 		getline(helpOutput, line);
 	}
 	
 	for (auto it = argumentDescriptions.begin(); it != argumentDescriptions.end(); it++)
 	{
-		cerr << printItem(*it);
+		cout << printItem(*it);
 	}
 	
 	getline(helpOutput, line);
-	cerr << line;
+	cout << line;
 	while (!helpOutput.eof())
 	{
 		getline(helpOutput, line);
-		cerr << endl << line;
+		cout << endl << line;
 	}
 	
 	helpOutput.close();
