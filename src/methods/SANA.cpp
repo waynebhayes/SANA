@@ -168,8 +168,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
 	//to track progress
-	vector<double> eIncs = energyIncSample();
-	//avgEnergyInc = -0.00001;
+	//vector<double> eIncs = energyIncSample();
+	avgEnergyInc = -0.00001;
     
     this->addHillClimbing = addHillClimbing;
 
@@ -1060,7 +1060,7 @@ double SANA::findTInitialByLinearRegression(){
 	cerr << "Retrieving 60 Samples" << endl;
 	int progress = 0;
 	//cerr.precision(17);
-	cerr << scientific;
+	//cerr << scientific;
 	while (cacheFile >> a >> b){
 		cache[a] = b;
 	}
@@ -1342,7 +1342,7 @@ vector<double> SANA::energyIncSample(double temp) {
 			EIncs.push_back(energyInc);
 		}
 	}
-	avgEnergyInc = vectorMean(EIncs);
+	//avgEnergyInc = vectorMean(EIncs);
 	return EIncs;
 }
 
