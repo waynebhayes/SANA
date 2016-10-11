@@ -209,7 +209,7 @@ Alignment SANA::run() {
             align = new Alignment(simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter));
         }
         if (addHillClimbing){
-            return hillClimbingAlignment();
+            return hillClimbingAlignment(*align, (long long unsigned int)(10000000)); //arbitrarily chosen, probably too big.
         }else{
             return *align;
         }
@@ -334,11 +334,7 @@ double SANA::acceptingProbability(double energyInc, double T) {
 }
 
 double SANA::trueAcceptingProbability(){
-    double total = 0;
-    for(uint i = 0; i < sampledProbability.size(); i++){
-        total += sampledProbability[i]; 
-    }
-    return (double)(total)/sampledProbability.size();
+    return vectorMean(sampledProbability);
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
@@ -392,6 +388,9 @@ void SANA::initDataStructures(const Alignment& startA) {
 		wecSum = wecScore*2*g1Edges;
 	}
     
+    iterationsPerformed = 0;
+    sampledProbability.clear();
+
 	currentScore = eval(startA);
 	timer.start();
 }
@@ -411,7 +410,6 @@ void SANA::setInterruptSignal() {
 
 Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
 		long long unsigned int& iter) {
-    
 	initDataStructures(startA);
 	setInterruptSignal();
 
@@ -455,6 +453,7 @@ Alignment SANA::simpleRun(const Alignment& startA, long long unsigned int maxExe
 }
 
 void SANA::SANAIteration() {
+    iterationsPerformed++;
 	if (randomReal(gen) <= changeProbability) performChange();
 	else performSwap();
 }
@@ -562,7 +561,8 @@ void SANA::performSwap() {
 
 double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double& newCurrentScore) {
 	bool makeChange = false;
-	
+	bool wasBadMove = false;
+    double badProbability = 0;
 	if(score == "sum") {
 		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
 		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
@@ -571,13 +571,9 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 
 		energyInc = newCurrentScore-currentScore;
+        wasBadMove = energyInc < 0;
+        badProbability = exp(energyInc/T);
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
-        /*if(energyInc < 0){ //if it was a bad move, record decision
-            if(sampledProbability.size() == 10000){
-                sampledProbability.erase(sampledProbability.begin());
-            }
-            sampledProbability.push_back(exp(energyInc/T));
-        }*/
 	}
 	else if(score == "product") {
 		newCurrentScore = 1;
@@ -588,14 +584,10 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore *= wecWeight * (newWecSum/(2*g1Edges));
 		
 		energyInc = newCurrentScore-currentScore;
+        wasBadMove = energyInc < 0;
+        badProbability = exp(energyInc/T);
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
-        /*if(energyInc < 0){ //if it was a bad move, record decision
-            if(sampledProbability.size() == 1000000){
-                 sampledProbability.erase(sampledProbability.begin());
-            }
-            sampledProbability.push_back(exp(energyInc/T));
-        }*/
-	}
+    }
 	else if(score == "max") {
 		double deltaEnergy = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
 									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
@@ -610,13 +602,9 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 		
 		energyInc = newCurrentScore - currentScore;
+        wasBadMove = energyInc < 0;
+        badProbability = exp(energyInc/T);
 		makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc/T);
-        /*if(deltaEnergy < 0){ //if it was a bad move, record decision
-            if(sampledProbability.size() == 1000000){
-                sampledProbability.erase(sampledProbability.begin());
-            }
-            sampledProbability.push_back(exp(energyInc/T));
-        }*/
 	}
 	else if(score == "min") {
 		double deltaEnergy = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
@@ -631,14 +619,10 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 		
-		energyInc = newCurrentScore - currentScore;
+		energyInc = newCurrentScore - currentScore; //is this even used?
+        wasBadMove = deltaEnergy < 0;
+        badProbability = exp(energyInc/T);
 		makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(newCurrentScore/T);
-        /*if(deltaEnergy < 0){ //if it was a bad move, record decision
-            if(sampledProbability.size() == 1000000){
-                sampledProbability.erase(sampledProbability.begin());
-            }
-            sampledProbability.push_back(exp(newCurrentScore/T));
-        }*/
 	}
 	else if(score == "inverse") {
 		newCurrentScore += ecWeight/(newAligEdges/g1Edges);
@@ -648,13 +632,9 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += wecWeight/(newWecSum/(2*g1Edges));
 
 		energyInc = newCurrentScore-currentScore;
+        wasBadMove = energyInc < 0;
+        badProbability = exp(energyInc/T);
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
-        /*if(energyInc < 0){ //if it was a bad move, record decision
-            if(sampledProbability.size() == 1000000){
-                sampledProbability.erase(sampledProbability.begin());
-            }
-            sampledProbability.push_back(exp(energyInc/T));
-        }*/
 	}
 	else if(score == "maxFactor") {
 		double maxScore = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
@@ -676,14 +656,17 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 		
 		energyInc = newCurrentScore - currentScore;
+        wasBadMove = maxScore < -1 * minScore;
+        badProbability = exp(energyInc/T);
 		makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc/T);
-        /*if(maxScore < -1 * minScore){ //if it was a bad move, record decision
-            if(sampledProbability.size() == 1000000){
-                sampledProbability.erase(sampledProbability.begin());
-            }
-            sampledProbability.push_back(exp(energyInc/T));
-        }*/
 	}
+
+    if(wasBadMove && iterationsPerformed % 500 == 0){ //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
+        if(sampledProbability.size() == 1000){
+            sampledProbability.erase(sampledProbability.begin());
+        }
+        sampledProbability.push_back(badProbability);
+    }
 
 	return makeChange;
 }
@@ -795,8 +778,8 @@ void SANA::trackProgress(long long unsigned int i) {
 	bool printScores = false;
 	bool checkScores = true;
 	cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
-	//cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", sampled probability = " << trueAcceptingProbability() << endl;
-    cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << endl;
+	cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", sampled probability = " << trueAcceptingProbability() << endl;
+    //cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << endl;
 
     // ofstream dump(mkdir("progress") + G1->getName() + "_" + G2->getName() + ".csv", std::ofstream::out | std::ofstream::app);
     // dump.precision(4);
@@ -1268,13 +1251,36 @@ double SANA::searchSpaceSizeLog() {
 	return n2*log(n2)-(n2-n1)*log(n2-n1)-n1;
 }
 
-Alignment SANA::hillClimbingAlignment(){
+Alignment SANA::hillClimbingAlignment(Alignment startAlignment, long long unsigned int idleCountTarget){
     long long unsigned int iter = 0;
-    uint idleCountMax = 1000000; //arbitrarily chosen
     uint idleCount = 0;
     T = 0;
+    initDataStructures(startAlignment); //this is redundant, but it's not that big of a deal.  Resets true probability.
     cerr << "Beginning Final Pure Hill Climbing Stage" << endl;
-    while(idleCount < idleCountMax){
+    while(idleCount < idleCountTarget){
+        if (iter%iterationsPerStep == 0) {
+            trackProgress(iter);
+        }
+        double oldScore = currentScore;
+        SANAIteration();
+        if(abs(oldScore-currentScore) < 0.00001){
+            idleCount++;
+        }else{
+            idleCount = 0;
+        }
+        iter++;
+    }
+    return A;
+}
+
+Alignment SANA::hillClimbingAlignment(long long unsigned int idleCountTarget){
+    long long unsigned int iter = 0;
+    Alignment startAlignment = getStartingAlignment();
+    uint idleCount = 0;
+    T = 0;
+    initDataStructures(startAlignment); //this is redundant, but it's not that big of a deal.  Resets true probability.
+    cerr << "Beginning Final Pure Hill Climbing Stage" << endl;
+    while(idleCount < idleCountTarget){
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
         }
