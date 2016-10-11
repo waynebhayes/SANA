@@ -36,7 +36,8 @@ public:
 
     //returns the number of iterations until it stagnates when not using temperture
     long long unsigned int hillClimbingIterations(long long unsigned int idleCountTarget);
-    Alignment hillClimbingAlignment();
+    Alignment hillClimbingAlignment(Alignment startAlignment, long long unsigned int idleCountTarget);
+    Alignment hillClimbingAlignment(long long unsigned int idleCountTarget);
 
     //returns an approximation of the the logarithm in base e of the size of the search space
     double searchSpaceSizeLog();
@@ -76,6 +77,7 @@ private:
     double minutes = 0;
     bool usingIterations;
     uint maxIterations = 0;
+    uint iterationsPerformed = 0;
     const double TInitialScaling = 0.00004;
     const double TDecayScaling = 0.00000001;
 	//to compute TDecay dynamically 
