@@ -987,6 +987,8 @@ double SANA::searchTInitialByStatisticalTest() {
 	tout << G1->getName() + "_" + G2->getName() << "," << "stats" << "," << pow(10, upperBoundTInitial) << "," << pForTInitial(pow(10, upperBoundTInitial)) << ",";
 	tout.close();
 
+	lowerTBound = lowerBoundTInitial;
+	upperTBound = upperBoundTInitial;
 	return upperBoundTInitial;
 }
 
@@ -1139,6 +1141,9 @@ double SANA::findTInitialByLinearRegression(){
 
 	// cerr << defaultfloat; was getting comiple error
 
+	lowerTBound = pow(10, get<2>(regressionResult));
+	upperTBound = pow(10, currentTemperature);
+
 	return pow(10, currentTemperature);
 }
 
@@ -1213,7 +1218,7 @@ double SANA::getPforTInitial(const Alignment& startA, double maxExecutionSeconds
 			return result;
 		}
 		if (iter%iterationsPerStep == 0) {
-			result = acceptingProbability(avgEnergyInc, T);
+			result = trueAcceptingProbability();
 			if (iter != 0 and timer.elapsed() > maxExecutionSeconds) {
 				return result;
 			}
