@@ -44,6 +44,9 @@ public:
 
 private:
 
+    double lowerTBound = 0;
+    double upperTBound = 0;
+
     //data structures for the networks
     uint n1;
     uint n2;
