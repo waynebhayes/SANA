@@ -7,9 +7,12 @@ SymmetricEdgeCoverage::SymmetricEdgeCoverage(Graph* G1, Graph* G2) : Measure(G1,
 SymmetricEdgeCoverage::~SymmetricEdgeCoverage() {
 }
 // These are mutually exclusive!
-#define EQUAL_WEIGHT_PER_NETWORK 1
-#define EQUAL_WEIGHT_PER_EDGE 0
+
+#define EQUAL_WEIGHT_PER_NETWORK 0
+#define EQUAL_WEIGHT_PER_EDGE 1
+
 double SymmetricEdgeCoverage::eval(const Alignment& A) {
+    assert(EQUAL_WEIGHT_PER_NETWORK + EQUAL_WEIGHT_PER_EDGE == 1);
     double result = 0.0;
 #if EQUAL_WEIGHT_PER_NETWORK
     result = (double) A.numAlignedEdges(*G1, *G2)/G1->getNumEdges();
