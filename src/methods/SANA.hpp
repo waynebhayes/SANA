@@ -43,7 +43,7 @@ public:
     double searchSpaceSizeLog();
 
 private:
-
+    //Temperature Boundaries. Use these after the tinitial has been determined
     double lowerTBound = 0;
     double upperTBound = 0;
 
