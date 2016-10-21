@@ -11,34 +11,34 @@ using namespace std;
 vector<array<string, 5>> argumentDescriptions = {
 	{ "Option", "Type", "Default", "Title", "Description" },
 	//-----------------------------------GENERAL-----------------------------------------
-	{ "", "", "banner", "", "---------------------------------------- General Options ------------------------------------------" },
-	{ "-g1", "string", "yeast", "Network 1", "First nerwork (smaller one)." },
-	{ "-g2", "string", "human", "Network 2", "Second (larger in number of nodes) network." },
+	{ "", "", "banner", "", "General Options" },
+	{ "-g1", "string", "yeast", "Network 1", "First nerwork (smaller one). Requirement: An alignment file must exist inside the networks directory which matches the name of the specified species." },
+	{ "-g2", "string", "human", "Network 2", "Second (larger in number of nodes) network.  Requirement: An alignment file must exist inside the networks directory which matches the name of the specified species." },
 	{ "-fg1", "string", "yeast", "Network 1", "Initializes the network G1 with an external file. Make sure that the name and path of the file exists." },
 	{ "-fg2", "string", "human", "Network 2", "Initializes the network G2 with an external file. Make sure that the name and path of the file exists. The network of G2 should have more nodes than G1." },
 	{ "-o", "string", "sana", "Output File basename", "Specifies the basename of output file; actual output files will append (.out, .align, etc) to this." },
 	{ "-t", "double", "5", "Runtime in minutes", "The number of minutes to run SANA. Must be non-zero, no upper limit." },
 	{ "-i", "double", "0", "Iteration", "Like -t, but specifying total iteration count, in units of 100 million (Mutually exclusive with -t)." },
 	{ "-pathmap1", "integer", "", "Path Map G1", "Allows mapping a path in G1 to an edge in G2, as if the path were a single edge in G2. Implemented by raising the adjacency list to this power (an integer)." },
-	{ "-pathmap2", "string", "", "Path Map G2", "Maps a path in G2 to an edge in G1, as if the path were a single edge in G1." },
+	{ "-pathmap2", "integer", "", "Path Map G2", "Maps a path in G2 to an edge in G1, as if the path were a single edge in G1." },
 	{ "-eval", "string", "", "Evaluate Existing Alignment", "Takes an existing alignment, evaluates it, and records the results to sana.out or the specified output file." },
 	{ "-startalignment", "string", "", "Starting Alignment", "File containing the starting alignment (in the format outputted by SANA). Some methods allow this option, while the rest start with random alignments." },
 	{ "-truealignment", "string", "", "True Alignment", "Alignment file containing the \"true\" alignment. This is used to evaluate the NC measure. In its absence, NC assumes that the true alignment is the identity (the node with index i in G1 is mapped to the node with index i in G2). In any case, NC is expressed as the fraction of nodes in the smaller network aligned correctly." },
 	{ "-rewire", "double", "0", "Add rewiring noise to G2", "If set greater than 0, the corresponding fraction of edges in G2 is randomly rewired." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "End General Options", "", "banner", "", "" },
+	//---------------------------------END GENERAL---------------------------------------
 
-	//----------------------------------METHOD-------------------------------------------
-	{ "", "", "banner", "", "\n-------------------------------------------- Method -----------------------------------------------" },
-	{ "-method", "string", "sana", "Method", "Sets the algorithm that performs the alignment. All methods except \"sana\" call an external algorithm written by other authors. \nPossible aligners are: \"lgraal\", \"hubalign\", \"sana\", \"wave\", \"random\", \"tabu\", \"dijkstra\", \"netal\", \"mi-graal\", \"ghost\", \"piswap\", \"optnetalign\", \"spinal\", \"great\", \"netalie\", \"gedevo\", \"greedylccs\", \"magna\", \"waveSim\", \"none\", and \"hc\"." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	//------------------------------------METHOD-----------------------------------------
+	{ "", "", "banner", "", "Method" },
+	{ "-method", "string", "sana", "Method", "Sets the algorithm that performs the alignment. All methods except \"sana\" call an external algorithm written by other authors. \nPossible aligners are: \"lgraal\", \"hubalign\", \"sana\", \"wave\", \"random\", \"tabu\", \"dijkstra\", \"netal\", \"mi-graal\", \"ghost\", \"piswap\", \"optnetalign\", \"spinal\", \"great\", \"natalie\", \"gedevo\", \"greedylccs\", \"magna\", \"waveSim\", \"none\", and \"hc\"." },
+	{ "End Method", "", "banner", "", "" },
+	//----------------------------------END METHOD---------------------------------------
 
 	//------------------------------------SANA-------------------------------------------
-	{ "", "", "banner", "", "\n--------------- Additional options to consider when method is \"sana\" (the default) ----------------" },
-	{ "-tinitial", "double", "1", "Initial Temperature", "Starting temperature of the simulated annealing. \"auto\" means calculate optimal starting temperature (requires extra CPU time)." },
-	{ "-tdecay", "double", "1", "Rate of Decay", "Exponential decay parameter of the temperature schedule. \"auto\" means calculate optimal starting temperature (requires extra CPU time)." },
-	{ "-combinedScoreAs", "string", "sum", "Score Combo Method", "If multiple objectives are specified, this specifies how to combine them. Choices are: sum, product, inverse, max, min, maxFactor." },
+	{ "", "", "banner", "", "Additional options to consider when method is \"sana\" (the default)" },
+	{ "-tinitial", "double", "auto", "Initial Temperature", "Starting temperature of the simulated annealing. \"auto\" means calculate optimal starting temperature (requires extra CPU time)." },
+	{ "-tdecay", "double", "autoi", "Rate of Decay", "Exponential decay parameter of the temperature schedule. \"auto\" means calculate optimal starting temperature (requires extra CPU time)." },
+	{ "-combinedscoreas", "string", "sum", "Score Combo Method", "If multiple objectives are specified, this specifies how to combine them. Choices are: sum, product, inverse, max, min, maxFactor." },
 	{ "-dynamictdecay", "bool", "0", "Dynamically control temperature decay", "Whether or not tdecay is set to auto, this Boolean specifies if we should dynamically adjust the temperature schedule as the anneal progresses. Gives potentially better results than fixed decay rate." },
 	{ "-lock", "string", "", "Node-to-Node Locking", "Specify a two column file of node pairs that are locked in the alignment." },
 	{ "-seed", "double", "RANDOM", "Random Seed", "Serves as a random seed in SANA." },
@@ -48,37 +48,37 @@ vector<array<string, 5>> argumentDescriptions = {
 	{ "-numcand", "double", "3", "(DEPRECATED)Restart Scheme K", "(DEPRECATED)Parameter K of the restart scheme." },
 	{ "-tcand", "double", "1", "Restart Scheme t2(DEPRECATED)", "(DEPRECATED)Parameter t2 of the restart scheme, in minutes" },
 	{ "-tfin", "double", "3", "Restart Scheme t3(DEPRECATED)", "(DEPRECATED)Parameter t3 of the restart scheme, in minutes" },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "END Additional options to consider when method is \"sana\" (the default)", "", "banner", "", "" },
+	//----------------------------------END SANA-----------------------------------------
 
 	//------------------------------------TABU-------------------------------------------
-	{ "", "", "banner", "", "\n---------------------- Additional options to consider when method is \"tabu\" -----------------------" },
+	{ "", "", "banner", "", "Additional options to consider when method is \"tabu\"" },
 	{ "-ntabus", "double", "300", "(DEPRECATED)TABU Argument", "(DEPRECATED)Argument for the TABU search function." },
 	{ "-nneighbors", "double", "50", "(DEPRECATED)See TABU", "(DEPRECATED)See TABU." },
 	{ "-nodetabus", "bool", "false", "(DEPRECATED)See TABU", "(DEPRECATED)See TABU." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "END Additional options to consider when method is \"tabu\"", "", "banner", "", "" },
+	//----------------------------------END TABU-----------------------------------------
 
-	//---------------------------------Dijkstra------------------------------------------
-	{ "", "", "banner", "", "\n-------------------- Additional options to consider when method is \"dijkstra\" ---------------------" },
+	//----------------------------------Dijkstra-----------------------------------------
+	{ "", "", "banner", "", "Additional options to consider when method is \"dijkstra\"" },
 	{ "-dijkstradelta","double","0","Dijkstra Randomness Amount","When picking the next edge to cross when adding a new node in the seed-and-extend Dijkstra algorithm, -dijkstradelta will set the width of the range of node similarity values that should be considered equal. Larger values inject more randomness; zero means \"pick best node according to current measure\"." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "END Additional options to consider when method is \"dijkstra\"", "", "banner", "", "" },
+	//---------------------------------END Dikstra---------------------------------------
 
 	//-----------------------------------LGRAAL------------------------------------------
-	{ "", "", "banner", "", "\n--------------------- Additional options to consider when method is \"lgraal\" ----------------------" },
-	{ "-lgraaliter", "double", "1000", "LGRAAL Iteration", "Number of LGRAAL Iterations" },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "", "", "banner", "", "Additional options to consider when method is \"lgraal\"" },
+	{ "-lgraaliter", "double", "1000", "LGRAAL Iteration", "Number of LGRAAL Iterations. This option is passed along to the external LGRAAL program." },
+	{ "End Additional options to consider when method is \"lgraal\"", "", "banner", "", "" },
+	//---------------------------------END LGRAAL----------------------------------------
 	
-	//----------------------------Objective Funtion Type---------------------------------
-	{ "", "", "banner", "", "\n-------------------------------------- Objective Function -----------------------------------------" },
+	//---------------------------Objective Function Type---------------------------------
+	{ "", "", "banner", "", "Objective Function" },
 	{ "-objfuntype", "string", "generic", "Objective Function Type", "Acceptable arguments are \"alpha\", \"beta\", or \"generic\". Make sure the chosen argument of \"-objectfuntype\" also matches with the chosen argument for \"-method\"." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "End Objective Function", "", "banner", "", "" },
+	//-------------------------END Objective Function Type-------------------------------
 
-	//---------------------Objective Funtion Type Specifications-------------------------
-	{ "", "", "banner", "", "\n----------- Objective Function Specification and Weight. Combine with \"-objfuntype x\" -------------" },
+	//--------------------Objective Function Type Specifications-------------------------
+	{ "", "", "banner", "", "Objective Function Specification and Weight. Combine with \"-objfuntype x\"" },
 	{ "-alpha", "double", "0", "alpha=0 means toplogy only; alpha=1 means sequence only.", "Trade off between biological (alpha = 1) and topological (alpha = 0) measures. Range: [0, 1]. Used when \"-objfuntype\" is \"alpha\"." },
 	{ "-beta", "double", "0", "Like -alpha, but values are normalized first.", "Same as alpha but with topological and biological scores balanced according to size. Range: [0, 1]. Used when \"-objfuntype\" is \"beta\"." },
 	{ "-ec", "double", "0", "Weight of EC", "The weight of the Edge Coverage (aka Edge Conservation or Edge Correctness) in the objective function. To be used when \"-objfuntype\" is \"generic\"." },
@@ -97,11 +97,11 @@ vector<array<string, 5>> argumentDescriptions = {
 	{ "-go_k", "double", "0", "k-common GO terms", "Objective function based on having up to k GO terms in common. Used when \"-objfuntype\" is \"generic\"." },
 	{ "-graphletcosine", "double", "0", "Similarity of cosine between GDV vectors", "Objective function based on the cosine angle between graphlet degree vectors. Used when \"-objfuntype\" is \"generic\"." },
 	{ "-topomeasure", "string", "", "Topological Measure", "Topological component of the scoring function. Used when \"-objfuntype\" is either \"alpha\" or \"beta\"." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "End Objective Function Specification and Weight. Combine with \"-objfuntype x\"", "", "banner", "", "" },
+	//-------------------END Objective Function Tyoe Specifications----------------------
 
 	//-----------------Further details of \"-method x -objfuntype y\"--------------------
-	{ "", "", "banner", "", "\n-------------- Further Weight Specification. Combine with \"-method x -objfuntype y\" ---------------" },
+	{ "", "", "banner", "", "Further Weight Specification. Combine with \"-method x -objfuntype y\"" },
 	{ "-wrappedArgs", "string", "", "Wrapper Function Arguments", "Arguments to pass verbatim to wrapped methods." },
 	{ "-maxDist", "double", "1", "Radial Distance from Node", "When using nodec, edgec, noded, or edged, the radial distance region over which to compute the count/density. Used when \"-objfuntype\" is \"generic\"." },
 	{ "-gofrac", "double", "1", "Fraction of GO_k Terms to Keep", "Used for GO similarity (\"-go_k\"). It is the fraction of GO term ocurrences corresponding to the least frequent terms to be kept." },
@@ -112,67 +112,67 @@ vector<array<string, 5>> argumentDescriptions = {
 	{ "-wavenodesim", "string", "nodec", "Weighted Average Node Pair Similarity", "Node pair similarity to use when emulating WAVE." },
 	{ "-simFile", "string", "", "Similarity File", "Specify an external three columnn (node from G1, node from  G2, similarity) file. These will be given weight according to the -esim argument." },
 	{ "-detailedreport", "bool", "false", "Detailed Report", "If false, initialize only basic measures and any measure necessary to run SANA." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "End Further Weight Specification. Combine with \"-method x -objfuntype y\"", "", "banner", "", "" },
+	//--------------END Further details of \"-method x -objfuntype y\"-------------------
 
 	//------------------------------------MODE-------------------------------------------
-	{ "", "", "banner", "", "\n--------------------------------------------- Mode ------------------------------------------------" },
+	{ "", "", "banner", "", "Mode" },
 	{ "-mode", "string", "normal", "Mode", "Runs SANA in a specified mode. Arguments for this option are: \"cluster\", \"exp\", \"param\", \"alpha\", \"dbg\", \"normal\", \"analysis\", \"similarity\"." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "End Mode", "", "banner", "", "" },
+	//----------------------------------END MODE-----------------------------------------
 
 	//----------------------------------CLUSTER------------------------------------------
-	{ "", "", "banner", "", "\n-------------------------------- More options for \"-mode cluster\" ---------------------------------" },
+	{ "", "", "banner", "", "More options for \"-mode cluster\"" },
 	{ "-qmode", "string", "normal", "Queue Mode", "The \"Queue Mode\" when using SGE" },
 	{ "-qsuboutfile", "string", "", "Queue Mode Output File", "Output file when using SGE" },
 	{ "-qsuberrfile", "string", "", "Queue Error File", "Error file when using SGE" },
 	{ "-qsubscriptfile", "string", "", "Queue Script File", "Script file when using SGE" },
 	{ "-qcount", "double", "1", "Qsub Count", "When submitting to SGE, number of times to submit the same job." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "End More options for \"-mode cluster\"", "", "banner", "", "" },
+	//--------------------------------END CLUSTER----------------------------------------
 
 	//--------------------------------EXPERIMENTAL---------------------------------------
-	{ "", "", "banner", "", "\n---------------------------------- More options for \"-mode exp\" -----------------------------------" },
+	{ "", "", "banner", "", "More options for \"-mode exp\"" },
 	{ "-outfolder", "string", "", "Experimental Mode Output Folder", "The folder SANA will output results to during Experiment Mode." },
 	{ "-experiment", "string", "", "Experimental Mode", "If any of the arguments -experiment, -paramestimation, or -alphaestimation is present, then the corresponding experiment is executed. See below for a description on experiment mode." },
 	{ "-collect", "bool", "false", "SGE Results Collection", "Collects results from a running or finished SGE job." },
 	{ "-dbg", "bool", "false", "Debug Flag", "Each mode in SANA might have a different use for the dbg flag (e.g., in experiments, if -dbg is found, the runs are not actually sent to the cluster, only printed)." },
 	{ "-local", "bool", "false", "Submit Jobs Locally", "Used with SGE. Will not submit jobs to SGE, but jobs will be run locally instead." },
 	{ "-updatecsv", "bool", "false", "Update CSV without re-running", "Used with expermient mode. If the data has already been collected, instead of re-evaluating all the alignments, it loads up the data and updates the csv output file." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "End More options for \"-mode exp\"", "", "banner", "", "" },
+	//------------------------------END EXPERIMENTAL-------------------------------------
 
 	//----------------------------PARAMETER ESTIMATION-----------------------------------
-	{ "", "", "banner", "", "\n--------------------------------- More options for \"-mode param\" ----------------------------------" },
+	{ "", "", "banner", "", "More options for \"-mode param\"" },
 	{ "-paramestimation", "string", "", "Parameter Estimation Mode", "If any of the arguments -experiment, -paramestimation, or -alphaestimation is present, then the corresponding experiment is executed. See below for a description on parameter estimation mode" },
 	{ "-submit", "bool", "false", "Print Jobs Instead of Submitting", "Used with Debugging Mode for SGE. If false, SGE jobs will not be submitted to queues, but will be printed to console instead." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "End More options for \"-mode param\"", "", "banner", "", "" },
+	//--------------------------END PARAMETER ESTIMATION---------------------------------
 
 	//------------------------------ALPHA ESTIMATION-------------------------------------
-	{ "", "", "banner", "", "\n--------------------------------- More options for \"-mode alpha\" ----------------------------------" },
+	{ "", "", "banner", "", "More options for \"-mode alpha\"" },
 	{ "-alphaestimation", "string", "", "Alpha Estimation Mode", "If any of the arguments -experiment, -paramestimation, or -alphaestimation is present, then the corresponding experiment is executed. See below for a description on parameter estimation mode" },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "End More options for \"-mode alpha\"", "", "banner", "", "" },
+	//----------------------------END ALPHA ESTIMATION-----------------------------------
 
 	//-----------------------------------DEBUG-------------------------------------------
-	//------------------------------------END--------------------------------------------
+	//---------------------------------END DEBUG-----------------------------------------
 
 	//----------------------------------NORMAL-------------------------------------------
-	//------------------------------------END--------------------------------------------
+	//--------------------------------END NORMAL-----------------------------------------
 
 	//---------------------------------ANALYSIS------------------------------------------
-	{ "", "", "banner", "", "\n------------------------------- More options for \"-mode analysis\" ---------------------------------" },
-	{ "-alignFormat", "integer", "0", "Alignfile Format", "Used in Analysis Mode \"-mode analysis\"." },
+	{ "", "", "banner", "", "More options for \"-mode analysis\"" },
+	{ "-alignFormat", "integer", "0", "Alignfile Format", "Used in Analysis Mode \"-mode analysis\". alignFormat can be 1, 2, 3, or 4 which mean the following:\n1: sana.out format\n2. edge list format\n3. partial edge list format\n4. mapping format (old sana.out one line)." },
 	{ "-alignFile", "string", "", "Alignment File Analysis Mode", "Used with \"-mode analysis\" to specify which pre-existing alignment file is being analyzed. Allowed values are 1=sana.out; 2=edge list; 3=partial edge list; 4=mapping (one line)." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "End More options for \"-mode analysis\"", "", "banner", "", "" },
+	//-------------------------------END ANALYSIS----------------------------------------
 
 	//---------------------------------SIMILARITY----------------------------------------
-	{ "", "", "banner", "", "\n------------------------------ More options for \"-mode similarity\" --------------------------------" },
+	{ "", "", "banner", "", "More options for \"-mode similarity\"" },
 	{ "-simFormat", "double", "1", "Similarity File Format", "Used in Similarity Mode \"-mode similarity\" and with \"-objfuntype -esim\". Allowed values are 1=node names; 2=node integers numbered as in LEDA .gw format." },
-	{ "---------------------------------------------- End ------------------------------------------------\n", "", "banner", "", "" },
-	//------------------------------------END--------------------------------------------
+	{ "End More options for \"-mode similarity\"", "", "banner", "", "" },
+	//-------------------------------END SIMILARITY--------------------------------------
 };
 
 void printAllArgumentDescriptions()
@@ -192,6 +192,20 @@ void printAllArgumentDescriptions()
 		cout << printItem(*it);
 	}
 	
+	/*string allOutput = "";
+	while(!helpOutput.eof()){
+		getline(helpOutput, line);
+		allOutput += line + " ";
+	}
+
+	while(!allOutput.size() > 80){
+		int space_location = 80;
+		while(allOutput[space_location] != ' ')
+			space_location--;
+		cout << '\n' << allOutput.substr(0, space_location);
+		allOutput = allOutput.substr(space_location+1, allOutput.size() - space_location);
+	}
+	cout << '\n' << allOutput;*/
 	getline(helpOutput, line);
 	cout << line;
 	while (!helpOutput.eof())
@@ -208,7 +222,30 @@ string printItem(const array<string, 5> &item)
 	ostringstream toReturn;
 	toReturn << '\n';
 	if (item[2] == "banner")
-		toReturn << item[0] << item[4];
+		if(item[0] == ""){
+			toReturn << '\n';
+			int width = 80 - item[4].size();
+			int dash_width = width/2;
+			string dashes = "";
+			for(int i = 0; i < dash_width - 1; i++)
+				dashes += '-';
+			toReturn << dashes << ' ' << item[4];
+			if(width%2)
+				dashes += '-';
+			toReturn << ' ' << dashes;
+		}
+		else{
+			int width = 80 - item[0].size();
+                        int dash_width = width/2;
+                        string dashes = "";
+                        for(int i = 0; i < dash_width - 1; i++)
+                                dashes += '-';
+                        toReturn << dashes << ' ' << item[0];
+                        if(width%2)
+                                dashes += '-';
+                        toReturn << ' ' << dashes;
+			toReturn << '\n';
+		}
 	else
 	{
 		toReturn << ' ' << setw(17) << left << item[0] << setw(8) << left << item[1] << setw(16) << left;
@@ -216,7 +253,12 @@ string printItem(const array<string, 5> &item)
 			toReturn << "\"\"";
 		else
 			toReturn << item[2];
-		toReturn << item[3] << '\n' << formatDescription(item[4]);
+		toReturn << item[3] << '\n';
+		if( hasNewLines(item[4]) ){
+			toReturn << formatWithNewLines(item[4]); 
+		}
+		else
+			toReturn << formatDescription(item[4]);
 	}
 	return toReturn.str();
 }
@@ -224,8 +266,8 @@ string printItem(const array<string, 5> &item)
 string formatDescription(string description)
 {
 	ostringstream toReturn;
-	int end = 57;
-	while (description.length() > 57)
+	int end = 38;
+	while (description.length() > 38)
 	{
 		while (description[end] != ' ')
 		{
@@ -233,8 +275,24 @@ string formatDescription(string description)
 		}
 		toReturn << setw(42) << left << "" << description.substr(0, end) + '\n';
 		description = description.substr(end + 1, description.length());
-		end = 57;
+		end = 38;
 	}
 	toReturn << setw(42) << left << "" << description;
 	return toReturn.str();
+}
+
+bool hasNewLines(const string &item4){
+	return (item4.find_first_of('\n') != string::npos);
+}
+
+string formatWithNewLines(const string &item4){
+	string toReturn = "";
+	toReturn += formatDescription(item4.substr(0,item4.find_first_of('\n'))) + '\n';
+        string textWithNewLine = item4.substr(item4.find_first_of('\n')+1, item4.size() - item4.find_first_of('\n')+1);
+        while(textWithNewLine.find('\n') != string::npos){
+        	toReturn += formatDescription(textWithNewLine.substr(0, textWithNewLine.find_first_of('\n'))) + '\n';
+                textWithNewLine = textWithNewLine.substr(textWithNewLine.find_first_of('\n') + 1, textWithNewLine.size() - textWithNewLine.find_first_of('\n') + 1);
+        }
+        toReturn += formatDescription(textWithNewLine);
+	return toReturn;
 }
