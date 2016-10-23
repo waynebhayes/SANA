@@ -209,7 +209,7 @@ Alignment SANA::run() {
             align = new Alignment(simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter));
         }
         if (addHillClimbing){
-            return hillClimbingAlignment(*align, (long long unsigned int)(10000000)); //arbitrarily chosen, probably too big.
+            return hillClimbingAlignment(*align, (long long unsigned int)(100000000)); //arbitrarily chosen, probably too big.
         }else{
             return *align;
         }
@@ -334,7 +334,11 @@ double SANA::acceptingProbability(double energyInc, double T) {
 }
 
 double SANA::trueAcceptingProbability(){
-    return vectorMean(sampledProbability);
+    if(sampledProbability.size() == 0){
+        return 1;
+    else{
+        return vectorMean(sampledProbability);
+    }
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
