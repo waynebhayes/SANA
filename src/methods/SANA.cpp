@@ -336,7 +336,7 @@ double SANA::acceptingProbability(double energyInc, double T) {
 double SANA::trueAcceptingProbability(){
     if(sampledProbability.size() == 0){
         return 1;
-    else{
+    }else{
         return vectorMean(sampledProbability);
     }
 }
