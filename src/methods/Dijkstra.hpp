@@ -17,7 +17,7 @@
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
 #include "../utils/SkipList.hpp"
-#include "../utils/SeedMatrix.hpp"
+//#include "../utils/SeedMatrix.hpp"
 
 using namespace std;
 
@@ -62,7 +62,7 @@ private:
 
   double delta;
   static constexpr double EPSILON = 0.0000001;
-  SeedMatrix seed_mat;
+  //SeedMatrix seed_mat;
   SkipList seed_queue;
   SkipList neighbor_queue;
   unsigned int nodes_aligned;

@@ -7,7 +7,7 @@ using get_time = std::chrono::steady_clock;
 Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC, double d) :
   Method(G1, G2, "Dijkstra_"+MC->toString()),
   delta(d),
-  seed_mat(MC, delta, true, G1_exclude, G2_exclude),
+  //seed_mat(MC, delta, true, G1_exclude, G2_exclude),
   seed_queue(delta, true, G1_exclude, G2_exclude),
   neighbor_queue(delta, true, G1_exclude, G2_exclude),
   nodes_aligned(0)
@@ -38,7 +38,7 @@ Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC, double d) :
 /* Helper functions */
 
 void Dijkstra::make_seed_queue(){
-  return; //this function not needed for seed matrix 
+  //return; //this function not needed for seed matrix 
   std::string fname = G1->getName() + G2->getName() + ".dijkstra";
   std::cout << "graph " << fname << std::endl;
 
@@ -50,13 +50,13 @@ void Dijkstra::make_seed_queue(){
   */
   std::cout << "make seed queue begin" << std::endl;
   auto start = get_time::now();
-  /*
+
  for(unsigned int i = 0; i < sims.size(); ++i){
     for(unsigned int j = 0; j < sims[i].size(); ++j){
       seed_queue.insert(sims[i][j], std::make_pair(i,j));
     }
   }
-  */
+
   auto end = get_time::now();
   auto diff = end - start;
   std::cout << "make time = (" << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count()<< "ms)" << std::endl;
@@ -176,7 +176,7 @@ Alignment Dijkstra::run() {
     try{
       //std::cout << "seed phase" << std::endl;
       //seed phase
-      std::pair <ushort, ushort> seed_pair = seed_mat.pop_uniform();//best_pair(seed_queue);
+      std::pair <ushort, ushort> seed_pair = best_pair(seed_queue); //seed_mat.pop_uniform();
       update_neighbors(seed_pair);
     }catch (QueueEmptyException & e){
       //can't recover from this
