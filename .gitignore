@@ -48,3 +48,6 @@ run_output.txt
 
 wrappedAlgorithms/*/*tmp*
 wrappedAlgorithms/*/*.alig*
+
+#debug files
+callgrind.out.*
