@@ -10,9 +10,11 @@
 
 using namespace std;
 
-extern vector<array<string, 5>> argumentDescriptions;
+extern vector<array<string, 6>> argumentDescriptions;
 
 void printAllArgumentDescriptions();
-string printItem(const array<string, 5> &item);
+string printItem(const array<string, 6> &item);
 string formatDescription(string description);
+bool hasNewLines(const string &item4);
+string formatWithNewLines(const string &item4);
 #endif
