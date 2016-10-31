@@ -988,7 +988,7 @@ double SANA::searchTInitialByStatisticalTest() {
 	tout.close();
 
 
-	lowerTBound = lowerBoundTInitial;
+	//lowerTBound = lowerBoundTInitial;
 	upperTBound = upperBoundTInitial;
 	return upperBoundTInitial;
 }
@@ -1382,11 +1382,13 @@ double SANA::searchTDecay(double TInitial, double minutes) {
 
 	double iter_t = minutes*60*getIterPerSecond();
 	//new TDecay method uses upper and lower tbounds
-	double tdecay = log(lowerTBound/(TInitialScaling* upperTBound)) / (-iter_t * TDecayScaling);
-	return tdecay;
+	if(lowerTBound != 0){
+		double tdecay = log(lowerTBound/(TInitialScaling* upperTBound)) / (-iter_t * TDecayScaling);
+		cerr << "\ntdecay: " << tdecay << "\n";
+		return tdecay;
+	}
 
-	cerr << "\ntdecay: " << tdecay << "\n";
-
+	//old TDecay method
 	vector<double> EIncs = energyIncSample();
 	cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
