@@ -987,6 +987,7 @@ double SANA::searchTInitialByStatisticalTest() {
 	tout << G1->getName() + "_" + G2->getName() << "," << "stats" << "," << pow(10, upperBoundTInitial) << "," << pForTInitial(pow(10, upperBoundTInitial)) << ",";
 	tout.close();
 
+
 	lowerTBound = lowerBoundTInitial;
 	upperTBound = upperBoundTInitial;
 	return upperBoundTInitial;
@@ -1143,6 +1144,10 @@ double SANA::findTInitialByLinearRegression(){
 
 	lowerTBound = pow(10, get<2>(regressionResult));
 	upperTBound = pow(10, currentTemperature);
+	double iter_t = minutes*60*getIterPerSecond();
+	cerr << "lowerBound via newmethode: " << (log(avgEnergyInc / log(1E-6))/log(10)) << " " << avgEnergyInc / log(1E-6) << " " << acceptingProbability(avgEnergyInc, avgEnergyInc / log(1E-6)) << " " << pForTInitial(avgEnergyInc / log(1E-6)) << endl;
+	cerr << "lowerBound via Statistics: " << temperatureFunction(iter_t, pow(10, currentTemperature), TDecay) << " " << pForTInitial(temperatureFunction(iter_t, pow(10, currentTemperature), TDecay)) << endl;
+	cerr << "lowerBound via Regression: " << lowerTBound << " " << pForTInitial(lowerTBound) << endl;
 
 	return pow(10, currentTemperature);
 }
@@ -1375,6 +1380,13 @@ double SANA::simpleSearchTInitial() {
 
 double SANA::searchTDecay(double TInitial, double minutes) {
 
+	double iter_t = minutes*60*getIterPerSecond();
+	//new TDecay method uses upper and lower tbounds
+	double tdecay = log(lowerTBound/(TInitialScaling* upperTBound)) / (-iter_t * TDecayScaling);
+	return tdecay;
+
+	cerr << "\ntdecay: " << tdecay << "\n";
+
 	vector<double> EIncs = energyIncSample();
 	cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
@@ -1402,7 +1414,7 @@ double SANA::searchTDecay(double TInitial, double minutes) {
 	double epsilon = (x_left + x_right)/2;
 	cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
 	cerr << "Final epsilon: " << epsilon << endl;
-	double iter_t = minutes*60*getIterPerSecond();
+	
 
 	double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
 	cerr << "Final T_decay: " << lambda << endl;
@@ -1414,7 +1426,7 @@ double SANA::searchTDecay(double TInitial, uint iterations) {
 	vector<double> EIncs = energyIncSample();
 	cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
-	//find the temperature epsilon such that the expected number of these energy samples accepted is 1
+	//find the temperature epsilon such that the expected number of thes e energy samples accepted is 1
 	//by bisection, since the expected number is monotically increasing in epsilon
 
 	//upper bound and lower bound of x
