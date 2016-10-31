@@ -209,7 +209,7 @@ Alignment SANA::run() {
             align = new Alignment(simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter));
         }
         if (addHillClimbing){
-            return hillClimbingAlignment(*align, (long long unsigned int)(100000000)); //arbitrarily chosen, probably too big.
+            return hillClimbingAlignment(*align, (long long unsigned int)(10000000)); //arbitrarily chosen, probably too big.
         }else{
             return *align;
         }
@@ -334,11 +334,7 @@ double SANA::acceptingProbability(double energyInc, double T) {
 }
 
 double SANA::trueAcceptingProbability(){
-    if(sampledProbability.size() == 0){
-        return 1;
-    }else{
-        return vectorMean(sampledProbability);
-    }
+    return vectorMean(sampledProbability);
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
@@ -1149,9 +1145,6 @@ double SANA::findTInitialByLinearRegression(){
 	lowerTBound = pow(10, get<2>(regressionResult));
 	upperTBound = pow(10, currentTemperature);
 	double iter_t = minutes*60*getIterPerSecond();
-	cerr << "lowerBound via newmethode: " << (log(avgEnergyInc / log(1E-6))/log(10)) << " " << avgEnergyInc / log(1E-6) << " " << acceptingProbability(avgEnergyInc, avgEnergyInc / log(1E-6)) << " " << pForTInitial(avgEnergyInc / log(1E-6)) << endl;
-	cerr << "lowerBound via Statistics: " << temperatureFunction(iter_t, pow(10, currentTemperature), TDecay) << " " << pForTInitial(temperatureFunction(iter_t, pow(10, currentTemperature), TDecay)) << endl;
-	cerr << "lowerBound via Regression: " << lowerTBound << " " << pForTInitial(lowerTBound) << endl;
 
 	return pow(10, currentTemperature);
 }
@@ -1387,7 +1380,7 @@ double SANA::searchTDecay(double TInitial, double minutes) {
 	double iter_t = minutes*60*getIterPerSecond();
 	//new TDecay method uses upper and lower tbounds
 	if(lowerTBound != 0){
-		double tdecay = log(lowerTBound/(TInitialScaling* upperTBound)) / (-iter_t * TDecayScaling);
+		double tdecay = -log(lowerTBound/(TInitialScaling* upperTBound)) / (-iter_t * TDecayScaling);
 		cerr << "\ntdecay: " << tdecay << "\n";
 		return tdecay;
 	}
