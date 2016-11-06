@@ -264,10 +264,15 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     }
 
     if (args.strings["-truealignment"] != "") {
-        m = new NodeCorrectness(Alignment::loadMapping(args.strings["-truealignment"]));
+	//properly turns the input file into a vector of strings
+	vector<string> edges = fileToStrings(args.strings["-truealignment"]);
+        m = new NodeCorrectness(NodeCorrectness::convertAlign(G1, G2, edges));
         M.addMeasure(m);
     } else if (G1.sameNodeNames(G2)) {
-        m = new NodeCorrectness(Alignment::correctMapping(G1, G2));
+	Alignment a(Alignment::correctMapping(G1,G2));
+	vector<ushort> mapping = a.getMapping();
+	mapping.push_back(G1.getNumNodes());
+        m = new NodeCorrectness(mapping);
         M.addMeasure(m);
     }
 
