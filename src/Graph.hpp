@@ -30,7 +30,8 @@ using namespace std;
 class Graph {
 
 public:
-
+    
+    void setMax(double number);
     static Graph loadGraph(string name);
     static Graph multGraph(string name, uint path);
 
@@ -44,12 +45,12 @@ public:
 
     static void GeoGeneDuplicationModel(uint numNodes, uint numEdges, string outputFile);
 
-
+    //void returnmaxSize(double max);
     //creates the null graph
     Graph();
     Graph(const Graph& G);
-
-
+    //double maxsize;
+    
     Graph(uint n, const vector<vector<ushort> > edgeList);
 
     string getName() const;
@@ -137,16 +138,16 @@ public:
     int unlockedmiRNACount = -1;
 
 private:
-
+    double max = 5;
     string name;
-
+    //double maxsize;
     vector<vector<ushort> > edgeList; //edges in no particular order
     vector<vector<bool> > adjMatrix;
     vector<vector<ushort> > adjLists; //neighbors in no particular order
 
     //list of the nodes of each connected component, sorted from larger to smaller
     vector<vector<ushort> > connectedComponents;
-
+    //int maxsize;
 
     // NOTE: these don't change after reIndexing G1 (method #3 of locking),
     // and they are used to reIndex the graph to normal at the end.
@@ -164,7 +165,6 @@ private:
     void removeRandomEdge();
 
     string autogenFilesFolder();
-
     vector<vector<uint> > computeGraphletDegreeVectors();
 
     //places in dist a matrix with the distance between every pair of nodes (a -1 indicates infinity)

@@ -735,7 +735,12 @@ int init(int maxGraphletSize, const char* graphFileName) {
     }
     // initialize orbit counts
     orbit = (int64**)malloc(n*sizeof(int64*));
-    for (int i=0;i<n;i++) orbit[i] = (int64*)calloc(73,sizeof(int64));
+    int maxsize;
+    if (GS == 4)
+	maxsize = 15;
+    else if(GS == 5)
+	maxsize = 73;
+    for (int i=0;i<n;i++) orbit[i] = (int64*)calloc(maxsize,sizeof(int64));
     return 1;
 }
 
@@ -760,8 +765,7 @@ std::vector<std::vector<uint> > computeGraphlets(int maxGraphletSize, string gra
     else if (maxGraphletSize==5) count5();
     else throw "The maximum graphlet size should be 4 or 5";
 
-    int dgvSize = maxGraphletSize==4 ? 15 : 73;
-    
+    int dgvSize = maxGraphletSize==4 ? 15 : 73; 
     vector<vector<uint> > res(n, vector<uint> (dgvSize));
     for (int i = 0; i < n; i++)
         for (int j = 0; j < dgvSize; j++)
