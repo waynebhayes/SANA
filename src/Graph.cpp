@@ -18,18 +18,15 @@ Graph Graph::multGraph(string name, uint path) {
     return g;
 }
 void Graph::setMax(double number){
-	if (number == 4){
-	    Graph::max = 4;
-	}
 	if (number != 4 && number != 5){
 	    std::cout<<"Max Graphlet Size must be 4 or 5\n"<<endl;
+	    Graph::max = 5; //If given size is not 4 or 5, set it to the default
 	}
+	else
+	    Graph::max = number;
 	Graph::computeGraphletDegreeVectors();
 }
-/*void Graph::returnmaxSize(double max){
-	//Graph::maxsize = max;
-	return;
-}*/
+
 //transform format
 void Graph::edgeList2gw(string fin, string fout) {
     vector<string> nodes = removeDuplicates(fileToStrings(fin));

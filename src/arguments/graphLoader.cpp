@@ -134,16 +134,13 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 		G2 = Graph::multGraph(g2Name, p2);
 	}
 	
-	double maxSize = args.doubles["-maxGraphletSize"];	
-	if(maxSize==4 || maxSize ==5){
+	double maxSize = args.doubles["-maxGraphletSize"];
+	if (maxSize){	
 		G1.setMax(maxSize);	
 		G2.setMax(maxSize);
 		std::cout<<"\nSetting max graphlet size to: "<<maxSize<<endl;
 	}
-	else{
-		std::cout<<"Invalid max Graphlet Size... "<<maxSize<<endl;
-		exit(0);
-	}
+
 
 	// For "-nodes-have-types"
 	if(args.bools["-nodes-have-types"]){
