@@ -170,7 +170,7 @@ vector<array<string, 6>> argumentDescriptions = {
 
 	//---------------------------------SIMILARITY----------------------------------------
 	{ "", "", "banner", "", "More options for \"-mode similarity\"", "0" },
-	{ "-simFormat", "double", "1", "Similarity File Format", "Used in Similarity Mode \"-mode similarity\" and with \"-objfuntype -esim\". Allowed values are 1=node names; 2=node integers numbered as in LEDA .gw format.", "0" },
+	{ "-simFormat", "double", "1", "Similarity File Format", "Used in Similarity Mode \"-mode similarity\" and with \"-objfuntype -esim\". Allowed values are 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
 	{ "End More options for \"-mode similarity\"", "", "banner", "", "", "0" },
 	//-------------------------------END SIMILARITY--------------------------------------
 };
