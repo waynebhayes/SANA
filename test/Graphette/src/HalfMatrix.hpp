@@ -1,8 +1,14 @@
+#ifndef HALFMATRIX_HPP
+#define HALFMATRIX_HPP
+
 #include <vector>
 #include <cstdlib>
 #include <cassert>
 #include <stdexcept>
 #include <iostream>
+
+typedef unsigned int uint;
+typedef unsigned short int ushort;
 
 class HalfMatrix{
 public:
@@ -22,3 +28,4 @@ private:
    	bool* _bitArray = NULL;
    	void encodeBitArray(uint decimalNumber);
 };
+#endif

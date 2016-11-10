@@ -27,6 +27,7 @@ Mode* selectMode(ArgumentParser& args) {
     Mode* mode;
 
     string name = args.strings["-mode"];
+    //std::cout<<"PRINTING MODE TO CHOOSE FROM"<<name<<"\n"<<endl;
     if (name == "cluster") {
         mode = new ClusterMode();
     } else if (name == "exp") {

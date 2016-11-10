@@ -12,6 +12,7 @@ OTHER_SRC =                                             \
 	src/Graphette.cpp                                   \
 	src/distanceMatrix.cpp                              \
 	src/test.cpp                                        \
+	src/init/GenerateOrbitMatrix.cpp                    \
 
 
 SRCS = $(OTHER_SRC)

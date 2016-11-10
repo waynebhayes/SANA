@@ -148,7 +148,8 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
         LocalMeasure* waveNodeSim = 
             (LocalMeasure*) M.getMeasure(args.strings["-wavenodesim"]);
         return new WeightedAlignmentVoter(&G1, &G2, waveNodeSim);
-    } 
+    }
+   
     if (name == "lgraal")
         return initLgraal(G1, G2, args);
     if (name == "hubalign")
