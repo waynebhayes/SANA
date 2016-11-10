@@ -1,3 +1,6 @@
+#ifndef GRAPHETTE_HPP
+#define GRAPHETTE_HPP
+
 #include <vector>
 #include <string>
 #include <iostream>
@@ -41,3 +44,4 @@ private:
 	void followTrail(std::vector<ushort>& permutation, std::vector<ushort>& cycle,
 						ushort seed, ushort current, std::vector<bool>& visited);
 };
+#endif
