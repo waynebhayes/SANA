@@ -1,3 +1,4 @@
+#include "distanceMatrix.hpp"
 using namespace std;
 
 void distanceMatrix(uint N, uint K)
