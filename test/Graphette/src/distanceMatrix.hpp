@@ -1,3 +1,6 @@
+#ifndef DISTANCEMATRIX_HPP
+#define DISTANCEMATRIX_HPP
+
 #include <algorithm>
 #include <iostream>
 #include <string>
@@ -8,3 +11,4 @@
 
 void distanceMatrix(uint N, uint K); // N= number of nodes, K = hamming distance
 
+#endif

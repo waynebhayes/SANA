@@ -47,7 +47,7 @@ vector<string> doubleArgs = {
 "-maxDist", // used for -edged and -noded
 "-alpha", //used when '-objfuntype' is "alpha"
 "-beta", //used when '-objfuntype' is "beta"
-
+"-maxGraphletSize",
 "-t",
 "-rewire",
 "-tnew", "-iterperstep", "-numcand", "-tcand", "-tfin",

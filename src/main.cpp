@@ -4,6 +4,8 @@
 #include "arguments/modeSelector.hpp"
 #include "utils/randomSeed.hpp"
 #include <iostream>
+#include <stdlib.h>
+#include <stdio.h>
 
 using namespace std;
 
@@ -29,6 +31,5 @@ int main(int argc, char* argv[]) {
     Mode* mode = selectMode(args);
     mode->run(args);
     delete mode;
-
     return 0;
 }
