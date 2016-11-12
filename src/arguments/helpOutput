@@ -1,7 +1,8 @@
 Usage: ./sana [OPTION] [ARG(S)] [OPTION] [ARG(S)]...
 Aligns the biological networks of two species.
-Example: ./sana
+Example: ./sana -g1 yeast -g2 human
 Above example aligns yeast and human for a duration of 5 minutes, optimizing s3.
+Note that the running time and objective function is implicit (default arguments).
 For more examples and information, see usage notes at bottom.
 
 The following is a list of supported options.

@@ -30,7 +30,7 @@ vector<array<string, 6>> argumentDescriptions = {
 
 	//------------------------------------METHOD-----------------------------------------
 	{ "", "", "banner", "", "Method", "0" },
-	{ "-method", "string", "sana", "Method", "Sets the algorithm that performs the alignment. All methods except \"sana\" call an external algorithm written by other authors. \nPossible aligners are: \"lgraal\", \"hubalign\", \"sana\", \"wave\", \"random\", \"tabu\", \"dijkstra\", \"netal\", \"mi-graal\", \"ghost\", \"piswap\", \"optnetalign\", \"spinal\", \"great\", \"natalie\", \"gedevo\", \"greedylccs\", \"magna\", \"waveSim\", \"none\", and \"hc\".", "1" },
+	{ "-method", "string", "sana", "Method", "Sets the algorithm that performs the alignment. NOTE: All methods except \"sana\" call an external algorithm written by other authors. \nPossible aligners are: \"lgraal\", \"hubalign\", \"sana\", \"wave\", \"random\", \"tabu\", \"dijkstra\", \"netal\", \"mi-graal\", \"ghost\", \"piswap\", \"optnetalign\", \"spinal\", \"great\", \"natalie\", \"gedevo\", \"greedylccs\", \"magna\", \"waveSim\", \"none\", and \"hc\".", "1" },
 	{ "End Method", "", "banner", "", "", "0" },
 	//----------------------------------END METHOD---------------------------------------
 
