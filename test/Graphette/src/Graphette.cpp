@@ -199,23 +199,3 @@ void Graphette::followTrail(vector<ushort>& permutation, vector<ushort>& cycle,
 	if(permutation[current] != seed)
 		followTrail(permutation, cycle, seed, permutation[current], visited);
 }
-
-void Graphette::mapOrbitIds(ushort n, vector<uint>& canonnicalGraphettes, string filename){
-	if(filename == "")
-		filename = "orbitIds" + to_string(n) + ".txt";
-	ofstream fmap(filename);
-	uint sum = 0;
-	vector<uint> ids;
-	for(uint num : canonnicalGraphettes){
-		Graphette g(n, num);
-		auto orbits = g.getOrbits();
-		for(auto orbit: orbits)
-			ids.push_back(num);
-		sum += orbits.size();
-	}
-	fmap << sum << endl;
-	for(uint num: ids)
-		fmap << num << " ";
-	fmap << endl;
-	fmap.close();
-}
