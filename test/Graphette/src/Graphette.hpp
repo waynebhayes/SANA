@@ -26,8 +26,6 @@ public:
 
 	std::vector<Graphette*> static generateAll(ushort n);
 
-	//Saves orbitID map for canonical graphettes in orbitIds'n'.txt
-	void static mapOrbitIds(ushort n, std::vector<uint>& canonnicalGraphettes, std::string filename = "");
 	std::vector<std::vector<ushort>> getOrbits();
 	void printAdjMatrix();
 private:
