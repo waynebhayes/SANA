@@ -23,6 +23,10 @@ public:
 	uint getNumNodes();
 	uint getNumEdges();
 	uint getDegree(uint node);
+	uint getLabel(uint node);
+	void setLabel(uint node, uint label);
+	std::vector <uint> getLabels();
+	void setLabels(std::vector<uint> label);
 
 	std::vector<Graphette*> static generateAll(uint n);
 
@@ -32,7 +36,7 @@ private:
 	uint numNodes_;
 	uint numEdges_, decimalNumber_;
 	HalfMatrix adjMatrix_;
-	std::vector<uint> degree_;
+	std::vector<uint> degree_, label_;
 	uint decodeHalfMatrix();
 	void init();
 	
