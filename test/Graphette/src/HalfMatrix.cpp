@@ -1,7 +1,7 @@
 #include "HalfMatrix.hpp"
 
 using namespace std;
-HalfMatrix::HalfMatrix(ushort n, std::vector<bool>& bitVector){
+HalfMatrix::HalfMatrix(uint n, std::vector<bool>& bitVector){
     if (n == 0)
         assert("Error: HalfMatrix constructor has 0 size");
     len_ = n;
@@ -11,7 +11,7 @@ HalfMatrix::HalfMatrix(ushort n, std::vector<bool>& bitVector){
     }
 }
 
-HalfMatrix::HalfMatrix(ushort n, uint decimalNumber){
+HalfMatrix::HalfMatrix(uint n, uint decimalNumber){
     if (n == 0)
         assert("Error: HalfMatrix constructor has 0 size");
     len_ = n;
@@ -19,7 +19,7 @@ HalfMatrix::HalfMatrix(ushort n, uint decimalNumber){
     this->encodeBitArray(decimalNumber);
 }
 
-HalfMatrix::HalfMatrix(ushort n)
+HalfMatrix::HalfMatrix(uint n)
                 : HalfMatrix(n, 0){
 
 }
@@ -52,7 +52,7 @@ HalfMatrix::~HalfMatrix(){
     delete[] _bitArray;
 }
 
-bool& HalfMatrix::operator() (ushort row, ushort col){
+bool& HalfMatrix::operator() (uint row, uint col){
     if (row >= len_ or col >= len_)
         throw std::out_of_range("HalfMatrix: index out of range");
     uint pos;
