@@ -17,13 +17,15 @@ public:
     HalfMatrix(const HalfMatrix& m);   // Copy constructor
     ~HalfMatrix();
 
+    uint getLength();
+    void print();
     bool& operator() (uint row, uint col);
     //bool operator() (uint row, uint col) const;
     HalfMatrix& operator= (const HalfMatrix& m);
     void clear();
 private:
-    uint _len;
-   	bool* _bitArray = NULL;
+    uint len_;
+   	bool* bitArray_ = NULL;
    	void encodeBitArray(uint decimalNumber);
 };
 #endif
