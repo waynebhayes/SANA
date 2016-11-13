@@ -106,18 +106,6 @@ void Graphette::setLabels(vector<uint>& label){
 	label_ = label;
 }
 
-void Graphette::printAdjMatrix(){
-	for (uint i = 0; i < numNodes_; i++){
-		for (uint j = 0; j < numNodes_; j++){
-			if (i < j)
-				cout << adjMatrix_(i, j) << " ";
-			else
-				cout << "  ";
-		}
-		cout << "\n";
-	}
-}
-
 vector<Graphette*> Graphette::generateAll(uint n){
 	vector<Graphette*> graphetteCopy(0);
 	if(n > 0){
@@ -183,7 +171,7 @@ Graphette* Graphette::permuteNodes(vector<uint>& permutation){
 		for(uint j = i+1; j < numNodes_; j++){
 			uint pi = permutation[i], pj = permutation[j]; //new_i, new_j
 			if(pi == pj) 
-				assert("Bad permutation: distict nodes map to the same node");
+				throw invalid_argument("Graphette::permuteNodes(): Bad permutation: distict nodes map to the same node");
 			else
 				pAdjMatrix(pi, pj) = adjMatrix_(i, j);
 		}
