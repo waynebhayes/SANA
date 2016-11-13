@@ -14,32 +14,32 @@
 class Graphette{
 public:
 	Graphette(); //default constructor
-	Graphette(ushort n, uint decimalNumber);
-	Graphette(ushort n, std::vector<bool>& bitVector);
-	Graphette(ushort n, HalfMatrix adjMatrix);
+	Graphette(uint n, uint decimalNumber);
+	Graphette(uint n, std::vector<bool>& bitVector);
+	Graphette(uint n, HalfMatrix adjMatrix);
 	~Graphette();
 	uint getDecimalNumber();
 	std::vector<bool> getBitVector();
-	ushort getNumNodes();
+	uint getNumNodes();
 	uint getNumEdges();
-	ushort getDegree(ushort node);
+	uint getDegree(uint node);
 
-	std::vector<Graphette*> static generateAll(ushort n);
+	std::vector<Graphette*> static generateAll(uint n);
 
-	std::vector<std::vector<ushort>> getOrbits();
+	std::vector<std::vector<uint>> getOrbits();
 	void printAdjMatrix();
 private:
-	ushort numNodes_;
+	uint numNodes_;
 	uint numEdges_, decimalNumber_;
 	HalfMatrix adjMatrix_;
-	std::vector<ushort> degree_;
+	std::vector<uint> degree_;
 	uint decodeHalfMatrix();
 	void init();
 	
-	bool suitable(std::vector<ushort>& permutation);
-	Graphette* permuteNodes(std::vector<ushort>& permutation);
-	void captureCycles(std::vector<ushort>& permutation, std::vector<ushort>& orbit);
-	void followTrail(std::vector<ushort>& permutation, std::vector<ushort>& cycle,
-						ushort seed, ushort current, std::vector<bool>& visited);
+	bool suitable(std::vector<uint>& permutation);
+	Graphette* permuteNodes(std::vector<uint>& permutation);
+	void captureCycles(std::vector<uint>& permutation, std::vector<uint>& orbit);
+	void followTrail(std::vector<uint>& permutation, std::vector<uint>& cycle,
+						uint seed, uint current, std::vector<bool>& visited);
 };
 #endif

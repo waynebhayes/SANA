@@ -10,7 +10,7 @@ Graphette::Graphette()
 	degree_.clear();
 }
 
-Graphette::Graphette(ushort n, uint decimalNumber)
+Graphette::Graphette(uint n, uint decimalNumber)
 	: numNodes_(n)
 	, decimalNumber_(decimalNumber)
 	, adjMatrix_(n, decimalNumber)
@@ -19,7 +19,7 @@ Graphette::Graphette(ushort n, uint decimalNumber)
 	this->init();
 }
 
-Graphette::Graphette(ushort n, vector<bool>& bitVector)
+Graphette::Graphette(uint n, vector<bool>& bitVector)
 	: numNodes_(n)
 	, adjMatrix_(n, bitVector)
 	, degree_(n, 0)
@@ -28,7 +28,7 @@ Graphette::Graphette(ushort n, vector<bool>& bitVector)
 	decimalNumber_ = this->decodeHalfMatrix();
 }
 
-Graphette::Graphette(ushort n, HalfMatrix adjMatrix)
+Graphette::Graphette(uint n, HalfMatrix adjMatrix)
 	: numNodes_(n)
 	, adjMatrix_(adjMatrix)
 	, degree_(n, 0)
@@ -44,8 +44,8 @@ Graphette::~Graphette(){
 
 void Graphette::init(){
 	uint sum = 0;
-	for(ushort i = 0; i < numNodes_; i++){
-		for(ushort j = i+1; j < numNodes_; j++){
+	for(uint i = 0; i < numNodes_; i++){
+		for(uint j = i+1; j < numNodes_; j++){
 			sum+= adjMatrix_(i,j);
 			degree_[i]+= adjMatrix_(i,j);
 			degree_[j]+= adjMatrix_(i,j);
@@ -56,8 +56,8 @@ void Graphette::init(){
 
 uint Graphette::decodeHalfMatrix(){
 	uint num = 0, k = 0, bitVectorSize = (numNodes_*(numNodes_-1))/2;
-	for(ushort i = 0; i < numNodes_; i++)
-		for(ushort j=i+1; j < numNodes_; j++){
+	for(uint i = 0; i < numNodes_; i++)
+		for(uint j=i+1; j < numNodes_; j++){
 			num += adjMatrix_(i, j) << (bitVectorSize-1-k);
 			k++;
 		}
@@ -66,8 +66,8 @@ uint Graphette::decodeHalfMatrix(){
 
 vector<bool> Graphette::getBitVector(){
 	vector<bool> bitVector;
-	for(ushort i = 0; i < numNodes_; i++)
-		for(ushort j=i+1; j < numNodes_; j++){
+	for(uint i = 0; i < numNodes_; i++)
+		for(uint j=i+1; j < numNodes_; j++){
 			bitVector.push_back(adjMatrix_(i, j));
 		}
 	return bitVector;
@@ -77,7 +77,7 @@ uint Graphette::getDecimalNumber(){
 	return decimalNumber_;
 }
 
-ushort Graphette::getNumNodes(){
+uint Graphette::getNumNodes(){
 	return numNodes_;
 }
 
@@ -85,13 +85,13 @@ uint Graphette::getNumEdges(){
 	return numEdges_;
 }
 
-ushort Graphette::getDegree(ushort node){
+uint Graphette::getDegree(uint node){
 	return degree_[node];
 }
 
 void Graphette::printAdjMatrix(){
-	for (ushort i = 0; i < numNodes_; i++){
-		for (ushort j = 0; j < numNodes_; j++){
+	for (uint i = 0; i < numNodes_; i++){
+		for (uint j = 0; j < numNodes_; j++){
 			if (i < j)
 				cout << adjMatrix_(i, j) << " ";
 			else
@@ -101,7 +101,7 @@ void Graphette::printAdjMatrix(){
 	}
 }
 
-vector<Graphette*> Graphette::generateAll(ushort n){
+vector<Graphette*> Graphette::generateAll(uint n){
 	vector<Graphette*> graphetteCopy(0);
 	if(n > 0){
 		uint num_edges = (n*(n-1))/2;
@@ -113,12 +113,12 @@ vector<Graphette*> Graphette::generateAll(ushort n){
 	return graphetteCopy;
 }
 
-vector<vector<ushort>> Graphette::getOrbits(){
-	vector<ushort> permutation, orbit;
+vector<vector<uint>> Graphette::getOrbits(){
+	vector<uint> permutation, orbit;
 	
 	//initially,the permutation is (0, 1, ..., numNodes_-1)
 	//and each node is in its own orbit. we'll merge orbits later 
-	for(ushort i = 0; i < numNodes_; i++){
+	for(uint i = 0; i < numNodes_; i++){
 		permutation.push_back(i);
 		orbit.push_back(i);
 	} 
@@ -135,10 +135,10 @@ vector<vector<ushort>> Graphette::getOrbits(){
 		delete pGraph;
 	}
 	//saving orbits
-	vector<vector<ushort>> output;
-	for(ushort orbitId = 0; orbitId < numNodes_; orbitId++){
-		vector<ushort> temp;
-		for(ushort node = 0; node < numNodes_; node++){
+	vector<vector<uint>> output;
+	for(uint orbitId = 0; orbitId < numNodes_; orbitId++){
+		vector<uint> temp;
+		for(uint node = 0; node < numNodes_; node++){
 			if(orbit[node] == orbitId)
 				temp.push_back(node);
 		}
@@ -148,8 +148,8 @@ vector<vector<ushort>> Graphette::getOrbits(){
 	return output;
 }
 
-bool Graphette::suitable(vector<ushort>& permutation){
-	for(ushort node = 0; node < numNodes_; node++){
+bool Graphette::suitable(vector<uint>& permutation){
+	for(uint node = 0; node < numNodes_; node++){
 		if(this->getDegree(node) != this->getDegree(permutation[node])){
 			return false;
 			break;
@@ -158,13 +158,13 @@ bool Graphette::suitable(vector<ushort>& permutation){
 	return true;
 }
 
-Graphette* Graphette::permuteNodes(vector<ushort>& permutation){
+Graphette* Graphette::permuteNodes(vector<uint>& permutation){
 	//To store adjMatrix_ after permutation
 	HalfMatrix pAdjMatrix(numNodes_);
 	//Apply the permutation
-	for(ushort i = 0; i < numNodes_; i++){
-		for(ushort j = i+1; j < numNodes_; j++){
-			ushort pi = permutation[i], pj = permutation[j]; //new_i, new_j
+	for(uint i = 0; i < numNodes_; i++){
+		for(uint j = i+1; j < numNodes_; j++){
+			uint pi = permutation[i], pj = permutation[j]; //new_i, new_j
 			if(pi == pj) 
 				assert("Bad permutation: distict nodes map to the same node");
 			else
@@ -176,24 +176,24 @@ Graphette* Graphette::permuteNodes(vector<ushort>& permutation){
 	return g;
 }
 
-void Graphette::captureCycles(vector<ushort>& permutation, vector<ushort>& orbit){
+void Graphette::captureCycles(vector<uint>& permutation, vector<uint>& orbit){
 	vector<bool> visited(numNodes_, false);
-	for(ushort i = 0; i < numNodes_; i++){
+	for(uint i = 0; i < numNodes_; i++){
 		if(not visited[i]){
 			//finding out each cycle at a time
-			vector<ushort> cycle;
+			vector<uint> cycle;
 			followTrail(permutation, cycle, i, i, visited);
-			ushort minOrbit = orbit[cycle[0]];
-			for(ushort j: cycle)
+			uint minOrbit = orbit[cycle[0]];
+			for(uint j: cycle)
 				minOrbit = min(orbit[j], minOrbit);
-			for(ushort j: cycle)
+			for(uint j: cycle)
 				orbit[j] = minOrbit;
 		}
 	}
 }
 
-void Graphette::followTrail(vector<ushort>& permutation, vector<ushort>& cycle,
-	ushort seed, ushort current, vector<bool>& visited){
+void Graphette::followTrail(vector<uint>& permutation, vector<uint>& cycle,
+	uint seed, uint current, vector<bool>& visited){
 	cycle.push_back(current);
 	visited[current] = true;
 	if(permutation[current] != seed)
