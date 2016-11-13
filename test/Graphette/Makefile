@@ -21,7 +21,7 @@ OBJDIR = _objs
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
 #MAIN = sana_dbg
-MAIN = main
+MAIN = faye
 
 .PHONY: depend clean test test_all regression_test
 
