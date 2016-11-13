@@ -102,7 +102,7 @@ void Graphette::setLabel(uint node, uint label){
 vector <uint> Graphette::getLabels(){
 	return label_;
 }
-void Graphette::setLabels(vector<uint> label){
+void Graphette::setLabels(vector<uint>& label){
 	label_ = label;
 }
 

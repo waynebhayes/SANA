@@ -26,7 +26,7 @@ public:
 	uint getLabel(uint node);
 	void setLabel(uint node, uint label);
 	std::vector <uint> getLabels();
-	void setLabels(std::vector<uint> label);
+	void setLabels(std::vector<uint>& label);
 
 	std::vector<Graphette*> static generateAll(uint n);
 
