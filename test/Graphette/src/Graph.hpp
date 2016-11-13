@@ -10,7 +10,10 @@
 #include <algorithm>
 #include <cstdlib>
 #include <stdexcept>
+#include <set>
 #include "HalfMatrix.hpp"
+#include "Graphette.hpp"
+#include "utils/xrand.hpp"
 
 class Graph{
 public:
@@ -26,15 +29,18 @@ public:
 
 	void addEdge(uint node1, uint node2);
 	void removeEdge(uint node1, uint node2);
+	bool getEdge(uint node1, uint node2);
 	uint getNumNodes();
 	uint getNumEdges();
 	uint getDegree(uint node);
 	void printAdjMatrix();
-	Graph* getSubGraph(std::vector<uint>& nodes);
+	Graphette* getSampleGraphette(uint numNodes, uint radius = 3);
+	std::vector<uint> getNeighbors(uint node, uint radius);
 private:
 	uint numNodes_, numEdges_;
 	HalfMatrix adjMatrix_;
 	std::vector<uint> degree_;
+	std::set<uint> explore(uint seed, uint radius);
 };
 
 #endif
