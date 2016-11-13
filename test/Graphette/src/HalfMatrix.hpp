@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <cstdlib>
-#include <cassert>
 #include <stdexcept>
 #include <iostream>
 
@@ -23,7 +22,7 @@ public:
     HalfMatrix& operator= (const HalfMatrix& m);
     void clear();
 private:
-    uint len_;
+    uint _len;
    	bool* _bitArray = NULL;
    	void encodeBitArray(uint decimalNumber);
 };
