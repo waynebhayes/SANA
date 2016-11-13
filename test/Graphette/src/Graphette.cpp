@@ -8,6 +8,7 @@ Graphette::Graphette()
 {
 	adjMatrix_.clear();
 	degree_.clear();
+	label_.clear();
 }
 
 Graphette::Graphette(uint n, uint decimalNumber)
@@ -40,6 +41,7 @@ Graphette::Graphette(uint n, HalfMatrix adjMatrix)
 Graphette::~Graphette(){
 	adjMatrix_.clear();
 	degree_.clear();
+	label_.clear();
 }
 
 void Graphette::init(){
@@ -50,6 +52,7 @@ void Graphette::init(){
 			degree_[i]+= adjMatrix_(i,j);
 			degree_[j]+= adjMatrix_(i,j);
 		}
+		label_.push_back(i);
 	}
 	numEdges_ = sum;
 }
@@ -87,6 +90,20 @@ uint Graphette::getNumEdges(){
 
 uint Graphette::getDegree(uint node){
 	return degree_[node];
+}
+
+uint Graphette::getLabel(uint node){
+	return label_[node];
+}
+void Graphette::setLabel(uint node, uint label){
+	label_[node] = label;
+}
+
+vector <uint> Graphette::getLabels(){
+	return label_;
+}
+void Graphette::setLabels(vector<uint> label){
+	label_ = label;
 }
 
 void Graphette::printAdjMatrix(){
