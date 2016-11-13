@@ -7,7 +7,7 @@
 #include <fstream>
 #include <cmath>
 #include <algorithm>
-#include <cassert>
+#include <stdexcept>
 #include <cstdlib>
 #include "HalfMatrix.hpp"
 
@@ -29,9 +29,8 @@ public:
 	void setLabels(std::vector<uint>& label);
 
 	std::vector<Graphette*> static generateAll(uint n);
-
 	std::vector<std::vector<uint>> getOrbits();
-	void printAdjMatrix();
+
 private:
 	uint numNodes_;
 	uint numEdges_, decimalNumber_;
