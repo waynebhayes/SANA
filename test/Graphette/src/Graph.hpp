@@ -63,7 +63,8 @@ private:
 	/*
 	For a given seed, it explores its neighborhood to distance up to radius.
 	*/
-	std::set<uint> explore(uint seed, uint radius);
+	std::set<uint> explore(uint seed, uint radius, std::vector<bool>& visited);
+	Graphette* createGraphette(std::vector<uint>& nodes);
 };
 
 #endif
