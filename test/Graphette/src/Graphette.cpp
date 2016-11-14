@@ -108,6 +108,10 @@ void Graphette::setLabels(vector<uint>& label){
 	label_ = label;
 }
 
+void Graphette::printAdjMatrix(){
+	adjMatrix_.print();
+}
+
 vector<Graphette*> Graphette::generateAll(uint n){
 	vector<Graphette*> graphetteCopy(0);
 	if(n > 0){

@@ -27,7 +27,7 @@ public:
 	std::vector <uint> labels();
 	void setLabel(uint node, uint label);
 	void setLabels(std::vector<uint>& label);
-
+	void printAdjMatrix();
 	std::vector<Graphette*> static generateAll(uint n);
 	std::vector<std::vector<uint>> orbits();
 
