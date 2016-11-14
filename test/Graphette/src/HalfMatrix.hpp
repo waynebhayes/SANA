@@ -17,7 +17,7 @@ public:
     HalfMatrix(const HalfMatrix& m);   // Copy constructor
     ~HalfMatrix();
 
-    uint getLength();
+    uint length();
     void print();
     bool& operator() (uint row, uint col);
     //bool operator() (uint row, uint col) const;

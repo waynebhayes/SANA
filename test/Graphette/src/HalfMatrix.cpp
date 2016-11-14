@@ -38,15 +38,17 @@ void HalfMatrix::encodeBitArray(uint decimalNumber){
     for(uint k = 0; k < num_edges; k++) 
         bitArray_[k] = false;
     
-    uint i = (len_*len_ - len_)/2 - 1;
+    int i = (len_*len_ - len_)/2 - 1;
     while (decimalNumber != 0)
     {
         if (i < 0){
-            throw out_of_range("Binary length exceeds number of possible edges");
+            throw out_of_range("HalfMatrix: Binary length exceeds number of possible edges");
         }
-        bitArray_[i] = decimalNumber % 2;
-        --i;
-        decimalNumber /= 2; 
+        else{
+            bitArray_[i] = decimalNumber % 2;
+            --i;
+            decimalNumber /= 2;
+        } 
     }
 }
 
@@ -54,7 +56,7 @@ HalfMatrix::~HalfMatrix(){
     delete[] bitArray_;
 }
 
-uint HalfMatrix::getLength(){
+uint HalfMatrix::length(){
     return len_;
 }
 
