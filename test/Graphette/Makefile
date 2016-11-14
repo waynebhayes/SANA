@@ -1,7 +1,7 @@
 CC = g++
 
 #CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g
-CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3
+CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -Og -g
 
 INCLUDES =
 LFLAGS =
@@ -14,6 +14,7 @@ OTHER_SRC =                                             \
 	src/test.cpp                                        \
 	src/init/GenerateOrbitMatrix.cpp                    \
 	src/Graph.cpp                                       \
+	src/utils/xrand.cpp                               \
 
 
 SRCS = $(OTHER_SRC)
