@@ -1,10 +1,4 @@
-#include "../Graphette.hpp"
-#include <cstdlib>
-#include <cassert>
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <string>
+##include "GenerateOrbitMatrix.hpp"
 
 using namespace std;
 
@@ -33,4 +27,6 @@ void generateOrbitMatrix(uint n){
 			}
 		fout << endl;
 	}
+	fin.close();
+	fout.close();
 }
