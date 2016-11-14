@@ -1,34 +1,33 @@
 #include "Graphette.hpp"
-//#include "HalfMatrix.hpp"
+#include "HalfMatrix.hpp"
+#include "Graph.hpp"
 #include <cstdlib>
-#include <cassert>
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <set>
+#include <utility>
+#include "utils/xrand.hpp"
 
 using namespace std;
 
-void printAdjMatrix(ushort numNodes_, HalfMatrix& adjMatrix_){
-	for (ushort i = 0; i < numNodes_; i++){
-		for (ushort j = 0; j < numNodes_; j++){
-			if (i < j)
-				cout << adjMatrix_(i, j) << " ";
-			else
-				cout << "  ";
-		}
-		cout << "\n";
-	}
-}
-
 int main(int arg, char*argv[]){
-	uint n = atoi(argv[1]);
-	string filename = "data/list"+to_string(n)+".txt";
-	ifstream fin(filename);
-	uint num;
-	fin >> num;
-	vector<uint> canon;
-	while(fin >> num){
-		canon.push_back(num);
+	uint m, n, seed = atoi(argv[1]), radius = atoi(argv[2]), len= atoi(argv[3]);
+	vector<pair<uint, uint>> edgelist;
+	ifstream fin("test/edgelist.txt");
+	while(fin >> m >> n){
+		edgelist.push_back(make_pair(m, n));
 	}
+	Graph g(edgelist);
+	auto nbors = g.neighbors(seed, radius);
+	for(auto nbor: nbors)
+		cout << nbor << " ";
+	cout << endl;
+	xshuffle(nbors, len);
+	//nbors.resize(len);
+	for(auto nbor: nbors)
+		cout << nbor << " ";
+	cout << endl;
+	return 0;
 }

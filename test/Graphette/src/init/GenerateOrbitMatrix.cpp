@@ -21,7 +21,7 @@ void generateOrbitMatrix(uint n){
 	while(fin >> cgraph){
 		Graphette g = Graphette(n, cgraph);
 		vector<uint> idList(n);		
-		vector<vector<uint>> orbits = g.getOrbits();
+		vector<vector<uint>> orbits = g.orbits();
 		for(auto orbit : orbits){
 			for(auto node : orbit){
 				idList[node] = orbitId;
