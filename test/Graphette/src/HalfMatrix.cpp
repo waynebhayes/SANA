@@ -3,11 +3,15 @@
 using namespace std;
 HalfMatrix::HalfMatrix(uint n, vector<bool>& bitVector){
     if (n == 0)
-        throw invalid_argument("HalfMatrix constructor has size = 0");
-    len_ = n;
-    bitArray_ = new bool[(n*n-n)/2];
-    for(uint i = 0; i < bitVector.size(); i++){
-        bitArray_[i] = bitVector[i];
+        throw invalid_argument("HalfMatrix(n, bitVector): n can't be 0");
+    else if ((n*n-n)/2 != bitVector.size())
+        throw invalid_argument("HalfMatrix(n, bitVector): bitVector.size() is not (n*n-n)/2");
+    else{
+        len_ = n;
+        bitArray_ = new bool[(n*n-n)/2];
+        for(uint i = 0; i < bitVector.size(); i++){
+            bitArray_[i] = bitVector[i];
+        }
     }
 }
 
@@ -81,7 +85,7 @@ bool& HalfMatrix::operator() (uint row, uint col){
     else if(row > col)
         pos = col*len_ + row-((col+1)*(col+2))/2;
     else
-        throw out_of_range("bad HalfMatrix index: row and column can't be equal");
+        throw invalid_argument("bad HalfMatrix index: row and column can't be equal");
     return bitArray_[pos];
 }
 
