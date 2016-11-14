@@ -15,7 +15,7 @@ uint xrand(uint begin, uint end){
 }
 void xshuffle(vector<uint>& nodes, uint len){
     if(len > 0 and nodes.size() > 1){
-   	    for(uint i = 0; i < len; i++){
+   	    for(uint i = 0; i < min(len, (uint) nodes.size()); i++){
    	    	uint j = xrand(i, nodes.size());
    	    	swap(nodes[i], nodes[j]);
    	    }
