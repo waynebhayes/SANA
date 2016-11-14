@@ -67,7 +67,7 @@ uint Graphette::decodeHalfMatrix(){
 	return num;
 }
 
-vector<bool> Graphette::getBitVector(){
+vector<bool> Graphette::bitVector(){
 	vector<bool> bitVector;
 	for(uint i = 0; i < numNodes_; i++)
 		for(uint j=i+1; j < numNodes_; j++){
@@ -76,32 +76,34 @@ vector<bool> Graphette::getBitVector(){
 	return bitVector;
 }
 
-uint Graphette::getDecimalNumber(){
+uint Graphette::decimalNumber(){
 	return decimalNumber_;
 }
 
-uint Graphette::getNumNodes(){
+uint Graphette::numNodes(){
 	return numNodes_;
 }
 
-uint Graphette::getNumEdges(){
+uint Graphette::numEdges(){
 	return numEdges_;
 }
 
-uint Graphette::getDegree(uint node){
+uint Graphette::degree(uint node){
 	return degree_[node];
 }
 
-uint Graphette::getLabel(uint node){
+uint Graphette::label(uint node){
 	return label_[node];
 }
+
+vector <uint> Graphette::labels(){
+	return label_;
+}
+
 void Graphette::setLabel(uint node, uint label){
 	label_[node] = label;
 }
 
-vector <uint> Graphette::getLabels(){
-	return label_;
-}
 void Graphette::setLabels(vector<uint>& label){
 	label_ = label;
 }
@@ -118,7 +120,7 @@ vector<Graphette*> Graphette::generateAll(uint n){
 	return graphetteCopy;
 }
 
-vector<vector<uint>> Graphette::getOrbits(){
+vector<vector<uint>> Graphette::orbits(){
 	vector<uint> permutation, orbit;
 	
 	//initially,the permutation is (0, 1, ..., numNodes_-1)
@@ -134,7 +136,7 @@ vector<vector<uint>> Graphette::getOrbits(){
 
 		Graphette* pGraph = this->permuteNodes(permutation);
 		//Check for automorphism
-		if(this->getDecimalNumber() == pGraph->getDecimalNumber()){
+		if(this->decimalNumber() == pGraph->decimalNumber()){
 			this->captureCycles(permutation, orbit);
 		}
 		delete pGraph;
@@ -155,9 +157,8 @@ vector<vector<uint>> Graphette::getOrbits(){
 
 bool Graphette::suitable(vector<uint>& permutation){
 	for(uint node = 0; node < numNodes_; node++){
-		if(this->getDegree(node) != this->getDegree(permutation[node])){
+		if(this->degree(node) != this->degree(permutation[node])){
 			return false;
-			break;
 		}
 	}
 	return true;
