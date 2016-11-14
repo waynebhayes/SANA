@@ -44,7 +44,7 @@ Graph::Graph(vector<pair<uint, uint>>& edgeList)
 }
 
 Graph::Graph(HalfMatrix& adjMatrix)
-	: numNodes_(adjMatrix.getLength())
+	: numNodes_(adjMatrix.length())
 	, adjMatrix_(adjMatrix)
 {
 	uint n = numNodes_;
@@ -109,41 +109,65 @@ void Graph::printAdjMatrix()
 	adjMatrix_.print();
 }
 
-Graphette* Graph::sampleGraphette(uint k, uint samplingRadius){
-	if(k == 0){
-		throw out_of_range("Graph::sampleGraphette(k, samplingRadius): k can't be 0");
-	}
-	else{
-		//Select a random node
-		uint node = xrand(0, k);
-		vector<uint> nbors = this->neighbors(node, samplingRadius);
-		xshuffle(nbors, samplingRadius);
-		nbors.resize(k);
-		Graphette* g = new Graphette();
-		return g;
-	}
-}
-
 vector<uint> Graph::neighbors(uint node, uint radius){
 	vector<uint> nbors;
-	auto nodes = this->explore(node, radius);
+	vector<bool> visited(numNodes_, false);
+	auto nodes = this->explore(node, radius, visited);
 	nbors.assign(nodes.begin(), nodes.end());
 	return nbors;
 }
 
-set<uint> Graph::explore(uint seed, uint radius){
+Graphette* Graph::sampleGraphette(uint k, uint samplingRadius){
+	if(k == 0){
+		throw out_of_range("Graph::sampleGraphette(k, samplingRadius): k can't be 0");
+	}
+	else if(k > numNodes_)
+		throw invalid_argument("Graph::sampleGraphette(k, samplingRadius): k > numNodes_");
+	else{
+		set<uint> nbors;
+		vector<uint>nborsvec;
+		while(nbors.size() < k){
+			//Select a random node
+			uint node = xrand(0, numNodes_);
+			vector<bool> visited(numNodes_, false);
+			auto temp = this->explore(node, samplingRadius, visited);
+			nbors.insert(temp.begin(), temp.end());
+		}
+		nborsvec.assign(nbors.begin(), nbors.end());
+		//idk, if this code is not fast enough, I need to optimize xshuffle(). It's definitely
+		//not a good idea to resize such a large (possibly) vector.
+		xshuffle(nborsvec, samplingRadius);
+		nborsvec.resize(k);
+		return this->createGraphette(nborsvec);
+	}
+}
+
+set<uint> Graph::explore(uint seed, uint radius, vector<bool>& visited){
 	set<uint> nbors;
 	nbors.insert(seed);
+	visited[seed] = true;
 	for(uint i=0; i<numNodes_; i++){
 		if(seed == i) continue;
 		if(this->hasEdge(seed, i)){
 			if(radius == 1) 
 				nbors.insert(i);
-			else if(radius > 1){
-				auto temp = this->explore(i, radius-1);
+			else if(radius > 1 and visited[i] == false){
+				auto temp = this->explore(i, radius-1, visited);
 				nbors.insert(temp.begin(), temp.end());
 			}
 		}
 	}
 	return nbors;
+}
+
+Graphette* Graph::createGraphette(vector<uint>& nodes){
+	vector<bool> bitVector;
+	for(uint i=0; i<nodes.size(); i++){
+		for(uint j=i+1; j<nodes.size(); j++){
+			bitVector.push_back(adjMatrix_(nodes[i], nodes[j]));
+		}
+	}
+	Graphette* g = new Graphette(nodes.size(), bitVector);
+	g->setLabels(nodes);
+	return g;
 }
