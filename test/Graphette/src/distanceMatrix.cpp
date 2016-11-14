@@ -38,7 +38,7 @@ void distanceMatrix(uint N, uint K)
         vector<vector<bool>> dmatrix(canon_size, vector<bool> (canon_size, 0));
         for(uint i = 0; i < canons.size(); i++){
             Graphette g(N, canons[i]);
-            vector<bool> bits = g.getBitVector();        
+            vector<bool> bits = g.bitVector();        
             
             //this string is used to determine all numEdges chooose K combinations. 
             string bitmask(k, 1); // K leading 1's
@@ -51,7 +51,7 @@ void distanceMatrix(uint N, uint K)
                     }
                 }
                 Graphette h(N, copy);
-                uint newNum = h.getDecimalNumber();
+                uint newNum = h.decimalNumber();
                 uint c = canon_map[newNum];
                 auto temp = find(canons.begin(), canons.end(), c);
                 uint j = temp-canons.begin(); //j is the index of c in the list of canonical graphs

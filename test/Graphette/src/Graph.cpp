@@ -70,7 +70,7 @@ Graph::~Graph(){
 
 void Graph::addEdge(uint node1, uint node2){
 	//To ensure that each edge is added no more than once
-	if(not adjMatrix_(node1, node2)){
+	if(not this->hasEdge(node1, node2)){
 		adjMatrix_(node1, node2) = true;
 		degree_[node1]++;
 		degree_[node2]++;
@@ -80,7 +80,7 @@ void Graph::addEdge(uint node1, uint node2){
 
 void Graph::removeEdge(uint node1, uint node2){
 	//To ensure that each edge is removed no more than once
-	if(adjMatrix_(node1, node2)){
+	if(this->hasEdge(node1, node2)){
 		adjMatrix_(node1, node2) = false;
 		degree_[node1]--;
 		degree_[node2]--;
@@ -88,19 +88,19 @@ void Graph::removeEdge(uint node1, uint node2){
 	}
 }
 
-bool Graph::getEdge(uint node1, uint node2){
+bool Graph::hasEdge(uint node1, uint node2){
 	return adjMatrix_(node1, node2);
 }
 
-uint Graph::getNumNodes(){
+uint Graph::numNodes(){
 	return numNodes_;
 }
 
-uint Graph::getNumEdges(){
+uint Graph::numEdges(){
 	return numEdges_;
 }
 
-uint Graph::getDegree(uint node){
+uint Graph::degree(uint node){
 	return degree_[node];
 }
 
@@ -109,20 +109,22 @@ void Graph::printAdjMatrix()
 	adjMatrix_.print();
 }
 
-Graphette* Graph::getSampleGraphette(uint numNodes, uint radius){
-	if(numNodes == 0){
-		throw out_of_range("Graph::getSampleGraphette(): numNodes can't be 0");
+Graphette* Graph::sampleGraphette(uint k, uint samplingRadius){
+	if(k == 0){
+		throw out_of_range("Graph::sampleGraphette(k, samplingRadius): k can't be 0");
 	}
 	else{
 		//Select a random node
-		uint node = xrand(0, numNodes);
-		vector<uint> nbors = this->getNeighbors(node, radius);
+		uint node = xrand(0, k);
+		vector<uint> nbors = this->neighbors(node, samplingRadius);
+		xshuffle(nbors, samplingRadius);
+		nbors.resize(k);
 		Graphette* g = new Graphette();
 		return g;
 	}
 }
 
-vector<uint> Graph::getNeighbors(uint node, uint radius){
+vector<uint> Graph::neighbors(uint node, uint radius){
 	vector<uint> nbors;
 	auto nodes = this->explore(node, radius);
 	nbors.assign(nodes.begin(), nodes.end());
@@ -134,7 +136,7 @@ set<uint> Graph::explore(uint seed, uint radius){
 	nbors.insert(seed);
 	for(uint i=0; i<numNodes_; i++){
 		if(seed == i) continue;
-		if(adjMatrix_(seed, i)){
+		if(this->hasEdge(seed, i)){
 			if(radius == 1) 
 				nbors.insert(i);
 			else if(radius > 1){
