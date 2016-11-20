@@ -94,7 +94,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableMeasures = {
         "ec","s3","sec","wec","nodec","noded","edgec","edged", "esim", "go","importance",
-        "sequence","graphlet","graphletlgraal", "graphletcosine", "spc"
+        "sequence","graphlet","graphletlgraal", "graphletcosine", "spc", "nc"
     };
     double total = 0;
     for (uint i = 0; i < optimizableMeasures.size(); i++) {
@@ -264,16 +264,25 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     }
 
     if (args.strings["-truealignment"] != "") {
-	//properly turns the input file into a vector of strings
 	vector<string> edges = fileToStrings(args.strings["-truealignment"]);
-        m = new NodeCorrectness(NodeCorrectness::convertAlign(G1, G2, edges));
-        M.addMeasure(m);
+	double ncWeight = 0;
+	try{
+	    ncWeight = getWeight("nc", G1, G2, args);	
+	}catch(...){
+	}
+	m = new NodeCorrectness(NodeCorrectness::convertAlign(G1, G2, edges));
+        M.addMeasure(m, ncWeight);
     } else if (G1.sameNodeNames(G2)) {
 	Alignment a(Alignment::correctMapping(G1,G2));
 	vector<ushort> mapping = a.getMapping();
 	mapping.push_back(G1.getNumNodes());
-        m = new NodeCorrectness(mapping);
-        M.addMeasure(m);
+	double ncWeight = 0;
+        try{
+	    ncWeight = getWeight("nc", G1, G2, args);
+	}catch(...){
+	}	
+	m = new NodeCorrectness(mapping);
+        M.addMeasure(m, ncWeight);
     }
 
     if (shouldInit("spc", G1, G2, args)) {
