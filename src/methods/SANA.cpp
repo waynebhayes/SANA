@@ -103,6 +103,18 @@ SANA::SANA(Graph* G1, Graph* G2,
 	} catch(...) {
 		wecWeight = 0;
 	}
+	try {
+		needNC = false;
+		ncWeight = MC->getWeight("nc");
+		//std::cout << "ncWeight: " << ncWeight << std::endl;
+		Measure* nc = MC->getMeasure("nc");
+		trueA = nc->getMappingforNC();
+		needNC = true;	
+	} catch(...) {
+		//std::cout << "Weight or measure not found!!" << std::endl;
+		ncWeight = 0;
+		trueA = {static_cast<ushort>(G2->getNumNodes()), 1};
+	}
 	localWeight = MC->getSumLocalWeight();
 
 
@@ -387,6 +399,12 @@ void SANA::initDataStructures(const Alignment& startA) {
 		double wecScore = wec->eval(A);
 		wecSum = wecScore*2*g1Edges;
 	}
+	if (needNC) {
+		//std::cout << "NEED NC EXECUTED!!!" << std::endl;
+		Measure* nc = MC->getMeasure("nc");
+		ncSum = (nc->eval(A))*trueA.back();
+		//cout << "ncSum: " << ncSum << endl;
+	}
     
     iterationsPerformed = 0;
     sampledProbability.clear();
@@ -492,10 +510,13 @@ void SANA::performChange() {
 	if (needWec) {
 		newWecSum = wecSum + WECIncChangeOp(source, oldTarget, newTarget);
 	}
-	
+	double newNcSum = -1;
+	if (needNC) {
+		newNcSum = ncSum + ncIncChangeOp(source, oldTarget, newTarget);
+	}	
 	
 	double newCurrentScore = 0;
-	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newCurrentScore);
+	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore);
 
 	if (makeChange) {
 		A[source] = newTarget;
@@ -506,6 +527,7 @@ void SANA::performChange() {
 		inducedEdges = newInducedEdges;
 		localScoreSum = newLocalScoreSum;
 		wecSum = newWecSum;
+		ncSum = newNcSum;
 		currentScore = newCurrentScore;
 	}
 }
@@ -545,9 +567,13 @@ void SANA::performSwap() {
 	if (needWec) {
 		newWecSum = wecSum + WECIncSwapOp(source1, source2, target1, target2);
 	}
-
+	
+	double newNcSum = -1;
+	if(needNC) {
+		newNcSum = ncSum + ncIncSwapOp(source1, source2, target1, target2);
+	}
 	double newCurrentScore = 0;
-	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newCurrentScore);
+	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore);
 
 	if (makeChange) {
 		A[source1] = target2;
@@ -555,11 +581,12 @@ void SANA::performSwap() {
 		aligEdges = newAligEdges;
 		localScoreSum = newLocalScoreSum;
 		wecSum = newWecSum;
+		ncSum = newNcSum;
 		currentScore = newCurrentScore;
 	}
 }
 
-double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double& newCurrentScore) {
+double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore) {
 	bool makeChange = false;
 	bool wasBadMove = false;
     double badProbability = 0;
@@ -569,6 +596,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+		newCurrentScore += ncWeight * (newNcSum/trueA.back());
 
 		energyInc = newCurrentScore-currentScore;
         wasBadMove = energyInc < 0;
@@ -582,7 +610,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore *= localWeight * (newLocalScoreSum/n1);
 		newCurrentScore *= secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore *= wecWeight * (newWecSum/(2*g1Edges));
-		
+		newCurrentScore *= ncWeight * (newNcSum/trueA.back());
 		energyInc = newCurrentScore-currentScore;
         wasBadMove = energyInc < 0;
         badProbability = exp(energyInc/T);
@@ -770,6 +798,22 @@ double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort
 		res += 2*wecSims[source2][target2];
 	}
 	return res;
+}
+
+int SANA::ncIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+	int change = 0;
+	if (trueA[source] == oldTarget) change -= 1;
+	if (trueA[source] == newTarget) change += 1;
+	return change;
+}
+
+int SANA::ncIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
+	int change = 0;
+	if(trueA[source1] == target1) change -= 1;
+	if(trueA[source2] == target2) change -= 1;
+	if(trueA[source1] == target2) change += 1;
+	if(trueA[source2] == target1) change += 1;
+	return change;		
 }
 
 void SANA::trackProgress(long long unsigned int i) {

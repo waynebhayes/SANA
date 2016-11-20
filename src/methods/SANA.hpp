@@ -126,11 +126,12 @@ private:
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A);
-    double scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double& newCurrentScore);
+    double scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore);
     double ecWeight;
     double s3Weight;
     double wecWeight;
     double secWeight;
+    double ncWeight;
     double localWeight;
     string score;
 
@@ -167,6 +168,12 @@ private:
     int inducedEdges;
     int inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
 
+    //to evaluate nc incrementally
+    bool needNC;
+    int ncSum;
+    vector<ushort> trueA;
+    int ncIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
+    int ncIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
 
     //to evaluate wec incrementally
     bool needWec;
