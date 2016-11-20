@@ -1,5 +1,5 @@
 #include "Graph.hpp"
-
+#include <sstream>
 using namespace std;
 
 Graph Graph::loadGraph(string name) {
@@ -17,14 +17,10 @@ Graph Graph::multGraph(string name, uint path) {
     g.name = name;
     return g;
 }
-void Graph::setMax(double number){
-	if (number != 4 && number != 5){
-	    std::cout<<"Max Graphlet Size must be 4 or 5\n"<<endl;
-	    Graph::max = 5; //If given size is not 4 or 5, set it to the default
-	}
-	else
-	    Graph::max = number;
-	Graph::computeGraphletDegreeVectors();
+void Graph::setMaxGraphletSize(double number){
+	if (number == 5) // Only options are 4 or 5
+	    Graph::maxGraphletSize = number;
+	//Graph::computeGraphletDegreeVectors();
 }
 
 //transform format
@@ -624,7 +620,9 @@ string Graph::autogenFilesFolder() {
 }
 
 vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
-    string gdvsFileName = autogenFilesFolder() + name + "_gdv.bin";
+    std::ostringstream oss;
+    oss << Graph::maxGraphletSize;
+    string gdvsFileName = autogenFilesFolder() + name + "_gdv"+oss.str()+".bin";
     uint n = getNumNodes();
     if (fileExists(gdvsFileName)) {
         vector<vector<uint> > gdvs(n, vector<uint> (15));
@@ -637,7 +635,7 @@ vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
     vector<vector<uint> > gdvs = computeGraphletDegreeVectors();
     cerr << "done (" << T.elapsedString() << ")" << endl;
     writeMatrixToBinaryFile(gdvs, gdvsFileName);
-    string readeableVersionFile = autogenFilesFolder() + name + "_gdv.txt";
+    string readeableVersionFile = autogenFilesFolder() + name + "_gdv"+ oss.str() + ".txt";
     writeMatrixToFile(gdvs, readeableVersionFile);
     return gdvs;
 }
@@ -655,9 +653,9 @@ vector<vector<uint> > Graph::computeGraphletDegreeVectors() {
         fout << edgeList[i][0] << " " << edgeList[i][1] << endl;
     }
     fout.close();
-    double sizemax = Graph::max;
+    double GraphletSizemax = Graph::maxGraphletSize;
    
-    vector<vector<uint> > gdvs = computeGraphlets(sizemax, fileName);
+    vector<vector<uint> > gdvs = computeGraphlets(GraphletSizemax, fileName);
     return gdvs;
 }
 
