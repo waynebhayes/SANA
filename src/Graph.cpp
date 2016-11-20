@@ -1,9 +1,10 @@
 #include "Graph.hpp"
-
+#include <sstream>
 using namespace std;
 
 Graph Graph::loadGraph(string name) {
     Graph g;
+    //g.maxsize = max;
     g.loadGwFile("networks/"+name+"/"+name+".gw");
     g.name = name;
     return g;
@@ -16,6 +17,12 @@ Graph Graph::multGraph(string name, uint path) {
     g.name = name;
     return g;
 }
+void Graph::setMaxGraphletSize(double number){
+	if (number == 5) // Only options are 4 or 5
+	    Graph::maxGraphletSize = number;
+	//Graph::computeGraphletDegreeVectors();
+}
+
 //transform format
 void Graph::edgeList2gw(string fin, string fout) {
     vector<string> nodes = removeDuplicates(fileToStrings(fin));
@@ -613,10 +620,12 @@ string Graph::autogenFilesFolder() {
 }
 
 vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
-    string gdvsFileName = autogenFilesFolder() + name + "_gdv.bin";
+    std::ostringstream oss;
+    oss << Graph::maxGraphletSize;
+    string gdvsFileName = autogenFilesFolder() + name + "_gdv"+oss.str()+".bin";
     uint n = getNumNodes();
     if (fileExists(gdvsFileName)) {
-        vector<vector<uint> > gdvs(n, vector<uint> (73));
+        vector<vector<uint> > gdvs(n, vector<uint> (15));
         readMatrixFromBinaryFile(gdvs, gdvsFileName);
         return gdvs;
     }
@@ -626,14 +635,16 @@ vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
     vector<vector<uint> > gdvs = computeGraphletDegreeVectors();
     cerr << "done (" << T.elapsedString() << ")" << endl;
     writeMatrixToBinaryFile(gdvs, gdvsFileName);
-    string readeableVersionFile = autogenFilesFolder() + name + "_gdv.txt";
+    string readeableVersionFile = autogenFilesFolder() + name + "_gdv"+ oss.str() + ".txt";
     writeMatrixToFile(gdvs, readeableVersionFile);
     return gdvs;
 }
 
 vector<vector<uint> > Graph::computeGraphletDegreeVectors() {
+    std::cout<<"Computing Graphlet Degree Vectors... "<<endl;  
     uint n = getNumNodes();
     uint m = getNumEdges();
+   
 
     string fileName = "tmp/compute_dgvs.txt";
     ofstream fout(fileName.c_str());
@@ -642,8 +653,9 @@ vector<vector<uint> > Graph::computeGraphletDegreeVectors() {
         fout << edgeList[i][0] << " " << edgeList[i][1] << endl;
     }
     fout.close();
-
-    vector<vector<uint> > gdvs = computeGraphlets(5, fileName);
+    double GraphletSizemax = Graph::maxGraphletSize;
+   
+    vector<vector<uint> > gdvs = computeGraphlets(GraphletSizemax, fileName);
     return gdvs;
 }
 
@@ -798,7 +810,7 @@ void Graph::GeoGeneDuplicationModel(uint numNodes, uint numEdges, string outputF
         for (uint j = 0; j < i; j++) {
             dists[count] = points[i].dist(points[j]);
             count++;
-        }
+       }
     }
     sort(dists.begin(), dists.end());
     double cutOffDist = dists[numEdges];
@@ -917,6 +929,7 @@ void Graph::saveGraphletsAsSigs(string outputFile) {
     out.open(outputFile.c_str());
      for (unsigned int i = 0; i < nodeNames.size(); i++) {
          out << nodeNames[i] << "\t";
+	
          for (int j = 0; j < 73; j++) {
              out << graphlets[i][j] << "\t";
          }

@@ -1,43 +1,48 @@
+#ifndef GRAPHETTE_HPP
+#define GRAPHETTE_HPP
+
 #include <vector>
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <cmath>
 #include <algorithm>
-#include <cassert>
+#include <stdexcept>
 #include <cstdlib>
 #include "HalfMatrix.hpp"
 
 class Graphette{
 public:
 	Graphette(); //default constructor
-	Graphette(ushort n, uint decimalNumber);
-	Graphette(ushort n, std::vector<bool>& bitVector);
-	Graphette(ushort n, HalfMatrix adjMatrix);
+	Graphette(uint n, uint decimalNumber);
+	Graphette(uint n, std::vector<bool>& bitVector);
+	Graphette(uint n, HalfMatrix adjMatrix);
 	~Graphette();
-	uint getDecimalNumber();
-	std::vector<bool> getBitVector();
-	ushort getNumNodes();
-	uint getNumEdges();
-	ushort getDegree(ushort node);
-
-	std::vector<Graphette*> static generateAll(ushort n);
-
-	//Saves orbitID map for canonical graphettes in orbitIds'n'.txt
-	void static mapOrbitIds(ushort n, std::vector<uint>& canonnicalGraphettes, std::string filename = "");
-	std::vector<std::vector<ushort>> getOrbits();
+	uint decimalNumber();
+	std::vector<bool> bitVector();
+	uint numNodes();
+	uint numEdges();
+	uint degree(uint node);
+	uint label(uint node);
+	std::vector <uint> labels();
+	void setLabel(uint node, uint label);
+	void setLabels(std::vector<uint>& label);
 	void printAdjMatrix();
+	std::vector<Graphette*> static generateAll(uint n);
+	std::vector<std::vector<uint>> orbits();
+
 private:
-	ushort numNodes_;
+	uint numNodes_;
 	uint numEdges_, decimalNumber_;
 	HalfMatrix adjMatrix_;
-	std::vector<ushort> degree_;
+	std::vector<uint> degree_, label_;
 	uint decodeHalfMatrix();
 	void init();
 	
-	bool suitable(std::vector<ushort>& permutation);
-	Graphette* permuteNodes(std::vector<ushort>& permutation);
-	void captureCycles(std::vector<ushort>& permutation, std::vector<ushort>& orbit);
-	void followTrail(std::vector<ushort>& permutation, std::vector<ushort>& cycle,
-						ushort seed, ushort current, std::vector<bool>& visited);
+	bool suitable(std::vector<uint>& permutation);
+	Graphette* permuteNodes(std::vector<uint>& permutation);
+	void captureCycles(std::vector<uint>& permutation, std::vector<uint>& orbit);
+	void followTrail(std::vector<uint>& permutation, std::vector<uint>& cycle,
+						uint seed, uint current, std::vector<bool>& visited);
 };
+#endif
