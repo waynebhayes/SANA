@@ -1,24 +1,31 @@
+#ifndef HALFMATRIX_HPP
+#define HALFMATRIX_HPP
+
 #include <vector>
 #include <cstdlib>
-#include <cassert>
 #include <stdexcept>
 #include <iostream>
+
+typedef unsigned int uint;
 
 class HalfMatrix{
 public:
     HalfMatrix(){};
-    HalfMatrix(ushort n, std::vector<bool>& bitVector);
-    HalfMatrix(ushort n, uint decimalNumber);
-    HalfMatrix(ushort n);
+    HalfMatrix(uint n, std::vector<bool>& bitVector);
+    HalfMatrix(uint n, uint decimalNumber);
+    HalfMatrix(uint n);
     HalfMatrix(const HalfMatrix& m);   // Copy constructor
     ~HalfMatrix();
 
-    bool& operator() (ushort row, ushort col);
-    //bool operator() (ushort row, ushort col) const;
+    uint length();
+    void print();
+    bool& operator() (uint row, uint col);
+    //bool operator() (uint row, uint col) const;
     HalfMatrix& operator= (const HalfMatrix& m);
     void clear();
 private:
-    ushort len_;
-   	bool* _bitArray = NULL;
+    uint len_;
+   	bool* bitArray_ = NULL;
    	void encodeBitArray(uint decimalNumber);
 };
+#endif

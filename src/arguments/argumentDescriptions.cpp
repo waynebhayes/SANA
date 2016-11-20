@@ -30,7 +30,7 @@ vector<array<string, 6>> argumentDescriptions = {
 
 	//------------------------------------METHOD-----------------------------------------
 	{ "", "", "banner", "", "Method", "0" },
-	{ "-method", "string", "sana", "Method", "Sets the algorithm that performs the alignment. All methods except \"sana\" call an external algorithm written by other authors. \nPossible aligners are: \"lgraal\", \"hubalign\", \"sana\", \"wave\", \"random\", \"tabu\", \"dijkstra\", \"netal\", \"mi-graal\", \"ghost\", \"piswap\", \"optnetalign\", \"spinal\", \"great\", \"natalie\", \"gedevo\", \"greedylccs\", \"magna\", \"waveSim\", \"none\", and \"hc\".", "1" },
+	{ "-method", "string", "sana", "Method", "Sets the algorithm that performs the alignment. NOTE: All methods except \"sana\" call an external algorithm written by other authors. \nPossible aligners are: \"lgraal\", \"hubalign\", \"sana\", \"wave\", \"random\", \"tabu\", \"dijkstra\", \"netal\", \"mi-graal\", \"ghost\", \"piswap\", \"optnetalign\", \"spinal\", \"great\", \"natalie\", \"gedevo\", \"greedylccs\", \"magna\", \"waveSim\", \"none\", and \"hc\".", "1" },
 	{ "End Method", "", "banner", "", "", "0" },
 	//----------------------------------END METHOD---------------------------------------
 
@@ -170,7 +170,7 @@ vector<array<string, 6>> argumentDescriptions = {
 
 	//---------------------------------SIMILARITY----------------------------------------
 	{ "", "", "banner", "", "More options for \"-mode similarity\"", "0" },
-	{ "-simFormat", "double", "1", "Similarity File Format", "Used in Similarity Mode \"-mode similarity\" and with \"-objfuntype -esim\". Allowed values are 1=node names; 2=node integers numbered as in LEDA .gw format.", "0" },
+	{ "-simFormat", "double", "1", "Similarity File Format", "Used in Similarity Mode \"-mode similarity\" and with \"-objfuntype -esim\". Allowed values are 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
 	{ "End More options for \"-mode similarity\"", "", "banner", "", "", "0" },
 	//-------------------------------END SIMILARITY--------------------------------------
 };
