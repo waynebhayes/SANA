@@ -16,7 +16,7 @@ double NodeCorrectness::eval(const Alignment& A) {
     for (uint i = 0; i < A.size(); i++) {
         if (A[i] == trueA[i]) count++;
     }
-	// std::cout << count << "/" << trueA[trueA.size()-1] << std::endl;
+	//std::cout << count << "/" << trueA[trueA.size()-1] << std::endl;
     return (double) count / trueA[trueA.size()-1];
 }
 
@@ -32,6 +32,10 @@ vector<ushort> NodeCorrectness::convertAlign(const Graph& G1, const Graph& G2, c
     }
     alignment.push_back(E.size()/2);
     return alignment;
+}
+
+vector<ushort> NodeCorrectness::getMappingforNC() const{
+	return trueA.getMapping();
 }
 
 bool NodeCorrectness::fulfillsPrereqs(Graph* G1, Graph* G2) {
