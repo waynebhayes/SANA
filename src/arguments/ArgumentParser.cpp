@@ -2,6 +2,8 @@
 #include "ArgumentParser.hpp"
 #include "../utils/utils.hpp"
 #include "argumentDescriptions.hpp"
+//#include "../Graph.cpp"
+//#include "../computeGraphlets.hpp"
 using namespace std;
 
 ArgumentParser::ArgumentParser(
@@ -103,7 +105,10 @@ void ArgumentParser::initParsedValues(vector<string> vArg) {
             i++;
         }
         else if(doubles.count(arg)) {
+	    //std::cout<<"Testing...1"<<endl;
             doubles[arg]=stod(vArg[i+1]);
+	    //std::cout<<"THIS IS A DOUBLE: "<<arg<<std::endl;
+	  
             i++;
         }
         else if(bools.count(arg)) bools[arg] = true;

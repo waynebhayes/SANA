@@ -1,7 +1,7 @@
 CC = g++
 
 #CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g
-CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3
+CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -Og -g
 
 INCLUDES =
 LFLAGS =
@@ -12,6 +12,9 @@ OTHER_SRC =                                             \
 	src/Graphette.cpp                                   \
 	src/distanceMatrix.cpp                              \
 	src/test.cpp                                        \
+	src/init/GenerateOrbitMatrix.cpp                    \
+	src/Graph.cpp                                       \
+	src/utils/xrand.cpp                               \
 
 
 SRCS = $(OTHER_SRC)
@@ -19,7 +22,7 @@ OBJDIR = _objs
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
 #MAIN = sana_dbg
-MAIN = main
+MAIN = faye
 
 .PHONY: depend clean test test_all regression_test
 

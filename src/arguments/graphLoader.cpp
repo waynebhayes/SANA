@@ -1,7 +1,7 @@
 #include <string>
 #include <iostream>
 #include <set>
-
+#include <sstream>
 #include "graphLoader.hpp"
 #include "../utils/Timer.hpp"
 
@@ -19,7 +19,7 @@ the graph definitions (in either GW or edge list format). If these
 arguments are used, -g1 and -g2 are ignored. g1Name and g2Name are deduced
 from the file names (by removing the path and the extension). Then,
 the network definitions are parsed and the necessary network files are created.
-
+
  */
 void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	string fg1 = args.strings["-fg1"], fg2 = args.strings["-fg2"], path1 = args.strings["-pathmap1"], path2 = args.strings["-pathmap2"];
@@ -126,11 +126,25 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	if (p1 == 1 && p2 == 1){
 		G1 = Graph::loadGraph(g1Name);
 		G2 = Graph::loadGraph(g2Name);
+		//G1.maxsize = 4;
+		//G2.maxsize = 4;
 	}
 	else{
 		G1 = Graph::multGraph(g1Name, p1);
 		G2 = Graph::multGraph(g2Name, p2);
 	}
+	
+	double maxGraphletSize = args.doubles["-maxGraphletSize"];
+	if (maxGraphletSize){	
+		G1.setMaxGraphletSize(maxGraphletSize);	
+		G2.setMaxGraphletSize(maxGraphletSize);
+		//std::cout<<"\nSetting max graphlet size to: "<<maxGraphletSize<<endl;
+		if (maxGraphletSize == 5)
+			std::cout<<"Setting maximum graphlet size to 5. . ."<<endl;
+		else
+			std::cout<<"Setting maximum graphlet size to 4. . ."<<endl;
+	}
+
 
 	// For "-nodes-have-types"
 	if(args.bools["-nodes-have-types"]){
@@ -220,8 +234,14 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	else{
 	    G1.reIndexGraph(G1.getLocking_ReIndexMap());
 	}
+	/*double maxSize = args.doubles["-maxGraphletSize"];
+	//int maxSize2;
+	//stringstream convert(maxS
+	if(maxSize){
+		std::cout<<"MAXGRAPHLET SIZE IS _____________"<<maxSize<<endl;
+		//G1.computeGraphletDegreeVectors(maxSize);	
 
-
+	}*/
 	double rewiredFraction = args.doubles["-rewire"];
 	if (rewiredFraction > 0) {
 		if (rewiredFraction > 1) {
