@@ -12,8 +12,8 @@ vector<array<string, 6>> argumentDescriptions = {
 	{ "Option", "Type", "Default", "Title", "Description", "0" },
 	//-----------------------------------GENERAL-----------------------------------------
 	{ "", "", "banner", "", "General Options", "0" },
-	{ "-g1", "string", "yeast", "Network 1", "First nerwork (smaller one). Requirement: An alignment file must exist inside the networks directory which matches the name of the specified species.", "0" },
-	{ "-g2", "string", "human", "Network 2", "Second (larger in number of nodes) network.  Requirement: An alignment file must exist inside the networks directory which matches the name of the specified species.", "0" },
+	{ "-g1", "string", "yeast", "Network 1", "First nerwork (smaller one). Requirement: A network file must exist inside the networks directory which matches the name of the specified species, in edgelist or LEDA.gw format.", "0" },
+	{ "-g2", "string", "human", "Network 2", "Second (larger in number of nodes) network.  Requirement: A network file must exist inside the networks directory which matches the name of the specified species, in edgelist or LEDA.gw format.", "0" },
 	{ "-fg1", "string", "yeast", "Network 1", "Initializes the network G1 with an external file. Make sure that the name and path of the file exists.", "1" },
 	{ "-fg2", "string", "human", "Network 2", "Initializes the network G2 with an external file. Make sure that the name and path of the file exists. The network of G2 should have more nodes than G1.", "1" },
 	{ "-o", "string", "sana", "Output File basename", "Specifies the basename of output file; actual output files will append (.out, .align, etc) to this.", "0" },
