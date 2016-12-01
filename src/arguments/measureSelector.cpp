@@ -73,7 +73,7 @@ double betaDerivedAlpha(string methodName, string G1Name, string G2Name, double 
 string getScoreTableMethodId(ArgumentParser& args) {
     string methodName = args.strings["-method"];
     if (methodName == "sana" or methodName == "tabu") {
-        methodName += args.strings["-topmeasure"];
+        methodName += args.strings["-topomeasure"];
     }
     return methodName;
 }
@@ -116,7 +116,7 @@ double getWeight(string measureName, Graph& G1, Graph& G2, ArgumentParser& args)
         
         string topMeasure;
         if (method == "sana" or method == "tabu") {
-            topMeasure = args.strings["-topmeasure"];
+            topMeasure = args.strings["-topomeasure"];
         } else if (method == "lgraal") topMeasure = "wec";
         else if (method == "hubalign") topMeasure = "importance";
         else {
@@ -212,7 +212,7 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
             double goWeight = getWeight("go", G1, G2, args);
             M.addMeasure(m, goWeight);
         }
-        if (detRep) {
+        if (detRep || args.doubles["-gocov"] > 0) {
             m = new GoCoverage(&G1, &G2);
             M.addMeasure(m);
         }
