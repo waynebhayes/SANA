@@ -1042,7 +1042,7 @@ double SANA::searchTInitialByStatisticalTest() {
 //and returns its score
 double SANA::scoreForTInitial(double TInitial) {
 	uint ITERATIONS = 10000.+100.*n1+10.*n2+n1*n2*0.1; //heuristic value
-
+	ITERATIONS = getIterPerSecond();
 	double oldIterationsPerStep = this->iterationsPerStep;
 	double oldTInitial = this->TInitial;
 	bool oldRestart = restart;
