@@ -62,6 +62,7 @@ double HillClimbing::getExecutionTime() const {
 }
 
 Alignment HillClimbing::run() {
+    int numSame = 0;
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
 
@@ -288,10 +289,11 @@ Alignment HillClimbing::run() {
             }
         }
 
-        if (bestNewCurrentScore == currentScore) {
+        if (bestNewCurrentScore == currentScore && ++numSame >= 10 ) {
             executionTime = timer.elapsed();
             return A;
         }
+	numSame = 0;
 
         currentScore = bestNewCurrentScore;
         aligEdges = bestNewAligEdges;
