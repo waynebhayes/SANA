@@ -25,8 +25,7 @@ ARGUMENTS_SRC = 							\
 	src/arguments/methodSelector.cpp				\
 	src/arguments/graphLoader.cpp					\
 	src/arguments/supportedArguments.cpp				\
-	src/arguments/defaultArguments.cpp				\
-	src/arguments/argumentDescriptions.cpp
+	src/arguments/defaultArguments.cpp
 
 MEASUSES_SRCS = 							\
 	src/measures/EdgeCorrectness.cpp 				\
