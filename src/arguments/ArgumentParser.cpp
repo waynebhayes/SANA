@@ -91,7 +91,6 @@ void ArgumentParser::initParsedValues(vector<string> vArg) {
     for (string arg : vArg) {
         if (arg == "-h" or arg == "--help") {
             printAllArgumentDescriptions();
-            cerr << endl;
             exit(0);
         }
     }
