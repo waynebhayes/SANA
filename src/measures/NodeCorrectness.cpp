@@ -51,9 +51,9 @@ vector<ushort> NodeCorrectness::convertAlign(const Graph& G1, const Graph& G2, c
     map<string,ushort> mapG1 = G1.getNodeNameToIndexMap();
     map<string,ushort> mapG2 = G2.getNodeNameToIndexMap();
     vector<ushort> alignment(G1.getNumNodes(), G2.getNumNodes());
+    //this is the initial size of the provided true alignment file
     alignment.push_back(E.size()/2);
-    
-    //only utilized when error checking is defined
+     
     bool exist = true;
     bool used = false;
     bool oneToOneError = false; 
