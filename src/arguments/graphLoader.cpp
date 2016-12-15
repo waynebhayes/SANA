@@ -44,6 +44,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	if (path2 != "") {
 		p2 = atoi(path2.c_str());
 	}
+	
 	string g1Folder, g2Folder;
 	g1Folder = "networks/"+g1Name;
 	g2Folder = "networks/"+g2Name;
@@ -139,10 +140,12 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 		G1.setMaxGraphletSize(maxGraphletSize);	
 		G2.setMaxGraphletSize(maxGraphletSize);
 		//std::cout<<"\nSetting max graphlet size to: "<<maxGraphletSize<<endl;
-		if (maxGraphletSize == 5)
-			std::cout<<"Setting maximum graphlet size to 5. . ."<<endl;
-		else
-			std::cout<<"Setting maximum graphlet size to 4. . ."<<endl;
+		if (maxGraphletSize == 5 || maxGraphletSize == 4)
+			std::cout<<"Setting maximum graphlet size to "<<maxGraphletSize<<". . ."<<endl;
+		else{
+			std::cout<<"ERROR: Invalid graphlet size: "<<maxGraphletSize<<"\nShould be 4 or 5\n";
+			exit(0);
+		}
 	}
 
 

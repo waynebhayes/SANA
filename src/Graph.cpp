@@ -622,6 +622,7 @@ string Graph::autogenFilesFolder() {
 vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
     std::ostringstream oss;
     oss << Graph::maxGraphletSize;
+   
     string gdvsFileName = autogenFilesFolder() + name + "_gdv"+oss.str()+".bin";
     uint n = getNumNodes();
     if (fileExists(gdvsFileName)) {
@@ -629,7 +630,7 @@ vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
         readMatrixFromBinaryFile(gdvs, gdvsFileName);
         return gdvs;
     }
-    cerr << "Computing " << gdvsFileName << " ... ";
+    cerr << "Storing data into file: " << gdvsFileName << " ... \n";
     Timer T;
     T.start();
     vector<vector<uint> > gdvs = computeGraphletDegreeVectors();
@@ -641,7 +642,7 @@ vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
 }
 
 vector<vector<uint> > Graph::computeGraphletDegreeVectors() {
-    std::cout<<"Computing Graphlet Degree Vectors... "<<endl;  
+    std::cout<<"\nComputing Graphlet Degree Vectors... "<<endl;  
     uint n = getNumNodes();
     uint m = getNumEdges();
    
