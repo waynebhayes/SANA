@@ -24,46 +24,38 @@ void split(const std::string &s, char delim, std::vector<std::string> &elems) {
 int main(int arg, char* argv[]) {
 
 	int MAX_ARGS = 7;
+	int BLOCK_SIZE = atoi(argv[2]);
 	
 	int num_nodes = atoi(argv[1]);
 	int num_graphs = (num_nodes == 0) ? 0 : pow(2, (num_nodes*(num_nodes - 1)) / 2);
 	
-	int num_children = floor(num_graphs/10000) + 1;
-	pid_t pids[num_children];
-	
-	int i = 0;
-	std::cout << "Number of Graphs: " << num_graphs << " split into children of size 10000\n";
-	for (i; i < num_graphs; i+= 10000) {
-		if ((pids[i/10000] = fork()) == 0) {
-			char* args[] = {
-				(char*)"graphetteS", 
-				(char*)std::to_string(num_nodes).c_str(), 
-				(char*)std::to_string(i/10000).c_str(), 
-				(char*)std::to_string(((i+10000 < num_graphs) ? 10000 : num_graphs - i)).c_str(), 
-				(char*)std::to_string(i).c_str(),  
-				(char*)std::to_string(((i+10000 < num_graphs) ? i+10000 : num_graphs)).c_str(),
-				NULL
-			};
-			std::cout << "Executing: NumNodes: " << args[1] << " Variation: " << args[2] << " Loop Size: " << args[3] << " Start: " << args[4] << " End: " << args[5] << "...\n";
-			execve(args[0], args, NULL);
-			exit(0);
-		}
-	}
-	
-	for (int i = 0; i < num_children; ++i) {
-		int status;
-		while (-1 == waitpid(pids[i], &status, 0));
-		if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-			std::cerr << "Process " << i << " (pid " << pids[i] << ") failed" << std::endl;
-			exit(1);
-		}
-	}
+	int num_children = floor(num_graphs/BLOCK_SIZE) + 1;
+
+//Uncomment this part if you want to generate the sub executable calls for larger node values 
+//Be sure to set the BLOCK_SIZE to something decent	(we used 22000 for node 8)
+	// int i = 0;
+	// std::cout << "Number of Graphs: " << num_graphs << " split into children of size BLOCK_SIZE\n";
+	// for (i; i < num_graphs; i+= BLOCK_SIZE) {
+		// char* args[] = {
+			// (char*)"./graphette", 
+			// (char*)std::to_string(num_nodes).c_str(), 
+			// (char*)std::to_string(i/BLOCK_SIZE).c_str(), 
+			// (char*)std::to_string(BLOCK_SIZE).c_str(), 
+			// (char*)std::to_string(i).c_str(),  
+			// (char*)std::to_string(((i+BLOCK_SIZE < num_graphs) ? i+BLOCK_SIZE : num_graphs)).c_str(),
+			// NULL
+		// };
+		// std::cout << args[0] << " " << args[1] << " " << args[2] << " " << args[3] << " " << args[4] << " " << args[5] << "\n";
+	// }
 	
 	std::vector<unsigned int> p_canonicals;
 	std::map <unsigned int, std::map<unsigned int, std::string> > canonical_map;
 	std::string p_canonical;
 	std::vector<std::string> line;
 	int current;
+	
+	//Loop through all of the files of intermediate canonicals and
+	//  put them into a map of intermediate canonicals to their non-canonical forms
 	for (int i = 0; i < num_children; ++i) {
 		current = 102391;
 		std::ifstream file("permutation_map"+std::to_string(num_nodes)+"_"+std::to_string(i)+".txt");
@@ -90,6 +82,7 @@ int main(int arg, char* argv[]) {
 		}
 	}
 	
+	//Run this to generate a file of the true/final canonicals in the 3 text files
 	final_canonicals(p_canonicals, canonical_map, num_nodes);
 	
 	return 0;
