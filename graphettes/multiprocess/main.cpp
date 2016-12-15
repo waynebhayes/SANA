@@ -15,6 +15,7 @@
 
 int main(int arg, char* argv[])
 {
+	//Arguments used for each sub pass 
 	int num_nodes = atoi(argv[1]);
 	int variation = atoi(argv[2]);
 	int block_size = atoi(argv[3]);
@@ -34,22 +35,17 @@ int main(int arg, char* argv[])
 	// This will show the decimal representations of adjMatrix of each Graph
 	std::cout << "Canonical Graph adjMatrix dec_rep: ";
 	for (string g : graph_canonical)
-	{
-		std::cout << "G" << g << " ";
 		fcanon << g.substr(1,g.length()) << " ";
-	}
 
-	int canonical_node = 0, non_canonical = 0;
+	int canonical_node = 0;
 	for (std::vector<unsigned int> s: mapping) {
 		canonical_node = s[0];
 		for (unsigned int m: s) {
 			fmap << m << " ";
-			fpermutation << m << "\t" << canonical_node << "\t" << permutations[m - variation*10000] << "\n";
+			fpermutation << m << "\t" << canonical_node << "\t" << permutations[m - variation*block_size] << "\n";
 		}
 		fmap << "\n";
-	}
-	
-	std::cout << "\n\n";                                 
+	}     
 	
 	return 0;
 }

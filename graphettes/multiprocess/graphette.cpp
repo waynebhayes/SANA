@@ -1,9 +1,16 @@
 #include "graphette.hpp"
 
+//Goes through generating the final/true canonicals and writes them to file
+//  runs through the Isomorphic code again to ensure that the permutation for the 
+//  ndoes is correct  
+//  O(n) linear pass through as opposed to the O(n*m) passthrough for finding the 
+//  canonicals
 void final_canonicals (std::vector<unsigned int> &p_canonicals,
 		std::map <unsigned int, std::map<unsigned int, string> > &canonical_map, int num_nodes) {
-	int num_graphs = (num_nodes == 0) ? 0 : pow(2, (num_nodes*(num_nodes - 1)) / 2);
+			
+	//Holds the true/final canonicals for the node size 		
 	std::vector<string> graph_canonical;
+	//Maps the true canonicals to the intermediate canonicals; element 0 of each vector is canonicals
 	std::vector<std::vector<unsigned int>> mapping;
 	
 	graph_canonical = generate_final_canonical(num_nodes, mapping, p_canonicals);
@@ -18,47 +25,64 @@ void final_canonicals (std::vector<unsigned int> &p_canonicals,
 	std::cout << "Canonical Graph adjMatrix dec_rep: ";
 	for (string g : graph_canonical)
 	{
-		std::cout << "G" << g << " ";
 		fcanon << g.substr(1,g.length()) << " ";
 	}
 
 	int array[num_nodes];
 	int num_possible_edges = (num_nodes*(num_nodes-1)) / 2;
 	vector<bool> graph_bit_vector(num_possible_edges), current_canonical_bit_vector(num_possible_edges);
-	Graph* permutation_graph = new Graph(num_nodes);
-	Graph* canonical = new Graph(num_nodes);
 	
+	//Graphs used for final permutation fixing for the node orderings
+	Graph* permutation_graph = new Graph(num_nodes);
+	Graph* canonical_graph = new Graph(num_nodes);
+	
+	//Remapping all the non-canonicals that were mapped to the intermediate canonicals
+	// by commutativity the true canonicals -> intermediate canonicals -> non-canonicals
 	fpermutation << "graphette\tcanonical\tpermutation\r\n";
 	int canonical_node = 0;
 	for (std::vector<unsigned int> s: mapping) {
+		//canonical node
 		canonical_node = s[0];
 		
-		canonical->reset();
+		//Resetting the canonical graph instead of recreating it to save Memory
+		canonical_graph->reset();
 		generate_bits_vector(canonical_node, current_canonical_bit_vector);
-		canonical->setAdjMatrix(current_canonical_bit_vector);
+		canonical_graph->setAdjMatrix(current_canonical_bit_vector);
 		
 		for (unsigned int m: s) {
 			for (std::pair<const unsigned int, string> permute: canonical_map[m]) {
 				fmap << permute.first << " ";
-				
+					
+				//The ismorphic code is a comparison from canonical to non-canonical form
+				// restting the array to canonical 01234... form 
+				// ensures that the comparison is always to canonical form
 				canonical_array(array, num_nodes);
-		
-				permutation_graph->reset();
-				generate_bits_vector(permute.first, graph_bit_vector);
-				permutation_graph->setAdjMatrix(graph_bit_vector);
 				
-				graphIsomorphic(*canonical, *permutation_graph, array);
-				
+				if (permute.first != canonical_node) {			
+					//Loading the permutation/non-canonical graph 
+					permutation_graph->reset();
+					generate_bits_vector(permute.first, graph_bit_vector);
+					permutation_graph->setAdjMatrix(graph_bit_vector);
+					
+					//Code used to check for Isomorphism also viable for fixing the permutation differences
+					// caused by incorrect canonical comparison to the intermediate ones 
+					graphIsomorphic(*canonical_graph, *permutation_graph, array);
+				}
+									
+				//Writes to permutation_map.txt in 
+				// Permutation Integer Representation		Canonical Node Integer Representation		Non-Canonical Node Permutation
 				fpermutation << permute.first << "\t\t\t" << canonical_node << "\t\t\t" << s_permutation(array, num_nodes) << "\r\n";
 			}
 		}
 		fmap << "\r\n";
 	}
+	
+	//Clean-up
 	delete permutation_graph;
-	delete canonical;
-	std::cout << "\n\n"; 
+	delete canonical_graph;
 }
 
+//Remaps the intermediate canonicals to the true canonicals 
 std::vector<string> generate_final_canonical(int num_nodes, std::vector<std::vector<unsigned int>> &mapping, std::vector<unsigned int> &p_canonicals) 
 {
 	int num_possible_edges = (num_nodes*(num_nodes-1)) / 2;
@@ -82,7 +106,7 @@ std::vector<string> generate_final_canonical(int num_nodes, std::vector<std::vec
 		generate_bits_vector(p_canonicals[i], graph_bit_vector);
 	    graph->setAdjMatrix(graph_bit_vector);
 		
-		//Empty = first is obviously canonical
+		//Empty = first occurrence is obviously canonical
 		if (graph_canonical.empty())
 		{
 			graph_canonical.push_back("s"+to_string(p_canonicals[i]));
@@ -98,6 +122,7 @@ std::vector<string> generate_final_canonical(int num_nodes, std::vector<std::vec
 				current_canonical->reset();
 				generate_bits_vector(convert(*j), current_canonical_bit_vector);
 				current_canonical->setAdjMatrix(current_canonical_bit_vector);
+				//Check Isomorphism 
 				if (graphIsomorphic(*current_canonical, *graph, array))
 				{
 					for (int k = 0; k < copy_c.size(); k++) {
@@ -110,6 +135,7 @@ std::vector<string> generate_final_canonical(int num_nodes, std::vector<std::vec
 					break;
 				}
 			}	
+			//If its in canonical form its added to graph_canonical
 			if (!not_canonical_form) {
 				graph_canonical.push_back("s"+to_string(p_canonicals[i]));
 				std::vector<unsigned int> map;
@@ -127,6 +153,7 @@ std::vector<string> generate_final_canonical(int num_nodes, std::vector<std::vec
 	return graph_canonical;	
 }
 
+//For use in storing in canonical_graph
 int convert(string s) {
 	return stoi(s.substr(1,s.length()));
 }
@@ -137,6 +164,7 @@ void canonical_array(int array[], int n) {
 	}
 }
 
+//Convert array node permutation to string
 string s_permutation(int array[], int n) {
 	string s = "";
 	for (int i = 0; i < n; i++) {
@@ -145,6 +173,14 @@ string s_permutation(int array[], int n) {
 	return s;
 }
 
+// This function takes a decimal number and a number of nodes
+// to find the binary representation of the decimal number and
+// store it in a vector. Length of vector depends on number of nodes.
+
+// Ex:
+// num_nodes = 4       --->    Length of vector must be 6
+// decimal_number = 3  --->    011 in binary
+// vector = [0, 1, 1]  --->    vector = [0, 0, 0, 0, 1, 1]
 void generate_bits_vector(int decimal_number, vector<bool>& result)
 {
 	// Convert to binary number and put each bit in result vector.
@@ -222,6 +258,7 @@ std::vector<string> generate_canonical(int num_nodes, std::vector<std::vector<un
 					break;
 				}
 			}	
+			//If canonical then store
 			if (!not_canonical_form) {
 				graph_canonical.push_back("s"+to_string(i));
 				std::vector<unsigned int> map;
@@ -264,7 +301,6 @@ vector<vector<bool>> decimal_to_matrix(int decimal_number, int num_nodes)
 	return result;
 }
 
-
 using namespace std;
 static Graph *isoG1, *isoG2;
 //Used for isomorphism checking
@@ -299,7 +335,7 @@ static bool _allPermutations(int n, int i, int *preArray, bool (*fcn)(int, int *
 {
     int j;
     if( n == i) {  /* output! */
-		std::cout << s_permutation(preArray, n) << std::endl;
+		// std::cout << s_permutation(preArray, n) << std::endl;
 		return fcn(n, preArray);
 	}
     for(j=0; j < n; j++)    /* put in slot i all j's not already appearing */
