@@ -1,8 +1,6 @@
 #include "defaultArguments.hpp"
 
 vector<string> defaultArguments = {
-"-g1 yeast",
-"-g2 human",
 "-nodecweights 4 0.1 0.25 0.5 0.15",
 "-edgecweights 4 0.1 0.25 0.5 0.15",
 "-goweights 1 1",
