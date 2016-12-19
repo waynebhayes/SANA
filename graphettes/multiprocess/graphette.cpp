@@ -1,89 +1,242 @@
 #include "graphette.hpp"
 
-//Goes through generating the final/true canonicals and writes them to file
-//  runs through the Isomorphic code again to ensure that the permutation for the 
-//  ndoes is correct  
-//  O(n) linear pass through as opposed to the O(n*m) passthrough for finding the 
-//  canonicals
-void final_canonicals (std::vector<unsigned int> &p_canonicals,
-		std::map <unsigned int, std::map<unsigned int, string> > &canonical_map, int num_nodes) {
+void split(const std::string &s, char delim, std::vector<std::string> &elems) {
+    std::stringstream ss;
+    ss.str(s);
+    std::string item;
+    while (std::getline(ss, item, delim))
+        elems.push_back(item);
+}
+
+//For use in storing in canonical_graph
+int convert(string s) {
+	return stoi(s.substr(1,s.length()));
+}
+
+void canonical_array(int array[], int n) {
+	for (int i = 0; i < n; i++) {
+		array[i] = i;
+	}
+}
+
+//Convert array node permutation to string
+string s_permutation(int array[], int n) {
+	string s = "";
+	for (int i = 0; i < n; i++) {
+		s += to_string(array[i]);
+	}
+	return s;
+}
+
+// This function takes a decimal number and a number of nodes
+// to find the binary representation of the decimal number and
+// store it in a vector. Length of vector depends on number of nodes.
+
+// Ex:
+// num_nodes = 4       --->    Length of vector must be 6
+// decimal_number = 3  --->    011 in binary
+// vector = [0, 1, 1]  --->    vector = [0, 0, 0, 0, 1, 1]
+void generate_bits_vector(int decimal_number, vector<bool>& result)
+{
+	// Convert to binary number and put each bit in result vector.
+	int i = result.size() - 1;
+	for (int j = 0; j < i+1; j++) {
+		result[j] = 0;
+	}
+	while (decimal_number != 0)
+	{
+		// This assertion assures that the length of binary in a decimal number
+		// will not exceed the number of possible edges.
+		// Ex: 
+		// num_possible_edges = 6
+		// Length of bits must be <= num_possible_edges
+		assert(i >= 0 && "Binary length exceeds number of possible edges");
+		result[i] = decimal_number % 2;
+		--i;
+		decimal_number /= 2;	
+	}
+}
+
+void generate_node_permutation_commands(int num_nodes, std::string file_name_variation)
+{
+	//Call split -l [x lines] [permutation_map.txt] [new_file names]
+	ofstream executable("executable_intermediate.txt");	
+	
+	char variation = 'a';
+	while(true) {
+		std::string filestring = file_name_variation;
+		filestring+=variation;
+		// std::cout << filestring << variation << std::endl;
+		variation++;
+		std::ifstream file(filestring);
+		if (file.is_open()) {
+			std::string args[] = {
+				"./multiprocess_permutations", 
+				std::to_string(num_nodes), 
+				filestring
+			};
+			executable << args[0] << " " << args[1] << " " << args[2] << "\n";
+		}
+		else {
+			break;
+		}
+	}
+}
+
+//Generates the node permutations in parallel
+//To execute use below command for parallelizing
+// cat [executable.txt] | ~wayne/bin/bin.x86_64/parallel -s sh 32
+void generate_node_permutations(int num_nodes, std::string file_name) 
+{
+	int num_possible_edges = (num_nodes*(num_nodes-1)) / 2;
+	vector<bool> graph_bit_vector(num_possible_edges), current_canonical_bit_vector(num_possible_edges);
+	
+	std::ofstream fpermutation(file_name+"_permutation_map_"+to_string(num_nodes)+".txt");
+	
+	//Graphs used for final permutation fixing for the node orderings
+	Graph* permutation_graph = new Graph(num_nodes);
+	Graph* canonical_graph = new Graph(num_nodes);
+
+	//Remapping all the non-canonicals that were mapped to the intermediate canonicals
+	// by commutativity the true canonicals -> intermediate canonicals -> non-canonicals
+	fpermutation << "graphette\tcanonical\tpermutation\r\n";
+	int array[num_nodes];
+	int canonical_node = 0;
+	int decimal_representation = 0;
+	
+	std::vector<std::string> line;
+	std::string canonical_to_noncanonical;
+	std::ifstream file(file_name);
+	
+	if (file.is_open()) {
+		while (getline(file, canonical_to_noncanonical, '\n')) {
+			line.clear();
+			split(canonical_to_noncanonical, ' ', line);
+			//canonical node
+			canonical_node = stoi(line[0]);
+			//Resetting the canonical graph instead of recreating it to save Memory
+			canonical_graph->reset();
+			generate_bits_vector(canonical_node, current_canonical_bit_vector);
+			canonical_graph->setAdjMatrix(current_canonical_bit_vector);
+			
+			for (int val = 0; val < line.size() - 1; val++) {
+				decimal_representation = atoi(line[val].c_str());
+				//The ismorphic code is a comparison from canonical to non-canonical form
+				// restting the array to canonical 01234... form 
+				// ensures that the comparison is always to canonical form
+				canonical_array(array, num_nodes);
+				
+				if (decimal_representation != canonical_node) {		
+					//Loading the permutation/non-canonical graph 
+					permutation_graph->reset();
+					generate_bits_vector(decimal_representation, graph_bit_vector);
+					permutation_graph->setAdjMatrix(graph_bit_vector);
+					
+					//Generating the node permutations
+					graphIsomorphic(*canonical_graph, *permutation_graph, array);
+				}
+				//Writes to permutation_map.txt in 
+				// Permutation Integer Representation		Canonical Node Integer Representation		Non-Canonical Node Permutation
+				fpermutation << decimal_representation << "\t\t\t" << canonical_node << "\t\t\t" << s_permutation(array, num_nodes) << "\r\n";
+			}
+		}
+		file.close();
+	}
+	
+		//Clean-up
+	delete permutation_graph;
+	delete canonical_graph;
+}
+
+//Generates a list of commands (located in executable.txt) that are used to generate the intermediate canonicals
+void generate_intermediate_canonical_commands (int num_nodes, int BLOCK_SIZE, std::string file_name) 
+{
+	int INTERVAL = 10;
+	
+	int num_graphs = (num_nodes == 0) ? 0 : pow(2, (num_nodes*(num_nodes - 1)) / 2);
+	int num_files = ceil(num_graphs/BLOCK_SIZE);
+	ofstream executable("executable_intermediate.txt");
+	int i = 0;
+	std::cout << "Number of Graphs: " << num_graphs << " split into children of size " << BLOCK_SIZE << "\n";
+	for (i; i < num_files; i+=INTERVAL) {
+		char* args[] = {
+			(char*)"./multiprocess", 
+			(char*)std::to_string(num_nodes).c_str(), 
+			(char*)std::to_string(i).c_str(), 
+			(char*)std::to_string(i+INTERVAL).c_str(), 
+			(char*)file_name.c_str(),  
+			NULL
+		};
+		executable << args[0] << " " << args[1] << " " << args[2] << " " << args[3] << " " << args[4] << "\n";
+	}
+}
+
+//Remaps intermediate canonicals to more intermediate canonicals 
+void generate_intermediate_canonicals (int num_nodes, int start_file_interval, int end_file_interval, std::string file_name) 
+{	
+	std::vector<unsigned int> p_canonicals;
+	std::map <unsigned int, std::map<unsigned int, std::string> > canonical_map;
+	std::string p_canonical;
+	std::vector<std::string> line;
+	int current;
+	//Filters the intermediate canonical permutation maps for the canonical to non-canonical mappings
+	for (int i = start_file_interval; i < end_file_interval; ++i) {
+		current = -1;
+		std::ifstream file(file_name+std::to_string(num_nodes)+"_"+std::to_string(i)+".txt");
+		if (file.is_open()) {
+			while (getline(file, p_canonical, '\n')) {
+				line.clear();
+				split(p_canonical, '\t', line);
+				int current_compare = stoi(line[1]);
+				int non_c = stoi(line[0]);
+				if (current_compare != current ) {
+					current = current_compare;
+					p_canonicals.push_back(current_compare);
+				}
+				if (!canonical_map.count(current_compare)) {
+					std::map<unsigned int, std::string> permute;
+					permute[non_c] = line[2];
+					canonical_map[current_compare] = permute;
+				}
+				else {
+					canonical_map[current_compare][non_c] = line[2];
+				}
+			}
+			file.close();
+		}
+	}
+	
+	int variation = start_file_interval/(end_file_interval - start_file_interval);
+	
+	intermediate_canonicals_map(p_canonicals, canonical_map, num_nodes, variation);
+}
+
+//Goes through generating the intermediate canonicals and writes them to file
+void intermediate_canonicals_map (std::vector<unsigned int> &p_canonicals,
+	std::map <unsigned int, std::map<unsigned int, string> > &canonical_map, int num_nodes, int variation) {
 			
 	//Holds the true/final canonicals for the node size 		
 	std::vector<string> graph_canonical;
 	//Maps the true canonicals to the intermediate canonicals; element 0 of each vector is canonicals
 	std::vector<std::vector<unsigned int>> mapping;
 	
-	graph_canonical = generate_final_canonical(num_nodes, mapping, p_canonicals);
+	graph_canonical = filter_intermediate_canonical(num_nodes, mapping, p_canonicals);
+	std::cout << "Intermediate canonicals generated...\n";
 
-	ofstream fcanon("canonical_decimal_representation"+to_string(num_nodes)+".txt"), 
-			fmap("canon_map"+to_string(num_nodes)+".txt"), fpermutation("permutation_map"+to_string(num_nodes)+".txt");
-	
-	// For writing to file
-	fcanon << graph_canonical.size() << "\n";
-	fpermutation << num_nodes << "\n";
-	// This will show the decimal representations of adjMatrix of each Graph
-	std::cout << "Canonical Graph adjMatrix dec_rep: ";
-	for (string g : graph_canonical)
-	{
-		fcanon << g.substr(1,g.length()) << " ";
-	}
+	ofstream fpermutation("intermediate_permutation_map"+to_string(num_nodes)+"_"+std::to_string(variation)+".txt");
 
-	int array[num_nodes];
-	int num_possible_edges = (num_nodes*(num_nodes-1)) / 2;
-	vector<bool> graph_bit_vector(num_possible_edges), current_canonical_bit_vector(num_possible_edges);
-	
-	//Graphs used for final permutation fixing for the node orderings
-	Graph* permutation_graph = new Graph(num_nodes);
-	Graph* canonical_graph = new Graph(num_nodes);
-	
-	//Remapping all the non-canonicals that were mapped to the intermediate canonicals
-	// by commutativity the true canonicals -> intermediate canonicals -> non-canonicals
-	fpermutation << "graphette\tcanonical\tpermutation\r\n";
 	int canonical_node = 0;
 	for (std::vector<unsigned int> s: mapping) {
-		//canonical node
 		canonical_node = s[0];
-		
-		//Resetting the canonical graph instead of recreating it to save Memory
-		canonical_graph->reset();
-		generate_bits_vector(canonical_node, current_canonical_bit_vector);
-		canonical_graph->setAdjMatrix(current_canonical_bit_vector);
-		
 		for (unsigned int m: s) {
-			for (std::pair<const unsigned int, string> permute: canonical_map[m]) {
-				fmap << permute.first << " ";
-					
-				//The ismorphic code is a comparison from canonical to non-canonical form
-				// restting the array to canonical 01234... form 
-				// ensures that the comparison is always to canonical form
-				canonical_array(array, num_nodes);
-				
-				if (permute.first != canonical_node) {			
-					//Loading the permutation/non-canonical graph 
-					permutation_graph->reset();
-					generate_bits_vector(permute.first, graph_bit_vector);
-					permutation_graph->setAdjMatrix(graph_bit_vector);
-					
-					//Code used to check for Isomorphism also viable for fixing the permutation differences
-					// caused by incorrect canonical comparison to the intermediate ones 
-					graphIsomorphic(*canonical_graph, *permutation_graph, array);
-				}
-									
-				//Writes to permutation_map.txt in 
-				// Permutation Integer Representation		Canonical Node Integer Representation		Non-Canonical Node Permutation
-				fpermutation << permute.first << "\t\t\t" << canonical_node << "\t\t\t" << s_permutation(array, num_nodes) << "\r\n";
-			}
+			fpermutation << m << "\t" << canonical_node << "\t" << "FILL IN DURING FINAL" << "\n";
 		}
-		fmap << "\r\n";
 	}
-	
-	//Clean-up
-	delete permutation_graph;
-	delete canonical_graph;
 }
 
 //Remaps the intermediate canonicals to the true canonicals 
-std::vector<string> generate_final_canonical(int num_nodes, std::vector<std::vector<unsigned int>> &mapping, std::vector<unsigned int> &p_canonicals) 
+std::vector<string> filter_intermediate_canonical(int num_nodes, std::vector<std::vector<unsigned int>> &mapping, 
+	std::vector<unsigned int> &p_canonicals) 
 {
 	int num_possible_edges = (num_nodes*(num_nodes-1)) / 2;
 	vector<bool> graph_bit_vector(num_possible_edges), current_canonical_bit_vector(num_possible_edges);
@@ -98,9 +251,9 @@ std::vector<string> generate_final_canonical(int num_nodes, std::vector<std::vec
 	int array[num_nodes];
 
 	for (int i = 0; i < p_canonicals.size(); i++)
-	{
-		// Use iterator because the erase() function vector only accepts 
-		// iterator as argument
+	{		
+		if(i%1000 == 0)	std::cout << "Almost there..." << i*100.0/p_canonicals.size() << "% 	\r\n";
+		
 		canonical_array(array, num_nodes);
 		graph->reset();
 		generate_bits_vector(p_canonicals[i], graph_bit_vector);
@@ -153,55 +306,53 @@ std::vector<string> generate_final_canonical(int num_nodes, std::vector<std::vec
 	return graph_canonical;	
 }
 
-//For use in storing in canonical_graph
-int convert(string s) {
-	return stoi(s.substr(1,s.length()));
-}
 
-void canonical_array(int array[], int n) {
-	for (int i = 0; i < n; i++) {
-		array[i] = i;
-	}
-}
+//DONT FUCKING TOUCH THIS SHIT BELOW HERE
 
-//Convert array node permutation to string
-string s_permutation(int array[], int n) {
-	string s = "";
-	for (int i = 0; i < n; i++) {
-		s += to_string(array[i]);
-	}
-	return s;
-}
 
-// This function takes a decimal number and a number of nodes
-// to find the binary representation of the decimal number and
-// store it in a vector. Length of vector depends on number of nodes.
-
-// Ex:
-// num_nodes = 4       --->    Length of vector must be 6
-// decimal_number = 3  --->    011 in binary
-// vector = [0, 1, 1]  --->    vector = [0, 0, 0, 0, 1, 1]
-void generate_bits_vector(int decimal_number, vector<bool>& result)
+//Generates a list of commands (located in executable.txt) that are used to generate the intermediate canonicals
+void generate_intial_canonical_commands (int num_nodes, int BLOCK_SIZE) 
 {
-	// Convert to binary number and put each bit in result vector.
-	int i = result.size() - 1;
-	for (int j = 0; j < i+1; j++) {
-		result[j] = 0;
-	}
-	while (decimal_number != 0)
-	{
-		// This assertion assures that the length of binary in a decimal number
-		// will not exceed the number of possible edges.
-		// Ex: 
-		// num_possible_edges = 6
-		// Length of bits must be <= num_possible_edges
-		assert(i >= 0 && "Binary length exceeds number of possible edges");
-		result[i] = decimal_number % 2;
-		--i;
-		decimal_number /= 2;	
+	int num_graphs = (num_nodes == 0) ? 0 : pow(2, (num_nodes*(num_nodes - 1)) / 2);
+	
+	ofstream executable("executable.txt");
+	int i = 0;
+	std::cout << "Number of Graphs: " << num_graphs << " split into children of size " << BLOCK_SIZE << "\n";
+	for (i; i < num_graphs; i+= BLOCK_SIZE) {
+		char* args[] = {
+			(char*)"./graphette", 
+			(char*)std::to_string(num_nodes).c_str(), 
+			(char*)std::to_string(i/BLOCK_SIZE).c_str(), 
+			(char*)std::to_string(BLOCK_SIZE).c_str(), 
+			(char*)std::to_string(i).c_str(),  
+			(char*)std::to_string(((i+BLOCK_SIZE < num_graphs) ? i+BLOCK_SIZE : num_graphs)).c_str(),
+			NULL
+		};
+		executable << args[0] << " " << args[1] << " " << args[2] << " " << args[3] << " " << args[4] << " " << args[5] << "\n";
 	}
 }
 
+//Used for generating the initial/intermediate canonicals
+void generate_initial_canonical (int num_nodes, int variation, int block_size, int start, int end) 
+{		
+	std::vector<string> graph_canonical;
+	std::vector<std::vector<unsigned int>> mapping;
+	std::vector<string> permutations(block_size);
+	
+	graph_canonical = generate_canonical(num_nodes, mapping, permutations, block_size, start, end);
+
+	ofstream fpermutation("permutation_map"+to_string(num_nodes)+"_"+std::to_string(variation)+".txt");
+
+	int canonical_node = 0;
+	for (std::vector<unsigned int> s: mapping) {
+		canonical_node = s[0];
+		for (unsigned int m: s) {
+			fpermutation << m << "\t" << canonical_node << "\t" << permutations[m - variation*block_size] << "\n";
+		}
+	}     
+}
+
+//Generates canonicals given start and end graph number 
 std::vector<string> generate_canonical(int num_nodes, std::vector<std::vector<unsigned int>> &mapping, std::vector<string> &permutations, 
 	int block_size, int start, int end) 
 {
@@ -374,14 +525,12 @@ bool _permutationIdentical(int n, int perm[])
 
 bool CombinAllPermutations(int n, bool (*fcn)(int, int *), int array[])
 {
-
     return _allPermutations(n, 0, array, fcn);
 }
 
 bool graphIsomorphic(Graph& G1, Graph& G2, int array[])
 {
     int i, n = G1.getNumNodes(), degreeCount1[n], degreeCount2[n];
-	
     if(G1.getNumNodes() != G2.getNumNodes())
     	return false;
 
