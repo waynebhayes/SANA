@@ -59,19 +59,19 @@ void generate_bits_vector(int decimal_number, vector<bool>& result)
 
 void generate_node_permutation_commands(int num_nodes, std::string file_name_variation)
 {
-	//Call split -l [x lines] [permutation_map.txt] [new_file names]
-	ofstream executable("executable_intermediate.txt");	
+	//Call split -l [x lines] [canonical_mapN_final.txt] [new_file names]
+	//SAMPLE: split -l 100 canonical_map7_final.txt map
+	ofstream executable("executable_permutations.txt");	
 	
 	char variation = 'a';
 	while(true) {
 		std::string filestring = file_name_variation;
 		filestring+=variation;
-		// std::cout << filestring << variation << std::endl;
 		variation++;
 		std::ifstream file(filestring);
 		if (file.is_open()) {
 			std::string args[] = {
-				"./multiprocess_permutations", 
+				"./generate_permutations", 
 				std::to_string(num_nodes), 
 				filestring
 			};
@@ -148,6 +148,76 @@ void generate_node_permutations(int num_nodes, std::string file_name)
 	delete canonical_graph;
 }
 
+void generate_final_canonicals(int num_nodes, std::string file_name)
+{
+	std::vector<unsigned int> p_canonicals;
+	std::map <unsigned int, std::map<unsigned int, std::string> > canonical_map;
+	std::string p_canonical;
+	std::vector<std::string> line;
+	int current;
+	int i = 0;
+	//Filters the intermediate canonical permutation maps for the canonical to non-canonical mappings
+	while(1) {
+		current = -1;
+		std::ifstream file(file_name+std::to_string(num_nodes)+"_"+std::to_string(i)+".txt");
+		if (file.is_open()) {
+			while (getline(file, p_canonical, '\n')) {
+				line.clear();
+				split(p_canonical, '\t', line);
+				int current_compare = stoi(line[1]);
+				int non_c = stoi(line[0]);
+				if (current_compare != current ) {
+					current = current_compare;
+					p_canonicals.push_back(current_compare);
+				}
+				if (!canonical_map.count(current_compare)) {
+					std::map<unsigned int, std::string> permute;
+					permute[non_c] = line[2];
+					canonical_map[current_compare] = permute;
+				}
+				else {
+					canonical_map[current_compare][non_c] = line[2];
+				}
+			}
+			file.close();
+		}
+		else {
+			break;
+		}
+		++i;
+	}
+	generate_final_canonicals_map(num_nodes, p_canonicals, canonical_map);
+}
+
+void generate_final_canonicals_map(int num_nodes, std::vector<unsigned int> &p_canonicals, std::map <unsigned int, std::map<unsigned int, string> > &canonical_map)
+{
+	//Holds the true/final canonicals for the node size 		
+	std::vector<string> graph_canonical;
+	//Maps the true canonicals to the intermediate canonicals; element 0 of each vector is canonicals
+	std::vector<std::vector<unsigned int>> mapping;
+	
+	graph_canonical = filter_intermediate_canonical(num_nodes, mapping, p_canonicals);
+	std::cout << "Final canonicals generated...\n";
+
+	ofstream fmap("canonical_map"+to_string(num_nodes)+"_"+"final"+".txt");
+
+	std::vector<unsigned int> sorter;
+	
+	for (std::vector<unsigned int> s: mapping) {
+		sorter.clear();
+		for (unsigned int m: s) {
+			for (std::pair<unsigned int, string> key_map: canonical_map[m]) {
+				sorter.push_back(key_map.first);
+			}
+		}
+		std::sort(sorter.begin(), sorter.end());
+		for (unsigned int n: sorter) {
+			fmap << n << " ";
+		}
+		fmap << "\r\n";
+	}
+}
+
 //Generates a list of commands (located in executable.txt) that are used to generate the intermediate canonicals
 void generate_intermediate_canonical_commands (int num_nodes, int BLOCK_SIZE, std::string file_name) 
 {
@@ -160,7 +230,7 @@ void generate_intermediate_canonical_commands (int num_nodes, int BLOCK_SIZE, st
 	std::cout << "Number of Graphs: " << num_graphs << " split into children of size " << BLOCK_SIZE << "\n";
 	for (i; i < num_files; i+=INTERVAL) {
 		char* args[] = {
-			(char*)"./multiprocess", 
+			(char*)"./generate_intermediate_canonicals", 
 			(char*)std::to_string(num_nodes).c_str(), 
 			(char*)std::to_string(i).c_str(), 
 			(char*)std::to_string(i+INTERVAL).c_str(), 
@@ -229,7 +299,9 @@ void intermediate_canonicals_map (std::vector<unsigned int> &p_canonicals,
 	for (std::vector<unsigned int> s: mapping) {
 		canonical_node = s[0];
 		for (unsigned int m: s) {
-			fpermutation << m << "\t" << canonical_node << "\t" << "FILL IN DURING FINAL" << "\n";
+			for (std::pair<unsigned int, string> key_map: canonical_map[m]) {
+				fpermutation << key_map.first << "\t" << canonical_node << "\t" << "NOT_NEEDED" << "\n";
+			}
 		}
 	}
 }
@@ -305,10 +377,6 @@ std::vector<string> filter_intermediate_canonical(int num_nodes, std::vector<std
 
 	return graph_canonical;	
 }
-
-
-//DONT FUCKING TOUCH THIS SHIT BELOW HERE
-
 
 //Generates a list of commands (located in executable.txt) that are used to generate the intermediate canonicals
 void generate_intial_canonical_commands (int num_nodes, int BLOCK_SIZE) 

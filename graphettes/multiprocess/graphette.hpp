@@ -1,22 +1,21 @@
 #ifndef GRAPHETTE_HPP
 #define GRAPHETTE_HPP
 
-#include <vector>
 #include <iostream>
 #include <cmath>
 #include <set>
 #include <assert.h>
 #include <stdlib.h>
 #include <time.h>
-#include "Graph.hpp"
 #include <fstream>
 #include <sstream>
 #include <stdio.h>
 #include <execinfo.h>
 #include <signal.h>
 #include <unistd.h>
-#include <string>
+#include <algorithm>
 #include <cmath>
+#include "Graph.hpp"
 using namespace std;
 
 
@@ -28,6 +27,12 @@ void split(const std::string &s, char delim, std::vector<std::string> &elems);
 
 void generate_node_permutation_commands(int num_nodes, std::string file_name_variation);
 void generate_node_permutations(int num_nodes, std::string file_name);
+
+void generate_final_canonicals(int num_nodes, std::string file_name);
+void generate_final_canonicals_map(int num_nodes, std::vector<unsigned int> &p_canonicals, std::map <unsigned int, std::map<unsigned int, string> > &canonical_map);
+
+
+
 
 void generate_intermediate_canonical_commands (int num_nodes, int BLOCK_SIZE, std::string file_name);
 void generate_intermediate_canonicals (int num_nodes, int start_file_interval, int end_file_interval, std::string file_name);
