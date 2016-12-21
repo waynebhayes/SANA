@@ -17,7 +17,6 @@ vector<array<string, 6>> supportedArguments = {
 	{ "-fg2", "string", "human", "Network 2", "Initializes the network G2 with an external file. Make sure that the name and path of the file exists. The network of G2 should have more nodes than G1.", "1" },
 	{ "-o", "string", "sana", "Output File basename", "Specifies the basename of output file; actual output files will append (.out, .align, etc) to this.", "0" },
 	{ "-t", "double", "5", "Runtime in minutes", "The number of minutes to run SANA. Must be non-zero, no upper limit.", "1" },
-	{ "-i", "double", "0", "Iteration", "Like -t, but specifying total iteration count, in units of 100 million (Mutually exclusive with -t).", "1" },
 	{ "-pathmap1", "integerS", "", "Path Map G1", "Allows mapping a path in G1 to an edge in G2, as if the path were a single edge in G2. Implemented by raising the adjacency list to this power (an integer).", "1" },
 	{ "-pathmap2", "integerS", "", "Path Map G2", "Maps a path in G2 to an edge in G1, as if the path were a single edge in G1.", "1" },
 	{ "-eval", "string", "", "Evaluate Existing Alignment", "Takes an existing alignment, evaluates it, and records the results to sana.out or the specified output file.", "1" },
