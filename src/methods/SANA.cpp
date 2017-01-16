@@ -1440,12 +1440,15 @@ double SANA::simpleSearchTInitial() {
 double SANA::searchTDecay(double TInitial, double minutes) {
 
 	double iter_t = minutes*60*getIterPerSecond();
-	//new TDecay method uses upper and lower tbounds
-	if(lowerTBound != 0){
+	
+    //commented out this method because it was bugged.
+    
+    //new TDecay method uses upper and lower tbounds
+	/*if(lowerTBound != 0){
 		double tdecay = -log(lowerTBound/(TInitialScaling* upperTBound)) / (-iter_t * TDecayScaling);
 		cerr << "\ntdecay: " << tdecay << "\n";
 		return tdecay;
-	}
+	}*/
 
 	//old TDecay method
 	vector<double> EIncs = energyIncSample();
