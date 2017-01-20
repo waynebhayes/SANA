@@ -23,7 +23,7 @@ args="
   -tcand 1
   -tfin 3
   -qcount 1
-  -o x
+  -o regression
   -rewire 0
 "
 
