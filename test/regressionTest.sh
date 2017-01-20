@@ -23,16 +23,15 @@ args="
   -tcand 1
   -tfin 3
   -qcount 1
-  -alphafile experiments/alphas.out
   -o x
   -rewire 0
 "
 
 echo "Running SANA regression test"
 
-make all > /dev/null
-./sana $args &> run_output.txt
-rm x
+make #> /dev/null
+./sana $args 2>&1 | tee run_output.txt
+#rm x
 
 # Only look at the first 7 iterations because not all computers will get through the same number
 # of iterations
@@ -70,7 +69,4 @@ else
 fi
 
 #rm run_output.txt
-
-
-
 
