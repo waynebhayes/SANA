@@ -35,7 +35,7 @@ make #> /dev/null
 
 # Only look at the first 7 iterations because not all computers will get through the same number
 # of iterations
-scores=(`grep -aA7 "0 (0s)" run_output.txt  | sed -e 's/.*score = \(.*\) P(.*/\1/'`)
+scores=(`grep -aA7 "s): " run_output.txt  | sed -e 's/.*score = \(.*\) P(.*/\1/'`)
 
 if [[ ! -e $olddata ]]
 then
