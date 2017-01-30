@@ -23,20 +23,19 @@ args="
   -tcand 1
   -tfin 3
   -qcount 1
-  -alphafile experiments/alphas.out
-  -o x
+  -o regression
   -rewire 0
 "
 
 echo "Running SANA regression test"
 
-make all > /dev/null
-./sana $args &> run_output.txt
-rm x
+make #> /dev/null
+./sana $args 2>&1 | tee run_output.txt
+#rm x
 
 # Only look at the first 7 iterations because not all computers will get through the same number
 # of iterations
-scores=(`grep -aA7 "0 (0s)" run_output.txt  | sed -e 's/.*score = \(.*\) P(.*/\1/'`)
+scores=(`grep -aA7 "s): " run_output.txt  | sed -e 's/.*score = \(.*\) P(.*/\1/'`)
 
 if [[ ! -e $olddata ]]
 then
@@ -70,7 +69,4 @@ else
 fi
 
 #rm run_output.txt
-
-
-
 

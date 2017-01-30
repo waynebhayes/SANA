@@ -66,6 +66,7 @@ public:
     void reIndexBefore_Iterations(map<ushort, ushort> reIndexMap);
     void reIndexAfter_Iterations(map<ushort, ushort> reverseReIndexMap);
 
+    ushort& getBack() { return A.back(); }
 private:
 
     vector<ushort> A;

@@ -18,6 +18,8 @@ int main(int argc, char* argv[]) {
 	exit(0);
     }
 
+    validateAndAddArguments();
+
     ArgumentParser args(stringArgs, doubleArgs, boolArgs, vectorArgs);
     args.parseArgs(argc, argv, defaultArguments, true);
 
