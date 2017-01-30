@@ -73,7 +73,7 @@ double betaDerivedAlpha(string methodName, string G1Name, string G2Name, double 
 string getScoreTableMethodId(ArgumentParser& args) {
     string methodName = args.strings["-method"];
     if (methodName == "sana" or methodName == "tabu") {
-        methodName += args.strings["-topmeasure"];
+        methodName += args.strings["-topomeasure"];
     }
     return methodName;
 }
@@ -94,7 +94,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableMeasures = {
         "ec","s3","sec","wec","nodec","noded","edgec","edged", "esim", "go","importance",
-        "sequence","graphlet","graphletlgraal", "graphletcosine", "spc"
+        "sequence","graphlet","graphletlgraal", "graphletcosine", "spc", "nc"
     };
     double total = 0;
     for (uint i = 0; i < optimizableMeasures.size(); i++) {
@@ -116,7 +116,7 @@ double getWeight(string measureName, Graph& G1, Graph& G2, ArgumentParser& args)
         
         string topMeasure;
         if (method == "sana" or method == "tabu") {
-            topMeasure = args.strings["-topmeasure"];
+            topMeasure = args.strings["-topomeasure"];
         } else if (method == "lgraal") topMeasure = "wec";
         else if (method == "hubalign") topMeasure = "importance";
         else {
@@ -212,7 +212,7 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
             double goWeight = getWeight("go", G1, G2, args);
             M.addMeasure(m, goWeight);
         }
-        if (detRep) {
+        if (detRep || args.doubles["-gocov"] > 0) {
             m = new GoCoverage(&G1, &G2);
             M.addMeasure(m);
         }
@@ -264,16 +264,25 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     }
 
     if (args.strings["-truealignment"] != "") {
-	//properly turns the input file into a vector of strings
 	vector<string> edges = fileToStrings(args.strings["-truealignment"]);
-        m = new NodeCorrectness(NodeCorrectness::convertAlign(G1, G2, edges));
-        M.addMeasure(m);
+	double ncWeight = 0;
+	try{
+	    ncWeight = getWeight("nc", G1, G2, args);	
+	}catch(...){
+	}
+	m = new NodeCorrectness(NodeCorrectness::convertAlign(G1, G2, edges));
+        M.addMeasure(m, ncWeight);
     } else if (G1.sameNodeNames(G2)) {
 	Alignment a(Alignment::correctMapping(G1,G2));
 	vector<ushort> mapping = a.getMapping();
 	mapping.push_back(G1.getNumNodes());
-        m = new NodeCorrectness(mapping);
-        M.addMeasure(m);
+	double ncWeight = 0;
+        try{
+	    ncWeight = getWeight("nc", G1, G2, args);
+	}catch(...){
+	}	
+	m = new NodeCorrectness(mapping);
+        M.addMeasure(m, ncWeight);
     }
 
     if (shouldInit("spc", G1, G2, args)) {

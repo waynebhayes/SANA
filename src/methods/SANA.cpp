@@ -29,8 +29,10 @@
 #include "../utils/LinearRegression.hpp"
 using namespace std;
 
+
+
 void SANA::initTau(void) {
-    tau = vector<double> {
+ /*    tau = vector<double> {
 	1.000, 0.985, 0.970, 0.960, 0.950, 0.942, 0.939, 0.934, 0.928, 0.920,
 	0.918, 0.911, 0.906, 0.901, 0.896, 0.891, 0.885, 0.879, 0.873, 0.867,
 	0.860, 0.853, 0.846, 0.838, 0.830, 0.822, 0.810, 0.804, 0.794, 0.784,
@@ -42,6 +44,21 @@ void SANA::initTau(void) {
 	0.026, 0.0212, 0.0172, 0.0138, 0.011, 0.008, 0.006, 0.005, 0.004, 0.003,
 	0.002, 0.001, 0.0003, 0.0001, 3e-5, 1e-6, 0, 0, 0, 0,
 	0};
+	 */
+	
+	tau = vector<double> {
+	0.996738, 0.994914, 0.993865, 0.974899, 0.977274, 0.980926, 0.97399, 0.970583, 0.967492, 0.962373, 
+	0.953197, 0.954104, 0.951387, 0.953532, 0.948492, 0.939501, 0.939128, 0.932902, 0.912378, 0.896011, 
+	0.89535, 0.88642, 0.874628, 0.856721, 0.855782, 0.838483, 0.820407, 0.784303, 0.771297, 0.751457, 
+	0.735902, 0.676393, 0.633939, 0.604872, 0.53482, 0.456856, 0.446905, 0.377708, 0.337258, 3.04e-01, 
+	0.280585, 0.240093, 1.95e-01, 1.57e-01, 1.21e-01, 1.00e-01, 8.04e-02, 5.95e-02, 4.45e-02, 3.21e-02, 
+	1.81e-02, 1.82e-02, 1.12e-02, 7.95e-03, 4.82e-03, 3.73e-03, 2.11e-03, 1.41e-03, 9.69e-04, 6.96e-04, 
+	5.48e-04, 4.20e-04, 4.00e-04, 3.50e-04, 3.10e-04, 2.84e-04, 2.64e-04, 1.19e-04, 8.16e-05, 7.22e-05, 
+	6.16e-05, 4.46e-05, 3.36e-05, 2.66e-05, 1.01e-05, 9.11e-06, 4.09e-06, 3.96e-06, 3.43e-06, 3.12e-06, 
+	2.46e-06, 2.02e-06, 1.85e-06, 1.72e-06, 1.10e-06, 9.13e-07, 8.65e-07, 8.21e-07, 7.26e-07, 6.25e-07, 
+	5.99e-07, 5.42e-07, 8.12e-08, 4.16e-08, 6.56e-09, 9.124e-10, 6.1245e-10, 3.356e-10, 8.124e-11, 4.587e-11};
+	
+
 }
 
 SANA::SANA(Graph* G1, Graph* G2,
@@ -102,6 +119,18 @@ SANA::SANA(Graph* G1, Graph* G2,
 		wecWeight = MC->getWeight("wec");
 	} catch(...) {
 		wecWeight = 0;
+	}
+	try {
+		needNC = false;
+		ncWeight = MC->getWeight("nc");
+		//std::cout << "ncWeight: " << ncWeight << std::endl;
+		Measure* nc = MC->getMeasure("nc");
+		trueA = nc->getMappingforNC();
+		needNC = true;	
+	} catch(...) {
+		//std::cout << "Weight or measure not found!!" << std::endl;
+		ncWeight = 0;
+		trueA = {static_cast<ushort>(G2->getNumNodes()), 1};
 	}
 	localWeight = MC->getSumLocalWeight();
 
@@ -179,6 +208,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 }
 
 SANA::~SANA() {
+	
 }
 
 
@@ -387,6 +417,12 @@ void SANA::initDataStructures(const Alignment& startA) {
 		double wecScore = wec->eval(A);
 		wecSum = wecScore*2*g1Edges;
 	}
+	if (needNC) {
+		//std::cout << "NEED NC EXECUTED!!!" << std::endl;
+		Measure* nc = MC->getMeasure("nc");
+		ncSum = (nc->eval(A))*trueA.back();
+		//cout << "ncSum: " << ncSum << endl;
+	}
     
     iterationsPerformed = 0;
     sampledProbability.clear();
@@ -492,10 +528,13 @@ void SANA::performChange() {
 	if (needWec) {
 		newWecSum = wecSum + WECIncChangeOp(source, oldTarget, newTarget);
 	}
-	
+	double newNcSum = -1;
+	if (needNC) {
+		newNcSum = ncSum + ncIncChangeOp(source, oldTarget, newTarget);
+	}	
 	
 	double newCurrentScore = 0;
-	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newCurrentScore);
+	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore);
 
 	if (makeChange) {
 		A[source] = newTarget;
@@ -506,6 +545,7 @@ void SANA::performChange() {
 		inducedEdges = newInducedEdges;
 		localScoreSum = newLocalScoreSum;
 		wecSum = newWecSum;
+		ncSum = newNcSum;
 		currentScore = newCurrentScore;
 	}
 }
@@ -545,9 +585,13 @@ void SANA::performSwap() {
 	if (needWec) {
 		newWecSum = wecSum + WECIncSwapOp(source1, source2, target1, target2);
 	}
-
+	
+	double newNcSum = -1;
+	if(needNC) {
+		newNcSum = ncSum + ncIncSwapOp(source1, source2, target1, target2);
+	}
 	double newCurrentScore = 0;
-	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newCurrentScore);
+	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore);
 
 	if (makeChange) {
 		A[source1] = target2;
@@ -555,11 +599,12 @@ void SANA::performSwap() {
 		aligEdges = newAligEdges;
 		localScoreSum = newLocalScoreSum;
 		wecSum = newWecSum;
+		ncSum = newNcSum;
 		currentScore = newCurrentScore;
 	}
 }
 
-double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double& newCurrentScore) {
+double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore) {
 	bool makeChange = false;
 	bool wasBadMove = false;
     double badProbability = 0;
@@ -569,6 +614,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+		newCurrentScore += ncWeight * (newNcSum/trueA.back());
 
 		energyInc = newCurrentScore-currentScore;
         wasBadMove = energyInc < 0;
@@ -582,7 +628,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore *= localWeight * (newLocalScoreSum/n1);
 		newCurrentScore *= secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore *= wecWeight * (newWecSum/(2*g1Edges));
-		
+		newCurrentScore *= ncWeight * (newNcSum/trueA.back());
 		energyInc = newCurrentScore-currentScore;
         wasBadMove = energyInc < 0;
         badProbability = exp(energyInc/T);
@@ -772,6 +818,22 @@ double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort
 	return res;
 }
 
+int SANA::ncIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+	int change = 0;
+	if (trueA[source] == oldTarget) change -= 1;
+	if (trueA[source] == newTarget) change += 1;
+	return change;
+}
+
+int SANA::ncIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
+	int change = 0;
+	if(trueA[source1] == target1) change -= 1;
+	if(trueA[source2] == target2) change -= 1;
+	if(trueA[source1] == target2) change += 1;
+	if(trueA[source2] == target1) change += 1;
+	return change;		
+}
+
 void SANA::trackProgress(long long unsigned int i) {
 	if (not enableTrackProgress) return;
 	bool printDetails = false;
@@ -780,7 +842,7 @@ void SANA::trackProgress(long long unsigned int i) {
 	cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
 	cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", sampled probability = " << trueAcceptingProbability() << endl;
     //cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << endl;
-
+	
     // ofstream dump(mkdir("progress") + G1->getName() + "_" + G2->getName() + ".csv", std::ofstream::out | std::ofstream::app);
     // dump.precision(4);
     // dump << fixed;
@@ -998,7 +1060,7 @@ double SANA::searchTInitialByStatisticalTest() {
 //and returns its score
 double SANA::scoreForTInitial(double TInitial) {
 	uint ITERATIONS = 10000.+100.*n1+10.*n2+n1*n2*0.1; //heuristic value
-
+	ITERATIONS = getIterPerSecond();
 	double oldIterationsPerStep = this->iterationsPerStep;
 	double oldTInitial = this->TInitial;
 	bool oldRestart = restart;
@@ -1378,12 +1440,15 @@ double SANA::simpleSearchTInitial() {
 double SANA::searchTDecay(double TInitial, double minutes) {
 
 	double iter_t = minutes*60*getIterPerSecond();
-	//new TDecay method uses upper and lower tbounds
-	if(lowerTBound != 0){
+	
+    //commented out this method because it was bugged.
+    
+    //new TDecay method uses upper and lower tbounds
+	/*if(lowerTBound != 0){
 		double tdecay = -log(lowerTBound/(TInitialScaling* upperTBound)) / (-iter_t * TDecayScaling);
 		cerr << "\ntdecay: " << tdecay << "\n";
 		return tdecay;
-	}
+	}*/
 
 	//old TDecay method
 	vector<double> EIncs = energyIncSample();

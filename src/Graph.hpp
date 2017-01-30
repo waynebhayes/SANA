@@ -31,7 +31,7 @@ class Graph {
 
 public:
     
-    void setMax(double number);
+    void setMaxGraphletSize(double number);
     static Graph loadGraph(string name);
     static Graph multGraph(string name, uint path);
 
@@ -138,7 +138,7 @@ public:
     int unlockedmiRNACount = -1;
 
 private:
-    double max = 5;
+    double maxGraphletSize = 4; //default is 4, 5 is too big
     string name;
     //double maxsize;
     vector<vector<ushort> > edgeList; //edges in no particular order

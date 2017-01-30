@@ -12,8 +12,8 @@ vector<array<string, 6>> argumentDescriptions = {
 	{ "Option", "Type", "Default", "Title", "Description", "0" },
 	//-----------------------------------GENERAL-----------------------------------------
 	{ "", "", "banner", "", "General Options", "0" },
-	{ "-g1", "string", "yeast", "Network 1", "First nerwork (smaller one). Requirement: An alignment file must exist inside the networks directory which matches the name of the specified species.", "0" },
-	{ "-g2", "string", "human", "Network 2", "Second (larger in number of nodes) network.  Requirement: An alignment file must exist inside the networks directory which matches the name of the specified species.", "0" },
+	{ "-g1", "string", "yeast", "Network 1", "First nerwork (smaller one). Requirement: A network file must exist inside the networks directory which matches the name of the specified species, in edgelist or LEDA.gw format.", "0" },
+	{ "-g2", "string", "human", "Network 2", "Second (larger in number of nodes) network.  Requirement: A network file must exist inside the networks directory which matches the name of the specified species, in edgelist or LEDA.gw format.", "0" },
 	{ "-fg1", "string", "yeast", "Network 1", "Initializes the network G1 with an external file. Make sure that the name and path of the file exists.", "1" },
 	{ "-fg2", "string", "human", "Network 2", "Initializes the network G2 with an external file. Make sure that the name and path of the file exists. The network of G2 should have more nodes than G1.", "1" },
 	{ "-o", "string", "sana", "Output File basename", "Specifies the basename of output file; actual output files will append (.out, .align, etc) to this.", "0" },
@@ -83,6 +83,7 @@ vector<array<string, 6>> argumentDescriptions = {
 	{ "-beta", "double", "0", "Like -alpha, but values are normalized first.", "Same as alpha but with topological and biological scores balanced according to size. Range: [0, 1]. Used when \"-objfuntype\" is \"beta\".", "1" },
 	{ "-ec", "double", "0", "Weight of EC", "The weight of the Edge Coverage (aka Edge Conservation or Edge Correctness) in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-s3", "double", "1", "Weight of S3", "The weight of the Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+	{ "-nc", "double", "0", "Weight of NC", "The weight of Node Correctness in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-wec", "double", "0", "Weight of WEC.", "Weight of the weighted edge coverage. To be used when \"-objfuntype\" is \"generic\". If non-zero, must specify how to weigh the edge using -wecnodesim.", "1" },
 	{ "-spc", "double", "0", "Shortest Path Conservation", "Objective function to minimize shortest path difference between pairs of nodes in G1 and G2. Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-importance", "double", "0", "Weight of Importance", "HubAlign's objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
