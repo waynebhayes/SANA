@@ -27,12 +27,12 @@ public:
     void setTInitialByLinearRegression();
     void setTInitialByStatisticalTest();
     void setTDecayAutomatically();
-	
-	//set temperature decay dynamically 
-	void setDynamicTDecay(); 
+    
+    //set temperature decay dynamically 
+    void setDynamicTDecay(); 
 
-
-
+    double elapsedEstimate = 0;
+    int order = 0;
 
     //returns the number of iterations until it stagnates when not using temperture
     long long unsigned int hillClimbingIterations(long long unsigned int idleCountTarget);
@@ -81,12 +81,12 @@ private:
     bool usingIterations;
     uint maxIterations = 0;
     uint iterationsPerformed = 0;
-    const double TInitialScaling = 0.00004;
-    const double TDecayScaling = 0.00000001;
-	//to compute TDecay dynamically 
-	//vector holds "ideal" temperature values at certain execution times 
-	bool dynamic_tdecay;
-	vector<double> tau; 
+    const double TInitialScaling = 1;
+    const double TDecayScaling = 1;
+    //to compute TDecay dynamically 
+    //vector holds "ideal" temperature values at certain execution times 
+    bool dynamic_tdecay;
+    vector<double> tau; 
     double SANAtime;
     
     double T;

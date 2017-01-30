@@ -72,6 +72,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 	g2Edges = G2->getNumEdges();
 	score = objectiveScore;
 
+	cin >> order;
+
 	G1->getAdjMatrix(G1AdjMatrix);
 	G2->getAdjMatrix(G2AdjMatrix);
 	G1->getAdjLists(G1AdjLists);
@@ -354,8 +356,10 @@ void SANA::enableRestartScheme(double minutesNewAlignments, uint iterationsPerSt
 }
 
 double SANA::temperatureFunction(double iter, double TInitial, double TDecay) {
-	SANAtime = TDecayScaling*iter;
-	return TInitialScaling * TInitial * (constantTemp ? 1 : exp(-TDecay*SANAtime));
+	if( (int)iter % (int)iterationsPerStep/6 == 0)
+		elapsedEstimate = timer.elapsed();
+	double fraction = (elapsedEstimate / (minutes * 60));
+	return TInitial * (constantTemp ? 1 : exp(-TDecay*fraction));
 }
 
 double SANA::acceptingProbability(double energyInc, double T) {
@@ -842,12 +846,15 @@ void SANA::trackProgress(long long unsigned int i) {
 	cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
 	cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", sampled probability = " << trueAcceptingProbability() << endl;
     //cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << endl;
-	
-    // ofstream dump(mkdir("progress") + G1->getName() + "_" + G2->getName() + ".csv", std::ofstream::out | std::ofstream::app);
-    // dump.precision(4);
-    // dump << fixed;
-    // dump << timer.elapsed() << "," << currentScore << "," << avgEnergyInc << "," << T << "," << acceptingProbability(avgEnergyInc, T) << endl;
-    // dump.close();
+
+	std::ostringstream ss;
+	ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
+
+    ofstream dump(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(order) + ".csv", std::ofstream::out | std::ofstream::app);
+    dump.precision(10);
+    dump << fixed;
+    dump << timer.elapsed() << "," << currentScore << "," << avgEnergyInc << "," << T << "," << T << "," << trueAcceptingProbability() << "," << lowerTBound << "," << upperTBound << "," << (elapsedEstimate / minutes * 60) << endl;
+    dump.close();
 	if (not (printDetails or printScores or checkScores)) return;
 	Alignment Al(A);
 	//original one is commented out for testing sec 
@@ -890,7 +897,7 @@ void SANA::trackProgress(long long unsigned int i) {
 		{
 		    //cerr << "avgEnergyInc " << avgEnergyInc << " TInitialScaling " << TInitialScaling << " TInitial " << TInitial << " PBetween " << PBetween << " TDecayScaling " << TDecayScaling << " SANAtime " << SANAtime << endl;
 		    double shouldBe;
-		    shouldBe = -log(avgEnergyInc/(TInitialScaling*TInitial*log(PBetween)))/(SANAtime);
+		    shouldBe = -log(avgEnergyInc/(TInitial*log(PBetween)))/(SANAtime);
 		    if(SANAtime==0 || shouldBe != shouldBe || shouldBe <= 0) 
 			shouldBe = TDecay * (ratio >= 0 ? ratio*ratio : 0.5);
 		    cerr << "TDecay " << TDecay << " too ";
@@ -1171,12 +1178,23 @@ double SANA::findTInitialByLinearRegression(){
 	//ncreasing temperature until an acceptable probability is reached
 	int iteration = 1;
 	cerr << "Increasing temperature until an acceptable probability is reached. " << endl;
-	while(currentPBad < 0.985){
+	while(currentPBad < 0.99){
 		currentTemperature += 0.4;
 		currentPBad = pForTInitial(pow(10, currentTemperature));
 		cerr << iteration << ": Temperature: " << pow(10, currentTemperature) << " PBad: " << currentPBad << endl;
 		iteration++;
 	}
+
+	double otherPBad = pForTInitial(pow(10, get<5>(regressionResult)));
+	double otherTemperature = get<5>(regressionResult);
+	while(otherPBad > 0.00001){
+		otherTemperature -= 0.1;
+		otherPBad = pForTInitial(pow(10, otherTemperature));
+		cerr << "Temperature: " << pow(10, otherTemperature) << " PBad: " << otherPBad << endl;
+	}
+		
+	lowerTBound = pow(10,otherTemperature);
+
 	ofstream info(mkdir("output") + G1->getName() + "_" + G2->getName() + ".txt");
 	info << "lower_temperature " << pow(10, get<2>(regressionResult)) << endl;
 	info << "upper_temperature " << pow(10, get<5>(regressionResult)) << endl;
@@ -1189,7 +1207,21 @@ double SANA::findTInitialByLinearRegression(){
 	info << "final_temperature " << pow(10, currentTemperature) << endl;
 	info << "final_P(Bad) " << currentPBad << endl;
 	info.close();
+
+
+
+
+	ofstream points(mkdir("points") + G1->getName() + "_" + G2->getName() + ".csv");
+	//points << "lower_temperature " << pow(10, get<2>(regressionResult)) << endl;
+	//points << "upper_temperature " << pow(10, get<5>(regressionResult)) << endl;
+	points << -10 << "," << get<6>(regressionResult) << endl;
+	points << get<2>(regressionResult) << "," << get<6>(regressionResult) << endl;
+	points << get<5>(regressionResult) << "," << get<7>(regressionResult) << endl;
+	points << 10 << "," << get<7>(regressionResult) << endl;
+	points.close();
+
 	cerr << "final_temperature: " <<  pow(10, currentTemperature) << " Final P(Bad): " << currentPBad << endl;
+
 
 	double x1 = get<2>(regressionResult);
 	double x2 = get<5>(regressionResult);
@@ -1204,7 +1236,7 @@ double SANA::findTInitialByLinearRegression(){
 
 	// cerr << defaultfloat; was getting comiple error
 
-	lowerTBound = pow(10, get<2>(regressionResult));
+	lowerTBound = pow(10, otherTemperature);
 	upperTBound = pow(10, currentTemperature);
 	double iter_t = minutes*60*getIterPerSecond();
 
@@ -1444,11 +1476,11 @@ double SANA::searchTDecay(double TInitial, double minutes) {
     //commented out this method because it was bugged.
     
     //new TDecay method uses upper and lower tbounds
-	/*if(lowerTBound != 0){
-		double tdecay = -log(lowerTBound/(TInitialScaling* upperTBound)) / (-iter_t * TDecayScaling);
+	if(lowerTBound != 0){
+		double tdecay = -log(lowerTBound * 1.0 * TInitialScaling/(upperTBound)) / (1);
 		cerr << "\ntdecay: " << tdecay << "\n";
 		return tdecay;
-	}*/
+	}
 
 	//old TDecay method
 	vector<double> EIncs = energyIncSample();
@@ -1480,7 +1512,7 @@ double SANA::searchTDecay(double TInitial, double minutes) {
 	cerr << "Final epsilon: " << epsilon << endl;
 	
 
-	double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
+	double lambda = log((TInitial)/epsilon)/(iter_t);
 	cerr << "Final T_decay: " << lambda << endl;
 	return lambda;
 }
@@ -1516,7 +1548,7 @@ double SANA::searchTDecay(double TInitial, uint iterations) {
 	cerr << "Final epsilon: " << epsilon << endl;
 	long long unsigned int iter_t = (long long unsigned int)(iterations)*100000000;
 
-	double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
+	double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t);
 	cerr << "Final T_decay: " << lambda << endl;
 	return lambda;
 }
@@ -1539,6 +1571,11 @@ void SANA::initIterPerSecond() {
 
 	initializedIterPerSecond = true;
 	iterPerSecond = res;
+	std::ostringstream ss;
+	ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
+	ofstream header(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(order) + ".csv");
+	header << "time,score,avgEnergyInc,T,realTemp,pbad,lower,higher,timer" << endl;
+	header.close();
 }
 
 void SANA::setDynamicTDecay() {
