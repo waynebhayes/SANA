@@ -14,7 +14,8 @@ OTHER_SRC =                                             \
 	src/test.cpp                                        \
 	src/init/GenerateOrbitMatrix.cpp                    \
 	src/Graph.cpp                                       \
-	src/utils/xrand.cpp                               \
+	src/utils/xrand.cpp                                 \
+	src/Database.cpp                                    \
 
 
 SRCS = $(OTHER_SRC)
