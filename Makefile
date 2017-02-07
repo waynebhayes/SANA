@@ -100,6 +100,7 @@ OTHER_SRC = 							\
 	src/complementaryProteins.cpp                       	\
 	src/computeGraphlets.cpp                            	\
 	src/Graph.cpp                                       	\
+	src/WeightedGraph.cpp                                   \
 	src/main.cpp                                        	\
 	src/report.cpp
 
