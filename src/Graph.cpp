@@ -17,7 +17,8 @@ Graph Graph::multGraph(string name, uint path) {
     g.name = name;
     return g;
 }
-void Graph::setMaxGraphletSize(double number){
+
+void Graph::setMaxGraphletSize(double number) {
 	if (number == 5) // Only options are 4 or 5
 	    Graph::maxGraphletSize = number;
 	//Graph::computeGraphletDegreeVectors();
@@ -53,13 +54,13 @@ string Graph::getName() const {
 }
 
 Graph::Graph() :
+    nodeTypes(vector<string>(0)),
     edgeList(vector<vector<ushort> > (0)),
-    adjMatrix(vector<vector<bool> > (0)),
     adjLists(vector<vector<ushort> > (0)),
     lockedList(vector<bool> (0)),
     lockedTo(vector<string>(0)),
     lockedCount(0),
-    nodeTypes(vector<string>(0))
+    adjMatrix(vector<vector<bool> > (0))
     {}
 
 Graph::Graph(const Graph& G) {
