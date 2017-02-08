@@ -33,30 +33,75 @@ void WeightedGraph::writeGWEdges(ofstream& outfile) {
     for (uint i = 0; i < numEdges; i++)  {
         ushort node1 = edgeList[i][0];
         ushort node2 = edgeList[i][1];
-        outfile << node1+1 << ' ' <<  node2+1 << ' ' << adjMatrix[node1][node2]
-            << " |{}|" << endl;
+        outfile << node1+1 << ' ' <<  node2+1 << " 0 |{" << adjMatrix[node1][node2]
+            << "}|" << endl;
     }
 }
-//void WeightedGraph::edgeList2gw(string fin, string fout) {
-//    vector<string> nodes = removeDuplicates(fileToStrings(fin));
-//    map<string,uint> nodeName2IndexMap;
-//    uint numNodes = nodes.size();
-//    for (uint i = 0; i < numNodes; i++) {
-//        nodeName2IndexMap[nodes[i]] = i;
-//    }
-//    vector<vector<string> > edges = fileToStringsByLines(fin);
-//    vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (2));
-//
-//    for (uint i = 0; i < edges.size(); i++) {
-//        if (edges[i].size() != 2) {
-//            throw runtime_error("File not in edge-list format: "+fin);
-//        }
-//        string node1 = edges[i][0];
-//        string node2 = edges[i][1];
-//        uint index1 = nodeName2IndexMap[node1];
-//        uint index2 = nodeName2IndexMap[node2];
-//        edgeList[i][0] = index1;
-//        edgeList[i][1] = index2;
-//    }
-//    saveInGWFormat(fout, nodes, edgeList);
-//}
+
+void WeightedGraph::loadGwFile(const string& fileName) {
+    //this function could be improved to deal with blank lines and comments
+    stringstream errorMsg;
+
+    ifstream infile(fileName.c_str());
+    string line;
+    //ignore header
+    for (int i = 0; i < 4; i++) getline(infile, line);
+    //read number of nodes
+    int n;
+    getline(infile, line);
+    istringstream iss(line);
+    if (!(iss >> n) or n <= 0) {
+        errorMsg << "Failed to read node number: " << line;
+        throw runtime_error(errorMsg.str().c_str());
+    }
+    // Throw away node names
+    string node;
+    for (int i = 0; i < n; i++) {
+        getline(infile, line);
+        istringstream iss(line);
+        if (!(iss >> node)) {
+            errorMsg << "Failed to read node " << i << " of " << n << ": " << line << " (" << node << ")";
+            throw runtime_error(errorMsg.str().c_str());
+        }
+    }
+    // Read number of edges
+    int m;
+    getline(infile, line);
+    istringstream iss2(line);
+    if (!(iss2 >> m)) {
+        errorMsg << "Failed to read edge number: " << line;
+        throw runtime_error(errorMsg.str().c_str());
+    }
+
+    adjLists = vector<vector<ushort> > (n, vector<ushort>(0));
+    adjMatrix = vector<vector<ushort> > (n, vector<ushort>(n, 0));
+    edgeList = vector<vector<ushort> > (m, vector<ushort>(2));
+    lockedList = vector<bool> (n, false);
+    lockedTo = vector<string> (n, "");
+    nodeTypes = vector<string> (n, "");
+
+    geneCount = miRNACount = 0;
+    //read edges
+    for (int i = 0; i < m; i++) {
+        getline(infile, line);
+        istringstream iss(line);
+        ushort node1, node2, reverseEdge, edge;
+        char dump;
+        if (!(iss >> node1 >> node2 >> reverseEdge >> dump >> dump >> edge)) {
+            errorMsg << "Failed to read edge: " << line;
+            throw runtime_error(errorMsg.str().c_str());
+        }
+
+        node1--; node2--; //-1 because of remapping
+
+        edgeList[i][0] = node1;
+        edgeList[i][1] = node2;
+
+        adjMatrix[node1][node2] = adjMatrix[node2][node1] = edge;
+        adjLists[node1].push_back(node2);
+        adjLists[node2].push_back(node1);
+    }
+    infile.close();
+    initConnectedComponents();
+}
+
