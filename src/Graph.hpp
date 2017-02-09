@@ -152,8 +152,8 @@ protected:
     vector<vector<uint> > computeGraphletDegreeVectors();
 
     //places in dist a matrix with the distance between every pair of nodes (a -1 indicates infinity)
-    vector<vector<ushort>> edgeList; //edges in no particular order
 protected:
+    vector<vector<ushort>> edgeList; //edges in no particular order
     vector<vector<ushort>> adjLists; //neighbors in no particular order
     vector<bool> lockedList;  // shows which nodes are locked
     vector<string> lockedTo;  // name of node we lock to in other graph
