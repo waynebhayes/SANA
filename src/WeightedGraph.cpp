@@ -14,28 +14,17 @@ void WeightedGraph::saveInGWFormat(string outputFile) {
     for (uint i = 0; i < numNodes; i++) {
         nodeNames[i] = "node"+intToString(i);
     }
-    saveInGWFormat(outputFile, nodeNames, edgeList);
+    saveInGWFormat(outputFile, nodeNames, edgeList, adjMatrix);
 }
 
 void WeightedGraph::saveInGWFormat(string outputFile, const vector<string>& nodeNames,
-    const vector<vector<ushort>>& edgeList) {
+    const vector<vector<ushort>>& edgeList, const vector<vector<ushort>>& adjMatrix) {
     ofstream outfile;
     outfile.open(outputFile.c_str());
 
     writeGWHeader(outfile);
     writeGWNodes(outfile, nodeNames);
-    writeGWEdges(outfile);
-}
-
-void WeightedGraph::writeGWEdges(ofstream& outfile) {
-    uint numEdges = edgeList.size();
-    outfile << numEdges << endl;
-    for (uint i = 0; i < numEdges; i++)  {
-        ushort node1 = edgeList[i][0];
-        ushort node2 = edgeList[i][1];
-        outfile << node1+1 << ' ' <<  node2+1 << " 0 |{" << adjMatrix[node1][node2]
-            << "}|" << endl;
-    }
+    writeGWEdges(outfile, edgeList, adjMatrix);
 }
 
 void WeightedGraph::loadGwFile(const string& fileName) {
@@ -102,6 +91,150 @@ void WeightedGraph::loadGwFile(const string& fileName) {
         adjLists[node2].push_back(node1);
     }
     infile.close();
+    initConnectedComponents();
+}
+
+void WeightedGraph::writeGWEdges(ofstream& outfile, const vector<vector<ushort>>& edgeList, 
+                                const vector<vector<ushort>>& adjMatrix) {
+    uint numEdges = edgeList.size();
+    outfile << numEdges << endl;
+    for (uint i = 0; i < numEdges; i++)  {
+        ushort node1 = edgeList[i][0];
+        ushort node2 = edgeList[i][1];
+        outfile << node1+1 << ' ' <<  node2+1 << " 0 |{" << adjMatrix[node1][node2]
+            << "}|" << endl;
+    }
+}
+
+void WeightedGraph::getAdjMatrix(vector<vector<ushort>>& adjMatrixCopy) const {
+    uint n = getNumNodes();
+    adjMatrixCopy = vector<vector<ushort>> (n, vector<ushort> (n));
+    for (uint i = 0; i < n; i++) {
+        for (uint j = 0; j < n; j++) adjMatrixCopy[i][j] = adjMatrix[i][j];
+    }
+}
+
+WeightedGraph WeightedGraph::nodeInducedSubgraph(const vector<ushort>& nodes) const {
+    uint n = nodes.size();
+    vector<ushort> rev = reverseMapping(nodes, getNumNodes());
+    unordered_set<ushort> nodeSet(nodes.begin(), nodes.end());
+    WeightedGraph G;
+    G.adjLists = vector<vector<ushort> > (n, vector<ushort> (0));
+    G.adjMatrix = vector<vector<ushort> > (n, vector<ushort> (n, 0));
+    //only add edges between induced nodes
+    for (const auto& edge: edgeList) {
+        ushort node1 = edge[0], node2 = edge[1];
+        if (nodeSet.count(node1) and nodeSet.count(node2)) {
+            ushort newNode1 = rev[node1];
+            ushort newNode2 = rev[node2];
+            G.adjLists[newNode1].push_back(newNode2);
+            G.adjLists[newNode2].push_back(newNode1);
+            vector<ushort> newEdge(2);
+            newEdge[0] = newNode1;
+            newEdge[1] = newNode2;
+            G.edgeList.push_back(newEdge);
+            G.adjMatrix[newNode1][newNode2] = G.adjMatrix[newNode2][newNode1] = adjMatrix[node1][node2];
+        }
+    }
+    G.initConnectedComponents();
+    return G;
+}
+
+void WeightedGraph::printStats(int numConnectedComponentsToPrint, ostream& stream) const {
+    stream << "n    = " << getNumNodes() << endl;
+    stream << "m    = " << getNumEdges() << endl;
+    stream << "#connectedComponents = " << getNumConnectedComponents() << endl;
+    stream << "Largest connectedComponents (nodes, edges) = ";
+    for (int i = 0; i < min(numConnectedComponentsToPrint, getNumConnectedComponents()); i++) {
+        const vector<ushort>& nodes = getConnectedComponents()[i];
+        WeightedGraph H = nodeInducedSubgraph(nodes);
+        stream << "(" << H.getNumNodes() << ", " << H.getNumEdges() << ") ";
+    }
+    stream << endl;
+}
+
+void WeightedGraph::addEdge(ushort node1, ushort node2) {
+    adjMatrix[node1][node2] = adjMatrix[node2][node1] = 1;
+    vector<ushort> edge(2);
+    edge[0] = node1;
+    edge[1] = node2;
+    edgeList.push_back(edge);
+    adjLists[node1].push_back(node2);
+    adjLists[node2].push_back(node1);
+}
+
+void WeightedGraph::addRandomEdge() {
+    ushort node1 = 0, node2 = 0;
+    while (node1 == node2 or adjMatrix[node1][node2]) {
+        node1 = randomNode();
+        node2 = randomNode();
+    }
+    addEdge(node1, node2);
+}
+
+void WeightedGraph::removeRandomEdge() {
+    ushort node1 = 0, node2 = 0;
+    while (node1 == node2 or not adjMatrix[node1][node2]) {
+        node1 = randomNode();
+        node2 = randomNode();
+    }
+    removeEdge(node1, node2);
+}
+
+void WeightedGraph::removeEdge(ushort node1, ushort node2) {
+    adjMatrix[node1][node2] = adjMatrix[node2][node1] = 0;
+    uint m = getNumEdges();
+    //update edge list
+    for (uint i = 0; i < m; i++) {
+        if ((edgeList[i][0] == node1 and edgeList[i][1] == node2) or
+            (edgeList[i][0] == node2 and edgeList[i][1] == node1)) {
+            vector<ushort> lastEdge = edgeList[m-1];
+            edgeList[i] = lastEdge;
+            edgeList.pop_back();
+            break;
+        }
+    }
+    //update adjacency lists
+    for (uint i = 0; i < adjLists[node1].size(); i++) {
+        if (adjLists[node1][i] == node2) {
+            ushort lastNeighbor = adjLists[node1][adjLists[node1].size()-1];
+            adjLists[node1][i] = lastNeighbor;
+            adjLists[node1].pop_back();
+            break;
+        }
+    }
+    for (uint i = 0; i < adjLists[node2].size(); i++) {
+        if (adjLists[node2][i] == node1) {
+            ushort lastNeighbor = adjLists[node2][adjLists[node2].size()-1];
+            adjLists[node2][i] = lastNeighbor;
+            adjLists[node2].pop_back();
+            break;
+        }
+    }
+}
+
+void WeightedGraph::addRandomEdges(double addedEdgesProportion) {
+    uint n = (double) getNumNodes() * addedEdgesProportion;
+    for (uint i = 0; i <= n; i++) {
+        addRandomEdge();
+    }
+    initConnectedComponents();
+}
+
+void WeightedGraph::removeRandomEdges(double removedEdgesProportion) {
+    uint n = (double) getNumNodes() * removedEdgesProportion;
+    for (uint i = 0; i <= n; i++) {
+        removeRandomEdge();
+    }
+    initConnectedComponents();
+}
+
+void WeightedGraph::rewireRandomEdges(double rewiredEdgesProportion) {
+    uint n = (double) getNumNodes() * rewiredEdgesProportion;
+    for (uint i = 0; i <= n; i++) {
+        addRandomEdge();
+        removeRandomEdge();
+    }
     initConnectedComponents();
 }
 
