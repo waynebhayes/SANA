@@ -156,6 +156,10 @@ if __name__ == "__main__":
                 geneListA.append(geneA)
                 compareList.append(geneB)
 
+    if not (args.sana_out or args.alignment_file):
+        print("No alignment file")
+        sys.exit(-2);
+
     ontology = ontologies.load(GENE_ONTOLOGY_FILE)
     ac = AnnotationCorpus.AnnotationCorpus(ontology)
     ac.parse(acFile, acSourceType, acParams)
@@ -167,10 +171,15 @@ if __name__ == "__main__":
             for geneA,geneB in zip(geneListA, compareList):
                 scores = [scoreFunction.SemSim(geneA, geneB, root) 
                         for root in ontologyRoots]
-                maxScore =  max(score for score in scores if score != None)
-                f.write("{}\t{}\t{}\t{}\r\n".format(args.mode,x,y,z))
+                try:
+                    maxScore =  max(score for score in scores if score != None)
+                except:
+                    maxScore = None
+                f.write("{}\t{}\t{}\t{}\r\n".format(args.mode,geneA,geneB,maxScore))
     else:
         for geneA,geneB in zip(geneListA, compareList):
-            score =  max(scoreFunction.SemSim(geneA, geneB, root) 
-                    for root in ontologyRoots)
+            try:
+                score = max(x for x in scores if x != None)
+            except:
+                score = None
             print(args.mode,geneA,geneB,score,sep="\t")
