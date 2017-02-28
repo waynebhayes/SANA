@@ -33,6 +33,7 @@ void Graph::edgeList2gw(string fin, string fout) {
     }
     vector<vector<string> > edges = fileToStringsByLines(fin);
     vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (2));
+    stringstream errorMsg;
 
     for (uint i = 0; i < edges.size(); i++) {
         if (edges[i].size() != 2) {
@@ -40,6 +41,10 @@ void Graph::edgeList2gw(string fin, string fout) {
         }
         string node1 = edges[i][0];
         string node2 = edges[i][1];
+	if(node1 == node2) {
+	    errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1 << '\n';
+	    throw runtime_error(errorMsg.str().c_str());
+	}
         uint index1 = nodeName2IndexMap[node1];
         uint index2 = nodeName2IndexMap[node2];
         edgeList[i][0] = index1;
@@ -187,6 +192,14 @@ void Graph::loadGwFile(const string& fileName) {
         }
         node1--; node2--; //-1 because of remapping
 
+        if(adjMatrix[node1][node2] || adjMatrix[node2][node1]){
+	    errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
+	    throw runtime_error(errorMsg.str().c_str());
+	}
+        if(node1 == node2) {
+	    errorMsg << "self-loops not allowed, node number " << node1 << '\n';
+	    throw runtime_error(errorMsg.str().c_str());
+	}
         edgeList[i][0] = node1;
         edgeList[i][1] = node2;
 
@@ -270,7 +283,6 @@ void Graph::multGwFile(const string& fileName, uint path) {
                 }
             }
     }
-
 
     edgeList = vector<vector<ushort> > (elements, vector<ushort>(2));
     int count = 0;
