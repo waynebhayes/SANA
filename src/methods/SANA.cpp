@@ -1144,8 +1144,9 @@ double SANA::findTInitialByLinearRegression(){
 	//pull the temperature bounds from the tuple and strech them a bit
 	double lowerEnd = get<2>(regressionResult);
 	double upperEnd = get<5>(regressionResult);
+	double wing = (upperEnd - lowerEnd) / 2;
 	//fill the score map with 30 more pairs betweem the boundaries
-	for(double i = lowerEnd; i < upperEnd; i += (upperEnd - lowerEnd) / 40.0){
+	for(double i = lowerEnd - wing; i < upperEnd + wing; i += (upperEnd - lowerEnd) / 40.0){
 		if(cache.find(i) == cache.end()){
 			double score = scoreForTInitial(pow(10, i));
 		    cacheOutStream << i << " " << score << endl;
