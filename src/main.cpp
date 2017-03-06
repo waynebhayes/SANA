@@ -23,13 +23,14 @@ int main(int argc, char* argv[]) {
     ArgumentParser args(stringArgs, doubleArgs, boolArgs, vectorArgs);
     args.parseArgs(argc, argv, defaultArguments, true);
 
-    if(args.doubles["-seed"] != 0) {
-        setSeed(args.doubles["-seed"]);
-    }
     system("hostname -f >&2");
 
     args.writeArguments();
 
+    if(args.doubles["-seed"] != 0) {
+        setSeed(args.doubles["-seed"]);
+    }
+    cerr << "Seed: " << getRandomSeed() << endl;
     Mode* mode = selectMode(args);
     mode->run(args);
     delete mode;
