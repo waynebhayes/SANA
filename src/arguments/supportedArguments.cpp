@@ -9,12 +9,12 @@ vector<string> vectorArgs;
 
 //This file contains every argument supported by SANA contained basically inside an array, each element in the array contains 6 fields.
 //A Description of each field:
-//	"Option" is the name we use to use an option when we call ./sana -Option ARG
+//	"Option" is the name we use to set the value of a specific option when executing SANA. Example: ./sana -Option ARG
 //	"Type" Describes what the datatype/datastructure is expected as an argument for that option.
 //	"Default" Means what the value of the default argument for an option is (if unspecified when ./sana is invoked).
-//	"Title" Gives a more general title of the option that serves to describe the option better than the first field.
+//	"Title" Gives a more general title of the option that serves to describe the option better than the first field "Option" does.
 //	"Description" Provides a small description for the option.
-//	"0/1", or the Last field is, for each element entry, either a 0 or 1. 1 means the option can be accessed from alternated interfaces controlling SANA (when SANA is not run from a shell).
+//	"0/1", or the Last field is, for each element entry, either a '0' or '1'. '1' means the option can be accessed from other interfaces controlling SANA (when SANA is NOT run from a shell). A '0' means it is not accessible.
 
 vector<array<string, 6>> supportedArguments = {
 	{ "Option", "Type", "Default", "Title", "Description", "0/1" },
