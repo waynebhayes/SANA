@@ -6,6 +6,9 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <map>
+#include <functional>
+#include <iomanip>
 
 #include "Measure.hpp"
 
@@ -28,16 +31,33 @@ public:
     string toString() const;
 
     double getSumLocalWeight() const;
-    vector<vector<float> > getAggregatedLocalSims() const;
+    //Please note that the return types are references
+    //to private variables, similar to C# get {}
+    //The const postfix has been therefore been removed
+    //because these functions can lead to state changes.
+    vector<vector<float> >& getAggregatedLocalSims();
+    map<string, vector<vector<float> > >& getLocalSimMap();
+
     int getNumberOfLocalMeasures() const;
     void rebalanceWeight(string& input);
     void rebalanceWeight();
+    void writeLocalScores(ostream & outfile, Graph const & G1, Graph const & G2, Alignment const & A) const;
 
 private:
+    typedef vector<vector<float> > SimMatrix;
+    typedef function<void(SimMatrix &, uint const &, uint const &)> SimMatrixRecipe;
     vector<Measure*> measures;
     vector<double> weights;
-
+    SimMatrix localAggregatedSim;
+    map<string, SimMatrix> localScoreSimMap;
+    
     void initn1n2(uint& n1, uint& n2) const;
+
+    //Abstracts the construction of the similarity matrix. Instead of the get..()
+    //functions producing possibly different implementations of similarity matrices,
+    //a common type of similarity matrix is produced in initSim and populated
+    //by a Recipe function.
+    vector<vector<float> > initSim(SimMatrixRecipe Recipe) const;
 
     void clearWeights();
     void setWeight(const string& measureName, double weight);

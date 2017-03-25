@@ -13,9 +13,9 @@ using namespace std;
 int main(int argc, char* argv[]) {
     if(argc == 1) {
         cerr << "Usage: ./sana [OPTION] [ARG(S)] [OPTION] [ARG(S)]...\n"
-	     << "Try \'./sana --help\' or \'./sana -h\' for more information."
-	     << endl;
-	exit(0);
+       << "Try \'./sana --help\' or \'./sana -h\' for more information."
+       << endl;
+        exit(0);
     }
 
     validateAndAddArguments();
