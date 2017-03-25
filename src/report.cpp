@@ -75,7 +75,7 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   const MeasureCombination& M, Method* method, string reportFile) {
   ofstream outfile,
            alignfile;
-  reportFile = checkFileNameAndOpenOutFile("report", reportFile, outfile, G1, G2, method, A);
+  reportFile = ensureFileNameExistsAndOpenOutFile("report", reportFile, outfile, G1, G2, method, A);
   alignfile.open((reportFile + ".align").c_str());  
 
   A.write(outfile);
@@ -85,16 +85,21 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   alignfile.close();
 }
 
+/*Writes out the local scores file in this format (example only of course):
+Pairwise Alignment  LocalMeasure1       LocalMeasure2       Weighted Sum
+821	723            0.334               0.214               0.548
+*/
 void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
   MeasureCombination const & M, Method * const method, string & localMeasureFile) {
   ofstream outfile;
-  checkFileNameAndOpenOutFile("local measure", localMeasureFile, outfile, G1, G2, method, A);
+  ensureFileNameExistsAndOpenOutFile("local measure", localMeasureFile, outfile, G1, G2, method, A);
   
   M.writeLocalScores(outfile, G1, G2, A);
   outfile.close();
 }
 
-string checkFileNameAndOpenOutFile(string const & fileType, string outFileName, ofstream & outfile, Graph const & G1, Graph const & G2, Method * const method, Alignment const & A) {
+//"Ensure" here means ensure that there is a valid file to output to.
+string ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFileName, ofstream & outfile, Graph const & G1, Graph const & G2, Method * const method, Alignment const & A) {
   string G1Name = G1.getName();
   string G2Name = G2.getName();
   if (outFileName == "") {
