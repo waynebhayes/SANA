@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <iterator>
 #include <string>
+#include <functional>
 
 MeasureCombination::MeasureCombination(){
 }
@@ -190,6 +191,8 @@ uint MeasureCombination::numMeasures() const {
 }
 
 void MeasureCombination::initn1n2(uint& n1, uint& n2) const {
+    if(n1 != 0 && n2 != 0)
+      return;
     for (uint i = 0; i < numMeasures(); i++) {
         Measure* m = measures[i];
         if (m->isLocal()) {
@@ -202,24 +205,81 @@ void MeasureCombination::initn1n2(uint& n1, uint& n2) const {
     throw runtime_error("There are no local measures");
 }
 
-vector<vector<float> > MeasureCombination::getAggregatedLocalSims() const {
-    uint n1, n2;
-    initn1n2(n1, n2);
-    //combine all locals into a new local
-    vector<vector<float> > combinedSims(n1, vector<float> (n2, 0));
-    for (uint i = 0; i < numMeasures(); i++) {
-        Measure* m = measures[i];
-        double w = weights[i];
-        if (m->isLocal() and w > 0) {
-            vector<vector<float> >* mSims = ((LocalMeasure*) m)->getSimMatrix();
-            for (uint i = 0; i < n1; i++) {
-                for (uint j = 0; j < n2; j++) {
-                    combinedSims[i][j] += w * (*mSims)[i][j];
+typedef vector<vector<float> > SimMatrix;
+typedef function<void(SimMatrix &, uint const &, uint const &)> SimMatrixRecipe;
+
+//Returns a reference to the similarity matrix of the weighted sum of local measures.
+//Only initializes the matrix on the first call.
+vector<vector<float> >& MeasureCombination::getAggregatedLocalSims() {
+    //A flag to check if the map has been initialized.
+    static bool is_init = false;
+    //The "recipe" that describes how to create the sim matrix,
+    //namely to combine all locals into a new localdo.
+    static function<void(vector<vector<float> > &, uint const &, uint const &)> const initFunc =
+      [this] (vector<vector<float> > & sim, uint const & n1, uint const & n2) {
+        Measure* m;
+        double w;
+        for (uint i = 0; i < numMeasures(); i++) {
+            m = measures[i];
+            w = weights[i];
+            if (m->isLocal() and w > 0) {
+                vector<vector<float> >* mSims = ((LocalMeasure*) m)->getSimMatrix();
+                for (uint i = 0; i < n1; i++) {
+                    for (uint j = 0; j < n2; j++) {
+                        sim[i][j] += w * (*mSims)[i][j];
+                    }
                 }
             }
         }
+      };
+    if(!is_init) {
+      is_init = true;
+      localAggregatedSim = initSim(initFunc);
     }
-    return combinedSims;
+    return localAggregatedSim;
+}
+
+//Returns a map defined as LocalMeasure (string) -> SimMatrix
+//Returns a reference to the map, initializing it on the first call
+//and returning the existing map on subsequent calls.
+map<string, SimMatrix>& MeasureCombination::getLocalSimMap() {
+    Measure* m;
+    double w;
+    //A flag to check if the map has been initialized.
+    static bool is_init = false;
+    //The "recipe" that describes how to create the sim matrix.
+    static SimMatrixRecipe const initFunc =
+        [this, &m, &w] (SimMatrix & sim, uint const & n1, uint const & n2) {
+            SimMatrix* mSims = ((LocalMeasure*) m)->getSimMatrix();
+            for (uint i = 0; i < n1; i++) {
+                for (uint j = 0; j < n2; j++) {
+                    sim[i][j] = w * (*mSims)[i][j];
+                }
+            }
+        };
+    if(!is_init) {
+      is_init = true;
+      for (uint i = 0; i < numMeasures(); ++i) {
+          m = measures[i];
+          w = weights[i];
+          if (m->isLocal() and w > 0) {
+              localScoreSimMap[m->getName()] = initSim(initFunc);
+          }
+      }
+    }
+    return localScoreSimMap;
+}
+
+//Abstracts the construction of the similarity matrix. Instead of the get..()
+//functions producing possibly different implementations of similarity matrices,
+//a common type of similarity matrix is produced in initSim and populated
+//by a Recipe function.
+SimMatrix MeasureCombination::initSim(SimMatrixRecipe recipe) const {
+  static uint n1 = 0, n2 = 0;
+  initn1n2(n1, n2);
+  vector<vector<float> > sim(n1, vector<float> (n2, 0));
+  recipe(sim, n1, n2);
+  return sim;
 }
 
 int MeasureCombination::getNumberOfLocalMeasures() const {
@@ -259,4 +319,30 @@ void MeasureCombination::setWeight(const string& measureName, double weight) {
         }
     }
     throw runtime_error("Measure not found: "+measureName);
+}
+
+/*Writes out the local scores file in this format (example only of course):
+Pairwise Alignment  LocalMeasure1       LocalMeasure2       Weighted Sum
+821	723            0.334               0.214               0.548
+*/
+void MeasureCombination::writeLocalScores(ostream & outFile, Graph const & G1, Graph const & G2, Alignment const & A) const {
+	map<ushort,string> mapG1 = G1.getIndexToNodeNameMap();
+	map<ushort,string> mapG2 = G2.getIndexToNodeNameMap();
+  int const COL_WIDTH = 20,
+            PRECISION = 3;
+  outFile << setw(COL_WIDTH) << left << "Pairwise Alignment";
+  for(auto const & mapping : localScoreSimMap)
+      outFile << setw(COL_WIDTH) << left << mapping.first;
+  outFile << setw(COL_WIDTH) << left << "Weighted Sum" << endl;
+  ostringstream edgeStream;
+  for(uint i = 0; i < A.size(); ++i) {
+      edgeStream << mapG1[i] << "\t" << mapG2[A[i]];
+      outFile << setw(COL_WIDTH) << edgeStream.str();
+      edgeStream.str("");
+      edgeStream.clear();
+      for(auto const & mapping : localScoreSimMap)
+          outFile << setw(COL_WIDTH) << left << setprecision(PRECISION) << mapping.second[i][A[i]];
+      outFile << setw(COL_WIDTH) << left << setprecision(PRECISION) << localAggregatedSim[i][A[i]] << endl;
+  }
+  
 }

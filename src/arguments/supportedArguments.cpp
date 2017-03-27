@@ -25,6 +25,7 @@ vector<array<string, 6>> supportedArguments = {
 	{ "-fg1", "string", "yeast", "Network 1", "Initializes the network G1 with an external file. Make sure that the name and path of the file exists.", "1" },
 	{ "-fg2", "string", "human", "Network 2", "Initializes the network G2 with an external file. Make sure that the name and path of the file exists. The network of G2 should have more nodes than G1.", "1" },
 	{ "-o", "string", "sana", "Output File basename", "Specifies the basename of output file; actual output files will append (.out, .align, etc) to this.", "0" },
+  { "-localScoresFile", "string", "localScores", "Local Scores File basename", "Specifies the basename of the local score file; actual output files will append (.out, .align, etc) to this.", "0"},
 	{ "-t", "double", "5", "Runtime in minutes", "The number of minutes to run SANA. Must be non-zero, no upper limit.", "1" },
 	{ "-pathmap1", "integerS", "", "Path Map G1", "Allows mapping a path in G1 to an edge in G2, as if the path were a single edge in G2. Implemented by raising the adjacency list to this power (an integer).", "1" },
 	{ "-pathmap2", "integerS", "", "Path Map G2", "Maps a path in G2 to an edge in G1, as if the path were a single edge in G1.", "1" },
@@ -195,7 +196,7 @@ vector<array<string, 6>> supportedArguments = {
 };
 
 void validateAndAddArguments(){
-	for(int i = 1; i < supportedArguments.size(); i++){
+	for(uint i = 1; i < supportedArguments.size(); ++i){
 		if(supportedArguments[i][2] != "banner"){
 			if(supportedArguments[i][0] == "") {
 				cerr << "Option: #" << i+1 << " is empty for the Option field. Please specify the Option name in the supportedArguments.cpp file.";
