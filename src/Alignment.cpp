@@ -186,11 +186,11 @@ void Alignment::write(ostream& stream) const {
 	stream << endl;
 }
 
-void Alignment::writeEdgeList(const Graph* G1, const Graph* G2, ostream& stream) const {
+void Alignment::writeEdgeList(const Graph* G1, const Graph* G2, ostream& edgeListStream) const {
 	map<ushort,string> mapG1 = G1->getIndexToNodeNameMap();
-	map<ushort,string> mapG2 = G2->getIndexToNodeNameMap();
-	for (uint i = 0; i < size(); i++) {
-		stream << mapG1[i] << "\t" << mapG2[A[i]] << endl;
+	map<ushort,string> mapG2 = G2->getIndexToNodeNameMap(); 
+	for (uint i = 0; i < size(); ++i) {
+		edgeListStream << mapG1[i] << "\t" << mapG2[A[i]] << endl;
 	}
 }
 
