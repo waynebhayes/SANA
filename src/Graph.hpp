@@ -1,7 +1,7 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#include<set>
+#include <set>
 #include <string>
 #include <vector>
 #include <utility>
@@ -59,7 +59,11 @@ public:
     uint getNumEdges() const;
     const vector<vector<ushort> >& getConnectedComponents() const;
     uint getNumConnectedComponents() const;
+#ifndef WEIGHTED
     void getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const;
+#else
+    void getAdjMatrix(vector<vector<ushort> >& adjMatrixCopy) const;
+#endif
     void getAdjLists(vector<vector<ushort> >& adjListsCopy) const;
     void getEdgeList(vector<vector<ushort> > & edgeListCopy) const;
     vector<string> getNodeNames() const;
@@ -142,7 +146,11 @@ private:
     string name;
     //double maxsize;
     vector<vector<ushort> > edgeList; //edges in no particular order
+#ifndef WEIGHTED
     vector<vector<bool> > adjMatrix;
+#else
+    vector<vector<ushort> > adjMatrix;
+#endif
     vector<vector<ushort> > adjLists; //neighbors in no particular order
 
     //list of the nodes of each connected component, sorted from larger to smaller

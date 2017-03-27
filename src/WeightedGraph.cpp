@@ -76,7 +76,7 @@ void WeightedGraph::loadGwFile(const string& fileName) {
         istringstream iss(line);
         ushort node1, node2, reverseEdge, edge;
         char dump;
-        if (!(iss >> node1 >> node2 >> reverseEdge >> dump >> dump >> edge)) {
+        if (!(iss >> node1 >> node2 >> dump >> dump >> dump >> edge)) {
             errorMsg << "Failed to read edge: " << line;
             throw runtime_error(errorMsg.str().c_str());
         }

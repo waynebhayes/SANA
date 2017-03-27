@@ -20,7 +20,11 @@ Importance::~Importance() {
 vector<vector<double> > Importance::initEdgeWeights(const Graph& G) {
     uint n = G.getNumNodes();
     vector<vector<double> > edgeWeights(n, vector<double> (n, 0));
+#ifndef WEIGHTED
     vector<vector<bool> > adjMatrix(n, vector<bool> (n));
+#else
+    vector<vector<ushort> > adjMatrix(n, vector<ushort> (n));
+#endif
     G.getAdjMatrix(adjMatrix);
     for (uint i = 0; i < n; i++) {
         for (uint j = 0; j < n; j++) {
