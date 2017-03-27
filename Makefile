@@ -27,7 +27,7 @@ ARGUMENTS_SRC = 							\
 	src/arguments/supportedArguments.cpp				\
 	src/arguments/defaultArguments.cpp
 
-MEASUSES_SRCS = 							\
+MEASURES_SRCS = 							\
 	src/measures/EdgeCorrectness.cpp 				\
 	src/measures/GoAverage.cpp      				\
 	src/measures/GoCoverage.cpp      				\
@@ -66,7 +66,7 @@ METHODS_SRC =   							\
 	src/methods/WeightedAlignmentVoter.cpp  			\
 	src/methods/Dijkstra.cpp 
 
-METHOD_WRAPERS_SRC =    						\
+METHOD_WRAPPERS_SRC =    						\
 	src/methods/wrappers/WrappedMethod.cpp				\
 	src/methods/wrappers/HubAlignWrapper.cpp 			\
 	src/methods/wrappers/LGraalWrapper.cpp  			\
@@ -104,7 +104,7 @@ OTHER_SRC = 							\
 	src/report.cpp
 
 
-SRCS = $(UTILS_SRC) $(MEASUSES_SRCS) $(METHODS_SRC) $(METHOD_WRAPERS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)
+SRCS = $(UTILS_SRC) $(MEASURES_SRCS) $(METHODS_SRC) $(METHOD_WRAPPERS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)
 OBJDIR = _objs
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
@@ -128,7 +128,7 @@ $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CC) -c $(INCLUDES) -o $@ $< $(CXXFLAGS)
 
-# TEST_SRC is anyting that ends in _UT (unit test)
+# TEST_SRC is anything that ends in _UT (unit test)
 TEST_SRC = $(wildcard test/*_UT.cpp)
 # TEST_DEPENDS is all the OBJS without main and Gtest
 _MAIN_OBJ = $(OBJDIR)/src/main.o
