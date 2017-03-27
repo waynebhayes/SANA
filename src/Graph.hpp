@@ -35,6 +35,7 @@ public:
     static Graph loadGraph(string name);
     static Graph multGraph(string name, uint path);
 
+
     static void saveInGWFormat(string outputFile, const vector<string>& nodeNames,
         const vector<vector<ushort>>& edgeList);
     static void saveInGWFormatShuffled(string outputFile, const vector<string>& nodeNames,
@@ -136,7 +137,24 @@ public:
     int unlockedGeneCount = -1;
     int unlockedmiRNACount = -1;
 
-protected:
+private:
+    double maxGraphletSize = 4; //default is 4, 5 is too big
+    string name;
+    //double maxsize;
+    vector<vector<ushort> > edgeList; //edges in no particular order
+    vector<vector<bool> > adjMatrix;
+    vector<vector<ushort> > adjLists; //neighbors in no particular order
+
+    //list of the nodes of each connected component, sorted from larger to smaller
+    vector<vector<ushort> > connectedComponents;
+    //int maxsize;
+
+    // NOTE: these don't change after reIndexing G1 (method #3 of locking),
+    // and they are used to reIndex the graph to normal at the end.
+    vector<bool> lockedList;  // shows which nodes are locked
+    vector<string> lockedTo;  // name of node we lock to in other graph
+    int lockedCount = 0;
+
     void updateUnlockedGeneCount();
 
     void initConnectedComponents();
@@ -146,34 +164,12 @@ protected:
     void addRandomEdge();
     void removeRandomEdge();
 
-    void computeDistanceMatrix(vector<vector<short> >& dist) const;
-
     string autogenFilesFolder();
     vector<vector<uint> > computeGraphletDegreeVectors();
 
     //places in dist a matrix with the distance between every pair of nodes (a -1 indicates infinity)
-protected:
-    vector<vector<ushort>> edgeList; //edges in no particular order
-    vector<vector<ushort>> adjLists; //neighbors in no particular order
-    vector<bool> lockedList;  // shows which nodes are locked
-    vector<string> lockedTo;  // name of node we lock to in other graph
+    void computeDistanceMatrix(vector<vector<short> >& dist) const;
 
-    // NOTE: these don't change after reIndexing G1 (method #3 of locking),
-    // and they are used to reIndex the graph to normal at the end.
-    int lockedCount = 0;
-
-    double maxGraphletSize = 4; //default is 4, 5 is too big
-    string name;
-    //double maxsize;
-    //list of the nodes of each connected component, sorted from larger to smaller
-    vector<vector<ushort> > connectedComponents;
-    //int maxsize;
-private:
-    vector<vector<bool> > adjMatrix;
 };
-
-void writeGWHeader(ofstream& outfile);
-void writeGWNodes(ofstream& outfile, const vector<string>& nodeNames);
-void writeGWEdges(ofstream& outfile, const vector<vector<ushort>>& edgeList);
 
 #endif

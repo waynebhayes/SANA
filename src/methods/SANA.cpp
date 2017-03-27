@@ -72,8 +72,6 @@ SANA::SANA(Graph* G1, Graph* G2,
 	g2Edges = G2->getNumEdges();
 	score = objectiveScore;
 
-	cin >> order;
-
 	G1->getAdjMatrix(G1AdjMatrix);
 	G2->getAdjMatrix(G2AdjMatrix);
 	G1->getAdjLists(G1AdjLists);
@@ -850,7 +848,7 @@ void SANA::trackProgress(long long unsigned int i) {
 	std::ostringstream ss;
 	ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
 
-    ofstream dump(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(order) + ".csv", std::ofstream::out | std::ofstream::app);
+    ofstream dump(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(0) + ".csv", std::ofstream::out | std::ofstream::app);
     dump.precision(10);
     dump << fixed;
     dump << timer.elapsed() << "," << currentScore << "," << avgEnergyInc << "," << T << "," << T << "," << trueAcceptingProbability() << "," << lowerTBound << "," << upperTBound << "," << (elapsedEstimate / minutes * 60) << endl;
@@ -1573,7 +1571,7 @@ void SANA::initIterPerSecond() {
 	iterPerSecond = res;
 	std::ostringstream ss;
 	ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
-	ofstream header(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(order) + ".csv");
+	ofstream header(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(0) + ".csv");
 	header << "time,score,avgEnergyInc,T,realTemp,pbad,lower,higher,timer" << endl;
 	header.close();
 }
