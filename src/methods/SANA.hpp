@@ -52,8 +52,13 @@ private:
     uint n2;
     double g1Edges; //stored as double because it appears in division
     double g2Edges; //stored as double because it appears in division
-    vector<vector<bool> > G1AdjMatrix;
-    vector<vector<bool> > G2AdjMatrix;
+    #ifndef WEIGHTED
+        vector<vector<bool> > G1AdjMatrix;
+        vector<vector<bool> > G2AdjMatrix;
+    #else
+        vector<vector<ushort> > G1AdjMatrix;
+        vector<vector<ushort> > G2AdjMatrix;
+    #endif
     vector<vector<ushort> > G1AdjLists;
     vector<vector<ushort> > G2AdjLists;
 
