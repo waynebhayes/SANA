@@ -90,7 +90,8 @@ vector<array<string, 6>> supportedArguments = {
 	{ "-edgec", "double", "0", "Weight of Edge Count", "The weight of the Local Edge Count objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-edged", "double", "0", "Weight of Edge Density", "The weight of the Local Edge Density objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-esim", "double", "0", "External Similarity Weight", "The weight of the external similarity file. Used when \"-objfuntype\" is \"generic\". (Pending changes to SANA, these values may be normalized to be in [0,1] after they're read but before they're used.)", "1" },
-	{ "-graphlet", "double", "0", "Weight of Graphlet Similarity.", "The weight of the Graphlet Objective Function as defined in the original GRAAL paper (2010). Used when \"-objfuntype\" is \"generic\".", "1" },
+	{ "-ewec", "double", "0", "External Weighted Edge Similarity", "The weighted of the external edge similarity file.", "1" },
+        { "-graphlet", "double", "0", "Weight of Graphlet Similarity.", "The weight of the Graphlet Objective Function as defined in the original GRAAL paper (2010). Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-graphletlgraal", "double", "0", "Weight of Graphlet Similarity (LGRAAL)", "The weight of LGRAAL's objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-sequence", "double", "0", "Weight of Sequence Similarity", "The weight of the Sequence Similarity function. Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-go_k", "double", "0", "k-common GO terms", "Objective function based on having up to k GO terms in common. Used when \"-objfuntype\" is \"generic\".", "1" },
@@ -111,7 +112,8 @@ vector<array<string, 6>> supportedArguments = {
 	{ "-wavenodesim", "string", "nodec", "Weighted Average Node Pair Similarity", "Node pair similarity to use when emulating WAVE.", "1" },
 	{ "-maxGraphletSize", "double", "", "Maximum Graphlet Size", "Chooses the maximum size of graphlets to use. Saves human_gdv and yeast_gdv files ending with the given maximum graphlet size in order to distinguish between different-sized graphlets (e.g. human_gdv4.txt and yeast_gdv4.txt, for maximum graphlet size of 4).", "0" },
 	{ "-simFile", "string", "", "Similarity File", "Specify an external three columnn (node from G1, node from  G2, similarity) file. These will be given weight according to the -esim argument.", "1" },
-	{ "-detailedreport", "bool", "false", "Detailed Report", "If false, initialize only basic measures and any measure necessary to run SANA.", "1" },
+        { "-ewecFile", "string", "", "egdvs file", "egdvs output file produced by GREAT", "1"},
+        { "-detailedreport", "bool", "false", "Detailed Report", "If false, initialize only basic measures and any measure necessary to run SANA.", "1" },
 	{ "End Further Weight Specification. Combine with \"-method x -objfuntype y\"", "", "banner", "", "", "0" },
 	//--------------END Further details of \"-method x -objfuntype y\"-------------------
 

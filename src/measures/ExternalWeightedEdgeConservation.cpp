@@ -8,34 +8,28 @@ ExternalWeightedEdgeConservation::ExternalWeightedEdgeConservation(Graph* G1, Gr
     G2->getAdjLists(adjListG2);
     G1->getAdjMatrix(adjMatrixG1);
     G2->getAdjMatrix(adjMatrixG2);
+    nodeNamesG1 = G1->getNodeNames();
+    nodeNamesG2 = G2->getNodeNames();
 }
 
 double ExternalWeightedEdgeConservation::eval(const Alignment& A){
     std::vector<std::vector<ushort> > edgeListG1;
     G1->getEdgeList(edgeListG1);
-    std::vector<std::vector<bool> > adjMatrixG2;
-    G2->getAdjMatrix(adjMatrixG2);
+    //std::vector<std::vector<bool> > adjMatrixG2;
+    //G2->getAdjMatrix(adjMatrixG2);
     double score = 0;
     for (const auto& edge: edgeListG1) {
         ushort node1 = edge[0], node2 = edge[1];
         if (adjMatrixG2[A[node1]][A[node2]]) {
-            std::string n1s = G1->getNodeNames()[node1], n2s = G1->getNodeNames()[node2];
-            std::string an1s = G2->getNodeNames()[A[node1]], an2s = G2->getNodeNames()[A[node2]];
+            std::string n1s = nodeNamesG1[node1], n2s = nodeNamesG1[node2];
+            std::string an1s = nodeNamesG2[A[node1]], an2s = nodeNamesG2[A[node2]];
             int e1 = getRowIndex(n1s, n2s); //Row for G1 and Col for G2
             int e2 = getColIndex(an1s, an2s);
-            if(e1 != -1 && e2 != -1){
-                score += getScore(e2, e1);
-                //std::cout << score << std::endl;
-	    }
-            else{
-                //print message for debugging
-            }
+            score += getScore(e2, e1);
         }
     }
-
     //normalizing
     score /= (2*G1->getNumEdges());
-    std::cout << score << std::endl;
     return score;
 }
 
@@ -107,13 +101,13 @@ float ExternalWeightedEdgeConservation::getScore(int colNum, int rowNum){
 }
 
 int ExternalWeightedEdgeConservation::getColIndex(std::string n1, std::string n2){
-    if(colIndex.find(n1) != colIndex.end()){
-        if(colIndex[n1].find(n2) != colIndex[n1].end()){
+    if(colIndex.count(n1)){
+        if(colIndex[n1].count(n2)){
             return colIndex[n1][n2];
         }
     }
-    if(colIndex.find(n2) != colIndex.end()){
-        if(colIndex[n2].find(n1) != colIndex[n2].end()){
+    if(colIndex.count(n2)){
+        if(colIndex[n2].count(n1)){
             return colIndex[n2][n1];
         }
     }
@@ -121,13 +115,13 @@ int ExternalWeightedEdgeConservation::getColIndex(std::string n1, std::string n2
 }
 
 int ExternalWeightedEdgeConservation::getRowIndex(std::string n1, std::string n2){
-    if(rowIndex.find(n1) != rowIndex.end()){
-        if(rowIndex[n1].find(n2) != rowIndex[n1].end()){
+    if(rowIndex.count(n1)){
+        if(rowIndex[n1].count(n2)){
             return rowIndex[n1][n2];
         }
     }
-    if(rowIndex.find(n2) != rowIndex.end()){
-        if(rowIndex[n2].find(n1) != rowIndex[n2].end()){
+    if(rowIndex.count(n2)){
+        if(rowIndex[n2].count(n1)){
             return rowIndex[n2][n1];
         }
     }
@@ -135,14 +129,14 @@ int ExternalWeightedEdgeConservation::getRowIndex(std::string n1, std::string n2
 }
 
 int ExternalWeightedEdgeConservation::getColIndex(ushort n1, ushort n2){
-    std::string n1s = G2->getNodeNames()[n1], n2s = G2->getNodeNames()[n2];
-    if(colIndex.find(n1s) != colIndex.end()){
-        if(colIndex[n1s].find(n2s) != colIndex[n1s].end()){
+    std::string n1s = nodeNamesG2[n1], n2s = nodeNamesG2[n2];
+    if(colIndex.count(n1s)){
+        if(colIndex[n1s].count(n2s)){
             return colIndex[n1s][n2s];
         }
     }
-    if(colIndex.find(n2s) != colIndex.end()){
-        if(colIndex[n2s].find(n1s) != colIndex[n2s].end()){
+    if(colIndex.count(n2s)){
+        if(colIndex[n2s].count(n1s)){
             return colIndex[n2s][n1s];
         }
     }
@@ -150,14 +144,14 @@ int ExternalWeightedEdgeConservation::getColIndex(ushort n1, ushort n2){
 }
 
 int ExternalWeightedEdgeConservation::getRowIndex(ushort n1, ushort n2){
-    std::string n1s = G1->getNodeNames()[n1], n2s = G1->getNodeNames()[n2];
-    if(rowIndex.find(n1s) != rowIndex.end()){
-        if(rowIndex[n1s].find(n2s) != rowIndex[n1s].end()){
+    std::string n1s = nodeNamesG1[n1], n2s = nodeNamesG1[n2];
+    if(rowIndex.count(n1s)){
+        if(rowIndex[n1s].count(n2s)){
             return rowIndex[n1s][n2s];
         }
     }
-    if(rowIndex.find(n2s) != rowIndex.end()){
-        if(rowIndex[n2s].find(n1s) != rowIndex[n2s].end()){
+    if(rowIndex.count(n2s)){
+        if(rowIndex[n2s].count(n1s)){
             return rowIndex[n2s][n1s];
         }
     }
@@ -176,5 +170,78 @@ double ExternalWeightedEdgeConservation::simScore(ushort source, ushort target, 
         }   
     }
 
+    score /= (2*G1->getNumEdges()); //normalization
+    return score;
+}
+
+double ExternalWeightedEdgeConservation::changeOp(ushort source, ushort oldTarget, ushort newTarget, const Alignment& A){
+    ushort neighbor;
+    int e1, e2;
+    double score = 0;
+    int size1 = adjListG1[source].size();
+    for(int i = 0; i < size1; ++i){
+        neighbor = adjListG1[source][i];
+        if(adjMatrixG2[oldTarget][A[neighbor]]){
+            std::string n1s = nodeNamesG1[source], n2s = nodeNamesG1[neighbor];
+            std::string an1s = nodeNamesG2[oldTarget], an2s = nodeNamesG2[A[neighbor]];
+            e1 = getRowIndex(n1s, n2s);
+            e2 = getColIndex(an1s, an2s);
+            score -= getScore(e2,e1);
+        }
+        if(adjMatrixG2[newTarget][A[neighbor]]){
+            std::string n1s = nodeNamesG1[source], n2s = nodeNamesG1[neighbor];
+            std::string an1s = nodeNamesG2[newTarget], an2s = nodeNamesG2[A[neighbor]];
+            e1 = getRowIndex(n1s, n2s);
+            e2 = getColIndex(an1s, an2s);
+            score += getScore(e2, e1);
+        }
+    }
+    score /= (2*G1->getNumEdges());
+    return score;
+}
+
+double ExternalWeightedEdgeConservation::swapOp(ushort source1, ushort source2, ushort target1, ushort target2, const Alignment& A){
+    ushort neighbor;
+    int e1, e2;
+    double score = 0;
+    int size1 = adjListG1[source1].size();
+    int size2 = adjListG1[source2].size();
+    for(int i = 0; i < size1; ++i){
+        neighbor = adjListG1[source1][i];
+        if(adjMatrixG2[target1][A[neighbor]]){
+            std::string n1s = nodeNamesG1[source1], n2s = nodeNamesG1[neighbor];
+            std::string an1s = nodeNamesG2[target1], an2s = nodeNamesG2[A[neighbor]];
+            e1 = getRowIndex(n1s, n2s);
+            e2 = getColIndex(an1s, an2s);
+            score -= getScore(e2,e1);
+        }
+        if(adjMatrixG2[target2][A[neighbor]]){
+            std::string n1s = nodeNamesG1[source1], n2s = nodeNamesG1[neighbor];
+            std::string an1s = nodeNamesG2[target2], an2s = nodeNamesG2[A[neighbor]];
+            e1 = getRowIndex(n1s, n2s);
+            e2 = getColIndex(an1s, an2s);
+            score += getScore(e2, e1);
+        }
+    }
+
+    for(int i = 0; i < size2; ++i){
+        ushort neighbor = adjListG1[source2][i];
+        if(adjMatrixG2[target2][A[neighbor]]){
+            std::string n1s = nodeNamesG1[source2], n2s = nodeNamesG1[neighbor];
+            std::string an1s = nodeNamesG2[target2], an2s = nodeNamesG2[A[neighbor]];
+            e1 = getRowIndex(n1s, n2s);
+            e2 = getColIndex(an1s, an2s);
+            score -= getScore(e2, e1);
+        }
+        if(adjMatrixG2[target1][A[neighbor]]){
+            std::string n1s = nodeNamesG1[source2], n2s = nodeNamesG1[neighbor];
+            std::string an1s = nodeNamesG2[target1], an2s = nodeNamesG2[A[neighbor]];
+            e1 = getRowIndex(n1s, n2s);
+            e2 = getColIndex(an1s, an2s);
+            score += getScore(e2, e1);
+        }
+    }
+
+    score /= (2*G1->getNumEdges());
     return score;
 }

@@ -29,6 +29,7 @@ ARGUMENTS_SRC = 							\
 
 MEASUSES_SRCS = 							\
 	src/measures/EdgeCorrectness.cpp 				\
+        src/measures/ExternalWeightedEdgeConservation.cpp               \
 	src/measures/GoAverage.cpp      				\
 	src/measures/GoCoverage.cpp      				\
 	src/measures/InducedConservedStructure.cpp			\
