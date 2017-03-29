@@ -18,12 +18,14 @@ void NormalMode::run(ArgumentParser& args) {
     initMeasures(M, G1, G2, args);
     Method* method;
     method = initMethod(G1, G2, args, M);
+    
     Alignment A = method->runAndPrintTime();
 
     A.printDefinitionErrors(G1,G2);
     assert(A.isCorrectlyDefined(G1, G2) and "Resulting alignment is not correctly defined");
 
     saveReport(G1, G2, A, M, method, args.strings["-o"]);
+    saveLocalMeasures(G1, G2, A, M, method, args.strings["-localScoresFile"]);
     delete method;
 }
 
