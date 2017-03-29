@@ -1,0 +1,146 @@
+Usage:
+  ./natalie [--help|-h|-help] [-alpha num] [-beta num] [-c num] [-d]
+     [-e num] [-g1 str] [-g2 str] [-gm str] [-i] [-if1 int] [-if2 int]
+     [-ifm int] [-k int] [-l int] [-maxJsonNodes int] [-maxSwitches int]
+     [-mu num] [-n int] [-nd int] [-no int] [-ns int] [-o str] [-of str]
+     [-op int] [-p int] [-phi num] [-r int] [-s int] [-sf int] [-t int]
+     [-tau num] [-v|--verbosity int] [-version] [-w int]
+Where:
+  --help|-h|-help
+     Print a short help message
+  -alpha num
+     Parameter used in updating the multipliers
+  -beta num
+     Trade-off parameter used in the objective function (in [0,1])
+     0 - Sequence only
+     1 - Network topology only (default)
+  -c num
+     Specifies the confidence/correlation threshold
+     (only used in conjunction with -sf [1,2,3]
+     or -if1 2 or -if2 2, default: 0.9)
+  -d
+     Force binary edge weights
+  -e num
+     Specifies e value cutoff (only used in conjunction
+     with -ifm 1 and -ifm 2, default: 10)
+  -g1 str
+     File name of input graph G_1
+  -g2 str
+     File name of input graph G_2
+  -gm str
+     File name in which matching edges of G_m are defined;
+     if omitted, the complete graph is used
+  -i
+     Specifies that all feasible solutions are integral
+  -if1 int
+     Specifies the input file format for G_1:
+     0 - GML format
+     1 - GraphML format
+     2 - STRING format (default)
+     3 - LGF format
+     4 - CSV format
+     5 - LEDA format
+     6 - Edge list format
+  -if2 int
+     Specifies the input file format for G_2:
+     0 - GML format
+     1 - GraphML format
+     2 - STRING format (default)
+     3 - LGF format
+     4 - CSV format
+     5 - LEDA format
+     6 - Edge list format
+  -ifm int
+     Specifies the input file format for G_m:
+     0 - Candidate list
+     1 - BLAST (default)
+     2 - LGF
+  -k int
+     Number of nondecreasing iterations after which
+     to update mu (default: 20)
+  -l int
+     Number of increasing iterations after which
+     to update mu (default: 10)
+  -maxJsonNodes int
+     Maximum number of JSON nodes to be generated
+    (default: 50)
+  -maxSwitches int
+     Maximum number of switches
+     (only used in conjunction with -s 3, default: 3)
+  -mu num
+     Parameter used in updating the multipliers
+  -n int
+     Number of iterations to compute (default -1: no limit)
+  -nd int
+     Number of dual descent steps before switching method
+     in the combined solver (default: 100)
+  -no int
+     Number of outputs to generate (default 1)
+  -ns int
+     Number of subgradient steps before switching method
+     in the combined solver (default: -1;
+     switch when subgradient method has converged)
+  -o str
+     Output file name
+  -of str
+     Specifies the output file format:
+     0 - DOT format
+     1 - GML format
+     2 - LGF format
+     3 - SIF format (default)
+     4 - JSON format
+     5 - NEATO format
+     6 - CSV (matched) format
+     7 - CSV (unmatched in G_1) format
+     8 - CSV (unmatched in G_2) format
+     9 - CSV (alignment) format
+    10 - EDA format
+    11 - NOA format
+    12 - ANALYSE (SIF, EDA and NOA) format
+  -op int
+     Specifies parts of the matching graph to output:
+     0 - Nodes and matching edges present in the solution
+     1 - Nodes, matching edges and original edges present
+         in the solution (default)
+     2 - Nodes and matching edges present in the solution
+         as well as all original edges
+  -p int
+     Compute p-value using specified number of samples (default: 0)
+  -phi num
+     Parameter phi of dual descent procedure
+  -r int
+     Specifies which relaxation to use [0]:
+     0 - Cached Lagrangian decomposition (#multipliers: O(n^4))
+     1 - Cached subproblem isolation  (#multipliers: O(n^3))
+  -s int
+     Specifies the solver to use:
+     0 - Subgradient optimization
+     1 - Dual descent method
+     2 - Enhanced dual descent method
+     3 - Combined method (default)
+  -sf int
+     Specifies the score function to be used:
+     0 - Average weights (default)
+     1 - Coexpression-based: continuous function
+     2 - Coexpression-based: scaled continuous function
+     3 - Coexpression-based: discrete values
+     4 - Coexpression-based: discrete inverse values
+     5 - Edge correctness
+     6 - Bit score
+  -t int
+     Time limit (wall) in seconds (default -1: no limit)
+  -tau num
+     Parameter tau of dual descent procedure
+  -v|--verbosity int
+     Specifies the verbosity level:
+     0 - No output
+     1 - Only necessary output
+     2 - More verbose output (default)
+     3 - Debug output
+  -version
+     Show version number
+  -w int
+     Web server mode:
+     0 - No web server (default)
+     1 - Natalie web server
+     2 - AMC web server
