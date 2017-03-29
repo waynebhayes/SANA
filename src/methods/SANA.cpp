@@ -637,36 +637,38 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
     }
 	else if(score == "max") {
-		double deltaEnergy = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
+		double deltaEnergy = max(ncWeight* (newNcSum/trueA.back() - ncSum/trueA.back()), max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
 									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
 									 secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
 								 max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
-									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges)))));
 
 		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
 		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
-		
+		newCurrentScore += ncWeight * (newNcSum/trueA.back());
+
 		energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
         badProbability = exp(energyInc/T);
 		makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc/T);
 	}
 	else if(score == "min") {
-		double deltaEnergy = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
+		double deltaEnergy = min(ncWeight* (newNcSum/trueA.back() - ncSum/trueA.back()), min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
 									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
 									 secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
 								 min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
-									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges)))));
 		
 		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
 		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
-		
+		newCurrentScore += ncWeight * (newNcSum/trueA.back());
+
 		energyInc = newCurrentScore - currentScore; //is this even used?
         wasBadMove = deltaEnergy < 0;
         badProbability = exp(energyInc/T);
@@ -678,6 +680,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += s3Weight/(newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore += localWeight/(newLocalScoreSum/n1);
 		newCurrentScore += wecWeight/(newWecSum/(2*g1Edges));
+		newCurrentScore += ncWeight/(newNcSum/trueA.back());
 
 		energyInc = newCurrentScore-currentScore;
         wasBadMove = energyInc < 0;
@@ -685,24 +688,25 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
 	}
 	else if(score == "maxFactor") {
-		double maxScore = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
+		double maxScore = max(ncWeight*(newNcSum/trueA.back() - ncSum/trueA.back()),max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
 									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
 									 secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
 							  max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
-									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges)))));
 									 
-		double minScore = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
+		double minScore = min(ncWeight*(newNcSum/trueA.back() - ncSum/trueA.back()), min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
 									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
 									 secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
 							  min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
-									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges)))));
 
 		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
 		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
-		
+	 	newCurrentScore += ncWeight * (newNcSum/trueA.back());
+	
 		energyInc = newCurrentScore - currentScore;
         wasBadMove = maxScore < -1 * minScore;
         badProbability = exp(energyInc/T);
