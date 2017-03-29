@@ -174,6 +174,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	needLocal = localWeight > 0;
 	if (needLocal) {
 		sims = MC->getAggregatedLocalSims();
+    localSimMatrixMap = MC->getLocalSimMap();
 		localWeight = 1; //the values in the sim matrix 'sims'
 		//have already been scaled by the weight
 	} else {
@@ -522,8 +523,11 @@ void SANA::performChange() {
 	}
 
 	double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
+  map<string, double> newLocalScoreSumMap(localScoreSumMap);
 	if (needLocal) {
-		newLocalScoreSum = localScoreSum + localScoreSumIncChangeOp(source, oldTarget, newTarget);
+		newLocalScoreSum = localScoreSum + localScoreSumIncChangeOp(sims, source, oldTarget, newTarget);
+    for(auto it = newLocalScoreSumMap.begin(); it != newLocalScoreSumMap.end(); ++it)
+      it->second += localScoreSumIncChangeOp(localSimMatrixMap[it->first], source, oldTarget, newTarget);
 	}
 
 	double newWecSum = -1; //dummy initialization to shut compiler warning
@@ -546,6 +550,8 @@ void SANA::performChange() {
 		aligEdges = newAligEdges;
 		inducedEdges = newInducedEdges;
 		localScoreSum = newLocalScoreSum;
+    for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
+      localScoreSumMap[newLocalScoreSumEntry.first] = newLocalScoreSumEntry.second;
 		wecSum = newWecSum;
 		ncSum = newNcSum;
 		currentScore = newCurrentScore;
@@ -579,8 +585,11 @@ void SANA::performSwap() {
 	}
 
 	double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
+  map<string, double> newLocalScoreSumMap(localScoreSumMap);
 	if (needLocal) {
-		newLocalScoreSum = localScoreSum + localScoreSumIncSwapOp(source1, source2, target1, target2);
+		newLocalScoreSum = localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2);
+    for(auto it = newLocalScoreSumMap.begin(); it != newLocalScoreSumMap.end(); ++it)
+        it->second += localScoreSumIncSwapOp(localSimMatrixMap[it->first], source1, source2, target1, target2);
 	}
 
 	double newWecSum = -1; //dummy initialization to shut compiler warning
@@ -600,6 +609,8 @@ void SANA::performSwap() {
 		A[source2] = target1;
 		aligEdges = newAligEdges;
 		localScoreSum = newLocalScoreSum;
+    for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
+      localScoreSumMap[newLocalScoreSumEntry.first] = newLocalScoreSumEntry.second;
 		wecSum = newWecSum;
 		ncSum = newNcSum;
 		currentScore = newCurrentScore;
@@ -765,15 +776,15 @@ int SANA::inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTar
 	return res;
 }
 
-double SANA::localScoreSumIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
-	return sims[source][newTarget] - sims[source][oldTarget];
+double SANA::localScoreSumIncChangeOp(vector<vector<float> > const & sim, ushort const & source, ushort const & oldTarget, ushort const & newTarget) {
+	return sim[source][newTarget] - sim[source][oldTarget];
 }
 
-double SANA::localScoreSumIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
-	return sims[source1][target2] -
-			sims[source1][target1] +
-			sims[source2][target1] -
-			sims[source2][target2];
+double SANA::localScoreSumIncSwapOp(vector<vector<float> > const & sim, ushort const & source1, ushort const & source2, ushort const & target1, ushort const & target2) {
+	return sim[source1][target2] -
+			sim[source1][target1] +
+			sim[source2][target1] -
+			sim[source2][target2];
 }
 
 double SANA::WECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
@@ -1110,9 +1121,9 @@ double SANA::findTInitialByLinearRegression(){
 	// }else ifile.close();
 	//Look for a cache file matching the measure and the graphs and fill the cache variable with the file
 	map<double, double> cache;
-	std::ifstream cacheFile(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
 	double a, b;
-	cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes\n";
+	std::ifstream cacheFile(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
+	cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes" << endl;
 	//set the float precisison of the stream. This is needed whenever a file is written
 	cerr << "Retrieving 60 Samples" << endl;
 	int progress = 0;
@@ -1148,8 +1159,9 @@ double SANA::findTInitialByLinearRegression(){
 	//pull the temperature bounds from the tuple and strech them a bit
 	double lowerEnd = get<2>(regressionResult);
 	double upperEnd = get<5>(regressionResult);
+	double wing = (upperEnd - lowerEnd) / 2;
 	//fill the score map with 30 more pairs betweem the boundaries
-	for(double i = lowerEnd; i < upperEnd; i += (upperEnd - lowerEnd) / 40.0){
+	for(double i = lowerEnd - wing; i < upperEnd + wing; i += (upperEnd - lowerEnd) / 40.0){
 		if(cache.find(i) == cache.end()){
 			double score = scoreForTInitial(pow(10, i));
 		    cacheOutStream << i << " " << score << endl;

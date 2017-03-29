@@ -10,6 +10,7 @@
 
 #include "Graph.hpp"
 #include "utils/utils.hpp"
+class MeasureCombination;
 using namespace std;
 
 class Alignment {
@@ -44,7 +45,7 @@ public:
 
     void write(ostream& stream) const;
 
-    void writeEdgeList(const Graph* G1, const Graph* G2, ostream& stream) const;
+    void writeEdgeList(const Graph* G1, const Graph* G2, ostream& edgeListStream) const;
 
     uint numAlignedEdges(const Graph& G1, const Graph& G2) const;
 

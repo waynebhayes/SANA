@@ -53,6 +53,8 @@ vector<double> NodeDensity::generateVector(Graph* g, ushort maxDist) {
 }
 
 float NodeDensity::compare(double n1, double n2) {
+	if(n1 == 0 && n2 == 0)
+		return 1.0;
 	if (n1 > n2) {
 		return (n2 / n1);
 	} else {
@@ -67,7 +69,6 @@ void NodeDensity::initSimMatrix() {
 	uint size2 = noded2.size();
 
 	sims = vector<vector<float> > (size1, vector<float> (size2, 0));
-
 	for(uint i = 0; i < size1;  ++i) {
 		for(uint j = 0; j < size2;  ++j) {
 			sims[i][j] = compare(noded1[i], noded2[j]);
