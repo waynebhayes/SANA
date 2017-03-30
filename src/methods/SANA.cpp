@@ -177,11 +177,6 @@ SANA::SANA(Graph* G1, Graph* G2,
 		}
 	}
 
-    if(needEwec){
-        ewec = (ExternalWeightedEdgeConservation*)(MC->getMeasure("ewec"));
-        ewecSum = ewec->eval(A);
-    }
-
 
 	//to evaluate local measures incrementally
 	needLocal = localWeight > 0;
