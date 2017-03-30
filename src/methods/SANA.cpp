@@ -173,10 +173,10 @@ SANA::SANA(Graph* G1, Graph* G2,
 	//to evaluate local measures incrementally
 	needLocal = localWeight > 0;
 	if (needLocal) {
-		sims = MC->getAggregatedLocalSims();
-    localSimMatrixMap = MC->getLocalSimMap();
 		localWeight = 1; //the values in the sim matrix 'sims'
 		//have already been scaled by the weight
+		sims = &MC->getAggregatedLocalSims();
+		localSimMatrixMap = &MC->getLocalSimMap();
 	} else {
 		localWeight = 0;
 	}
@@ -411,7 +411,7 @@ void SANA::initDataStructures(const Alignment& startA) {
 	if (needLocal) {
 		localScoreSum = 0;
 		for (uint i = 0; i < n1; i++) {
-			localScoreSum += sims[i][A[i]];
+			localScoreSum += (*sims)[i][A[i]];
 		}
 	}
 
@@ -525,9 +525,9 @@ void SANA::performChange() {
 	double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
   map<string, double> newLocalScoreSumMap(localScoreSumMap);
 	if (needLocal) {
-		newLocalScoreSum = localScoreSum + localScoreSumIncChangeOp(sims, source, oldTarget, newTarget);
+		newLocalScoreSum = localScoreSum + localScoreSumIncChangeOp(*sims, source, oldTarget, newTarget);
     for(auto it = newLocalScoreSumMap.begin(); it != newLocalScoreSumMap.end(); ++it)
-      it->second += localScoreSumIncChangeOp(localSimMatrixMap[it->first], source, oldTarget, newTarget);
+      it->second += localScoreSumIncChangeOp((*localSimMatrixMap)[it->first], source, oldTarget, newTarget);
 	}
 
 	double newWecSum = -1; //dummy initialization to shut compiler warning
@@ -587,9 +587,9 @@ void SANA::performSwap() {
 	double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
   map<string, double> newLocalScoreSumMap(localScoreSumMap);
 	if (needLocal) {
-		newLocalScoreSum = localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2);
+		newLocalScoreSum = localScoreSum + localScoreSumIncSwapOp(*sims, source1, source2, target1, target2);
     for(auto it = newLocalScoreSumMap.begin(); it != newLocalScoreSumMap.end(); ++it)
-        it->second += localScoreSumIncSwapOp(localSimMatrixMap[it->first], source1, source2, target1, target2);
+        it->second += localScoreSumIncSwapOp((*localSimMatrixMap)[it->first], source1, source2, target1, target2);
 	}
 
 	double newWecSum = -1; //dummy initialization to shut compiler warning

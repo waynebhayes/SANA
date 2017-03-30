@@ -187,8 +187,8 @@ private:
     bool needLocal;
     double localScoreSum;
     map<string, double> localScoreSumMap;
-    vector<vector<float> > sims;
-    map<string, vector<vector<float> > > localSimMatrixMap;
+    vector<vector<float> > * sims;
+    map<string, vector<vector<float> > > * localSimMatrixMap;
     double localScoreSumIncChangeOp(vector<vector<float> > const & sim, ushort const & source, ushort const & oldTarget, ushort const & newTarget);
     double localScoreSumIncSwapOp(vector<vector<float> > const & sim, ushort const & source1, ushort const & source2, ushort const & target1, ushort const & target2);
 
