@@ -45,7 +45,7 @@ public:
 
     void write(ostream& stream) const;
 
-    void writeEdgeList(const Graph* G1, const Graph* G2, ostream& edgeListStream) const;
+    void writeEdgeList(Graph const * G1, Graph const * G2, ostream& edgeListStream) const;
 
     uint numAlignedEdges(const Graph& G1, const Graph& G2) const;
 
