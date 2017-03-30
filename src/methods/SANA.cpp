@@ -742,10 +742,10 @@ int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ush
 		res += G2AdjMatrix[target1][A[neighbor]];
 	}
 	//address case swapping between adjacent nodes with adjacent images:
-#ifndef WEIGHTED 
-	res += 2*(G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
+#ifdef WEIGHTED 
+        res += (-1 << 1) & (G1AdjMatrix[source1][source2] + G2AdjMatrix[target1][target2]);
 #else
-	res += 2*(G1AdjMatrix[source1][source2] > 0 and G2AdjMatrix[target1][target2] > 0);
+	res += 2*(G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
 #endif
 	return res;
 }
@@ -817,10 +817,10 @@ double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort
 		}
 	}
 	//address case swapping between adjacent nodes with adjacent images:
-#ifndef WEIGHTED        
-	if (G1AdjMatrix[source1][source2] and G2AdjMatrix[target1][target2]) {
-#else
+#ifdef WEIGHTED        
 	if (G1AdjMatrix[source1][source2] > 0 and G2AdjMatrix[target1][target2] > 0) {
+#else
+	if (G1AdjMatrix[source1][source2] and G2AdjMatrix[target1][target2]) {
 #endif
 		res += 2*wecSims[source1][target1];
 		res += 2*wecSims[source2][target2];

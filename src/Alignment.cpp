@@ -198,10 +198,10 @@ void Alignment::writeEdgeList(const Graph* G1, const Graph* G2, ostream& stream)
 uint Alignment::numAlignedEdges(const Graph& G1, const Graph& G2) const {
 	vector<vector<ushort> > G1EdgeList;
 	G1.getEdgeList(G1EdgeList);
-#ifndef WEIGHTED
-	vector<vector<bool> > G2AdjMatrix;
+#ifdef WEIGHTED
+        vector<vector<ushort> > G2AdjMatrix;
 #else
-  vector<vector<ushort> > G2AdjMatrix;
+	vector<vector<bool> > G2AdjMatrix;
 #endif
 	G2.getAdjMatrix(G2AdjMatrix);
 
@@ -218,10 +218,10 @@ Graph Alignment::commonSubgraph(const Graph& G1, const Graph& G2) const {
 
 	vector<vector<ushort> > G1EdgeList;
 	G1.getEdgeList(G1EdgeList);
-#ifndef WEIGHTED
-  vector<vector<bool> > G2AdjMatrix;
+#ifdef WEIGHTED
+        vector<vector<ushort> > G2AdjMatrix;
 #else
-  vector<vector<ushort> > G2AdjMatrix;
+        vector<vector<bool> > G2AdjMatrix;
 #endif
 
 	G2.getAdjMatrix(G2AdjMatrix);
