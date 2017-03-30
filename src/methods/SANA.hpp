@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #ifndef SANA_HPP
 #define SANA_HPP
 #include <map>
