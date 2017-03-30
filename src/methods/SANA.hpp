@@ -194,9 +194,11 @@ private:
     //to evaluate local measures incrementally
     bool needLocal;
     double localScoreSum;
+    map<string, double> localScoreSumMap;
     vector<vector<float> > sims;
-    double localScoreSumIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
-    double localScoreSumIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+    map<string, vector<vector<float> > > localSimMatrixMap;
+    double localScoreSumIncChangeOp(vector<vector<float> > const & sim, ushort const & source, ushort const & oldTarget, ushort const & newTarget);
+    double localScoreSumIncSwapOp(vector<vector<float> > const & sim, ushort const & source1, ushort const & source2, ushort const & target1, ushort const & target2);
 
 
 
