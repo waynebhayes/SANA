@@ -22,7 +22,7 @@ vector<string> defaultArguments = {
 "-tfin 3",
 "-qcount 1",
 "-o sana",
-"-localScoresFile localScores",
+"-localScoresFile sana",
 "-ntabus 300",
 "-nneighbors 50",
 "-qmode normal",

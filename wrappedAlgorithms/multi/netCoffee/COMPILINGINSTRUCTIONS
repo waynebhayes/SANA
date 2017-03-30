@@ -1,0 +1,14 @@
+OMPILING
+To compile the source code, the latest compilers which supports the standard language C++11, also known as C++0x, is needed. Other older compiler may not support it.
+1. Compile LEMON GRAPH LIBRARY
+
+cd $NETCOFFEE/include/lemon-1.2.3/
+./configure
+./make
+
+2. Compile NetCoffee
+
+cd $NETCOFFEE
+./make MODE=Release
+#If you want to compile it in Debug mode, run command:
+./make (MODE=Debug)
