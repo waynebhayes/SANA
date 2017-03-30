@@ -41,6 +41,10 @@ public:
     int getNumberOfLocalMeasures() const;
     void rebalanceWeight(string& input);
     void rebalanceWeight();
+    /*Writes out the local scores file in this format (example only of course):
+    Pairwise Alignment  LocalMeasure1       LocalMeasure2       Weighted Sum
+    821	723            0.334               0.214               0.548
+    */
     void writeLocalScores(ostream & outfile, Graph const & G1, Graph const & G2, Alignment const & A) const;
 
 private:

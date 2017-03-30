@@ -72,11 +72,11 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
 }
 
 void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
-  const MeasureCombination& M, Method* method, string reportFile) {
+  const MeasureCombination& M, Method* method, string reportFileName) {
   ofstream outfile,
            alignfile;
-  reportFile = ensureFileNameExistsAndOpenOutFile("report", reportFile, outfile, G1, G2, method, A);
-  alignfile.open((reportFile + ".align").c_str());  
+  reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, outfile, G1.getName(), G2.getName(), method->getName(), method->fileNameSuffix(A));
+  alignfile.open((reportFileName + ".align").c_str());  
 
   A.write(outfile);
   A.writeEdgeList(&G1, &G2, alignfile);
@@ -85,26 +85,27 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   alignfile.close();
 }
 
-/*Writes out the local scores file in this format (example only of course):
-Pairwise Alignment  LocalMeasure1       LocalMeasure2       Weighted Sum
-821	723            0.334               0.214               0.548
-*/
 void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
-  MeasureCombination const & M, Method * const method, string & localMeasureFile) {
+  MeasureCombination const & M, Method * const method, string & localMeasureFileName) {
   ofstream outfile;
-  ensureFileNameExistsAndOpenOutFile("local measure", localMeasureFile, outfile, G1, G2, method, A);
+  ensureFileNameExistsAndOpenOutFile("local measure", localMeasureFileName, outfile, G1.getName(), G2.getName(), method->getName(), method->fileNameSuffix(A));
   
   M.writeLocalScores(outfile, G1, G2, A);
   outfile.close();
 }
 
-//"Ensure" here means ensure that there is a valid file to output to.
-string ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFileName, ofstream & outfile, Graph const & G1, Graph const & G2, Method * const method, Alignment const & A) {
-  string G1Name = G1.getName();
-  string G2Name = G2.getName();
+/*"Ensure" here means ensure that there is a valid file to output to.
+NOTE: the && is a move semantic, which moves the internal pointers of one object
+to another and then destructs the original, instead of destructing all of the
+internal data of the original. It is assumed that the maps are passed as r-values
+from getIndexToNodeMap(), so the original will always be destroyed on passing.
+Thus this will likely fail compilation if l-values are passed.*/
+string ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFileName, ofstream & outfile, string && G1Name, string && G2Name, string && methodName, string && fileNameSuffix) {
+  string extension = fileType == "local measure" ? ".localscores" :
+                                                   ".out";
   if (outFileName == "") {
     outFileName = "alignments/" + G1Name + "_" + G2Name + "/"
-    + G1Name + "_" + G2Name + "_" + method->getName() + method->fileNameSuffix(A);
+    + G1Name + "_" + G2Name + "_" + methodName + fileNameSuffix;
     addUniquePostfixToFilename(outFileName, ".txt");
     outFileName += ".txt";
   }else{
@@ -118,7 +119,9 @@ string ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFil
     }
   }
 
-  outfile.open((outFileName + ".out").c_str());
+  outFileName += extension;
+
+  outfile.open(outFileName.c_str());
 
   if(not outfile.is_open()){
     cerr << "Problem saving " << fileType << " file to specified location. Saving to sana program file." << endl;
@@ -126,6 +129,6 @@ string ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFil
     outfile.open(outFileName.c_str());
   }
 
-  cerr << "Saving " << fileType << " as \"" << outFileName << ".out\"" << endl;
+  cerr << "Saving " << fileType << " as \"" << outFileName << "\"" << endl;
   return outFileName;
 }
