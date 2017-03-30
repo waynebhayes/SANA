@@ -345,5 +345,4 @@ void MeasureCombination::writeLocalScores(ostream & outFile, Graph const & G1, G
           outFile << setw(COL_WIDTH) << left << setprecision(PRECISION) << mapping.second[i][A[i]];
       outFile << setw(COL_WIDTH) << left << setprecision(PRECISION) << localAggregatedSim[i][A[i]] << endl;
   }
-  
 }
