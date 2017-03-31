@@ -1,0 +1,1 @@
+time ./optnetalign --net1 ../optnetalign/tests/cg1a.net --net2 ../optnetalign/tests/cg1b.net --bitscores ../optnetalign/tests/cg1.sim --ics --tournsel --total --popsize 100 --generations 100 --outprefix foo --mutswappb 0.005 --cxswappb 0.1 --nooutput --blastsum

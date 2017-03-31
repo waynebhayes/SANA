@@ -1,0 +1,15 @@
+60
+3
+-tinitial auto -tdecay auto -wecnodesim graphletlgraal
+lgraal hubalign sanalg sanaec random*
+syeast
+nc s3 lccs ec wecgraphletlgraal* wecnoded* graphletlgraal* noded* importance*
+
+# line 1: execution time per run
+# line 2: number of submissions per method/network pair combination
+# line 3: common arguments to all experiments
+# line 4: method IDs (must appear in experiments/methods.cnf)
+# line 5: dataset ID (must appear in experiments/datasets.cnf)
+# line 6: measures to be evaluated
+# anything past line 6 is ignored
+# methods and measures followed by * are not included in the csv file

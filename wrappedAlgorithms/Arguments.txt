@@ -1,0 +1,14 @@
+GEDEVO: --maxsecs <seconds> --blastpairlist [3 columns] --pop [400] --threads <N> [recommended runtime is "--maxsame 3000"]
+
+GHOST: -p <numThreads> -x <all-vs-all blast e-scores> -alpha [alpha*topo + (1-alpha)seq]
+
+HubAlign: -a [alpha, where 1=topo only] -b [blast bit scores 3 columns]
+
+MAGNA++: -o [output prefix] -m [S3, EC, ICS] -a [alpha balancing node+edge NOT sequence!] -p [population (2000)] -n [generations (15000)] -t [threads]
+
+MI-GRAAL: -l [lambda, importance of SEQ] -q [sequence file]
+
+NATALIE: -r 1 -beta [0=SEQ 1=TOPO] -n [iterations default infinite] -t [seconds default infinite]
+
+OptNetAlign: --total [no unaligned nodes] --popsize [defaut 100] --generations [100?] --bitscores [3 column] --evalues [3 column] --blastsum [boolean, objective] --ics --ec --s3 --nthreads [N] --timelimit [minutes] --s3variant
+

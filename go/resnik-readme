@@ -1,0 +1,30 @@
+Before you start using resnik.py as a script, here are several things you must consider.
+
+1) Annotation corpora currently are only accepted in gaf-2.0 format, listed here:
+    http://geneontology.org/page/go-annotation-file-format-20
+2) The first network, -g1, is the one that the second network, -g2, is aligned to.
+
+3) The format for alignment is the first line of the sana.out file.
+    - Currently working on supporting a multi-column alignment file 
+
+4) This will NOT work with any of the networks currently, except human and yeast.
+    - All other networks have the NCBI designation for genes, which are not 
+      in the annotation corpora provided by the Gene Ontology Consortium listed here:
+    http://geneontology.org/page/download-annotations
+
+How to Use resnik.py
+--------------------
+
+Call it via the command-line : python resnik.py [OPTION] [FILE]
+Use -h to get full list of arguments
+
+Required arguments
+--------------------
+-g1,-g2         Graphs
+-ga1,-ga2       Annotation Corpora
+-ont            Ontology file
+-al
+
+
+
+

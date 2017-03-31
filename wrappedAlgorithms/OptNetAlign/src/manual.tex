@@ -1,0 +1,147 @@
+% !TEX TS-program = pdflatex
+% !TEX encoding = UTF-8 Unicode
+
+% This is a simple template for a LaTeX document using the "article" class.
+% See "book", "report", "letter" for other types of document.
+
+\documentclass[11pt]{article} % use larger type; default would be 10pt
+
+\usepackage[utf8]{inputenc} % set input encoding (not needed with XeLaTeX)
+
+%%% Examples of Article customizations
+% These packages are optional, depending whether you want the features they provide.
+% See the LaTeX Companion or other references for full information.
+
+%%% PAGE DIMENSIONS
+\usepackage{geometry} % to change the page dimensions
+\geometry{a4paper} % or letterpaper (US) or a5paper or....
+% \geometry{margin=2in} % for example, change the margins to 2 inches all round
+% \geometry{landscape} % set up the page for landscape
+%   read geometry.pdf for detailed page layout information
+
+\usepackage{graphicx} % support the \includegraphics command and options
+\usepackage{hyperref}
+% \usepackage[parfill]{parskip} % Activate to begin paragraphs with an empty line rather than an indent
+
+%%% PACKAGES
+\usepackage{booktabs} % for much better looking tables
+\usepackage{array} % for better arrays (eg matrices) in maths
+\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
+\usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+\usepackage{subfig} % make it possible to include more than one captioned figure/table in a single float
+% These packages are all incorporated in the memoir class to one degree or another...
+
+%%% HEADERS & FOOTERS
+\usepackage{fancyhdr} % This should be set AFTER setting up the page geometry
+\pagestyle{fancy} % options: empty , plain , fancy
+\renewcommand{\headrulewidth}{0pt} % customise the layout...
+\lhead{}\chead{}\rhead{}
+\lfoot{}\cfoot{\thepage}\rfoot{}
+
+%%% SECTION TITLE APPEARANCE
+\usepackage{sectsty}
+\allsectionsfont{\sffamily\mdseries\upshape} % (See the fntguide.pdf for font help)
+% (This matches ConTeXt defaults)
+
+%%% ToC (table of contents) APPEARANCE
+\usepackage[nottoc,notlof,notlot]{tocbibind} % Put the bibliography in the ToC
+\usepackage[titles,subfigure]{tocloft} % Alter the style of the Table of Contents
+\renewcommand{\cftsecfont}{\rmfamily\mdseries\upshape}
+\renewcommand{\cftsecpagefont}{\rmfamily\mdseries\upshape} % No bold!
+
+%%% END Article customizations
+
+%%% The "real" document content comes below...
+
+\title{Using Optnetalign}
+\author{Connor Clark}
+%\date{} % Activate to display a given date or no date (if empty),
+         % otherwise the current date is printed 
+
+\begin{document}
+\maketitle
+
+\section{Overview}
+
+This document describes how to use our three alignment programs, written in C++. These are:
+
+\begin{itemize}
+\item Optnetalign: our primary aligment algorithm, a multi-objective metaheuristic aligner that does a much better job at optimizing both sequence and topological similarity, and outputs a wide variety of alignments at differing tradeoffs between those two objectives.
+\item Our initial prototype, which uses NSGA-II to find alignments. We found that this did not perform nearly as well, but we include it in the interest of advancing knowledge of network alignment. It could be that someone else may find that it works better for their problem, or that there exists some combination of parameters we never found that performs very well. In general, we found that NSGA-II took much longer to attain similar results, and produced a much narrower set of tradeoffs.
+\item Hillclimber: a simple program that constructs a single alignment using the non-dominated hillclimbing algorithm that we describe in our paper. This program can produce a good alignment much faster than Optnetalign, but it only produces one alignment at an unknown point in the total set of potential topological-biological tradeoffs. This program generally outperforms existing aligners after running for just a few minutes.
+\end{itemize}
+
+These programs share the same argument-parsing system, and thus share the same set of arguments. A few only work for one or two of the programs, but the vast majority of the arguments work for all of them. In section 2, we describe the input formats used by our programs. In section 3, we describe the program arguments. In section 4, we give examples of program invocation. In section 5, we discuss how to compile from the C++ source code.
+
+\section{Input formats}
+
+Our program accepts the input formats that most existing aligners use, as well. There are three forms of input: the networks, BLAST bit scores, and GO annotations.
+
+\subsection{Network data format}
+Networks are input as plain text files as a list of edges. Each line of the text file contains one edge, which is denoted by two node names separated by whitespace. Node names can be any string. Two small example networks are included with our source code as \texttt{example1.net} and \texttt{example2.net}. The file extension \texttt{.net} is optional, but is commonly used in network alignment programs.
+
+\subsection{Bit score data format}
+Bit scores are supplied in a plain text file. Each line of this file indicates the bit score between two nodes of the two input networks. Therefore, each line consists of the name of a node in the first network followed by the name of a node in the second network, followed by a floating point number. Each of these three items is separated by whitespace. An example of this is included with our source code as \texttt{example.sim}. The bit score data need not be exhaustive. If a bit score is not provided for a particular pair of nodes, it will be assumed to be zero.
+
+\subsection{GO annotations}
+One plain text GO annotation file is needed per network, if GO consistency is to be used as an objective. Each line of such a file starts with the name of a node, followed by the GO terms associated with that node. Each of these elements is separated by whitespace. Two examples, corresponding to our two example networks, are included in our source code as \texttt{example1.annos} and \texttt{example2.annos}.
+
+\section{Arguments}
+
+The following is a list of the arguments that can (or must) be passed to our programs, along with information on any particular variations in their behavior for the different programs. Each argument must be preceded by two dashes. Some arguments are then immediately followed by a filepath (such as the argument specifying the location of the first network file), while others are just toggles (such as the argument that specifies whether to print the progress of the alignment process to \texttt{stdout}). For example, to invoke Optnetalign with two networks  optimizing \(EC\), with verbose reporting and without writing files to disk, use \begin{verbatim} optnetalign --net1 example1.net --net2 example2.net --total --ec --verbose --nooutput \end{verbatim}
+
+\begin{itemize}
+\item \textbf{net1} Specifies the path to the first network file. This is the network that will be mapped \textit{from}. As such, it must have fewer nodes than \textbf{net2}. 
+\item \textbf{net2} Specifies the path to the second network file, which will be mapped to. Must have more nodes than \textbf{net1}. 
+\item \textbf{outprefix} Specifies the prefix for all output files. For instance, if you are aligning \textit{C. elegans} to \textit{D. melanogaster} with the objectives \(ICS\) and \(GOC\), you might specify  \texttt{--outprefix ce-dm-ics-goc} . This will cause the alignments to be output as  \texttt{ce-dm-ics-goc\_x.aln}, where \texttt{x} is the alignment number. It will also cause a summary file listing the name of each alignment file and its value on each of the objectives that can be computed for it. This file will be titled \texttt{ce-dm-ics-goc.info}.
+\item \textbf{total} When set, this specifies that all output alignments must be total. That is, every node in \textbf{net1} is forced to be aligned to some node in \textbf{net2}. Currently, it is recommended that you always set this option, as it does not work entirely correctly in Optnetalign or Hillclimber yet. However, it works correctly in the NSGA-II program. When this switch is not set, the size of the alignment is treated as an objective to maximize. The idea here is that the metaheuristic may find small alignments with very high \(ICS\). This has not yet worked very well, but it should be possible and is an objective for future work.
+\item \textbf{uniformsize} This option works when \textbf{total} is not set and when using the NSGA-II aligner. This causes all initial alignments to be set to random sizes uniformly distributed between the maximum and minimum possible size. By ``size", we mean the number of nodes in \textbf{net1} that are aligned.
+\item \textbf{smallstart} This option works when \textbf{total} is not set and when using the NSGA-II aligner. This causes all initial alignments to be set to a very small initial size.
+\item \textbf{popsize} For the NSGA-II aligner, this sets the size of the population. For Optnetalign, this sets the maximum size of the archive. Whenever the archive exceeds this size, it will be resized to it by removing the members most crowded in objective space, using NSGA-II's crowded comparison operator. In some cases, The archive may never actually reach this size.
+\item \textbf{generations} For the NSGA-II aligner, this sets the termination condition of how many generations to compute. Optnetalign, however, is a steady-state genetic algorithm and thus does not proceed in generations. Thus, when this is set in Optnetalign, this is used as a termination condition by terminating once \(popsize \times generations\) alignments have been created total. In Hillclimber, one generation is equal to 500 steps of hillclimbing, and once this number of generations is reached, the program stops and outputs the current alignment.
+\item \textbf{initlist} This is not yet implemented. However, once it is, this will be a path to a plain text list of paths to existing alignments to be used as the initial alignment population.
+\item \textbf{bitscores} The path to the bit score file, using the format described above. When provided without also providing the switch \textbf{blastsum}, this will only be used when printing the \texttt{.info} file, to display the sum of bitscores for each alignment produced, \textit{without} using that measure as an objective during the course of the alignment process. 
+\item \textbf{evalues} This is not yet implemented. It will eventually work analogously to the \textbf{bitscores} switch.
+\item \textbf{annotations1} The path to GO annotations for the first network, using the format described above. When provided without also providing the switch \textbf{goc}, this information will only be used when printing the \texttt{.info} file, to display the \(GOC\) for each alignment produced, \textit{without} using that measure as an objective during the course of the alignment process.
+\item \textbf{annotations2} The same as \textbf{annotations1}, except for the second network. Either both or neither \textbf{annotations1} and \textbf{annotations2} must be provided.
+\item \textbf{goc} When set, will use \(GOC\) as an alignment objective. Must be accompanied by the \textbf{annotations1} and \textbf{annotations2} switches.
+\item \textbf{blastsum} When set, will use the sum of BLAST bit scores as an alignment objective. Must be accompanied by the \textbf{bitscores} switch.
+\item \textbf{ics} When set, \(ICS\) will be used as an alignment objective. 
+\item \textbf{ec} When set, \(EC\) will be used as an alignment objective.
+\item \textbf{s3} When set, \(S^3\) will be used as an alignment objective.
+\item \textbf{s3denom} When set, the denominator of \(S^3\) will be used as an alignment objective (to be minimized, of course). This will be displayed as a negative number in program output, since our program works by maximizing objectives internally.
+\item \textbf{icstimesec} When set, an experimental objective, \(ICS \times EC\), will be used as an alignment objective.
+\item \textbf{s3variant} When set, an experimental objective related to \(S^3\) will be used as an alignment objective. This objective uses the formula \(\frac{|f(E_1) \cap E_2|}{max(|E_1|, E(G_2[f(V_1)]) - |f(E_1) \cap E_2|}\)
+\item \textbf{verbose} When set, the alignment program will regularly print statistics on the current state of the search to \texttt{stdout}.
+\item \textbf{mutswappb} Gives the probability that a given index in the permutation representation of the alignment will be swapped with another random index whenever mutation is performed.
+\item \textbf{mutrate} For Optnetalign, the probability that mutation will be performed in an iteration of the main loop.
+\item \textbf{cxrate} For Optnetalign, the probability that crossover will be performed in an iteration of the main loop. For the NSGA-II aligner, the probability that crossover will be used in creating a new alignment at each generation.
+\item \textbf{oneobjrate} For Optnetalign, the probability that one-objective hillclimbing will be performed in an iteration of the main loop. For NSGA-II, specifies the chance one-objective hillclimbing will be used after mutation and crossover, if \textbf{hillclimbiters} is non-zero.
+\item \textbf{finalstats} When set, information about the min, max, and average of each objective, and the parameter settings of the run, will be printed to \texttt{stdout} after the alignment algorithm ends. We used this to help find good parameter settings, and the output is unlabeled, necessitating reading the source code to understand it. In the future, we plan to make the output more comprehensible. For end-users, the same information can be gleaned from the \texttt{.info} file more easily.
+\item \textbf{seeding} For NSGA-II, when set, uses hillclimbing to create good alignments before the genetic algorithm begins. Has no effect in Optnetalign or Hillclimber, which always start with random alignments. When not set, NSGA-II will also use random starting alignments.
+\item \textbf{nooutput} Instructs the program not to output any files to disk at completion. Generally only used in conjunction with \textbf{finalstats} or \textbf{verbose}.
+\item \textbf{tournsel} For NSGA-II, use tournament selection to pick alignments for crossover. Otherwise, randomly select alignments. has no effect in Optnetalign or Hillclimber.
+\item \textbf{hillclimbiters} For NSGA-II, specifies how many of rounds of hillclimbing (each of 500 swaps) to perform after crossover and mutation. For Optnetalign, specifies how many rounds of hillclimbing (of 500 swaps) to perform in each iteration of the main program loop. Has no effect on Hillclimber, which only does hillclimbing anyway. To control the amount of hillclimbing done by Hillclimber, use the \textbf{generations} switch.
+\item \textbf{randseed} Specifies a random seed for the program. When not set, the current system clock is used to seed the program.
+\item \textbf{nthreads} Specifies how many threads to use in NSGA-II and Optnetalign. No effect on Hillclimber, which is single-threaded. It is recommended to set this to the number of logical cores on your machine for best performance.
+\item \textbf{dynparams} For Optnetalign, dynamically adjusts \textbf{mutrate, cxrate, oneobjrate} to match their success rates in producing non-dominated alignments. Never sets these rates higher than their initial user-specified rates, however, so when this is set, the rate switches are interpreted as maximums. This switch tends to dramatically improve performance. Has no effect on NSGA-II or Hillclimber.
+\item \textbf{timelimit} For Optnetalign, sets the maximum time to run. Has no effect on NSGA-II or Hillclimber, since their running time can be controlled in a more straight-forward way by specifying \textbf{generations}. When Optnetalign is not given a time limit, it works until \(popsize \times generations\) total alignments have been created. When a time limit is given, if \(popsize \times generations\) total alignments have been created, it will terminate early.
+\end{itemize}
+
+\section{Example invocations}
+What we call experiment one in our paper used the following invocation.
+
+\texttt{./optnetalign --net1 scere.net --net2 dmela.net --total --s3 --bitscores sc-dm.sim --blastsum --annotations1 scere.annos --annotations2 dmela.annos --cxrate 0.05 --cxswappb 0.75 --mutrate 0.05 --mutswappb 0.0001 --oneobjrate 0.75 --dynparams --popsize 200 --generations 1000000000 --hillclimbiters 10000  --timelimit 720 --outprefix sc-dm1 --finalstats >> sc-dm1.finalstats}
+
+Experiment two used the following invocation.
+
+\texttt{./optnetalign --net1 scere.net --net2 dmela.net --total --s3 --bitscores sc-dm.sim --annotations1 scere.annos --annotations2 dmela.annos --goc --cxrate 0.05 --cxswappb 0.75 --mutrate 0.05 --mutswappb 0.0001 --oneobjrate 0.75 --dynparams --popsize 200 --generations 1000000000 --hillclimbiters 10000  --timelimit 720 --outprefix sc-dm2 --finalstats >> sc-dm2.finalstats}
+
+A simple example invocation optimizing \(GOC\), \(S^3\) and sum of bit scores for our example networks follows. 
+
+\texttt{./optnetalign --net1 example1.net --net2 example2.net --bitscores example.sim --annotations1 example1.annos --annotations2 example2.annos --total --goc --s3 --blastsum --outprefix example-s3-goc-sumblast --verbose --popsize 100 --generations 100}
+
+\section{Compiling the programs}
+The only external dependencies of our programs are the BOOST library \footnote{\url{http://www.boost.org}} and the Intel Threading Building Blocks library, version 4.2 \footnote{\url{http://www.threadingbuildingblocks.org}}. Both of these libraries are freely available and easy to install on most UNIX systems. We recommend simply modifying our included Makefile to point to the proper library locations on your system, and to replace our compiler with whichever you prefer. We have tested our program at various points with the Intel C Compiler, Clang, and GCC, and we have compiled the programs on both Ubuntu and OS X. Since we only use stable, well-documented libraries, we imagine the programs should be easy to compile on Windows as well, but we have not yet attempted this. 
+
+\end{document}

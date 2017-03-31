@@ -1,0 +1,254 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0303 
+header_name {.h} 
+code_name {.cpp}
+class MagnaUI {open
+} {
+  Function {MagnaUI()} {open
+  } {
+    codeblock {} {open after {sim = new magnaparams;}
+    } {}
+    Fl_Window main_window {
+      label {MAGNA++} open
+      xywh {584 23 644 613} type Double resizable size_range {560 530 0 0} visible
+    } {
+      Fl_Group {} {
+        label Required open
+        xywh {5 20 635 147} box ENGRAVED_BOX align 9
+        code0 {\#include <FL/Fl_File_Chooser.H>}
+      } {
+        Fl_Button load_graph1_btn {
+          label {Network 1}
+          callback {char *flstr = fl_file_chooser("Select Network 1","*",".",0);
+if (flstr!=NULL) {
+load_graph1_disp->value(flstr);
+sim->graph_file_name1 = trimwhitespace(strdup(load_graph1_disp->value()));
+}}
+          xywh {12 34 158 23}
+        }
+        Fl_Input load_graph1_disp {
+          callback {sim->graph_file_name1 = trimwhitespace(strdup(load_graph1_disp->value()));}
+          tooltip {Network with fewer nodes.} xywh {175 33 460 24}
+          code0 {sim->graph_file_name1 = trimwhitespace(strdup(load_graph1_disp->value()));}
+        }
+        Fl_Button load_graph2_btn {
+          label {Network 2}
+          callback {char *flstr = fl_file_chooser("Select Network 2","*",".",0);
+if (flstr!=NULL) {
+load_graph2_disp->value(flstr);
+sim->graph_file_name2 = trimwhitespace(strdup(load_graph2_disp->value()));
+}}
+          xywh {12 68 158 23}
+        }
+        Fl_Input load_graph2_disp {
+          callback {sim->graph_file_name2 = trimwhitespace(strdup(load_graph2_disp->value()));}
+          tooltip {Network with more nodes.} xywh {175 67 460 24}
+          code0 {sim->graph_file_name2 = trimwhitespace(strdup(load_graph2_disp->value()));}
+        }
+        Fl_Button output_dir_btn {
+          label {Output File Directory}
+          callback {char *flstr = fl_dir_chooser("Select directory",".",0);
+if (flstr!=NULL) {
+output_dir_disp->value(flstr);
+sim->output_file_dir = trimwhitespace(strdup(output_dir_disp->value()));
+}}
+          xywh {12 103 158 23}
+        }
+        Fl_Input output_dir_disp {
+          callback {sim->output_file_dir = trimwhitespace(strdup(output_dir_disp->value()));}
+          tooltip {Directory where alignment results will be stored.} xywh {175 101 460 24}
+          code0 {sim->output_file_dir = trimwhitespace(strdup(output_dir_disp->value()));}
+        }
+        Fl_Input output_prefix_disp {
+          label {Output File Name}
+          callback {sim->output_file_pref = trimwhitespace(strdup(output_prefix_disp->value()));}
+          tooltip {Prefix of output file names.} xywh {175 135 460 24}
+          code0 {sim->output_file_pref = trimwhitespace(strdup(output_prefix_disp->value()));}
+          code1 {sim->output_file_prefix = NULL;}
+        }
+      }
+      Fl_Group {} {
+        label Optional open
+        xywh {5 189 635 166} box ENGRAVED_BOX align 9
+      } {
+        Fl_Group edge_group {
+          label {Measure of Edge Conservation} open
+          xywh {10 214 625 38} box EMBOSSED_BOX align 5
+        } {
+          Fl_Light_Button edge_s3 {
+            label S3
+            callback {sim->edge_optimizing_measure_code = 2;}
+            xywh {16 221 45 24} type Radio
+            code0 {edge_s3->set();}
+            code1 {sim->edge_optimizing_measure_code = 2;}
+          }
+          Fl_Light_Button edge_ec {
+            label EC
+            callback {sim->edge_optimizing_measure_code = 0;}
+            xywh {69 221 45 24} type Radio
+          }
+          Fl_Light_Button edge_ics {
+            label ICS
+            callback {sim->edge_optimizing_measure_code = 1;}
+            xywh {122 221 45 24} type Radio
+          }
+        }
+        Fl_Group node_group {
+          label {Measure of Node Conservation} open
+          xywh {10 276 625 42} box EMBOSSED_BOX align 5
+        } {
+          Fl_Light_Button node_none {
+            label None
+            callback {sim->use_nodematrix = 0;
+node_m_disp->value("");
+sim->nodematrix_file = NULL;}
+            xywh {18 283 56 26} type Radio
+            code0 {node_none->set();}
+            code1 {sim->use_nodematrix = 0;}
+            code2 {sim->nodematrix_file = NULL;}
+          }
+          Fl_Light_Button node_m {
+            label {Node Similarity File}
+            callback {char *flstr = fl_file_chooser("Select node comparison matrix","*",".",0);
+if (flstr!=NULL) {
+node_m_disp->value(flstr);
+sim->nodematrix_file = trimwhitespace(strdup(node_m_disp->value()));
+}
+sim->use_nodematrix = 1;}
+            xywh {79 283 180 26} type Radio
+            class Fl_Lighter_Button
+          }
+          Fl_Input node_m_disp {
+            callback {node_m->setonly();
+sim->use_nodematrix = 1;
+sim->nodematrix_file = trimwhitespace(strdup(node_m_disp->value()));}
+            tooltip {To optimize node conservation, include file with pairwise node similarities.} xywh {264 283 366 27}
+          }
+        }
+        Fl_Input alpha_disp {
+          label {Edge-Node Weight}
+          callback {sim->alpha = atof(alpha_disp->value());}
+          tooltip {Contribution of edge vs. node conservation. 1 = edge conservation only. 0 = node conservation only.} xywh {11 324 66 24} type Float align 8
+          code0 {alpha_disp->value("0.5");}
+          code1 {sim->alpha = 0.5;}
+        }
+      }
+      Fl_Group {} {
+        label {Advanced (see manual)} open
+        xywh {5 378 635 190} box ENGRAVED_BOX align 9
+      } {
+        Fl_Group init_pop_group {
+          label {Initial Population File} open
+          xywh {11 400 625 41} box EMBOSSED_BOX align 5
+        } {
+          Fl_Light_Button init_pop_none {
+            label None
+            callback {init_pop_file_disp->value("");
+sim->init_pop_file = NULL;}
+            xywh {16 410 62 24} type Radio
+            code0 {init_pop_none->set();}
+            code1 {sim->init_pop_file = NULL;}
+          }
+          Fl_Light_Button init_pop_file {
+            label File
+            callback {char *flstr = fl_file_chooser("Select initial population file","*",".",0);
+if (flstr!=NULL) {
+init_pop_file_disp->value(flstr);
+sim->init_pop_file = trimwhitespace(strdup(init_pop_file_disp->value()));
+}} selected
+            xywh {81 410 70 24} type Radio
+            class Fl_Lighter_Button
+          }
+          Fl_Input init_pop_file_disp {
+            callback {init_pop_file->setonly();
+sim->init_pop_file = trimwhitespace(strdup(init_pop_file_disp->value()));}
+            tooltip {To customize initial population, select file containing the list of alignments to be included.} xywh {156 410 475 25}
+          }
+        }
+        Fl_Group {} {
+          label {Genetic Algorithm Options} open
+          xywh {12 466 308 92} box EMBOSSED_BOX align 5
+        } {
+          Fl_Input pop_size_disp {
+            label {Population Size}
+            callback {sim->pop_size = atoi(pop_size_disp->value());}
+            tooltip {The larger the value, the better. 15,000 is recommended. If the process takes too long, try decreasing this value.} xywh {252 474 63 22} type Int
+            code0 {pop_size_disp->value("15000");}
+            code1 {sim->pop_size = 15000;}
+          }
+          Fl_Input num_gens_disp {
+            label {Number of Generations}
+            callback {sim->n_gen = atoi(num_gens_disp->value());}
+            tooltip {The larger the value, the better. 2,000 is recommended. If the process takes too long, try decreasing this value.} xywh {252 502 63 22} type Int
+            code0 {num_gens_disp->value("2000");}
+            code1 {sim->n_gen = 2000;}
+          }
+          Fl_Input frac_elite_disp {
+            label {Fraction of Elite Members}
+            callback {sim->pop_elite_ratio = atof(frac_elite_disp->value());}
+            tooltip {Fraction of the population that survives from one generation to the next. 0.5 is recommended.} xywh {252 529 63 22} type Float
+            code0 {frac_elite_disp->value("0.5");}
+            code1 {sim->pop_elite_ratio = 0.5;}
+          }
+        }
+        Fl_Group {} {
+          label {Parallelization Options} open
+          xywh {325 466 308 35} box EMBOSSED_BOX align 5
+        } {
+          Fl_Input n_threads_disp {
+            label {Number of Threads}
+            callback {sim->n_threads = atoi(n_threads_disp->value());}
+            tooltip {Automatically set to maximum possible value. Decreasing this value will slow down computation.} xywh {330 472 61 24} type Int align 8
+            code0 {char nthr_str[8]; int nthr = numprocs(); if (nthr < 1) nthr = 1; sprintf(nthr_str,"%d",nthr); n_threads_disp->value(nthr_str);}
+            code1 {sim->n_threads = nthr;}
+          }
+        }
+        Fl_Group {} {
+          label {Output Options} open
+          xywh {325 522 308 35} box EMBOSSED_BOX align 5
+        } {
+          Fl_Input freq_output_disp {
+            label {Frequency of Output}
+            callback {sim->freq = atoi(freq_output_disp->value());}
+            tooltip {0 = only output final alignment. Set to k to output best alignment every n/k generations.} xywh {330 528 61 24} type Int align 8
+            code0 {freq_output_disp->value("0");}
+            code1 {sim->freq = 0;}
+          }
+        }
+      }
+      Fl_Button run_sim_btn {
+        label {Run MAGNA++}
+        callback run_sim_btn_cb
+        xywh {5 577 265 29}
+        code0 {\#include "magnauibase.h"}
+      }
+      Fl_Button stop_sim_btn {
+        label {Stop MAGNA++}
+        callback {pthread_cancel(run_sim_thread);
+main_window->label("MAGNA++");
+main_window->activate();}
+        xywh {374 577 265 29}
+        code0 {if(ISWIN32) stop_sim_btn->hide();}
+        code1 {stop_sim_btn->hide();}
+      }
+    }
+  }
+  Function {show(int argc, char **argv)} {open
+  } {
+    code {main_window->show(argc, argv);} {}
+  }
+  decl {struct magnaparams *sim;} {public local
+  }
+  Function {run_sim_btn_cb(Fl_Button* o, void* v)} {open return_type {static void}
+  } {
+    code {((MagnaUI*)(o->parent()->user_data()))->run_sim_btn_cb_i(o,v);} {}
+  }
+  Function {run_sim_btn_cb_i(Fl_Button*, void*)} {open
+  } {
+    code {\#define run_sim_btn_cb_i_fn
+\#include "magnauifluidadd.h"
+\#undef run_sim_btn_cb_i_fn} {}
+  }
+  decl {pthread_t run_sim_thread;} {public local
+  }
+} 

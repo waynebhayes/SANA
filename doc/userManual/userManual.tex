@@ -1,0 +1,639 @@
+\documentclass[]{article}
+\usepackage{hyperref}
+\usepackage{verbatim}
+\usepackage[normalem]{ulem}
+
+%opening
+\title{SANA software}
+\author{Nil Mamano}
+
+\begin{document}
+
+\maketitle
+
+
+\part{SANA User Manual} % Main appendix title
+
+SANA was developed in a Linux environment (Ubuntu 14.04) and it has only been tested in this environment.
+
+The source code is ``conscious'' of the folder structure, so \textbf{it is important that files are in the expected locations and with the expected names}. While this approach is less flexible, it simplifies things for the user, since during a typical execution SANA may interact with many files, and it would not be practical to specify all of them as arguments.
+
+We call the ``root'' folder of the project the one containing the Makefile. File paths within this document, such as \texttt{src/main.cpp}, are relative to the root folder of the project.
+
+This document is not self-contained. Many concepts are described in the SANA Paper, the Thesis, or the Temperature Schedule Report.
+
+Through this document, ``SANA'' might refer to two different things: the SANA method in particular, or the whole program, which includes many other things (and other methods).
+
+\section{Obtaining biological data}\label{b:obtainbio}
+
+Sequence and GO term data should be downloaded and placed in the locations expected by SANA prior to running it.
+
+\subsection{GO terms}\label{b:goterms}
+Evaluating GO term based measures, such as GO coverage, requires having Gene Ontology data for each specie, i.e., the list saying which GO terms each protein has. Different datasets use different formats:
+\begin{itemize}
+\item Noisy yeast dataset: The networks from this dataset do not have GO term data, as the dataset is only used to evaluate topology.
+\item BioGRID dataset: There is a single file containing the GO terms of every network in this dataset. It can be downloaded here: \url{ftp.ncbi.nlm.nih.gov/gene/DATA/gene2go.gz} (17MB). SANA expects it to be stored as \texttt{go/gene2go}.
+\item Yeast and Human dataset: each of these networks has its own file with the GO terms of their proteins. They are already in the project, as\\ \texttt{networks/human/go/human\_gene\_association.txt} and\\ \texttt{networks/yeast/go/yeast\_gene\_association.txt}, so they don't need to be downloaded. The original files are in \url{http://www.geneontology.org/gene-associations/submission/gene_association.goa_human.gz} (6.2MB) and \url{http://www.geneontology.org/gene-associations/submission/gene_association.sgd.gz} (1.2MB).
+\end{itemize}
+
+\subsection{Sequence}\label{b:sequence}
+There are two steps in order to be able to evaluate sequence similarity. First, the sequences of each protein must be downloaded. Second, BLAST must be executed to obtain the sequence alignment scores.
+
+We have uploaded the sequence alignment scores directly. They can be downloaded from  \sout{\url{https://goo.gl/yPzTsT}} (400MB compressed, 1.3GB decompressed) (note: no longer online). The downloaded zip contains a folder \texttt{scores} that should be placed in the \texttt{sequence} folder, i.e., as \texttt{sequence/scores}.
+
+Next, we explain the way to generate the scores yourself (not recommended; you can skip to next section). The way to download sequences depends on the dataset:
+\begin{itemize}
+\item Noisy yeast dataset: The networks from this dataset do not have sequence data, as the dataset is only used to evaluate topology.
+\item BioGRID dataset: Given a network file using the protein identifiers from the BioGRID database, the script \texttt{sequence/PPI\_get\_FASTA.py} queries the BioGRID database for the sequences of the proteins. It has two arguments: (i) the network file; (ii) the output file. The script \texttt{sequence/get\_all\_FASTA.sh} downloads the sequences of all the proteins at the same time, using the \texttt{PPI\_get\_FASTA.py} script. It should be run as \texttt{./get\_all\_FASTA.sh} from the \texttt{sequence} folder. SANA expects the output files to be stored at \texttt{networks/name/sequence/name.fasta}, where \texttt{name} is one of the names of the BioGRID dataset networks. The script \texttt{get\_all\_FASTA.sh} stores the output files this way, so you just need to run this script.
+\item Yeast and Human dataset: the files with the sequences already come with the project. They are \texttt{networks/yeast/sequence/yeast\_curated.fasta} and\\ \texttt{networks/human/sequence/human\_curated.fasta}.
+\end{itemize}
+
+Once all the files with the sequences are in their place, BLAST must be run to create the sequence alignment scores. The script \texttt{sequence/run\_blast.sh} executes BLAST with the 16 pairs of networks from the BioGRID database and the yeast and human networks. It should be run as \texttt{./run\_blast.sh} from the \texttt{sequence} folder. For each pair of networks, the output of BLAST should be in \texttt{sequence/scores/name1\_name2\_blast.out}, where \texttt{name1} is the name of the first network and \texttt{name2} is the name of the second network. The script \texttt{run\_blast.sh} stores the output files this way. Note: BLAST can take up to several hours to run for each pair of networks.
+
+
+
+\subsection{Folder structure}\label{b:struct}
+The project folder contains the following elements:
+\begin{itemize}
+\item\verb|Makefile|: Makefile to build the project. It can be used as follows:
+\begin{itemize}
+\item\verb|make|: builds the SANA software. The output executable is called \verb|sana|.
+\item\verb|make clear_cache|: removes files auto-generated by SANA. 
+\item\verb|make clean|: removes files auto-generated by SANA as well as object (\verb|.o|) files and the \verb|sana| executable.
+\end{itemize}
+\item\verb|src/|: the source code of SANA.
+\item\verb|networks/|: the networks from the datasets used in the paper. It should contain one folder for each network, with the network file in ``\href{http://www.algorithmic-solutions.info/leda_manual/gw.html}{GraphWin}'' (\verb'.gw') format. The name of the folder and the network should match. For instance, \verb|networks/yeast/yeast.gw|. SANA will create a subfolder\\ \verb|networks/yeast/autogenerated/| to store data from this network, such as its distance matrix or its graphlet degree vectors.
+\item\verb|NAPAbench/|: to be filled later.
+\item\verb|alignmentDrawer/|: to be filled later.
+\item\verb|plots/|: to be filled later.
+\item\verb|scripts/|: to be filled later.
+\item\verb|resnik/|: to be filled later.
+\item\verb|wrappedAlgorithms/|: to be filled later.
+\item\verb|experiments/|: to be filled later.
+\item\verb|alignments/|: the alignments generated by SANA. SANA has an argument to specify the name of the output file containing the generated alignment. In absence of this argument, SANA gives a relevant name to the output file and stores it in this folder. For instance,\\ \verb|alignments/yeast_human/yeast_human_SANA_EC_480.txt|.
+\item\verb|LGRAAL/|: the LGRAAL software.
+\item\verb|HubAlign/|: the HubAlign software.
+\item\verb|go/|: this folder contains Gene Ontology data. Moreover, it contains three scripts used internally by SANA to evaluate the Go Average measure: \texttt{itgom.py}, \texttt{pairwise.py}, and \texttt{protein\_pair\_sim.py}. Moreover, it should contain the file \texttt{gene2go} (see section~\ref{b:goterms}).
+\item\verb|sequence/|: this folder contains sequence data. It contains the following files and folders:
+\begin{itemize}
+\item \texttt{PPI\_get\_FASTA.py}: A python script to download proteins sequences (see section~\ref{b:sequence}).
+\item\texttt{get\_all\_FASTA.sh}: A bash script that executes \texttt{PPI\_get\_FASTA.py} for all the network from the BioGRID dataset.
+\item\texttt{run\_blast.sh}: A bash script to run BLAST.
+\item\texttt{blast/}: the BLAST software.
+\item\texttt{scores/}: output of BLAST for each pair of networks.
+\item\texttt{bitscores/}: folder auto-generated by SANA.
+\end{itemize}
+\item\verb|matrices/|: auxiliary folder that SANA creates to store similarity matrices among species.
+\item\verb|tmp/|: auxiliary folder where SANA stores temporary files, such as intermediate inputs and outputs of the scripts.
+\end{itemize}
+\section{Compiling and executing}
+To compile, do \texttt{make} from the root project directory. To execute, do \texttt{./sana} from the same folder, followed by the arguments (see section~\ref{b:args}). Note that prior to running SANA, you should obtain the necessary biological data (see section~\ref{b:obtainbio}). The first time you run SANA with a new pair of networks, there will be a big overhead in the beginning because SANA will have to compute a lot of data in order to be able to evaluate all the measures. This data is stored for posterior runs.
+
+During the execution of simulated annealing, SANA gives feedback about the progress of the alignment. The log looks something like this:
+\begin{verbatim}
+...
+12 (23.106s): score = 0.00913156 P = 0.00687286
+13 (30.805s): score = 0.010701 P = 0.00407068
+14 (38.722s): score = 0.012009 P = 0.00228178
+15 (46.697s): score = 0.0143891 P = 0.00120349
+...
+\end{verbatim}
+It shows, from left to right: the iteration divided by the $N$ parameter of the restart schedule (by default, $10^7$), the execution time, the score of the objective function, and the current probability to accept a worse solution with a typical energy increment for this pair of networks and objective function.
+ 
+SANA outputs the alignment in a file. The first row contains the alignment itself, in a format that SANA understands. This way, it can be used as starting alignment for a different execution of SANA. The remaining of the file contains a report: the details of the networks, the method used to create it, the parameters used, the scores of all the measures, and the largest connected components of the common subgraph.
+
+
+\section{SANA arguments}\label{b:args}
+There are optional arguments and mandatory arguments. The mandatory arguments have default values, which can be seen (and edited) in \texttt{src/arguments/defaultArguments.cpp}. The basic syntax is \texttt{./sana arg1 value1 arg2 value2 ...} The order of the arguments is not important. If an argument appears more than once, the last value is the only one that counts. All the arguments start with \texttt{-} and are all in lowercase (e.g., \texttt{-method}). There are four kinds of arguments, according to the type of value that they expect.
+\begin{itemize}
+\item String arguments: the value is a string. For instance, \texttt{-g1 yeast}
+\item Double arguments: the value is a number. For instance, \texttt{-alpha 0.5}
+\item Bool arguments: they are always optional and they don't have a value. For instance, \texttt{-restart}.
+\item Vector arguments: the value is a sequence of numbers. The first number indicates the size of the sequence, and the following numbers are the elements. For instance, \texttt{-nodecweights 4 0.1 0.25 0.5 0.15}
+\end{itemize}
+
+Next, we show the list of arguments\footnote{Some arguments for advanced functions have been omitted. The full list can be found in \texttt{src/arguments/supportedArguments.cpp}}. For each argument, if and only if they are mandatory, we show its default value in \texttt{src/arguments/defaultArguments.cpp}.
+\subsubsection*{Networks}
+\begin{itemize}
+\item\texttt{-g1 yeast} (string): Specifies the name of $G_1$. The value should be the name of one of the folders in \texttt{networks}.
+\item\texttt{-g2 human} (string): Specifies the name of $G_2$. The value should be the name of one of the folders in \texttt{networks}, and it should have more nodes than $G_1$.
+\end{itemize}
+\subsubsection*{Method}
+\begin{itemize}
+\item\texttt{-method sana} (string): its possible values are \texttt{lgraal}, \texttt{hubalign}, \texttt{sana}, \texttt{wave}, \texttt{random}, \texttt{tabu}, \texttt{dijkstra}, \texttt{netal}, \texttt{mi-graal}, \texttt{ghost}, \texttt{piswap}, \texttt{optnetalign}, \texttt{spinal}, \texttt{great}, \texttt{netalie}, \texttt{gedevo}, \texttt{greedylccs}, \texttt{magna}, \texttt{waveSim}, \texttt{none}, and \texttt{hc}.
+\item\texttt{-t 1} (double): maximum execution time for SANA, in minutes. If during the execution of SANA you input \texttt{Control+C}, the program will ask if you want to save the alignment as it is. 
+\item\texttt{-alpha 0} (double): balance between topology and sequence similarity in the objective function of L-GRAAL and HubAlign.
+\end{itemize}
+\subsubsection*{Temperature schedule}
+\begin{itemize}
+\item\texttt{-k 1} (double): $k$ parameter of the temperature schedule, scaled by $2.5\cdot 10^{4}$. It can receive a special value: \texttt{auto}. In that case the parameter is set automatically.
+\item\texttt{-l 1} (double): $\lambda$ parameter of the temperature schedule, scaled by $10^8$. It can receive a special value: \texttt{auto}. In that case the parameter is set automatically.
+\item\texttt{-startalignment} (string): file containing the starting alignment (in the format outputted by SANA). Some methods allow this option, while the rest start with random alignments. It is not implemented in SANA, although it could be done.
+\end{itemize}
+\subsubsection*{Restart scheme}
+\begin{itemize}
+\item\texttt{-restart} (bool): active the restart scheme in SANA.
+\item\texttt{-tnew 3} (double): parameter $t_1$ of the restart scheme, in minutes.
+\item\texttt{-iterperstep 10000000} (double): parameter $N$ of the restart scheme.
+\item\texttt{-numcand 3} (double): parameter $K$ of the restart scheme.
+\item\texttt{-tcand 1} (double): parameter $t_2$ of the restart scheme, in minutes.
+\item\texttt{-tfin 3} (double): parameter $t_3$ of the restart scheme, in minutes.
+\end{itemize}
+\subsubsection*{Objective function}
+In SANA, the objective function can be any weighted combination of measures among EC, S3, WEC, and any local measures. Each measure can have a weight. If the sum of the different weights is not 1, they are scaled accordingly.
+
+\begin{itemize}
+\item\texttt{-ec 1} (double): weight of EC.
+\item\texttt{-s3 0} (double): weight of S3.
+\item\texttt{-graphlet 0} (double): weight of Graphlet similarity.
+\item\texttt{-graphletlgraal 0} (double): weight of Graphlet similarity, as defined in L-GRAAL.
+\item\texttt{-nodec 0} (double): weight of Node density.
+\item\texttt{-edgec 0} (double): weight of Edge density.
+\item\texttt{-importance 0} (double): weight of Importance.
+\item\texttt{-wec 0} (double): weight of WEC.
+\item\texttt{-sequence 0} (double): weight of Sequence similarity (in SANA, the contribution of Sequence similarity is tuned through the \texttt{-alpha} argument, not this).
+\item\texttt{-nodecweights 4 0.1 0.25 0.5 0.15} (vector): weights $w$ of the Node density measure. They are automatically scaled to 1.
+\item\texttt{-edgecweights 4 0.1 0.25 0.5 0.15} (vector): weights $w$ of the Edge density measure. They are automatically scaled to 1.
+\item\texttt{-wecnodesim nodec} (string): local measure used to weight the edges in the WEC measure.
+\end{itemize}
+\subsubsection*{Objective Scoring Combinations}
+In SANA, the objective score is the result of the measures above, and a scoring combination choice. The default is sum.
+
+The possible values thus far are the following.
+\begin{itemize}
+\item\texttt{-score sum} (string): The default score combination, where each weighted measure is summed together for the cumulative score.
+\item\texttt{-score product} (string): Score combination where each weighted measure is multiplied together for the final score.
+\item\texttt{-score inverse} (string): Score combination method is set to value1.
+\item\texttt{-score max} (string): Score combination where swaps are made if any of the measures will increase with the swap.
+\item\texttt{-score min} (string): Score combination where swaps are made if no measure will decrease as a result of it.
+\item\texttt{-score maxFactor} (string): Score combination where swaps are made if the potential gain of a measure is great than the potential loss of another measure.
+\end{itemize}
+\subsubsection*{Other measures}
+\begin{itemize}
+\item\texttt{-goweights 1 1} (vector): all the $\mbox{GO}_k$ measures are added into a single measure, with different weights. This vector specifies the maximum $\mbox{GO}_k$ measure and the weight of each one. For instance, \texttt{-goweights 2 0.5 0.5} means evaluate $\mbox{GO}_1$ and $\mbox{GO}_2$ in equal parts. The weights are automatically scaled to 1.
+\item\texttt{-goavg} (bool): indicates whether the GO Average measure should be incorporated in the report (this measure is optional because it requires a lot of time.)
+
+Go Average can only be evaluated with the yeast and human networks, as IT-GOM does not understand the protein identifiers from the BioGRID dataset.
+\item\texttt{-truealignment} (string): alignment file containing the ``true'' alignment. This is used to evaluate the NC measure. In its absence, NC assumes that the true alignment is the identity (the node with index $i$ in $G_1$ is mapped to the node with index $i$ in $G_2$). In any case, NC is only evaluated when $G_1$ and $G_2$ have the same size.
+\end{itemize}
+
+\subsubsection*{Others}
+\begin{itemize}
+\item\texttt{-o} (string): Specifies the output file, relative to the project folder. In its absence, SANA gives it a relevant name automatically and stores it in the \texttt{alignments} folder (see section~\ref{b:struct}).
+\end{itemize}
+
+\subsection{Examples}
+
+\begin{description}
+\item[Default arguments]
+\begin{verbatim}
+
+./sana
+\end{verbatim}
+Executes SANA, aligning the \texttt{yeast} and \texttt{human} networks, optimizing S3, for 5 minute.
+\item[Slower temperature schedule]
+\begin{verbatim}
+
+./sana -l 0.7 -k 2
+\end{verbatim}
+\item[Restart scheme]
+\begin{verbatim}
+
+./sana -restart -tnew 20 -iterperstep 30000000 -numcand 15 -tcand 2 -tfin 10
+\end{verbatim}
+One hour total execution time
+\item[Optimize EC]
+\begin{verbatim}
+
+./sana -ec 1 -s3 0
+\end{verbatim}
+\item[Optimize L-GRAAL's objective function and use $\alpha=0.5$]
+\begin{verbatim}
+
+./sana -ec 0 -wec 0.5 -sequence 0.5 -wecnodesim graphletlgraal
+\end{verbatim}
+\item[Custom output file]
+\begin{verbatim}
+
+./sana -o x
+\end{verbatim}
+Stores the output in \texttt{x}.
+\item[Different node density weights]
+\begin{verbatim}
+
+./sana -nodecweights 3 0 0 1
+\end{verbatim}
+\item[Networks from the Noisy yeast dataset]
+\begin{verbatim}
+
+./sana -g1 0syn -g2 5syn
+\end{verbatim}
+The networks are named \texttt{0syn}, \texttt{5syn}, \texttt{10syn}, \texttt{15syn}, \texttt{20syn}, and \texttt{25syn}, where the numbers indicate the amount of noise.
+\item[Networks from the BioGRID dataset]
+\begin{verbatim}
+
+./sana -g1 RNorvegicus -g2 SPombe
+\end{verbatim}
+\item[L-GRAAL with $\alpha=0.5$]
+\begin{verbatim}
+
+./sana -method lgraal -t 60 -alpha 0.5
+\end{verbatim}
+\item[HubAlign with $\alpha=0.3$]
+\begin{verbatim}
+
+./sana -method hubalign -alpha 0.3
+\end{verbatim}
+\item[Objective function combination]
+\begin{verbatim}
+
+./sana -ec 1 -ics 0.5 -s3 3 -graphlet 1 -edgec 0.5
+\end{verbatim}
+\item[$\mbox{GO}_5$ measure as objective function]
+\begin{verbatim}
+
+./sana -ec 0 -go 1 -goweights 5 0 0 0 0 1
+\end{verbatim}
+\item[Evaluate GO Average measure]
+\begin{verbatim}
+
+./sana -g1 yeast -g2 human -goavg
+\end{verbatim}
+\end{description}
+
+\part{Code}
+
+\section{Formats}\label{formats}
+\subsubsection*{Networks}
+Networks in the \texttt{networks/} folder are specified in \textit{graphWin} format. Another network file format sometimes used by other software is what I call ``edge list''. The file has one line per edge, each line consisting of two node names.
+
+Internally, nodes are identified by their index (starting with 0) in the graphWin file, and not by their names. However, the \texttt{Graph} class has functions to translate between node names and indices. The indices are stored as \texttt{ushort} (alias for \texttt{unsigned short int}), to save space in the adjacency matrices and other data structures. This limits the maximum size of networks to 65536 nodes.
+
+
+\subsubsection*{Alignments}
+When SANA finishes it saves the resulting alignment in the file named with the value of the argument \texttt{-o} (or with an automatically generated name, if this argument is not found). The alignment is contained in the first line. It is a list of $n_1$ numbers between $0$ and $n_2-1$. If the $i$-th number is $j$, it means that the node with index $i$ in $G_1$ maps to the node with index $j$ in $G_2$.
+
+The remaining of the file is just a description of the networks, the properties of the alignment (such as scores of different measures), and details about the method used to generate it.
+
+\section{Coding conventions}
+
+\begin{itemize}
+\item Classes have two files named the same as the class, the header (\texttt{.hpp}) and the source (\texttt{.cpp}).
+\item Class files start with uppercase, while other files start with lowercase.
+\end{itemize}
+
+
+\section{Source files}
+In this section, \texttt{.*pp} means that there is both a header and a source file.
+
+\begin{itemize}
+
+\subsection{Auxiliary files}
+
+
+\item \texttt{utils.*pp} Mix of auxiliary functions that didn't belong anywhere else.
+
+\item \texttt{templateUtils.cpp} Same as \texttt{utils.cpp}, but with template functions.
+
+\item \texttt{Timer.*pp} A timer.
+
+\item \texttt{ArgumentParser.*pp} An argument parser.
+
+\item \texttt{NormalDistribution.*pp} Statistical functions about a normal distribution.
+
+\item \texttt{computeGraphlets.*pp} An algorithm to compute the graphlet degree vectors of a graph. I did not create this code myself, I just adapted it. It is free software (the license is in the code) so it can't be used in a closed version of SANA. It is called from the method \texttt{loadGraphletDegreeVectors()} from the \texttt{Graph} class, so it shouldn't require direct manipulation.
+
+To avoid recomputing the GDVs, the \texttt{Graph} class stores them in \\ \texttt{networks/}\textit{name}\texttt{/autogenerated/}\textit{name}\texttt{\_gdv.bin} (in binary format), where \textit{name} is the name of the graph. When \texttt{loadGraphletDegreeVectors()} is called, first it is checked if the binary file already exists. If it does, it is loaded directly. Otherwise, it is computed and stored.
+
+\item \texttt{Graph.*pp} Networks.
+
+The function \texttt{getDistanceMatrix} returns the distance matrix. The first time it is called, it is computed and stored in\\ \texttt{networks/}\textit{name}\texttt{/autogenerated/}\textit{name}\texttt{\_distMatrix.txt}. When \texttt{getDistanceMatrix} is called, it is first checked if this file exists. If it does, the matrix is loaded directly instead of recomputing it.
+
+A special function of this class is
+\begin{verbatim}
+static void GeoGeneDuplicationModel(uint numNodes,
+    uint numEdges, string outputFile)
+\end{verbatim}
+which builds a graph following the GEO-GD expansion model (from the paper ``Geometric evolutionary dynamics of protein interaction networks'') with a certain number of nodes and edges, and stores it in graphWin format in the specified file.
+
+\item \texttt{Alignment.*pp} Alignment between two graphs. It does not have the graphs as attributes, so it receives them as arguments in many functions.
+
+Internally, alignments are stored as a vector $A$ of \texttt{ushort}. $A[i]=j$ indicates that the node of $G_1$ with index $i$ is mapped to the node with index $j$ of $G_2$.
+One of the useful functions of this class to catch bugs is
+\begin{verbatim}
+bool isCorrectlyDefined(const Graph& G1, const Graph& G2);
+\end{verbatim}
+which returns whether the alignment is correctly defined between $G_1$ and $G_2$. It is recommendable to always call this function before doing any analysis on an alignment.
+
+\item \texttt{randomSeed.*pp} Random seed generator.
+
+\subsection{Measures}
+
+\item \texttt{Measure.*pp} Abstract base class (i.e., cannot be instantiated) for all the measures. It requires that all subclasses implement the function \texttt{eval(const Alignment\& A)}, which is supposed to evaluate the alignment $A$ and return a score.
+
+Its attributes are a name and two graphs. While measures (e.g., EC) ``exist'' independently of any two particular graphs, sometimes the \texttt{eval} function uses some data structures which can be precomputed for any two particular graphs, such as the similarity matrix in case of Sequence similarity. Since we don't want to recompute this matrix every time we call \texttt{eval}, this type of data structure are initialized when creating the measure. This requires that the measure has the graphs as attributes.
+
+\item \texttt{EdgeCorrectness.*pp} Subclass of \texttt{Measure}. Also known as EC, or Edge Coverage.
+
+\item \texttt{SymmetricSubstructureScore.*pp} Subclass of \texttt{Measure}. Usually called S3.
+
+\item \texttt{InducedSubstructureScore.*pp} Subclass of \texttt{Measure}. Usually called ICS.
+
+\item \texttt{LargestCommonConnectedSubgraph.*pp} Subclass of \texttt{Measure}. Usually called LCCS. Recall that there are two versions of LCCS (see a comment in the code for details). A constant bool \texttt{USE\_MAGNA\_DEFINITION} choses between the two.
+
+\item \texttt{NodeCorrectness.*pp} Subclass of \texttt{Measure}. Usually called NC. The constructor receives the ``true'' alignment as argument.
+
+\item \texttt{ShortestPathConservation.*pp} Subclass of \texttt{Measure}. A measure based on shortest paths. It is the only measure that is not normalized, and in addition, you want to minimize it instead of maximizing.
+
+\item \texttt{InvalidMeasure.*pp} Subclass of \texttt{Measure}. It is a dummy class that does nothing. It is used in places where a Measure is technically required but not actually used.
+
+\item \texttt{LocalMeasure.*pp} Subclass of \texttt{Measure}. It is also an abstract base class (i.e., cannot be instantiated) for all the local measures. What all local measures have in common is that they have a similarity matrix, and that the score is the average similarity of the aligned nodes. The subclasses of \texttt{LocalMeasure} don't need to define \texttt{eval}, they only need to define \texttt{initSimMatrix()}, which creates the similarity matrix. Some similarity matrices may be costly to compute, so the first time they are computed they are stored in \texttt{matrices/autogenerated/} with a unique name and in binary format. When a local measure is instantiated, first it is checked if the file exists, and if it does it is loaded instead of recomputed. Since this process is common for all local measures, \texttt{LocalMeasure} handles it.
+
+\item \texttt{GraphletSimilarity.*pp} Subclass of \texttt{LocalMeasure}. Graphlet similarity measure as defined in the GRAAL paper.
+
+\item \texttt{GraphletLGRAAL.*pp} Subclass of \texttt{LocalMeasure}. Graphlet similarity measure as defined in the L-GRAAL paper.
+
+\item \texttt{Importance.*pp} Subclass of \texttt{LocalMeasure}. Importance measure used in HubAlign.
+
+\item \texttt{EdgeCount.*pp} Subclass of \texttt{LocalMeasure}.
+
+\item \texttt{NodeCount.*pp} Subclass of \texttt{LocalMeasure}.
+
+\item \texttt{Sequence.*pp} Subclass of \texttt{LocalMeasure}. It uses BLAST bit-scores.
+
+In order to initialize its similarity matrix, the BLAST output is necessary. It is expected to be \texttt{sequence/scores/}\textit{g1Name}\texttt{\_}\textit{g2Name}\texttt{\_blast.out}. If it is not found, the program halts. The BLAST output is not generated automatically by SANA, as it can take hours. Instead, there are some scripts in \texttt{sequence/} to run BLAST and obtain these files (see Section~\ref{b:sequence} for details).
+
+In the case of the Yeast and Human networks, \texttt{Sequence} has to translate the names of the nodes in the network to the names that appear in the BLAST output files. This translation is used by looking at the \texttt{networks/yeast/sequence/yeast\_curated.fasta} file (analogous for the Human network).
+
+\item \texttt{GoSimilarity.*pp} Subclass of \texttt{LocalMeasure}. This is a weighted combination of all the $\mbox{GO}_k$ measures. The constructor receives a vector \texttt{countWeights} that determines the relative weight of each $\mbox{GO}_k$ measure. For instance, if the vector is $(1)$, then the corresponding measure is $\mbox{GO}_1$; if it is $(0,1)$, the corresponding measure is $\mbox{GO}_2$; if it is $(1,1)$, then it is the average of both.
+
+In order to initialize its similarity matrix, the GO terms of each node are necessary. As explained in Section~\ref{b:goterms}, the corresponding data is expected to be found in different files for different datasets. In all cases, the corresponding file is identified (if the file is not found, the program halts), parsed to remove all the unnecessary data, and stored in\\ \texttt{networks/}\textit{name}\texttt{/autogenerated/}\textit{name}\texttt{\_go\_simple.txt}. Next, this file is parsed again (as usual, if it doesn't exist yet it is first generated) and the data is transformed again to a different format that is more convenient (the GO terms are replaced by their numbers and grouped by proteins, and the proteins names are replaced by their indices). The result is stored in \texttt{networks/}\textit{name}\texttt{/autogenerated/}\textit{name}\texttt{\_go\_internal.txt}. This is the file loaded to compute the similarity matrix (if it doesn't exist yet it is first generated).
+
+As defined in MAGNA, this local measure is special because instead of being the average similarity of the aligned nodes, it is the sum of the similarity of the aligned nodes divided by the number of proteins with at least one GO term in $G_1$ (or the number of proteins with at least one GO term in $G_2$, if this number is smaller). However, this is inconvenient because it is useful to combine several local measures by combining their similarity matrices, but that only works if they are all evaluated the same. Therefore, we use the traditional definition, the average similarity of the aligned nodes (the reimplementation of \texttt{eval} is in the code but it is commented).
+
+\item \texttt{GoCoverage.*pp} Subclass of \texttt{Measure}. Note: even though this measure can be implemented as a local measure, that has not been done yet (it was on the to-do list).
+
+GO Coverage measure. It uses (among others) the public function \texttt{loadGOTerms} from the sister class \texttt{GoSimilarity}, which returns the list of GO terms of every protein. In this way, only the \texttt{GoSimilarity} class has to interact directly with the auxiliary GO files.
+
+\item \texttt{GoAverage.*pp} Subclass of \texttt{Measure}. Note: even though this measure can be implemented as a local measure, that has not been done yet.
+
+GO Average measure. This measure was used in MAGNA. It calls the scripts \texttt{go/pairwise.py}, \texttt{go/itgom.py}, and \texttt{go/protein\_pair\_sim.py}, which were created by Vikram. These scripts query a GO-term semantic similarity analysis website.
+
+The scripts take very long to finish. The data could be stored to speed the process for subsequent executions, but this has not been implemented yet, as it is a measure that we have not used much and it only works with the Yeast and Human networks.
+
+\item \texttt{GenericLocalMeasure.*pp} Subclass of \texttt{LocalMeasure} This is a local measure that is not any particular one. Instead, it receives the similarity matrix directly in the constructor. It is used, for instance, to combine several local measures into one.
+
+\item \texttt{WeightedEdgeConservation.*pp} Subclass of \texttt{Measure}. Also known as WEC, or Weighted Edge Coverage. The constructor receives a local measure that is used to give weights to the edges.
+
+\item \texttt{MeasureCombination.*pp} This class is like a measure made of a combination of measures. It has a vector of pointers to measures and a corresponding vector of weights. It is used because sometimes it is necessary to iterate through all the measures (for instance, to write all the scores to the report). It is also useful to specify the objective function of SANA, which is a weighted combination of measures. SANA receives a \texttt{MeasureCombination} as argument in the constructor.
+
+\subsection{Methods}\label{methods}
+
+\item \texttt{Method} Abstract base class (i.e., cannot be instantiated) for all the network alignment methods (such as SANA). The main method of this class is \texttt{run()}, which must be implemented by the subclasses. This function returns an alignment. The constructor is
+\begin{verbatim}
+Method(Graph* G1, Graph* G2, string name);
+\end{verbatim}
+Even though the methods ``exist'' independently of the graphs $G_1$ and $G_2$, the constructor requires the graphs so that methods can initialize any data structures needed for \texttt{run()} (analogous to how for measures we want to do any preprocessing necessary for \texttt{eval()} just once, for methods we want to do any preprocessing necessary for \texttt{run()} just once).
+
+There are two other methods that subclasses must implement. The first is \texttt{fileNameSuffix(const Alignment\& A)}. If when running SANA the argument \texttt{-o} to specify the output file is not supplied, a name is generated automatically:\\
+\texttt{alignments/}\textit{G1Name}\texttt{\_}\textit{G2Name}\texttt{/}\textit{G1Name}\texttt{\_}\textit{G2Name}\texttt{\_}\textit{method}\texttt{\_}\textit{suffix}\texttt{.txt}\\where \textit{method} is the name of the method, and \textit{suffix} is what \texttt{fileNameSuffix()} returns, and is supposed to give additional information about the details of the alignment. For instance:
+\begin{verbatim}
+yeast_human_SANA_EC_048.txt
+yeast_human_LGRAAL_alpha_0.txt
+\end{verbatim}
+Note: if the automatically generated name already exists, a numerical suffix is added automatically.
+
+The other function subclasses of \texttt{Method} must implement is \texttt{describeParameters()}, which should describe the parameters used in this particular execution of the method (for instance, the values of $k$ and $\lambda$ in the case of SANA). This information is added to the report in the output file.
+
+\item \texttt{SANA.*pp} Subclass of \texttt{Method}. The code is quite complex because it has many features (incremental evaluation, combination of objective functions, restart scheme, automatic setting of temperature schedule parameters). However, I tried to comment it adequately.
+
+By default, SANA is initialized without restarting scheme. It can be enabled with \texttt{enableRestartingScheme(...)}. Similarly, automatic temperature schedule can be enabled with \texttt{setKAutomatically()} and \texttt{setLAutomatically()}. SANA sets values of $k$ and $\lambda$ when initialized, but these functions override them.
+
+Note: although in the paper it is explained that the $\alpha$ parameter controls the weight of Sequence similarity versus topology, in the code there is no explicit $\alpha$ parameter. SANA has a \texttt{MeasureCombination} attribute which has the weight of each measure in the objective function. The effect of $\alpha$ can be emulated with these weights.
+
+In order to know what is a ``typical energy increment'' for a particular pair of networks and objective function, SANA first runs itself with temperature fixed to 0, which is usually quick, and uses this execution to sample energy increments. Hence, when running SANA, it might seem like it runs twice.
+
+\item \texttt{HillClimbing.*pp} Subclass of \texttt{Method}. It is very similar to SANA, but it implements steepest ascent hill-climbing. In other words, it looks at every neighbor at each iteration, and chooses the best, until it can't improve anymore. It is a very slow method.
+
+\item \texttt{HubAlignWrapper.*pp} Subclass of \texttt{Method}. It runs HubAlign, which is expected to be in \texttt{HubAlign/HubAlign} (if it isn't, the program halts). The purpose of this class is to give a uniform interface for running SANA and HubAlign: HubAlign expects the networks and sequence data in a different format, outputs the alignment in a different format, and requires other several parameters, which the class fixes to the values specified in the paper.
+
+Moreover, in HubAlign the $\alpha$ parameter has the opposite meaning as usual (it is the weight of topology, not sequence), although this is accounted for in the \texttt{main.cpp} file.
+
+\item \texttt{LGraalWrapper.*pp} Subclass of \texttt{Method}. Analogous to \texttt{HubAlignWrapper} for L-GRAAL. In this case, the software is expected to be in \texttt{LGRAAL/L-GRAAL.exe}. The program \texttt{LGRAAL/ncount4.exe} is also executed, which they use to compute GDVs. The output of this program, which is part of the input of \texttt{L-GRAAL.exe}, is stored for quick access in\\ \texttt{networks/}\textit{name}\texttt{/autogenerated/}\textit{name}\texttt{\_lgraal\_gdvs.ndump2}.
+
+\item \texttt{RandomAligner.*pp} Subclass of \texttt{Method}. It returns a random alignment.
+
+\item \texttt{GreedyLCCS.*pp} Subclass of \texttt{Method}. This method is bugged. It is supposed to optimize LCCS in a greedy fashion. It is in the to-do list to fix it (or reimplement/delete it).
+
+\item \texttt{NoneMethod.*pp} Subclass of \texttt{Method}. It is a dummy class that does nothing. It is used in places where a method is technically required but not actually used.
+
+\item \texttt{WeightedAlignmentVoter.*pp} Subclass of \texttt{Method}. An implementation of WAVE.
+
+\end{itemize}
+The files \texttt{Experiment.*pp}, \texttt{ParameterEstimation.*pp}, \texttt{AlphaEstimation.*pp}, and \texttt{ComplementaryProteins.*pp} are not described because they are complicated and serve very specific purposes.
+
+\subsection{Modes}
+\item \texttt{AnalysisMode.*pp}
+
+\item \texttt{ClusterMode.*pp} Used in submission to cluster.
+
+\item \texttt{DebugMode.*pp} Used for debugging purposes.
+
+\item \texttt{NormalMode.*pp} Default mode used in running
+
+\item \texttt{SimilarityMode.*pp} Used in creating similarity files.
+
+\subsection{Main program}
+
+The main program is in \texttt{main.cpp}. \textbf{The project folder is hard-coded in this file, and it is necessary to update it for the program to run correctly}.
+
+The main program does the following:
+
+\begin{enumerate}
+
+\item The arguments are parsed.
+
+\item If the bool argument \texttt{-qsub} is present, then the execution is sent to the cluster. A small bash script \texttt{tmp/submit.sh} (with a unique suffix if necessary) is created and executed. This script submits SANA to run in the cluster with exactly the same arguments (except \texttt{-qsub}). Moreover, the \texttt{-qcount} argument allows you to submit it more than once.
+
+\item The arguments and their values are printed in the terminal, so that the user can inspect what is being executed.
+
+\item If any of the arguments \texttt{-experiment}, \texttt{-paramestimation}, or \texttt{-alphaestimation} is present, then the corresponding experiment is executed.
+
+\item Any folder that will be used by the program is created if it did not already exist, such as \texttt{tmp/}.
+
+\item The graphs are read and their data structures initialized.
+
+\item If the double argument \texttt{-rewire} is greater than $0$, the corresponding fraction of edges in $G_2$ is randomly rewired. For instance, with \texttt{-rewire 0.25}, $25\%$ of the edges will be rewired. This is useful when aligning a network vs a noisy version of itself.
+
+Note: there are also functions to add and remove edges randomly, but there is no argument for those.
+
+\item If the bool argument \texttt{-dbg} is found, the execution flow is passed to the function \texttt{dbgMode}. This function does not do anything in particular, it is just used to try things out of the usual. It is not meant for anything permanent, and it is overwritten as needed.
+
+\item The measures are initialized. The first time SANA is executed, this step takes a long time. The following times, it takes a fraction of the time because most of the data is stored.
+
+Some measures are only initialized if certain preconditions are met (for instance, for Importance there must at least exist one node with degree greater than 10 in each network).
+
+\item The method that is going to be run is initialized.
+
+\item The method is executed.
+
+\item The correctness of the alignment is checked.
+
+\item The report is generated and saved.
+
+\end{enumerate}
+
+\section{Extending the software}
+
+When adding measures or methods, it is useful to look at already existing examples.
+
+\subsection{Adding a new measure}
+This requires creating a new class that is a subclass of \texttt{Measure} or \texttt{LocalMeasure}.
+
+In the first case, one must implement the constructor and \texttt{eval()}. The constructor should receive at least $G_1$ and $G_2$ as parameters. It should call the constructor of \texttt{Measure} with $G_1$, $G_2$ and the name (or acronym) of the measure. For instance:
+\begin{verbatim}
+EdgeCorrectness(Graph* G1, Graph* G2) : Measure(G1, G2, "ec") {}
+\end{verbatim}
+
+In the second case, one must implement the constructor and \texttt{initSimMatrix()}.
+
+The function \texttt{initSimMatrix()} should compute the similarity matrix of this measure and set it in the attribute \texttt{vector<vector<float>> sims} of the superclass.
+The constructor should do exactly three things:
+\begin{enumerate}
+\item Call the constructor of \texttt{LocalMeasure}, e.g.:
+\begin{verbatim}
+Importance(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "importance")
+\end{verbatim}
+\item Choose a name for the file to store the similarity matrix at; it is typically \texttt{matrices/autogenerated/G1Name\_G2Name\_suffix.bin}, where \texttt{suffix} could be the name of the measure.
+\item Call \texttt{loadBinSimMatrix(file)}, where \texttt{file} is the name of the file of the similarity matrix. This function from the \texttt{LocalMeasure} superclass looks up the file, loads the matrix if it already exists, or calls \texttt{initSimMatrix()} (which is reimplemented by the subclass) and then stores the similarity matrix.
+\end{enumerate}
+
+Once the new class has been created, in order for it to be evaluated and added to the final report, there must be some modifications made in the file \texttt{main.cpp}:
+\begin{itemize}
+\item Include the header file.
+\item In the function \texttt{initMeasures(...)}, initialize a pointer to an instance of the measure and add it to the \texttt{MeasureCombination} variable \texttt{M}, e.g.:
+\begin{verbatim}
+  Measure *m;
+  m = new LargestCommonConnectedSubgraph(&G1, &G2);
+  M.addMeasure(m);
+\end{verbatim}
+\end{itemize}
+In addition, if you have modified SANA so that it can optimize that measure (more on that latter) or if it is a local measure (all local measures can be optimized by SANA by default), and you want SANA to be able to optimize it, you must do the following:
+\begin{itemize}
+\item Add a double argument to the list of arguments (it appears in the start of the file) with the name of the measure, e.g., \texttt{-ec}.
+\item In \texttt{initMeasures(...)}, add it to \texttt{M} with the value of the argument (i.e., the weight):
+\begin{verbatim}
+m = new EdgeCorrectness(&G1, &G2);
+M.addMeasure(m, args.doubles["-ec"]);
+\end{verbatim}
+\end{itemize}
+
+Note: since $G_1$ and $G_2$ are already protected attributes of \texttt{Measure}, it is not necessary for the subclasses to have them as their own attributes.
+
+\subsection{Adding a new method}
+This requires creating a subclass of \texttt{Method}. It is necessary to implement the constructor, \texttt{run()}, \texttt{describeParameters()} and \texttt{fileNameSuffix()} (see Section~\ref{methods}). Similar to \texttt{Measure}, the constructor of \texttt{Method} expects the networks and a name for the new method.
+
+Once the new class has been created, in order to be able to use it, there must be some modifications made in the file \texttt{methodSelector.cpp}:
+\begin{itemize}
+\item Include the header file.
+\item In the function \texttt{initMethod(...)}, add a new if case, which compares the variable \texttt{name} to the name of the method and returns a new instance of the method, e.g.:
+\begin{verbatim}
+if (name == "random") {
+  return new RandomAligner(&G1, &G2);
+}
+\end{verbatim}
+\end{itemize}
+Once this is done, you can execute the new method with \texttt{./sana -method name}.
+
+Note: since $G_1$ and $G_2$ are already protected attributes of \texttt{Method}, it is not necessary for the subclasses to have them as their own attributes.
+
+\subsection{Adding a new wrapper method}
+This requires creating a subclass of \texttt{WrapperMethod}. It is necessary to implement the constructor, \texttt{generateAlignment()}, \texttt{loadDefaultParameters()} and \texttt{loadAlignment()} (see Section~\ref{methods}). Similar to \texttt{Measure}, the constructor of \texttt{Method} expects the networks and a name for the new method.
+
+Once the new class has been created, in order to be able to use it, there must be some modifications made in the file \texttt{methodSelector.cpp}:
+\begin{itemize}
+\item Include the header file.
+\item In the function \texttt{initMethod(...)}, add a new if case, which compares the variable \texttt{name} to the name of the wrapper method and returns a new instance of the method, e.g.:
+\begin{verbatim}
+if (name == "random") {
+  return new RandomAligner(&G1, &G2);
+}
+\end{verbatim}
+\end{itemize}
+Once this is done, you can execute the new method with \texttt{./sana -method name}.
+
+Note: since $G_1$ and $G_2$ are already protected attributes of \texttt{Method}, it is not necessary for the subclasses to have them as their own attributes.
+
+\subsection{Adding a new objective function to SANA}
+
+You don't need to modify the \texttt{SANA} class to add a new local measure. The changes described above to the \texttt{main.cpp} file suffice.
+
+For other measures, many more changes are necessary to \texttt{SANA.hpp} and \texttt{SANA.cpp}. In the simplest case, you would need to do the following. Let the measure be $x$.
+\begin{enumerate}
+\item Add a private attribute \texttt{xScore} to the \texttt{SANA} class.
+\item The function \texttt{initDataStructures(const Alignment\& startA)}, which is called prior to starting the iterations of SA, prepares all the data structures necessary to run SANA starting with the alignment \texttt{startA}. Here, the value of \texttt{xScore} should be initialized, i.e., \texttt{xScore = x.eval(startA)}, where \texttt{x} is an instance of the measure $x$.
+\item Modify \texttt{performChange()} and \texttt{performSwap()} to compute it incrementally. Both functions follow the same structure, and both require the same additions:
+\begin{enumerate}
+\item The new $x$ score should be computed in a local variable \texttt{xNewScore}.
+\item The new current score should be computed accounting for the new $x$ score and the weight of $x$:
+\begin{verbatim}
+double newCurrentScore = 0;
+newCurrentScore += ecWeight * ecNewScore;
+newCurrentScore += s3Weight * s3NewScore;
+...
+newCurrentScore += xWeight * xNewScore;
+\end{verbatim}
+Note that the weight of $x$ can be obtained as \texttt{MC->getWeight("x")}, where \texttt{"x"} is the name of the measure. \emph{MC} is an attribute of SANA of type \texttt{MeasureCombination} which has the weight of each measure.
+\item If (and only if) the new solution is accepted, update \texttt{xScore} and any data structures that are necessary to compute it incrementally. This has to be done inside the following \texttt{if} (it is the same in both \texttt{performChange()} and \texttt{performSwap()}):
+\begin{verbatim}
+if (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T)) {
+  ...
+  xScore = xNewScore;
+  ...
+}
+\end{verbatim}
+\end{enumerate}
+\end{enumerate}
+
+
+\section{Analysis of complementary homolog proteins}
+
+The files \texttt{ComplementaryProteins.*pp} contain function to do this analysis. The file containing the raw data about which protein pairs are complementary or non-complementary is found in \texttt{sequence/complementProteins.txt}.
+
+Note that this analysis can be done with the Yeast and Human networks or with the SCerevisiae and HSapiens networks (from the BioGRID dataset).
+
+The first useful function is \texttt{printProteinPairCountInNetworks(bool BioGRIDNetworks)}, which prints how many of the protein from \texttt{sequence/complementProteins.txt} actually appear in the networks. The bool \texttt{BioGRIDNetworks} distinguishes between the two possible pairs of networks. Its output (with \texttt{BioGRIDNetworks = false}) is
+\begin{verbatim}
+The yeast network contains 138 of the 200 complementary yeast proteins.
+The yeast network contains 163 of the 224 non-complementary yeast proteins.
+The human network contains 137 of the 200 complementary human proteins.
+The human network contains 150 of the 224 non-complementary human proteins.
+
+103 of the 200 pairs of complementary proteins appear in both networks.
+119 of the 224 pairs of non-complementary proteins appear in both networks.
+\end{verbatim}
+The second useful function is \texttt{printComplementaryProteinCounts(const Alignment\& A, bool BioGRIDNetworks)}, which analyses how many complementary and non-complementary pairs the alignment $A$ has aligned. An example of output (with \texttt{BioGRIDNetworks = false}) would be:
+\begin{verbatim}
+Complementary homolog proteins aligned: 0/103 (0%)
+Non-complementary homolog proteins aligned: 0/119 (0%)
+\end{verbatim}
+
+SANA does not currently have any argument to call these functions. They are called from the \texttt{dbgMode(...)} function using the \texttt{-dbg} argument. For instance, the following code analyses the alignment \texttt{alignment.txt} given in edge-list format.
+\begin{verbatim}
+void dbgMode(Graph& G1, Graph& G2, ArgumentParser& args) {
+  printProteinPairCountInNetworks(false);
+  Alignment A = Alignment::loadEdgeList(&G1, &G2, "alignment.txt");
+  printComplementaryProteinCounts(A, false);
+  exit(0);
+}
+\end{verbatim}
+SANA should be run as \texttt{./sana -dbg -g1 yeast -g2 human}. If \texttt{alignment.txt} were an alignment between SCerevisiae and HSapiens, then SANA should be run as \texttt{./sana -dbg -g1 SCerevisiae -g2 HSapiens}, and the code should be modified as:
+\begin{verbatim}
+void dbgMode(Graph& G1, Graph& G2, ArgumentParser& args) {
+  printProteinPairCountInNetworks(true);
+  Alignment A = Alignment::loadEdgeList(&G1, &G2, "alignment.txt");
+  printComplementaryProteinCounts(A, true);
+  exit(0);
+}
+\end{verbatim}
+\end{document}
