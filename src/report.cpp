@@ -75,7 +75,7 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   const MeasureCombination& M, Method* method, string reportFileName) {
   ofstream outfile,
            alignfile;
-  reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, outfile, G1.getName(), G2.getName(), method->getName(), method->fileNameSuffix(A));
+  reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, outfile, G1.getName(), G2.getName(), method, A);
   alignfile.open((reportFileName + ".align").c_str());  
 
   A.write(outfile);
@@ -92,7 +92,7 @@ void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
     return;
   }
   ofstream outfile;
-  ensureFileNameExistsAndOpenOutFile("local measure", localMeasureFileName, outfile, G1.getName(), G2.getName(), method->getName(), method->fileNameSuffix(A));
+  ensureFileNameExistsAndOpenOutFile("local measure", localMeasureFileName, outfile, G1.getName(), G2.getName(), method, A);
   M.writeLocalScores(outfile, G1, G2, A);
   outfile.close();
 }
@@ -100,15 +100,15 @@ void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
 /*"Ensure" here means ensure that there is a valid file to output to.
 NOTE: the && is a move semantic, which moves the internal pointers of one object
 to another and then destructs the original, instead of destructing all of the
-internal data of the original. It is assumed that the maps are passed as r-values
-from getIndexToNodeMap(), so the original will always be destroyed on passing.
-Thus this will likely fail compilation if l-values are passed.*/
-string ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFileName, ofstream & outfile, string && G1Name, string && G2Name, string && methodName, string && fileNameSuffix) {
+internal data of the original. 
+It is assumed that the graph names are passed as r-values, thus this function will likely 
+fail compilation if l-value graph names are passed.*/
+string  ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFileName, ofstream & outfile, string && G1Name, string && G2Name, Method * const & method, Alignment const & A) {
   string extension = fileType == "local measure" ? ".localscores" :
                                                    ".out";
   if (outFileName == "") {
     outFileName = "alignments/" + G1Name + "_" + G2Name + "/"
-    + G1Name + "_" + G2Name + "_" + methodName + fileNameSuffix;
+    + G1Name + "_" + G2Name + "_" + method->getName() + method->fileNameSuffix(A);
     addUniquePostfixToFilename(outFileName, ".txt");
     outFileName += ".txt";
   }else{
