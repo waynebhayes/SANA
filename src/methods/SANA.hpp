@@ -7,6 +7,7 @@
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
 #include "../utils/randomSeed.hpp"
+#include "../measures/ExternalWeightedEdgeConservation.hpp"
 
 class SANA: public Method {
 
@@ -126,13 +127,14 @@ private:
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A);
-    double scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore);
+    double scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum);
     double ecWeight;
     double s3Weight;
     double wecWeight;
     double secWeight;
     double ncWeight;
     double localWeight;
+    double ewecWeight;
     string score;
 
     //restart scheme
@@ -182,6 +184,12 @@ private:
     double WECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
     double WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
 
+    //to evaluate ewec incrementally
+    bool needEwec;
+    ExternalWeightedEdgeConservation* ewec;
+    double ewecSum;
+    double EWECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget, const Alignment& A);
+    double EWECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2, const Alignment& A);
 
     //to evaluate local measures incrementally
     bool needLocal;

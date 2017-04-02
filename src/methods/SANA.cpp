@@ -120,6 +120,11 @@ SANA::SANA(Graph* G1, Graph* G2,
 	} catch(...) {
 		wecWeight = 0;
 	}
+    try{
+        ewecWeight = MC->getWeight("ewec");
+    }catch(...) {
+        ewecWeight = 0;
+    }
 	try {
 		needNC = false;
 		ncWeight = MC->getWeight("nc");
@@ -152,6 +157,9 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 	//to evaluate WEC incrementally
 	needWec = wecWeight > 0;
+
+    //to evaluate EWEC incrementally	
+    needEwec = ewecWeight>0;
 	
 	//to evaluate SEC incrementally
 	needSec = secWeight > 0;
@@ -420,6 +428,12 @@ void SANA::initDataStructures(const Alignment& startA) {
 		double wecScore = wec->eval(A);
 		wecSum = wecScore*2*g1Edges;
 	}
+
+    if(needEwec){
+        ewec = (ExternalWeightedEdgeConservation*)(MC->getMeasure("ewec"));
+        ewecSum = ewec->eval(A);
+    } 
+
 	if (needNC) {
 		//std::cout << "NEED NC EXECUTED!!!" << std::endl;
 		Measure* nc = MC->getMeasure("nc");
@@ -534,13 +548,19 @@ void SANA::performChange() {
 	if (needWec) {
 		newWecSum = wecSum + WECIncChangeOp(source, oldTarget, newTarget);
 	}
+
+    double newEwecSum = -1;
+    if (needEwec) {
+        newEwecSum = ewecSum + EWECIncChangeOp(source, oldTarget, newTarget, A);
+    }
+
 	double newNcSum = -1;
 	if (needNC) {
 		newNcSum = ncSum + ncIncChangeOp(source, oldTarget, newTarget);
 	}	
 	
 	double newCurrentScore = 0;
-	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore);
+	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum);
 
 	if (makeChange) {
 		A[source] = newTarget;
@@ -553,6 +573,7 @@ void SANA::performChange() {
     for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
       localScoreSumMap[newLocalScoreSumEntry.first] = newLocalScoreSumEntry.second;
 		wecSum = newWecSum;
+        ewecSum = newEwecSum;
 		ncSum = newNcSum;
 		currentScore = newCurrentScore;
 	}
@@ -596,13 +617,19 @@ void SANA::performSwap() {
 	if (needWec) {
 		newWecSum = wecSum + WECIncSwapOp(source1, source2, target1, target2);
 	}
+
+    double newEwecSum = -1;
+	if (needEwec) {
+		newEwecSum = ewecSum + EWECIncSwapOp(source1, source2, target1, target2, A);
+	}
+
 	
 	double newNcSum = -1;
 	if(needNC) {
 		newNcSum = ncSum + ncIncSwapOp(source1, source2, target1, target2);
 	}
 	double newCurrentScore = 0;
-	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore);
+	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum);
 
 	if (makeChange) {
 		A[source1] = target2;
@@ -612,12 +639,13 @@ void SANA::performSwap() {
     for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
       localScoreSumMap[newLocalScoreSumEntry.first] = newLocalScoreSumEntry.second;
 		wecSum = newWecSum;
+        ewecSum = newEwecSum;
 		ncSum = newNcSum;
 		currentScore = newCurrentScore;
 	}
 }
 
-double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore) {
+double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum) {
 	bool makeChange = false;
 	bool wasBadMove = false;
     double badProbability = 0;
@@ -627,6 +655,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+        newCurrentScore += ewecWeight * (newEwecSum);
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
 
 		energyInc = newCurrentScore-currentScore;
@@ -834,6 +863,23 @@ double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort
 	}
 	return res;
 }
+
+double SANA::EWECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget, const Alignment& A){
+    //return ewec->changeOp(source, oldTarget, newTarget, A);
+    double score = 0;
+    score = (ewec->simScore(source, newTarget, A)) - (ewec->simScore(source, oldTarget, A));
+    //score *= -1;
+    return score;
+} 
+
+double SANA::EWECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2, const Alignment& A){
+    //return ewec->swapOp(source1, source2, target1, target2, A);
+    double score = 0;
+    score = (ewec->simScore(source1, target2, A)) + (ewec->simScore(source2, target1, A)) - (ewec->simScore(source1, target1, A)) - (ewec->simScore(source2, target2, A));
+    //score *= -1;
+    return score;
+}
+
 
 int SANA::ncIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
 	int change = 0;
