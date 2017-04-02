@@ -10,8 +10,8 @@ public:
     double eval(const Alignment& A);
 private:
     bool NORMALIZE;
-    double permutationInverse(uint M, uint N);
-
+    double Permutation(uint M, uint N);
+    double ScoreForOneGOterm(uint M, uint N);
     double downweightedScore(uint M, uint N);
     double scoreUpperBound();
 };
