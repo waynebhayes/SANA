@@ -43,10 +43,10 @@ if echo $M | grep -q -i '^hubalign$'; then
 elif echo $M | grep -q -i '^l-*graal$'; then
     M=lgraal
     TL=`parse "($M1+$M2)/120"`
-    Margs=" -t $TL -s3 0 -graphlet 1 -objfuntype alpha "
-    Sargs=' -s3 0 -objfuntype generic -topmeasure wec -wecnodesim graphletlgraal -wec 1 '
+    Margs=" -t $TL -s3 0 -graphletlgraal 1 -objfuntype alpha "
+    Sargs=' -s3 0 -objfuntype generic -topomeasure wec -wecnodesim graphletlgraal -wec 1 '
     Mseq=" -t $TL -s3 0 -graphlet 1 -objfuntype alpha -alpha 0.$ialpha -sequence 0.$ialpha"
-    Sseq=" -s3 0 -objfuntype alpha -topmeasure wec -wecnodesim graphletlgraal -wec 1 -alpha 0.$ialpha -sequence 0.$ialpha"
+    Sseq=" -s3 0 -objfuntype alpha -topomeasure wec -wecnodesim graphletlgraal -wec 1 -alpha 0.$ialpha -sequence 0.$ialpha"
 elif echo $M | grep -q -i '^mi-*graal$'; then
     M=migraal
     Margs="-wrappedArgs '-p 1'"
