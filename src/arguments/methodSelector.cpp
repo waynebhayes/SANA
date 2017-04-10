@@ -86,8 +86,12 @@ Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombin
     return new TabuSearch(&G1, &G2, minutes, &M, ntabus, nneighbors, nodeTabus);
 }
 
+#ifdef WEIGHTED
+Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M, string startAligName) {
+    if (startAligName == "") throw runtime_error("ALIGNMENT FILE NEEDED");
+#else
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
-
+#endif
     double TInitial = 0;
     // t_initial "auto" defaults to by-linear-regression
     if (args.strings["-tinitial"] == "auto")
@@ -104,8 +108,11 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     Method* sana;
 
     double time = args.doubles["-t"];
+#ifdef WEIGHTED
+    sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"], args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"], startAligName);
+#else
     sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"], args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"]);
-    
+#endif
     if (args.bools["-restart"]) {
         double tnew = args.doubles["-tnew"];
         uint iterperstep = args.doubles["-iterperstep"];
@@ -180,7 +187,11 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (name == "wave")
 		return new WAVEWrapper(&G1, &G2, wrappedArgs);
     if (name == "sana")
+#ifdef WEIGHTED
+        return initSANA(G1, G2, args, M, startAligName);
+#else
         return initSANA(G1, G2, args, M);
+#endif
     if (name == "hc")
         return new HillClimbing(&G1, &G2, &M, startAligName);
     if (name == "random")

@@ -62,7 +62,11 @@ void SANA::initTau(void) {
 }
 
 SANA::SANA(Graph* G1, Graph* G2,
-		double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore):
+		double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore
+#ifdef WEIGHTED
+,string& startAligName
+#endif
+):
     		Method(G1, G2, "SANA_"+MC->toString())
 {
 	//data structures for the networks
@@ -75,6 +79,9 @@ SANA::SANA(Graph* G1, Graph* G2,
 	G1->getAdjMatrix(G1AdjMatrix);
 	G2->getAdjMatrix(G2AdjMatrix);
 	G1->getAdjLists(G1AdjLists);
+#ifdef WEIGHTED
+        prune(startAligName);
+#endif
 	G2->getAdjLists(G2AdjLists);
 
 
@@ -1587,4 +1594,48 @@ void SANA::initIterPerSecond() {
 void SANA::setDynamicTDecay() {
 	dynamic_tdecay = true; 	
 }
+#ifdef WEIGHTED
+void SANA::prune(string& startAligName) {
+    int n = G1->getNumNodes();
+    vector<ushort> alignment;
+    ifstream infile(startAligName.c_str());
+    string line;
+    getline(infile, line);
+    istringstream iss(line);
+    stringstream errorMsg;
+    int shadow_node{0};
+    for (int i = 0; i < n; i++) {
+        if (!(iss >> shadow_node) or shadow_node < 0) {
+            errorMsg << "Node number: " << to_string(shadow_node);
+            throw runtime_error(errorMsg.str().c_str());
+        }
+        alignment.push_back(shadow_node);
+    }
+    infile.close();
+    if (alignment.size() != n) {
+        errorMsg << "Alignment size (" << alignment.size() << ") less than number of nodes (" << n <<")";
+        throw runtime_error(errorMsg.str().c_str());
+    }
+    set<pair<int,int>> removedEdges;
+    for (int i = 0; i < n; i++) {
+        shadow_node = alignment[i];
+        int m = G1AdjLists[i].size();
+        for (int j = 0; j < m; j++) {
+            if (G1AdjLists[i][j] < i)
+                continue;
+            int shadow_end = alignment[G1AdjLists[i][j]];
+            G2AdjMatrix[shadow_node][shadow_end] -= G1AdjMatrix[i][G1AdjLists[i][j]];
+            G2AdjMatrix[shadow_end][shadow_node] -= G1AdjMatrix[i][G1AdjLists[i][j]];
+            if (G2AdjMatrix[shadow_node][shadow_end] == 0)
+                removedEdges.insert(pair<int,int>(shadow_node,shadow_end));
+        }
+    }
+    for (auto c : removedEdges)
+        G2->removeEdge(c.first, c.second);
+    G2->setAdjMatrix(G2AdjMatrix);
+    G2->getAdjLists(G2AdjLists);
+    //for (auto c: G2->edgeList) cout << c[0] << " " << c[1] << " " << G2AdjMatrix[c[0]][c[1]] << endl;
+}
+#endif
+
 
