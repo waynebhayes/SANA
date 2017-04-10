@@ -153,6 +153,23 @@ void Graph::getEdgeList(vector<vector<ushort> >& edgeListCopy) const {
 const vector<vector<ushort> >& Graph::getConnectedComponents() const {
     return connectedComponents;
 }
+#ifdef WEIGHTED
+void Graph::setAdjMatrix(vector<vector<ushort> >& adjMatrixCopy) {
+#else
+void Graph::setAdjMatrix(vector<vector<bool> >& adjMatrixCopy) {
+#endif
+    adjMatrix = adjMatrixCopy;
+}
+
+void Graph::setAdjLists(vector<vector<ushort> >& adjListsCopy) {
+    adjLists = adjListsCopy;
+}
+void Graph::setEdgeList(vector<vector<ushort> >& edgeListCopy) {
+    edgeList = edgeListCopy;
+}
+
+
+
 
 void Graph::loadGwFile(const string& fileName) {
     //this function could be improved to deal with blank lines and comments

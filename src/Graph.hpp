@@ -61,11 +61,17 @@ public:
     uint getNumConnectedComponents() const;
 #ifdef WEIGHTED
     void getAdjMatrix(vector<vector<ushort> >& adjMatrixCopy) const;
+    void setAdjMatrix(vector<vector<ushort> >& adjMatrixCopy);
 #else
     void getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const;
+    void setAdjMatrix(vector<vector<bool> >& adjMatrixCopy);
 #endif
     void getAdjLists(vector<vector<ushort> >& adjListsCopy) const;
     void getEdgeList(vector<vector<ushort> > & edgeListCopy) const;
+
+    void setAdjLists(vector<vector<ushort> >& adjListsCopy);
+    void setEdgeList(vector<vector<ushort> >& edgeListCopy);
+
     vector<string> getNodeNames() const;
 
     //loads graph from file in GraphWin (.gw) format:
@@ -140,6 +146,7 @@ public:
     uint miRNACount = 0;
     int unlockedGeneCount = -1;
     int unlockedmiRNACount = -1;
+    void removeEdge(ushort node1, ushort node2);
 
 private:
     double maxGraphletSize = 4; //default is 4, 5 is too big
@@ -168,7 +175,6 @@ private:
     void initConnectedComponents();
 
     void addEdge(ushort node1, ushort node2);
-    void removeEdge(ushort node1, ushort node2);
     void addRandomEdge();
     void removeRandomEdge();
 
