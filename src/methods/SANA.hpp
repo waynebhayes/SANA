@@ -12,7 +12,12 @@ class SANA: public Method {
 
 public:
     SANA(Graph* G1, Graph* G2,
-        double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore);
+#ifdef WEIGHTED 
+        double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore, string& startAligName
+#else
+        double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore 
+#endif
+    );
     ~SANA();
 
     Alignment run();
@@ -41,6 +46,7 @@ public:
 
     //returns an approximation of the the logarithm in base e of the size of the search space
     double searchSpaceSizeLog();
+    void prune(string& startAligName);
 
 private:
     //Temperature Boundaries. Use these after the tinitial has been determined
@@ -52,13 +58,13 @@ private:
     uint n2;
     double g1Edges; //stored as double because it appears in division
     double g2Edges; //stored as double because it appears in division
-    #ifdef WEIGHTED
-        vector<vector<ushort> > G1AdjMatrix;
-        vector<vector<ushort> > G2AdjMatrix;
-    #else
-        vector<vector<bool> > G1AdjMatrix;
-        vector<vector<bool> > G2AdjMatrix;
-    #endif
+#ifdef WEIGHTED
+    vector<vector<ushort> > G1AdjMatrix;
+    vector<vector<ushort> > G2AdjMatrix;
+#else
+    vector<vector<bool> > G1AdjMatrix;
+    vector<vector<bool> > G2AdjMatrix;
+#endif
     vector<vector<ushort> > G1AdjLists;
     vector<vector<ushort> > G2AdjLists;
 
