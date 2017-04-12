@@ -74,7 +74,7 @@ void Database::addGraph(string filename){
 			uint oj = canonPerm_[gDec].at(j)-'0'; //original index of jth element of the canonical isomorph 
 			uint id = orbitId_[cgIndex][j];
 			if(!haveOpen[id]) {
-			    forbitId[id].open("test/"+to_string(id)+"/"+graphName, ios_base::app);
+			    forbitId[id].open(DATABASE_DIR+to_string(id)+"/"+graphName, ios_base::app);
 			    haveOpen[id]=1;
 			}
 			forbitId[id] << (g->label(oj)) << " ";
@@ -88,7 +88,7 @@ void Database::addGraph(string filename){
 		delete g;
 	}
 	for(i=0; i < numOrbitId_; i++) if(haveOpen[i]) forbitId[i].close();
-	ofstream fout("test/output");
+	ofstream fout(DATABASE_DIR + graphName + "-nodeOrbitMembershipBitVector.txt");
 	fout << k_ << " " << radius_ << " " << limit_ << endl;
 	for(auto a: sigMatrix){
 		for(auto b: a) fout << b;

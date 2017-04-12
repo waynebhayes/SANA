@@ -10,6 +10,8 @@
 #include <utility>
 #include <stdexcept>
 
+#define DATABASE_DIR "Database4/" // be sure to have the trailing slash! only k=4 for now
+
 class Database
 {
 public:
