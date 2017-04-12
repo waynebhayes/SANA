@@ -49,9 +49,9 @@ void Database::addGraph(string filename){
 	uint m, n, i, j;
 	int pos, len;
 	string graphName(filename);
-	while((pos=graphName.find("/"))>0) {
+	while((pos=graphName.find("/"))>=0) {
 	    len = graphName.size();
-	    graphName = graphName.substr(pos,len);
+	    graphName = graphName.substr(pos+1,len);
 	}
 
 	//reading edgelist
