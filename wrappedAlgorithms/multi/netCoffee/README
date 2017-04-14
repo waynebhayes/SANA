@@ -1,0 +1,235 @@
+################################################################################
+PROGRAM: NetCoffee
+AUTHOR: JIALU HU
+EMAIL: jialu.hu@fu-berlin.de
+
+Copyright (C) <2013>  <Jialu Hu>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+################################################################################
+Description
+This file is README file of the package of NetCoffee, developed by Jialu Hu.
+To guide you quickly starting to use our alignment tool, we structured this README into four parts:
+1) PREREQUISITE
+2) COMPILING
+3) OPTION
+4) EXAMPLE 
+Before running this program, you are strongly recommended to read this file carefully.
+
+################################################################################
+PREREQUISITE
+1. LEMON Graph Library 1.2.3
+The source code is freely available under Boost Software License, Version 1.0 at the website: http://lemon.cs.elte.hu/trac/lemon/wiki/Downloads
+Please first compile the lemon graph library before compiling the code of NetCoffee.
+Note that this package should move to the directory $NETCOFFEE/include.
+2. FSST package
+This package is necessary only if you want to use "-analyse" option to calculate the semantic similarities.
+It can be download at http://gotax.bioinf.mpi-inf.mpg.de/avail.php.
+3. GoTermFinder
+This package is necessary only if you want to use "-analyse" option to draw the GoTree View or calculate p-Value of each match-set.
+It can be download at http://search.cpan.org/dist/GO-TermFinder/lib/GO/TermFinder.pm.
+
+################################################################################
+COMPILING
+To compile the source code, the latest compilers which supports the standard language C++11, also known as C++0x, is needed. Other older compiler may not support it.
+1. Compile LEMON GRAPH LIBRARY
+
+cd $NETCOFFEE/include/lemon-1.2.3/
+./configure
+./make
+
+2. Compile NetCoffee
+
+cd $NETCOFFEE
+./make MODE=Release
+#If you want to compile it in Debug mode, run command:
+./make (MODE=Debug)
+
+################################################################################
+OPTION
+You can see the detailed option information with option "-h".
+It is noted that there are two options you must specify if you want to run NetCoffee for an alignment task. They are described as follows:
+
+1. -profile
+The default file is "./profile.input", but you can also change the filename and path by "-profile" option.
+This file tells the program where to find the dataset and to create output files.
+It is expected to be in two-column tab-delimited format.
+These lines starting with "#" will be seen as comment.
+Each line has one keyword and one value, like this:
+$keyword	$value
+Using this file, you are allowed to set options (network,gofile,efile,alignmentfile,avefunsimfile,scorefile,logfile) here.
+However, you are also allowed to set these option in command line, except for these keywords: network, gofile, efile, which containing multiple files.
+Note that, the values must be strictly in order from up to down for keywords "network, gofile, efile".
+For example, suppose we have
+three PPI networ:1.tab, 2.tab, 3.tab,
+go association file: 1.fsst, 2.fsst, 3.fsst,
+six balst evalue (or bitscore) files: 1-1.cf, 1-2.cf,...,3-3.cf,
+then the profile should looks like:
+
+--------------BEGIN OF PROFILE--------------
+#COMMENT $keyword	$value
+network  ./dataset/1.tab
+network  ./dataset/2.tab
+network  ./dataset/3.tab
+gofile  ./dataset/goa/1.fsst
+gofile  ./dataset/goa/2.fsst
+gofile  ./dataset/goa/3.fsst
+efile  ./dataset/1-1.cf
+efile  ./dataset/1-2.cf
+efile  ./dataset/1-3.cf
+efile  ./dataset/2-2.cf
+efile  ./dataset/2-3.cf
+efile  ./dataset/3-3.cf
+scorefile     ./dataset/score_composit.model
+alignmentfile ./result/alignment_netcoffee.data
+avefunsimfile netcoffee_fsst.result
+logfile       ./result/measure_time.txt
+--------------END OF PROFILE--------------
+
+
+2. -scorefile
+The default file is "./dataset/score_composit.model". This file was empirically obtained from blastp scoring files for othologous model and null model based on e-value.
+If the option "bscore" was enabled, this file should be "./dataset/score_composit.bmodel", which calculates the sequence-based score based on bitscore. 
+You can run commandline with option "-record -task 0" to generate this data with blastp scoring files.
+
+3. -network
+This option specifies the compared PPI networks, which is formated as follows:
+--------------BEGIN OF NETWORK--------------
+INTERACTOR_A	INTERACTOR_B
+Q6QNY1	Q9NWB7
+Q96P48	O00220
+Q96P48	O14763
+O15105	Q92905
+Q92905	Q13485
+Q16666	Q86WV6
+Q9NZH6	P84022
+P26717	O43914
+P04234	P07766
+--------------END OF NETWORK--------------
+
+4. -efile
+This option specifies the blastp sequence similarity files for each pair of species, which includes three columns seperated by <TAB>.
+The first column provides proteins from the first netwoks, the second column provides proteins from the second networks, the third column provides evalue or bitscore.
+However, the options "-bscore" and "-scorefile ./dataset/score_composit.bmodel" must be used if the third column gives bitscore;
+The change of protein order in the same line is not allowed.
+There are two examples:
+
+--------------BEGIN OF EVALUE FILE--------------
+P31946	P62258	1e-116
+P31946	Q04917	7e-133
+P31946	P61981	2e-135
+P31946	P31947	3e-122
+P31946	P27348	2e-152
+P31946	P63104	4e-162
+P62258	P31946	1e-116
+P62258	P62258	 0e+00
+P62258	Q04917	4e-110
+P62258	P61981	3e-112
+--------------END OF EVALUE FILE--------------
+
+--------------BEGIN OF BITSCORE FILE--------------
+P31946	P62258	  325.0
+P31946	Q04917	  367.0
+P31946	P61981	  373.0
+P31946	P31947	  340.0
+P31946	P27348	  416.0
+P31946	P63104	  441.0
+P62258	P31946	  325.0
+P62258	P62258	  524.0
+P62258	Q04917	  309.0
+P62258	P61981	  315.0
+--------------END OF BITSCORE FILE--------------
+
+5. other option in Usage
+
+You can generate the following message by running the program with option "-h".
+
+$NETCOFFEE/bin/netcoffee -h
+Usage:
+  ./bin/netcoffee -version|-records|-alignment|-analyse|-format
+     [--help|-h|-help] [-alignmentfile str] [-alpha num] [-avefunsimfile str]
+     [-beta num] [-bscore] [-distributionfile str] [-edgefactor num]
+     [-eta num] [-formatfile str] [-nmax int] [-numspecies int]
+     [-numthreads int] [-orthologyfile str] [-out] [-randomfile str]
+     [-recordsfile str] [-resultfolder str] [-task int]
+Where:
+  --help|-h|-help
+     Print a short help message
+  -alignment
+     Execute the alignment algorithm.
+  -alignmentfile str
+     The filename of alignment which is required to either create or analyse.
+  -alpha num
+     Prameter controlling how much topology score contributes to the alignment score. Default is 0.5.
+  -analyse
+     Make analysis on alignmenr result.
+  -avefunsimfile str
+     The filename for functional similarity of alignment.
+  -beta num
+     Probability for randomly picking out the alignment records. Default is 1.0
+  -bscore
+     Use bitscore as the similarity of edges.
+  -distributionfile str
+     Output file for log ratio distribution.
+  -edgefactor num
+     The factor of the power law normalization. Default is 0.1.
+  -eta num
+     Threshold imfactor which is used to exclude match-sets from a single species. Default is 1.0.
+  -format
+     Process input or output file into proper format.
+  -formatfile str
+     Profile of input parameters.
+  -nmax int
+     The parameter for SA algorithm N.
+  -numspecies int
+     Number of the species compared. Default is 4.
+  -numthreads int
+     Number of threads running in parallel.
+  -orthologyfile str
+     Training data for orthology model.
+  -out
+     Print the alignment result into file.
+  -randomfile str
+     Training data for random model.
+  -records
+     Generate alignment records file.
+  -recordsfile str
+     Records file for writing and reading. It is used to store the triplet edges.
+  -resultfolder str
+     The folder which was used as active folder in the data process.
+  -task int
+     Complete different tasks. The task was determined with other options such as -alignment together. Default is 1.
+  -version
+     Show the version number.
+
+################################################################################
+EXAMPLE
+1. Download dataset
+Our datasets are freely available at our website: https://code.google.com/p/netcoffee/downloads/list.
+Download it into the folder of $NETCOFFEE and uncompress it with command:
+tar -zxvf dataset.tar.gz
+2. Compile source code
+Compile the source code with command:
+make MODE=Release
+3. Run NetCoffee on our test dataset-2 with command:
+./bin/netcoffee -alignment -task 1 -out -alpha ${ALPHA} -numspecies ${num} -numthreads ${thread num} -alignmentfile ./result/alignment_netcoffee.data -resultfolder ./result/
+${ALPHA} is the parameter you want to specify for alpha.
+Then you can find the all the involved output files in ./result/ .
+There are many other functions which you can see with "-help" option.
+
+################################################################################
+END
+THANKS FOR READING
+If you have any questions regarding to the program, please don't hesitate to contact us through email.

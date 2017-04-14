@@ -325,9 +325,10 @@ void MeasureCombination::setWeight(const string& measureName, double weight) {
 Pairwise Alignment  LocalMeasure1       LocalMeasure2       Weighted Sum
 821	723            0.334               0.214               0.548
 */
+typedef map<ushort,string> NodeIndexMap;
 void MeasureCombination::writeLocalScores(ostream & outFile, Graph const & G1, Graph const & G2, Alignment const & A) const {
-	map<ushort,string> mapG1 = G1.getIndexToNodeNameMap();
-	map<ushort,string> mapG2 = G2.getIndexToNodeNameMap();
+  NodeIndexMap mapG1 = G1.getIndexToNodeNameMap();
+  NodeIndexMap mapG2 = G2.getIndexToNodeNameMap();
   int const COL_WIDTH = 20,
             PRECISION = 3;
   outFile << setw(COL_WIDTH) << left << "Pairwise Alignment";
@@ -344,5 +345,4 @@ void MeasureCombination::writeLocalScores(ostream & outFile, Graph const & G1, G
           outFile << setw(COL_WIDTH) << left << setprecision(PRECISION) << mapping.second[i][A[i]];
       outFile << setw(COL_WIDTH) << left << setprecision(PRECISION) << localAggregatedSim[i][A[i]] << endl;
   }
-  
 }

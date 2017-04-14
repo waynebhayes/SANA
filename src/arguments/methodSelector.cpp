@@ -74,7 +74,7 @@ Method* initDijkstra(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinat
     if(delta < 0.0 || delta > 1.0){
         throw runtime_error("Dijkstra:delta not in valid range [0.0,1.0)");
     }
-    return new Dijkstra(&G1, &G2, &M, delta); 
+    return new Dijkstra(&G1, &G2, &M, delta);
 }
 
 Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
@@ -105,7 +105,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 
     double time = args.doubles["-t"];
     sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"], args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"]);
-    
+
     if (args.bools["-restart"]) {
         double tnew = args.doubles["-tnew"];
         uint iterperstep = args.doubles["-iterperstep"];
@@ -125,18 +125,18 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     }
     if (args.bools["-dynamictdecay"]) {
 	((SANA*) sana)->setDynamicTDecay();
-    } 
+    }
     if (args.strings["-lock"] != ""){
-    	sana->setLockFile(args.strings["-lock"] );
+      sana->setLockFile(args.strings["-lock"] );
     }
     return sana;
 }
 
 Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
- 
+
     string aligFile = args.strings["-eval"];
     if (aligFile != "")
-        return new NoneMethod(&G1, &G2, aligFile);	
+        return new NoneMethod(&G1, &G2, aligFile);
     string name = toLowerCase(args.strings["-method"]);
     string startAligName = args.strings["-startalignment"];
     double alpha = args.doubles["-alpha"];
@@ -145,11 +145,11 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (name == "greedylccs")
         return new GreedyLCCS(&G1, &G2, startAligName);
     if (name == "waveSim") {
-        LocalMeasure* waveNodeSim = 
+        LocalMeasure* waveNodeSim =
             (LocalMeasure*) M.getMeasure(args.strings["-wavenodesim"]);
         return new WeightedAlignmentVoter(&G1, &G2, waveNodeSim);
     }
-   
+
     if (name == "lgraal")
         return initLgraal(G1, G2, args);
     if (name == "hubalign")
@@ -158,17 +158,17 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
         return initTabuSearch(G1, G2, args, M);
     if (name == "dijkstra")
         return initDijkstra(G1, G2, args, M);
-      //return new Dijkstra(&G1, &G2, &M);
+        //return new Dijkstra(&G1, &G2, &M);
     if (name == "netal")
         return new NETALWrapper(&G1, &G2, wrappedArgs);
     if (name == "mi-graal" || name == "migraal")
         return new MIGRAALWrapper(&G1, &G2, wrappedArgs);
     if (name == "ghost")
-    	return new GHOSTWrapper(&G1, &G2, wrappedArgs);
+        return new GHOSTWrapper(&G1, &G2, wrappedArgs);
     if (name == "piswap")
-    	return new PISwapWrapper(&G1, &G2, alpha, startAligName, wrappedArgs);
+        return new PISwapWrapper(&G1, &G2, alpha, startAligName, wrappedArgs);
     if (name == "optnetalign")
-		return new OptNetAlignWrapper(&G1, &G2, wrappedArgs);
+       return new OptNetAlignWrapper(&G1, &G2, wrappedArgs);
     if (name == "spinal")
 		return new SPINALWrapper(&G1, &G2, alpha, wrappedArgs);
     if (name == "great")

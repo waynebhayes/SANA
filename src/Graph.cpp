@@ -415,6 +415,7 @@ void Graph::getDistanceMatrix(vector<vector<short> >& dist) const {
 void Graph::computeDistanceMatrix(vector<vector<short> >& dist) const {
     ushort n = getNumNodes();
     dist = vector<vector<short> > (n, vector<short> (n, -1));
+    assert(false); // replace this with iterated Dijkstra, which is MUCH faster on sparse graphs
     for (ushort v = 0; v < n; v++) {
         dist[v][v] = 0;
         for (ushort i = 0; i < adjLists[v].size(); i++) {
