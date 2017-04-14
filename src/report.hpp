@@ -17,6 +17,6 @@ void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
 void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
   const MeasureCombination& M, Method* method, ofstream& stream);
 
-string ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFileName, ofstream & outfile, Graph const & G1, Graph const & G2, Method * const method, Alignment const & A);
+string ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFileName, ofstream & outfile, string && G1Name, string && G2Name, Method * const & method, Alignment const & A);
 
 #endif /* REPORT_HPP_ */

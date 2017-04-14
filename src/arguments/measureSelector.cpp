@@ -13,6 +13,7 @@
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/ShortestPathConservation.hpp"
+#include "../measures/ExternalWeightedEdgeConservation.hpp"
 
 #include "../measures/localMeasures/NodeCount.hpp"
 #include "../measures/localMeasures/NodeDensity.hpp"
@@ -94,7 +95,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableMeasures = {
         "ec","s3","sec","wec","nodec","noded","edgec","edged", "esim", "go","importance",
-        "sequence","graphlet","graphletlgraal", "graphletcosine", "spc", "nc"
+        "sequence","graphlet","graphletlgraal", "graphletcosine", "spc", "nc", "ewec"
     };
     double total = 0;
     for (uint i = 0; i < optimizableMeasures.size(); i++) {
@@ -203,6 +204,12 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
         m = new ExternalSimMatrix(&G1, &G2, args.strings["-simFile"], args.doubles["-simFormat"]);
         double esimWeight = getWeight("esim", G1, G2, args);
         M.addMeasure(m, esimWeight);
+    }
+
+    if (shouldInit("ewec", G1, G2, args)) {
+        m = new ExternalWeightedEdgeConservation(&G1, &G2, args.strings["-ewecFile"]);
+        double ewecWeight = getWeight("ewec", G1, G2, args);
+        M.addMeasure(m, ewecWeight);
     }
 
     if (GoSimilarity::fulfillsPrereqs(&G1, &G2)) {

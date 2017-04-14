@@ -47,6 +47,12 @@ void Database::addGraph(string filename){
 	ifstream fgraph(filename);
 	vector<pair<uint, uint>> edgelist;
 	uint m, n, i, j;
+	int pos, len;
+	string graphName(filename);
+	while((pos=graphName.find("/"))>=0) {
+	    len = graphName.size();
+	    graphName = graphName.substr(pos+1,len);
+	}
 
 	//reading edgelist
 	while(fgraph >> m >> n){
@@ -56,6 +62,8 @@ void Database::addGraph(string filename){
 
 	Graph graph(edgelist);
 	vector<vector<bool>> sigMatrix(graph.numNodes(), vector<bool>(numOrbitId_, 0));//each row for each node
+	vector<bool> haveOpen(numOrbitId_, 0);
+	vector<ofstream> forbitId(numOrbitId_);
 
 	for(i = 0; i < limit_; i++){
 		Graphette* g = graph.sampleGraphette(k_, radius_);
@@ -65,20 +73,22 @@ void Database::addGraph(string filename){
 		for(j = 0; j < k_; j++){
 			uint oj = canonPerm_[gDec].at(j)-'0'; //original index of jth element of the canonical isomorph 
 			uint id = orbitId_[cgIndex][j];
-			ofstream forbitId;
-			forbitId.open("test/"+to_string(id)+"/edgelist.txt", ios_base::app);
-			forbitId << (g->label(oj)) << " ";
+			if(!haveOpen[id]) {
+			    forbitId[id].open(DATABASE_DIR+to_string(id)+"/"+graphName, ios_base::app);
+			    haveOpen[id]=1;
+			}
+			forbitId[id] << (g->label(oj)) << " ";
 			for(auto orbit: g->labels()){
 				if(orbit != g->label(oj))
-					forbitId << orbit << " ";
+					forbitId[id] << orbit << " ";
 			}
-			forbitId << endl;
-			forbitId.close();
+			forbitId[id] << endl;
 			sigMatrix[g->label(oj)][id]= true;
 		}
 		delete g;
 	}
-	ofstream fout("test/output");
+	for(i=0; i < numOrbitId_; i++) if(haveOpen[i]) forbitId[i].close();
+	ofstream fout(DATABASE_DIR + graphName + "-nodeOrbitMembershipBitVector.txt");
 	fout << k_ << " " << radius_ << " " << limit_ << endl;
 	for(auto a: sigMatrix){
 		for(auto b: a) fout << b;

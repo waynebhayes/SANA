@@ -1,0 +1,89 @@
+#This is a default profile for our alignment tool, NetCoffee.
+#Your can specify your own parameters in this file.
+#These lines starting with '#' are comments. Use option '-profile' to change the path of your profile.
+#The format of profile is that each line has only two column seperated with TAB.
+#The first column is keyword for parameters, and the second column is the value for the key.
+#Note that the order of input network is pretty strict.
+#If you change the order of input networks, the corresponding order of blastp files must be changed at the same time.
+#For example: the order of input PPI files (keyword network) is 1.tab 2.tab 3.tab 4.tab, then the order of balstp files is 1-1 1-2 1-3 1-4 2-2 2-3 2-4 3-3 3-4. See more information in README.
+#keyword valueword
+#network  ./dataset/1-hs9606.tab
+#network ./dataset/2-mm10090.tab
+network ./dataset/3-dm7227.tab
+network ./dataset/4-ce6239.tab
+network  ./dataset/5-sc4932.tab
+#network  ./dataset/graemlin/0-coli.tab
+#network  ./dataset/graemlin/1-cholerae.tab
+#network  ./dataset/graemlin/2-campy.tab
+#network  ./dataset/graemlin/3-pylori.tab
+#network  ./dataset/graemlin/4-caulo.tab
+#network  ./dataset/graemlin/5-salmo.tab
+#network  ./dataset/dip/dip-rawdata/20130707/Celeg20130131-int.txt
+#network  ./dataset/dip/dip-rawdata/20130707/Dmela20130131-int.txt
+#network  ./dataset/dip/dip-rawdata/20130707/Ecoli20130131-int.txt
+#network  ./dataset/dip/dip-rawdata/20130707/Hpylo20130131-int.txt
+#network  ./dataset/dip/dip-rawdata/20130707/Hsapi20130131-int.txt
+#network  ./dataset/dip/dip-rawdata/20130707/Mmusc20130131-int.txt
+#network  ./dataset/dip/dip-rawdata/20130707/Rnorv20130131-int.txt
+#network  ./dataset/dip/dip-rawdata/20130707/Scere20130131-int.txt
+gofile  ./dataset/goa/gene_association.goa_human.fsst
+gofile  ./dataset/goa/gene_association.goa_mouse.fsst
+gofile  ./dataset/goa/gene_association.goa_fly.fsst
+gofile  ./dataset/goa/gene_association.goa_worm.fsst
+gofile  ./dataset/goa/gene_association.goa_yeast.fsst
+gofile   ./dataset/goa/gene_association.goa_target.fsst
+#efile   ./dataset/graemlin/0-coli-0-coli.evals
+#efile   ./dataset/graemlin/0-coli-1-cholerae.evals
+#efile   ./dataset/graemlin/0-coli-2-campy.evals
+#efile   ./dataset/graemlin/0-coli-3-pylori.evals
+#efile   ./dataset/graemlin/0-coli-4-caulo.evals
+#efile   ./dataset/graemlin/0-coli-5-salmo.evals
+#efile   ./dataset/graemlin/1-cholerae-1-cholerae.evals
+#efile   ./dataset/graemlin/1-cholerae-2-campy.evals
+#efile   ./dataset/graemlin/1-cholerae-3-pylori.evals
+#efile   ./dataset/graemlin/1-cholerae-4-caulo.evals
+#efile   ./dataset/graemlin/1-cholerae-5-salmo.evals
+#efile   ./dataset/graemlin/2-campy-2-campy.evals
+#efile   ./dataset/graemlin/2-campy-3-pylori.evals
+#efile   ./dataset/graemlin/2-campy-4-caulo.evals
+#efile   ./dataset/graemlin/2-campy-5-salmo.evals
+#efile   ./dataset/graemlin/3-pylori-3-pylori.evals
+#efile   ./dataset/graemlin/3-pylori-4-caulo.evals
+#efile   ./dataset/graemlin/3-pylori-5-salmo.evals
+#efile   ./dataset/graemlin/4-caulo-4-caulo.evals
+#efile   ./dataset/graemlin/4-caulo-5-salmo.evals
+#efile   ./dataset/graemlin/5-salmo-5-salmo.evals
+#efile  ./dataset/1-hs9606-1-hs9606.cf
+#efile  ./dataset/1-hs9606-2-mm10090.cf
+#efile  ./dataset/1-hs9606-3-dm7227.cf
+#efile  ./dataset/1-hs9606-4-ce6239.cf
+#efile  ./dataset/1-hs9606-5-sc4932.cf
+#efile  ./dataset/2-mm10090-2-mm10090.cf
+#efile  ./dataset/2-mm10090-3-dm7227.cf
+#efile  ./dataset/2-mm10090-4-ce6239.cf
+#efile  ./dataset/2-mm10090-5-sc4932.cf
+efile  ./dataset/3-dm7227-3-dm7227.cf
+efile  ./dataset/3-dm7227-4-ce6239.cf
+efile  ./dataset/3-dm7227-5-sc4932.cf
+efile  ./dataset/4-ce6239-4-ce6239.cf
+efile  ./dataset/4-ce6239-5-sc4932.cf
+efile  ./dataset/5-sc4932-5-sc4932.cf
+#efile  ./dataset/1-hs9606-1-hs9606.b6.data
+#efile  ./dataset/1-hs9606-2-mm10090.b6.data
+#efile  ./dataset/1-hs9606-3-dm7227.b6.data
+#efile  ./dataset/1-hs9606-4-ce6239.b6.data
+#efile  ./dataset/1-hs9606-5-sc4932.b6.data
+#efile  ./dataset/2-mm10090-2-mm10090.b6.data
+#efile  ./dataset/2-mm10090-3-dm7227.b6.data
+#efile  ./dataset/2-mm10090-4-ce6239.b6.data
+#efile  ./dataset/2-mm10090-5-sc4932.b6.data
+#efile  ./dataset/3-dm7227-3-dm7227.b6.data
+#efile  ./dataset/3-dm7227-4-ce6239.b6.data
+#efile  ./dataset/3-dm7227-5-sc4932.b6.data
+#efile  ./dataset/4-ce6239-4-ce6239.b6.data
+#efile  ./dataset/4-ce6239-5-sc4932.b6.data
+#efile  ./dataset/5-sc4932-5-sc4932.b6.data
+scorefile     ./dataset/score_composit.model
+alignmentfile ./result/alignment_netcoffee.data
+avefunsimfile netcoffee_fsst.result
+logfile       ./result/measure_time.txt
