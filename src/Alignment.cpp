@@ -10,8 +10,8 @@ Alignment::Alignment(const Alignment& alig): A(alig.A) {}
 Alignment::Alignment(Graph* G1, Graph* G2, const vector<vector<string> >& mapList) {
 	map<string,ushort> mapG1 = G1->getNodeNameToIndexMap();
 	map<string,ushort> mapG2 = G2->getNodeNameToIndexMap();
-	ushort n1 = mapList.size();
-	ushort n2 = G2->getNumNodes();
+	ushort n1 = mapList.size(); 
+    ushort n2 = G2->getNumNodes();
 	A = vector<ushort>(G1->getNumNodes(), n2); //n2 used to note invalid value
 	for (ushort i = 0; i < n1; i++) {
 		string nodeG1 = mapList[i][0];
@@ -66,15 +66,35 @@ Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, 
 		string nodeG2 = mapList[i][1];
 
 		if (byName) {
+            bool nodeG1Misplaced = false;
+            bool nodeG2Misplaced = false;
 			if(mapG1.find(nodeG1) == mapG1.end()){
-				cerr << nodeG1 << " not in G1 " << G1->getName()  << endl;
-				continue;
+				cerr << nodeG1 << " not in G1 " << G1->getName();
+                if(mapG2.find(nodeG1) != mapG2.end()){
+                    cerr << ", but it is in G2. Will switch if appropriate." << endl;
+                    nodeG1Misplaced = true;
+                }else{
+                    cerr << endl;
+                    continue;
+                }
 			}
 			if (mapG2.find(nodeG2) == mapG2.end()){
-				cerr << nodeG2 << " not in G2 " << G2->getName() << endl;
-				continue;
+				cerr << nodeG2 << " not in G2 " << G2->getName();
+				if(mapG1.find(nodeG2) != mapG1.end()){
+                    //cerr << " is in G1, though." << endl;
+                    cerr << ", but it is in G1. Will switch if appropriate." << endl;
+                    nodeG2Misplaced = true;
+                }else{
+                    cerr << endl;
+                    continue;
+                }
 			}
-
+            if(nodeG1Misplaced and nodeG2Misplaced){
+                string temp = nodeG1;
+                nodeG1 = nodeG2;
+                nodeG2 = temp;
+                cerr << nodeG1 << " and " << nodeG2 << " swapped." << endl;
+            }
 			A[mapG1[nodeG1]] = mapG2[nodeG2];
 		} else {
 			A[atoi(nodeG1.c_str())] = atoi(nodeG2.c_str());
