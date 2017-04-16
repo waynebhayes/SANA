@@ -1339,4 +1339,15 @@ void Graph::updateUnlockedGeneCount(){
        }
    }
 }
+#ifdef WEIGHTED
+uint Graph::getWeightedNumEdges() {
+    if (weightedNumEdges != 0) return weightedNumEdges;
+    weightedNumEdges = 0;
+    for (auto c : edgeList) 
+        weightedNumEdges += adjMatrix[c[0]][c[1]];
+    return weightedNumEdges;
+}
+#endif
+        
+
 
