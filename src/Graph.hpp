@@ -56,6 +56,9 @@ public:
     string getName() const;
 
     uint getNumNodes() const;
+#ifdef WEIGHTED
+    uint getWeightedNumEdges();
+#endif
     uint getNumEdges() const;
     const vector<vector<ushort> >& getConnectedComponents() const;
     uint getNumConnectedComponents() const;
@@ -168,6 +171,7 @@ private:
     // and they are used to reIndex the graph to normal at the end.
     vector<bool> lockedList;  // shows which nodes are locked
     vector<string> lockedTo;  // name of node we lock to in other graph
+    int weightedNumEdges = 0;
     int lockedCount = 0;
 
     void updateUnlockedGeneCount();

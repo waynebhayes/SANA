@@ -13,6 +13,7 @@
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/ShortestPathConservation.hpp"
+#include "../measures/MultiEdgeCorrectness.hpp"
 
 #include "../measures/localMeasures/NodeCount.hpp"
 #include "../measures/localMeasures/NodeDensity.hpp"
@@ -159,6 +160,9 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 
     m = new EdgeCorrectness(&G1, &G2);
     M.addMeasure(m, getWeight("ec", G1, G2, args));
+
+    m = new MultiEdgeCorrectness(&G1, &G2);
+    M.addMeasure(m, 1);
 
     m = new InducedConservedStructure(&G1, &G2);
     M.addMeasure(m);
