@@ -106,5 +106,5 @@ if __name__ == '__main__':
         for node_b in s_el[node_a]:
             if node_a > node_b:
                 continue
-            print('{} {} 0 |{{{}}}|'.format(node_a,node_b, s_am[node_a][node_b]))
+            print('{} {} 0 |{{{}}}|'.format(node_a+1, node_b+1, s_am[node_a][node_b]))
 
