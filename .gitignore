@@ -51,3 +51,4 @@ wrappedAlgorithms/*/*.alig*
 
 #debug files
 callgrind.out.*
+core*
