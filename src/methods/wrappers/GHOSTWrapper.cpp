@@ -72,7 +72,7 @@ string GHOSTWrapper::generateAlignment() {
 	string name2 = G2->getName();
 
 	execPrintOutput("cd " + wrappedDir + "; " + GHOSTBinary + " -c " + cfgFile);
-	execPrintOutput("cd " + wrappedDir + "; int2string.sh 0 2 ../../networks/"+name1+"/"+name1+".gw ../../networks/"+name2+"/"+name2+".gw "+ af + ".af > " + af + ".align");
+	execPrintOutput("cd " + wrappedDir + "; ./int2string.sh 0 2 ../../networks/"+name1+"/"+name1+".gw ../../networks/"+name2+"/"+name2+".gw "+ af + ".af > " + af + ".align");
 	return wrappedDir + "/" + af + ".align";
 }
 
