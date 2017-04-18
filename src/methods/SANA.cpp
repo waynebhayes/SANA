@@ -471,7 +471,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
 		if (interrupt) {
 			return A;
 		}
-		if (iter%iterationsPerStep == 0) {
+		if (iter%100000 == 0) {
 			trackProgress(iter);
 			if (iter != 0 and timer.elapsed() > maxExecutionSeconds) {
 				return A;
@@ -1139,7 +1139,7 @@ double SANA::scoreForTInitial(double TInitial) {
 
 	long long unsigned int iter = 0;
 	// simpleRun(Alignment::random(n1, n2), 0.0, iter);
-	simpleRun(getStartingAlignment(), (long long unsigned int) 100000, iter);
+	simpleRun(getStartingAlignment(), 1.0, iter);
 	this->iterationsPerStep = oldIterationsPerStep;
 	this->TInitial = oldTInitial;
 	constantTemp = false;
@@ -1150,7 +1150,10 @@ double SANA::scoreForTInitial(double TInitial) {
 }
 
 double SANA::findTInitialByLinearRegression(){
-	//Create a file with a 300 sample estimate of the temperature-score relationship
+
+	//Create a file with a 300 sample estimate of the temperature-pbad relationship
+	//Do not delete
+
 	// ifstream ifile(mkdir("template") + G1->getName() + "_" + G2->getName() + ".csv");
 	// if(!ifile.good()){
 	// 	ifile.close();
@@ -1165,37 +1168,40 @@ double SANA::findTInitialByLinearRegression(){
 	// 	}
 	// 	file.close();
 	// }else ifile.close();
-	//Look for a cache file matching the measure and the graphs and fill the cache variable with the file
+
+	//Look for a cache file that stores the known elements of the temperture-pbad relationship
 	map<double, double> cache;
 	double a, b;
 	std::ifstream cacheFile(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
 	cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes" << endl;
+
 	//set the float precisison of the stream. This is needed whenever a file is written
 	cerr << "Retrieving 60 Samples" << endl;
 	int progress = 0;
-	//cerr.precision(17);
-	//cerr << scientific;
 	while (cacheFile >> a >> b){
 		cache[a] = b;
 	}
 	cacheFile.close();
+
 	//Make a file out stream to send scores to the cache file if the temperatures score isn't already there
-	ofstream cacheOutStream(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt", std::ofstream::out | std::ofstream::app);
+	ofstream cacheOutStream(mkdir("pbads") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt", std::ofstream::out | std::ofstream::app);
 	cacheOutStream.precision(17);
 	cacheOutStream << scientific;
 	//Map that pairs temperatures (in log space) to scores, then we add the pairs already in the cache
 	map<double, double> scoreMap;
 	//start first instance of linear regression by filling the map with 20 pairs over 10E-10 to 10E!0
+	double maxx = 0.0;
 	for(double i = -10.0; i < 10.0; i = i + 1.0){
 		if(cache.find(i) == cache.end()){
 			double score = scoreForTInitial(pow(10, i));
-			cacheOutStream << i << " " << score << endl;
+			cacheOutStream << i << "," << score << endl;
 			scoreMap[i] = score;
 		}else{
 			scoreMap[i] = cache[i];
 		}
+		maxx = max(maxx, scoreMap[i]);
 		progress++;
-		cerr << progress << "/60 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
+		cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
 	}
 	//actually perform the linear regression
 	LinearRegression linearRegression;
@@ -1210,13 +1216,14 @@ double SANA::findTInitialByLinearRegression(){
 	for(double i = lowerEnd - wing; i < upperEnd + wing; i += (upperEnd - lowerEnd) / 40.0){
 		if(cache.find(i) == cache.end()){
 			double score = scoreForTInitial(pow(10, i));
-		    cacheOutStream << i << " " << score << endl;
+		    cacheOutStream << i << "," << score << endl;
 			scoreMap[i] = score;
 		}else{
 			scoreMap[i] = cache[i];
 		}
+		maxx = max(maxx, scoreMap[i]);
 		progress++;
-		cerr << progress << "/60 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
+		cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
 	}
 	cerr << endl;
 	//close the cahce file stream
@@ -1231,31 +1238,32 @@ double SANA::findTInitialByLinearRegression(){
 	cerr << "higher temperature: " << pow(10, get<5>(regressionResult)) << endl;
 	cerr << "line 1 height: " << get<6>(regressionResult) << " ";
 	cerr << "line 3 height: " << get<7>(regressionResult) << endl;
-	double currentTemperature = get<5>(regressionResult);
-	cerr << "Current Temperature " << pow(10, get<5>(regressionResult));
-	double currentPBad = pForTInitial(pow(10, get<5>(regressionResult)));
-	cerr << " Current P(Bad) " << currentPBad << endl;
-	//ncreasing temperature until an acceptable probability is reached
+
+	double startingTemperature = get<5>(regressionResult);
+	cerr << "Starting Temperature " << pow(10, startingTemperature);
+	double startingProbability = pForTInitial(pow(10, startingTemperature));
+	cerr << "Starting P(Bad) " << startingProbability << endl;
+	//increasing temperature until an acceptablly high probability is reached
 	int iteration = 1;
-	cerr << "Increasing temperature until an acceptable probability is reached. " << endl;
-	while(currentPBad < 0.99){
-		currentTemperature += 0.4;
-		currentPBad = pForTInitial(pow(10, currentTemperature));
-		cerr << iteration << ": Temperature: " << pow(10, currentTemperature) << " PBad: " << currentPBad << endl;
+	cerr << "Increasing temperature from " << pow(10, startingTemperature) << " until an acceptable probability is reached" << endl;
+	while(startingProbability < 0.99){
+		startingTemperature += 0.4;
+		startingProbability = pForTInitial(pow(10, startingTemperature));
+		cerr << iteration << ": Temperature: " << pow(10, startingTemperature) << " PBad: " << startingProbability << endl;
 		iteration++;
 	}
 
-	double otherPBad = pForTInitial(pow(10, get<5>(regressionResult)));
-	double otherTemperature = get<5>(regressionResult);
-	while(otherPBad > 0.00001){
-		otherTemperature -= 0.1;
-		otherPBad = pForTInitial(pow(10, otherTemperature));
-		cerr << "Temperature: " << pow(10, otherTemperature) << " PBad: " << otherPBad << endl;
+	//decreasubg temperature until an acceptablly low probability is reached
+	double finalTemperature = get<2>(regressionResult);
+	double finalProbability = pForTInitial(pow(10, finalTemperature));
+	while(finalProbability > 0.00001){
+		finalTemperature -= 0.1;
+		finalProbability = pForTInitial(pow(10, finalTemperature));
+		cerr << "Temperature: " << pow(10, finalTemperature) << " PBad: " << finalProbability << endl;
 	}
-		
-	lowerTBound = pow(10,otherTemperature);
 
-	ofstream info(mkdir("output") + G1->getName() + "_" + G2->getName() + ".txt");
+	//Print Schedule Report
+	ofstream info(mkdir("temperatureSchedule") + G1->getName() + "_" + G2->getName() + ".txt");
 	info << "lower_temperature " << pow(10, get<2>(regressionResult)) << endl;
 	info << "upper_temperature " << pow(10, get<5>(regressionResult)) << endl;
 	info << "lower_exp " << get<2>(regressionResult) << endl;
@@ -1263,44 +1271,38 @@ double SANA::findTInitialByLinearRegression(){
 	info << "line_1_height " << get<6>(regressionResult) << endl;
 	info << "line_3_height " << get<7>(regressionResult) << endl;
 	info << "starting_P(Bad) " << pForTInitial(pow(10, get<5>(regressionResult))) << endl;
-	info << "final_temperature_exp " << currentTemperature << endl;
-	info << "final_temperature " << pow(10, currentTemperature) << endl;
-	info << "final_P(Bad) " << currentPBad << endl;
+	info << "final_temperature_exp " << startingTemperature << endl;
+	info << "final_temperature " << pow(10, startingTemperature) << endl;
+	info << "final_P(Bad) " << startingProbability << endl;
 	info.close();
 
+	
+	cerr << "final_temperature: " <<  pow(10, startingTemperature) << " Final P(Bad): " << startingProbability << endl;
 
+	// cerr << defaultfloat; was getting comiple error
 
+	lowerTBound = pow(10, finalTemperature);
+	upperTBound = pow(10, startingTemperature);
 
+	cerr << "Initial Temperature: " <<  upperTBound << " Final Temperature: " << lowerTBound << endl;
+	cerr << "Predicted P(Bad) Range: " << startingProbability << " to " << finalProbability << endl;
+
+	//Print points for graph making
 	ofstream points(mkdir("points") + G1->getName() + "_" + G2->getName() + ".csv");
-	//points << "lower_temperature " << pow(10, get<2>(regressionResult)) << endl;
-	//points << "upper_temperature " << pow(10, get<5>(regressionResult)) << endl;
 	points << -10 << "," << get<6>(regressionResult) << endl;
 	points << get<2>(regressionResult) << "," << get<6>(regressionResult) << endl;
 	points << get<5>(regressionResult) << "," << get<7>(regressionResult) << endl;
 	points << 10 << "," << get<7>(regressionResult) << endl;
 	points.close();
-
-	cerr << "final_temperature: " <<  pow(10, currentTemperature) << " Final P(Bad): " << currentPBad << endl;
-
-
-	double x1 = get<2>(regressionResult);
-	double x2 = get<5>(regressionResult);
-	double y1 = get<6>(regressionResult);
-	double y2 = get<7>(regressionResult);
-
-	double slope = - abs ( (y1 - y2) / (x2 - x1) );
-	double B = y1 - slope * x1;
-	double xintercept = ( 0 - B ) / slope;
-
-	cerr << "x intercept " << pow(10, xintercept) << endl;
-
-	// cerr << defaultfloat; was getting comiple error
-
-	lowerTBound = pow(10, otherTemperature);
-	upperTBound = pow(10, currentTemperature);
-	double iter_t = minutes*60*getIterPerSecond();
-
-	return pow(10, currentTemperature);
+	ofstream left(mkdir("left") + G1->getName() + "_" + G2->getName() + ".csv");
+	left << lowerTBound << "," << maxx << endl;
+	left << lowerTBound << "," << 0.0 << endl;
+	left.close();
+	ofstream right(mkdir("right") + G1->getName() + "_" + G2->getName() + ".csv");
+	right << upperTBound << "," << maxx << endl;
+	right << upperTBound << "," << 0.0 << endl;
+	right.close();
+	return pow(10, startingTemperature);
 }
 
 string SANA::getFolder(){
@@ -1337,7 +1339,7 @@ double SANA::pForTInitial(double TInitial) {
 	// return pBad;
 
 	uint ITERATIONS = 10000.+100.*n1+10.*n2+n1*n2*0.1; //heuristic value
-
+	ITERATIONS = 100000;
 	double oldIterationsPerStep = this->iterationsPerStep;
 	double oldTInitial = this->TInitial;
 	bool oldRestart = restart;
@@ -1350,7 +1352,7 @@ double SANA::pForTInitial(double TInitial) {
 
 	long long unsigned int iter = 0;
 	// simpleRun(Alignment::random(n1, n2), 0.0, iter);
-	double result = getPforTInitial(getStartingAlignment(), 0.0, iter);
+	double result = getPforTInitial(getStartingAlignment(), 1.0, iter);
 	this->iterationsPerStep = oldIterationsPerStep;
 	this->TInitial = oldTInitial;
 	constantTemp = false;
