@@ -1163,7 +1163,7 @@ double SANA::findTInitialByLinearRegression(){
 	// 	file << "exp,temp,score" << endl;
 	// 	cout << "working";
 	// 	for(double i = -10; i < 10; i += 20.0/300.0){
-	// 		file << i << "," << pow(10, i) << "," << scoreForTInitial(pow(10, i)) << endl;
+	// 		file << i << "," << pow(10, i) << "," << pForTInitial(pow(10, i)) << endl;
 	// 		cout << "\r" << i << flush;
 	// 	}
 	// 	file.close();
@@ -1172,7 +1172,7 @@ double SANA::findTInitialByLinearRegression(){
 	//Look for a cache file that stores the known elements of the temperture-pbad relationship
 	map<double, double> cache;
 	double a, b;
-	std::ifstream cacheFile(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
+	std::ifstream cacheFile(mkdir("pbads") + "pbads_" + G1->getName() + "_" + G2->getName() + ".txt");
 	cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes" << endl;
 
 	//set the float precisison of the stream. This is needed whenever a file is written
@@ -1184,16 +1184,16 @@ double SANA::findTInitialByLinearRegression(){
 	cacheFile.close();
 
 	//Make a file out stream to send scores to the cache file if the temperatures score isn't already there
-	ofstream cacheOutStream(mkdir("pbads") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt", std::ofstream::out | std::ofstream::app);
+	ofstream cacheOutStream(mkdir("pbads") + "pbads_" + G1->getName() + "_" + G2->getName() + ".txt", std::ofstream::out | std::ofstream::app);
 	cacheOutStream.precision(17);
 	cacheOutStream << scientific;
-	//Map that pairs temperatures (in log space) to scores, then we add the pairs already in the cache
+	//Map that pairs temperatures (in log space) to pbads, then we add the pairs already in the cache
 	map<double, double> scoreMap;
 	//start first instance of linear regression by filling the map with 20 pairs over 10E-10 to 10E!0
 	double maxx = 0.0;
 	for(double i = -10.0; i < 10.0; i = i + 1.0){
 		if(cache.find(i) == cache.end()){
-			double score = scoreForTInitial(pow(10, i));
+			double score = pForTInitial(pow(10, i));
 			cacheOutStream << i << "," << score << endl;
 			scoreMap[i] = score;
 		}else{
@@ -1215,7 +1215,7 @@ double SANA::findTInitialByLinearRegression(){
 	//fill the score map with 30 more pairs betweem the boundaries
 	for(double i = lowerEnd - wing; i < upperEnd + wing; i += (upperEnd - lowerEnd) / 40.0){
 		if(cache.find(i) == cache.end()){
-			double score = scoreForTInitial(pow(10, i));
+			double score = pForTInitial(pow(10, i));
 		    cacheOutStream << i << "," << score << endl;
 			scoreMap[i] = score;
 		}else{
