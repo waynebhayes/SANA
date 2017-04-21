@@ -1610,8 +1610,12 @@ void SANA::prune(string& startAligName) {
     stringstream errorMsg;
     int shadow_node{0};
     for (int i = 0; i < n; i++) {
-        if (!(iss >> shadow_node) or shadow_node < 0) {
-            errorMsg << "Node number: " << to_string(shadow_node);
+        if (!(iss >> shadow_node)) {
+            errorMsg << "Format is not all integers, or not enought integers: " << line;
+            throw runtime_error(errorMsg.str().c_str());
+        }
+        if (shadow_node < 0) {
+            errorMsg << "Shadow node: " << shadow_node << " < 0";
             throw runtime_error(errorMsg.str().c_str());
         }
         alignment.push_back(shadow_node);
