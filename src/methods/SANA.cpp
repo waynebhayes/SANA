@@ -73,6 +73,9 @@ SANA::SANA(Graph* G1, Graph* G2,
 	n1 = G1->getNumNodes();
 	n2 = G2->getNumNodes();
 	g1Edges = G1->getNumEdges();
+#ifdef WEIGHTED
+        g2WeightedEdges = G2->getWeightedNumEdges();
+#endif
 	g2Edges = G2->getNumEdges();
 	score = objectiveScore;
 
@@ -122,6 +125,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	ecWeight = MC->getWeight("ec");
 	s3Weight = MC->getWeight("s3");
 	secWeight = MC->getWeight("sec");
+        mecWeight = MC->getWeight("mec");
 	try {
 		wecWeight = MC->getWeight("wec");
 	} catch(...) {
@@ -150,7 +154,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
 	//to evaluate EC incrementally
-	needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0;
+	needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0 or mecWeight > 0;
 
 
 	//to evaluate S3 incrementally
@@ -624,6 +628,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
+		newCurrentScore += mecWeight * (newAligEdges/g2WeightedEdges);
 
 		energyInc = newCurrentScore-currentScore;
         wasBadMove = energyInc < 0;

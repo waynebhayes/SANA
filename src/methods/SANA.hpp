@@ -57,6 +57,9 @@ private:
     uint n1;
     uint n2;
     double g1Edges; //stored as double because it appears in division
+#ifdef WEIGHTED
+    double g2WeightedEdges;
+#endif
     double g2Edges; //stored as double because it appears in division
 #ifdef WEIGHTED
     vector<vector<ushort> > G1AdjMatrix;
@@ -144,6 +147,7 @@ private:
     double secWeight;
     double ncWeight;
     double localWeight;
+    double mecWeight;
     string score;
 
     //restart scheme
