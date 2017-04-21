@@ -59,6 +59,11 @@ def convert_alignment(alignment:[(str,str)], m_graph) -> [int]:
         int_alignment[node_num] = int(s_node)
     return int_alignment
 
+def read_int_alignment(file_name:str) -> [int]:
+    with open(str(file_name),mode='r') as f:
+        alignment = [int(x) for x in f.readline().strip().split()]
+    return alignment
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Create shadow network')
     parser.add_argument('-n','--networks', required=True, nargs='+')
@@ -81,8 +86,11 @@ if __name__ == '__main__':
         if a not in alignments:
             print('{}.align is not present in --alignments'.format(a), file=sys.stderr)
 
-        alignment = read_alignment(alignments[a])
-        int_alignment = convert_alignment(alignment, m_graph)
+        try:
+            int_alignment = read_int_alignment(alignment)
+        except ValueError:
+            print('Invalid alignment file', file=sys.stderr)
+            sys.exit(1)
 
         for peg,hole in enumerate(int_alignment):
             for end_peg in m_graph.edge_list[peg]:
