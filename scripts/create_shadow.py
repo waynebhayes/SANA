@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 import pathlib
 import sys
@@ -93,7 +94,7 @@ if __name__ == '__main__':
     print('LEDA.GRAPH')
     print('string')
     print('short')
-    print('-2')
+    print('-1')
     print(len(s_el))
     for node_a in range(len(s_el)):
         print('|{{shadow{}}}|'.format(node_a))
