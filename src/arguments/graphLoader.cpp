@@ -134,7 +134,15 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 		G1 = Graph::multGraph(g1Name, p1);
 		G2 = Graph::multGraph(g2Name, p2);
 	}
-	
+
+    if (G1.getNumNodes() > G2.getNumNodes()) {
+        Graph G3;
+        G3 = G1;
+        G1 = G2;
+        G2 = G3;
+        cerr << "Switching G1 and G2 because G1 has more nodes than G2." << endl;
+    }
+
 	double maxGraphletSize = args.doubles["-maxGraphletSize"];
 	if (maxGraphletSize){	
 		G1.setMaxGraphletSize(maxGraphletSize);	
@@ -251,9 +259,9 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 		G2.rewireRandomEdges(rewiredFraction);
 	}
 
-	if (G1.getNumNodes() > G2.getNumNodes()) {
+	/*if (G1.getNumNodes() > G2.getNumNodes()) {
 		throw runtime_error("G2 has less nodes than G1");
-	}
+	}*/
 	if (G1.getNumEdges() == 0 or G2.getNumEdges() == 0) {
 		throw runtime_error("One of the networks has 0 edges");
 	}
