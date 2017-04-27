@@ -1,7 +1,7 @@
 CC = g++
 
 #CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g3
-CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-ggdb -pg -Bstatic #-static
+CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-ggdb -pg
 
 
 INCLUDES =
@@ -118,6 +118,9 @@ all:    $(MAIN)
 
 $(MAIN): $(OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
+
+$(MAIN).static: $(OBJS)
+	$(CC) $(CXXFLAGS) -static $(INCLUDES) -o $(MAIN).static $(OBJS) $(LFLAGS) $(LIBS)
 
 #.c.o:
 #	$(CC) $(CXXFLAGS) $(INCLUDES) -c $<  -o $@
