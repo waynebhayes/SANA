@@ -1,6 +1,7 @@
 CC = g++
 
 #CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g3
+#CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -D WEIGHTED #-pg -ggdb -Bstatic #-static 
 CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-ggdb -pg -Bstatic #-static
 
 
@@ -29,6 +30,7 @@ ARGUMENTS_SRC = 							\
 
 MEASURES_SRCS = 							\
 	src/measures/EdgeCorrectness.cpp 				\
+	src/measures/MultiEdgeCorrectness.cpp 				\
         src/measures/ExternalWeightedEdgeConservation.cpp               \
 	src/measures/GoAverage.cpp      				\
 	src/measures/GoCoverage.cpp      				\
