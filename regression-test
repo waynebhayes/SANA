@@ -1,0 +1,93 @@
+#!/usr/bin/python3
+import subprocess
+import argparse
+import os
+from sys import exit
+import sys
+
+def RunRegressionTest():
+    failedTests = []
+    parser = argparse.ArgumentParser(description="Regression testing for SANA algorithm")
+    parser.add_argument("-bdir", "--base-dir", required=True, nargs=1, help='directory of a base version of SANA')
+    parser.add_argument("-odir", "--output-dir", default=["regression_output"], type=str, nargs=1, help='directory in which regression test will output to')
+    parser.add_argument("-tdir", "--testing-dir", default=["."], type=str, nargs=1, help='directory of the testing sana')
+    parser.add_argument("-errm", "--error-margin", default=[0.05], type=float, nargs=1, help='error margin of how big the difference between the current and base sana unit')
+    arguments = parser.parse_args()
+    print(arguments)
+    
+    if not os.path.isdir(arguments.output_dir[-1]):
+        os.makedirs(arguments.output_dir[-1])
+
+    with open(os.devnull, 'wb') as supress:
+        print("--------------------------Starting Current SANA Make----------------------------------------")
+        subprocess.call('make -C {} -j clean'.format(arguments.testing_dir[-1]), shell=True, stdout=supress)
+        subprocess.call('make -C {} -j'.format(arguments.testing_dir[-1]), shell=True, stdout=supress)
+        print("--------------------------Starting Base SANA Make----------------------------------------")
+        subprocess.call('make -C {} -j clean'.format(arguments.base_dir[-1]), shell=True, stdout=supress)
+        subprocess.call('make -C {} -j'.format(arguments.base_dir[-1]), shell=True, stdout=supress)
+
+    BioGRIDNetworks = subprocess.check_output('ls {}/networks | grep \'^[A-Z][A-Z]\''.format(arguments.testing_dir[-1]), shell=True).decode(sys.stdout.encoding).split()
+    print(BioGRIDNetworks)
+    def GetNumOfNode(network):
+        return int(subprocess.check_output('head {}/networks/{}/{}.gw | sed -n 5p'.format(arguments.testing_dir[-1],network, network), shell=True).decode(sys.stdout.encoding))
+    BioGRIDNetworks = [i[1] for i in sorted([(GetNumOfNode(i), i) for i in BioGRIDNetworks], key=lambda tup : tup[0])]
+
+    with open(os.devnull, 'wb') as supress:
+        for i in range(len(BioGRIDNetworks)):
+            for j in range(i+1,len(BioGRIDNetworks)):
+                print("Running {} - {}" .format(BioGRIDNetworks[i], BioGRIDNetworks[j]))
+                subprocess.call('{}/sana -g1 {} -g2 {} -o {}/{}-{}-testing &> {}/{}-{}-testing.progress'.format(arguments.testing_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j], arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j], arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j]), shell=True)
+                subprocess.call('{}/sana -g1 {} -g2 {} -o {}/{}-{}-base &> {}/{}-{}-base.progress'.format(arguments.base_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j], arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j], arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j]), shell=True)
+
+
+    print("--------------------------Checking Iterations----------------------------------------")
+    print("{: >30} {: >20} {: >20} {: >20}".format("Network-Pair", "Base SANA Iterations", "Current SANA Iterations", "Difference Percentage"))
+    testingIterations = []
+    baseIterations = []
+    for i in range(len(BioGRIDNetworks)):
+        for j in range(i+1, len(BioGRIDNetworks)):
+            iteration_testing = float(subprocess.check_output("grep -o \"[0-9]*.[0-9]* iterations\" {}/{}-{}-testing.progress".format(arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j]), shell=True).decode(sys.stdout.encoding).split()[0])
+            iteration_base = float(subprocess.check_output("grep -o \"[0-9]*.[0-9]* iterations\" {}/{}-{}-base.progress".format(arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j]), shell=True).decode(sys.stdout.encoding).split()[0])
+            testingIterations.append(iteration_testing)
+            baseIterations.append(iteration_base)
+            print("{: >30} {: >20} {: >20} {: >20}".format("{}-{}".format(BioGRIDNetworks[i], BioGRIDNetworks[j]), iteration_base, iteration_testing, (iteration_testing - iteration_base) / iteration_base * 100))
+    testingIterationsAvg = sum(testingIterations)/len(testingIterations)
+    baseIterationsAvg = sum(baseIterations)/len(baseIterations)
+    if (abs(baseIterationsAvg - testingIterationsAvg)/baseIterationsAvg > arguments.error_margin[-1]):
+        failedTests.append('iterations')
+            
+    def check_scores(score):
+        print("--------------------------Checking {}----------------------------------------".format(score))
+        print("{: >30} {: >20} {: >20} {: >20}".format("Network-Pair", "Base SANA S3", "Current SANA S3", "Difference Percentage"))
+        testingScores = []
+        baseScores  = []
+        for i in range(len(BioGRIDNetworks)):
+            for j in range(i+1, len(BioGRIDNetworks)):
+                testing = float(subprocess.check_output("grep -o \"{}: [0-9]\+.[0-9]\+\" {}/{}-{}-testing.out".format(score,arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j]), shell=True).decode(sys.stdout.encoding).split()[1])
+                base = float(subprocess.check_output("grep -o \"{}: [0-9]\+.[0-9]\+\" {}/{}-{}-base.out".format(score,arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j]), shell=True).decode(sys.stdout.encoding).split()[1])
+                testingScores.append(testing)
+                baseScores.append(base)
+                print("{: >30} {: >20} {: >20} {: >20}".format("{}-{}".format(BioGRIDNetworks[i], BioGRIDNetworks[j]), base, testing, (testing - base) / base * 100))
+        testingScoresAvg = sum(testingScores)/len(testingScores)
+        baseScoresAvg = sum(baseScores)/len(baseScores)
+        if (abs(baseIterationsAvg - testingIterationsAvg)/baseIterationsAvg > arguments.error_margin[-1]):
+            failedTests.append(score)
+
+    for score in ['s3', 'ec', 'ics', 'lccs', 'sec']:
+        check_scores(score)
+    
+    return failedTests
+
+if __name__ == '__main__':
+    failedTests = RunRegressionTest()
+
+    if (len(failedTests)):
+        print("Failed test in  the following: {}".format(', '.join(failedTests)))
+        exit(1)
+    else:
+        print("Passed regression testing")
+        exit(0)
+
+
+
+
