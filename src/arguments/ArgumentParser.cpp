@@ -1,7 +1,7 @@
 #include <iostream>
 #include "ArgumentParser.hpp"
 #include "../utils/utils.hpp"
-#include "argumentDescriptions.hpp"
+#include "supportedArguments.hpp"
 //#include "../Graph.cpp"
 //#include "../computeGraphlets.hpp"
 using namespace std;
