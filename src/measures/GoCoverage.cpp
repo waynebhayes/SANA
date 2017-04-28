@@ -14,21 +14,40 @@ GoCoverage::GoCoverage(Graph* G1, Graph* G2) :
 }
 
 GoCoverage::~GoCoverage() {
-
 }
 
-double GoCoverage::permutationInverse(uint M, uint N) {
+double GoCoverage::Permutation(uint M, uint N) {
+    if (N > M) swap(N, M);
+    assert(M >= N && N > 0);
     double res = 1;
     uint aux = M;
     while (aux > (M-N)) {
-        res /= aux;
+        res *= aux;
         aux--;
     }
     return res;
 }
 
+#define COMBO_GO 0
+#define INVERSE_FREQ_GO 1
+#define INVERSE_LOG_GO 0
+double GoCoverage::ScoreForOneGOterm(uint M, uint N) {
+    assert(0 < N && N <= M);
+#if COMBO_GO
+    return 1.0/Permutation(M,N);
+#elif INVERSE_FREQ_GO
+    return 1.0; // /min(M,N);
+#elif INVERSE_LOG_GO
+    return 1.0/log(max(M,N)+1);
+#endif
+}
+
 double GoCoverage::downweightedScore(uint M, uint N) {
-    return 1.0/N * permutationInverse(M, N);
+#if COMBO_GO
+    return ScoreForOneGOterm(M, N)/N; // divide by M if you want to enforce max only if #GO is same in both networks
+#elif INVERSE_FREQ_GO
+    return ScoreForOneGOterm(M, N)/N; // divide by M if you want to enforce max only if #GO is same in both networks
+#endif
 }
 
 double GoCoverage::scoreUpperBound() {
@@ -39,9 +58,9 @@ double GoCoverage::scoreUpperBound() {
         uint goTerm = pair.first;
         uint M = pair.second;
         uint N = goCountG2[goTerm];
+	if(N>M) swap(N,M);
         if (N > 0) {
-            if (N > M) swap(N, M);
-            total += permutationInverse(M, N);
+            total += ScoreForOneGOterm(M, N);
         }
     }
     return total;
@@ -65,7 +84,7 @@ double GoCoverage::eval(const Alignment& A) {
                 uint M = goCountG1[goTerm];
                 uint N = goCountG2[goTerm];
                 if (N > M) swap(N, M);
-                total += downweightedScore(M, N);
+                if(N>0) total += downweightedScore(M, N);
             }
         }
     }

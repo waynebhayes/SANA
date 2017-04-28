@@ -19,7 +19,7 @@ the graph definitions (in either GW or edge list format). If these
 arguments are used, -g1 and -g2 are ignored. g1Name and g2Name are deduced
 from the file names (by removing the path and the extension). Then,
 the network definitions are parsed and the necessary network files are created.
-
+
  */
 void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	string fg1 = args.strings["-fg1"], fg2 = args.strings["-fg2"], path1 = args.strings["-pathmap1"], path2 = args.strings["-pathmap2"];
@@ -114,7 +114,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 			}
 		}
 		else{
-			cerr << "Lock file (" << lockFile << ") does not exists!" << endl;
+			cerr << "Lock file (" << lockFile << ") does not exist!" << endl;
 			throw runtime_error("Lock file not found: " + lockFile);
 		}
 	}
@@ -198,8 +198,6 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	    }
 
 	}
-
-
 
 
 	// Getting Valid locks

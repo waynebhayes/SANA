@@ -131,6 +131,11 @@ SANA::SANA(Graph* G1, Graph* G2,
 	} catch(...) {
 		wecWeight = 0;
 	}
+    try{
+        ewecWeight = MC->getWeight("ewec");
+    }catch(...) {
+        ewecWeight = 0;
+    }
 	try {
 		needNC = false;
 		ncWeight = MC->getWeight("nc");
@@ -164,6 +169,9 @@ SANA::SANA(Graph* G1, Graph* G2,
 	//to evaluate WEC incrementally
 	needWec = wecWeight > 0;
 	
+    //to evaluate EWEC incrementally	
+    needEwec = ewecWeight>0;
+	
 	//to evaluate SEC incrementally
 	needSec = secWeight > 0;
 	
@@ -185,6 +193,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	needLocal = localWeight > 0;
 	if (needLocal) {
 		sims = MC->getAggregatedLocalSims();
+    localSimMatrixMap = MC->getLocalSimMap();
 		localWeight = 1; //the values in the sim matrix 'sims'
 		//have already been scaled by the weight
 	} else {
@@ -430,6 +439,12 @@ void SANA::initDataStructures(const Alignment& startA) {
 		double wecScore = wec->eval(A);
 		wecSum = wecScore*2*g1Edges;
 	}
+
+    if(needEwec){
+        ewec = (ExternalWeightedEdgeConservation*)(MC->getMeasure("ewec"));
+        ewecSum = ewec->eval(A);
+    } 
+
 	if (needNC) {
 		//std::cout << "NEED NC EXECUTED!!!" << std::endl;
 		Measure* nc = MC->getMeasure("nc");
@@ -533,21 +548,30 @@ void SANA::performChange() {
 	}
 
 	double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
+  map<string, double> newLocalScoreSumMap(localScoreSumMap);
 	if (needLocal) {
-		newLocalScoreSum = localScoreSum + localScoreSumIncChangeOp(source, oldTarget, newTarget);
+		newLocalScoreSum = localScoreSum + localScoreSumIncChangeOp(sims, source, oldTarget, newTarget);
+    for(auto it = newLocalScoreSumMap.begin(); it != newLocalScoreSumMap.end(); ++it)
+      it->second += localScoreSumIncChangeOp(localSimMatrixMap[it->first], source, oldTarget, newTarget);
 	}
 
 	double newWecSum = -1; //dummy initialization to shut compiler warning
 	if (needWec) {
 		newWecSum = wecSum + WECIncChangeOp(source, oldTarget, newTarget);
 	}
+
+    double newEwecSum = -1;
+    if (needEwec) {
+        newEwecSum = ewecSum + EWECIncChangeOp(source, oldTarget, newTarget, A);
+    }
+
 	double newNcSum = -1;
 	if (needNC) {
 		newNcSum = ncSum + ncIncChangeOp(source, oldTarget, newTarget);
 	}	
 	
 	double newCurrentScore = 0;
-	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore);
+	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum);
 
 	if (makeChange) {
 		A[source] = newTarget;
@@ -557,7 +581,10 @@ void SANA::performChange() {
 		aligEdges = newAligEdges;
 		inducedEdges = newInducedEdges;
 		localScoreSum = newLocalScoreSum;
+    for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
+      localScoreSumMap[newLocalScoreSumEntry.first] = newLocalScoreSumEntry.second;
 		wecSum = newWecSum;
+        ewecSum = newEwecSum;
 		ncSum = newNcSum;
 		currentScore = newCurrentScore;
 	}
@@ -590,8 +617,11 @@ void SANA::performSwap() {
 	}
 
 	double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
+  map<string, double> newLocalScoreSumMap(localScoreSumMap);
 	if (needLocal) {
-		newLocalScoreSum = localScoreSum + localScoreSumIncSwapOp(source1, source2, target1, target2);
+		newLocalScoreSum = localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2);
+    for(auto it = newLocalScoreSumMap.begin(); it != newLocalScoreSumMap.end(); ++it)
+        it->second += localScoreSumIncSwapOp(localSimMatrixMap[it->first], source1, source2, target1, target2);
 	}
 
 	double newWecSum = -1; //dummy initialization to shut compiler warning
@@ -599,25 +629,34 @@ void SANA::performSwap() {
 		newWecSum = wecSum + WECIncSwapOp(source1, source2, target1, target2);
 	}
 	
+    double newEwecSum = -1;
+	if (needEwec) {
+		newEwecSum = ewecSum + EWECIncSwapOp(source1, source2, target1, target2, A);
+	}
+
+	
 	double newNcSum = -1;
 	if(needNC) {
 		newNcSum = ncSum + ncIncSwapOp(source1, source2, target1, target2);
 	}
 	double newCurrentScore = 0;
-	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore);
+	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum);
 
 	if (makeChange) {
 		A[source1] = target2;
 		A[source2] = target1;
 		aligEdges = newAligEdges;
 		localScoreSum = newLocalScoreSum;
+    for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
+      localScoreSumMap[newLocalScoreSumEntry.first] = newLocalScoreSumEntry.second;
 		wecSum = newWecSum;
+        ewecSum = newEwecSum;
 		ncSum = newNcSum;
 		currentScore = newCurrentScore;
 	}
 }
 
-double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore) {
+double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum) {
 	bool makeChange = false;
 	bool wasBadMove = false;
     double badProbability = 0;
@@ -627,6 +666,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+        newCurrentScore += ewecWeight * (newEwecSum);
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
 		newCurrentScore += mecWeight * (newAligEdges/g2WeightedEdges);
 
@@ -649,17 +689,18 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
     }
 	else if(score == "max") {
-		double deltaEnergy = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
+		double deltaEnergy = max(ncWeight* (newNcSum/trueA.back() - ncSum/trueA.back()), max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
 									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
 									 secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
 								 max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
-									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges)))));
 
 		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
 		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+		newCurrentScore += ncWeight * (newNcSum/trueA.back());
 		
 		energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -667,17 +708,18 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc/T);
 	}
 	else if(score == "min") {
-		double deltaEnergy = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
+		double deltaEnergy = min(ncWeight* (newNcSum/trueA.back() - ncSum/trueA.back()), min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
 									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
 									 secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
 								 min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
-									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges)))));
 		
 		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
 		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+		newCurrentScore += ncWeight * (newNcSum/trueA.back());
 		
 		energyInc = newCurrentScore - currentScore; //is this even used?
         wasBadMove = deltaEnergy < 0;
@@ -690,6 +732,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += s3Weight/(newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore += localWeight/(newLocalScoreSum/n1);
 		newCurrentScore += wecWeight/(newWecSum/(2*g1Edges));
+		newCurrentScore += ncWeight/(newNcSum/trueA.back());
 
 		energyInc = newCurrentScore-currentScore;
         wasBadMove = energyInc < 0;
@@ -697,23 +740,24 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
 	}
 	else if(score == "maxFactor") {
-		double maxScore = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
+		double maxScore = max(ncWeight*(newNcSum/trueA.back() - ncSum/trueA.back()),max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
 									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
 									 secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
 							  max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
-									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges)))));
 									 
-		double minScore = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
+		double minScore = min(ncWeight*(newNcSum/trueA.back() - ncSum/trueA.back()), min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
 									 s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
 									 secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
 							  min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
-									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+									 wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges)))));
 
 		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
 		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+	 	newCurrentScore += ncWeight * (newNcSum/trueA.back());
 		
 		energyInc = newCurrentScore - currentScore;
         wasBadMove = maxScore < -1 * minScore;
@@ -777,15 +821,15 @@ int SANA::inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTar
 	return res;
 }
 
-double SANA::localScoreSumIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
-	return sims[source][newTarget] - sims[source][oldTarget];
+double SANA::localScoreSumIncChangeOp(vector<vector<float> > const & sim, ushort const & source, ushort const & oldTarget, ushort const & newTarget) {
+	return sim[source][newTarget] - sim[source][oldTarget];
 }
 
-double SANA::localScoreSumIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
-	return sims[source1][target2] -
-			sims[source1][target1] +
-			sims[source2][target1] -
-			sims[source2][target2];
+double SANA::localScoreSumIncSwapOp(vector<vector<float> > const & sim, ushort const & source1, ushort const & source2, ushort const & target1, ushort const & target2) {
+	return sim[source1][target2] -
+			sim[source1][target1] +
+			sim[source2][target1] -
+			sim[source2][target2];
 }
 
 double SANA::WECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
@@ -839,6 +883,23 @@ double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort
 	}
 	return res;
 }
+
+double SANA::EWECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget, const Alignment& A){
+    //return ewec->changeOp(source, oldTarget, newTarget, A);
+    double score = 0;
+    score = (ewec->simScore(source, newTarget, A)) - (ewec->simScore(source, oldTarget, A));
+    //score *= -1;
+    return score;
+} 
+
+double SANA::EWECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2, const Alignment& A){
+    //return ewec->swapOp(source1, source2, target1, target2, A);
+    double score = 0;
+    score = (ewec->simScore(source1, target2, A)) + (ewec->simScore(source2, target1, A)) - (ewec->simScore(source1, target1, A)) - (ewec->simScore(source2, target2, A));
+    //score *= -1;
+    return score;
+}
+
 
 int SANA::ncIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
 	int change = 0;
@@ -1126,9 +1187,9 @@ double SANA::findTInitialByLinearRegression(){
 	// }else ifile.close();
 	//Look for a cache file matching the measure and the graphs and fill the cache variable with the file
 	map<double, double> cache;
-	std::ifstream cacheFile(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
 	double a, b;
-	cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes\n";
+	std::ifstream cacheFile(mkdir("scores") + "scores_" + G1->getName() + "_" + G2->getName() + ".txt");
+	cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes" << endl;
 	//set the float precisison of the stream. This is needed whenever a file is written
 	cerr << "Retrieving 60 Samples" << endl;
 	int progress = 0;
@@ -1164,8 +1225,9 @@ double SANA::findTInitialByLinearRegression(){
 	//pull the temperature bounds from the tuple and strech them a bit
 	double lowerEnd = get<2>(regressionResult);
 	double upperEnd = get<5>(regressionResult);
+	double wing = (upperEnd - lowerEnd) / 2;
 	//fill the score map with 30 more pairs betweem the boundaries
-	for(double i = lowerEnd; i < upperEnd; i += (upperEnd - lowerEnd) / 40.0){
+	for(double i = lowerEnd - wing; i < upperEnd + wing; i += (upperEnd - lowerEnd) / 40.0){
 		if(cache.find(i) == cache.end()){
 			double score = scoreForTInitial(pow(10, i));
 		    cacheOutStream << i << " " << score << endl;

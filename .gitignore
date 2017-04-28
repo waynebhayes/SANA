@@ -42,8 +42,10 @@ wrappedAlgorithms/PISWAP/networkx/*/*.pyc
 wrappedAlgorithms/PISWAP/networkx/*/*/*.pyc
 
 sana.out
+*.localscores
 
 regression_test_baseline.txt
+/test/googletest/
 run_output.txt
 
 wrappedAlgorithms/*/*tmp*
@@ -55,3 +57,5 @@ core*
 
 #Vi/vim swp files
 **.swp
+.un~
+/cache/

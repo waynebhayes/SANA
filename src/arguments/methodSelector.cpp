@@ -134,7 +134,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 	((SANA*) sana)->setDynamicTDecay();
     } 
     if (args.strings["-lock"] != ""){
-    	sana->setLockFile(args.strings["-lock"] );
+      sana->setLockFile(args.strings["-lock"] );
     }
     return sana;
 }
@@ -165,17 +165,17 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
         return initTabuSearch(G1, G2, args, M);
     if (name == "dijkstra")
         return initDijkstra(G1, G2, args, M);
-      //return new Dijkstra(&G1, &G2, &M);
+        //return new Dijkstra(&G1, &G2, &M);
     if (name == "netal")
         return new NETALWrapper(&G1, &G2, wrappedArgs);
     if (name == "mi-graal" || name == "migraal")
         return new MIGRAALWrapper(&G1, &G2, wrappedArgs);
     if (name == "ghost")
-    	return new GHOSTWrapper(&G1, &G2, wrappedArgs);
+        return new GHOSTWrapper(&G1, &G2, wrappedArgs);
     if (name == "piswap")
-    	return new PISwapWrapper(&G1, &G2, alpha, startAligName, wrappedArgs);
+        return new PISwapWrapper(&G1, &G2, alpha, startAligName, wrappedArgs);
     if (name == "optnetalign")
-		return new OptNetAlignWrapper(&G1, &G2, wrappedArgs);
+       return new OptNetAlignWrapper(&G1, &G2, wrappedArgs);
     if (name == "spinal")
 		return new SPINALWrapper(&G1, &G2, alpha, wrappedArgs);
     if (name == "great")
