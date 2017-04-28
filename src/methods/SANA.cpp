@@ -668,7 +668,9 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
         newCurrentScore += ewecWeight * (newEwecSum);
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
+#ifdef WEIGHTED
 		newCurrentScore += mecWeight * (newAligEdges/g2WeightedEdges);
+#endif
 
 		energyInc = newCurrentScore-currentScore;
         wasBadMove = energyInc < 0;
