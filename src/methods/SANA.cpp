@@ -168,7 +168,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 	//to evaluate WEC incrementally
 	needWec = wecWeight > 0;
-
+	
     //to evaluate EWEC incrementally	
     needEwec = ewecWeight>0;
 	
@@ -628,7 +628,7 @@ void SANA::performSwap() {
 	if (needWec) {
 		newWecSum = wecSum + WECIncSwapOp(source1, source2, target1, target2);
 	}
-
+	
     double newEwecSum = -1;
 	if (needEwec) {
 		newEwecSum = ewecSum + EWECIncSwapOp(source1, source2, target1, target2, A);
@@ -701,7 +701,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
-
+		
 		energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
         badProbability = exp(energyInc/T);
@@ -720,7 +720,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
-
+		
 		energyInc = newCurrentScore - currentScore; //is this even used?
         wasBadMove = deltaEnergy < 0;
         badProbability = exp(energyInc/T);
@@ -758,7 +758,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 	 	newCurrentScore += ncWeight * (newNcSum/trueA.back());
-	
+		
 		energyInc = newCurrentScore - currentScore;
         wasBadMove = maxScore < -1 * minScore;
         badProbability = exp(energyInc/T);

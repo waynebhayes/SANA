@@ -10,7 +10,7 @@ Alignment::Alignment(const Alignment& alig): A(alig.A) {}
 Alignment::Alignment(Graph* G1, Graph* G2, const vector<vector<string> >& mapList) {
 	map<string,ushort> mapG1 = G1->getNodeNameToIndexMap();
 	map<string,ushort> mapG2 = G2->getNodeNameToIndexMap();
-	ushort n1 = mapList.size(); 
+	ushort n1 = mapList.size();
     ushort n2 = G2->getNumNodes();
 	A = vector<ushort>(G1->getNumNodes(), n2); //n2 used to note invalid value
 	for (ushort i = 0; i < n1; i++) {
