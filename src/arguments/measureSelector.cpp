@@ -13,6 +13,7 @@
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/ShortestPathConservation.hpp"
+#include "../measures/MultiEdgeCorrectness.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 
 #include "../measures/localMeasures/NodeCount.hpp"
@@ -95,7 +96,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableMeasures = {
         "ec","s3","sec","wec","nodec","noded","edgec","edged", "esim", "go","importance",
-        "sequence","graphlet","graphletlgraal", "graphletcosine", "spc", "nc", "ewec"
+        "sequence","graphlet","graphletlgraal", "graphletcosine", "spc", "nc","mec", "ewec"
     };
     double total = 0;
     for (uint i = 0; i < optimizableMeasures.size(); i++) {
@@ -160,6 +161,9 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 
     m = new EdgeCorrectness(&G1, &G2);
     M.addMeasure(m, getWeight("ec", G1, G2, args));
+
+    m = new MultiEdgeCorrectness(&G1, &G2);
+    M.addMeasure(m, getWeight("mec", G1, G2, args));
 
     m = new InducedConservedStructure(&G1, &G2);
     M.addMeasure(m);

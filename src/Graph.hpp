@@ -1,7 +1,7 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#include<set>
+#include <set>
 #include <string>
 #include <vector>
 #include <utility>
@@ -56,12 +56,25 @@ public:
     string getName() const;
 
     uint getNumNodes() const;
+#ifdef WEIGHTED
+    uint getWeightedNumEdges();
+#endif
     uint getNumEdges() const;
     const vector<vector<ushort> >& getConnectedComponents() const;
     uint getNumConnectedComponents() const;
+#ifdef WEIGHTED
+    void getAdjMatrix(vector<vector<ushort> >& adjMatrixCopy) const;
+    void setAdjMatrix(vector<vector<ushort> >& adjMatrixCopy);
+#else
     void getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const;
+    void setAdjMatrix(vector<vector<bool> >& adjMatrixCopy);
+#endif
     void getAdjLists(vector<vector<ushort> >& adjListsCopy) const;
     void getEdgeList(vector<vector<ushort> > & edgeListCopy) const;
+
+    void setAdjLists(vector<vector<ushort> >& adjListsCopy);
+    void setEdgeList(vector<vector<ushort> >& edgeListCopy);
+
     vector<string> getNodeNames() const;
 
     //loads graph from file in GraphWin (.gw) format:
@@ -136,13 +149,18 @@ public:
     uint miRNACount = 0;
     int unlockedGeneCount = -1;
     int unlockedmiRNACount = -1;
+    void removeEdge(ushort node1, ushort node2);
 
 private:
     double maxGraphletSize = 4; //default is 4, 5 is too big
     string name;
     //double maxsize;
     vector<vector<ushort> > edgeList; //edges in no particular order
+#ifdef WEIGHTED
+    vector<vector<ushort> > adjMatrix;
+#else
     vector<vector<bool> > adjMatrix;
+#endif
     vector<vector<ushort> > adjLists; //neighbors in no particular order
 
     //list of the nodes of each connected component, sorted from larger to smaller
@@ -153,6 +171,7 @@ private:
     // and they are used to reIndex the graph to normal at the end.
     vector<bool> lockedList;  // shows which nodes are locked
     vector<string> lockedTo;  // name of node we lock to in other graph
+    int weightedNumEdges = 0;
     int lockedCount = 0;
 
     void updateUnlockedGeneCount();
@@ -160,7 +179,6 @@ private:
     void initConnectedComponents();
 
     void addEdge(ushort node1, ushort node2);
-    void removeEdge(ushort node1, ushort node2);
     void addRandomEdge();
     void removeRandomEdge();
 

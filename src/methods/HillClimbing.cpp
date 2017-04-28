@@ -67,10 +67,15 @@ Alignment HillClimbing::run() {
     uint n2 = G2->getNumNodes();
 
     vector<ushort> A(startA.getMapping());
-
+#ifdef WEIGHTED
+    vector<vector<ushort> > G1AdjMatrix;
+    vector<vector<ushort> > G2AdjMatrix;
+#else
     vector<vector<bool> > G1AdjMatrix;
-    G1->getAdjMatrix(G1AdjMatrix);
     vector<vector<bool> > G2AdjMatrix;
+#endif
+
+    G1->getAdjMatrix(G1AdjMatrix);
     G2->getAdjMatrix(G2AdjMatrix);
     vector<vector<ushort> > G1AdjLists;
     G1->getAdjLists(G1AdjLists);
@@ -231,8 +236,11 @@ Alignment HillClimbing::run() {
                     newAligEdges += G2AdjMatrix[target1][A[neighbor]];
                 }
                 //address case swapping between adjacent nodes with adjacent images:
+#ifdef WEIGHTED
+                newAligEdges += (-1 << 1) & (G1AdjMatrix[source1][source2] + G2AdjMatrix[target1][target2]);
+#else
                 newAligEdges += 2*(G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
-
+#endif
                 double newLocalScoreSum = localScoreSum +
                     localsCombined[source1][target2] -
                     localsCombined[source1][target1] +
@@ -264,7 +272,11 @@ Alignment HillClimbing::run() {
                         }
                     }
                     //address case swapping between adjacent nodes with adjacent images:
+#ifdef WEIGHTED
+                    if (G1AdjMatrix[source1][source2] > 0 and G2AdjMatrix[target1][target2] > 0) { 
+#else
                     if (G1AdjMatrix[source1][source2] and G2AdjMatrix[target1][target2]) {
+#endif
                         //not sure about this -- but seems fine
                         newWecSum += 2*(*wecSimMatrix)[source1][target1];
                         newWecSum += 2*(*wecSimMatrix)[source2][target2];
