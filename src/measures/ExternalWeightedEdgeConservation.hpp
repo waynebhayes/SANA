@@ -25,8 +25,13 @@ private:
     std::map<std::string, std::map<std::string, int>> rowIndex;
     std::vector<std::vector<ushort> > adjListG1;
     std::vector<std::vector<ushort> > adjListG2;
+#ifdef WEIGHTED
+    std::vector<std::vector<ushort> > adjMatrixG1;
+    std::vector<std::vector<ushort> > adjMatrixG2;
+#else
     std::vector<std::vector<bool> > adjMatrixG1;
     std::vector<std::vector<bool> > adjMatrixG2;
+#endif
     std::vector<std::string> nodeNamesG1;
     std::vector<std::string> nodeNamesG2;
 

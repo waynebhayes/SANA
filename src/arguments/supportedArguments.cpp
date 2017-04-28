@@ -90,6 +90,7 @@ vector<array<string, 6>> supportedArguments = {
 	{ "-alpha", "double", "0", "alpha=0 means toplogy only; alpha=1 means sequence only.", "Trade off between biological (alpha = 1) and topological (alpha = 0) measures. Range: [0, 1]. Used when \"-objfuntype\" is \"alpha\".", "1" },
 	{ "-beta", "double", "0", "Like -alpha, but values are normalized first.", "Same as alpha but with topological and biological scores balanced according to size. Range: [0, 1]. Used when \"-objfuntype\" is \"beta\".", "1" },
 	{ "-ec", "double", "0", "Weight of EC", "The weight of the Edge Coverage (aka Edge Conservation or Edge Correctness) in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+	{ "-mec", "double", "0", "Weight of MEC", "The weight of the Multiple Edge Coverage in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-s3", "double", "1", "Weight of S3", "The weight of the Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-nc", "double", "0", "Weight of NC", "This weight of Node Correctness in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-wec", "double", "0", "Weight of WEC.", "Weight of the weighted edge coverage. To be used when \"-objfuntype\" is \"generic\". If non-zero, must specify how to weigh the edge using -wecnodesim.", "1" },

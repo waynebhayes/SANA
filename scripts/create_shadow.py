@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 import pathlib
 import sys
@@ -58,12 +59,21 @@ def convert_alignment(alignment:[(str,str)], m_graph) -> [int]:
         int_alignment[node_num] = int(s_node)
     return int_alignment
 
+def read_int_alignment(file_name:str) -> [int]:
+    with open(str(file_name),mode='r') as f:
+        alignment = [int(x) for x in f.readline().strip().split()]
+    return alignment
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Create shadow network')
     parser.add_argument('-n','--networks', required=True, nargs='+')
     parser.add_argument('-a','--alignments', required=True, nargs='+')
     parser.add_argument('-s','--shadow-nodes', required=True, type=int)
+    parser.add_argument('-v','--verbose', action='store_true')
     args = parser.parse_args()
+    if args.verbose:
+        print(args.networks,file=sys.stderr)
+        print(args.alignments, file=sys.stderr)
 
     s_el = [[] for x in range(args.shadow_nodes)]
     s_am = [[0 for x in range(args.shadow_nodes)] for y in range(args.shadow_nodes)]
@@ -72,39 +82,35 @@ if __name__ == '__main__':
 
     for network in args.networks:
         network_path = pathlib.Path(network)
-        m_graph = graph.Graph(network, network_path.suffix == '.gw')
+        m_graph = Graph(network, network_path.suffix == '.gw')
 
         a = '{}-shadow'.format(network_path.stem)
         if a not in alignments:
             print('{}.align is not present in --alignments'.format(a), file=sys.stderr)
 
-        alignment = read_alignment(alignments[a])
-        int_alignment = convert_alignment(alignment, m_graph)
+        try:
+            int_alignment = read_int_alignment(alignment)
+        except ValueError:
+            print('Invalid alignment file', file=sys.stderr)
+            sys.exit(1)
 
         for peg,hole in enumerate(int_alignment):
             for end_peg in m_graph.edge_list[peg]:
-                if peg > end_peg:
-                    continue
                 end_hole = int_alignment[end_peg]
-
                 if s_am[hole][end_hole] == 0:
                     s_el[hole].append(end_hole)
-                    s_el[end_hole].append(hole)
-
                 s_am[hole][end_hole] += 1
-                s_am[end_hole][hole] += 1
 
     print('LEDA.GRAPH')
     print('string')
     print('short')
-    print('-2')
+    print('-1')
     print(len(s_el))
     for node_a in range(len(s_el)):
         print('|{{shadow{}}}|'.format(node_a))
-    print(sum(len(x) for x in s_el))
-    for node_a in range(len(s_el)):
-        for node_b in s_el[node_a]:
-            if node_a > node_b:
-                continue
-            print('{} {} 0 |{{{}}}|'.format(node_a+1, node_b+1, s_am[node_a][node_b]))
+    print(int(sum(len(x) for x in s_el) / 2))
+    for node_a in range(len(s_am)):
+        for node_b in range(node_a, len(s_am)):
+            if (s_am[node_a][node_b] > 0):
+                print('{} {} 0 |{{{}}}|'.format(node_a+1, node_b+1, s_am[node_a][node_b]))
 

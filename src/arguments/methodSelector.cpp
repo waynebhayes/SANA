@@ -74,7 +74,7 @@ Method* initDijkstra(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinat
     if(delta < 0.0 || delta > 1.0){
         throw runtime_error("Dijkstra:delta not in valid range [0.0,1.0)");
     }
-    return new Dijkstra(&G1, &G2, &M, delta);
+    return new Dijkstra(&G1, &G2, &M, delta); 
 }
 
 Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
@@ -86,8 +86,12 @@ Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombin
     return new TabuSearch(&G1, &G2, minutes, &M, ntabus, nneighbors, nodeTabus);
 }
 
+#ifdef WEIGHTED
+Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M, string startAligName) {
+    if (startAligName == "") throw runtime_error("ALIGNMENT FILE NEEDED");
+#else
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
-
+#endif
     double TInitial = 0;
     // t_initial "auto" defaults to by-linear-regression
     if (args.strings["-tinitial"] == "auto")
@@ -104,8 +108,11 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     Method* sana;
 
     double time = args.doubles["-t"];
+#ifdef WEIGHTED
+    sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"], args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"], startAligName);
+#else
     sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"], args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"]);
-
+#endif
     if (args.bools["-restart"]) {
         double tnew = args.doubles["-tnew"];
         uint iterperstep = args.doubles["-iterperstep"];
@@ -125,7 +132,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     }
     if (args.bools["-dynamictdecay"]) {
 	((SANA*) sana)->setDynamicTDecay();
-    }
+    } 
     if (args.strings["-lock"] != ""){
       sana->setLockFile(args.strings["-lock"] );
     }
@@ -133,10 +140,10 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 }
 
 Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
-
+ 
     string aligFile = args.strings["-eval"];
     if (aligFile != "")
-        return new NoneMethod(&G1, &G2, aligFile);
+        return new NoneMethod(&G1, &G2, aligFile);	
     string name = toLowerCase(args.strings["-method"]);
     string startAligName = args.strings["-startalignment"];
     double alpha = args.doubles["-alpha"];
@@ -145,11 +152,11 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (name == "greedylccs")
         return new GreedyLCCS(&G1, &G2, startAligName);
     if (name == "waveSim") {
-        LocalMeasure* waveNodeSim =
+        LocalMeasure* waveNodeSim = 
             (LocalMeasure*) M.getMeasure(args.strings["-wavenodesim"]);
         return new WeightedAlignmentVoter(&G1, &G2, waveNodeSim);
     }
-
+   
     if (name == "lgraal")
         return initLgraal(G1, G2, args);
     if (name == "hubalign")
@@ -180,7 +187,11 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (name == "wave")
 		return new WAVEWrapper(&G1, &G2, wrappedArgs);
     if (name == "sana")
+#ifdef WEIGHTED
+        return initSANA(G1, G2, args, M, startAligName);
+#else
         return initSANA(G1, G2, args, M);
+#endif
     if (name == "hc")
         return new HillClimbing(&G1, &G2, &M, startAligName);
     if (name == "random")

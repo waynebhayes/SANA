@@ -10,7 +10,7 @@ Alignment::Alignment(const Alignment& alig): A(alig.A) {}
 Alignment::Alignment(Graph* G1, Graph* G2, const vector<vector<string> >& mapList) {
 	map<string,ushort> mapG1 = G1->getNodeNameToIndexMap();
 	map<string,ushort> mapG2 = G2->getNodeNameToIndexMap();
-	ushort n1 = mapList.size(); 
+	ushort n1 = mapList.size();
     ushort n2 = G2->getNumNodes();
 	A = vector<ushort>(G1->getNumNodes(), n2); //n2 used to note invalid value
 	for (ushort i = 0; i < n1; i++) {
@@ -218,7 +218,11 @@ void Alignment::writeEdgeList(Graph const * G1, Graph const * G2, ostream& edgeL
 uint Alignment::numAlignedEdges(const Graph& G1, const Graph& G2) const {
 	vector<vector<ushort> > G1EdgeList;
 	G1.getEdgeList(G1EdgeList);
+#ifdef WEIGHTED
+        vector<vector<ushort> > G2AdjMatrix;
+#else
 	vector<vector<bool> > G2AdjMatrix;
+#endif
 	G2.getAdjMatrix(G2AdjMatrix);
 
 	uint count = 0;
@@ -234,7 +238,12 @@ Graph Alignment::commonSubgraph(const Graph& G1, const Graph& G2) const {
 
 	vector<vector<ushort> > G1EdgeList;
 	G1.getEdgeList(G1EdgeList);
-	vector<vector<bool> > G2AdjMatrix;
+#ifdef WEIGHTED
+        vector<vector<ushort> > G2AdjMatrix;
+#else
+        vector<vector<bool> > G2AdjMatrix;
+#endif
+
 	G2.getAdjMatrix(G2AdjMatrix);
 
 	//only add edges preserved by alignment

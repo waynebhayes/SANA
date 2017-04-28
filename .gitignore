@@ -1,4 +1,3 @@
-test/Graphette/test/output
 *.o
 *~
 sana
@@ -54,5 +53,9 @@ wrappedAlgorithms/*/*.alig*
 
 #debug files
 callgrind.out.*
+core*
+
+#Vi/vim swp files
+**.swp
 .un~
 /cache/
