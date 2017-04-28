@@ -69,9 +69,11 @@ if __name__ == '__main__':
     parser.add_argument('-n','--networks', required=True, nargs='+')
     parser.add_argument('-a','--alignments', required=True, nargs='+')
     parser.add_argument('-s','--shadow-nodes', required=True, type=int)
+    parser.add_argument('-v','--verbose', action='store_true')
     args = parser.parse_args()
-    print(args.networks)
-    print(args.alignments)
+    if args.verbose:
+        print(args.networks,file=sys.stderr)
+        print(args.alignments, file=sys.stderr)
 
     s_el = [[] for x in range(args.shadow_nodes)]
     s_am = [[0 for x in range(args.shadow_nodes)] for y in range(args.shadow_nodes)]
