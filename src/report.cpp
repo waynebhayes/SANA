@@ -72,17 +72,48 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
 }
 
 void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
-  const MeasureCombination& M, Method* method, string reportFile) {
-  string G1Name = G1.getName();
-  string G2Name = G2.getName();
-  if (reportFile == "") {
-    reportFile = "alignments/" + G1Name + "_" + G2Name + "/"
+  const MeasureCombination& M, Method* method, string reportFileName) {
+  ofstream outfile,
+           alignfile;
+  reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, outfile, G1.getName(), G2.getName(), method, A);
+  alignfile.open((reportFileName + ".align").c_str());  
+
+  A.write(outfile);
+  A.writeEdgeList(&G1, &G2, alignfile);
+  makeReport(G1, G2, A, M, method, outfile);
+  outfile.close();
+  alignfile.close();
+}
+
+void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
+  MeasureCombination const & M, Method * const method, string & localMeasureFileName) {
+  if(M.getSumLocalWeight() <= 0) { //This is how needLocal is calculated in SANA.cpp 
+    cout << "No local measures provided, not writing local scores file." << endl;
+    return;
+  }
+  ofstream outfile;
+  ensureFileNameExistsAndOpenOutFile("local measure", localMeasureFileName, outfile, G1.getName(), G2.getName(), method, A);
+  M.writeLocalScores(outfile, G1, G2, A);
+  outfile.close();
+}
+
+/*"Ensure" here means ensure that there is a valid file to output to.
+NOTE: the && is a move semantic, which moves the internal pointers of one object
+to another and then destructs the original, instead of destructing all of the
+internal data of the original. 
+It is assumed that the graph names are passed as r-values, thus this function will likely 
+fail compilation if l-value graph names are passed.*/
+string  ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFileName, ofstream & outfile, string && G1Name, string && G2Name, Method * const & method, Alignment const & A) {
+  string extension = fileType == "local measure" ? ".localscores" :
+                                                   ".out";
+  if (outFileName == "") {
+    outFileName = "alignments/" + G1Name + "_" + G2Name + "/"
     + G1Name + "_" + G2Name + "_" + method->getName() + method->fileNameSuffix(A);
-    addUniquePostfixToFilename(reportFile, ".txt");
-    reportFile += ".txt";
+    addUniquePostfixToFilename(outFileName, ".txt");
+    outFileName += ".txt";
   }else{
-    string location = reportFile.substr(0, reportFile.find_last_of("/"));
-    if (location != reportFile) {
+    string location = outFileName.substr(0, outFileName.find_last_of("/"));
+    if (location != outFileName) {
       uint lastPos = 0;
       while(not folderExists(location)){//Making each of the folders, one by one.
         createFolder(location.substr(0, location.find("/", lastPos)));
@@ -91,21 +122,16 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
     }
   }
 
-  ofstream outfile;
-  ofstream alignfile;
-  outfile.open((reportFile + ".out").c_str());
-  alignfile.open((reportFile + ".align").c_str());  
+  outFileName += extension;
+
+  outfile.open(outFileName.c_str());
 
   if(not outfile.is_open()){
-    cerr << "Problem saving file to specified location. Saving to sana program file." << endl;
-    reportFile = reportFile.substr(reportFile.find_last_of("/")+1);
-    outfile.open(reportFile.c_str());
+    cerr << "Problem saving " << fileType << " file to specified location. Saving to sana program file." << endl;
+    outFileName = outFileName.substr(outFileName.find_last_of("/")+1);
+    outfile.open(outFileName.c_str());
   }
 
-  cerr << "Saving report as \"" << reportFile << ".out\"" << endl;
-  A.write(outfile);
-  A.writeEdgeList(&G1, &G2, alignfile);
-  makeReport(G1, G2, A, M, method, outfile);
-  outfile.close();
-  alignfile.close();
+  cerr << "Saving " << fileType << " as \"" << outFileName << "\"" << endl;
+  return outFileName;
 }

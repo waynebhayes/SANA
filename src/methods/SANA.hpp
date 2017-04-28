@@ -7,17 +7,13 @@
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
 #include "../utils/randomSeed.hpp"
+#include "../measures/ExternalWeightedEdgeConservation.hpp"
 
 class SANA: public Method {
 
 public:
     SANA(Graph* G1, Graph* G2,
-#ifdef WEIGHTED 
-        double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore, string& startAligName
-#else
-        double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore 
-#endif
-    );
+        double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore);
     ~SANA();
 
     Alignment run();
@@ -46,7 +42,6 @@ public:
 
     //returns an approximation of the the logarithm in base e of the size of the search space
     double searchSpaceSizeLog();
-    void prune(string& startAligName);
 
 private:
     //Temperature Boundaries. Use these after the tinitial has been determined
@@ -57,17 +52,9 @@ private:
     uint n1;
     uint n2;
     double g1Edges; //stored as double because it appears in division
-#ifdef WEIGHTED
-    double g2WeightedEdges;
-#endif
     double g2Edges; //stored as double because it appears in division
-#ifdef WEIGHTED
-    vector<vector<ushort> > G1AdjMatrix;
-    vector<vector<ushort> > G2AdjMatrix;
-#else
     vector<vector<bool> > G1AdjMatrix;
     vector<vector<bool> > G2AdjMatrix;
-#endif
     vector<vector<ushort> > G1AdjLists;
     vector<vector<ushort> > G2AdjLists;
 
@@ -140,14 +127,14 @@ private:
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A);
-    double scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore);
+    double scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum);
     double ecWeight;
     double s3Weight;
     double wecWeight;
     double secWeight;
     double ncWeight;
     double localWeight;
-    double mecWeight;
+    double ewecWeight;
     string score;
 
     //restart scheme
@@ -197,13 +184,21 @@ private:
     double WECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
     double WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
 
+    //to evaluate ewec incrementally
+    bool needEwec;
+    ExternalWeightedEdgeConservation* ewec;
+    double ewecSum;
+    double EWECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget, const Alignment& A);
+    double EWECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2, const Alignment& A);
 
     //to evaluate local measures incrementally
     bool needLocal;
     double localScoreSum;
+    map<string, double> localScoreSumMap;
     vector<vector<float> > sims;
-    double localScoreSumIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
-    double localScoreSumIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+    map<string, vector<vector<float> > > localSimMatrixMap;
+    double localScoreSumIncChangeOp(vector<vector<float> > const & sim, ushort const & source, ushort const & oldTarget, ushort const & newTarget);
+    double localScoreSumIncSwapOp(vector<vector<float> > const & sim, ushort const & source1, ushort const & source2, ushort const & target1, ushort const & target2);
 
 
 

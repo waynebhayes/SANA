@@ -125,6 +125,7 @@ void checkFileExists(const string& fileName) {
 }
 
 void addUniquePostfixToFilename(string& name, const string& fileExtension) {
+    //Loop unrolling?
     string origName = name;
     if (fileExists(name + fileExtension)) {
         name += "_2";

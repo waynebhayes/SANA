@@ -11,7 +11,6 @@ void generateOrbitMatrix(uint n){
 	vector<uint> canonical;
 
 	fin >> num;
-	fout << "#ORBIT ID FOR EACH NODE OF EACH " << n << "-CANONICAL GRAPHETTE IN ASCENDING ORDER\n";
 	while(fin >> cgraph){
 		Graphette g = Graphette(n, cgraph);
 		vector<uint> idList(n);		
