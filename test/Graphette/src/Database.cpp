@@ -15,6 +15,7 @@ Database::Database(uint k, uint radius, uint limit)
 	string str;
 	ifstream fcanon_map("data/canon_map"+to_string(k)+".txt"), forbit_map("data/orbit_map"+to_string(k)+".txt");
 	ifstream fcanon_list("data/canon_list"+to_string(k)+".txt");
+	databaseDir = "Database"+to_string(k)+"/";
 
 	//reading canon_map
 	while(fcanon_map >> i >> str){
@@ -74,7 +75,7 @@ void Database::addGraph(string filename){
 			uint oj = canonPerm_[gDec].at(j)-'0'; //original index of jth element of the canonical isomorph 
 			uint id = orbitId_[cgIndex][j];
 			if(!haveOpen[id]) {
-			    forbitId[id].open(DATABASE_DIR+to_string(id)+"/"+graphName, ios_base::app);
+			    forbitId[id].open(databaseDir+to_string(id)+"/"+graphName, ios_base::app);
 			    haveOpen[id]=1;
 			}
 			forbitId[id] << (g->label(oj)) << " ";
@@ -88,7 +89,7 @@ void Database::addGraph(string filename){
 		delete g;
 	}
 	for(i=0; i < numOrbitId_; i++) if(haveOpen[i]) forbitId[i].close();
-	ofstream fout(DATABASE_DIR + graphName + "-nodeOrbitMembershipBitVector.txt");
+	ofstream fout(databaseDir + graphName + "-nodeOrbitMembershipBitVector.txt");
 	fout << k_ << " " << radius_ << " " << limit_ << endl;
 	for(auto a: sigMatrix){
 		for(auto b: a) fout << b;
