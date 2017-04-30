@@ -10,8 +10,6 @@
 #include <utility>
 #include <stdexcept>
 
-#define DATABASE_DIR "Database4/" // be sure to have the trailing slash! only k=4 for now
-
 class Database
 {
 public:
@@ -22,6 +20,7 @@ public:
 	
 private:
 	uint k_, numOrbitId_, radius_, limit_;
+	std::string databaseDir;
 	std::vector<uint> canonDec_; //canonDec[i] = decimal repr. of the canonical isomorph of graphette i;
 	std::vector<uint> canonList_; //canonList[i] = ith canonical graphette in decimal
 	std::vector<std::string> canonPerm_; //canonPerm[i] = Permutation of the nodes from  graphette i to canonical isomorph;
