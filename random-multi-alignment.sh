@@ -3,6 +3,21 @@ USAGE="USAGE: $0 OUTDIR {list of network files, LEDA or edgelist accepted}"
 die() { echo "ERROR: $@" >&2; echo "$USAGE" >&2; exit 1
 }
 
+newlines() { /bin/awk '{for(i=1; i<=NF; i++) print $i}' "$@" }
+randomizeLines() {
+cat "$@" | awk 'BEGIN{srand();srand(int(2^30*rand())+'$$')}
+    function randint(N){return int(N*rand())}
+    {line[NR]=$0}
+    END{
+        N=NR;
+        while(N) {
+            k=randint(N)+1;
+            print line[k];
+            line[k]=line[N--];
+        }
+    }'
+}
+
 OUTDIR="$1"; shift
 [ -d "$OUTDIR" ] || die "first argument must be name of output directory"
 
