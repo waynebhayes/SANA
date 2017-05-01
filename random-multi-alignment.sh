@@ -3,7 +3,8 @@ USAGE="USAGE: $0 OUTDIR {list of network files, LEDA or edgelist accepted}"
 die() { echo "ERROR: $@" >&2; echo "$USAGE" >&2; exit 1
 }
 
-newlines() { /bin/awk '{for(i=1; i<=NF; i++) print $i}' "$@" }
+newlines() { /bin/awk '{for(i=1; i<=NF; i++) print $i}' "$@"
+}
 randomizeLines() {
 cat "$@" | awk 'BEGIN{srand();srand(int(2^30*rand())+'$$')}
     function randint(N){return int(N*rand())}
@@ -36,7 +37,7 @@ do
     esac | randomizeLines | tee $TMPDIR/$b.nodes | wc -l > $TMPDIR/$b.numNodes
 done
 GROUP=`echo " $GROUP" | sed 's/^ -//'`
-SHADOW_NODES=`cd $TMPDIR && grep . *.numNodes | sed -e 's/\.numNodes//' -e 's/:/ /' | sort -k 2n | tail -1 | awk '{print $2}'`
+#SHADOW_NODES=`cd $TMPDIR && grep . *.numNodes | sed -e 's/\.numNodes//' -e 's/:/ /' | sort -k 2n | tail -1 | awk '{print $2}'`
 paste $TMPDIR/*.nodes | sed -e 's/		/	_	/g' -e 's/		/	_	/g' -e 's/^	/_	/' -e 's/	$/	_/' > $TMPDIR/$GROUP.align
 
 (
