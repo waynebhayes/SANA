@@ -1,9 +1,17 @@
+#!/usr/bin/env python3
+
 import argparse
 import sys
 import os
 import pathlib
 import subprocess
 import glob
+
+if (sys.version_info.major == 3 and sys.version_info.minor < 5) or sys.version_info == 2:
+    print("Python version must >=3.5. If you are on UCI network, use the command:",
+            file=sys.stderr)
+    print("module load python/3.5.1", file=sys.stderr)
+    sys.exit(2)
 
 
 class TemperatureSchedule:
