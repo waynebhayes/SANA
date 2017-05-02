@@ -23,8 +23,10 @@ def create_cmd_line(args, OUT_DIR, P_DIR, C_DIR, SHADOW_FILE):
         n_name = os.path.splitext(os.path.basename(network))[0]
         output = os.path.join(OUT_DIR, C_DIR, 'shadow-' + n_name)
         align = os.path.join(OUT_DIR, P_DIR, 'shadow-' + n_name + '.out')
-        commands.append('./sana -fg1 {} -fg2 {} {} -o {} -startalignment {}'.format(
-            network, SHADOW_FILE, args.command_line, output, align))
+        c = './sana -fg1 {} -fg2 {} {} -o {} -startalignment {} -t {}'.format(
+            network, SHADOW_FILE, args.command_line, output, align, 
+            args.time/args.iterations)
+        commands.append(c)
     return '\n'.join(commands)
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run multi-pairwise SANA')
@@ -35,6 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--shadow-nodes', type=int, required=True)
     parser.add_argument('-o', '--output-directory', type=str, required=True)
     args = parser.parse_args()
+    print(args)
 
     if args.time <= 0:
         print('--time must be greater than 0', file=sys.stderr)
@@ -85,7 +88,12 @@ if __name__ == '__main__':
             # starting = t_initial * e^(-t_decay * i/K)
         c_shadow_args = ['python3','./scripts/create_shadow.py','-c','-n'] + \
                 args.networks + ['-s', str(args.shadow_nodes)] + ['-a'] + \
-                glob.glob(os.path.join(OUT_DIR,'dir{}'.format(i),'*.out'))
+                glob.glob(os.path.join(OUT_DIR,C_DIR,'*.out'))
         with open(os.path.join(OUT_DIR,C_DIR,'shadow{}.gw'.format(i)), 
             mode='w') as f:
             process = subprocess.run(c_shadow_args, stdout=f)
+        if process.returncode != 0:
+            print('The following error has occurred in ./scripts/create_shadow.py',
+                    file=sys.stderr)
+            print(process.stderr, file=sys.stderr)
+            sys.exit(1)
