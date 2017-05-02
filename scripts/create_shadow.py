@@ -104,18 +104,10 @@ if __name__ == '__main__':
 
         a = 'shadow-{}'.format(network_path.stem)
         if a not in alignments:
-            print('{}.align not listed in --alignments'.format(a), 
+            print('{} not listed in --alignments'.format(a), 
                     file=sys.stderr)
-        # try:
-        #     alignment = read_alignment(alignments[a])
-        #     int_alignment = convert_alignment(alignment,m_graph)
-        # except:
-        #     raise
-        # try:
-            # int_alignment = read_int_alignment(alignment)
-        # except ValueError:
-            # print('Invalid alignment file', file=sys.stderr)
-            # sys.exit(1)
+            print(args.alignments, file=sys.stderr)
+            sys.exit(1)
         int_alignment = m_function(alignments[a],m_graph)
 
         for peg,hole in enumerate(int_alignment):
