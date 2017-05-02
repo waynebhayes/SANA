@@ -1701,15 +1701,24 @@ void SANA::prune(string& startAligName) {
             int shadow_end = alignment[G1AdjLists[i][j]];
             G2AdjMatrix[shadow_node][shadow_end] -= G1AdjMatrix[i][G1AdjLists[i][j]];
             G2AdjMatrix[shadow_end][shadow_node] -= G1AdjMatrix[i][G1AdjLists[i][j]];
-            if (G2AdjMatrix[shadow_node][shadow_end] == 0)
-                removedEdges.insert(pair<int,int>(shadow_node,shadow_end));
+            if (G2AdjMatrix[shadow_node][shadow_end] == 0) {
+                    removedEdges.insert(pair<int,int>(shadow_node,shadow_end));
+            }
         }
     }
-    for (auto c : removedEdges)
-        G2->removeEdge(c.first, c.second);
+    vector<vector<ushort> > t_edgeList;
+    vector<vector<ushort> > G2EdgeList;
+    G2->getEdgeList(G2EdgeList);
+    for (auto c : G2EdgeList) {
+        if (removedEdges.find(pair<int,int>(c[0],c[1])) != removedEdges.end() or
+                removedEdges.find(pair<int,int>(c[1],c[0])) != removedEdges.end()) {
+            continue;
+        }
+        t_edgeList.push_back(c);
+    }
     G2->setAdjMatrix(G2AdjMatrix);
     G2->getAdjLists(G2AdjLists);
-    //for (auto c: G2->edgeList) cout << c[0] << " " << c[1] << " " << G2AdjMatrix[c[0]][c[1]] << endl;
+    G2->setEdgeList(t_edgeList);
 }
 #endif
 
