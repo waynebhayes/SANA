@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <iostream>
 
-typedef unsigned int uint;
+//typedef long long unsigned int uint;
 
 class HalfMatrix{
 public:
