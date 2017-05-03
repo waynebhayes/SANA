@@ -2,17 +2,9 @@
 #include "HalfMatrix.hpp"
 #include "Graph.hpp"
 #include "utils/xrand.hpp"
-#include <cstdlib>
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <set>
-#include <utility>
-#include <ctime>
-#include <cmath>
-#include <stdexcept>
 #include "Database.hpp"
+#include <bits/stdc++.h>
+
 
 using namespace std;
 

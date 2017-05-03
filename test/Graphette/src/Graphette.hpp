@@ -1,15 +1,7 @@
 #ifndef GRAPHETTE_HPP
 #define GRAPHETTE_HPP
-
-#include <vector>
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <cmath>
-#include <algorithm>
-#include <stdexcept>
-#include <cstdlib>
 #include "HalfMatrix.hpp"
+#include <bits/stdc++.h>
 
 class Graphette{
 public:
