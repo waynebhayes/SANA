@@ -1,6 +1,8 @@
+#!/usr/bin/env python3
 import argparse
 import pathlib
 import sys
+import os
 
 class Graph:
 
@@ -52,59 +54,81 @@ def read_alignment(file_name:str) -> [(str,str),]:
     return alignment
 
 def convert_alignment(alignment:[(str,str)], m_graph) -> [int]:
-    int_alignment = [0 for x in range(len(alignment))]
-    for node_name,s_node in alignment:
-        node_num = m_graph.node_map[node_name]
-        int_alignment[node_num] = int(s_node)
+    int_alignment = [None for x in range(len(alignment))]
+    for s_node,node_name in alignment:
+        try:
+            node_num = m_graph.node_map[node_name]
+        except KeyError:
+            continue
+        int_alignment[node_num] = int(s_node[6:])
     return int_alignment
+
+def read_int_alignment(file_name:str) -> [int]:
+    with open(str(file_name),mode='r') as f:
+        alignment = [int(x) for x in f.readline().strip().split()]
+    return alignment
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Create shadow network')
     parser.add_argument('-n','--networks', required=True, nargs='+')
     parser.add_argument('-a','--alignments', required=True, nargs='+')
     parser.add_argument('-s','--shadow-nodes', required=True, type=int)
+    parser.add_argument('-v','--verbose', action='store_true')
+    parser.add_argument('-c','--compact', action='store_true')
     args = parser.parse_args()
+    if args.verbose:
+        print(args.networks,file=sys.stderr)
+        print(args.alignments, file=sys.stderr)
 
     s_el = [[] for x in range(args.shadow_nodes)]
     s_am = [[0 for x in range(args.shadow_nodes)] for y in range(args.shadow_nodes)]
 
     alignments = {pathlib.Path(f).stem:f for f in args.alignments}
+    if args.compact:
+        def m_compact(x,y):
+            return read_int_alignment(x)
+        m_function = m_compact
+    else:
+        def m_compact(x,y):
+            m_alignment = convert_alignment(read_alignment(x),y)
+            m_path,m_ext = os.path.splitext(x)
+            with open(m_path+'.out',mode='w') as f:
+                print(' '.join(str(x) for x in m_alignment), file=f)
+            return m_alignment
+        m_function = m_compact
 
     for network in args.networks:
         network_path = pathlib.Path(network)
-        m_graph = graph.Graph(network, network_path.suffix == '.gw')
+        m_graph = Graph(network, network_path.suffix == '.gw')
 
-        a = '{}-shadow'.format(network_path.stem)
+        a = 'shadow-{}'.format(network_path.stem)
         if a not in alignments:
-            print('{}.align is not present in --alignments'.format(a), file=sys.stderr)
-
-        alignment = read_alignment(alignments[a])
-        int_alignment = convert_alignment(alignment, m_graph)
+            print('{} not listed in --alignments'.format(a), 
+                    file=sys.stderr)
+            print(args.alignments, file=sys.stderr)
+            sys.exit(1)
+        int_alignment = m_function(alignments[a],m_graph)
 
         for peg,hole in enumerate(int_alignment):
+            if hole == None:
+                continue
             for end_peg in m_graph.edge_list[peg]:
-                if peg > end_peg:
-                    continue
                 end_hole = int_alignment[end_peg]
-
                 if s_am[hole][end_hole] == 0:
                     s_el[hole].append(end_hole)
-                    s_el[end_hole].append(hole)
-
                 s_am[hole][end_hole] += 1
-                s_am[end_hole][hole] += 1
 
     print('LEDA.GRAPH')
     print('string')
     print('short')
-    print('-2')
+    print('-1')
     print(len(s_el))
     for node_a in range(len(s_el)):
         print('|{{shadow{}}}|'.format(node_a))
-    print(sum(len(x) for x in s_el))
-    for node_a in range(len(s_el)):
-        for node_b in s_el[node_a]:
-            if node_a > node_b:
-                continue
-            print('{} {} 0 |{{{}}}|'.format(node_a+1, node_b+1, s_am[node_a][node_b]))
+    print(int(sum(len(x) for x in s_el) / 2))
+    for node_a in range(len(s_am)):
+        for node_b in range(node_a, len(s_am)):
+            if (s_am[node_a][node_b] > 0):
+                print('{} {} 0 |{{{}}}|'.format(node_a+1, node_b+1, s_am[node_a][node_b]))
 
