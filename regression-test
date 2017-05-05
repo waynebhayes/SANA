@@ -17,7 +17,6 @@ if [[ ! -d "$OutputDir" ]]; then
     mkdir $OutputDir
 fi
 
-: '
 echo "Making current SANA"
 make clean &> /dev/null
 if ! make clean all&> /dev/null; then
@@ -30,7 +29,6 @@ if ! make -C $1 clean all &> /dev/null; then
     echo "Make failed for base SANA"
     exit 1
 fi
-'
 
 Networks_nodes=""
 for network in `ls ./networks | grep "^[A-Z][A-Z]"`;do
