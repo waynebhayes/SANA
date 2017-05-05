@@ -1,93 +1,74 @@
-#!/usr/bin/python3
-import subprocess
-import argparse
-import os
-from sys import exit
-import sys
+#!/usr/bin/bash
 
-def RunRegressionTest():
-    failedTests = []
-    parser = argparse.ArgumentParser(description="Regression testing for SANA algorithm")
-    parser.add_argument("-bdir", "--base-dir", required=True, nargs=1, help='directory of a base version of SANA')
-    parser.add_argument("-odir", "--output-dir", default=["regression_output"], type=str, nargs=1, help='directory in which regression test will output to')
-    parser.add_argument("-tdir", "--testing-dir", default=["."], type=str, nargs=1, help='directory of the testing sana')
-    parser.add_argument("-errm", "--error-margin", default=[0.05], type=float, nargs=1, help='error margin of how big the difference between the current and base sana unit')
-    arguments = parser.parse_args()
-    print(arguments)
-    
-    if not os.path.isdir(arguments.output_dir[-1]):
-        os.makedirs(arguments.output_dir[-1])
+ErrorMargin="0.05"
 
-    with open(os.devnull, 'wb') as supress:
-        print("--------------------------Starting Current SANA Make----------------------------------------")
-        subprocess.call('make -C {} -j clean'.format(arguments.testing_dir[-1]), shell=True, stdout=supress)
-        subprocess.call('make -C {} -j'.format(arguments.testing_dir[-1]), shell=True, stdout=supress)
-        print("--------------------------Starting Base SANA Make----------------------------------------")
-        subprocess.call('make -C {} -j clean'.format(arguments.base_dir[-1]), shell=True, stdout=supress)
-        subprocess.call('make -C {} -j'.format(arguments.base_dir[-1]), shell=True, stdout=supress)
+abs(){
+    [ `echo "$1 < 0" | bc -l` -eq 1 ] && echo "-1 * $1" | bc || echo $1
+}
 
-    BioGRIDNetworks = subprocess.check_output('ls {}/networks | grep \'^[A-Z][A-Z]\''.format(arguments.testing_dir[-1]), shell=True).decode(sys.stdout.encoding).split()
-    print(BioGRIDNetworks)
-    def GetNumOfNode(network):
-        return int(subprocess.check_output('head {}/networks/{}/{}.gw | sed -n 5p'.format(arguments.testing_dir[-1],network, network), shell=True).decode(sys.stdout.encoding))
-    BioGRIDNetworks = [i[1] for i in sorted([(GetNumOfNode(i), i) for i in BioGRIDNetworks], key=lambda tup : tup[0])]
+f='
+echo "Making current SANA"
+make clean &> /dev/null
+if ! make clean all&> /dev/null; then
+    echo "Make failed for current SANA"
+    exit 1
+fi
 
-    with open(os.devnull, 'wb') as supress:
-        for i in range(len(BioGRIDNetworks)):
-            for j in range(i+1,len(BioGRIDNetworks)):
-                print("Running {} - {}" .format(BioGRIDNetworks[i], BioGRIDNetworks[j]))
-                subprocess.call('{}/sana -g1 {} -g2 {} -o {}/{}-{}-testing &> {}/{}-{}-testing.progress'.format(arguments.testing_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j], arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j], arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j]), shell=True)
-                subprocess.call('{}/sana -g1 {} -g2 {} -o {}/{}-{}-base &> {}/{}-{}-base.progress'.format(arguments.base_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j], arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j], arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j]), shell=True)
+echo "Making base SANA"
+if ! make -C . clean all$1 &> /dev/null; then
+    echo "Make failed for base SANA"
+    exit 1
+fi
+'
 
+Networks_nodes=""
+for network in `ls ./networks | grep "^[A-Z][A-Z]"`;do
+    Networks_nodes=$Networks_nodes${network}" ""`head ./networks/${network}/${network}.gw | sed -n 5p`""\n"
+done
+Biogrid_network=`echo -e $Networks_nodes | sort -k2 -n | awk '{print $1}'`
 
-    print("--------------------------Checking Iterations----------------------------------------")
-    print("{: >30} {: >20} {: >20} {: >20}".format("Network-Pair", "Base SANA Iterations", "Current SANA Iterations", "Difference Percentage"))
-    testingIterations = []
-    baseIterations = []
-    for i in range(len(BioGRIDNetworks)):
-        for j in range(i+1, len(BioGRIDNetworks)):
-            iteration_testing = float(subprocess.check_output("grep -o \"[0-9]*.[0-9]* iterations\" {}/{}-{}-testing.progress".format(arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j]), shell=True).decode(sys.stdout.encoding).split()[0])
-            iteration_base = float(subprocess.check_output("grep -o \"[0-9]*.[0-9]* iterations\" {}/{}-{}-base.progress".format(arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j]), shell=True).decode(sys.stdout.encoding).split()[0])
-            testingIterations.append(iteration_testing)
-            baseIterations.append(iteration_base)
-            print("{: >30} {: >20} {: >20} {: >20}".format("{}-{}".format(BioGRIDNetworks[i], BioGRIDNetworks[j]), iteration_base, iteration_testing, (iteration_testing - iteration_base) / iteration_base * 100))
-    testingIterationsAvg = sum(testingIterations)/len(testingIterations)
-    baseIterationsAvg = sum(baseIterations)/len(baseIterations)
-    if (abs(baseIterationsAvg - testingIterationsAvg)/baseIterationsAvg > arguments.error_margin[-1]):
-        failedTests.append('iterations')
-            
-    def check_scores(score):
-        print("--------------------------Checking {}----------------------------------------".format(score))
-        print("{: >30} {: >20} {: >20} {: >20}".format("Network-Pair", "Base SANA S3", "Current SANA S3", "Difference Percentage"))
-        testingScores = []
-        baseScores  = []
-        for i in range(len(BioGRIDNetworks)):
-            for j in range(i+1, len(BioGRIDNetworks)):
-                testing = float(subprocess.check_output("grep -o \"{}: [0-9]\+.[0-9]\+\" {}/{}-{}-testing.out".format(score,arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j]), shell=True).decode(sys.stdout.encoding).split()[1])
-                base = float(subprocess.check_output("grep -o \"{}: [0-9]\+.[0-9]\+\" {}/{}-{}-base.out".format(score,arguments.output_dir[-1], BioGRIDNetworks[i], BioGRIDNetworks[j]), shell=True).decode(sys.stdout.encoding).split()[1])
-                testingScores.append(testing)
-                baseScores.append(base)
-                print("{: >30} {: >20} {: >20} {: >20}".format("{}-{}".format(BioGRIDNetworks[i], BioGRIDNetworks[j]), base, testing, (testing - base) / base * 100))
-        testingScoresAvg = sum(testingScores)/len(testingScores)
-        baseScoresAvg = sum(baseScores)/len(baseScores)
-        if (abs(baseIterationsAvg - testingIterationsAvg)/baseIterationsAvg > arguments.error_margin[-1]):
-            failedTests.append(score)
+Networks_count=`echo $Biogrid_network | wc -w`
 
-    for score in ['s3', 'ec', 'ics', 'lccs', 'sec']:
-        check_scores(score)
-    
-    return failedTests
+: '
+for i in $(seq 1 $Networks_count);do
+    for j in $(seq $((i + 1)) $Networks_count); do
+        Network1=`echo -e $Biogrid_network | awk '{print $'$i'}'`
+        Network2=`echo -e $Biogrid_network | awk '{print $'$j'}'`
+        echo "Running $Network1-$Network2"
+        ./sana -g1 $Network1 -g2 $Network2 -o "$Network1-$Network2-base" &> "$Network1-$Network2-base.progress"
+        ./sana -g1 $Network1 -g2 $Network2 -o "$Network1-$Network2-current" &> "$Network1-$Network2-current.progress"
+    done
+done
+'
 
-if __name__ == '__main__':
-    failedTests = RunRegressionTest()
+baseIterations=""
+currentIterations=""
+echo "Checking Iterations Speed"
+printf "%-30s | %-20s | %-20s\n" "Networks Pair" "Base Speed" "Current Speed"
+for i in $(seq 1 $Networks_count);do
+    for j in $(seq $((i + 1)) $Networks_count); do
+        Network1=`echo -e $Biogrid_network | awk '{print $'$i'}'`
+        Network2=`echo -e $Biogrid_network | awk '{print $'$j'}'`
+        base_progress="$Network1-$Network2-base.progress"
+        current_progress="$Network1-$Network2-current.progress"
+        bIt=`grep -o "[0-9]*.[0-9]* iterations" ./$base_progress | awk '{print $1}'`
+        cIt=`grep -o "[0-9]*.[0-9]* iterations" ./$current_progress | awk '{print $1}'`
+        baseIterations=$baseIterations" "$bIt
+        currentIterations=$currentIterations" "$cIt
+        printf "%-30s | %-20s | %-20s\n" "$Network1-$Network2" "$bIt" "$cIt"
+    done
+done
 
-    if (len(failedTests)):
-        print("Failed test in  the following: {}".format(', '.join(failedTests)))
-        exit(1)
-    else:
-        print("Passed regression testing")
-        exit(0)
-
-
+baseIterationsAvg=`echo $baseIterations | tr " " "\n" | awk '{s+=$1}END{print s/NR}'`
+currentIterationsAvg=`echo $currentIterations | tr " " "\n" | awk '{s+=$1}END{print s/NR}'`
+baseIterationsAvg=`printf "%f" $baseIterationsAvg`
+currentIterationsAvg=`printf "%f" $currentIterationsAvg`
+errorDif=`echo "($baseIterationsAvg - $currentIterationsAvg)/$baseIterationsAvg" | bc -l`
+errorDif=`abs $errorDif`
+printf "Base Iterations Average: %s | Current Iterations Average: %s | Base Relative Difference: %s\n" "$baseIterationsAvg" "$currentIterationsAvg" "$errorDif"
+if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
+    echo "Iterations Failed"
+    exit 1
+fi
 
 
