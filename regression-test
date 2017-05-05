@@ -1,12 +1,23 @@
 #!/usr/bin/bash
+set -e
 
 ErrorMargin="0.05"
+OutputDir="regression_out"
 
 abs(){
     [ `echo "$1 < 0" | bc -l` -eq 1 ] && echo "-1 * $1" | bc || echo $1
 }
 
-f='
+if [[ ! $# -eq 1 ]]; then
+    echo "Please pass one input into the bash script"
+    exit 1
+fi
+
+if [[ ! -d "$OutputDir" ]]; then
+    mkdir $OutputDir
+fi
+
+: '
 echo "Making current SANA"
 make clean &> /dev/null
 if ! make clean all&> /dev/null; then
@@ -15,7 +26,7 @@ if ! make clean all&> /dev/null; then
 fi
 
 echo "Making base SANA"
-if ! make -C . clean all$1 &> /dev/null; then
+if ! make -C $1 clean all &> /dev/null; then
     echo "Make failed for base SANA"
     exit 1
 fi
@@ -29,17 +40,15 @@ Biogrid_network=`echo -e $Networks_nodes | sort -k2 -n | awk '{print $1}'`
 
 Networks_count=`echo $Biogrid_network | wc -w`
 
-: '
 for i in $(seq 1 $Networks_count);do
     for j in $(seq $((i + 1)) $Networks_count); do
         Network1=`echo -e $Biogrid_network | awk '{print $'$i'}'`
         Network2=`echo -e $Biogrid_network | awk '{print $'$j'}'`
         echo "Running $Network1-$Network2"
-        ./sana -g1 $Network1 -g2 $Network2 -o "$Network1-$Network2-base" &> "$Network1-$Network2-base.progress"
-        ./sana -g1 $Network1 -g2 $Network2 -o "$Network1-$Network2-current" &> "$Network1-$Network2-current.progress"
+        $1/sana -g1 $Network1 -g2 $Network2 -o "$OutputDir/$Network1-$Network2-base" &> "$OutputDir/$Network1-$Network2-base.progress"
+        ./sana -g1 $Network1 -g2 $Network2 -o "$OutputDir/$Network1-$Network2-current" &> "$OutputDir/$Network1-$Network2-current.progress"
     done
 done
-'
 
 baseIterations=""
 currentIterations=""
@@ -49,8 +58,8 @@ for i in $(seq 1 $Networks_count);do
     for j in $(seq $((i + 1)) $Networks_count); do
         Network1=`echo -e $Biogrid_network | awk '{print $'$i'}'`
         Network2=`echo -e $Biogrid_network | awk '{print $'$j'}'`
-        base_progress="$Network1-$Network2-base.progress"
-        current_progress="$Network1-$Network2-current.progress"
+        base_progress="$OutputDir/$Network1-$Network2-base.progress"
+        current_progress="$OutputDir/$Network1-$Network2-current.progress"
         bIt=`grep -o "[0-9]*.[0-9]* iterations" ./$base_progress | awk '{print $1}'`
         cIt=`grep -o "[0-9]*.[0-9]* iterations" ./$current_progress | awk '{print $1}'`
         baseIterations=$baseIterations" "$bIt
@@ -70,5 +79,3 @@ if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
     echo "Iterations Failed"
     exit 1
 fi
-
-
