@@ -27,6 +27,7 @@
 #include "../measures/localMeasures/Sequence.hpp"
 #include "../utils/NormalDistribution.hpp"
 #include "../utils/LinearRegression.hpp"
+#include "../utils/utils.hpp"
 using namespace std;
 
 
@@ -62,19 +63,29 @@ void SANA::initTau(void) {
 }
 
 SANA::SANA(Graph* G1, Graph* G2,
-		double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore):
+		double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore
+#ifdef WEIGHTED
+,string& startAligName
+#endif
+):
     		Method(G1, G2, "SANA_"+MC->toString())
 {
 	//data structures for the networks
 	n1 = G1->getNumNodes();
 	n2 = G2->getNumNodes();
 	g1Edges = G1->getNumEdges();
+#ifdef WEIGHTED
+        g2WeightedEdges = G2->getWeightedNumEdges();
+#endif
 	g2Edges = G2->getNumEdges();
 	score = objectiveScore;
 
 	G1->getAdjMatrix(G1AdjMatrix);
 	G2->getAdjMatrix(G2AdjMatrix);
 	G1->getAdjLists(G1AdjLists);
+#ifdef WEIGHTED
+        prune(startAligName);
+#endif
 	G2->getAdjLists(G2AdjLists);
 
 
@@ -115,6 +126,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	ecWeight = MC->getWeight("ec");
 	s3Weight = MC->getWeight("s3");
 	secWeight = MC->getWeight("sec");
+        mecWeight = MC->getWeight("mec");
 	try {
 		wecWeight = MC->getWeight("wec");
 	} catch(...) {
@@ -148,7 +160,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 
 	//to evaluate EC incrementally
-	needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0;
+	needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0 or mecWeight > 0;
 
 
 	//to evaluate S3 incrementally
@@ -157,7 +169,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 	//to evaluate WEC incrementally
 	needWec = wecWeight > 0;
-
+	
     //to evaluate EWEC incrementally	
     needEwec = ewecWeight>0;
 	
@@ -617,7 +629,7 @@ void SANA::performSwap() {
 	if (needWec) {
 		newWecSum = wecSum + WECIncSwapOp(source1, source2, target1, target2);
 	}
-
+	
     double newEwecSum = -1;
 	if (needEwec) {
 		newEwecSum = ewecSum + EWECIncSwapOp(source1, source2, target1, target2, A);
@@ -657,6 +669,9 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
         newCurrentScore += ewecWeight * (newEwecSum);
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
+#ifdef WEIGHTED
+		newCurrentScore += mecWeight * (newAligEdges/g2WeightedEdges);
+#endif
 
 		energyInc = newCurrentScore-currentScore;
         wasBadMove = energyInc < 0;
@@ -689,7 +704,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
-
+		
 		energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
         badProbability = exp(energyInc/T);
@@ -708,7 +723,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
-
+		
 		energyInc = newCurrentScore - currentScore; //is this even used?
         wasBadMove = deltaEnergy < 0;
         badProbability = exp(energyInc/T);
@@ -746,7 +761,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 	 	newCurrentScore += ncWeight * (newNcSum/trueA.back());
-	
+		
 		energyInc = newCurrentScore - currentScore;
         wasBadMove = maxScore < -1 * minScore;
         badProbability = exp(energyInc/T);
@@ -786,7 +801,11 @@ int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ush
 		res += G2AdjMatrix[target1][A[neighbor]];
 	}
 	//address case swapping between adjacent nodes with adjacent images:
+#ifdef WEIGHTED 
+        res += (-1 << 1) & (G1AdjMatrix[source1][source2] + G2AdjMatrix[target1][target2]);
+#else
 	res += 2*(G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
+#endif
 	return res;
 }
 
@@ -857,7 +876,11 @@ double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort
 		}
 	}
 	//address case swapping between adjacent nodes with adjacent images:
+#ifdef WEIGHTED        
+	if (G1AdjMatrix[source1][source2] > 0 and G2AdjMatrix[target1][target2] > 0) {
+#else
 	if (G1AdjMatrix[source1][source2] and G2AdjMatrix[target1][target2]) {
+#endif
 		res += 2*wecSims[source1][target1];
 		res += 2*wecSims[source2][target2];
 	}
@@ -1302,6 +1325,7 @@ double SANA::findTInitialByLinearRegression(){
 	right << upperTBound << "," << maxx << endl;
 	right << upperTBound << "," << 0.0 << endl;
 	right.close();
+	if(schedule)exit(0);
 	return pow(10, startingTemperature);
 }
 
@@ -1643,4 +1667,61 @@ void SANA::initIterPerSecond() {
 void SANA::setDynamicTDecay() {
 	dynamic_tdecay = true; 	
 }
+#ifdef WEIGHTED
+void SANA::prune(string& startAligName) {
+    int n = G1->getNumNodes();
+    vector<ushort> alignment;
+    ifstream infile(startAligName.c_str());
+    string line;
+    getline(infile, line);
+    istringstream iss(line);
+    stringstream errorMsg;
+    int shadow_node{0};
+    for (int i = 0; i < n; i++) {
+        if (!(iss >> shadow_node)) {
+            errorMsg << "Format is not all integers, or not enought integers: " << line;
+            throw runtime_error(errorMsg.str().c_str());
+        }
+        if (shadow_node < 0) {
+            errorMsg << "Shadow node: " << shadow_node << " < 0";
+            throw runtime_error(errorMsg.str().c_str());
+        }
+        alignment.push_back(shadow_node);
+    }
+    infile.close();
+    if (alignment.size() != n) {
+        errorMsg << "Alignment size (" << alignment.size() << ") less than number of nodes (" << n <<")";
+        throw runtime_error(errorMsg.str().c_str());
+    }
+    set<pair<int,int>> removedEdges;
+    for (int i = 0; i < n; i++) {
+        shadow_node = alignment[i];
+        int m = G1AdjLists[i].size();
+        for (int j = 0; j < m; j++) {
+            if (G1AdjLists[i][j] < i)
+                continue;
+            int shadow_end = alignment[G1AdjLists[i][j]];
+            G2AdjMatrix[shadow_node][shadow_end] -= G1AdjMatrix[i][G1AdjLists[i][j]];
+            G2AdjMatrix[shadow_end][shadow_node] -= G1AdjMatrix[i][G1AdjLists[i][j]];
+            if (G2AdjMatrix[shadow_node][shadow_end] == 0) {
+                    removedEdges.insert(pair<int,int>(shadow_node,shadow_end));
+            }
+        }
+    }
+    vector<vector<ushort> > t_edgeList;
+    vector<vector<ushort> > G2EdgeList;
+    G2->getEdgeList(G2EdgeList);
+    for (auto c : G2EdgeList) {
+        if (removedEdges.find(pair<int,int>(c[0],c[1])) != removedEdges.end() or
+                removedEdges.find(pair<int,int>(c[1],c[0])) != removedEdges.end()) {
+            continue;
+        }
+        t_edgeList.push_back(c);
+    }
+    G2->setAdjMatrix(G2AdjMatrix);
+    G2->getAdjLists(G2AdjLists);
+    G2->setEdgeList(t_edgeList);
+}
+#endif
+
 
