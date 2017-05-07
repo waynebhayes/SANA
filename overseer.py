@@ -33,8 +33,23 @@ def init_parser():
     parser.add_argument('-c', '--command-line', type=str)
     parser.add_argument('-s', '--shadow-nodes', type=int, required=True)
     parser.add_argument('-o', '--output-directory', type=str, required=True)
+    # TODO - Actually use this processes arg
     parser.add_argument('-p', '--processes', type=int, default=8)
     return parser
+
+def check_args(args):
+    code = 0
+    if args.time <= 0:
+        print('--time must be greater than 0', file=sys.stderr)
+        code += 1
+    if args.iterations <= 0:
+        print('--iterations must be greater than 0', file=sys.stderr)
+        code += 2
+    if os.path.exists(args.output_directory):
+        print('Directory "{}" exists. IMMINENT LOSS OF DATA'.format(
+            args.output_directory), file=sys.stderr)
+        code += 4
+    return code
     
 def create_cmd_line(args, OUT_DIR, P_DIR, C_DIR, SHADOW_FILE):
     commands = [] 
@@ -49,22 +64,15 @@ def create_cmd_line(args, OUT_DIR, P_DIR, C_DIR, SHADOW_FILE):
     return '\n'.join(commands)
 if __name__ == '__main__':
     args = init_parser().parse_args()
+    code = check_args(args)
+    # TODO
+    # print(args), stderr or stdout ?
+    if code != 0:
+        sys.exit(code)
     print(args)
 
-    if args.time <= 0:
-        print('--time must be greater than 0', file=sys.stderr)
-        sys.exit(1)
-    if args.iterations <= 0:
-        print('--iterations must be greater than 0', file=sys.stderr)
-        sys.exit(1)
-
     OUT_DIR = args.output_directory
-    if os.path.exists(OUT_DIR):
-        print('Directory "{}" exists. IMMINENT LOSS OF DATA'.format(OUT_DIR),
-                file=sys.stderr)
-        sys.exit(2)
     os.mkdir(OUT_DIR)
-
     INIT_OUT_DIR = os.path.join(OUT_DIR,'dir0')
     os.mkdir(INIT_OUT_DIR)
 
