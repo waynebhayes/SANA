@@ -3,28 +3,46 @@
 import argparse
 import sys
 import os
-import pathlib
 import subprocess
 import glob
+import multiprocessing
+import re
+import math
 
 if (sys.version_info.major == 3 and sys.version_info.minor < 5) or sys.version_info == 2:
-    print("Python version must >=3.5. If you are on UCI network, use the command:",
+    print("Python version must >=3.5. If on UCI network, use the command:",
             file=sys.stderr)
     print("module load python/3.5.1", file=sys.stderr)
-    sys.exit(2)
-
+    sys.exit(8)
 
 class TemperatureSchedule:
-    def __init__(self, networks:list, shadow:str, **kwargs):
+    def __init__(self, args:list, processes:list, OUT_DIR:str):
+        m_pattern = re.compile(r'(?:Initial Temperature|tdecay):\s([0-9]+\.[0-9]+)')
         self.__t = dict()
-        for g in networks:
-            pass
-            #self.__t[g],self.__tdecay[g] = [python exec]
-                    #(sana -g1 g -g2 shadow... hudson stuff)
+        self.__tdecay = dict()
+        i = 0
+        for n,p in zip(args.networks,processes):
+            name = os.path.splitext(os.path.basename(n))[0]
+            output, process = p
+            with open(output+'.stdout',mode='w') as f:
+                f.write(process.stdout.decode('utf-8'))
+            with open(output+'.stderr',mode='w') as f:
+                f.write(process.stderr.decode('utf-8'))
+            if process.returncode != 0:
+                print('Exception has occurred running shadow-{}'.format(name), file=sys.stderr)
+                print(create_cmd_line(args,n,1), file=sys.stderr)
+                raise Exception
+            matches = m_pattern.findall(process.stderr.decode('utf-8'))
+            if len(matches) != 2:
+                print('Something must have gone wrong!',file=sys.stderr)
+                print('Check init dir for shadow-{}'.format(name), file=sys.stderr)
+                raise Exception
+            self.__tdecay[n] = float(matches[0])
+            self.__t[n] = float(matches[1])
 
     def __getitem__(self, key):
         return (self.__t[key],self.__tdecay[key])
-
+    
 def init_parser():
     parser = argparse.ArgumentParser(description='Run multi-pairwise SANA')
     parser.add_argument('-n', '--networks', nargs='+', required=True)
@@ -33,7 +51,6 @@ def init_parser():
     parser.add_argument('-c', '--command-line', type=str)
     parser.add_argument('-s', '--shadow-nodes', type=int, required=True)
     parser.add_argument('-o', '--output-directory', type=str, required=True)
-    # TODO - Actually use this processes arg
     parser.add_argument('-p', '--processes', type=int, default=8)
     return parser
 
@@ -50,25 +67,52 @@ def check_args(args):
             args.output_directory), file=sys.stderr)
         code += 4
     return code
-    
-def create_cmd_line(args, OUT_DIR, P_DIR, C_DIR, SHADOW_FILE):
+
+def create_cmd_line(args, network:str, i:int):
+    out_dir = args.output_directory
+    p_dir = os.path.join(out_dir, 'dir{}'.format(i-1))
+    c_dir = os.path.join(out_dir, 'dir{}'.format(i))
+    shadow_file = os.path.join(p_dir, 'shadow{}.gw'.format(i-1))
     commands = [] 
-    for network in args.networks:
-        n_name = os.path.splitext(os.path.basename(network))[0]
-        output = os.path.join(OUT_DIR, C_DIR, 'shadow-' + n_name)
-        align = os.path.join(OUT_DIR, P_DIR, 'shadow-' + n_name + '.out')
-        c = './sana -fg1 {} -fg2 {} {} -o {} -startalignment {} -t {}'.format(
-            network, SHADOW_FILE, args.command_line, output, align, 
-            args.time/args.iterations)
-        commands.append(c)
-    return '\n'.join(commands)
+    n_name = os.path.splitext(os.path.basename(network))[0]
+    output = os.path.join(c_dir, 'shadow-' + n_name)
+    align = os.path.join(p_dir, 'shadow-' + n_name + '.out')
+    c = ['./sana', '-fg1', network, '-fg2',  shadow_file, '-o', output,
+            '-startalignment', align,'-t', str(args.time/args.iterations)] + \
+                    args.command_line.split() 
+    return (output,c)
+
+def run_process(args, network:str, n_index:int, i:int, manager:list, t_schedule=None):
+    output, command = create_cmd_line(args, network, i)
+    if t_schedule:
+        tinit,tdecay = t_schedule[network]
+        tinit_i = tinit* math.exp(tdecay*i/args.iterations)
+        command += ['-tinitial', str(tinit_i), '-tdecay', str(tdecay)]
+    print(' '.join(command))
+    manager[n_index] = (output,subprocess.run(command, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE))
+    return None
+
+def iteration(args, i:int,t_schedule=None):
+    processes = []
+    manager = multiprocessing.Manager()
+    m_list = manager.list(range(len(args.networks)))
+    for index,n in enumerate(args.networks):
+        processes.append(multiprocessing.Process(target=run_process, 
+            args=(args, n, index, i, m_list, t_schedule)))
+    for p in processes:
+        p.start()
+    for p in processes:
+        p.join()
+    return m_list
+
 if __name__ == '__main__':
     args = init_parser().parse_args()
     code = check_args(args)
-    # TODO
-    # print(args), stderr or stdout ?
     if code != 0:
         sys.exit(code)
+    # TODO
+    # print(args), stderr or stdout ?
     print(args)
 
     OUT_DIR = args.output_directory
@@ -76,13 +120,14 @@ if __name__ == '__main__':
     INIT_OUT_DIR = os.path.join(OUT_DIR,'dir0')
     os.mkdir(INIT_OUT_DIR)
 
-    # Generate initial random alignments in TEMP_DIR/dir0/*.align
+    # Generate initial random alignments in OUT_DIR/dir0/*.align
     r_process = subprocess.run(['./random-multi-alignment.sh',INIT_OUT_DIR] 
             + args.networks)
     if r_process.returncode != 0:
         print('The following error has occurred in ./random-multi-alignment:',
                 file=sys.stderr)
-        print(r_process.stderr, file=sys.stderr)
+        print(process.stderr, file=sys.stderr)
+        sys.exit(1)
 
     # Generate initial shadow network
     c_shadow_args = ['python3','./scripts/create_shadow.py','-n'] + \
@@ -91,27 +136,41 @@ if __name__ == '__main__':
     with open(os.path.join(INIT_OUT_DIR,'shadow0.gw'),mode='w') as f:
          process = subprocess.run(c_shadow_args, stdout=f)
 
-    # my_tschedule = TemperatureSchedule(self, args.networks, [shadow])
+    # INIT TEMP
+    os.mkdir(os.path.join(OUT_DIR,'dir1'))
+    a = iteration(args,1)
+    try:
+        my_tschedule = TemperatureSchedule(args, a, OUT_DIR)
+    except:
+        raise
+    os.rename(os.path.join(OUT_DIR,'dir1'), os.path.join(OUT_DIR,'dir-init'))
 
     for i in range(1, 1+args.iterations):
-        print('Iteration {}'.format(i))
-        P_DIR = 'dir{}'.format(i-1)
-        C_DIR = 'dir{}'.format(i)
-        os.mkdir(os.path.join(OUT_DIR,C_DIR))
-        SHADOW_FILE = os.path.join(OUT_DIR, P_DIR,
-                'shadow{iteration}.gw'.format(iteration=(i-1)))
-        commands = create_cmd_line(args, OUT_DIR, P_DIR, C_DIR, SHADOW_FILE)
-        with open(os.path.join(OUT_DIR,C_DIR,'run.output'),mode='w') as f:
-            subprocess.run(['/home/wayne/bin/bin.x86_64/parallel', '8'],
-                    input=commands.encode('ascii'), stderr=f)
-            # t_initial,t_decay = my_tschedule[g]
-            # starting = t_initial * e^(-t_decay * i/K)
+        print('Iteration {} starting...  '.format(i), end=' ')
+        C_DIR = os.path.join(OUT_DIR, 'dir{}'.format(i))
+        os.mkdir(C_DIR)
+        a = iteration(args, i, my_tschedule)
+        for j,item in enumerate(a):
+            output, process = item
+            with open(output+'.stdout',mode='w') as f:
+                f.write(process.stdout.decode('utf-8'))
+            with open(output+'.stderr',mode='w') as f:
+                f.write(process.stderr.decode('utf-8'))
+            if process.returncode != 0:
+                network = args.networks[j]
+                fail_name = os.path.splitext(os.path.basename(network))[0]
+                print('shadow-{} has failed on iteration{}'.format(fail_name, i),
+                        file=sys.stderr)
+                sys.exit(1)
+        print('done')
+
+        print('Creating shadow{} file'.format(i))
         c_shadow_args = ['python3','./scripts/create_shadow.py','-c','-n'] + \
                 args.networks + ['-s', str(args.shadow_nodes)] + ['-a'] + \
-                glob.glob(os.path.join(OUT_DIR,C_DIR,'*.out'))
-        with open(os.path.join(OUT_DIR,C_DIR,'shadow{}.gw'.format(i)), 
+                glob.glob(os.path.join(C_DIR,'*.out'))
+        with open(os.path.join(C_DIR,'shadow{}.gw'.format(i)), 
             mode='w') as f:
-            process = subprocess.run(c_shadow_args, stdout=f)
+            process = subprocess.run(c_shadow_args, stdout=f, stderr=subprocess.PIPE)
         if process.returncode != 0:
             print('The following error has occurred in ./scripts/create_shadow.py',
                     file=sys.stderr)
