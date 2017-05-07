@@ -24,6 +24,17 @@ class TemperatureSchedule:
 
     def __getitem__(self, key):
         return (self.__t[key],self.__tdecay[key])
+
+def init_parser():
+    parser = argparse.ArgumentParser(description='Run multi-pairwise SANA')
+    parser.add_argument('-n', '--networks', nargs='+', required=True)
+    parser.add_argument('-t', '--time', default=60, type=float)
+    parser.add_argument('-i', '--iterations', default=1, type=int)
+    parser.add_argument('-c', '--command-line', type=str)
+    parser.add_argument('-s', '--shadow-nodes', type=int, required=True)
+    parser.add_argument('-o', '--output-directory', type=str, required=True)
+    parser.add_argument('-p', '--processes', type=int, default=8)
+    return parser
     
 def create_cmd_line(args, OUT_DIR, P_DIR, C_DIR, SHADOW_FILE):
     commands = [] 
@@ -37,14 +48,7 @@ def create_cmd_line(args, OUT_DIR, P_DIR, C_DIR, SHADOW_FILE):
         commands.append(c)
     return '\n'.join(commands)
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Run multi-pairwise SANA')
-    parser.add_argument('-n', '--networks', nargs='+', required=True)
-    parser.add_argument('-t', '--time', default=60, type=int)
-    parser.add_argument('-i', '--iterations', default=1, type=int)
-    parser.add_argument('-c', '--command-line', type=str)
-    parser.add_argument('-s', '--shadow-nodes', type=int, required=True)
-    parser.add_argument('-o', '--output-directory', type=str, required=True)
-    args = parser.parse_args()
+    args = init_parser().parse_args()
     print(args)
 
     if args.time <= 0:
