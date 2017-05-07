@@ -77,12 +77,12 @@ if __name__ == '__main__':
     os.mkdir(INIT_OUT_DIR)
 
     # Generate initial random alignments in TEMP_DIR/dir0/*.align
-    process = subprocess.run(['./random-multi-alignment.sh',INIT_OUT_DIR] 
+    r_process = subprocess.run(['./random-multi-alignment.sh',INIT_OUT_DIR] 
             + args.networks)
-    if process.returncode != 0:
+    if r_process.returncode != 0:
         print('The following error has occurred in ./random-multi-alignment:',
                 file=sys.stderr)
-        print(process.stderr, file=sys.stderr)
+        print(r_process.stderr, file=sys.stderr)
 
     # Generate initial shadow network
     c_shadow_args = ['python3','./scripts/create_shadow.py','-n'] + \
