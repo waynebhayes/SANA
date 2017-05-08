@@ -1,19 +1,9 @@
 #ifndef GRAPH_HPP
 #define GRAPH_HPP
-
-#include <vector>
-#include <utility>
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <cmath>
-#include <algorithm>
-#include <cstdlib>
-#include <stdexcept>
-#include <set>
 #include "HalfMatrix.hpp"
 #include "Graphette.hpp"
 #include "utils/xrand.hpp"
+#include <bits/stdc++.h>
 
 class Graph{
 public:
@@ -48,13 +38,13 @@ public:
 		-For radius=2, it will return the neighbors of neighbors, the direct 
 		neighbors and the node itself.
 	*/
-	std::vector<uint> neighbors(uint node, uint radius);
+	std::vector<uint> neighbors(uint node);
 	
 	/*
 	Randomly selects a node and all nodes in its neighborhood within given 
 	samplingRadius. Then randomly selects a k-Graphette from these nodes.
 	*/
-	Graphette* sampleGraphette(uint k, uint samplingRadius);
+	Graphette* sampleGraphette(uint k);
 
 private:
 	uint numNodes_, numEdges_;
@@ -66,5 +56,4 @@ private:
 	std::set<uint> explore(uint seed, uint radius, std::vector<bool>& visited);
 	Graphette* createGraphette(std::vector<uint>& nodes);
 };
-
 #endif

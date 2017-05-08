@@ -67,7 +67,7 @@ void Database::addGraph(string filename){
 	vector<ofstream> forbitId(numOrbitId_);
 
 	for(i = 0; i < limit_; i++){
-		Graphette* g = graph.sampleGraphette(k_, radius_);
+		Graphette* g = graph.sampleGraphette(k_);
 		uint gDec = g->decimalNumber();
 		//index of canonical isomorph of g in canonList
 		uint cgIndex = this->getIndex(canonList_, canonDec_[gDec]);

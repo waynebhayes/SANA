@@ -109,36 +109,50 @@ void Graph::printAdjMatrix()
 	adjMatrix_.print();
 }
 
-vector<uint> Graph::neighbors(uint node, uint radius){
+vector<uint> Graph::neighbors(uint node){
 	vector<uint> nbors;
-	vector<bool> visited(numNodes_, false);
-	auto nodes = this->explore(node, radius, visited);
-	nbors.assign(nodes.begin(), nodes.end());
+	for(uint i = 0; i < numNodes_; i++){
+		if(i == node) continue;
+		else if(this->hasEdge(i, node))
+			nbors.push_back(i);
+	}
 	return nbors;
 }
 
-Graphette* Graph::sampleGraphette(uint k, uint samplingRadius){
-	if(k == 0){
-		throw out_of_range("Graph::sampleGraphette(k, samplingRadius): k can't be 0");
+Graphette* Graph::sampleGraphette(uint k){
+	if(k == 0 or k > numNodes_){
+		throw out_of_range("Graph::sampleGraphette(k): k is outside (0, numNodes_]");
 	}
-	else if(k > numNodes_)
-		throw invalid_argument("Graph::sampleGraphette(k, samplingRadius): k > numNodes_");
 	else{
-		set<uint> nbors;
-		vector<uint>nborsvec;
-		while(nbors.size() < k){
-			//Select a random node
-			uint node = xrand(0, numNodes_);
-			vector<bool> visited(numNodes_, false);
-			auto temp = this->explore(node, samplingRadius, visited);
-			nbors.insert(temp.begin(), temp.end());
+		vector<bool> visited(false, numNodes_);
+		vector<uint> nodes(1, xrand(0, numNodes_));
+		set<uint> candidates;
+		while(nodes.size() < k){
+			auto n = *(nodes.rbegin());
+			visited[n] = true;
+			for(auto nbor : this->neighbors(n)){
+				if(not visited[nbor])
+					candidates.insert(nbor);
+			}
+			if(candidates.size() > 0){
+				auto i = xrand(0, candidates.size());
+				auto it = candidates.begin();
+				while(i > 0){
+					it++;
+					i--;
+				}
+				nodes.push_back(*it);
+				candidates.erase(it);
+			}
+			else{
+				//Select a random node
+				uint node = xrand(0, numNodes_);
+				if(not visited[node]){
+					nodes.push_back(node);	
+				}
+			}
 		}
-		nborsvec.assign(nbors.begin(), nbors.end());
-		//idk, if this code is not fast enough, I need to optimize xshuffle(). It's definitely
-		//not a good idea to resize such a large (possibly) vector.
-		xshuffle(nborsvec, samplingRadius);
-		nborsvec.resize(k);
-		return this->createGraphette(nborsvec);
+		return this->createGraphette(nodes);
 	}
 }
 
