@@ -45,13 +45,20 @@ class TemperatureSchedule:
     
 def init_parser():
     parser = argparse.ArgumentParser(description='Run multi-pairwise SANA')
-    parser.add_argument('-n', '--networks', nargs='+', required=True)
-    parser.add_argument('-t', '--time', default=60, type=float)
-    parser.add_argument('-i', '--iterations', default=1, type=int)
-    parser.add_argument('-c', '--command-line', type=str)
-    parser.add_argument('-s', '--shadow-nodes', type=int, required=True)
-    parser.add_argument('-o', '--output-directory', type=str, required=True)
-    parser.add_argument('-p', '--processes', type=int, default=8)
+    parser.add_argument('-n', '--networks', nargs='+', required=True, 
+                help='List of network files. Must be .gw or .el format')
+    parser.add_argument('-t', '--time', default=60, type=float, 
+                help='Total run time in minutes. Default is 60 minutes')
+    parser.add_argument('-i', '--iterations', default=10, type=int, 
+                help='Number of iterations. Default is 10')
+    parser.add_argument('-c', '--command-line', type=str, 
+                help='Additional arguments to pass to SANA. Must be enclosed with single or double quotes')
+    parser.add_argument('-s', '--shadow-nodes', type=int, required=True, 
+                help='Number of nodes in the largest network. Must be an integer')
+    parser.add_argument('-o', '--output-directory', type=str, required=True, 
+                help='Output directory. Must not exist')
+    parser.add_argument('-p', '--processes', type=int, default=8, 
+                help='Number of concurrent processes running. Default is 8')
     return parser
 
 def check_args(args):
