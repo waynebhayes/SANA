@@ -177,9 +177,9 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	    // We have edgelists, first column gene, second is miRNA
 	    // GENE miRNA
 	    while(ifs1 >> node){
-	         genesG1.insert(node);
-	         ifs1 >> node;
-	         miRNAsG1.insert(node);
+	        genesG1.insert(node);
+	        ifs1 >> node;
+	        miRNAsG1.insert(node);
 	    }
 
 	    // Same for fg2
