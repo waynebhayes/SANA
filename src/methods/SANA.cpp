@@ -27,6 +27,7 @@
 #include "../measures/localMeasures/Sequence.hpp"
 #include "../utils/NormalDistribution.hpp"
 #include "../utils/LinearRegression.hpp"
+#include "../utils/utils.hpp"
 using namespace std;
 
 
@@ -1324,6 +1325,7 @@ double SANA::findTInitialByLinearRegression(){
 	right << upperTBound << "," << maxx << endl;
 	right << upperTBound << "," << 0.0 << endl;
 	right.close();
+	if(schedule)exit(0);
 	return pow(10, startingTemperature);
 }
 

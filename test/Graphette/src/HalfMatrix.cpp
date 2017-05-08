@@ -1,6 +1,6 @@
 #include "HalfMatrix.hpp"
-
 using namespace std;
+
 HalfMatrix::HalfMatrix(uint n, vector<bool>& bitVector){
     if (n == 0)
         throw invalid_argument("HalfMatrix(n, bitVector): n can't be 0");
@@ -85,7 +85,7 @@ bool& HalfMatrix::operator() (uint row, uint col){
     else if(row > col)
         pos = col*len_ + row-((col+1)*(col+2))/2;
     else
-        throw invalid_argument("bad HalfMatrix index: row and column can't be equal");
+        throw out_of_range("HalfMatrix: row and col equal");
     return bitArray_[pos];
 }
 
