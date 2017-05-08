@@ -82,25 +82,29 @@ def create_cmd_line(args, network:str, i:int):
                     args.command_line.split() 
     return (output,c)
 
-def run_process(args, network:str, n_index:int, i:int, manager:list, t_schedule=None):
+def run_process(args, network:str, n_index:int, i:int, produce:list,
+        semaphore, t_schedule=None):
     output, command = create_cmd_line(args, network, i)
     if t_schedule:
         tinit,tdecay = t_schedule[network]
         tinit_i = tinit* math.exp(tdecay*i/args.iterations)
         command += ['-tinitial', str(tinit_i), '-tdecay', str(tdecay)]
+    semaphore.acquire()
     print(' '.join(command))
-    manager[n_index] = (output,subprocess.run(command, stdout=subprocess.PIPE,
+    produce[n_index] = (output,subprocess.run(command, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE))
+    semaphore.release()
     return None
 
 def iteration(args, i:int,t_schedule=None):
     processes = []
     manager = multiprocessing.Manager()
     m_list = manager.list(range(len(args.networks)))
+    m_semaphore = manager.BoundedSemaphore(args.processes)
     for index,n in enumerate(args.networks):
-        processes.append(multiprocessing.Process(target=run_process, 
-            args=(args, n, index, i, m_list, t_schedule)))
-    for p in processes:
+        p = multiprocessing.Process(target=run_process, 
+                args=(args, n, index, i, m_list, m_semaphore, t_schedule))
+        processes.append(p)
         p.start()
     for p in processes:
         p.join()
