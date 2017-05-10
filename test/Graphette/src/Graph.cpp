@@ -8,7 +8,7 @@ Graph::Graph()
 	adjMatrix_.clear();
 	degree_.clear();
 }
-Graph::Graph(uint numNodes)
+Graph::Graph(ullint numNodes)
 	:numNodes_(numNodes)
 	,numEdges_(0)
 	,adjMatrix_(numNodes)
@@ -17,7 +17,7 @@ Graph::Graph(uint numNodes)
 
 }
 
-Graph::Graph(vector<pair<uint, uint>>& edgeList)
+Graph::Graph(vector<pair<ullint, ullint>>& edgeList)
 {
 	if(not edgeList.size()){
 		numNodes_ = 0;
@@ -26,12 +26,9 @@ Graph::Graph(vector<pair<uint, uint>>& edgeList)
 		degree_.clear();
 	}
 	else{
-		uint n = 0;
-		for(auto edge: edgeList){
-			if(max(edge.first, edge.second) > n){
-				n = max(edge.first, edge.second);
-			}
-		}
+		ullint n = 0;
+		for(auto edge: edgeList)
+			n = max(n, max(edge.first, edge.second));
 		n++;
 		numNodes_ = n;
 		numEdges_ = 0;
@@ -47,12 +44,12 @@ Graph::Graph(HalfMatrix& adjMatrix)
 	: numNodes_(adjMatrix.length())
 	, adjMatrix_(adjMatrix)
 {
-	uint n = numNodes_;
+	ullint n = numNodes_;
 	degree_.clear();
 	degree_.resize(n, 0);
-	uint sum = 0;
-	for(uint i = 0; i < n; i++){
-		for(uint j = i+1; j < n; j++){
+	ullint sum = 0;
+	for(ullint i = 0; i < n; i++){
+		for(ullint j = i+1; j < n; j++){
 			if(adjMatrix_(i, j)){
 				sum++;
 				degree_[i]++;
@@ -68,7 +65,7 @@ Graph::~Graph(){
 	degree_.clear();
 }
 
-void Graph::addEdge(uint node1, uint node2){
+void Graph::addEdge(ullint node1, ullint node2){
 	//To ensure that each edge is added no more than once
 	if(not this->hasEdge(node1, node2)){
 		adjMatrix_(node1, node2) = true;
@@ -78,7 +75,7 @@ void Graph::addEdge(uint node1, uint node2){
 	}
 }
 
-void Graph::removeEdge(uint node1, uint node2){
+void Graph::removeEdge(ullint node1, ullint node2){
 	//To ensure that each edge is removed no more than once
 	if(this->hasEdge(node1, node2)){
 		adjMatrix_(node1, node2) = false;
@@ -88,19 +85,19 @@ void Graph::removeEdge(uint node1, uint node2){
 	}
 }
 
-bool Graph::hasEdge(uint node1, uint node2){
+bool Graph::hasEdge(ullint node1, ullint node2){
 	return adjMatrix_(node1, node2);
 }
 
-uint Graph::numNodes(){
+ullint Graph::numNodes(){
 	return numNodes_;
 }
 
-uint Graph::numEdges(){
+ullint Graph::numEdges(){
 	return numEdges_;
 }
 
-uint Graph::degree(uint node){
+ullint Graph::degree(ullint node){
 	return degree_[node];
 }
 
@@ -109,9 +106,9 @@ void Graph::printAdjMatrix()
 	adjMatrix_.print();
 }
 
-vector<uint> Graph::neighbors(uint node){
-	vector<uint> nbors;
-	for(uint i = 0; i < numNodes_; i++){
+vector<ullint> Graph::neighbors(ullint node){
+	vector<ullint> nbors;
+	for(ullint i = 0; i < numNodes_; i++){
 		if(i == node) continue;
 		else if(this->hasEdge(i, node))
 			nbors.push_back(i);
@@ -119,21 +116,16 @@ vector<uint> Graph::neighbors(uint node){
 	return nbors;
 }
 
-Graphette* Graph::sampleGraphette(uint k){
+Graphette* Graph::sampleGraphette(ullint k){
 	if(k == 0 or k > numNodes_){
 		throw out_of_range("Graph::sampleGraphette(k): k is outside (0, numNodes_]");
 	}
 	else{
-		vector<bool> visited(false, numNodes_);
-		vector<uint> nodes(1, xrand(0, numNodes_));
-		set<uint> candidates;
+		vector<bool> visited(numNodes_, false);
+		//nodes contains the selected 
+		set<ullint> nodes, candidates;
 		while(nodes.size() < k){
-			auto n = *(nodes.rbegin());
-			visited[n] = true;
-			for(auto nbor : this->neighbors(n)){
-				if(not visited[nbor])
-					candidates.insert(nbor);
-			}
+			ullint node;
 			if(candidates.size() > 0){
 				auto i = xrand(0, candidates.size());
 				auto it = candidates.begin();
@@ -141,43 +133,31 @@ Graphette* Graph::sampleGraphette(uint k){
 					it++;
 					i--;
 				}
-				nodes.push_back(*it);
-				candidates.erase(it);
+				node = *it;
 			}
 			else{
 				//Select a random node
-				uint node = xrand(0, numNodes_);
-				if(not visited[node]){
-					nodes.push_back(node);	
+				node = xrand(0, numNodes_);
+			}
+			if(not visited[node]){
+				visited[node] = true;
+				candidates.erase(node);
+				nodes.insert(node);
+				for(auto nbor : this->neighbors(node)){
+					if(not visited[nbor])
+						candidates.insert(nbor);
 				}
 			}
 		}
-		return this->createGraphette(nodes);
+		vector<ullint> temp(nodes.begin(), nodes.end());
+		return this->createGraphette(temp);
 	}
 }
 
-set<uint> Graph::explore(uint seed, uint radius, vector<bool>& visited){
-	set<uint> nbors;
-	nbors.insert(seed);
-	visited[seed] = true;
-	for(uint i=0; i<numNodes_; i++){
-		if(seed == i) continue;
-		if(this->hasEdge(seed, i)){
-			if(radius == 1) 
-				nbors.insert(i);
-			else if(radius > 1 and visited[i] == false){
-				auto temp = this->explore(i, radius-1, visited);
-				nbors.insert(temp.begin(), temp.end());
-			}
-		}
-	}
-	return nbors;
-}
-
-Graphette* Graph::createGraphette(vector<uint>& nodes){
+Graphette* Graph::createGraphette(vector<ullint>& nodes){
 	vector<bool> bitVector;
-	for(uint i=0; i<nodes.size(); i++){
-		for(uint j=i+1; j<nodes.size(); j++){
+	for(ullint i=0; i<nodes.size(); i++){
+		for(ullint j=i+1; j<nodes.size(); j++){
 			bitVector.push_back(adjMatrix_(nodes[i], nodes[j]));
 		}
 	}

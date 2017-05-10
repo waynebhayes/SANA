@@ -1,9 +1,9 @@
 #include "distanceMatrix.hpp"
 using namespace std;
 
-void distanceMatrix(uint N, uint K)
+void distanceMatrix(ullint N, ullint K)
 {
-    uint input, canon_size, numEdges = (N*N-N)/2;
+    ullint input, canon_size, numEdges = (N*N-N)/2;
     if(K > numEdges) 
         throw domain_error("Hamming distance must be <= Number of possible edges");
     else if (K == 0)
@@ -12,7 +12,7 @@ void distanceMatrix(uint N, uint K)
     string canon_filepath("data/list"+to_string(N)+".txt");
     string map_filepath("data/canon_map"+to_string(N)+".txt");
 
-    vector<uint> canons, canon_map;
+    vector<ullint> canons, canon_map;
 
     //Getting the inputs.
     ifstream fin;
@@ -34,9 +34,9 @@ void distanceMatrix(uint N, uint K)
 
     //For each of the canonical graphs, we shall determine all the cannonical graphettes 
     //that are K-hamming distance away from it
-    for(uint k = 1; k <= K; k++){
+    for(ullint k = 1; k <= K; k++){
         vector<vector<bool>> dmatrix(canon_size, vector<bool> (canon_size, 0));
-        for(uint i = 0; i < canons.size(); i++){
+        for(ullint i = 0; i < canons.size(); i++){
             Graphette g(N, canons[i]);
             vector<bool> bits = g.bitVector();        
             
@@ -45,16 +45,16 @@ void distanceMatrix(uint N, uint K)
             bitmask.resize(numEdges, 0); // N*N-N-K trailing 0's
             do {
                 vector<bool> copy = bits;
-                for (uint i = 0; i < bitmask.size(); i++){
+                for (ullint i = 0; i < bitmask.size(); i++){
                     if(bitmask[i]){
                         copy[i] = !copy[i]; //changing bits
                     }
                 }
                 Graphette h(N, copy);
-                uint newNum = h.decimalNumber();
-                uint c = canon_map[newNum];
+                ullint newNum = h.decimalNumber();
+                ullint c = canon_map[newNum];
                 auto temp = find(canons.begin(), canons.end(), c);
-                uint j = temp-canons.begin(); //j is the index of c in the list of canonical graphs
+                ullint j = temp-canons.begin(); //j is the index of c in the list of canonical graphs
                 dmatrix[i][j] = true;
                 dmatrix[j][i] = true;
                 
