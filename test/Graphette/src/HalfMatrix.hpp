@@ -6,26 +6,26 @@
 #include <stdexcept>
 #include <iostream>
 
-//typedef long long unsigned int uint;
+typedef long long unsigned int ullint;
 
 class HalfMatrix{
 public:
     HalfMatrix(){};
-    HalfMatrix(uint n, std::vector<bool>& bitVector);
-    HalfMatrix(uint n, uint decimalNumber);
-    HalfMatrix(uint n);
+    HalfMatrix(ullint n, std::vector<bool>& bitVector);
+    HalfMatrix(ullint n, ullint decimalNumber);
+    HalfMatrix(ullint n);
     HalfMatrix(const HalfMatrix& m);   // Copy constructor
     ~HalfMatrix();
 
-    uint length();
+    ullint length();
     void print();
-    bool& operator() (uint row, uint col);
-    //bool operator() (uint row, uint col) const;
+    bool& operator() (ullint row, ullint col);
+    //bool operator() (ullint row, ullint col) const;
     HalfMatrix& operator= (const HalfMatrix& m);
     void clear();
 private:
-    uint len_;
+    ullint len_;
    	bool* bitArray_ = NULL;
-   	void encodeBitArray(uint decimalNumber);
+   	void encodeBitArray(ullint decimalNumber);
 };
 #endif

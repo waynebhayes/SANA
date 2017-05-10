@@ -9,6 +9,6 @@
 #include <stdexcept>
 #include "Graphette.hpp"
 
-void distanceMatrix(uint N, uint K); // N= number of nodes, K = hamming distance
+void distanceMatrix(ullint N, ullint K); // N= number of nodes, K = hamming distance
 
 #endif
