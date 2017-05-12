@@ -19,6 +19,8 @@ fi
 
 REGRESSION_FAILED=false
 
+: '
+
 echo "Making current SANA"
 make clean &> /dev/null
 if ! make clean all&> /dev/null; then
@@ -31,6 +33,7 @@ if ! make -C $1 clean all &> /dev/null; then
     echo "Make failed for base SANA"
     exit 1
 fi
+'
 
 Networks_nodes=""
 for network in `ls ./networks | grep "^[A-Z][A-Z]"`;do
@@ -39,6 +42,7 @@ done
 Biogrid_network=`echo -e $Networks_nodes | sort -k2 -n | awk '{print $1}'`
 Networks_count=`echo $Biogrid_network | wc -w`
 
+: '
 for i in $(seq 1 $Networks_count);do
     for j in $(seq $((i + 1)) $Networks_count); do
         Network1=`echo -e $Biogrid_network | awk '{print $'$i'}'`
@@ -48,6 +52,7 @@ for i in $(seq 1 $Networks_count);do
         ./sana -g1 $Network1 -g2 $Network2 -o "$OutputDir/$Network1-$Network2-current" &> "$OutputDir/$Network1-$Network2-current.progress"
     done
 done
+'
 
 baseIterations=""
 currentIterations=""
@@ -106,7 +111,6 @@ TestScores()
     errorDif=`abs $errorDif`
     printf "Base $1 Score Average: %s | Current $1 Score Average: %s | Base Relative Difference: %s\n" "$baseScoresAvg" "$currentScoresAvg" "$errorDif"
     if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
-        echo "$1 Score Checking Failed. Relative difference exceeded $ErrorMargin"
         return 1
     else
         return 0
@@ -116,11 +120,27 @@ TestScores()
 SCORES="ec ics s3 lccs sec"
 for score in `echo $SCORES | tr ' ' '\n' `; do
     if ! TestScores $score; then
+        echo "$score Score Checking Failed. Relative difference exceeded $ErrorMargin"
         REGRESSION_FAILED=true
     fi
 done
 
-echo $REGRESSION_FAILED
+echo "Checking SANA locking mechanism"
+for i in `seq 1`; do
+    offset=`shuf -i 1-7 -n 1`
+    max=`expr 8 - $offset`
+    select=`shuf -i "1-$offset" -n 1`
+    select2=`expr $offset + $select`
+    Network1=`echo -e $Biogrid_network | awk '{print $'$select'}'`
+    Network2=`echo -e $Biogrid_network | awk '{print $'$select2'}'`
+    echo $Network1 $Network2
+    paste <(cat ./networks/$Network1/${Network1}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) <(cat ./networks/$Network2/${Network2}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) > $OutputDir/$Network1-$Network2.locking
+    sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null
+    if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
+        REGRESSION_FAILED=true
+        echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file"
+    fi
+done
 
 if "$REGRESSION_FAILED" = true;then
     exit 1
