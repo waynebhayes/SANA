@@ -17,6 +17,8 @@ if [[ ! -d "$OutputDir" ]]; then
     mkdir $OutputDir
 fi
 
+REGRESSION_FAILED=false
+
 echo "Making current SANA"
 make clean &> /dev/null
 if ! make clean all&> /dev/null; then
@@ -35,7 +37,6 @@ for network in `ls ./networks | grep "^[A-Z][A-Z]"`;do
     Networks_nodes=$Networks_nodes${network}" ""`head ./networks/${network}/${network}.gw | sed -n 5p`""\n"
 done
 Biogrid_network=`echo -e $Networks_nodes | sort -k2 -n | awk '{print $1}'`
-
 Networks_count=`echo $Biogrid_network | wc -w`
 
 for i in $(seq 1 $Networks_count);do
@@ -74,6 +75,55 @@ errorDif=`echo "($baseIterationsAvg - $currentIterationsAvg)/$baseIterationsAvg"
 errorDif=`abs $errorDif`
 printf "Base Iterations Average: %s | Current Iterations Average: %s | Base Relative Difference: %s\n" "$baseIterationsAvg" "$currentIterationsAvg" "$errorDif"
 if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
-    echo "Iterations Failed"
+    REGRESSION_FAILED=true
+fi
+
+TestScores()
+{
+    baseScores=""
+    currentScores=""
+    printf "Checking %s score\n" $1
+    printf "%-30s | %-20s | %-20s\n" "Networks Pair" "Base $1" "Current $1"
+    for i in $(seq 1 $Networks_count);do
+        for j in $(seq $((i + 1)) $Networks_count); do
+            Network1=`echo -e $Biogrid_network | awk '{print $'$i'}'`
+            Network2=`echo -e $Biogrid_network | awk '{print $'$j'}'`
+            base_progress="$OutputDir/$Network1-$Network2-base.out"
+            current_progress="$OutputDir/$Network1-$Network2-current.out"
+            baseScore=`grep -o "^$1: 0.[0-9]\+$" ./$base_progress | awk '{print $2}'`
+            currentScore=`grep -o "^$1: 0.[0-9]\+$" ./$current_progress | awk '{print $2}'`
+            baseScores=$baseScores" "$baseScore
+            currentScores=$currentScores" "$currentScore
+            printf "%-30s | %-20s | %-20s\n" "$Network1-$Network2" "$baseScore" "$currentScore"
+        done
+    done
+
+    baseScoresAvg=`echo $baseScores | tr " " "\n" | awk '{s+=$1}END{print s/NR}'`
+    currentScoresAvg=`echo $currentScores | tr " " "\n" | awk '{s+=$1}END{print s/NR}'`
+    baseScoresAvg=`printf "%f" $baseScoresAvg`
+    currentScoresAvg=`printf "%f" $currentScoresAvg`
+    errorDif=`echo "($baseScoresAvg - $currentScoresAvg)/$baseScoresAvg" | bc -l`
+    errorDif=`abs $errorDif`
+    printf "Base $1 Score Average: %s | Current $1 Score Average: %s | Base Relative Difference: %s\n" "$baseScoresAvg" "$currentScoresAvg" "$errorDif"
+    if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
+        echo "$1 Score Checking Failed. Relative difference exceeded $ErrorMargin"
+        return 1
+    else
+        return 0
+    fi
+}
+
+SCORES="ec ics s3 lccs sec"
+for score in `echo $SCORES | tr ' ' '\n' `; do
+    if ! TestScores $score; then
+        REGRESSION_FAILED=true
+    fi
+done
+
+echo $REGRESSION_FAILED
+
+if "$REGRESSION_FAILED" = true;then
     exit 1
+else
+    exit 0
 fi
