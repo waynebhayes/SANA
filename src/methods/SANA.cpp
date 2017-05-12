@@ -75,7 +75,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	n2 = G2->getNumNodes();
 	g1Edges = G1->getNumEdges();
 #ifdef WEIGHTED
-        g2WeightedEdges = G2->getWeightedNumEdges();
+	g2WeightedEdges = G2->getWeightedNumEdges();
 #endif
 	g2Edges = G2->getNumEdges();
 	score = objectiveScore;
@@ -84,7 +84,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	G2->getAdjMatrix(G2AdjMatrix);
 	G1->getAdjLists(G1AdjLists);
 #ifdef WEIGHTED
-        prune(startAligName);
+	prune(startAligName);
 #endif
 	G2->getAdjLists(G2AdjLists);
 
@@ -375,7 +375,7 @@ void SANA::enableRestartScheme(double minutesNewAlignments, uint iterationsPerSt
 }
 
 double SANA::temperatureFunction(double iter, double TInitial, double TDecay) {
-	if( (int)iter % (int)iterationsPerStep/6 == 0)
+	// if( (int)iter % (int)iterationsPerStep/30 == 0)
 		elapsedEstimate = timer.elapsed();
 	double fraction = (elapsedEstimate / (minutes * 60));
 	return TInitial * (constantTemp ? 1 : exp(-TDecay*fraction));
@@ -670,7 +670,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += ewecWeight * (newEwecSum);
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
 #ifdef WEIGHTED
-		newCurrentScore += mecWeight * (newAligEdges/g2WeightedEdges);
+	newCurrentScore += mecWeight * (newAligEdges/g2WeightedEdges);
 #endif
 
 		energyInc = newCurrentScore-currentScore;
@@ -802,7 +802,7 @@ int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ush
 	}
 	//address case swapping between adjacent nodes with adjacent images:
 #ifdef WEIGHTED 
-        res += (-1 << 1) & (G1AdjMatrix[source1][source2] + G2AdjMatrix[target1][target2]);
+	res += (-1 << 1) & (G1AdjMatrix[source1][source2] + G2AdjMatrix[target1][target2]);
 #else
 	res += 2*(G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
 #endif
@@ -1199,7 +1199,7 @@ double SANA::findTInitialByLinearRegression(){
 	cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes" << endl;
 
 	//set the float precisison of the stream. This is needed whenever a file is written
-	cerr << "Retrieving 60 Samples" << endl;
+	cerr << "Retrieving 100 Samples" << endl;
 	int progress = 0;
 	while (cacheFile >> a >> b){
 		cache[a] = b;
@@ -1217,7 +1217,7 @@ double SANA::findTInitialByLinearRegression(){
 	for(double i = -10.0; i < 10.0; i = i + 1.0){
 		if(cache.find(i) == cache.end()){
 			double score = pForTInitial(pow(10, i));
-			cacheOutStream << i << "," << score << endl;
+			cacheOutStream << i << " " << score << endl;
 			scoreMap[i] = score;
 		}else{
 			scoreMap[i] = cache[i];
@@ -1239,7 +1239,7 @@ double SANA::findTInitialByLinearRegression(){
 	for(double i = lowerEnd - wing; i < upperEnd + wing; i += (upperEnd - lowerEnd) / 40.0){
 		if(cache.find(i) == cache.end()){
 			double score = pForTInitial(pow(10, i));
-		    cacheOutStream << i << "," << score << endl;
+		    cacheOutStream << i << " " << score << endl;
 			scoreMap[i] = score;
 		}else{
 			scoreMap[i] = cache[i];
@@ -1318,12 +1318,12 @@ double SANA::findTInitialByLinearRegression(){
 	points << 10 << "," << get<7>(regressionResult) << endl;
 	points.close();
 	ofstream left(mkdir("left") + G1->getName() + "_" + G2->getName() + ".csv");
-	left << lowerTBound << "," << maxx << endl;
-	left << lowerTBound << "," << 0.0 << endl;
+	left << pow(10, lowerTBound) << "," << maxx << endl;
+	left << pow(10, lowerTBound) << "," << 0.0 << endl;
 	left.close();
 	ofstream right(mkdir("right") + G1->getName() + "_" + G2->getName() + ".csv");
-	right << upperTBound << "," << maxx << endl;
-	right << upperTBound << "," << 0.0 << endl;
+	right << pow(10, upperTBound) << "," << maxx << endl;
+	right << pow(10, upperTBound) << "," << 0.0 << endl;
 	right.close();
 	if(schedule)exit(0);
 	return pow(10, startingTemperature);
@@ -1332,10 +1332,10 @@ double SANA::findTInitialByLinearRegression(){
 string SANA::getFolder(){
 	//create (if neccessary) and return the path of the measure combinations respcetive cache folder
 	stringstream ss;
-	ss << "mkdir -p " << "cache" << "/" << MC->toString() << "/";
+	ss << "mkdir -p " << "cache-pbad" << "/" << MC->toString() << "/";
 	system(ss.str().c_str());
 	stringstream sf;
-	sf << "cache" << "/" << MC->toString() << "/";
+	sf << "cache-pbad" << "/" << MC->toString() << "/";
 	return sf.str();
 }
 
@@ -1723,5 +1723,3 @@ void SANA::prune(string& startAligName) {
     G2->setEdgeList(t_edgeList);
 }
 #endif
-
-
