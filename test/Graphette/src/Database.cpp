@@ -3,119 +3,107 @@
 using namespace std;
 
 Database::Database()
-	: Database(5, 3, 500)
+	: Database(5)
 {}
 
-Database::Database(uint k, uint radius, uint limit)
+Database::Database(ullint k)
 	: k_(k)
-	, radius_(radius)
-	, limit_(limit)
 {
-	uint m, i, j;
-	string str;
+	/**Just reading the data from canon_map, canon_list, and orbit_map**/
+	ullint m, decimal;
+	string permutation;
 	ifstream fcanon_map("data/canon_map"+to_string(k)+".txt"), forbit_map("data/orbit_map"+to_string(k)+".txt");
 	ifstream fcanon_list("data/canon_list"+to_string(k)+".txt");
 	databaseDir = "Database"+to_string(k)+"/";
 
 	//reading canon_map
-	while(fcanon_map >> i >> str){
-		canonDec_.push_back(i);
-		canonPerm_.push_back(str);
+	graphette x;
+	while(fcanon_map >> decimal >> permutation){
+		x.canonicalDecimal = decimal;
+		x.canonicalPermutation = permutation;
+		g.push_back(x);
 	}
 	fcanon_map.close();
-
-	//reading canon_list
+	//reading canon_list and orbit_map
 	fcanon_list >> m; //reading the number of canonical graphettes
-	while(fcanon_list >> i){
-		canonList_.push_back(i);
+	forbit_map >> numOrbitId_; //reading the number of orbit ids
+	for(ullint i = 0; i < m; i++){
+		fcanon_list >> decimal;
+		canonicalGraphette.push_back(decimal);
+		//reading orbit ids for the canonical graphette decimal
+		vector<ullint> ids(k);
+		for(ullint j = 0; j < k; j++){
+			forbit_map >> ids[j];
+		}
+		orbitId_.push_back(ids);
 	}
 	fcanon_list.close();
-
-	//reading orbit_map
-	forbit_map >> numOrbitId_; //reading the number of orbit ids
-	for(i = 0; i < canonList_.size(); i++){
-		vector<uint> inputvec;
-		for(j = 0; j < k; j++){
-			forbit_map >> m;
-			inputvec.push_back(m);
-		}
-		orbitId_.push_back(inputvec);
-	}
+	fcanon_map.close();
 	forbit_map.close();
 }
 
-void Database::addGraph(string filename){
+void Database::addGraph(string filename, ullint numSamples){
+	//Prepocessing the input filename
 	ifstream fgraph(filename);
-	vector<pair<uint, uint>> edgelist;
-	uint m, n, i, j;
-	int pos, len;
-	string graphName(filename);
-	while((pos=graphName.find("/"))>=0) {
-	    len = graphName.size();
-	    graphName = graphName.substr(pos+1,len);
-	}
-
-	//reading edgelist
+	string graphName = filename;
+	while(graphName.find("/") != string::npos)
+		graphName = graphName.substr(graphName.find("/") + 1);
+	//reading the graph from an edge list file
+	vector<pair<ullint, ullint>> edgelist;
+	ullint m, n;
 	while(fgraph >> m >> n){
 		edgelist.push_back(make_pair(m, n));
 	}
 	fgraph.close();
-
 	Graph graph(edgelist);
-	vector<vector<bool>> sigMatrix(graph.numNodes(), vector<bool>(numOrbitId_, 0));//each row for each node
-	vector<bool> haveOpen(numOrbitId_, 0);
+	//orbit signature for each node
+	vector<vector<bool>> orbitSignature(graph.numNodes(), vector<bool>(numOrbitId_, false));//each row for each node
+	vector<bool> isOpen(numOrbitId_, false);
 	vector<ofstream> forbitId(numOrbitId_);
-
-	for(i = 0; i < limit_; i++){
-		Graphette* g = graph.sampleGraphette(k_, radius_);
-		uint gDec = g->decimalNumber();
-		//index of canonical isomorph of g in canonList
-		uint cgIndex = this->getIndex(canonList_, canonDec_[gDec]);
-		for(j = 0; j < k_; j++){
-			uint oj = canonPerm_[gDec].at(j)-'0'; //original index of jth element of the canonical isomorph 
-			uint id = orbitId_[cgIndex][j];
-			if(!haveOpen[id]) {
+	ullint indicator = numSamples / 10;
+	for(ullint i = 0; i < numSamples; i++){
+		if(i % indicator == 0)
+			cout << (i / indicator) * 10 << "% complete\n";
+		Graphette* x = graph.sampleGraphette(k_);
+		Graphette* y = this->getCanonicalGraphette(x);
+		//save orbit ids in respective directories
+		for(ullint j = 0; j < k_; j++){
+			auto z = y->decimalNumber();
+			ullint l = lower_bound(canonicalGraphette.begin(), canonicalGraphette.end(), z) - canonicalGraphette.begin();
+			ullint id = orbitId_[l][j];
+			if(!isOpen[id]) {
 			    forbitId[id].open(databaseDir+to_string(id)+"/"+graphName, ios_base::app);
-			    haveOpen[id]=1;
+			    isOpen[id] = true;
 			}
-			forbitId[id] << (g->label(oj)) << " ";
-			for(auto orbit: g->labels()){
-				if(orbit != g->label(oj))
+			forbitId[id] << y->label(j) << " ";
+			for(auto orbit: y->labels()){
+				if(orbit != y->label(j))
 					forbitId[id] << orbit << " ";
 			}
 			forbitId[id] << endl;
-			sigMatrix[g->label(oj)][id]= true;
+			orbitSignature[y->label(j)][id]= true;
 		}
-		delete g;
+		delete y;
 	}
-	for(i=0; i < numOrbitId_; i++) if(haveOpen[i]) forbitId[i].close();
-	ofstream fout(databaseDir + graphName + "-nodeOrbitMembershipBitVector.txt");
-	fout << k_ << " " << radius_ << " " << limit_ << endl;
-	for(auto a: sigMatrix){
-		for(auto b: a) fout << b;
+	cout << "100% complete\n";
+	for(ullint i = 0; i < numOrbitId_; i++) 
+		if(isOpen[i]) forbitId[i].close();
+	
+	//save orbit signatures as a matrix
+	ofstream fout(databaseDir + graphName + "nodeOrbitMembershipBitVector.txt");
+	fout << "k = " << k_ << " numSamples = " << numSamples << endl;
+	for(auto node: orbitSignature){
+		for(auto id: node) fout << id;
 		fout << endl;
 	}
 	fout.close();
 }
 
-uint Database::getIndex(vector<uint>& vec, uint num){
-	uint index = lower_bound(vec.begin(), vec.end(), num)-vec.begin();
-	if(vec[index] != num){
-		throw domain_error("Database::getIndex(): num not found in vec");
+Graphette* Database::getCanonicalGraphette(Graphette* x){
+	ullint num = x->decimalNumber();
+	Graphette* y = new Graphette(k_, g[num].canonicalDecimal);
+	for(ullint i = 0; i < k_; i++){
+		y->setLabel(g[num].canonicalPermutation[i] - '0', x->label(i));
 	}
-	else {
-		return index;
-	}
-}
-
-bool Database::queryGraphette(uint decimal){
-	Graphette g(k_, decimal);
-	uint j;
-	uint cgIndex = this->getIndex(canonList_, canonDec_[decimal]);
-	vector<uint> sig(k_);
-	for(j = 0; j < k_; j++){
-		uint oj = canonPerm_[decimal].at(j)-'0'; //original index of jth element of the canonical isomorph 
-		sig[oj] = orbitId_[cgIndex][j];
-	}
-	return false;
+	return y;
 }

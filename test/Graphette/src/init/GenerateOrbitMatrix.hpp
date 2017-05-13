@@ -8,5 +8,5 @@
 #include <fstream>
 #include <string>
 
-void generateOrbitMatrix(uint n);
+void generateOrbitMatrix(ullint n);
 #endif

@@ -1,32 +1,29 @@
 #ifndef DATABASE_HPP
 #define DATABASE_HPP
-
 #include "Graphette.hpp"
 #include "Graph.hpp"
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <utility>
-#include <stdexcept>
+#include <bits/stdc++.h>
+
+typedef struct
+{
+	std::string canonicalPermutation;
+	ullint canonicalDecimal;
+}graphette;
 
 class Database
 {
 public:
 	Database();
-	Database(uint k, uint radius, uint limit);
-	void addGraph(std::string filename);
-
+	Database(ullint k);
+	void addGraph(std::string filename, ullint numSamples);
 	
 private:
-	uint k_, numOrbitId_, radius_, limit_;
+	ullint k_, numOrbitId_;
 	std::string databaseDir;
-	std::vector<uint> canonDec_; //canonDec[i] = decimal repr. of the canonical isomorph of graphette i;
-	std::vector<uint> canonList_; //canonList[i] = ith canonical graphette in decimal
-	std::vector<std::string> canonPerm_; //canonPerm[i] = Permutation of the nodes from  graphette i to canonical isomorph;
-	std::vector<std::vector<uint>> orbitId_; //orbitId[i][j] = orbit id of jth node from ith canon. graphette in ascending order
-
-	uint getIndex(std::vector<uint>& vec, uint num);
-	bool queryGraphette(uint decimal);
+	std::vector<graphette> g;
+	std::vector<ullint> canonicalGraphette;
+	std::vector<std::vector<ullint>> orbitId_; //orbit id of node j from ith canonical graphette
+	Graphette* getCanonicalGraphette(Graphette* x);
 };
+
 #endif
