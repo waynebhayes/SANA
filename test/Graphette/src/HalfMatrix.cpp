@@ -1,7 +1,7 @@
 #include "HalfMatrix.hpp"
-
 using namespace std;
-HalfMatrix::HalfMatrix(uint n, vector<bool>& bitVector){
+
+HalfMatrix::HalfMatrix(ullint n, vector<bool>& bitVector){
     if (n == 0)
         throw invalid_argument("HalfMatrix(n, bitVector): n can't be 0");
     else if ((n*n-n)/2 != bitVector.size())
@@ -9,13 +9,13 @@ HalfMatrix::HalfMatrix(uint n, vector<bool>& bitVector){
     else{
         len_ = n;
         bitArray_ = new bool[(n*n-n)/2];
-        for(uint i = 0; i < bitVector.size(); i++){
+        for(ullint i = 0; i < bitVector.size(); i++){
             bitArray_[i] = bitVector[i];
         }
     }
 }
 
-HalfMatrix::HalfMatrix(uint n, uint decimalNumber){
+HalfMatrix::HalfMatrix(ullint n, ullint decimalNumber){
     if (n == 0)
         throw invalid_argument("HalfMatrix constructor has size = 0");
     len_ = n;
@@ -23,23 +23,23 @@ HalfMatrix::HalfMatrix(uint n, uint decimalNumber){
     this->encodeBitArray(decimalNumber);
 }
 
-HalfMatrix::HalfMatrix(uint n)
+HalfMatrix::HalfMatrix(ullint n)
                 : HalfMatrix(n, 0){
 
 }
 
 HalfMatrix::HalfMatrix(const HalfMatrix& m){
     len_ = m.len_;
-    uint size = (len_*len_-len_)/2;
+    ullint size = (len_*len_-len_)/2;
     bitArray_ = new bool[size];
-    for( uint i = 0; i < size; i++)
+    for( ullint i = 0; i < size; i++)
         bitArray_[i] = m.bitArray_[i];
 }
 
-void HalfMatrix::encodeBitArray(uint decimalNumber){
+void HalfMatrix::encodeBitArray(ullint decimalNumber){
     // Convert to binary number and put each bit in result vector.
-    uint num_edges = (len_*len_-len_)/2;
-    for(uint k = 0; k < num_edges; k++) 
+    ullint num_edges = (len_*len_-len_)/2;
+    for(ullint k = 0; k < num_edges; k++) 
         bitArray_[k] = false;
     
     int i = (len_*len_ - len_)/2 - 1;
@@ -60,13 +60,13 @@ HalfMatrix::~HalfMatrix(){
     delete[] bitArray_;
 }
 
-uint HalfMatrix::length(){
+ullint HalfMatrix::length(){
     return len_;
 }
 
 void HalfMatrix::print(){
-    for (uint i = 0; i < len_; i++){
-        for (uint j = 0; j < len_; j++){
+    for (ullint i = 0; i < len_; i++){
+        for (ullint j = 0; j < len_; j++){
             if (i < j)
                 cout << (*this)(i, j) << " ";
             else
@@ -76,28 +76,28 @@ void HalfMatrix::print(){
     }
 }
 
-bool& HalfMatrix::operator() (uint row, uint col){
+bool& HalfMatrix::operator() (ullint row, ullint col){
     if (row >= len_ or col >= len_)
         throw out_of_range("HalfMatrix: index out of range");
-    uint pos;
+    ullint pos;
     if(row < col)
         pos = row*len_ + col-((row+1)*(row+2))/2;
     else if(row > col)
         pos = col*len_ + row-((col+1)*(col+2))/2;
     else
-        throw invalid_argument("bad HalfMatrix index: row and column can't be equal");
+        throw out_of_range("HalfMatrix: row and col equal");
     return bitArray_[pos];
 }
 
 HalfMatrix& HalfMatrix::operator= (const HalfMatrix& m){
     len_ = m.len_;
-    uint size = (len_*len_-len_)/2;
+    ullint size = (len_*len_-len_)/2;
     if(bitArray_ != NULL)
         delete[] bitArray_;
     //I don't want the new bitArray_ to be modified when the m.bitArray_
     // gets modified by some supernatural entity. Hence no pointer copying.
     bitArray_ = new bool[size];
-    for( uint i = 0; i < size; i++)
+    for( ullint i = 0; i < size; i++)
         bitArray_[i] = m.bitArray_[i];
     return *this;
 }

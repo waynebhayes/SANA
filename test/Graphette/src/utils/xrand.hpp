@@ -1,12 +1,9 @@
 #ifndef XRAND_HPP
 #define XRAND_HPP
+#include <bits/stdc++.h>
 
-#include <random>
-#include <stdexcept>
-#include <vector>
-#include <algorithm>
-#include <cstdlib>
+typedef unsigned long long  ullint;
 
-uint xrand(uint begin, uint end); //the range is [begin, end)
-void xshuffle(std::vector<uint>& nodes, uint len);
+ullint xrand(ullint begin, ullint end); //the range is [begin, end)
+void xshuffle(std::vector<ullint>& nodes, ullint len);
 #endif

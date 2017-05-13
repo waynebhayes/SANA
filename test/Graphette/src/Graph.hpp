@@ -1,24 +1,14 @@
 #ifndef GRAPH_HPP
 #define GRAPH_HPP
-
-#include <vector>
-#include <utility>
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <cmath>
-#include <algorithm>
-#include <cstdlib>
-#include <stdexcept>
-#include <set>
 #include "HalfMatrix.hpp"
 #include "Graphette.hpp"
 #include "utils/xrand.hpp"
+#include <bits/stdc++.h>
 
 class Graph{
 public:
 	Graph();
-	Graph(uint numNodes);
+	Graph(ullint numNodes);
 	
 	/*
 	IMPORTANT: 
@@ -27,17 +17,17 @@ public:
 		-Self-edges are not allowed.
 		-No label is allowed. Nodes have to be unsigned integers.
 	*/
-	Graph(std::vector<std::pair<uint, uint>>& edgeList);
+	Graph(std::vector<std::pair<ullint, ullint>>& edgeList);
 	
 	Graph(HalfMatrix& adjMatrix);
 	~Graph();
 
-	void addEdge(uint node1, uint node2);
-	void removeEdge(uint node1, uint node2);
-	bool hasEdge(uint node1, uint node2);
-	uint numNodes();
-	uint numEdges();
-	uint degree(uint node);
+	void addEdge(ullint node1, ullint node2);
+	void removeEdge(ullint node1, ullint node2);
+	bool hasEdge(ullint node1, ullint node2);
+	ullint numNodes();
+	ullint numEdges();
+	ullint degree(ullint node);
 	void printAdjMatrix();
 	
 	/*
@@ -48,23 +38,18 @@ public:
 		-For radius=2, it will return the neighbors of neighbors, the direct 
 		neighbors and the node itself.
 	*/
-	std::vector<uint> neighbors(uint node, uint radius);
+	std::vector<ullint> neighbors(ullint node);
 	
 	/*
 	Randomly selects a node and all nodes in its neighborhood within given 
 	samplingRadius. Then randomly selects a k-Graphette from these nodes.
 	*/
-	Graphette* sampleGraphette(uint k, uint samplingRadius);
+	Graphette* sampleGraphette(ullint k);
 
 private:
-	uint numNodes_, numEdges_;
+	ullint numNodes_, numEdges_;
 	HalfMatrix adjMatrix_;
-	std::vector<uint> degree_;
-	/*
-	For a given seed, it explores its neighborhood to distance up to radius.
-	*/
-	std::set<uint> explore(uint seed, uint radius, std::vector<bool>& visited);
-	Graphette* createGraphette(std::vector<uint>& nodes);
+	std::vector<ullint> degree_;
+	Graphette* createGraphette(std::vector<ullint>& nodes);
 };
-
 #endif

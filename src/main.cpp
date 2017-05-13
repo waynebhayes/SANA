@@ -3,12 +3,14 @@
 #include "arguments/defaultArguments.hpp"
 #include "arguments/modeSelector.hpp"
 #include "utils/randomSeed.hpp"
+#include "utils/utils.hpp"
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
 
 using namespace std;
 
+bool schedule;
 
 int main(int argc, char* argv[]) {
     if(argc == 1) {
@@ -30,6 +32,11 @@ int main(int argc, char* argv[]) {
     if(args.doubles["-seed"] != 0) {
         setSeed(args.doubles["-seed"]);
     }
+	if(args.bools["schedule"]){
+		schedule = true;
+	}else{
+		schedule = false;
+	}
     cerr << "Seed: " << getRandomSeed() << endl;
     Mode* mode = selectMode(args);
     mode->run(args);
