@@ -68,6 +68,27 @@ def read_int_alignment(file_name:str) -> [int]:
         alignment = [int(x) for x in f.readline().strip().split()]
     return alignment
 
+def export_GW(edge_list,matrix):
+    print('LEDA.GRAPH')
+    print('string')
+    print('short')
+    print('-1')
+    print(len(s_el))
+    for node_a in range(len(s_el)):
+        print('|{{shadow{}}}|'.format(node_a))
+    print(int(sum(len(x) for x in s_el) / 2))
+    for node_a in range(len(s_am)):
+        for node_b in range(node_a, len(s_am)):
+            if (s_am[node_a][node_b] > 0):
+                print('{} {} 0 |{{{}}}|'.format(node_a+1, node_b+1, s_am[node_a][node_b]))
+
+def export_EL(edge_list,matrix):
+    for index,edges in enumerate(edge_list):
+        for end in edges:
+            if index > end:
+                continue
+            print('shadow{start} shadow{e} {value}'.format(
+                start=index, e=end, value=matrix[index][end]))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Create shadow network')
@@ -76,6 +97,8 @@ if __name__ == '__main__':
     parser.add_argument('-s','--shadow-nodes', required=True, type=int)
     parser.add_argument('-v','--verbose', action='store_true')
     parser.add_argument('-c','--compact', action='store_true')
+    parser.add_argument('--format', default='el', choices=['el','gw'], type=str,
+            help='Output format. Can be edge list or LEDA format')
     args = parser.parse_args()
     if args.verbose:
         print(args.networks,file=sys.stderr)
@@ -119,16 +142,8 @@ if __name__ == '__main__':
                     s_el[hole].append(end_hole)
                 s_am[hole][end_hole] += 1
 
-    print('LEDA.GRAPH')
-    print('string')
-    print('short')
-    print('-1')
-    print(len(s_el))
-    for node_a in range(len(s_el)):
-        print('|{{shadow{}}}|'.format(node_a))
-    print(int(sum(len(x) for x in s_el) / 2))
-    for node_a in range(len(s_am)):
-        for node_b in range(node_a, len(s_am)):
-            if (s_am[node_a][node_b] > 0):
-                print('{} {} 0 |{{{}}}|'.format(node_a+1, node_b+1, s_am[node_a][node_b]))
+    if args.format == 'gw':
+        export_GW(s_el, s_am)
+    else:
+        export_EL(s_el, s_am)
 
