@@ -116,41 +116,65 @@ vector<ullint> Graph::neighbors(ullint node){
 	return nbors;
 }
 
-Graphette* Graph::sampleGraphette(ullint k){
+Graphette* Graph::sampleGraphette(ullint k, ullint node1, ullint node2){
 	if(k == 0 or k > numNodes_){
-		throw out_of_range("Graph::sampleGraphette(k): k is outside (0, numNodes_]");
+		throw out_of_range("Graph::sampleGraphette(): k is outside (0, numNodes_]");
 	}
-	else{
+	else if(node1 == 0 or node1 > numNodes_){
+		throw out_of_range("Graph::sampleGraphette(): node1 is outside (0, numNodes_]");
+	}
+	else if(node2 == 0 or node2 > numNodes_){
+		throw out_of_range("Graph::sampleGraphette(): node2 is outside (0, numNodes_]");
+	}
+	else {
 		vector<bool> visited(numNodes_, false);
 		//nodes contains the selected 
-		set<ullint> nodes, candidates;
+		vector<long long> candidates(numNodes_);
+		vector<ullint> nodes;
+		long long len = 0, gone = 0;
+		nodes.push_back(node1);
+		nodes.push_back(node2);
+		visited[node1] = true;
+		visited[node2] = true;
+		for(auto nbor : this->neighbors(node1)){
+			if(not visited[nbor]){
+				candidates[len++] = nbor;
+				visited[nbor] = true;
+			}
+		}
+		for(auto nbor : this->neighbors(node2)){
+			if(not visited[nbor]){
+				candidates[len++] = nbor;
+				visited[nbor] = true;
+			}
+
+		}
 		while(nodes.size() < k){
-			ullint node;
-			if(candidates.size() > 0){
-				auto i = xrand(0, candidates.size());
-				auto it = candidates.begin();
-				while(i > 0){
-					it++;
-					i--;
-				}
-				node = *it;
+			ullint i, node;
+			if( (double) (len - gone) / len > 0.1){
+				do{ 
+					i = xrand(0, len);
+				}while(candidates[i] == -1);
+				node = candidates[i];
+				candidates[i] = -1;
+				gone++;
 			}
 			else{
 				//Select a random node
-				node = xrand(0, numNodes_);
-			}
-			if(not visited[node]){
+				do{ 
+					node = xrand(0, numNodes_);
+				}while(visited[node]);
 				visited[node] = true;
-				candidates.erase(node);
-				nodes.insert(node);
-				for(auto nbor : this->neighbors(node)){
-					if(not visited[nbor])
-						candidates.insert(nbor);
+			}
+			nodes.push_back(node);
+			for(auto nbor : this->neighbors(node)){
+				if(not visited[nbor]) {
+					candidates[len++] = nbor;
+					visited[nbor] = true;
 				}
 			}
 		}
-		vector<ullint> temp(nodes.begin(), nodes.end());
-		return this->createGraphette(temp);
+		return this->createGraphette(nodes);
 	}
 }
 
