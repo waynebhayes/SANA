@@ -17,7 +17,7 @@ if (sys.version_info.major == 3 and sys.version_info.minor < 5) or sys.version_i
 
 class TemperatureSchedule:
     def __init__(self, args:list, processes:list, OUT_DIR:str):
-        m_pattern = re.compile(r'(?:Initial Temperature|tdecay):\s([0-9]+\.[0-9]+)')
+        m_pattern = re.compile(r'(?:Initial Temperature|tdecay):\s([0-9]+(?:\.[0-9]+)?)')
         self.__t = dict()
         self.__tdecay = dict()
         i = 0
@@ -79,7 +79,7 @@ def create_cmd_line(args, network:str, i:int):
     out_dir = args.output_directory
     p_dir = os.path.join(out_dir, 'dir{}'.format(i-1))
     c_dir = os.path.join(out_dir, 'dir{}'.format(i))
-    shadow_file = os.path.join(p_dir, 'shadow{}.gw'.format(i-1))
+    shadow_file = os.path.join(p_dir, 'shadow{}.el'.format(i-1))
     commands = [] 
     n_name = os.path.splitext(os.path.basename(network))[0]
     output = os.path.join(c_dir, 'shadow-' + n_name)
@@ -144,10 +144,11 @@ if __name__ == '__main__':
     c_shadow_args = ['python3','./scripts/create_shadow.py','-n'] + \
             args.networks + ['-s', str(args.shadow_nodes)] + ['-a'] + \
             glob.glob(os.path.join(INIT_OUT_DIR,'*.align'))
-    with open(os.path.join(INIT_OUT_DIR,'shadow0.gw'),mode='w') as f:
+    with open(os.path.join(INIT_OUT_DIR,'shadow0.el'),mode='w') as f:
          process = subprocess.run(c_shadow_args, stdout=f)
 
     # INIT TEMP
+    print("starting alignment... ", end='')
     os.mkdir(os.path.join(OUT_DIR,'dir1'))
     a = iteration(args,1)
     try:
@@ -155,6 +156,7 @@ if __name__ == '__main__':
     except:
         raise
     os.rename(os.path.join(OUT_DIR,'dir1'), os.path.join(OUT_DIR,'dir-init'))
+    print("done")
 
     for i in range(1, 1+args.iterations):
         print('Iteration {} starting...  '.format(i), end=' ')
@@ -179,7 +181,7 @@ if __name__ == '__main__':
         c_shadow_args = ['python3','./scripts/create_shadow.py','-c','-n'] + \
                 args.networks + ['-s', str(args.shadow_nodes)] + ['-a'] + \
                 glob.glob(os.path.join(C_DIR,'*.out'))
-        with open(os.path.join(C_DIR,'shadow{}.gw'.format(i)), 
+        with open(os.path.join(C_DIR,'shadow{}.el'.format(i)), 
             mode='w') as f:
             process = subprocess.run(c_shadow_args, stdout=f, stderr=subprocess.PIPE)
         if process.returncode != 0:
