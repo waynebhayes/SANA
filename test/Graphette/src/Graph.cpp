@@ -151,7 +151,7 @@ Graphette* Graph::sampleGraphette(ullint k, ullint node1, ullint node2){
 		}
 		while(nodes.size() < k){
 			ullint i, node;
-			if( (double) (len - gone) / len > 0.1){
+			if( (double) (len - gone) / len > 0){ // insist on graphlet before accepting a disconnect
 				do{ 
 					i = xrand(0, len);
 				}while(candidates[i] == -1);
