@@ -130,7 +130,11 @@ Graphette* Graph::sampleGraphette(ullint k, ullint node1, ullint node2){
 		}
 		while(nodes.size() < k){
 			ullint i, node;
+<<<<<<< HEAD
 			if( (double) gone / len < 0.9){
+=======
+			if( (double) (len - gone) / len > 0){ // insist on graphlet before accepting a disconnect
+>>>>>>> 3398caa5764519beef0f8c94f8792fee8ca03d13
 				do{ 
 					i = xrand(0, len);
 				}while(candidates[i] == -1);
