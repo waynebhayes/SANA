@@ -49,7 +49,7 @@ public:
 private:
 	ullint numNodes_, numEdges_;
 	HalfMatrix adjMatrix_;
-	std::vector<ullint> degree_;
+	std::vector<std::vector<ullint>> adjList_;
 	Graphette* createGraphette(std::vector<ullint>& nodes);
 };
 #endif
