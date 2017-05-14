@@ -2,6 +2,7 @@
 #define DATABASE_HPP
 #include "Graphette.hpp"
 #include "Graph.hpp"
+#include "utils/xrand.hpp"
 #include <bits/stdc++.h>
 
 typedef struct

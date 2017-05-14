@@ -64,8 +64,10 @@ void Database::addGraph(string filename, ullint numSamples){
 	for(ullint i = 0; i < numSamples; i++){
 		if(i % indicator == 0)
 			cout << (i / indicator) * 10 << "% complete\n";
-		Graphette* x = graph.sampleGraphette(k_);
+		auto edge = xrand(0, edgelist.size());
+		Graphette* x = graph.sampleGraphette(k_, edgelist[edge].first, edgelist[edge].second);
 		Graphette* y = this->getCanonicalGraphette(x);
+		delete x;
 		//save orbit ids in respective directories
 		for(ullint j = 0; j < k_; j++){
 			auto z = y->decimalNumber();
