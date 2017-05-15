@@ -2,75 +2,60 @@
 using namespace std;
 
 Graph::Graph()
-	:numNodes_(0)
-	,numEdges_(0)
+	: Graph(0)
 {
-	adjMatrix_.clear();
-	degree_.clear();
+
 }
 Graph::Graph(ullint numNodes)
-	:numNodes_(numNodes)
-	,numEdges_(0)
-	,adjMatrix_(numNodes)
-	,degree_(numNodes, false)
+	: numNodes_(numNodes)
+	, numEdges_(0)
+	, adjMatrix_(numNodes)
+	, adjList_(numNodes)
 {
 
 }
 
 Graph::Graph(vector<pair<ullint, ullint>>& edgeList)
+	: numNodes_(0)
+	, numEdges_(0)
+	, adjList_(0)
 {
-	if(not edgeList.size()){
-		numNodes_ = 0;
-		numEdges_= 0;
-		adjMatrix_.clear();
-		degree_.clear();
+	for(auto& edge: edgeList)
+		numNodes_ = max(numNodes_, max(edge.first, edge.second));
+	numNodes_+= (edgeList.size() > 0);
+	adjMatrix_ = HalfMatrix(numNodes_);
+	adjList_.resize(numNodes_);
+	for(auto& edge: edgeList){
+		this->addEdge(edge.first, edge.second);
 	}
-	else{
-		ullint n = 0;
-		for(auto edge: edgeList)
-			n = max(n, max(edge.first, edge.second));
-		n++;
-		numNodes_ = n;
-		numEdges_ = 0;
-		adjMatrix_ = HalfMatrix(n);
-		degree_.resize(n, 0);
-		for(auto edge: edgeList){
-			this->addEdge(edge.first, edge.second);
-		}
-	}
+	for(auto& vec : adjList_)
+		sort(vec.begin(), vec.end());
 }
 
 Graph::Graph(HalfMatrix& adjMatrix)
 	: numNodes_(adjMatrix.length())
+	, numEdges_(0)
 	, adjMatrix_(adjMatrix)
 {
 	ullint n = numNodes_;
-	degree_.clear();
-	degree_.resize(n, 0);
-	ullint sum = 0;
-	for(ullint i = 0; i < n; i++){
-		for(ullint j = i+1; j < n; j++){
-			if(adjMatrix_(i, j)){
-				sum++;
-				degree_[i]++;
-				degree_[j]++;
-			}
-		}
-	}
-	numEdges_ = sum;
+	adjList_ = vector<vector<ullint>> (n);
+	for(ullint i = 0; i < n; i++) for(ullint j = i+1; j < n; j++)
+		if(adjMatrix_(i, j)) 
+			this->addEdge(i, j);
+	for(auto& vec : adjList_)
+		sort(vec.begin(), vec.end());
 }
 
 Graph::~Graph(){
 	adjMatrix_.clear();
-	degree_.clear();
 }
 
 void Graph::addEdge(ullint node1, ullint node2){
 	//To ensure that each edge is added no more than once
 	if(not this->hasEdge(node1, node2)){
 		adjMatrix_(node1, node2) = true;
-		degree_[node1]++;
-		degree_[node2]++;
+		adjList_[node1].push_back(node2);
+		adjList_[node2].push_back(node1);
 		numEdges_++;
 	}
 }
@@ -79,8 +64,8 @@ void Graph::removeEdge(ullint node1, ullint node2){
 	//To ensure that each edge is removed no more than once
 	if(this->hasEdge(node1, node2)){
 		adjMatrix_(node1, node2) = false;
-		degree_[node1]--;
-		degree_[node2]--;
+		adjList_[node1].erase(lower_bound(adjList_[node1].begin(), adjList_[node1].end(), node2));
+		adjList_[node2].erase(lower_bound(adjList_[node2].begin(), adjList_[node2].end(), node1));
 		numEdges_--;
 	}
 }
@@ -98,7 +83,7 @@ ullint Graph::numEdges(){
 }
 
 ullint Graph::degree(ullint node){
-	return degree_[node];
+	return adjList_[node].size();
 }
 
 void Graph::printAdjMatrix()
@@ -107,13 +92,7 @@ void Graph::printAdjMatrix()
 }
 
 vector<ullint> Graph::neighbors(ullint node){
-	vector<ullint> nbors;
-	for(ullint i = 0; i < numNodes_; i++){
-		if(i == node) continue;
-		else if(this->hasEdge(i, node))
-			nbors.push_back(i);
-	}
-	return nbors;
+	return adjList_[node];
 }
 
 Graphette* Graph::sampleGraphette(ullint k, ullint node1, ullint node2){
@@ -121,10 +100,17 @@ Graphette* Graph::sampleGraphette(ullint k, ullint node1, ullint node2){
 		throw out_of_range("Graph::sampleGraphette(): k is outside [0, numNodes_)");
 	}
 	else if(node1 < 0 or node1 >= numNodes_){
+<<<<<<< HEAD
 		throw out_of_range("Graph::sampleGraphette(): node1 is outside [0, numNodes_)");
 	}
 	else if(node2 < 0 or node2 >= numNodes_){
 		throw out_of_range("Graph::sampleGraphette(): node2 is outside [0, numNodes_)");
+=======
+		throw out_of_range("Graph::sampleGraphette(): node1 is outside (0, numNodes_]");
+	}
+	else if(node2 < 0 or node2 >= numNodes_){
+		throw out_of_range("Graph::sampleGraphette(): node2 is outside (0, numNodes_]");
+>>>>>>> feaf6c0ac142915af1ef5fcb12025518638dd8bf
 	}
 	else {
 		vector<bool> visited(numNodes_, false);
@@ -151,7 +137,7 @@ Graphette* Graph::sampleGraphette(ullint k, ullint node1, ullint node2){
 		}
 		while(nodes.size() < k){
 			ullint i, node;
-			if( (double) (len - gone) / len > 0){ // insist on graphlet before accepting a disconnect
+			if(len > gone){ // insist on graphlet before accepting a disconnect
 				do{ 
 					i = xrand(0, len);
 				}while(candidates[i] == -1);

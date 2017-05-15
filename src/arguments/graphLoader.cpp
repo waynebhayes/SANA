@@ -176,19 +176,39 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	    string node;
 	    // We have edgelists, first column gene, second is miRNA
 	    // GENE miRNA
+#ifdef WEIGHTED
+	    while (getline(ifs1,node)) {
+                istringstream m_iss(node);
+                m_iss >> node;
+	        genesG1.insert(node);
+	        m_iss >> node;
+	        miRNAsG1.insert(node);
+	    }
+#else
 	    while(ifs1 >> node){
 	        genesG1.insert(node);
 	        ifs1 >> node;
 	        miRNAsG1.insert(node);
 	    }
-
+#endif
 	    // Same for fg2
 	    ifstream ifs2(fg2.c_str());
+#ifdef WEIGHTED
+	    // Same for fg2
+	    while (getline(ifs2,node)) {
+                istringstream m_iss(node);
+                m_iss >> node;
+	        genesG1.insert(node);
+	        m_iss >> node;
+	        miRNAsG1.insert(node);
+	    }
+#else
 	    while(ifs2 >> node){
 	        genesG2.insert(node);
 	        ifs2 >> node;
 	        miRNAsG2.insert(node);
 	    }
+#endif
 
 	    G1.setNodeTypes(genesG1, miRNAsG1);
 	    G2.setNodeTypes(genesG2, miRNAsG2);
