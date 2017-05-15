@@ -118,13 +118,13 @@ vector<ullint> Graph::neighbors(ullint node){
 
 Graphette* Graph::sampleGraphette(ullint k, ullint node1, ullint node2){
 	if(k == 0 or k > numNodes_){
-		throw out_of_range("Graph::sampleGraphette(): k is outside (0, numNodes_]");
+		throw out_of_range("Graph::sampleGraphette(): k is outside [0, numNodes_)");
 	}
-	else if(node1 == 0 or node1 > numNodes_){
-		throw out_of_range("Graph::sampleGraphette(): node1 is outside (0, numNodes_]");
+	else if(node1 < 0 or node1 >= numNodes_){
+		throw out_of_range("Graph::sampleGraphette(): node1 is outside [0, numNodes_)");
 	}
-	else if(node2 == 0 or node2 > numNodes_){
-		throw out_of_range("Graph::sampleGraphette(): node2 is outside (0, numNodes_]");
+	else if(node2 < 0 or node2 >= numNodes_){
+		throw out_of_range("Graph::sampleGraphette(): node2 is outside [0, numNodes_)");
 	}
 	else {
 		vector<bool> visited(numNodes_, false);
