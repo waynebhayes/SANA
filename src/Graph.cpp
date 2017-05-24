@@ -206,8 +206,6 @@ void Graph::setEdgeList(vector<vector<ushort> >& edgeListCopy) {
 }
 
 
-
-
 void Graph::loadGwFile(const string& fileName) {
     //this function could be improved to deal with blank lines and comments
     stringstream errorMsg;
@@ -218,10 +216,15 @@ void Graph::loadGwFile(const string& fileName) {
     for (int i = 0; i < 4; i++) getline(infile, line);
     //read number of nodes
     int n;
-    getline(infile, line);
-    istringstream iss(line);
-    if (!(iss >> n) or n <= 0) {
-        errorMsg << "Failed to read node number: " << line;
+    if(line == "-2") {
+	getline(infile, line);
+	istringstream iss2(line);
+	(iss2 >> n);
+    } else {
+	n = stoi(line);
+    }
+    if (n <= 0) {
+        errorMsg << "Failed to read node number: " << line << " read as " << n;
         throw runtime_error(errorMsg.str().c_str());
     }
     //read (and ditch) nodes
@@ -785,9 +788,14 @@ map<string,ushort> Graph::getNodeNameToIndexMap() const {
     for (int i = 0; i < 4; i++) getline(infile, line);
     //read number of nodes
     int n;
-    getline(infile, line);
-    istringstream iss(line);
-    if (!(iss >> n) or n <= 0) {
+    if(line == "-2") {
+	getline(infile, line);
+	istringstream iss2(line);
+	(iss2 >> n);
+    } else {
+	n = stoi(line);
+    }
+    if (n <= 0) {
         throw runtime_error("Failed to read node number: " + line);
     }
 
