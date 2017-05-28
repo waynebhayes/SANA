@@ -84,7 +84,9 @@ SANA::SANA(Graph* G1, Graph* G2,
 	G2->getAdjMatrix(G2AdjMatrix);
 	G1->getAdjLists(G1AdjLists);
 #ifdef WEIGHTED
-	prune(startAligName);
+        if (startAligName != "") {
+            prune(startAligName);
+        }
 #endif
 	G2->getAdjLists(G2AdjLists);
 
