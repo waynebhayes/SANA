@@ -154,7 +154,6 @@ if __name__ == '__main__':
         output = os.path.join(c_dir, '{}-{}'.format(shadow_name, n_name))
         c = ['./sana', '-fg1', network, '-fg2',  shadow_file, '-o', output,
                 '-t', '1']
-        c += args.command_line.split()
         c += ['2>',output + '.stderr', '1>', output + '.stdout']
         commands.append(' '.join(c))
     str_commands = '\n'.join(commands)
@@ -163,10 +162,10 @@ if __name__ == '__main__':
     if process.returncode != 0:
         print('Something has gone wrong! Parallel script failed', file=sys.stderr)
         raise Exception(PARALLEL_EXEC + ' has failed.')
-    # --------------------------------------------------
     # Reading/parsing initial temperature values
     my_tschedule = TemperatureSchedule(args, biggest_network, OUT_DIR)
     print('done')
+    # --------------------------------------------------
 
     for i in range(1, 1+args.iterations):
         print('Iteration {} starting...  '.format(i), end=' ', flush=True)
