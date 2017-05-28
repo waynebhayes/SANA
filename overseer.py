@@ -94,7 +94,7 @@ def run_process(args, network:str, n_index:int, i:int, produce:list,
     output, command = create_cmd_line(args, network, i)
     if t_schedule:
         tinit,tdecay = t_schedule[network]
-        tinit_i = tinit* math.exp(tdecay*i/args.iterations)
+        tinit_i = tinit* math.exp(-tdecay*i/args.iterations)
         command += ['-tinitial', str(tinit_i), '-tdecay', str(tdecay)]
     semaphore.acquire()
     print(' '.join(command))
