@@ -72,10 +72,10 @@ def check_args(args):
 
 def create_cmd_line(args, network:str, i:int):
     out_dir = args.output_directory
+    out_dir_name = os.path.splitext(os.path.basename(OUT_DIR))[0]
     p_dir = os.path.join(out_dir, 'dir{}'.format(i-1))
     c_dir = os.path.join(out_dir, 'dir{}'.format(i))
-    shadow_file = os.path.join(p_dir, 'shadow{}.el'.format(i-1))
-    commands = [] 
+    shadow_file = os.path.join(p_dir, '{}.shadow{}.el'.format(out_dir_name, i-1))
     n_name = os.path.splitext(os.path.basename(network))[0]
     output = os.path.join(c_dir, 'shadow-' + n_name)
     align = os.path.join(p_dir, 'shadow-' + n_name + '.out')
@@ -113,6 +113,7 @@ if __name__ == '__main__':
 
     # Create output directory
     OUT_DIR = args.output_directory
+    OUT_DIR_NAME = os.path.splitext(os.path.basename(OUT_DIR))[0]
     os.mkdir(OUT_DIR)
     INIT_OUT_DIR = os.path.join(OUT_DIR,'dir0')
     os.mkdir(INIT_OUT_DIR)
@@ -134,7 +135,7 @@ if __name__ == '__main__':
     c_shadow_args = ['python3','./scripts/create_shadow.py','-n'] + \
             args.networks + ['-s', str(largest_num_node)] + ['-a'] + \
             glob.glob(os.path.join(INIT_OUT_DIR,'*.align'))
-    with open(os.path.join(INIT_OUT_DIR,'shadow0.el'),mode='w') as f:
+    with open(os.path.join(INIT_OUT_DIR, '{}.shadow0.el'.format(OUT_DIR_NAME)),mode='w') as f:
          process = subprocess.run(c_shadow_args, stdout=f, stderr=subprocess.PIPE)
     if process.returncode != 0:
         print('ERROR. ./scripts/create_shadow.py has failed', file=sys.stderr)
@@ -195,7 +196,7 @@ if __name__ == '__main__':
         c_shadow_args = ['python3','./scripts/create_shadow.py','-c','-n'] + \
                 args.networks + ['-s', str(largest_num_node)] + ['-a'] + \
                 glob.glob(os.path.join(c_dir,'*.out'))
-        with open(os.path.join(c_dir,'shadow{}.el'.format(i)), 
+        with open(os.path.join(c_dir,'{}.shadow{}.el'.format(OUT_DIR_NAME,i)), 
             mode='w') as f:
             process = subprocess.run(c_shadow_args, stdout=f, stderr=subprocess.PIPE)
         if process.returncode != 0:
