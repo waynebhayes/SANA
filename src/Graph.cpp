@@ -1,5 +1,6 @@
 #include "Graph.hpp"
 #include <sstream>
+#include <unistd.h>
 using namespace std;
 
 Graph Graph::loadGraph(string name) {
@@ -993,11 +994,14 @@ void writeGWEdges(ofstream& outfile, const vector<vector<ushort>>& edgeList) {
 void Graph::saveInGWFormat(string outputFile, const vector<string>& nodeNames,
     const vector<vector<ushort>>& edgeList) {
     ofstream outfile;
-    outfile.open(outputFile.c_str());
-
+    string pid = to_string(getpid()), saveIn = "/tmp/saveInGWFormat";
+    string tempFile = saveIn+pid;
+    outfile.open(tempFile.c_str());
     writeGWHeader(outfile);
     writeGWNodes(outfile, nodeNames);
     writeGWEdges(outfile, edgeList);
+    outfile.close();
+    exec("mv "+tempFile+" "+outputFile);
 }
 
 void Graph::saveInGWFormatShuffled(string outputFile, const vector<string>& nodeNames,

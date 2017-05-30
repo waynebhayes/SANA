@@ -57,7 +57,7 @@ paste $TMPDIR/*.2.nodes 2>/dev/null | sed -e 's/		/	_	/g' -e 's/		/	_	/g' -e 's/
     do
 	b=`basename $i .1.nodes`
 	N=`expr $N + 1`
-	cut -f$N $GROUP.align | awk '{printf "shadow%d\t%s\n",NR-1,$1}' > shadow-$b.align
+	cut -f$N $GROUP.align | awk '{printf "%s\tshadow%d\n",$1,NR-1}' | tee $b-shadow.align | awk '{printf "%s\t%s\n",$2,$1}' > shadow-$b.align
     done
 )
 mv $TMPDIR/*align "$OUTDIR"
