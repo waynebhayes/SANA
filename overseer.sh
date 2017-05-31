@@ -1,13 +1,12 @@
 #!/bin/sh
 
-SANA=./sana
 PARALLEL="parallel -s sh 8"
 
 TMPDIR=/tmp/overseer.$$
 trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
 
-USAGE="USAGE: $0 iterations outdir {list of input networks}"
+USAGE="USAGE: $0 sana.exe iterations outdir {list of input networks}"
 die() { echo "$USAGE" >&2; echo "$@" >&2; exit 1
 }
 parallel_delay() {
@@ -17,11 +16,13 @@ parallel_delay() {
     tail -n +2 $TMPDIR/pd | $PARALLEL
 }
 
-ITER_EXPR="$1"
-OUTDIR="$2"
+SANA="$1"
+ITER_EXPR="$2"
+OUTDIR="$3"
 NAME=`basename "$OUTDIR"`
-shift 2
+shift 3
 
+[ -x "$SANA" ] || die "first argument '$SANA' must be an executable file"
 ITER=`parse "$ITER_EXPR"` || die "'$ITER_EXPR': cannot figure out iteration count"
 [ -d "$OUTDIR" ] && die "outdir '$OUTDIR' cannot already exist"
 mkdir -p "$OUTDIR"/dir-init || die "Cannot make outdir '$OUTDIR'"
@@ -62,14 +63,14 @@ paste $OUTDIR/dir-init/tinitial-final.txt $OUTDIR/dir-init/tdecay.txt | awk '$1=
 
 for i in `integers $ITER`
 do
-    echo ---- ITER $i -----
+    echo ---- ITER $i ----- `date`
     i1=`expr $i + 1`
     mkdir -p $OUTDIR/dir$i1
     for g
     do
 	bg=`basename $g .gw`
 	bg=`basename $bg .el`
-	named-col-prog 'if(!index(name,"'$bg'"))next; i='$i';ITER='$ITER'; e0=log(tinitial);e1=log(tfinal);printf "'$SANA' -s3 0 -mec 1 -t 1 -fg1 '$g' -fg2 '$OUTDIR/dir$i/$NAME-shadow$i.el' -tinitial %g -tdecay %g -o '$OUTDIR/dir$i1/shadow-$bg' 2>'$OUTDIR/dir$i1/shadow-$bg.stderr' -startalignment '$OUTDIR/dir$i/shadow-$bg.out'\n", tinitial*exp((e1-e0)*i/ITER),tdecay/ITER' $OUTDIR/dir-init/schedule.tsv
+	named-col-prog 'if(!index(name,"'$bg'"))next; i='$i';ITER='$ITER'; e0=log(tinitial);e1=log(tfinal);printf "'$SANA' -s3 0 -mec 1 -t .01 -fg1 '$g' -fg2 '$OUTDIR/dir$i/$NAME-shadow$i.el' -tinitial %g -tdecay %g -o '$OUTDIR/dir$i1/shadow-$bg' 2>'$OUTDIR/dir$i1/shadow-$bg.stderr' -startalignment '$OUTDIR/dir$i/shadow-$bg.out'\n", tinitial*exp((e1-e0)*i/ITER),tdecay/ITER' $OUTDIR/dir-init/schedule.tsv
     done | parallel_delay networks/$NAME-shadow$i/$NAME-shadow$i.gw
     ./scripts/create_shadow.py -c -s $MAX_NODES -a $OUTDIR/dir$i1/shadow-*.out -n "$@" >$OUTDIR/dir$i1/$NAME-shadow$i1.el || die "$OUTDIR/dir$i1/$NAME-shadow$i1.el network creation failed"
 done
