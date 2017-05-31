@@ -75,6 +75,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	n2 = G2->getNumNodes();
 	g1Edges = G1->getNumEdges();
 #ifdef WEIGHTED
+	g1WeightedEdges = G1->getWeightedNumEdges();
 	g2WeightedEdges = G2->getWeightedNumEdges();
 #endif
 	g2Edges = G2->getNumEdges();
@@ -672,7 +673,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += ewecWeight * (newEwecSum);
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
 #ifdef WEIGHTED
-	newCurrentScore += mecWeight * (newAligEdges/g2WeightedEdges);
+	newCurrentScore += mecWeight * (newAligEdges/(g1WeightedEdges+g2WeightedEdges));
 #endif
 
 		energyInc = newCurrentScore-currentScore;
