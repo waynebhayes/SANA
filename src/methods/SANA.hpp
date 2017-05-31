@@ -59,6 +59,7 @@ private:
     uint n2;
     double g1Edges; //stored as double because it appears in division
 #ifdef WEIGHTED
+    double g1WeightedEdges;
     double g2WeightedEdges;
 #endif
     double g2Edges; //stored as double because it appears in division
