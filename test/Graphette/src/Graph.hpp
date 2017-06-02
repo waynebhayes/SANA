@@ -44,12 +44,12 @@ public:
 	Randomly selects a node and all nodes in its neighborhood within given 
 	samplingRadius. Then randomly selects a k-Graphette from these nodes.
 	*/
-	Graphette* sampleGraphette(ullint k);
+	Graphette* sampleGraphette(ullint k, ullint node1, ullint node2);
 
 private:
 	ullint numNodes_, numEdges_;
 	HalfMatrix adjMatrix_;
-	std::vector<ullint> degree_;
+	std::vector<std::vector<ullint>> adjList_;
 	Graphette* createGraphette(std::vector<ullint>& nodes);
 };
 #endif

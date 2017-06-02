@@ -161,12 +161,12 @@ vector<string> fileToStrings(const string& fileName, bool asLines) {
     uint fileNameLen = fileName.size();
     FILE *fp;
     char buf[10240], pipe = 0;
-    if(fileName.substr(fileNameLen-3,3) == ".gz"){
+    if(fileNameLen>=3 && fileName.substr(fileNameLen-3,3) == ".gz"){
 	pipe=1;
 	cerr << "fileToStrings: decompressing using gunzip: " << fileName << endl;
 	string unzip_cmd = "gunzip < " + fileName;
 	fp = popen(unzip_cmd.c_str(), "r");
-    } else if(fileName.substr(fileNameLen-3,3) == ".xz"){
+    } else if(fileNameLen>=3 && fileName.substr(fileNameLen-3,3) == ".xz"){
 	pipe=1;
 	cerr << "fileToStrings: decompressing using xzcat: " << fileName << endl;
 	string unzip_cmd = "xzcat < " + fileName;

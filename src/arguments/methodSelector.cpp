@@ -88,7 +88,6 @@ Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombin
 
 #ifdef WEIGHTED
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M, string startAligName) {
-    if (startAligName == "") throw runtime_error("ALIGNMENT FILE NEEDED");
 #else
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
 #endif
