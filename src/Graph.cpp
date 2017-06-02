@@ -1,5 +1,6 @@
 #include "Graph.hpp"
 #include <sstream>
+#include <unistd.h>
 using namespace std;
 
 Graph Graph::loadGraph(string name) {
@@ -25,20 +26,49 @@ void Graph::setMaxGraphletSize(double number){
 
 //transform format
 void Graph::edgeList2gw(string fin, string fout) {
+#ifdef WEIGHTED
+    vector<string> t_nodes = fileToStrings(fin);
+    vector<string> nodes;
+    for (int i = 0; i < t_nodes.size(); i++) {
+        if (i%3 == 2) {
+            continue;
+        }
+        nodes.push_back(t_nodes[i]);
+    }
+    nodes = removeDuplicates(nodes);
+#else
     vector<string> nodes = removeDuplicates(fileToStrings(fin));
+#endif
     map<string,uint> nodeName2IndexMap;
     uint numNodes = nodes.size();
     for (uint i = 0; i < numNodes; i++) {
         nodeName2IndexMap[nodes[i]] = i;
     }
     vector<vector<string> > edges = fileToStringsByLines(fin);
+#ifdef WEIGHTED
+    vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (3));
+#else
     vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (2));
+#endif
     stringstream errorMsg;
 
     for (uint i = 0; i < edges.size(); i++) {
+#ifdef WEIGHTED
+        string edgeValue;
+        if (edges[i].size() == 2) {
+            edgeValue = '1';
+        }
+        else if (edges[i].size() == 3) {
+            edgeValue = edges[i][2];
+        }
+        else {
+            throw runtime_error("File not in edge-list format: "+fin);
+        }
+#else
         if (edges[i].size() != 2) {
             throw runtime_error("File not in edge-list format: "+fin);
         }
+#endif
         string node1 = edges[i][0];
         string node2 = edges[i][1];
 	if(node1 == node2) {
@@ -49,6 +79,9 @@ void Graph::edgeList2gw(string fin, string fout) {
         uint index2 = nodeName2IndexMap[node2];
         edgeList[i][0] = index1;
         edgeList[i][1] = index2;
+#ifdef WEIGHTED
+        edgeList[i][2] = stoi(edgeValue);
+#endif
     }
     saveInGWFormat(fout, nodes, edgeList);
 }
@@ -174,8 +207,6 @@ void Graph::setEdgeList(vector<vector<ushort> >& edgeListCopy) {
 }
 
 
-
-
 void Graph::loadGwFile(const string& fileName) {
     //this function could be improved to deal with blank lines and comments
     stringstream errorMsg;
@@ -186,10 +217,15 @@ void Graph::loadGwFile(const string& fileName) {
     for (int i = 0; i < 4; i++) getline(infile, line);
     //read number of nodes
     int n;
-    getline(infile, line);
-    istringstream iss(line);
-    if (!(iss >> n) or n <= 0) {
-        errorMsg << "Failed to read node number: " << line;
+    if(line == "-2") {
+	getline(infile, line);
+	istringstream iss2(line);
+	(iss2 >> n);
+    } else {
+	n = stoi(line);
+    }
+    if (n <= 0) {
+        errorMsg << "Failed to read node number: " << line << " read as " << n;
         throw runtime_error(errorMsg.str().c_str());
     }
     //read (and ditch) nodes
@@ -753,9 +789,14 @@ map<string,ushort> Graph::getNodeNameToIndexMap() const {
     for (int i = 0; i < 4; i++) getline(infile, line);
     //read number of nodes
     int n;
-    getline(infile, line);
-    istringstream iss(line);
-    if (!(iss >> n) or n <= 0) {
+    if(line == "-2") {
+	getline(infile, line);
+	istringstream iss2(line);
+	(iss2 >> n);
+    } else {
+	n = stoi(line);
+    }
+    if (n <= 0) {
         throw runtime_error("Failed to read node number: " + line);
     }
 
@@ -941,18 +982,26 @@ void writeGWEdges(ofstream& outfile, const vector<vector<ushort>>& edgeList) {
     uint numEdges = edgeList.size();
     outfile << numEdges << endl;
     for (uint i = 0; i < numEdges; i++) {
+#ifdef WEIGHTED
+        outfile << edgeList[i][0]+1 << " " << edgeList[i][1]+1 << " 0 |{"; 
+        outfile << edgeList[i][2] << "}|" << endl;
+#else
         outfile << edgeList[i][0]+1 << " " << edgeList[i][1]+1 << " 0 |{}|" << endl;
+#endif
     }
 }
 
 void Graph::saveInGWFormat(string outputFile, const vector<string>& nodeNames,
     const vector<vector<ushort>>& edgeList) {
     ofstream outfile;
-    outfile.open(outputFile.c_str());
-
+    string pid = to_string(getpid()), saveIn = "/tmp/saveInGWFormat";
+    string tempFile = saveIn+pid;
+    outfile.open(tempFile.c_str());
     writeGWHeader(outfile);
     writeGWNodes(outfile, nodeNames);
     writeGWEdges(outfile, edgeList);
+    outfile.close();
+    exec("mv "+tempFile+" "+outputFile);
 }
 
 void Graph::saveInGWFormatShuffled(string outputFile, const vector<string>& nodeNames,

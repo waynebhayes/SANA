@@ -9,7 +9,7 @@ MultiEdgeCorrectness::~MultiEdgeCorrectness() {
 
 double MultiEdgeCorrectness::eval(const Alignment& A) {
 #ifdef WEIGHTED
-    return (double) A.numAlignedEdges(*G1, *G2)/G2->getWeightedNumEdges();
+    return (double) A.numAlignedEdges(*G1, *G2)/(G2->getWeightedNumEdges() + G1->getWeightedNumEdges());
 #else
     return 1;
 #endif
