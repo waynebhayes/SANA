@@ -6,7 +6,7 @@ ErrorMargin="0.05"
 OutputDir="regression_out"
 CompareFile=""
 
-while getopts "b:e:o:a:" opt; do
+while getopts "b:e:o:c:" opt; do
     case $opt in
     b)
         BaseRegressionFile=$OPTARG
@@ -22,7 +22,7 @@ while getopts "b:e:o:a:" opt; do
     o)
         OutputFile=$OPTARG
         ;;
-    a)
+    c)
         CompareFile=$OPTARG
         ;;
     \?) 
