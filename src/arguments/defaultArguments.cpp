@@ -28,5 +28,6 @@ vector<string> defaultArguments = {
 "-qmode normal",
 "-simFormat 1",
 "-combinedScoreAs sum",
-"-sec 0"
+"-sec 0",
+"-maxGraphletSize 5"
 };
