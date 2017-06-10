@@ -493,7 +493,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
 		if (interrupt) {
 			return A;
 		}
-		if (iter%100000 == 0) {
+		if (iter%iterationsPerStep == 0) {
 			trackProgress(iter);
 			if (iter != 0 and timer.elapsed() > maxExecutionSeconds) {
 				return A;
