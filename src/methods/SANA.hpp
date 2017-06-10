@@ -142,7 +142,7 @@ private:
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A);
-    double scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum);
+    double scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges);
     double ecWeight;
     double s3Weight;
     double wecWeight;
@@ -150,6 +150,7 @@ private:
     double ncWeight;
     double localWeight;
     double mecWeight;
+    double sesWeight;
     double ewecWeight;
     string score;
 
@@ -176,6 +177,12 @@ private:
     int aligEdges;
     int aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
     int aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+
+    // to evaluate SES incrementally
+    bool needSquaredAligEdges;
+    int squaredAligEdges;
+    int squaredAligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
+    int squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
 
     //to evaluate EC incrementally
     bool needSec;

@@ -48,6 +48,7 @@ public:
     void writeEdgeList(Graph const * G1, Graph const * G2, ostream& edgeListStream) const;
 
     uint numAlignedEdges(const Graph& G1, const Graph& G2) const;
+    uint numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const;
 
     //common subgraph: graph with same nodes as G1, but with only the edges preserved by A
     Graph commonSubgraph(const Graph& G1, const Graph& G2) const;
