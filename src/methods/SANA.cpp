@@ -130,6 +130,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	s3Weight = MC->getWeight("s3");
 	secWeight = MC->getWeight("sec");
         mecWeight = MC->getWeight("mec");
+        sesWeight = MC->getWeight("ses");
 	try {
 		wecWeight = MC->getWeight("wec");
 	} catch(...) {
@@ -165,6 +166,8 @@ SANA::SANA(Graph* G1, Graph* G2,
 	//to evaluate EC incrementally
 	needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0 or mecWeight > 0;
 
+        // to evaluate SES incrementally
+	needSquaredAligEdges = sesWeight > 0;
 
 	//to evaluate S3 incrementally
 	needInducedEdges = s3Weight > 0;
@@ -427,6 +430,10 @@ void SANA::initDataStructures(const Alignment& startA) {
 		aligEdges = startA.numAlignedEdges(*G1, *G2);
 	}
 
+	if (needSquaredAligEdges) {
+		squaredAligEdges = startA.numSquaredAlignedEdges(*G1, *G2);
+	}
+
 	if (needInducedEdges) {
 		inducedEdges = G2->numNodeInducedSubgraphEdges(A);
 	}
@@ -545,6 +552,11 @@ void SANA::performChange() {
 	if (needAligEdges or needSec) {
 		newAligEdges = aligEdges + aligEdgesIncChangeOp(source, oldTarget, newTarget);
 	}
+        
+        double newSquaredAligEdges = -1;
+        if (needSquaredAligEdges) {
+            newSquaredAligEdges = squaredAligEdges + squaredAligEdgesIncChangeOp(source, oldTarget, newTarget);
+        }
 
 	int newInducedEdges = -1; //dummy initialization to shut compiler warnings
 	if (needInducedEdges) {
@@ -575,7 +587,7 @@ void SANA::performChange() {
 	}	
 	
 	double newCurrentScore = 0;
-	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum);
+	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
 
 	if (makeChange) {
 		A[source] = newTarget;
@@ -583,6 +595,7 @@ void SANA::performChange() {
 		assignedNodesG2[oldTarget] = false;
 		assignedNodesG2[newTarget] = true;
 		aligEdges = newAligEdges;
+		squaredAligEdges = newSquaredAligEdges;
 		inducedEdges = newInducedEdges;
 		localScoreSum = newLocalScoreSum;
     for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
@@ -591,7 +604,6 @@ void SANA::performChange() {
         ewecSum = newEwecSum;
 		ncSum = newNcSum;
 		currentScore = newCurrentScore;
-	}
 }
 
 void SANA::performSwap() {
@@ -620,6 +632,11 @@ void SANA::performSwap() {
 		newAligEdges = aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2);
 	}
 
+        double newSquaredAligEdges = -1;
+        if (needSquaredAligEdges) {
+            newSquaredAligEdges = squaredAligEdges + squaredAligEdgesIncSwapOp(source1, source2, target1, target2);
+        }
+
 	double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
   map<string, double> newLocalScoreSumMap(localScoreSumMap);
 	if (needLocal) {
@@ -644,7 +661,7 @@ void SANA::performSwap() {
 		newNcSum = ncSum + ncIncSwapOp(source1, source2, target1, target2);
 	}
 	double newCurrentScore = 0;
-	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum);
+	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
 
 	if (makeChange) {
 		A[source1] = target2;
@@ -660,7 +677,7 @@ void SANA::performSwap() {
 	}
 }
 
-double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum) {
+double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges) {
 	bool makeChange = false;
 	bool wasBadMove = false;
     double badProbability = 0;
@@ -674,6 +691,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
 #ifdef WEIGHTED
 	newCurrentScore += mecWeight * (newAligEdges/(g1WeightedEdges+g2WeightedEdges));
+	newCurrentScore += sesWeight * newSquaredAligEdges;
 #endif
 
 		energyInc = newCurrentScore-currentScore;
@@ -785,7 +803,7 @@ int SANA::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget
 	int res = 0;
 	for (uint i = 0; i < G1AdjLists[source].size(); i++) {
 		ushort neighbor = G1AdjLists[source][i];
-		res -= G2AdjMatrix[oldTarget][A[neighbor]];
+		res -= (G1AdjMatrix[source][neighbor] + G2AdjMatrix[oldTarget][A[neighbor]]);
 		res += G2AdjMatrix[newTarget][A[neighbor]];
 	}
 	return res;
@@ -809,6 +827,35 @@ int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ush
 #else
 	res += 2*(G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
 #endif
+	return res;
+}
+
+int SANA::squaredAligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+	int res = 0;
+	for (uint i = 0; i < G1AdjLists[source].size(); i++) {
+		ushort neighbor = G1AdjLists[source][i];
+                // Account for ushort edges? Or assume smaller graph is edge value 1?
+                res -= 2 * (G2AdjMatrix[oldTarget][A[neighbor]] + 1) - 1; 
+                res += 2 * (G2AdjMatrix[newTarget][A[neighbor]] + 1) + 1; 
+	}
+	return res;
+}
+
+int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
+	int res = 0;
+	for (uint i = 0; i < G1AdjLists[source1].size(); i++) {
+		ushort neighbor = G1AdjLists[source1][i];
+                res -= 2 * (G2AdjMatrix[target1][A[neighbor]] + 1) - 1; 
+                res += 2 * (G2AdjMatrix[target2][A[neighbor]] + 1) + 1; 
+	}
+	for (uint i = 0; i < G1AdjLists[source2].size(); i++) {
+		ushort neighbor = G1AdjLists[source2][i];
+                res -= 2 * (G2AdjMatrix[target2][A[neighbor]] + 1) - 1; 
+                res += 2 * (G2AdjMatrix[target1][A[neighbor]] + 1) + 1; 
+	}
+        // How to do for squared?
+	// address case swapping between adjacent nodes with adjacent images:
+	// res += ((-1 << 1) & (G1AdjMatrix[source1][source2] + G2AdjMatrix[target1][target2]));
 	return res;
 }
 

@@ -233,6 +233,24 @@ uint Alignment::numAlignedEdges(const Graph& G1, const Graph& G2) const {
 	return count;
 }
 
+uint Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
+	vector<vector<ushort> > G1EdgeList;
+	G1.getEdgeList(G1EdgeList);
+#ifdef WEIGHTED
+        vector<vector<ushort> > G2AdjMatrix;
+#else
+	vector<vector<bool> > G2AdjMatrix;
+#endif
+	G2.getAdjMatrix(G2AdjMatrix);
+
+	uint count = 0;
+	for (const auto& edge: G1EdgeList) {
+		ushort node1 = edge[0], node2 = edge[1];
+		count += pow((G2AdjMatrix[A[node1]][A[node2]] + 1), 2);
+	}
+	return count;
+}
+
 Graph Alignment::commonSubgraph(const Graph& G1, const Graph& G2) const {
 	uint n = G1.getNumNodes();
 
