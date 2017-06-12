@@ -604,6 +604,7 @@ void SANA::performChange() {
         ewecSum = newEwecSum;
 		ncSum = newNcSum;
 		currentScore = newCurrentScore;
+    } 
 }
 
 void SANA::performSwap() {
