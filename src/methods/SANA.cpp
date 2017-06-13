@@ -381,7 +381,7 @@ void SANA::enableRestartScheme(double minutesNewAlignments, uint iterationsPerSt
 }
 
 double SANA::temperatureFunction(double iter, double TInitial, double TDecay) {
-	// if( (int)iter % (int)iterationsPerStep/30 == 0)
+	if( (int)iter % (int)iterationsPerStep/6 == 0)
 		elapsedEstimate = timer.elapsed();
 	double fraction = (elapsedEstimate / (minutes * 60));
 	return TInitial * (constantTemp ? 1 : exp(-TDecay*fraction));
