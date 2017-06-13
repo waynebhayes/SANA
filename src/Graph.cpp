@@ -746,7 +746,12 @@ vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
     string gdvsFileName = autogenFilesFolder() + name + "_gdv"+oss.str()+".bin";
     uint n = getNumNodes();
     if (fileExists(gdvsFileName)) {
-        vector<vector<uint> > gdvs(n, vector<uint> (15));
+        vector<vector<uint> > gdvs;
+        if(maxGraphletSize == 4){
+            gdvs.assign(n, vector<uint>(15));
+        }else{//it is either 4 or 5
+            gdvs.assign(n, vector<uint>(73));
+        }
         readMatrixFromBinaryFile(gdvs, gdvsFileName);
         return gdvs;
     }
