@@ -803,7 +803,7 @@ int SANA::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget
 	int res = 0;
 	for (uint i = 0; i < G1AdjLists[source].size(); i++) {
 		ushort neighbor = G1AdjLists[source][i];
-		res -= (G1AdjMatrix[source][neighbor] + G2AdjMatrix[oldTarget][A[neighbor]]);
+		res -= G2AdjMatrix[oldTarget][A[neighbor]];
 		res += G2AdjMatrix[newTarget][A[neighbor]];
 	}
 	return res;
