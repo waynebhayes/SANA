@@ -1001,7 +1001,7 @@ void SANA::trackProgress(long long unsigned int i) {
 	}
 	if (checkScores) {
 		double realScore = eval(Al);
-		if (realScore-currentScore > 0.000001) {
+		if (fabs(realScore-currentScore) > 0.000001) {
 			cerr << "internal error: incrementally computed score (" << currentScore;
 			cerr << ") is not correct (" << realScore << ")" << endl;
 		}
