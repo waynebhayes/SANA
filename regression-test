@@ -125,12 +125,15 @@ done
 
 if [ ! -z "$CompareFile" ]; then
     BaseAverages=`cat $OutputFile | grep "Average" | grep -o "[0-9]\+.[0-9]\+"`
+    Names=`cat $OutputFile | grep "Average" | awk '{print $1}'`
     NewAverages=`cat $CompareFile | grep "Average" | grep -o "[0-9]\+.[0-9]\+"`
     for i in $(seq `echo $BaseAverages | wc -w`);do
         baseItem=`echo -e $BaseAverages | awk '{print $'$i'}'`
         newItem=`echo -e $NewAverages | awk '{print $'$i'}'`
-        errorDif=`parse "ABS(($baseItem - $newItem)/$baseItem)"`
-        echo $errorDif
+        name=`echo -e $Names | awk '{print $'$i'}'`
+        errorDif=`parse "($baseItem - $newItem)/$baseItem"`
+        echo $name $errorDif
+        errorDif=`parse "ABS($errorDif)"`
         if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
             REGRESSION_FAILED="true"
         fi
