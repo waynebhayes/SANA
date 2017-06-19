@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+PATH="$PATH:`pwd`/scripts"
+export PATH
+
 OutputFile="regression_test.result"
 ErrorMargin="0.05"
 OutputDir="regression_out"
@@ -126,7 +129,7 @@ if [ ! -z "$CompareFile" ]; then
     for i in $(seq `echo $BaseAverages | wc -w`);do
         baseItem=`echo -e $BaseAverages | awk '{print $'$i'}'`
         newItem=`echo -e $NewAverages | awk '{print $'$i'}'`
-        errorDif=`echo "($baseItem - $newItem)/$baseItem" | bc -l`
+        errorDif=`parse "ABS(($baseItem - $newItem)/$baseItem)"`
         echo $errorDif
         if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
             REGRESSION_FAILED="true"
