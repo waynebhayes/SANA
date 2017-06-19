@@ -88,7 +88,7 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
 void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
   MeasureCombination const & M, Method * const method, string & localMeasureFileName) {
   if(M.getSumLocalWeight() <= 0) { //This is how needLocal is calculated in SANA.cpp 
-    cout << "No local measures provided, not writing local scores file." << endl;
+    cerr << "No local measures provided, not writing local scores file." << endl;
     return;
   }
   ofstream outfile;
