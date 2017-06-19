@@ -149,9 +149,9 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 		G2.setMaxGraphletSize(maxGraphletSize);
 		//std::cout<<"\nSetting max graphlet size to: "<<maxGraphletSize<<endl;
 		if (maxGraphletSize == 5 || maxGraphletSize == 4)
-			std::cout<<"Setting maximum graphlet size to "<<maxGraphletSize<<". . ."<<endl;
+			std::cerr<<"Setting maximum graphlet size to "<<maxGraphletSize<<". . ."<<endl;
 		else{
-			std::cout<<"ERROR: Invalid graphlet size: "<<maxGraphletSize<<"\nShould be 4 or 5\n";
+			std::cerr<<"ERROR: Invalid graphlet size: "<<maxGraphletSize<<"\nShould be 4 or 5\n";
 			exit(0);
 		}
 	}
