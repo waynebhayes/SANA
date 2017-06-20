@@ -74,7 +74,7 @@ for i in $(seq 1 $Networks_count);do
     for j in $(seq $((i + 1)) $Networks_count); do
         Network1=`echo -e $Biogrid_network | awk '{print $'$i'}'`
         Network2=`echo -e $Biogrid_network | awk '{print $'$j'}'`
-        echo "Running $Network1-$Network2" 
+        echo "Running $Network1-$Network2" >&2
         echo "./sana -g1 $Network1 -g2 $Network2 -o '$OutputDir/$Network1-$Network2' &> '$OutputDir/$Network1-$Network2.progress'"
     done
 done | parallel 8  # run in parallel on jenkins
