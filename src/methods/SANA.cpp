@@ -1004,7 +1004,8 @@ void SANA::trackProgress(long long unsigned int i) {
 		if (fabs(realScore-currentScore) > 0.000001) {
 			cerr << "internal error: incrementally computed score (" << currentScore;
 			cerr << ") is not correct (" << realScore << ")" << endl;
-		}
+		    currentScore = realScore;
+        }
 	}
 	if (dynamic_tdecay) { // Code for estimating dynamic TDecay 
 		//The dynamic method uses linear interpolation to obtain an 
