@@ -77,7 +77,7 @@ for i in $(seq 1 $Networks_count);do
         echo "Running $Network1-$Network2" 
         echo "./sana -g1 $Network1 -g2 $Network2 -o '$OutputDir/$Network1-$Network2' &> '$OutputDir/$Network1-$Network2.progress'"
     done
-done | parallel 6  # run in parallel on jenkins
+done | parallel 8  # run in parallel on jenkins
 
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
