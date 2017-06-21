@@ -137,6 +137,7 @@ if [ ! -z "$CompareFile" ]; then
         errorDif=`parse "ABS($errorDif)"`
         if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
             REGRESSION_FAILED="true"
+	    echo "$name failed error margin: ($baseItem - $newItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
         fi
     done
 
@@ -154,7 +155,7 @@ if [ ! -z "$CompareFile" ]; then
 	    sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null
 	    if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
 		REGRESSION_FAILED=true
-		echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file"
+		echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file" >&2
 	    fi
 	else
 	    echo "WARNING (temporary hack): one of the following is empty: Network1 = '$Network1', Network2 = '$Network2'" >&2
