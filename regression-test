@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+PATH="$PATH:`pwd`/scripts"
+export PATH
+
 OutputFile="regression_test.result"
 ErrorMargin="0.05"
 OutputDir="regression_out"
@@ -53,8 +56,9 @@ if [ -f $OutpuFile ]; then
     > "$OutputFile"
 fi
 
+# Note Jenkins already makes SANA
 echo "Making SANA"
-if ! make clean all &> /dev/null; then
+if ! make &> /dev/null; then
     echo "Make failed for SANA"
     exit 1
 fi
@@ -70,10 +74,10 @@ for i in $(seq 1 $Networks_count);do
     for j in $(seq $((i + 1)) $Networks_count); do
         Network1=`echo -e $Biogrid_network | awk '{print $'$i'}'`
         Network2=`echo -e $Biogrid_network | awk '{print $'$j'}'`
-        echo "Running $Network1-$Network2" 
-        ./sana -g1 $Network1 -g2 $Network2 -o "$OutputDir/$Network1-$Network2" &> "$OutputDir/$Network1-$Network2.progress"
+        echo "Running $Network1-$Network2" >&2
+        echo "./sana -g1 $Network1 -g2 $Network2 -o '$OutputDir/$Network1-$Network2' &> '$OutputDir/$Network1-$Network2.progress'"
     done
-done
+done | parallel 8  # run in parallel on jenkins
 
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
@@ -122,14 +126,18 @@ done
 
 if [ ! -z "$CompareFile" ]; then
     BaseAverages=`cat $OutputFile | grep "Average" | grep -o "[0-9]\+.[0-9]\+"`
+    Names=`cat $OutputFile | grep "Average" | awk '{print $1}'`
     NewAverages=`cat $CompareFile | grep "Average" | grep -o "[0-9]\+.[0-9]\+"`
     for i in $(seq `echo $BaseAverages | wc -w`);do
         baseItem=`echo -e $BaseAverages | awk '{print $'$i'}'`
         newItem=`echo -e $NewAverages | awk '{print $'$i'}'`
-        errorDif=`echo "($baseItem - $newItem)/$baseItem" | bc -l`
-        echo $errorDif
+        name=`echo -e $Names | awk '{print $'$i'}'`
+        errorDif=`parse "($baseItem - $newItem)/$baseItem"`
+        echo $name $errorDif
+        errorDif=`parse "ABS($errorDif)"`
         if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
             REGRESSION_FAILED="true"
+	    echo "$name failed error margin: ($baseItem - $newItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
         fi
     done
 
@@ -142,12 +150,16 @@ if [ ! -z "$CompareFile" ]; then
         select2=`expr $offset + $select`
         Network1=`echo -e $Biogrid_network | awk '{print $'$select'}'`
         Network2=`echo -e $Biogrid_network | awk '{print $'$select2'}'`
-        paste <(cat ./networks/$Network1/${Network1}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) <(cat ./networks/$Network2/${Network2}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) > $OutputDir/$Network1-$Network2.locking
-        sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null
-        if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
-            REGRESSION_FAILED=true
-            echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file"
-        fi
+	if [ -n "$Network1" -a -n "$Network2" ]; then
+	    paste <(cat ./networks/$Network1/${Network1}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) <(cat ./networks/$Network2/${Network2}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) > $OutputDir/$Network1-$Network2.locking
+	    sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null
+	    if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
+		REGRESSION_FAILED=true
+		echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file" >&2
+	    fi
+	else
+	    echo "WARNING (temporary hack): one of the following is empty: Network1 = '$Network1', Network2 = '$Network2'" >&2
+	fi
     done
 
     if [ "$REGRESSION_FAILED" = true ];then
