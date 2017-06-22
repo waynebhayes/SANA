@@ -211,8 +211,9 @@ private:
     bool needEwec;
     ExternalWeightedEdgeConservation* ewec;
     double ewecSum;
-    double EWECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget, const Alignment& A);
-    double EWECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2, const Alignment& A);
+    double EWECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
+    double EWECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+    double EWECSimCombo(ushort source, ushort target);
 
     //to evaluate local measures incrementally
     bool needLocal;
