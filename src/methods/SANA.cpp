@@ -578,7 +578,7 @@ void SANA::performChange() {
 
     double newEwecSum = -1;
     if (needEwec) {
-        newEwecSum = ewecSum + EWECIncChangeOp(source, oldTarget, newTarget, A);
+        newEwecSum = ewecSum + EWECIncChangeOp(source, oldTarget, newTarget);
     }
 
 	double newNcSum = -1;
@@ -653,7 +653,7 @@ void SANA::performSwap() {
 	
     double newEwecSum = -1;
 	if (needEwec) {
-		newEwecSum = ewecSum + EWECIncSwapOp(source1, source2, target1, target2, A);
+		newEwecSum = ewecSum + EWECIncSwapOp(source1, source2, target1, target2);
 	}
 
 	
@@ -938,22 +938,35 @@ double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort
 	return res;
 }
 
-double SANA::EWECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget, const Alignment& A){
+double SANA::EWECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget){
     //return ewec->changeOp(source, oldTarget, newTarget, A);
     double score = 0;
-    score = (ewec->simScore(source, newTarget, A)) - (ewec->simScore(source, oldTarget, A));
+    score = (EWECSimCombo(source, newTarget)) - (EWECSimCombo(source, oldTarget));
     //score *= -1;
     return score;
 } 
 
-double SANA::EWECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2, const Alignment& A){
+double SANA::EWECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2){
     //return ewec->swapOp(source1, source2, target1, target2, A);
     double score = 0;
-    score = (ewec->simScore(source1, target2, A)) + (ewec->simScore(source2, target1, A)) - (ewec->simScore(source1, target1, A)) - (ewec->simScore(source2, target2, A));
+    score = (EWECSimCombo(source1, target2)) + (EWECSimCombo(source2, target1)) - (EWECSimCombo(source1, target1)) - (EWECSimCombo(source2, target2));
     //score *= -1;
     return score;
 }
 
+double SANA::EWECSimCombo(ushort source, ushort target){
+    double score = 0;
+    for (uint i = 0; i < G1AdjLists[source].size(); ++i) {
+        ushort neighbor = G1AdjLists[source][i];
+        if (G2AdjMatrix[target][A[neighbor]]) {
+            int e1 = ewec->getRowIndex(source, neighbor);
+            int e2 = ewec->getColIndex(target, A[neighbor]);
+            score+=ewec->getScore(e2,e1);
+        }
+    }
+    score /= (2*G1->getNumEdges()); //normalization
+    return score;
+}
 
 int SANA::ncIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
 	int change = 0;

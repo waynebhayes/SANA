@@ -11,9 +11,6 @@ CompareFile=""
 
 while getopts "b:e:o:c:" opt; do
     case $opt in
-    b)
-        BaseRegressionFile=$OPTARG
-        ;;
     e)
         if [[ $OPTARG =~ "^[0.9]*.[0.9]\+$" ]]; then
             ErrorMargin=$OPTARG
@@ -44,23 +41,12 @@ if [ -z $CompareFile ] && [ ! -f $CompareFile ]; then
     exit 1
 fi
 
-abs(){
-    [ `echo "$1 < 0" | bc -l` -eq 1 ] && echo "-1 * $1" | bc || echo $1
-}
-
 if [ ! -d "$OutputDir" ]; then
     mkdir $OutputDir
 fi
 
 if [ -f $OutpuFile ]; then
     > "$OutputFile"
-fi
-
-# Note Jenkins already makes SANA
-echo "Making SANA"
-if ! make &> /dev/null; then
-    echo "Make failed for SANA"
-    exit 1
 fi
 
 Networks_nodes=""
@@ -74,8 +60,7 @@ for i in $(seq 1 $Networks_count);do
     for j in $(seq $((i + 1)) $Networks_count); do
         Network1=`echo -e $Biogrid_network | awk '{print $'$i'}'`
         Network2=`echo -e $Biogrid_network | awk '{print $'$j'}'`
-        echo "Running $Network1-$Network2" >&2
-        echo "./sana -g1 $Network1 -g2 $Network2 -o '$OutputDir/$Network1-$Network2' &> '$OutputDir/$Network1-$Network2.progress'"
+        echo "echo Running $Network1-$Network2; ./sana -g1 $Network1 -g2 $Network2 -o '$OutputDir/$Network1-$Network2' &> '$OutputDir/$Network1-$Network2.progress'"
     done
 done | parallel 8  # run in parallel on jenkins
 
@@ -142,24 +127,22 @@ if [ ! -z "$CompareFile" ]; then
     done
 
     echo "Checking SANA Locking Mechanism" >> $OutputFile
-    RANDOM=1
     for i in `seq 4`; do
-        offset=`shuf -i 1-7 -n 1`
-        max=`expr 8 - $offset`
-        select=`shuf -i "1-$offset" -n 1`
-        select2=`expr $offset + $select`
+        random=`shuf -i "1-$Networks_count" -n 2 | sort -n`
+        select=`echo $random | tr "\n" " " | awk '{print $1}'`
+        select2=`echo $random | tr "\n" " " | awk '{print $2}'`
         Network1=`echo -e $Biogrid_network | awk '{print $'$select'}'`
         Network2=`echo -e $Biogrid_network | awk '{print $'$select2'}'`
-	if [ -n "$Network1" -a -n "$Network2" ]; then
-	    paste <(cat ./networks/$Network1/${Network1}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) <(cat ./networks/$Network2/${Network2}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) > $OutputDir/$Network1-$Network2.locking
-	    sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null
-	    if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
-		REGRESSION_FAILED=true
-		echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file" >&2
-	    fi
-	else
-	    echo "WARNING (temporary hack): one of the following is empty: Network1 = '$Network1', Network2 = '$Network2'" >&2
-	fi
+        if [ -n "$Network1" -a -n "$Network2" ]; then
+            paste <(cat ./networks/$Network1/${Network1}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) <(cat ./networks/$Network2/${Network2}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) > $OutputDir/$Network1-$Network2.locking
+            ./sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null
+            if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
+            REGRESSION_FAILED=true
+            echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file" >&2
+            fi
+        else
+            echo "WARNING (temporary hack): one of the following is empty: Network1 = '$Network1', Network2 = '$Network2'" >&2
+        fi
     done
 
     if [ "$REGRESSION_FAILED" = true ];then

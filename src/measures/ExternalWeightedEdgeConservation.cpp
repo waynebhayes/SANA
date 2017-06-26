@@ -1,6 +1,7 @@
 #include "ExternalWeightedEdgeConservation.hpp"
 #include <sstream>
 #include <fstream>
+#include <algorithm>
 
 ExternalWeightedEdgeConservation::ExternalWeightedEdgeConservation(Graph* G1, Graph* G2, std::string scoresFile) : Measure(G1, G2, "ewec"){
     loadMatrix(scoresFile);
@@ -45,6 +46,11 @@ void ExternalWeightedEdgeConservation::addEdgeToCol(std::string e, int ind){
     std::string n1;
     std::string n2;
     breakEdge(e, n1, n2);
+    if(std::distance(nodeNamesG2.begin(), std::find(nodeNamesG2.begin(), nodeNamesG2.end(), n1)) > std::distance(nodeNamesG2.begin(), std::find(nodeNamesG2.begin(), nodeNamesG2.end(), n2))){
+        string n3 = n1;
+        n1 = n2;
+        n2 = n3;
+    }
     colIndex[n1][n2] = ind;
 }
 
@@ -52,6 +58,11 @@ void ExternalWeightedEdgeConservation::addEdgeToRow(std::string e, int ind){
     std::string n1;
     std::string n2;
     breakEdge(e, n1, n2);
+    if(std::distance(nodeNamesG1.begin(), std::find(nodeNamesG1.begin(), nodeNamesG1.end(), n1)) > std::distance(nodeNamesG1.begin(), std::find(nodeNamesG1.begin(), nodeNamesG1.end(), n2))){
+        string n3 = n1;
+        n1 = n2;
+        n2 = n3;
+    }
     rowIndex[n1][n2] = ind;
 }
 
@@ -129,38 +140,29 @@ int ExternalWeightedEdgeConservation::getRowIndex(std::string n1, std::string n2
 }
 
 int ExternalWeightedEdgeConservation::getColIndex(ushort n1, ushort n2){
+    bool orderCorrect = n1 < n2;
+    if(!orderCorrect){
+        ushort n3 = n1;
+        n1 = n2;
+        n2 = n3;
+    }
     std::string n1s = nodeNamesG2[n1], n2s = nodeNamesG2[n2];
-    if(colIndex.count(n1s)){
-        if(colIndex[n1s].count(n2s)){
-            return colIndex[n1s][n2s];
-        }
-    }
-    if(colIndex.count(n2s)){
-        if(colIndex[n2s].count(n1s)){
-            return colIndex[n2s][n1s];
-        }
-    }
-    return -1;
+    return colIndex[n1s][n2s];
 }
 
 int ExternalWeightedEdgeConservation::getRowIndex(ushort n1, ushort n2){
+    bool orderCorrect = n1 < n2;
+    if(!orderCorrect){
+        ushort n3 = n1;
+        n1 = n2;
+        n2 = n3;
+    }
     std::string n1s = nodeNamesG1[n1], n2s = nodeNamesG1[n2];
-    if(rowIndex.count(n1s)){
-        if(rowIndex[n1s].count(n2s)){
-            return rowIndex[n1s][n2s];
-        }
-    }
-    if(rowIndex.count(n2s)){
-        if(rowIndex[n2s].count(n1s)){
-            return rowIndex[n2s][n1s];
-        }
-    }
-    return -1;
+    return rowIndex[n1s][n2s];
 }
-
+/* Deprecated, do not use.
 double ExternalWeightedEdgeConservation::simScore(ushort source, ushort target, const Alignment& A){
     double score = 0;
-
     for (uint i = 0; i < adjListG1[source].size(); ++i) {
         ushort neighbor = adjListG1[source][i];
         if (adjMatrixG2[target][A[neighbor]]) {
@@ -169,7 +171,6 @@ double ExternalWeightedEdgeConservation::simScore(ushort source, ushort target, 
             score+=getScore(e2,e1);
         }   
     }
-
     score /= (2*G1->getNumEdges()); //normalization
     return score;
 }
@@ -244,4 +245,4 @@ double ExternalWeightedEdgeConservation::swapOp(ushort source1, ushort source2, 
 
     score /= (2*G1->getNumEdges());
     return score;
-}
+}*/ 
