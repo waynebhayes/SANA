@@ -11,7 +11,8 @@ using namespace std;
 extern vector<string> stringArgs; //We load the argument names of supportedArguments (Declared below) into stringArgs, doubleArgs, boolArgs, and vectorArgs.
 extern vector<string> doubleArgs; //Later, the information stored into these four data types get loaded into a map declared and defined in ArgumentParser.hpp/.cpp
 extern vector<string> boolArgs;
-extern vector<string> vectorArgs;
+extern vector<string> doubleVectorArgs;
+extern vector<string> stringVectorArgs;
 extern vector<array<string, 6>> supportedArguments; //Initially stores information on options/arguments in SANA.
 
 void validateAndAddArguments(); //Checks to make sure fields inside supportedArguments are properly filled out and adds them to the four Args datatypes.

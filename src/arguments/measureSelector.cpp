@@ -95,24 +95,37 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 }
 
 double totalGenericWeight(ArgumentParser& args) {
-    vector<string> optimizableMeasures = {
-        "ec","s3","sec","wec","nodec","noded","edgec","edged", "esim", "go","importance",
+    vector<string> optimizableDoubleMeasures = {
+        "ec","s3","sec","wec","nodec","noded","edgec","edged", "go","importance",
         "sequence","graphlet","graphletlgraal", "graphletcosine", "spc", "nc","mec", "ewec", "ses"
     };
     double total = 0;
-    for (uint i = 0; i < optimizableMeasures.size(); i++) {
-        total += args.doubles["-"+optimizableMeasures[i]];
+    for (uint i = 0; i < optimizableDoubleMeasures.size(); i++) 
+        total += args.doubles["-"+optimizableDoubleMeasures[i]];
+
+    vector<string> optimizableDoubleVectorsMeasures = {
+        "esim"
+    };
+
+    for (uint i = 0; i < optimizableDoubleVectorsMeasures.size(); i++){
+        for (auto j : args.doubleVectors["-" + optimizableDoubleVectorsMeasures[i] ])
+            total += j;
     }
     return total;
 }
 
-double getWeight(string measureName, Graph& G1, Graph& G2, ArgumentParser& args) {
+double getWeight(string measureName, Graph& G1, Graph& G2, ArgumentParser& args, int index=0) {
     string method = args.strings["-method"];
     if (method == "random") return 0;
 
     string objFunType = args.strings["-objfuntype"];
     if (objFunType == "generic") {
-        double weight = args.doubles["-"+measureName];
+        double weight;
+        if (args.doubles.count("-" + measureName)){
+            weight = args.doubles["-"+measureName];
+        }
+        else
+            weight = args.doubleVectors["-" + measureName][index];
         return weight/totalGenericWeight(args);
     } else if (objFunType == "alpha" or objFunType == "beta") {
         double alpha = getAlpha(G1, G2, args);
@@ -143,8 +156,12 @@ bool shouldInit(string measureName, Graph& G1, Graph& G2, ArgumentParser& args) 
     bool detailedReport = args.bools["-detailedreport"];
     if (detailedReport) return true;
 
-    double weight = getWeight(measureName, G1, G2, args);
-    if (weight > 0) return true;
+    if (args.doubleVectors.count("-" + measureName))
+        return args.doubleVectors["-" + measureName].size() ? true : false;
+    else if (args.stringVectors.count("-" + measureName))
+        return args.stringVectors["-" + measureName].size() ? true : false;
+    else if (getWeight(measureName, G1, G2, args) > 0)
+        return true;
 
     double wecWeight = getWeight("wec", G1, G2, args);
     string wecNodeSim = args.strings["-wecnodesim"];
@@ -185,7 +202,7 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     //as wec uses one of the local measures
 
     if (shouldInit("nodec", G1, G2, args)) {
-        m = new NodeCount(&G1, &G2, args.vectors["-nodecweights"]);
+        m = new NodeCount(&G1, &G2, args.doubleVectors["-nodecweights"]);
         double nodecWeight = getWeight("nodec", G1, G2, args);
         M.addMeasure(m, nodecWeight);
     }
@@ -197,7 +214,7 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     }
 
     if (shouldInit("edgec", G1, G2, args)) {
-        m = new EdgeCount(&G1, &G2, args.vectors["-edgecweights"]);
+        m = new EdgeCount(&G1, &G2, args.doubleVectors["-edgecweights"]);
         double edgecWeight = getWeight("edgec", G1, G2, args);
         M.addMeasure(m, edgecWeight);
     }
@@ -209,9 +226,20 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     }
 
     if (shouldInit("esim", G1, G2, args)) {
-        m = new ExternalSimMatrix(&G1, &G2, args.strings["-simFile"], args.doubles["-simFormat"]);
-        double esimWeight = getWeight("esim", G1, G2, args);
-        M.addMeasure(m, esimWeight);
+        int n_esim = args.doubleVectors["-esim"].size();
+        int n_simFile = args.stringVectors["-simFile"].size();
+        int n_simFormat = args.doubleVectors["-simFormat"].size();
+
+        if (n_esim != n_simFile || n_simFile != n_simFormat)
+            throw runtime_error("Numbers of arguments passed into -esim does not match -simFile and/oor -simFormat");
+
+        cout << n_esim << '\n';
+        for (int i = 0; i < n_esim; i++){
+            cout << args.stringVectors["-simFile"][i] << ' ' << args.doubleVectors["-simFormat"][i] << endl << flush;
+            m = new ExternalSimMatrix(&G1, &G2, args.stringVectors["-simFile"][i], args.doubleVectors["-simFormat"][i]);
+            double esimWeight = getWeight("esim", G1, G2, args, i);
+            M.addMeasure(m, esimWeight);
+        }
     }
 
     if (shouldInit("ewec", G1, G2, args)) {
@@ -223,7 +251,7 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     if (GoSimilarity::fulfillsPrereqs(&G1, &G2)) {
         if (shouldInit("go", G1, G2, args)) {
             m = new GoSimilarity(&G1, &G2,
-                args.vectors["-goweights"], args.doubles["-gofrac"]);
+                args.doubleVectors["-goweights"], args.doubles["-gofrac"]);
             double goWeight = getWeight("go", G1, G2, args);
             M.addMeasure(m, goWeight);
         }

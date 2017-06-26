@@ -12,15 +12,16 @@ public:
     map<string, string> strings;
     map<string, double> doubles;
     map<string, bool> bools;
-    map<string, vector<double> > vectors;
-
+    map<string, vector<double> > doubleVectors;
+    map<string, vector<string> > stringVectors;
     vector<string> originalArgv; //argv but in vector format
 
     ArgumentParser(
         const vector<string> &defStringArgs,
         const vector<string> &defDoubleArgs,
         const vector<string> &defBoolArgs,
-        const vector<string> &defVectorArgs);
+        const vector<string> &defDoubleVectorArgs,
+        const vector<string> &defStringVectorArgs);
     
     void parseArgs(int argc, char* argv[],
         vector<string> baseValueLines, bool readParamsFromFileInFirstArg);
@@ -32,7 +33,8 @@ private:
         const vector<string> &defStringArgs,
         const vector<string> &defDoubleArgs,
         const vector<string> &defBoolArgs,
-        const vector<string> &defVectorArgs);
+        const vector<string> &defDoubleVectorArgs,
+        const vector<string> &defStringVectorArgs);
 
     void initParsedValues(vector<string> vArg);
 
