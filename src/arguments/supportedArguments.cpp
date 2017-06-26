@@ -5,7 +5,8 @@ using namespace std;
 vector<string> stringArgs;
 vector<string> doubleArgs;
 vector<string> boolArgs;
-vector<string> vectorArgs;
+vector<string> doubleVectorArgs;
+vector<string> stringVectorArgs;
 
 //This file contains every argument supported by SANA contained basically inside an array, each element in the array contains 6 fields.
 //A Description of each field:
@@ -101,7 +102,7 @@ vector<array<string, 6>> supportedArguments = {
 	{ "-noded", "double", "0", "Weight of Node Density", "The weight of the Local Node Density objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-edgec", "double", "0", "Weight of Edge Count", "The weight of the Local Edge Count objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-edged", "double", "0", "Weight of Edge Density", "The weight of the Local Edge Density objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
-	{ "-esim", "double", "0", "External Similarity Weight", "The weight of the external similarity file. Used when \"-objfuntype\" is \"generic\". (Pending changes to SANA, these values may be normalized to be in [0,1] after they're read but before they're used.)", "1" },
+	{ "-esim", "double_vector", "0", "External Similarity Weight", "The weight of the external similarity file. Used when \"-objfuntype\" is \"generic\". (Pending changes to SANA, these values may be normalized to be in [0,1] after they're read but before they're used.)", "1" },
 	{ "-ewec", "double", "0", "External Weighted Edge Similarity", "The weighted of the external edge similarity file.", "1" },
         { "-graphlet", "double", "0", "Weight of Graphlet Similarity.", "The weight of the Graphlet Objective Function as defined in the original GRAAL paper (2010). Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-graphletlgraal", "double", "0", "Weight of Graphlet Similarity (LGRAAL)", "The weight of LGRAAL's objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
@@ -117,13 +118,13 @@ vector<array<string, 6>> supportedArguments = {
 	{ "-wrappedArgs", "string", "", "Wrapper Function Arguments", "Arguments to pass verbatim to wrapped methods.", "0" },
 	{ "-maxDist", "double", "1", "Radial Distance from Node", "When using nodec, edgec, noded, or edged, the radial distance region over which to compute the count/density. Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-gofrac", "double", "1", "Fraction of GO_k Terms to Keep", "Used for GO similarity (\"-go_k\"). It is the fraction of GO term ocurrences corresponding to the least frequent terms to be kept.", "1" },
-	{ "-nodecweights", "vector", "4 .1 .25 .5 .15", "Weights of Node Density Measure", "Weights w of the Node count/density measure. They are automatically scaled to 1.", "1" },
-	{ "-edgecweights", "vector", "4 .1 .25 .5 .15", "Weights of Edge Density Measure", "Weights w of the Edge count/density measure. They are automatically scaled to 1.", "1" },
-	{ "-goweights", "vector", "1 1", "Weight and Measure of GO Measures", "Specifies the maximum GO measure and the weight of each one.", "1" },
+	{ "-nodecweights", "double_vector", "4 .1 .25 .5 .15", "Weights of Node Density Measure", "Weights w of the Node count/density measure. They are automatically scaled to 1.", "1" },
+	{ "-edgecweights", "double_vector", "4 .1 .25 .5 .15", "Weights of Edge Density Measure", "Weights w of the Edge count/density measure. They are automatically scaled to 1.", "1" },
+	{ "-goweights", "double_vector", "1 1", "Weight and Measure of GO Measures", "Specifies the maximum GO measure and the weight of each one.", "1" },
 	{ "-wecnodesim", "string", "graphletlgraal", "Weighted Edge Coverage Node Pair Similarity", "Node pair similarity used to weight the edges in the WEC measure. The edges are weighted by taking the average of the scores of an edge's two ending nodes using some node similarity measure which can be different from the default node sim measure.", "1" },
 	{ "-wavenodesim", "string", "nodec", "Weighted Average Node Pair Similarity", "Node pair similarity to use when emulating WAVE.", "1" },
 	{ "-maxGraphletSize", "double", "", "Maximum Graphlet Size", "Chooses the maximum size of graphlets to use. Saves human_gdv and yeast_gdv files ending with the given maximum graphlet size in order to distinguish between different-sized graphlets (e.g. human_gdv4.txt and yeast_gdv4.txt, for maximum graphlet size of 4).", "0" },
-	{ "-simFile", "string", "", "Similarity File", "Specify an external three columnn (node from G1, node from  G2, similarity) file. These will be given weight according to the -esim argument.", "1" },
+	{ "-simFile", "string_vector", "0", "Similarity File", "Specify an external three columnn (node from G1, node from  G2, similarity) file. These will be given weight according to the -esim argument.", "1" },
         { "-ewecFile", "string", "", "egdvs file", "egdvs output file produced by GREAT", "1"},
         { "-detailedreport", "bool", "false", "Detailed Report", "If false, initialize only basic measures and any measure necessary to run SANA.", "1" },
 	{ "End Further Weight Specification. Combine with \"-method x -objfuntype y\"", "", "banner", "", "", "0" },
@@ -184,7 +185,7 @@ vector<array<string, 6>> supportedArguments = {
 
 	//---------------------------------SIMILARITY----------------------------------------
 	{ "", "", "banner", "", "More options for \"-mode similarity\"", "0" },
-	{ "-simFormat", "double", "1", "Similarity File Format", "Used in Similarity Mode \"-mode similarity\" and with \"-objfuntype -esim\". Allowed values are 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
+	{ "-simFormat", "double_vector", "0", "Similarity File Format", "Used in Similarity Mode \"-mode similarity\" and with \"-objfuntype -esim\". Allowed values are 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
 	{ "End More options for \"-mode similarity\"", "", "banner", "", "", "0" },
 	//-------------------------------END SIMILARITY--------------------------------------
 	
@@ -236,12 +237,12 @@ void validateAndAddArguments(){
 			else if(supportedArguments[i][1] == "double" || supportedArguments[i][1] == "integerD")
 				doubleArgs.push_back(supportedArguments[i][0]);
 
-			else if(supportedArguments[i][1] == "bool")
-                        	boolArgs.push_back(supportedArguments[i][0]);
-
-			else if(supportedArguments[i][1] == "vector")
-                	        vectorArgs.push_back(supportedArguments[i][0]);
-
+            else if(supportedArguments[i][1] == "bool")
+                boolArgs.push_back(supportedArguments[i][0]);
+			else if(supportedArguments[i][1] == "double_vector")
+                doubleVectorArgs.push_back(supportedArguments[i][0]);
+            else if(supportedArguments[i][1] == "string_vector")
+                stringVectorArgs.push_back(supportedArguments[i][0]);
 			else{
 				cerr << "Option: " << supportedArguments[i][0] << " is type " << supportedArguments[i][1] << " which is not supported. Please check to make sure this option has a correct type.";
 				exit(1);
