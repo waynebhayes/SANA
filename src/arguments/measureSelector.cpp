@@ -16,6 +16,7 @@
 #include "../measures/MultiEdgeCorrectness.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 #include "../measures/SquaredEdgeScore.hpp"
+#include "../measures/TriangleCorrectness.hpp"
 
 #include "../measures/localMeasures/NodeCount.hpp"
 #include "../measures/localMeasures/NodeDensity.hpp"
@@ -96,7 +97,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableDoubleMeasures = {
-        "ec","s3","sec","wec","nodec","noded","edgec","edged", "go","importance",
+        "ec","s3","tc","sec","wec","nodec","noded","edgec","edged", "go","importance",
         "sequence","graphlet","graphletlgraal", "graphletcosine", "spc", "nc","mec", "ewec", "ses"
     };
     double total = 0;
@@ -197,7 +198,9 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 
     m = new SymmetricEdgeCoverage(&G1, &G2);
     M.addMeasure(m, getWeight("sec", G1, G2, args));
-
+    
+    m = new TriangleCorrectness(&G1, &G2);
+    M.addMeasure(m, getWeight("tc", G1, G2, args));
     //local measures must be initialized before wec,
     //as wec uses one of the local measures
 
