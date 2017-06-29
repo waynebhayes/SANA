@@ -4,7 +4,6 @@ CC = g++
 #CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -D WEIGHTED #-pg -ggdb -Bstatic #-static 
 CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-ggdb #-pg #-ggdb
 
-
 INCLUDES =
 LFLAGS =
 LIBS =

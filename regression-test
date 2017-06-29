@@ -4,6 +4,10 @@ set -e
 PATH="$PATH:`pwd`/scripts"
 export PATH
 
+TMPDIR=/tmp/regression-test$$
+trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
+mkdir $TMPDIR
+
 OutputFile="regression_test.result"
 ErrorMargin="0.05"
 OutputDir="regression_out"
@@ -53,14 +57,15 @@ Networks_nodes=""
 for network in `ls ./networks | grep "^[A-Z][A-Z]"`;do
     Networks_nodes=$Networks_nodes${network}" ""`head ./networks/${network}/${network}.gw | sed -n 5p`""\n"
 done
-Biogrid_network=`echo -e $Networks_nodes | sort -k2 -n | awk '{print $1}'`
+# sort them largest first (sort -nr) since we're going to run them in parallel start the slowest ones first.
+Biogrid_network=`echo -e $Networks_nodes | sort -k2 -nr | awk '{print $1}'`
 Networks_count=`echo $Biogrid_network | wc -w`
 
 for i in $(seq 1 $Networks_count);do
     for j in $(seq $((i + 1)) $Networks_count); do
         Network1=`echo -e $Biogrid_network | awk '{print $'$i'}'`
         Network2=`echo -e $Biogrid_network | awk '{print $'$j'}'`
-        echo "echo Running $Network1-$Network2; ./sana -g1 $Network1 -g2 $Network2 -o '$OutputDir/$Network1-$Network2' &> '$OutputDir/$Network1-$Network2.progress'"
+        echo "echo Running $Network2-$Network1; ./sana -g1 $Network2 -g2 $Network1 -o '$OutputDir/$Network2-$Network1' &> '$OutputDir/$Network2-$Network1.progress'"
     done
 done | parallel 8  # run in parallel on jenkins
 
@@ -71,10 +76,10 @@ for i in $(seq 1 $Networks_count);do
     for j in $(seq $((i + 1)) $Networks_count); do
         Network1=`echo -e $Biogrid_network | awk '{print $'$i'}'`
         Network2=`echo -e $Biogrid_network | awk '{print $'$j'}'`
-        progress="$OutputDir/$Network1-$Network2.progress"
+        progress="$OutputDir/$Network2-$Network1.progress"
         cIt=`grep -o "[0-9]*.[0-9]* iterations" ./$progress | awk '{print $1}'`
         Iterations="$Iterations $cIt"
-        printf "%-30s | %-20s\n" "$Network1-$Network2" "$cIt" >> $OutputFile
+        printf "%-30s | %-20s\n" "$Network2-$Network1" "$cIt" >> $OutputFile
 
     done
 done
@@ -92,10 +97,10 @@ PrintTestScores()
         for j in $(seq $((i + 1)) $Networks_count); do
             Network1=`echo -e $Biogrid_network | awk '{print $'$i'}'`
             Network2=`echo -e $Biogrid_network | awk '{print $'$j'}'`
-            progress="$OutputDir/$Network1-$Network2.out"
+            progress="$OutputDir/$Network2-$Network1.out"
             Score=`grep -o "^$1: 0.[0-9]\+$" ./$progress | awk '{print $2}'`
             Scores=$Scores" "$Score
-            printf "%-30s | %-20s\n" "$Network1-$Network2" "$Score" >> $OutputFile
+            printf "%-30s | %-20s\n" "$Network2-$Network1" "$Score" >> $OutputFile
         done
     done
 
@@ -119,7 +124,7 @@ if [ ! -z "$CompareFile" ]; then
         name=`echo -e $Names | awk '{print $'$i'}'`
         errorDif=`parse "($baseItem - $newItem)/$baseItem"`
         echo $name $errorDif
-        errorDif=`parse "ABS($errorDif)"`
+        errorDif=`parse "ABS($errorDif)" | awk '{printf "%.16f\n",$1}'`
         if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
             REGRESSION_FAILED="true"
 	    echo "$name failed error margin: ($baseItem - $newItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
@@ -127,6 +132,8 @@ if [ ! -z "$CompareFile" ]; then
     done
 
     echo "Checking SANA Locking Mechanism" >> $OutputFile
+    # First create the shuffled list so we can run them in parallel in the next loop.
+    touch $TMPDIR/networks.locking
     for i in `seq 4`; do
         random=`shuf -i "1-$Networks_count" -n 2 | sort -n`
         select=`echo $random | tr "\n" " " | awk '{print $1}'`
@@ -134,15 +141,20 @@ if [ ! -z "$CompareFile" ]; then
         Network1=`echo -e $Biogrid_network | awk '{print $'$select'}'`
         Network2=`echo -e $Biogrid_network | awk '{print $'$select2'}'`
         if [ -n "$Network1" -a -n "$Network2" ]; then
-            paste <(cat ./networks/$Network1/${Network1}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) <(cat ./networks/$Network2/${Network2}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) > $OutputDir/$Network1-$Network2.locking
-            ./sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null
-            if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
-            REGRESSION_FAILED=true
-            echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file" >&2
-            fi
+	    paste <(cat ./networks/$Network1/${Network1}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) <(cat ./networks/$Network2/${Network2}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) > $OutputDir/$Network1-$Network2.locking
+	    echo "$Network1" "$Network2" >> $TMPDIR/networks.locking
         else
             echo "WARNING (temporary hack): one of the following is empty: Network1 = '$Network1', Network2 = '$Network2'" >&2
         fi
+    done
+    cat $TMPDIR/networks.locking | while read Network1 Network2; do
+	echo "./sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null"
+    done | parallel 8
+    cat $TMPDIR/networks.locking | while read Network1 Network2; do
+	if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
+	    REGRESSION_FAILED=true
+	    echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file" >&2
+	fi
     done
 
     if [ "$REGRESSION_FAILED" = true ];then

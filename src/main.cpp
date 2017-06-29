@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
 
     validateAndAddArguments();
 
-    ArgumentParser args(stringArgs, doubleArgs, boolArgs, vectorArgs);
+    ArgumentParser args(stringArgs, doubleArgs, boolArgs, doubleVectorArgs, stringVectorArgs);
     args.parseArgs(argc, argv, defaultArguments, true);
 
     system("hostname -f >&2");
