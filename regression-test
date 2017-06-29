@@ -127,6 +127,7 @@ if [ ! -z "$CompareFile" ]; then
     done
 
     echo "Checking SANA Locking Mechanism" >> $OutputFile
+    # First create the shuffled list so we can run them in parallel in the next loop.
     for i in `seq 4`; do
         random=`shuf -i "1-$Networks_count" -n 2 | sort -n`
         select=`echo $random | tr "\n" " " | awk '{print $1}'`
@@ -134,15 +135,20 @@ if [ ! -z "$CompareFile" ]; then
         Network1=`echo -e $Biogrid_network | awk '{print $'$select'}'`
         Network2=`echo -e $Biogrid_network | awk '{print $'$select2'}'`
         if [ -n "$Network1" -a -n "$Network2" ]; then
-            paste <(cat ./networks/$Network1/${Network1}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) <(cat ./networks/$Network2/${Network2}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) > $OutputDir/$Network1-$Network2.locking
-            ./sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null
-            if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
-            REGRESSION_FAILED=true
-            echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file" >&2
-            fi
+	    paste <(cat ./networks/$Network1/${Network1}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) <(cat ./networks/$Network2/${Network2}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) > $OutputDir/$Network1-$Network2.locking
+	    echo "$Network1" "$Network2" >> $TMPDIR/networks.locking
         else
             echo "WARNING (temporary hack): one of the following is empty: Network1 = '$Network1', Network2 = '$Network2'" >&2
         fi
+    done
+    cat $TMPDIR/networks.locking | while read Network1 Network2; do
+	    echo "./sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null"
+    done | parallel 8
+    cat $TMPDIR/networks.locking | while read Network1 Network2; do
+	if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
+	REGRESSION_FAILED=true
+	echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file" >&2
+	fi
     done
 
     if [ "$REGRESSION_FAILED" = true ];then
