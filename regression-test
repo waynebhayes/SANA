@@ -119,7 +119,7 @@ if [ ! -z "$CompareFile" ]; then
         name=`echo -e $Names | awk '{print $'$i'}'`
         errorDif=`parse "($baseItem - $newItem)/$baseItem"`
         echo $name $errorDif
-        errorDif=`parse "ABS($errorDif)"`
+        errorDif=`parse "ABS($errorDif)" | awk '{printf "%.16f\n",$1}'`
         if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
             REGRESSION_FAILED="true"
 	    echo "$name failed error margin: ($baseItem - $newItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
