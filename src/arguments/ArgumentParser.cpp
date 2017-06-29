@@ -10,8 +10,9 @@ ArgumentParser::ArgumentParser(
     const vector<string>& defStringArgs,
     const vector<string>& defDoubleArgs,
     const vector<string>& defBoolArgs,
-    const vector<string>& defVectorArgs) {
-    initDefaultValues(defStringArgs, defDoubleArgs, defBoolArgs, defVectorArgs);
+    const vector<string>& defDoubleVectorArgs,
+    const vector<string>& defStringVectorArgs) {
+    initDefaultValues(defStringArgs, defDoubleArgs, defBoolArgs, defDoubleVectorArgs, defStringVectorArgs);
 
 }
 
@@ -19,7 +20,8 @@ void ArgumentParser::initDefaultValues(
     const vector<string>& defStringArgs,
     const vector<string>& defDoubleArgs,
     const vector<string>& defBoolArgs,
-    const vector<string>& defVectorArgs) {
+    const vector<string>& defDoubleVectorArgs,
+    const vector<string>& defStringVectorArgs) {
 
     for (string s : defStringArgs) {
         strings[s] = "";
@@ -30,9 +32,11 @@ void ArgumentParser::initDefaultValues(
     for (string s : defBoolArgs) {
         bools[s] = false;
     }
-    for (string s : defVectorArgs) {
-        vectors[s] = vector<double> (0);
+    for (string s : defDoubleVectorArgs) {
+        doubleVectors[s] = vector<double> (0);
     }
+    for (string s : defStringVectorArgs)
+        stringVectors[s] = vector<string>(0);
 }
 
 void ArgumentParser::parseArgs(int argc, char* argv[],
@@ -104,20 +108,24 @@ void ArgumentParser::initParsedValues(vector<string> vArg) {
             i++;
         }
         else if(doubles.count(arg)) {
-	    //std::cout<<"Testing...1"<<endl;
             doubles[arg]=stod(vArg[i+1]);
-	    //std::cout<<"THIS IS A DOUBLE: "<<arg<<std::endl;
-	  
             i++;
         }
         else if(bools.count(arg)) bools[arg] = true;
-        else if(vectors.count(arg)) {
+        else if(doubleVectors.count(arg)) {
             int k = stoi(vArg[i+1]);
-            vectors[arg] = vector<double> (0);
+            doubleVectors[arg] = vector<double> (0);
             for (int j = 0; j < k; j++) {
-                vectors[arg].push_back(stod(vArg[i+2+j]));
+                doubleVectors[arg].push_back(stod(vArg[i+2+j]));
             }
-            i = i+2+k-1;
+            i = i+k+1;
+        }
+        else if(stringVectors.count(arg)){
+            int k = stoi(vArg[i+1]);
+            stringVectors[arg] = vector<string>(0);
+            for (int j = 0; j < k; j++)
+                stringVectors[arg].push_back(vArg[i+2+j]);
+            i = i+k+1;
         }
         else {
                 throw runtime_error("Unknown argument: " + arg + ". See the README for the correct syntax");
@@ -148,7 +156,7 @@ void ArgumentParser::writeArguments() {
     }
     cerr << endl;
 
-    for (auto it = vectors.cbegin(); it != vectors.cend(); ++it) {
+    for (auto it = doubleVectors.cbegin(); it != doubleVectors.cend(); ++it) {
         cerr << (*it).first << ": ";
         for (uint i = 0; i < (*it).second.size(); i++)
             cerr << (*it).second[i] << " ";
