@@ -41,15 +41,17 @@ public:
     int order = 0;
 
     //returns the number of iterations until it stagnates when not using temperture
-    long long unsigned int hillClimbingIterations(long long unsigned int idleCountTarget);
-    Alignment hillClimbingAlignment(Alignment startAlignment, long long unsigned int idleCountTarget);
-    Alignment hillClimbingAlignment(long long unsigned int idleCountTarget);
+    long long int hillClimbingIterations(long long int idleCountTarget);
+    Alignment hillClimbingAlignment(Alignment startAlignment, long long int idleCountTarget);
+    Alignment hillClimbingAlignment(long long int idleCountTarget);
 
     //returns an approximation of the the logarithm in base e of the size of the search space
     double searchSpaceSizeLog();
     void prune(string& startAligName);
 
 private:
+    int maxTriangles = 0;
+
     //Temperature Boundaries. Use these after the tinitial has been determined
     double lowerTBound = 0;
     double upperTBound = 0;
@@ -106,7 +108,7 @@ private:
     double SANAtime;
     
     double T;
-    double temperatureFunction(double iter, double TInitial, double TDecay);
+    double temperatureFunction(long long int iter, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double T);
     double trueAcceptingProbability();
     //to compute TInitial automatically
@@ -142,7 +144,7 @@ private:
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A);
-    double scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges);
+    double scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges);
     double ecWeight;
     double s3Weight;
     double wecWeight;
@@ -152,6 +154,7 @@ private:
     double mecWeight;
     double sesWeight;
     double ewecWeight;
+    double TCWeight;
     string score;
 
     //restart scheme
@@ -193,6 +196,11 @@ private:
     int inducedEdges;
     int inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
 
+    bool needTC;
+    double TCSum;
+    double TCIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
+    double TCIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+
     //to evaluate nc incrementally
     bool needNC;
     int ncSum;
@@ -229,15 +237,15 @@ private:
     //other execution options
     bool constantTemp; //tempertare does not decrease as a function of iteration
     bool enableTrackProgress; //shows output periodically
-    void trackProgress(long long unsigned i);
+    void trackProgress(long long int i);
     double avgEnergyInc;
 
 
     //algorithm
     Alignment simpleRun(const Alignment& A, double maxExecutionSeconds,
-        long long unsigned int& iter);
-    Alignment simpleRun(const Alignment& A, long long unsigned int maxExecutionIterations,
-        long long unsigned int& iter);
+        long long int& iter);
+    Alignment simpleRun(const Alignment& A, long long int maxExecutionIterations,
+        long long int& iter);
     double currentScore;
     double energyInc;
     vector<double> sampledProbability;
@@ -256,7 +264,7 @@ private:
 
     double pForTInitial(double TInitial);
     double getPforTInitial(const Alignment& startA, double maxExecutionSeconds,
-        long long unsigned int& iter);
+        long long int& iter);
     double findTInitialByLinearRegression();
     string getFolder();
     string haveFolder();
