@@ -4,6 +4,10 @@ set -e
 PATH="$PATH:`pwd`/scripts"
 export PATH
 
+TMPDIR=/tmp/regression-test$$
+trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
+mkdir $TMPDIR
+
 OutputFile="regression_test.result"
 ErrorMargin="0.05"
 OutputDir="regression_out"
@@ -128,6 +132,7 @@ if [ ! -z "$CompareFile" ]; then
 
     echo "Checking SANA Locking Mechanism" >> $OutputFile
     # First create the shuffled list so we can run them in parallel in the next loop.
+    touch $TMPDIR/networks.locking
     for i in `seq 4`; do
         random=`shuf -i "1-$Networks_count" -n 2 | sort -n`
         select=`echo $random | tr "\n" " " | awk '{print $1}'`
