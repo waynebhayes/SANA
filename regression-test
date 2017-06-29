@@ -8,9 +8,9 @@ TMPDIR=/tmp/regression-test$$
 trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
 
-OutputFile="regression_test.result"
+OutputFile="regression-test.result"
 ErrorMargin="0.05"
-OutputDir="regression_out"
+OutputDir="regression-out"
 CompareFile=""
 
 while getopts "b:e:o:c:" opt; do
@@ -54,7 +54,7 @@ if [ -f $OutpuFile ]; then
 fi
 
 Networks_nodes=""
-for network in `ls ./networks | grep "^[A-Z][A-Z]"`;do
+for network in `ls ./networks | egrep "^(RNorv|SPombe|CEleg|MMus|AThal|DMel|SCere|HSap)"`;do
     Networks_nodes=$Networks_nodes${network}" ""`head ./networks/${network}/${network}.gw | sed -n 5p`""\n"
 done
 # sort them largest first (sort -nr) since we're going to run them in parallel start the slowest ones first.
@@ -67,7 +67,7 @@ for i in $(seq 1 $Networks_count);do
         Network2=`echo -e $Biogrid_network | awk '{print $'$j'}'`
         echo "echo Running $Network2-$Network1; ./sana -g1 $Network2 -g2 $Network1 -o '$OutputDir/$Network2-$Network1' &> '$OutputDir/$Network2-$Network1.progress'"
     done
-done | parallel 8  # run in parallel on jenkins
+done | parallel -s 8  # run in parallel on jenkins
 
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
@@ -149,7 +149,7 @@ if [ ! -z "$CompareFile" ]; then
     done
     cat $TMPDIR/networks.locking | while read Network1 Network2; do
 	echo "./sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null"
-    done | parallel 8
+    done | parallel -s 8
     cat $TMPDIR/networks.locking | while read Network1 Network2; do
 	if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
 	    REGRESSION_FAILED=true
