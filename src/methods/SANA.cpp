@@ -22,6 +22,7 @@
 #include "../measures/SymmetricSubstructureScore.hpp"
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
+#include "../measures/TriangleCorrectness.hpp"
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/SymmetricEdgeCoverage.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
@@ -153,6 +154,12 @@ SANA::SANA(Graph* G1, Graph* G2,
 		ncWeight = 0;
 		trueA = {static_cast<ushort>(G2->getNumNodes()), 1};
 	}
+    try{
+        TCWeight = MC->getWeight("tc");
+    }catch (...){
+        TCWeight = 0;
+    }
+
 	localWeight = MC->getSumLocalWeight();
 
 
@@ -182,7 +189,10 @@ SANA::SANA(Graph* G1, Graph* G2,
 	//to evaluate SEC incrementally
 	needSec = secWeight > 0;
 	
-	
+    //to evaluation TC incrementally
+    needTC = TCWeight > 0;
+
+    
 	if (needWec) {
 		Measure* wec = MC->getMeasure("wec");
 		LocalMeasure* m = ((WeightedEdgeConservation*) wec)->getNodeSimMeasure();
@@ -258,15 +268,15 @@ Alignment SANA::getStartingAlignment(){
 Alignment SANA::run() {
     if (restart) return runRestartPhases();
     else {
-        long long unsigned int iter = 0;
+        long long int iter = 0;
         Alignment* align;
         if(!usingIterations){
             align = new Alignment(simpleRun(getStartingAlignment(), minutes*60, iter));
         }else{
-            align = new Alignment(simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter));
+            align = new Alignment(simpleRun(getStartingAlignment(), ((long long int)(maxIterations))*100000000, iter));
         }
         if (addHillClimbing){
-            return hillClimbingAlignment(*align, (long long unsigned int)(10000000)); //arbitrarily chosen, probably too big.
+            return hillClimbingAlignment(*align, (long long int)(10000000)); //arbitrarily chosen, probably too big.
         }else{
             return *align;
         }
@@ -380,8 +390,8 @@ void SANA::enableRestartScheme(double minutesNewAlignments, uint iterationsPerSt
 	}
 }
 
-double SANA::temperatureFunction(double iter, double TInitial, double TDecay) {
-	if( (int)iter % (int)iterationsPerStep/6 == 0)
+double SANA::temperatureFunction(long long int iter, double TInitial, double TDecay) {
+	if( iter % ((int)iterationsPerStep/6) == 0)
 		elapsedEstimate = timer.elapsed();
 	double fraction = (elapsedEstimate / (minutes * 60));
 	return TInitial * (constantTemp ? 1 : exp(-TDecay*fraction));
@@ -463,6 +473,11 @@ void SANA::initDataStructures(const Alignment& startA) {
 		//cout << "ncSum: " << ncSum << endl;
 	}
     
+    if(needTC){
+        Measure* tc = MC->getMeasure("tc");
+        maxTriangles = ((TriangleCorrectness*)tc)->getMaxTriangles();
+        TCSum = tc->eval(A);
+    }
     iterationsPerformed = 0;
     sampledProbability.clear();
 
@@ -484,7 +499,7 @@ void SANA::setInterruptSignal() {
 }
 
 Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
-		long long unsigned int& iter) {
+		long long int& iter) {
 	initDataStructures(startA);
 	setInterruptSignal();
 
@@ -504,8 +519,8 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
 	return A; //dummy return to shut compiler warning
 }
 
-Alignment SANA::simpleRun(const Alignment& startA, long long unsigned int maxExecutionIterations,
-		long long unsigned int& iter) {
+Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIterations,
+		long long int& iter) {
 
 	initDataStructures(startA);
 
@@ -563,6 +578,11 @@ void SANA::performChange() {
 		newInducedEdges = inducedEdges + inducedEdgesIncChangeOp(source, oldTarget, newTarget);
 	}
 
+    double newTCSum = -1;
+    if(needTC){
+        newTCSum = TCSum + TCIncChangeOp(source, oldTarget, newTarget);
+    }
+
 	double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
   map<string, double> newLocalScoreSumMap(localScoreSumMap);
 	if (needLocal) {
@@ -587,7 +607,7 @@ void SANA::performChange() {
 	}	
 	
 	double newCurrentScore = 0;
-	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
+	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
 
 	if (makeChange) {
 		A[source] = newTarget;
@@ -597,6 +617,7 @@ void SANA::performChange() {
 		aligEdges = newAligEdges;
 		squaredAligEdges = newSquaredAligEdges;
 		inducedEdges = newInducedEdges;
+        TCSum = newTCSum;
 		localScoreSum = newLocalScoreSum;
     for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
       localScoreSumMap[newLocalScoreSumEntry.first] = newLocalScoreSumEntry.second;
@@ -638,6 +659,11 @@ void SANA::performSwap() {
             newSquaredAligEdges = squaredAligEdges + squaredAligEdgesIncSwapOp(source1, source2, target1, target2);
         }
 
+    int newTCSum = -1;
+    if (needTC){
+        newTCSum = TCSum + TCIncSwapOp(source1, source2, target1, target2);
+    }
+
 	double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
   map<string, double> newLocalScoreSumMap(localScoreSumMap);
 	if (needLocal) {
@@ -662,13 +688,14 @@ void SANA::performSwap() {
 		newNcSum = ncSum + ncIncSwapOp(source1, source2, target1, target2);
 	}
 	double newCurrentScore = 0;
-	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
+	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
 
 	if (makeChange) {
 		A[source1] = target2;
 		A[source2] = target1;
 		aligEdges = newAligEdges;
 		localScoreSum = newLocalScoreSum;
+        TCSum = newTCSum;
     for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
       localScoreSumMap[newLocalScoreSumEntry.first] = newLocalScoreSumEntry.second;
 		wecSum = newWecSum;
@@ -678,7 +705,7 @@ void SANA::performSwap() {
 	}
 }
 
-double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges) {
+double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges) {
 	bool makeChange = false;
 	bool wasBadMove = false;
     double badProbability = 0;
@@ -686,7 +713,8 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += ecWeight * (newAligEdges/g1Edges);
 		newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
 		newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
-		newCurrentScore += localWeight * (newLocalScoreSum/n1);
+		newCurrentScore += TCWeight * (newTCSum);
+        newCurrentScore += localWeight * (newLocalScoreSum/n1);
 		newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
         newCurrentScore += ewecWeight * (newEwecSum);
 		newCurrentScore += ncWeight * (newNcSum/trueA.back());
@@ -704,6 +732,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore = 1;
 		newCurrentScore *= ecWeight * (newAligEdges/g1Edges);
 		newCurrentScore *= s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+        newCurrentScore *= TCWeight * (newTCSum);
 		newCurrentScore *= localWeight * (newLocalScoreSum/n1);
 		newCurrentScore *= secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
 		newCurrentScore *= wecWeight * (newWecSum/(2*g1Edges));
@@ -790,7 +819,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc/T);
 	}
 
-    if(wasBadMove && iterationsPerformed % 500 == 0){ //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
+    if(wasBadMove && (iterationsPerformed % 500 == 0/* || (TCWeight > 0 && iterationsPerformed % 25 == 0)*/)){ //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
         if(sampledProbability.size() == 1000){
             sampledProbability.erase(sampledProbability.begin());
         }
@@ -968,6 +997,82 @@ double SANA::EWECSimCombo(ushort source, ushort target){
     return score;
 }
 
+double SANA::TCIncChangeOp(ushort source, ushort oldTarget, ushort newTarget){
+    double deltaTriangles = 0;
+    for(uint i = 0; i < G1AdjLists[source].size(); i++){
+        for(uint j = i+1; j < G1AdjLists[source].size(); j++){
+            ushort neighbor1 = G1AdjLists[source][i];
+            ushort neighbor2 = G1AdjLists[source][j];
+            if(G1AdjMatrix[neighbor1][neighbor2]){
+                //G1 has a triangle
+                //cerr << "G1 has a triangle: (" << source << "," << neighbor1 << "," << neighbor2 << ")" << endl; 
+                if(G2AdjMatrix[oldTarget][A[neighbor1]] and G2AdjMatrix[oldTarget][A[neighbor2]] and G2AdjMatrix[A[neighbor1]][A[neighbor2]]){
+                    //G2 HAD a triangle
+                    //cerr << "G2 HAD a triangle: (" << oldTarget << "," << A[neighbor1] << "," << A[neighbor2] << ")" << endl;
+                    deltaTriangles -= 1;
+                }
+
+                if(G2AdjMatrix[newTarget][A[neighbor1]] and G2AdjMatrix[newTarget][A[neighbor2]] and G2AdjMatrix[A[neighbor1]][A[neighbor2]]){
+                    //G2 GAINS a triangle
+                    //cerr << "G2 GAINS a triangle: (" << newTarget << "," << A[neighbor1] << "," << A[neighbor2] << ")" << endl;
+                    deltaTriangles += 1;
+                }
+            }
+        }
+    }
+    //cerr << deltaTriangles << endl;
+    return ((double)deltaTriangles/maxTriangles);
+}
+
+double SANA::TCIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2){
+    double deltaTriangles = 0;
+    for(uint i = 0; i < G1AdjLists[source1].size(); i++){
+        for(uint j = i+1; j < G1AdjLists[source1].size(); j++){
+            ushort neighbor1 = G1AdjLists[source1][i];
+            ushort neighbor2 = G1AdjLists[source1][j];
+            if(G1AdjMatrix[neighbor1][neighbor2]){
+                //G1 has a triangle 
+                if(G2AdjMatrix[target1][A[neighbor1]] and G2AdjMatrix[target1][A[neighbor2]] and G2AdjMatrix[A[neighbor1]][A[neighbor2]]){
+                    //G2 HAD a triangle
+                    deltaTriangles -= 1;
+                }
+
+                if((G2AdjMatrix[target2][A[neighbor1]] and G2AdjMatrix[target2][A[neighbor2]] and G2AdjMatrix[A[neighbor1]][A[neighbor2]]) 
+                   || (neighbor1 == source2 and G2AdjMatrix[target2][target1] and G2AdjMatrix[target2][A[neighbor2]] and G2AdjMatrix[target1][A[neighbor2]])
+                   || (neighbor2 == source2 and G2AdjMatrix[target2][A[neighbor1]] and G2AdjMatrix[target2][target1] and G2AdjMatrix[A[neighbor1]][target1])){
+                    //G2 GAINS a triangle
+                    deltaTriangles += 1;
+                }
+            }
+        }
+    }
+    for(uint i = 0; i < G1AdjLists[source2].size(); i++){
+        for(uint j = i+1; j < G1AdjLists[source2].size(); j++){
+            ushort neighbor1 = G1AdjLists[source2][i];
+            ushort neighbor2 = G1AdjLists[source2][j];
+            if(G1AdjMatrix[neighbor1][neighbor2]){
+                //G1 has a triangle 
+                if(G2AdjMatrix[target2][A[neighbor1]] and G2AdjMatrix[target2][A[neighbor2]] and G2AdjMatrix[A[neighbor1]][A[neighbor2]]){
+                    //G2 HAD a triangle
+                    deltaTriangles -= 1;
+                }
+
+                if((G2AdjMatrix[target1][A[neighbor1]] and G2AdjMatrix[target1][A[neighbor2]] and G2AdjMatrix[A[neighbor1]][A[neighbor2]])
+                   || (neighbor1 == source1 and G2AdjMatrix[target1][target2] and G2AdjMatrix[target1][A[neighbor2]] and G2AdjMatrix[target2][A[neighbor2]])
+                   || (neighbor2 == source1 and G2AdjMatrix[target1][A[neighbor1]] and G2AdjMatrix[target1][target2] and G2AdjMatrix[A[neighbor1]][target2])){
+                    //G2 GAINS a triangle
+                    deltaTriangles += 1;
+                }
+            }
+        }
+    }
+    //if(deltaTriangles != 0){
+        //cerr << deltaTriangles << endl;
+        //cerr << ((double)deltaTriangles/maxTriangles) << endl;
+    //}
+    return ((double)deltaTriangles/maxTriangles);
+}
+
 int SANA::ncIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
 	int change = 0;
 	if (trueA[source] == oldTarget) change -= 1;
@@ -984,7 +1089,7 @@ int SANA::ncIncSwapOp(ushort source1, ushort source2, ushort target1, ushort tar
 	return change;		
 }
 
-void SANA::trackProgress(long long unsigned int i) {
+void SANA::trackProgress(long long int i) {
 	if (not enableTrackProgress) return;
 	bool printDetails = false;
 	bool printScores = false;
@@ -1062,7 +1167,7 @@ Alignment SANA::runRestartPhases() {
 	T.start();
 	newAlignmentsCount = 0;
 	while (T.elapsed() < minutesNewAlignments*60) {
-		long long unsigned int iter = 0;
+		long long int iter = 0;
 		// Alignment A = simpleRun(Alignment::random(n1, n2), 0.0, iter);
 		Alignment A = simpleRun(getStartingAlignment(), 0.0, iter);
 		uint i = getLowestIndex();
@@ -1074,7 +1179,7 @@ Alignment SANA::runRestartPhases() {
 		newAlignmentsCount++;
 	}
 	cerr << "candidates phase" << endl;
-	vector<long long unsigned int> iters(numCandidates, iterationsPerStep);
+	vector<long long int> iters(numCandidates, iterationsPerStep);
 	for (uint i = 0; i < numCandidates; i++) {
 		candidates[i] = simpleRun(candidates[i], minutesPerCandidate*60, iters[i]);
 		candidatesScores[i] = currentScore;
@@ -1225,7 +1330,7 @@ double SANA::scoreForTInitial(double TInitial) {
 	enableTrackProgress = false;
 	restart = false;
 
-	long long unsigned int iter = 0;
+	long long int iter = 0;
 	// simpleRun(Alignment::random(n1, n2), 0.0, iter);
 	simpleRun(getStartingAlignment(), 1.0, iter);
 	this->iterationsPerStep = oldIterationsPerStep;
@@ -1289,7 +1394,7 @@ double SANA::findTInitialByLinearRegression(){
 		}
 		maxx = max(maxx, scoreMap[i]);
 		progress++;
-		cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
+		cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << scoreMap[i] << endl;
 	}
 	//actually perform the linear regression
 	LinearRegression linearRegression;
@@ -1311,7 +1416,7 @@ double SANA::findTInitialByLinearRegression(){
 		}
 		maxx = max(maxx, scoreMap[i]);
 		progress++;
-		cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
+		cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << scoreMap[i] << endl;
 	}
 	cerr << endl;
 	//close the cahce file stream
@@ -1439,7 +1544,7 @@ double SANA::pForTInitial(double TInitial) {
 	enableTrackProgress = true;
 	restart = false;
 
-	long long unsigned int iter = 0;
+	long long int iter = 0;
 	// simpleRun(Alignment::random(n1, n2), 0.0, iter);
 	double result = getPforTInitial(getStartingAlignment(), 1.0, iter);
 	this->iterationsPerStep = oldIterationsPerStep;
@@ -1452,7 +1557,7 @@ double SANA::pForTInitial(double TInitial) {
 }
 
 double SANA::getPforTInitial(const Alignment& startA, double maxExecutionSeconds,
-		long long unsigned int& iter) {
+		long long int& iter) {
 
 	double result = 0.0;
 	initDataStructures(startA);
@@ -1466,8 +1571,12 @@ double SANA::getPforTInitial(const Alignment& startA, double maxExecutionSeconds
 		}
 		if (iter%iterationsPerStep == 0) {
 			result = trueAcceptingProbability();
-			if (iter != 0 and timer.elapsed() > maxExecutionSeconds) {
-				return result;
+			if ((iter != 0 and timer.elapsed() > maxExecutionSeconds and sampledProbability.size() > 0) or iter > 5E7) {
+				if(sampledProbability.size() == 0){
+                    return 1;
+                }else{
+                    return result;
+                }
 			}
 		} //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
 		SANAIteration();
@@ -1503,8 +1612,8 @@ double SANA::searchSpaceSizeLog() {
 	return n2*log(n2)-(n2-n1)*log(n2-n1)-n1;
 }
 
-Alignment SANA::hillClimbingAlignment(Alignment startAlignment, long long unsigned int idleCountTarget){
-    long long unsigned int iter = 0;
+Alignment SANA::hillClimbingAlignment(Alignment startAlignment, long long int idleCountTarget){
+    long long int iter = 0;
     uint idleCount = 0;
     T = 0;
     initDataStructures(startAlignment); //this is redundant, but it's not that big of a deal.  Resets true probability.
@@ -1525,8 +1634,8 @@ Alignment SANA::hillClimbingAlignment(Alignment startAlignment, long long unsign
     return A;
 }
 
-Alignment SANA::hillClimbingAlignment(long long unsigned int idleCountTarget){
-    long long unsigned int iter = 0;
+Alignment SANA::hillClimbingAlignment(long long int idleCountTarget){
+    long long int iter = 0;
     Alignment startAlignment = getStartingAlignment();
     uint idleCount = 0;
     T = 0;
@@ -1548,17 +1657,17 @@ Alignment SANA::hillClimbingAlignment(long long unsigned int idleCountTarget){
     return A;
 }
 
-long long unsigned int SANA::hillClimbingIterations(long long unsigned int idleCountTarget) {
+long long int SANA::hillClimbingIterations(long long int idleCountTarget) {
 	// Alignment startA = Alignment::random(n1, n2);
 	Alignment startA = getStartingAlignment();
-	long long unsigned int iter = 0;
+	long long int iter = 0;
 
 	//cerr << "We consider that SANA has stagnated if it goes ";
 	//cerr << idleCountTarget << " without improving" << endl;
 
 	initDataStructures(startA);
 	T = 0;
-	long long unsigned int idleCount = 0;
+	long long int idleCount = 0;
 	for (; ; iter++) {
 		if (iter%iterationsPerStep == 0) {
 			trackProgress(iter);
@@ -1697,7 +1806,7 @@ double SANA::searchTDecay(double TInitial, uint iterations) {
 	double epsilon = (x_left + x_right)/2;
 	cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
 	cerr << "Final epsilon: " << epsilon << endl;
-	long long unsigned int iter_t = (long long unsigned int)(iterations)*100000000;
+	long long int iter_t = (long long int)(iterations)*100000000;
 
 	double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t);
 	cerr << "Final T_decay: " << lambda << endl;
@@ -1713,7 +1822,7 @@ double SANA::getIterPerSecond() {
 
 void SANA::initIterPerSecond() {
 	cerr << "Determining iteration speed...." << endl;
-	long long unsigned int iter = hillClimbingIterations(500000+searchSpaceSizeLog());
+	long long int iter = hillClimbingIterations(10000000+searchSpaceSizeLog());
 	if (iter == 0) {
 		throw runtime_error("hill climbing stagnated after 0 iterations");
 	}
