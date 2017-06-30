@@ -160,6 +160,7 @@ $(GTEST_OBJS):
 	cd test/gtest && make
 
 clean: #clear_cache
+	$(RM) -rf cache*  # mostly for pBad
 	$(RM) -rf $(OBJDIR)/src
 	$(RM) $(MAIN)
 
