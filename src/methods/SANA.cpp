@@ -819,7 +819,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc/T);
 	}
 
-    if(wasBadMove && (iterationsPerformed % 500 == 0/* || (TCWeight > 0 && iterationsPerformed % 25 == 0)*/)){ //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
+    if(wasBadMove && (iterationsPerformed % 500 == 0 || (TCWeight > 0 && iterationsPerformed % 25 == 0))){ //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
         if(sampledProbability.size() == 1000){
             sampledProbability.erase(sampledProbability.begin());
         }
