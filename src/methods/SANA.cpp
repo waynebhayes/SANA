@@ -1822,7 +1822,7 @@ double SANA::getIterPerSecond() {
 
 void SANA::initIterPerSecond() {
 	cerr << "Determining iteration speed...." << endl;
-	long long int iter = hillClimbingIterations(10000000+searchSpaceSizeLog());
+	long long int iter = hillClimbingIterations(500000+searchSpaceSizeLog());
 	if (iter == 0) {
 		throw runtime_error("hill climbing stagnated after 0 iterations");
 	}
