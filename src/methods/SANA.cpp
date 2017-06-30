@@ -1657,7 +1657,7 @@ Alignment SANA::hillClimbingAlignment(long long int idleCountTarget){
     return A;
 }
 
-long long int SANA::hillClimbingIterations(long long int idleCountTarget) {
+void SANA::hillClimbingIterations(long long int iterTarget) {
 	// Alignment startA = Alignment::random(n1, n2);
 	Alignment startA = getStartingAlignment();
 	long long int iter = 0;
@@ -1667,20 +1667,12 @@ long long int SANA::hillClimbingIterations(long long int idleCountTarget) {
 
 	initDataStructures(startA);
 	T = 0;
-	long long int idleCount = 0;
-	for (; ; iter++) {
+	for (; iter < iterTarget ; iter++) {
 		if (iter%iterationsPerStep == 0) {
 			trackProgress(iter);
 		}
-		double oldScore = currentScore;
 		SANAIteration();
-		if (abs(oldScore-currentScore) < 0.00001) idleCount++;
-		else idleCount = 0;
-		if (idleCount == idleCountTarget) {
-			return  (iter+1) - idleCount;
-		}
 	}
-	return iter; //dummy return to shut compiler warning
 }
 
 double SANA::expectedNumAccEInc(double temp, const vector<double>& energyIncSample) {
@@ -1822,10 +1814,11 @@ double SANA::getIterPerSecond() {
 
 void SANA::initIterPerSecond() {
 	cerr << "Determining iteration speed...." << endl;
-	long long int iter = hillClimbingIterations(500000+searchSpaceSizeLog());
-	if (iter == 0) {
+	long long int iter = 1E7;
+    hillClimbingIterations(iter);
+	/*if (iter == 500000) {
 		throw runtime_error("hill climbing stagnated after 0 iterations");
-	}
+	}*/
 	double res = iter/timer.elapsed();
 	cerr << "SANA does " << to_string(res) << " iterations per second" << endl;
 
