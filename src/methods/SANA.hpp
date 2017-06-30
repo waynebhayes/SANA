@@ -41,7 +41,7 @@ public:
     int order = 0;
 
     //returns the number of iterations until it stagnates when not using temperture
-    long long int hillClimbingIterations(long long int idleCountTarget);
+    void hillClimbingIterations(long long int iterTarget);
     Alignment hillClimbingAlignment(Alignment startAlignment, long long int idleCountTarget);
     Alignment hillClimbingAlignment(long long int idleCountTarget);
 
