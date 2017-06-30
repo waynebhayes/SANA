@@ -67,7 +67,7 @@ for i in $(seq 1 $Networks_count);do
         Network1=`echo -e $Biogrid_network | awk '{print $'$j'}'`
         echo "echo Running $Network1-$Network2; ./sana -g1 $Network1 -g2 $Network2 -o '$OutputDir/$Network1-$Network2' &> '$OutputDir/$Network1-$Network2.progress'"
     done
-done | parallel -s 8  # run in parallel on jenkins
+done | parallel -s bash 8  # run in parallel on jenkins
 
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
@@ -149,7 +149,7 @@ if [ ! -z "$CompareFile" ]; then
     done
     cat $TMPDIR/networks.locking | while read Network1 Network2; do
 	echo "./sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null"
-    done | parallel -s 8
+    done | parallel -s bash 8
     cat $TMPDIR/networks.locking | while read Network1 Network2; do
 	if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
 	    REGRESSION_FAILED=true
