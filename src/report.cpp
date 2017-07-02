@@ -73,6 +73,8 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
 
 void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   const MeasureCombination& M, Method* method, string reportFileName) {
+  Timer T;
+  T.start();
   ofstream outfile,
            alignfile;
   reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, outfile, G1.getName(), G2.getName(), method, A);
@@ -83,10 +85,13 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   makeReport(G1, G2, A, M, method, outfile);
   outfile.close();
   alignfile.close();
+  cerr << "Took " << T.elapsed() << " seconds to save the alignment and scores." << endl;
 }
 
 void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
   MeasureCombination const & M, Method * const method, string & localMeasureFileName) {
+  Timer T;
+  T.start();
   if(M.getSumLocalWeight() <= 0) { //This is how needLocal is calculated in SANA.cpp 
     cerr << "No local measures provided, not writing local scores file." << endl;
     return;
@@ -95,6 +100,7 @@ void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
   ensureFileNameExistsAndOpenOutFile("local measure", localMeasureFileName, outfile, G1.getName(), G2.getName(), method, A);
   M.writeLocalScores(outfile, G1, G2, A);
   outfile.close();
+  cerr << "Took " << T.elapsed() << " seconds to save hte alignment and scores." << endl;
 }
 
 /*"Ensure" here means ensure that there is a valid file to output to.

@@ -4,6 +4,7 @@
 
 #include "measureSelector.hpp"
 
+#include "../utils/Timer.hpp"
 #include "../methods/NoneMethod.hpp"
 #include "../methods/GreedyLCCS.hpp"
 #include "../methods/WeightedAlignmentVoter.hpp"
@@ -121,13 +122,22 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         ((SANA*) sana)->enableRestartScheme(tnew, iterperstep, numcand, tcand, tfin);
     }
     if (args.strings["-tinitial"] == "by-linear-regression") {
+        Timer T;
+        T.start();
         ((SANA*) sana)->setTInitialByLinearRegression();
+        cerr << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
     }
     if (args.strings["-tinitial"] == "by-statistical-test") {
+        Timer T;
+        T.start();
         ((SANA*) sana)->setTInitialByStatisticalTest();
+        cerr << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
     }
     if (args.strings["-tdecay"] == "auto") {
+        Timer T;
+        T.start();
         ((SANA*) sana)->setTDecayAutomatically();
+        cerr << endl << "TDecay took " << T.elapsed() << " seconds to complete." << endl << endl;
     }
     if (args.bools["-dynamictdecay"]) {
 	((SANA*) sana)->setDynamicTDecay();
