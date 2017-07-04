@@ -1,4 +1,5 @@
 #include "Database.hpp"
+#include "utils/fileno.hpp"
 
 using namespace std;
 
@@ -42,7 +43,9 @@ Database::Database(ullint k)
 	forbit_map.close();
 }
 
+#define MAX_FILES 1024 // ensure this is actually big enough!
 void Database::addGraph(string filename, ullint numSamples){
+	int firstfd=-1;
 	//Prepocessing the input filename
 	ifstream fgraph(filename);
 	string graphName = filename;
@@ -60,6 +63,9 @@ void Database::addGraph(string filename, ullint numSamples){
 	vector<vector<bool>> orbitSignature(graph.numNodes(), vector<bool>(numOrbitId_, false));//each row for each node
 	vector<bool> isOpen(numOrbitId_, false);
 	vector<ofstream> forbitId(numOrbitId_);
+	vector<int> orbit2fd(numOrbitId_, -1);
+	vector<int> fd2orbit(MAX_FILES, -1);
+	vector<int> fdCount(MAX_FILES, 0);
 	ullint indicator = numSamples / 10;
 	for(ullint i = 0; i < numSamples; i++){
 		if(i % indicator == 0)
@@ -75,8 +81,48 @@ void Database::addGraph(string filename, ullint numSamples){
 			ullint id = orbitId_[l][j];
 			if(!isOpen[id]) {
 			    forbitId[id].open(databaseDir+to_string(id)+"/"+graphName, ios_base::app);
+			    if(forbitId[id].fail()) { // time to close some of them
+				int i, biggest, numClosed=0;
+				// Find the biggest one
+				biggest=firstfd;
+				assert(firstfd>0);
+				for(i=firstfd+1;i<MAX_FILES;i++)
+				    if(fdCount[i] > fdCount[biggest]) biggest=i;
+				// cerr << "most frequent orbit is " << fd2orbit[biggest] << " with count "<< fdCount[biggest];
+				biggest = fdCount[biggest];
+				// Close those that are not used much
+				for(i=firstfd;i<MAX_FILES;i++){
+				    int orbit = fd2orbit[i];
+				    if(fdCount[i] < biggest/8 && orbit > 0) {
+					assert(orbit>=0 && orbit < numOrbitId_);
+					assert(orbit2fd[orbit]>0 && orbit2fd[orbit]<MAX_FILES);
+					assert(isOpen[orbit]);
+					forbitId[orbit].close();
+					++numClosed;
+					isOpen[orbit]=false;
+					orbit2fd[orbit]=-1;
+					fd2orbit[i]=-1;
+				    }
+				    fdCount[i] = 0; // reset for LRU
+				}
+				// Try again
+				forbitId[id].open(databaseDir+to_string(id)+"/"+graphName, ios_base::app);
+				if(forbitId[id].fail()) {
+				    cerr << "really and truly can't open new file\n";
+				    exit(1);
+				} else {
+				    // cerr << "; numClosed was "<<numClosed<<endl;
+				}
+			    }
+			    orbit2fd[id]=fileno(forbitId[id]);
+			    fd2orbit[orbit2fd[id]]=id;
 			    isOpen[id] = true;
+			    if(firstfd<0){
+				firstfd=orbit2fd[id];
+				// cerr << "firstfd is "<<firstfd<<endl;}
+			    }
 			}
+			++fdCount[orbit2fd[id]];
 			forbitId[id] << y->label(j) << " ";
 			for(auto orbit: y->labels()){
 				if(orbit != y->label(j))
