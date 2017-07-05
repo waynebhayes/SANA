@@ -41,7 +41,7 @@ void LocalMeasure::loadBinSimMatrix(string simMatrixFileName) {
         Timer T;
         T.start();
         initSimMatrix();
-        cerr << "done (" << T.elapsedString() << ")" << endl;
+        cerr << "Loading binary sim matrix done (" << T.elapsedString() << ")" << endl;
         writeMatrixToBinaryFile(sims, simMatrixFileName);
     }
 }

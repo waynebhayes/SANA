@@ -196,7 +196,7 @@ void Experiment::loadGraphs(map<string, Graph>& graphs) {
             }
         }
     }
-    cerr << "done ("+T.elapsedString()+")" << endl;
+    cerr << "Experiment::loadGraphs done ("+T.elapsedString()+")" << endl;
 }
 
 string Experiment::getResultId(string method, string G1Name, string G2Name,

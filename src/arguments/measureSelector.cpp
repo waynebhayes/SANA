@@ -170,7 +170,7 @@ bool shouldInit(string measureName, Graph& G1, Graph& G2, ArgumentParser& args) 
 }
 
 void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& args) {
-    cerr << "Initializing measures... " << endl;
+    cerr << "Initializing measures... ";
     Timer T;
     T.start();
     Measure *m;

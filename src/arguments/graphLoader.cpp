@@ -230,7 +230,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 
 	// Getting Valid locks
 	if(lockFile != "")
-		cerr << "Initializing locking... with lock file " + lockFile << endl;
+	    cerr << "Initializing locking... with lock file " + lockFile << endl;
 	vector<string> validLocksG1;
 	vector<string> validLocksG2;
 	map<string,ushort> mapG1 = G1.getNodeNameToIndexMap();
@@ -285,7 +285,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	if (G1.getNumEdges() == 0 or G2.getNumEdges() == 0) {
 		throw runtime_error("One of the networks has 0 edges");
 	}
-	cerr << "done (" << T.elapsedString() << ")" << endl;
+	cerr << "locking initialization done (" << T.elapsedString() << ")" << endl;
 
 	if(column1.size() > 0 && column1.size() != validLocksG1.size()){
 		cerr << "Warning: Out of " << column1.size() << " locks only ";

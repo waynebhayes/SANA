@@ -1,4 +1,5 @@
 #include "Database.hpp"
+#include "utils/fileno.hpp"
 
 using namespace std;
 
@@ -6,12 +7,19 @@ Database::Database()
 	: Database(5)
 {}
 
-Database::Database(ullint k)
+Database::Database(short k)
 	: k_(k)
 {
 	/**Just reading the data from canon_map, canon_list, and orbit_map**/
 	ullint m, decimal;
 	string permutation;
+	struct rlimit rlim;
+	if(getrlimit(RLIMIT_NOFILE, &rlim)<0){perror("getrlimit(2)"); exit(1);}
+	rlim.rlim_cur=rlim.rlim_max;
+	if(setrlimit(RLIMIT_NOFILE, &rlim)<0){perror("setrlimit(2)"); exit(1);}
+	if(getrlimit(RLIMIT_NOFILE, &rlim)<0){perror("getrlimit(2)"); exit(1);}
+	MAX_FD=rlim.rlim_cur;
+	cerr << "MAX_FD is " <<MAX_FD <<endl;
 	ifstream fcanon_map("data/canon_map"+to_string(k)+".txt"), forbit_map("data/orbit_map"+to_string(k)+".txt");
 	ifstream fcanon_list("data/canon_list"+to_string(k)+".txt");
 	databaseDir = "Database"+to_string(k)+"/";
@@ -32,7 +40,7 @@ Database::Database(ullint k)
 		canonicalGraphette.push_back(decimal);
 		//reading orbit ids for the canonical graphette decimal
 		vector<ullint> ids(k);
-		for(ullint j = 0; j < k; j++){
+		for(short j = 0; j < k; j++){
 			forbit_map >> ids[j];
 		}
 		orbitId_.push_back(ids);
@@ -43,6 +51,7 @@ Database::Database(ullint k)
 }
 
 void Database::addGraph(string filename, ullint numSamples){
+	int firstfd=-1;
 	//Prepocessing the input filename
 	ifstream fgraph(filename);
 	string graphName = filename;
@@ -60,6 +69,9 @@ void Database::addGraph(string filename, ullint numSamples){
 	vector<vector<bool>> orbitSignature(graph.numNodes(), vector<bool>(numOrbitId_, false));//each row for each node
 	vector<bool> isOpen(numOrbitId_, false);
 	vector<ofstream> forbitId(numOrbitId_);
+	vector<int> orbit2fd(numOrbitId_, -1);
+	vector<int> fd2orbit(MAX_FD, -1);
+	vector<int> fdCount(MAX_FD, 0);
 	ullint indicator = numSamples / 10;
 	for(ullint i = 0; i < numSamples; i++){
 		if(i % indicator == 0)
@@ -75,8 +87,48 @@ void Database::addGraph(string filename, ullint numSamples){
 			ullint id = orbitId_[l][j];
 			if(!isOpen[id]) {
 			    forbitId[id].open(databaseDir+to_string(id)+"/"+graphName, ios_base::app);
+			    if(forbitId[id].fail()) { // time to close some of them
+				int i, biggest, numClosed=0;
+				// Find the biggest one
+				biggest=firstfd;
+				assert(firstfd>0);
+				for(i=firstfd+1;i<MAX_FD;i++)
+				    if(fdCount[i] > fdCount[biggest]) biggest=i;
+				cerr << "ran out of fds, running LRU: most frequent orbit is " << fd2orbit[biggest] << " with count "<< fdCount[biggest];
+				biggest = fdCount[biggest];
+				// Close those that are not used much
+				for(i=firstfd;i<MAX_FD;i++){
+				    int orbit = fd2orbit[i];
+				    if(fdCount[i] < biggest/8 && orbit > 0) {
+					assert(orbit>=0 && orbit < numOrbitId_);
+					assert(orbit2fd[orbit]>0 && orbit2fd[orbit]<MAX_FD);
+					assert(isOpen[orbit]);
+					forbitId[orbit].close();
+					++numClosed;
+					isOpen[orbit]=false;
+					orbit2fd[orbit]=-1;
+					fd2orbit[i]=-1;
+				    }
+				    fdCount[i] = 0; // reset for LRU
+				}
+				// Try again
+				forbitId[id].open(databaseDir+to_string(id)+"/"+graphName, ios_base::app);
+				if(forbitId[id].fail()) {
+				    cerr << "really and truly can't open new file\n";
+				    exit(1);
+				} else {
+				    cerr << "; numClosed was "<<numClosed<<endl;
+				}
+			    }
+			    orbit2fd[id]=fileno(forbitId[id]);
+			    fd2orbit[orbit2fd[id]]=id;
 			    isOpen[id] = true;
+			    if(firstfd<0){
+				firstfd=orbit2fd[id];
+				cerr << "firstfd is "<<firstfd<<endl;
+			    }
 			}
+			++fdCount[orbit2fd[id]];
 			forbitId[id] << y->label(j) << " ";
 			for(auto orbit: y->labels()){
 				if(orbit != y->label(j))

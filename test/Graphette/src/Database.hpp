@@ -4,22 +4,24 @@
 #include "Graph.hpp"
 #include "utils/xrand.hpp"
 #include <bits/stdc++.h>
+#include <sys/resource.h>
 
 typedef struct
 {
 	std::string canonicalPermutation;
-	ullint canonicalDecimal;
+	long canonicalDecimal;
 }graphette;
 
 class Database
 {
 public:
 	Database();
-	Database(ullint k);
+	Database(short k);
 	void addGraph(std::string filename, ullint numSamples);
 	
 private:
 	ullint k_, numOrbitId_;
+	int MAX_FD;
 	std::string databaseDir;
 	std::vector<graphette> g;
 	std::vector<ullint> canonicalGraphette;
