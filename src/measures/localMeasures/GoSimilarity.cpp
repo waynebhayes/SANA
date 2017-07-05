@@ -66,7 +66,7 @@ void GoSimilarity::ensureGoFileSimpleFormatExists(const Graph& G) {
             GoSimilarity::generateGene2GoSimpleFormat();
         }
     }
-    cerr << "done (" << T.elapsedString() << ")" << endl;
+    cerr << "GO simple format done (" << T.elapsedString() << ")" << endl;
 }
 
 //extracts the relevant columns from a GOFile
@@ -175,7 +175,7 @@ void GoSimilarity::ensureGOFileInternalFormatExists(const Graph& G) {
         Timer T;
         T.start();
         simpleToInternalFormat(G, getGoSimpleFileName(G), GOFileInternalFormat);
-        cerr << "done (" << T.elapsedString() << ")" << endl;
+        cerr << "GO internal format done (" << T.elapsedString() << ")" << endl;
     }
     assert(fileExists(GOFileInternalFormat));
 }

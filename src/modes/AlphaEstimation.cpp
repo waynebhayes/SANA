@@ -67,12 +67,12 @@ void AlphaEstimation::init(string alphaFile) {
             graphs[g2Name] = Graph::loadGraph(g2Name);
         }
     }
-    cerr << "done ("+T.elapsedString()+")" << endl;
+    cerr << "graph loading done ("+T.elapsedString()+")" << endl;
 
     cerr << "Computing alphas...";
     T.start();
     computeAlphas();
-    cerr << "done ("+T.elapsedString()+")" << endl;
+    cerr << "AlphaEstimation::init done ("+T.elapsedString()+")" << endl;
 }
 
 double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasure) {

@@ -513,7 +513,7 @@ void Graph::getDistanceMatrix(vector<vector<short> >& dist) const {
         T.start();
         cerr << "Computing "+name+" distance matrix...";
         computeDistanceMatrix(dist);
-        cerr << "done (" << T.elapsedString() << ")" << endl;
+        cerr << "Graph::getDistanceMatrix done (" << T.elapsedString() << ")" << endl;
         writeMatrixToFile(dist, distMatrixFile);
     }
 }
@@ -759,7 +759,7 @@ vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
     Timer T;
     T.start();
     vector<vector<uint> > gdvs = computeGraphletDegreeVectors();
-    cerr << "done (" << T.elapsedString() << ")" << endl;
+    cerr << "Graph::loadGraphletDegreeVectors done (" << T.elapsedString() << ")" << endl;
     writeMatrixToBinaryFile(gdvs, gdvsFileName);
     string readeableVersionFile = autogenFilesFolder() + name + "_gdv"+ oss.str() + ".txt";
     writeMatrixToFile(gdvs, readeableVersionFile);
