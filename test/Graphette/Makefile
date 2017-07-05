@@ -1,7 +1,7 @@
 CC = g++
 
 #CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g
-CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-g
+CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -ggdb
 
 INCLUDES =
 LFLAGS =
@@ -15,6 +15,7 @@ OTHER_SRC =                                             \
 	src/init/GenerateOrbitMatrix.cpp                    \
 	src/Graph.cpp                                       \
 	src/utils/xrand.cpp                                 \
+	src/utils/fileno.cpp                                 \
 	src/Database.cpp                                    \
 
 

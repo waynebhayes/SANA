@@ -123,7 +123,7 @@ void ParameterEstimation::collectData() {
             data[i][j] = getScore(kValues[i], lValues[j]);
         }
     }
-    cerr << "done (" << t.elapsedString() << ")" << endl;
+    cerr << "ParameterEstimation::collectData done (" << t.elapsedString() << ")" << endl;
 }
 
 void ParameterEstimation::printData(string outputFile) {
