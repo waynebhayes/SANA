@@ -4,13 +4,13 @@
 #include <algorithm>
 
 ExternalWeightedEdgeConservation::ExternalWeightedEdgeConservation(Graph* G1, Graph* G2, std::string scoresFile) : Measure(G1, G2, "ewec"){
-    loadMatrix(scoresFile);
     G1->getAdjLists(adjListG1);
     G2->getAdjLists(adjListG2);
     G1->getAdjMatrix(adjMatrixG1);
     G2->getAdjMatrix(adjMatrixG2);
     nodeNamesG1 = G1->getNodeNames();
     nodeNamesG2 = G2->getNodeNames();
+    loadMatrix(scoresFile);
 }
 
 double ExternalWeightedEdgeConservation::eval(const Alignment& A){
@@ -46,30 +46,34 @@ void ExternalWeightedEdgeConservation::addEdgeToCol(std::string e, int ind){
     std::string n1;
     std::string n2;
     breakEdge(e, n1, n2);
-    if(std::distance(nodeNamesG2.begin(), std::find(nodeNamesG2.begin(), nodeNamesG2.end(), n1)) > std::distance(nodeNamesG2.begin(), std::find(nodeNamesG2.begin(), nodeNamesG2.end(), n2))){
-        string n3 = n1;
-        n1 = n2;
-        n2 = n3;
+    int n1Index = std::distance(nodeNamesG2.begin(), std::find(nodeNamesG2.begin(), nodeNamesG2.end(), n1));
+    int n2Index = std::distance(nodeNamesG2.begin(), std::find(nodeNamesG2.begin(), nodeNamesG2.end(), n2));
+    if(n1Index > n2Index){
+        int n3Index = n1Index;
+        n1Index = n2Index;
+        n2Index = n3Index;
     }
-    colIndex[n1][n2] = ind;
+    colIndex[n1Index][n2Index] = ind;
 }
 
 void ExternalWeightedEdgeConservation::addEdgeToRow(std::string e, int ind){
     std::string n1;
     std::string n2;
     breakEdge(e, n1, n2);
-    if(std::distance(nodeNamesG1.begin(), std::find(nodeNamesG1.begin(), nodeNamesG1.end(), n1)) > std::distance(nodeNamesG1.begin(), std::find(nodeNamesG1.begin(), nodeNamesG1.end(), n2))){
-        string n3 = n1;
-        n1 = n2;
-        n2 = n3;
+    int n1Index = std::distance(nodeNamesG1.begin(), std::find(nodeNamesG1.begin(), nodeNamesG1.end(), n1));
+    int n2Index = std::distance(nodeNamesG1.begin(), std::find(nodeNamesG1.begin(), nodeNamesG1.end(), n2));
+    if(n1Index > n2Index){
+        int n3Index = n1Index;
+        n1Index = n2Index;
+        n2Index = n3Index;
     }
-    rowIndex[n1][n2] = ind;
+    rowIndex[n1Index][n2Index] = ind;
 }
 
 void ExternalWeightedEdgeConservation::loadMatrix(std::string scoresFile){
-    simScores = std::vector<std::vector<float>>();
-    colIndex = std::map<std::string, std::map<std::string, int>>();
-    rowIndex = std::map<std::string, std::map<std::string, int>>();
+    simScores = std::vector<std::vector<double>>();
+    colIndex = std::vector<std::vector<int>>(nodeNamesG2.size(), vector<int>(nodeNamesG2.size()));
+    rowIndex = std::vector<std::vector<int>>(nodeNamesG1.size(), vector<int>(nodeNamesG1.size()));
 
     std::ifstream infile(scoresFile);
     if( !infile  ) {
@@ -86,7 +90,7 @@ void ExternalWeightedEdgeConservation::loadMatrix(std::string scoresFile){
     std::string edge1;
     while(colHeadersStream >> edge1){
         addEdgeToCol(edge1, c);
-        simScores.push_back(vector<float>());
+        simScores.push_back(vector<double>());
         ++c;
     }
     
@@ -98,7 +102,7 @@ void ExternalWeightedEdgeConservation::loadMatrix(std::string scoresFile){
         lnStream >> edge2;
         addEdgeToRow(edge2, r);
         
-        float value;
+        double value;
         while(lnStream >> value){
             simScores[c].push_back(value);
             ++c;
@@ -107,36 +111,20 @@ void ExternalWeightedEdgeConservation::loadMatrix(std::string scoresFile){
     }
 }
 
-float ExternalWeightedEdgeConservation::getScore(int colNum, int rowNum){
+double ExternalWeightedEdgeConservation::getScore(int colNum, int rowNum){
     return simScores[colNum][rowNum];
 }
 
 int ExternalWeightedEdgeConservation::getColIndex(std::string n1, std::string n2){
-    if(colIndex.count(n1)){
-        if(colIndex[n1].count(n2)){
-            return colIndex[n1][n2];
-        }
-    }
-    if(colIndex.count(n2)){
-        if(colIndex[n2].count(n1)){
-            return colIndex[n2][n1];
-        }
-    }
-    return -1;
+    int n1Index = std::distance(nodeNamesG2.begin(), std::find(nodeNamesG2.begin(), nodeNamesG2.end(), n1));
+    int n2Index = std::distance(nodeNamesG2.begin(), std::find(nodeNamesG2.begin(), nodeNamesG2.end(), n2));
+    return getColIndex(n1Index, n2Index);
 }
 
 int ExternalWeightedEdgeConservation::getRowIndex(std::string n1, std::string n2){
-    if(rowIndex.count(n1)){
-        if(rowIndex[n1].count(n2)){
-            return rowIndex[n1][n2];
-        }
-    }
-    if(rowIndex.count(n2)){
-        if(rowIndex[n2].count(n1)){
-            return rowIndex[n2][n1];
-        }
-    }
-    return -1;
+    int n1Index = std::distance(nodeNamesG1.begin(), std::find(nodeNamesG1.begin(), nodeNamesG1.end(), n1));
+    int n2Index = std::distance(nodeNamesG1.begin(), std::find(nodeNamesG1.begin(), nodeNamesG1.end(), n2));
+    return getRowIndex(n1Index, n2Index);
 }
 
 int ExternalWeightedEdgeConservation::getColIndex(ushort n1, ushort n2){
@@ -146,8 +134,7 @@ int ExternalWeightedEdgeConservation::getColIndex(ushort n1, ushort n2){
         n1 = n2;
         n2 = n3;
     }
-    std::string n1s = nodeNamesG2[n1], n2s = nodeNamesG2[n2];
-    return colIndex[n1s][n2s];
+    return colIndex[n1][n2];
 }
 
 int ExternalWeightedEdgeConservation::getRowIndex(ushort n1, ushort n2){
@@ -157,8 +144,7 @@ int ExternalWeightedEdgeConservation::getRowIndex(ushort n1, ushort n2){
         n1 = n2;
         n2 = n3;
     }
-    std::string n1s = nodeNamesG1[n1], n2s = nodeNamesG1[n2];
-    return rowIndex[n1s][n2s];
+    return rowIndex[n1][n2];
 }
 /* Deprecated, do not use.
 double ExternalWeightedEdgeConservation::simScore(ushort source, ushort target, const Alignment& A){

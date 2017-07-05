@@ -20,12 +20,12 @@ public:
     //double swapOp(ushort source1, ushort source2, ushort target1, ushort target2, const Alignment& A);
     int getColIndex(ushort n1, ushort n2); //make these private before you push 
     int getRowIndex(ushort n1, ushort n2);
-    float getScore(int colNum, int rowNum); //returns sim score given the indices of the col and row
+    double getScore(int colNum, int rowNum); //returns sim score given the indices of the col and row
 
 private:
-    std::vector<std::vector<float>> simScores;
-    std::map<std::string, std::map<std::string, int>> colIndex;
-    std::map<std::string, std::map<std::string, int>> rowIndex;
+    std::vector<std::vector<double>> simScores;
+    std::vector<std::vector<int>> colIndex;
+    std::vector<std::vector<int>> rowIndex;
     std::vector<std::vector<ushort> > adjListG1;
     std::vector<std::vector<ushort> > adjListG2;
 #ifdef WEIGHTED
