@@ -32,9 +32,11 @@ all:    $(MAIN)
 
 $(MAIN): $(OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
+	chmod 755 $(MAIN)
 
 $(MAIN).static: $(OBJS)
 	$(CC) $(CXXFLAGS) -static $(INCLUDES) -o $(MAIN).static $(OBJS) $(LFLAGS) $(LIBS)
+	chmod 755 $(MAIN).static
 
 #.c.o:
 #	$(CC) $(CXXFLAGS) $(INCLUDES) -c $<  -o $@
