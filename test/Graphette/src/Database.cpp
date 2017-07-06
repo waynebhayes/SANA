@@ -88,18 +88,22 @@ void Database::addGraph(string filename, ullint numSamples){
 			if(!isOpen[id]) {
 			    forbitId[id].open(databaseDir+to_string(id)+"/"+graphName, ios_base::app);
 			    if(forbitId[id].fail()) { // time to close some of them
-				int i, biggest, numClosed=0;
-				// Find the biggest one
-				biggest=firstfd;
+				int i, biggest, smallest, numClosed=0;
+				// Find the smallest and biggest ones
 				assert(firstfd>0);
-				for(i=firstfd+1;i<MAX_FD;i++)
+				biggest=smallest=firstfd;
+				for(i=firstfd+1;i<MAX_FD;i++) {
 				    if(fdCount[i] > fdCount[biggest]) biggest=i;
+				    if(fdCount[i] < fdCount[smallest]) smallest=i;
+				}
 				cerr << "ran out of fds, running LRU: most frequent orbit is " << fd2orbit[biggest] << " with count "<< fdCount[biggest];
 				biggest = fdCount[biggest];
+				smallest = fdCount[smallest];
 				// Close those that are not used much
 				for(i=firstfd;i<MAX_FD;i++){
 				    int orbit = fd2orbit[i];
 				    if(fdCount[i] < biggest/8 && orbit > 0) {
+				    //if(fdCount[i] <= 2*smallest && orbit > 0) {
 					assert(orbit>=0 && orbit < numOrbitId_);
 					assert(orbit2fd[orbit]>0 && orbit2fd[orbit]<MAX_FD);
 					assert(isOpen[orbit]);
