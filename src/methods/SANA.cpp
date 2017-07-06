@@ -608,9 +608,8 @@ void SANA::performChange() {
 	
 	double newCurrentScore = 0;
 	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
-
-	if (makeChange) {
-		A[source] = newTarget;
+    if (makeChange) {
+        A[source] = newTarget;
 		unassignedNodesG2[newTargetIndex] = oldTarget;
 		assignedNodesG2[oldTarget] = false;
 		assignedNodesG2[newTarget] = true;
@@ -625,7 +624,7 @@ void SANA::performChange() {
         ewecSum = newEwecSum;
 		ncSum = newNcSum;
 		currentScore = newCurrentScore;
-    } 
+    }
 }
 
 void SANA::performSwap() {
@@ -689,8 +688,8 @@ void SANA::performSwap() {
 	}
 	double newCurrentScore = 0;
 	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
-
-	if (makeChange) {
+    
+    if (makeChange) {
 		A[source1] = target2;
 		A[source2] = target1;
 		aligEdges = newAligEdges;
@@ -705,7 +704,7 @@ void SANA::performSwap() {
 	}
 }
 
-double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges) {
+bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges) {
 	bool makeChange = false;
 	bool wasBadMove = false;
     double badProbability = 0;
@@ -979,7 +978,9 @@ double SANA::EWECIncSwapOp(ushort source1, ushort source2, ushort target1, ushor
     //return ewec->swapOp(source1, source2, target1, target2, A);
     double score = 0;
     score = (EWECSimCombo(source1, target2)) + (EWECSimCombo(source2, target1)) - (EWECSimCombo(source1, target1)) - (EWECSimCombo(source2, target2));
-    //score *= -1;
+    if(G1AdjMatrix[source1][source2] and G2AdjMatrix[target1][target2]){
+        score += ewec->getScore(ewec->getColIndex(target1, target2), ewec->getRowIndex(source1, source2))/(g1Edges); //correcting for missed edges when swapping 2 adjacent pairs
+    }
     return score;
 }
 
@@ -993,8 +994,7 @@ double SANA::EWECSimCombo(ushort source, ushort target){
             score+=ewec->getScore(e2,e1);
         }
     }
-    score /= (2*G1->getNumEdges()); //normalization
-    return score;
+    return score/(2*g1Edges);
 }
 
 double SANA::TCIncChangeOp(ushort source, ushort oldTarget, ushort newTarget){
@@ -1094,7 +1094,7 @@ void SANA::trackProgress(long long int i) {
 	bool printDetails = false;
 	bool printScores = false;
 	bool checkScores = true;
-	cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
+    cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
 	cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", sampled probability = " << trueAcceptingProbability() << endl;
     //cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << endl;
 
@@ -1815,7 +1815,7 @@ double SANA::getIterPerSecond() {
 void SANA::initIterPerSecond() {
 	cerr << "Determining iteration speed...." << endl;
 	long long int iter = 1E7;
-    hillClimbingIterations(iter);
+    hillClimbingIterations(iter + 1);
 	/*if (iter == 500000) {
 		throw runtime_error("hill climbing stagnated after 0 iterations");
 	}*/

@@ -198,9 +198,12 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 
     m = new SymmetricEdgeCoverage(&G1, &G2);
     M.addMeasure(m, getWeight("sec", G1, G2, args));
+
+    if (shouldInit("tc", G1, G2, args)){
+        m = new TriangleCorrectness(&G1, &G2);
+        M.addMeasure(m, getWeight("tc", G1, G2, args));
+    }
     
-    m = new TriangleCorrectness(&G1, &G2);
-    M.addMeasure(m, getWeight("tc", G1, G2, args));
     //local measures must be initialized before wec,
     //as wec uses one of the local measures
 
