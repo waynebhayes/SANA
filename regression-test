@@ -115,9 +115,9 @@ for score in `echo $SCORES | tr ' ' '\n' `; do
 done
 
 if [ ! -z "$CompareFile" ]; then
-    BaseAverages=`cat $OutputFile | grep "Average" | grep -o "[0-9]\+.[0-9]\+"`
-    Names=`cat $OutputFile | grep "Average" | awk '{print $1}'`
-    NewAverages=`cat $CompareFile | grep "Average" | grep -o "[0-9]\+.[0-9]\+"`
+    BaseAverages=`cat $CompareFile | grep "Average" | grep -o "[0-9]\+.[0-9]\+"`
+    Names=`cat $CompareFile | grep "Average" | awk '{print $1}'`
+    NewAverages=`cat $OutputFile | grep "Average" | grep -o "[0-9]\+.[0-9]\+"`
     for i in $(seq `echo $BaseAverages | wc -w`);do
         baseItem=`echo -e $BaseAverages | awk '{print $'$i'}'`
         newItem=`echo -e $NewAverages | awk '{print $'$i'}'`
