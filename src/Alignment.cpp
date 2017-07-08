@@ -233,7 +233,7 @@ uint Alignment::numAlignedEdges(const Graph& G1, const Graph& G2) const {
 	return count;
 }
 
-uint Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
+int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
 	vector<vector<ushort> > G1EdgeList;
 	G1.getEdgeList(G1EdgeList);
 #ifdef WEIGHTED
