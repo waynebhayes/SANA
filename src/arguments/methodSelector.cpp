@@ -124,7 +124,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     if (args.strings["-tinitial"] == "by-linear-regression") {
         Timer T;
         T.start();
-        ((SANA*) sana)->setTInitialByLinearRegression();
+        ((SANA*) sana)->setTInitialByLinearRegression(args.bools["-use-score-based-schedule"]);
         cerr << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
     }
     if (args.strings["-tinitial"] == "by-statistical-test") {

@@ -30,7 +30,7 @@ public:
 
     //set temperature schedule automatically
     void setTemperatureScheduleAutomatically();
-    void setTInitialByLinearRegression();
+    void setTInitialByLinearRegression(bool scoreBased = false);
     void setTInitialByStatisticalTest();
     void setTDecayAutomatically();
     
@@ -265,7 +265,7 @@ private:
     double pForTInitial(double TInitial);
     double getPforTInitial(const Alignment& startA, double maxExecutionSeconds,
         long long int& iter);
-    double findTInitialByLinearRegression();
+    double findTInitialByLinearRegression(bool scoreBased = false);
     string getFolder();
     string haveFolder();
     string mkdir(const std::string& file);
