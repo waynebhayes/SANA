@@ -59,7 +59,7 @@ else
 
     # Now get temperature schedule
     mkdir -p $OUTDIR/dir-init
-    ls "$@" | awk '{file=$0;gsub(".*/",""); gsub(".el$",""); gsub(".gw$",""); printf "'$SANA' -s3 0 -mec 1 -t 1 -fg1 %s -fg2 '$OUTDIR/dir0/$NAME-shadow0.el' -o '$OUTDIR'/dir-init/%s 2>'$OUTDIR'/dir-init/%s.stderr\n", file,$0,$0}' | parallel_delay networks/$NAME-shadow0/$NAME-shadow0.gw
+    ls "$@" | awk '{file=$0;gsub(".*/",""); gsub(".el$",""); gsub(".gw$",""); printf "'$SANA' -s3 0 -ses 1 -t 1 -fg1 %s -fg2 '$OUTDIR/dir0/$NAME-shadow0.el' -o '$OUTDIR'/dir-init/%s 2>'$OUTDIR'/dir-init/%s.stderr\n", file,$0,$0}' | parallel_delay networks/$NAME-shadow0/$NAME-shadow0.gw
 
     grep '^Initial Temperature: ' $OUTDIR/dir-init/*.stderr | sed -e "s,$OUTDIR/dir-init/,," -e 's/\.stderr//' -e 's/:/ /' | awk '{print $1,$4,$7}' > $OUTDIR/dir-init/tinitial-final.txt
     grep '^tdecay' $OUTDIR/dir-init/*.stderr | sed -e "s,$OUTDIR/dir-init/,," -e 's/.stderr//' -e 's/:/ /' | awk '{print $1,$3}' > $OUTDIR/dir-init/tdecay.txt
@@ -67,7 +67,13 @@ else
     echo 'name	tinitial	tfinal	tdecay' | tee $OUTDIR/dir-init/schedule.tsv
     paste $OUTDIR/dir-init/tinitial-final.txt $OUTDIR/dir-init/tdecay.txt | awk '$1==$4{printf "%s\t%s\t%s\t%s\n",$1,$2,$3,$5}' | tee -a $OUTDIR/dir-init/schedule.tsv
 fi
-
+DENOM=`
+    cd $OUTDIR/dir-init;
+    for i in *.out; do awk '/^G1:/{getline; getline; ;m=$NF;print m}' $i; done |
+	sort -n |
+	awk '{m[NR-1]=$1}END{for(i=0;i<NR;i++) if(NR-i>1){D+=(NR-i)^2*m[i];for(j=i+1;j<NR;j++)m[j]-=m[i]}; print D}'
+`
+echo Denominator for ses score is $DENOM
 for i in `integers $ITER`
 do
     echo ---- ITER $i ----- `date`
@@ -78,7 +84,8 @@ do
     do
 	bg=`basename $g .gw`
 	bg=`basename $bg .el`
-	named-col-prog 'if(!index(name,"'$bg'"))next; i='$i';ITER='$ITER'; e0=log(tinitial);e1=log(tfinal);printf "'$SANA' -s3 0 -mec 1 -t .01 -fg1 '$g' -fg2 '$OUTDIR/dir$i/$NAME-shadow$i.el' -tinitial %g -tdecay %g -o '$OUTDIR/dir$i1/shadow-$bg' 2>'$OUTDIR/dir$i1/shadow-$bg.stderr' -startalignment '$OUTDIR/dir$i/shadow-$bg.out'\n", tinitial*exp((e1-e0)*i/ITER),tdecay/ITER' $OUTDIR/dir-init/schedule.tsv
+	named-col-prog 'if(!index(name,"'$bg'"))next; i='$i';ITER='$ITER'; e0=log(tinitial);e1=log(tfinal);printf "'$SANA' -s3 0 -ses 1 -t 1 -fg1 '$g' -fg2 '$OUTDIR/dir$i/$NAME-shadow$i.el' -tinitial %g -tdecay %g -o '$OUTDIR/dir$i1/shadow-$bg' 2>'$OUTDIR/dir$i1/shadow-$bg.stderr' -startalignment '$OUTDIR/dir$i/shadow-$bg.out'\n", tinitial*exp((e1-e0)*i/ITER),tdecay/ITER' $OUTDIR/dir-init/schedule.tsv
     done | parallel_delay networks/$NAME-shadow$i/$NAME-shadow$i.gw
     ./scripts/create_shadow.py -c -s $MAX_NODES -a $OUTDIR/dir$i1/shadow-*.out -n "$@" >$OUTDIR/dir$i1/$NAME-shadow$i1.el || die "$OUTDIR/dir$i1/$NAME-shadow$i1.el network creation failed"
 done
+awk '$3>1{sum2+=$3^2}END{print "Final score:", sum2/'$DENOM'}' $OUTDIR/dir$ITER/$NAME-shadow$ITER.el
