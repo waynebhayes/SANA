@@ -571,6 +571,7 @@ void SANA::performChange() {
         double newSquaredAligEdges = -1;
         if (needSquaredAligEdges) {
             newSquaredAligEdges = squaredAligEdges + squaredAligEdgesIncChangeOp(source, oldTarget, newTarget);
+            //cerr << "nSAE " << newSquaredAligEdges << " sAE " << squaredAligEdges << " sAeICO " << squaredAligEdgesIncChangeOp(source, oldTarget, newTarget) << endl;
         }
 
 	int newInducedEdges = -1; //dummy initialization to shut compiler warnings
@@ -610,20 +611,31 @@ void SANA::performChange() {
 	bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
     if (makeChange) {
         A[source] = newTarget;
-		unassignedNodesG2[newTargetIndex] = oldTarget;
-		assignedNodesG2[oldTarget] = false;
-		assignedNodesG2[newTarget] = true;
-		aligEdges = newAligEdges;
-		squaredAligEdges = newSquaredAligEdges;
-		inducedEdges = newInducedEdges;
-        TCSum = newTCSum;
-		localScoreSum = newLocalScoreSum;
-    for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
-      localScoreSumMap[newLocalScoreSumEntry.first] = newLocalScoreSumEntry.second;
-		wecSum = newWecSum;
-        ewecSum = newEwecSum;
-		ncSum = newNcSum;
-		currentScore = newCurrentScore;
+	    unassignedNodesG2[newTargetIndex] = oldTarget;
+	    assignedNodesG2[oldTarget] = false;
+	    assignedNodesG2[newTarget] = true;
+	    aligEdges = newAligEdges;
+	    inducedEdges = newInducedEdges;
+	    TCSum = newTCSum;
+	    localScoreSum = newLocalScoreSum;
+	    for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
+	      localScoreSumMap[newLocalScoreSumEntry.first] = newLocalScoreSumEntry.second;
+	    wecSum = newWecSum;
+	    ewecSum = newEwecSum;
+	    ncSum = newNcSum;
+	    assert(newCurrentScore == newSquaredAligEdges);
+#if 0
+	    if(randomReal(gen)<=1) {
+		double foo = eval(A);
+		if(fabs(foo - newCurrentScore)>20){
+		    cerr << "\nChange: nCS " << newCurrentScore << " (nSAE) " << newSquaredAligEdges << " eval " << foo << " nCS - eval " << newCurrentScore-foo;
+		    //cerr << "source " << source << " oldTarget " << oldTarget << " newTarget " << newTarget << " adj? " << G2AdjMatrix[oldTarget][newTarget] << endl;
+		    newCurrentScore = newSquaredAligEdges = foo;
+		} else cerr << "c";
+	    }
+#endif
+	    currentScore = newCurrentScore;
+	    squaredAligEdges = newSquaredAligEdges;
     }
 }
 
@@ -664,7 +676,7 @@ void SANA::performSwap() {
     }
 
 	double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
-  map<string, double> newLocalScoreSumMap(localScoreSumMap);
+	map<string, double> newLocalScoreSumMap(localScoreSumMap);
 	if (needLocal) {
 		newLocalScoreSum = localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2);
     for(auto it = newLocalScoreSumMap.begin(); it != newLocalScoreSumMap.end(); ++it)
@@ -689,18 +701,29 @@ void SANA::performSwap() {
 	double newCurrentScore = 0;
 	bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
     
-    if (makeChange) {
-		A[source1] = target2;
-		A[source2] = target1;
-		aligEdges = newAligEdges;
-		localScoreSum = newLocalScoreSum;
-        TCSum = newTCSum;
-    for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
-      localScoreSumMap[newLocalScoreSumEntry.first] = newLocalScoreSumEntry.second;
-		wecSum = newWecSum;
-        ewecSum = newEwecSum;
-		ncSum = newNcSum;
-		currentScore = newCurrentScore;
+	if (makeChange) {
+	    A[source1] = target2;
+	    A[source2] = target1;
+	    aligEdges = newAligEdges;
+	    localScoreSum = newLocalScoreSum;
+	    TCSum = newTCSum;
+	    for(auto const & newLocalScoreSumEntry : newLocalScoreSumMap)
+		localScoreSumMap[newLocalScoreSumEntry.first] = newLocalScoreSumEntry.second;
+	    wecSum = newWecSum;
+	    ewecSum = newEwecSum;
+	    ncSum = newNcSum;
+	    assert(newCurrentScore == newSquaredAligEdges);
+#if 0
+	    if(randomReal(gen)<=1) {
+		double foo = eval(A);
+		if(fabs(foo - newCurrentScore)>20){
+		    cerr << "\nSwap: nCS " << newCurrentScore << " eval " << foo << " nCS - eval " << newCurrentScore-foo << " adj? " << (G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
+		    newCurrentScore = newSquaredAligEdges = foo;
+		} else cerr << "s";
+	    }
+#endif
+	    currentScore = newCurrentScore;
+	    squaredAligEdges = newSquaredAligEdges;
 	}
 }
 
@@ -859,32 +882,53 @@ int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ush
 	return res;
 }
 
+static int _edgeVal;
+#define SQRDIFF(i,j) ((_edgeVal=G2AdjMatrix[i][A[j]]), 2*((_edgeVal<1000?_edgeVal:0) + 1)) // sometimes it's -1!?
+/*#define SQRDIFF(i,j) (2*(G2AdjMatrix[i][A[j]] + 1))*/
 int SANA::squaredAligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
 	int res = 0;
 	for (uint i = 0; i < G1AdjLists[source].size(); i++) {
 		ushort neighbor = G1AdjLists[source][i];
                 // Account for ushort edges? Or assume smaller graph is edge value 1?
-                res -= 2 * (G2AdjMatrix[oldTarget][A[neighbor]] + 1) - 1; 
-                res += 2 * (G2AdjMatrix[newTarget][A[neighbor]] + 1) + 1; 
+                int diff;
+	        diff = SQRDIFF(oldTarget, neighbor);
+		assert(fabs(diff)<100);
+                res -= diff>0?diff:0;
+                diff = SQRDIFF(newTarget, neighbor);
+		assert(fabs(diff)<100);
+                res += diff>0?diff:0;
 	}
 	return res;
 }
 
 int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
-	int res = 0;
+	int res = 0, diff;
 	for (uint i = 0; i < G1AdjLists[source1].size(); i++) {
 		ushort neighbor = G1AdjLists[source1][i];
-                res -= 2 * (G2AdjMatrix[target1][A[neighbor]] + 1) - 1; 
-                res += 2 * (G2AdjMatrix[target2][A[neighbor]] + 1) + 1; 
+                diff = SQRDIFF(target1, neighbor);
+		assert(fabs(diff)<100);
+                res -= diff>0?diff:0;
+                diff = SQRDIFF(target2, neighbor);
+		assert(fabs(diff)<100);
+                res += diff>0?diff:0;
 	}
 	for (uint i = 0; i < G1AdjLists[source2].size(); i++) {
 		ushort neighbor = G1AdjLists[source2][i];
-                res -= 2 * (G2AdjMatrix[target2][A[neighbor]] + 1) - 1; 
-                res += 2 * (G2AdjMatrix[target1][A[neighbor]] + 1) + 1; 
+                diff = SQRDIFF(target2, neighbor);
+		assert(fabs(diff)<100);
+                res -= diff>0?diff:0;
+                diff = SQRDIFF(target1, neighbor);
+		assert(fabs(diff)<100);
+                res += diff>0?diff:0;
 	}
         // How to do for squared?
 	// address case swapping between adjacent nodes with adjacent images:
 	// res += ((-1 << 1) & (G1AdjMatrix[source1][source2] + G2AdjMatrix[target1][target2]));
+	if(G1AdjMatrix[source1][source2] and G2AdjMatrix[target1][target2])
+	{
+	    //cerr << "Beer!.......";
+	    //res -= (SQRDIFF(target1,source2) + SQRDIFF(target2,source1))/2;
+	}
 	return res;
 }
 
@@ -1874,7 +1918,7 @@ void SANA::prune(string& startAligName) {
         alignment.push_back(shadow_node);
     }
     infile.close();
-    if (alignment.size() != n) {
+    if ((int)alignment.size() != n) {
         errorMsg << "Alignment size (" << alignment.size() << ") less than number of nodes (" << n <<")";
         throw runtime_error(errorMsg.str().c_str());
     }
