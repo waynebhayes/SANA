@@ -22,6 +22,9 @@ the network definitions are parsed and the necessary network files are created.
 
  */
 void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
+	cerr << "Initializing graphs... " << endl;
+	Timer T;
+	T.start();
 	string fg1 = args.strings["-fg1"], fg2 = args.strings["-fg2"], path1 = args.strings["-pathmap1"], path2 = args.strings["-pathmap2"];
 	createFolder("networks");
 	string g1Name, g2Name;
@@ -44,7 +47,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	if (path2 != "") {
 		p2 = atoi(path2.c_str());
 	}
-	
+
 	string g1Folder, g2Folder;
 	g1Folder = "networks/"+g1Name;
 	g2Folder = "networks/"+g2Name;
@@ -120,10 +123,6 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	}
 
 	//
-
-	cerr << "Initializing graphs... " << endl;
-	Timer T;
-	T.start();
 	if (p1 == 1 && p2 == 1){
 		G1 = Graph::loadGraph(g1Name);
 		G2 = Graph::loadGraph(g2Name);
@@ -143,9 +142,13 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         cerr << "Switching G1 and G2 because G1 has more nodes than G2." << endl;
     }
 
+	cerr << "load graphs done (" << T.elapsedString() << ")" << endl;
+	Timer T2;
+	T2.start();
+
 	double maxGraphletSize = args.doubles["-maxGraphletSize"];
-	if (maxGraphletSize){	
-		G1.setMaxGraphletSize(maxGraphletSize);	
+	if (maxGraphletSize){
+		G1.setMaxGraphletSize(maxGraphletSize);
 		G2.setMaxGraphletSize(maxGraphletSize);
 		//std::cout<<"\nSetting max graphlet size to: "<<maxGraphletSize<<endl;
 		if (maxGraphletSize == 5 || maxGraphletSize == 4)
@@ -268,7 +271,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	//stringstream convert(maxS
 	if(maxSize){
 		std::cout<<"MAXGRAPHLET SIZE IS _____________"<<maxSize<<endl;
-		//G1.computeGraphletDegreeVectors(maxSize);	
+		//G1.computeGraphletDegreeVectors(maxSize);
 
 	}*/
 	double rewiredFraction = args.doubles["-rewire"];
@@ -285,10 +288,11 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	if (G1.getNumEdges() == 0 or G2.getNumEdges() == 0) {
 		throw runtime_error("One of the networks has 0 edges");
 	}
-	cerr << "locking initialization done (" << T.elapsedString() << ")" << endl;
 
 	if(column1.size() > 0 && column1.size() != validLocksG1.size()){
 		cerr << "Warning: Out of " << column1.size() << " locks only ";
 		cerr << validLocksG1.size() << " were valid locks. [Invalid locks are ignored]" << endl;
 	}
+
+	cerr << "locking initialization done (" << T2.elapsedString() << ")" << endl;
 }
