@@ -1478,7 +1478,10 @@ double SANA::findTInitialByLinearRegression(bool scoreBased){
 		}
 		maxx = max(maxx, scoreMap[i]);
 		progress++;
-		cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << scoreMap[i] << endl;
+        if(scoreBased)
+            cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
+        else
+            cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << scoreMap[i] << endl;
 	}
 	cerr << endl;
 	//close the cahce file stream
