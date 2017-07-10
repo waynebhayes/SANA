@@ -623,7 +623,7 @@ void SANA::performChange() {
 	    wecSum = newWecSum;
 	    ewecSum = newEwecSum;
 	    ncSum = newNcSum;
-	    assert(newCurrentScore == newSquaredAligEdges);
+	    //assert(newCurrentScore == newSquaredAligEdges);
 #if 0
 	    if(randomReal(gen)<=1) {
 		double foo = eval(A);
@@ -712,7 +712,7 @@ void SANA::performSwap() {
 	    wecSum = newWecSum;
 	    ewecSum = newEwecSum;
 	    ncSum = newNcSum;
-	    assert(newCurrentScore == newSquaredAligEdges);
+	    //assert(newCurrentScore == newSquaredAligEdges);
 #if 0
 	    if(randomReal(gen)<=1) {
 		double foo = eval(A);
