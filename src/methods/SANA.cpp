@@ -892,10 +892,10 @@ int SANA::squaredAligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort ne
                 // Account for ushort edges? Or assume smaller graph is edge value 1?
                 int diff;
 	        diff = SQRDIFF(oldTarget, neighbor);
-		assert(fabs(diff)<100);
+		assert(fabs(diff)<1100);
                 res -= diff>0?diff:0;
                 diff = SQRDIFF(newTarget, neighbor);
-		assert(fabs(diff)<100);
+		assert(fabs(diff)<1100);
                 res += diff>0?diff:0;
 	}
 	return res;
@@ -906,19 +906,19 @@ int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort targe
 	for (uint i = 0; i < G1AdjLists[source1].size(); i++) {
 		ushort neighbor = G1AdjLists[source1][i];
                 diff = SQRDIFF(target1, neighbor);
-		assert(fabs(diff)<100);
+		assert(fabs(diff)<1100);
                 res -= diff>0?diff:0;
                 diff = SQRDIFF(target2, neighbor);
-		assert(fabs(diff)<100);
+		assert(fabs(diff)<1100);
                 res += diff>0?diff:0;
 	}
 	for (uint i = 0; i < G1AdjLists[source2].size(); i++) {
 		ushort neighbor = G1AdjLists[source2][i];
                 diff = SQRDIFF(target2, neighbor);
-		assert(fabs(diff)<100);
+		assert(fabs(diff)<1100);
                 res -= diff>0?diff:0;
                 diff = SQRDIFF(target1, neighbor);
-		assert(fabs(diff)<100);
+		assert(fabs(diff)<1100);
                 res += diff>0?diff:0;
 	}
         // How to do for squared?
@@ -1557,7 +1557,7 @@ double SANA::findTInitialByLinearRegression(bool scoreBased){
 	right << pow(10, upperTBound) << "," << maxx << endl;
 	right << pow(10, upperTBound) << "," << 0.0 << endl;
 	right.close();
-	if(schedule)exit(0);
+	if(scheduleOnly)exit(0);
 	return pow(10, startingTemperature);
 }
 
