@@ -12,6 +12,9 @@ bool multiPairwiseIteration;
 
 void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
   const MeasureCombination& M, Method* method, ofstream& stream) {
+
+  Timer T1;
+  T1.start();
   int numCCsToPrint = 3;
 
   stream << endl << currentDateTime() << endl << endl;
@@ -40,9 +43,17 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
   if(!multiPairwiseIteration)
 #endif
   {
+      cerr << "  printing stats done (" << T1.elapsedString() << ")" << endl;
+      Timer T2;
+      T2.start();
+
       stream << endl << "Scores:" << endl;
       M.printMeasures(A, stream);
       stream << endl;
+
+      cerr << "  printing scores done (" << T2.elapsedString() << ")" << endl;
+      Timer T3;
+      T3.start();
 
       Graph CS = A.commonSubgraph(G1, G2);
       stream << "Common subgraph:" << endl;
@@ -81,6 +92,7 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
       stream << "Common connected subgraphs:" << endl;
       printTable(table, 2, stream);
       stream << endl;
+      cerr << "  printing tables done (" << T2.elapsedString() << ")" << endl;
   }
 }
 
@@ -91,7 +103,7 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   ofstream outfile,
            alignfile;
   reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, outfile, G1.getName(), G2.getName(), method, A);
-  alignfile.open((reportFileName + ".align").c_str());  
+  alignfile.open((reportFileName + ".align").c_str());
 
   A.write(outfile);
   A.writeEdgeList(&G1, &G2, alignfile);
@@ -105,7 +117,7 @@ void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
   MeasureCombination const & M, Method * const method, string & localMeasureFileName) {
   Timer T;
   T.start();
-  if(M.getSumLocalWeight() <= 0) { //This is how needLocal is calculated in SANA.cpp 
+  if(M.getSumLocalWeight() <= 0) { //This is how needLocal is calculated in SANA.cpp
     cerr << "No local measures provided, not writing local scores file." << endl;
     return;
   }
@@ -119,8 +131,8 @@ void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
 /*"Ensure" here means ensure that there is a valid file to output to.
 NOTE: the && is a move semantic, which moves the internal pointers of one object
 to another and then destructs the original, instead of destructing all of the
-internal data of the original. 
-It is assumed that the graph names are passed as r-values, thus this function will likely 
+internal data of the original.
+It is assumed that the graph names are passed as r-values, thus this function will likely
 fail compilation if l-value graph names are passed.*/
 string  ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFileName, ofstream & outfile, string && G1Name, string && G2Name, Method * const & method, Alignment const & A) {
   string extension = fileType == "local measure" ? ".localscores" :

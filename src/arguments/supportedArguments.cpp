@@ -52,6 +52,11 @@ vector<array<string, 6>> supportedArguments = {
 	{ "-lock", "string", "", "Node-to-Node Locking", "Specify a two column file of node pairs that are locked in the alignment.", "0" },
 	{ "-seed", "double", "RANDOM", "Random Seed", "Serves as a random seed in SANA.", "0" },
 	{ "-restart", "bool", "false", "(DEPRECATED)Restart Scheme", "(DEPRECATED)Active the restart scheme in SANA.", "0" },
+	{ "-scheduleOnly", "bool", "false", "Temperature schedule only", "Compute temperature schedule and exit", "0" },
+#ifdef WEIGHTED
+	{ "-multi-iteration-only", "bool", "false", "Multi-Pairwise Iteration", "Skip all analysis for a normal iteration, just do the anneal", "0"},
+#endif
+
 	{ "-tnew", "double", "3", "(DEPRECATED)Restart Scheme t1", "(DEPRECATED)Parameter t1 of the restart scheme, in minutes", "0" },
 	{ "-iterperstep", "double", "10000000", "(DEPRECATED)Restart Scheme N", "(DEPRECATED)Parameter N of the restart scheme.", "0" },
 	{ "-numcand", "double", "3", "(DEPRECATED)Restart Scheme K", "(DEPRECATED)Parameter K of the restart scheme.", "0" },
