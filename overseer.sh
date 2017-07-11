@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PARALLEL="parallel -s sh 8"
+PARALLEL="parallel -s sh 35"
 
 TMPDIR=/tmp/overseer.$$
 trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
@@ -14,6 +14,7 @@ warn() { echo "WARNING: $@" >&2
 parallel_delay() {
     cat > $TMPDIR/pd
     head -1 $TMPDIR/pd | sh &
+    sleep 1
     until [ -f "$1" ]; do sleep 1; done
     tail -n +2 $TMPDIR/pd | $PARALLEL
 }
@@ -57,10 +58,10 @@ else
     ./scripts/create_shadow.py -s $MAX_NODES -a $OUTDIR/dir-init/shadow-*.align -n "$@" >$OUTDIR/dir0/$NAME-shadow0.el || die "$NAME-shadow0.el network creation failed"
     mv $OUTDIR/dir-init/shadow-*.align $OUTDIR/dir-init/shadow-*.out $OUTDIR/dir0
 
-    # Now get temperature schedule
+    # Now get temperature schedule and SES denominator (the latter requires *.out files so don't use -scheduleOnly)
     mkdir -p $OUTDIR/dir-init
-    ls "$@" | awk '{file=$0;gsub(".*/",""); gsub(".el$",""); gsub(".gw$",""); printf "'$SANA' -s3 0 -ses 1 -t 1 -fg1 %s -fg2 '$OUTDIR/dir0/$NAME-shadow0.el' -o '$OUTDIR'/dir-init/%s 2>'$OUTDIR'/dir-init/%s.stderr\n", file,$0,$0}' | parallel_delay networks/$NAME-shadow0/$NAME-shadow0.gw
-
+    /bin/rm -rf networks/$NAME-shadow0
+    ls "$@" | awk '{file=$0;gsub(".*/",""); gsub(".el$",""); gsub(".gw$",""); printf "'$SANA' -t 1 -s3 0 -ses 1 -fg1 %s -fg2 '$OUTDIR/dir0/$NAME-shadow0.el' -o '$OUTDIR'/dir-init/%s 2>'$OUTDIR'/dir-init/%s.stderr\n", file,$0,$0}' | parallel_delay networks/$NAME-shadow0/$NAME-shadow0.gw
     grep '^Initial Temperature: ' $OUTDIR/dir-init/*.stderr | sed -e "s,$OUTDIR/dir-init/,," -e 's/\.stderr//' -e 's/:/ /' | awk '{print $1,$4,$7}' > $OUTDIR/dir-init/tinitial-final.txt
     grep '^tdecay' $OUTDIR/dir-init/*.stderr | sed -e "s,$OUTDIR/dir-init/,," -e 's/.stderr//' -e 's/:/ /' | awk '{print $1,$3}' > $OUTDIR/dir-init/tdecay.txt
 
@@ -80,11 +81,12 @@ do
     i1=`expr $i + 1`
     if [ -f $OUTDIR/dir$i1/$NAME-shadow$i1.el ]; then continue; fi
     mkdir -p $OUTDIR/dir$i1
+    /bin/rm -rf networks/$NAME-shadow$i
     for g
     do
 	bg=`basename $g .gw`
 	bg=`basename $bg .el`
-	named-col-prog 'if(!index(name,"'$bg'"))next; i='$i';ITER='$ITER'; e0=log(tinitial);e1=log(tfinal);printf "'$SANA' -s3 0 -ses 1 -t 1 -fg1 '$g' -fg2 '$OUTDIR/dir$i/$NAME-shadow$i.el' -tinitial %g -tdecay %g -o '$OUTDIR/dir$i1/shadow-$bg' 2>'$OUTDIR/dir$i1/shadow-$bg.stderr' -startalignment '$OUTDIR/dir$i/shadow-$bg.out'\n", tinitial*exp((e1-e0)*i/ITER),tdecay/ITER' $OUTDIR/dir-init/schedule.tsv
+	named-col-prog 'if(!index(name,"'$bg'"))next; i='$i';ITER='$ITER'; e0=log(tinitial);e1=log(tfinal);printf "'$SANA' -multi-iteration-only -s3 0 -ses 1 -t '$T_ITER' -fg1 '$g' -fg2 '$OUTDIR/dir$i/$NAME-shadow$i.el' -tinitial %g -tdecay %g -o '$OUTDIR/dir$i1/shadow-$bg' 2>'$OUTDIR/dir$i1/shadow-$bg.stderr' -startalignment '$OUTDIR/dir$i/shadow-$bg.out'\n", tinitial*exp((e1-e0)*i/ITER),tdecay/ITER' $OUTDIR/dir-init/schedule.tsv
     done | parallel_delay networks/$NAME-shadow$i/$NAME-shadow$i.gw
     ./scripts/create_shadow.py -c -s $MAX_NODES -a $OUTDIR/dir$i1/shadow-*.out -n "$@" >$OUTDIR/dir$i1/$NAME-shadow$i1.el || die "$OUTDIR/dir$i1/$NAME-shadow$i1.el network creation failed"
 done

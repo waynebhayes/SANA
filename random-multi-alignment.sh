@@ -45,7 +45,8 @@ do
     esac | randomizeLines | tee $TMPDIR/$b.1.nodes | wc -l > $TMPDIR/$b.1.numNodes
     if $TYPES; then awk '{n[$2]=1}END{for(i in n)print i}' $i | randomizeLines | tee $TMPDIR/$b.2.nodes | wc -l > $TMPDIR/$b.2.numNodes; fi
 done
-GROUP=`echo " $GROUP" | sed 's/^ -//'`
+#GROUP=`echo " $GROUP" | sed 's/^ -//'`
+GROUP=group
 #SHADOW_NODES=`cd $TMPDIR && grep . *.numNodes | sed -e 's/\.numNodes//' -e 's/:/ /' | sort -k 2n | tail -1 | awk '{print $2}'`
 paste $TMPDIR/*.1.nodes | sed -e 's/		/	_	/g' -e 's/		/	_	/g' -e 's/^	/_	/' -e 's/	$/	_/' > $TMPDIR/$GROUP.align
 paste $TMPDIR/*.2.nodes 2>/dev/null | sed -e 's/		/	_	/g' -e 's/		/	_	/g' -e 's/^	/_	/' -e 's/	$/	_/' >> $TMPDIR/$GROUP.align

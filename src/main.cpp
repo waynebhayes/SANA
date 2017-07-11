@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-using namespace std;
+bool scheduleOnly;
 
-bool schedule;
+using namespace std;
 
 int main(int argc, char* argv[]) {
     if(argc == 1) {
@@ -25,17 +25,17 @@ int main(int argc, char* argv[]) {
     ArgumentParser args(stringArgs, doubleArgs, boolArgs, doubleVectorArgs, stringVectorArgs);
     args.parseArgs(argc, argv, defaultArguments, true);
 
-    system("hostname -f >&2");
+    //system("hostname -f >&2");
 
     args.writeArguments();
 
     if(args.doubles["-seed"] != 0) {
         setSeed(args.doubles["-seed"]);
     }
-	if(args.bools["schedule"]){
-		schedule = true;
+	if(args.bools["-scheduleOnly"]){
+		scheduleOnly = true;
 	}else{
-		schedule = false;
+		scheduleOnly = false;
 	}
     cerr << "Seed: " << getRandomSeed() << endl;
     Mode* mode = selectMode(args);

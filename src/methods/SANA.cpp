@@ -623,7 +623,7 @@ void SANA::performChange() {
 	    wecSum = newWecSum;
 	    ewecSum = newEwecSum;
 	    ncSum = newNcSum;
-	    assert(newCurrentScore == newSquaredAligEdges);
+	    //assert(newCurrentScore == newSquaredAligEdges);
 #if 0
 	    if(randomReal(gen)<=1) {
 		double foo = eval(A);
@@ -712,7 +712,7 @@ void SANA::performSwap() {
 	    wecSum = newWecSum;
 	    ewecSum = newEwecSum;
 	    ncSum = newNcSum;
-	    assert(newCurrentScore == newSquaredAligEdges);
+	    //assert(newCurrentScore == newSquaredAligEdges);
 #if 0
 	    if(randomReal(gen)<=1) {
 		double foo = eval(A);
@@ -1478,7 +1478,10 @@ double SANA::findTInitialByLinearRegression(bool scoreBased){
 		}
 		maxx = max(maxx, scoreMap[i]);
 		progress++;
-		cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << scoreMap[i] << endl;
+        if(scoreBased)
+            cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
+        else
+            cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << scoreMap[i] << endl;
 	}
 	cerr << endl;
 	//close the cahce file stream
@@ -1501,7 +1504,7 @@ double SANA::findTInitialByLinearRegression(bool scoreBased){
 	//increasing temperature until an acceptablly high probability is reached
 	int iteration = 1;
 	cerr << "Increasing temperature from " << pow(10, startingTemperature) << " until an acceptable probability is reached" << endl;
-	while(startingProbability < 0.99){
+	while(scoreBased ? false : startingProbability < 0.99){
 		startingTemperature += 0.4;
 		startingProbability = pForTInitial(pow(10, startingTemperature));
 		cerr << iteration << ": Temperature: " << pow(10, startingTemperature) << " PBad: " << startingProbability << endl;
@@ -1511,7 +1514,7 @@ double SANA::findTInitialByLinearRegression(bool scoreBased){
 	//decreasubg temperature until an acceptablly low probability is reached
 	double finalTemperature = get<2>(regressionResult);
 	double finalProbability = pForTInitial(pow(10, finalTemperature));
-	while(finalProbability > 0.00001){
+	while(scoreBased ? false : finalProbability > 0.00001){
 		finalTemperature -= 0.1;
 		finalProbability = pForTInitial(pow(10, finalTemperature));
 		cerr << "Temperature: " << pow(10, finalTemperature) << " PBad: " << finalProbability << endl;
