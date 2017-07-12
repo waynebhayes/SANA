@@ -883,7 +883,7 @@ int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ush
 }
 
 static int _edgeVal;
-#define SQRDIFF(i,j) ((_edgeVal=G2AdjMatrix[i][A[j]]), 2*((_edgeVal<1000?_edgeVal:0) + 1)) // sometimes it's -1!?
+#define SQRDIFF(i,j) ((_edgeVal=G2AdjMatrix[i][A[j]]), 2*((_edgeVal<1000?_edgeVal:0) + 1))
 /*#define SQRDIFF(i,j) (2*(G2AdjMatrix[i][A[j]] + 1))*/
 int SANA::squaredAligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
 	int res = 0;
