@@ -3,13 +3,13 @@
 USAGE="$0 <multi-align file with K columns> <list of exactly K networks in edgelist format, in the same order the columns of the multi-align file>"
 
 hawk 'ARGIND==1{
-	if(ARGIND-2!=net){printf "reading file %s\n",FILENAME; net=ARGIND-2}
+	if(ARGIND-2!=net){printf "reading file %s\n",FILENAME > "/dev/fd/2"; net=ARGIND-2}
 	cluster[FNR-1]="\t"$0"\t";
 	for(i=1;i<=NF;i++) A[FNR-1][i-1]=$i;
 	NC++;
     }
     ARGIND>1{
-	if(ARGIND-2!=net){printf "reading file %s\n",FILENAME; net=ARGIND-2;netName[net]=FILENAME}
+	if(ARGIND-2!=net){printf "reading file %s\n",FILENAME > "/dev/fd/2"; net=ARGIND-2;netName[net]=FILENAME}
 	node[net][$1]=1;
 	node[net][$2]=1;
 	edgeList[net][$1][$2]=edgeList[net][$2][$1]=1
@@ -38,7 +38,7 @@ hawk 'ARGIND==1{
 		    }
 		if(E>1)
 		{
-		    printf "Cluster (%d,%d) = \n\t(%s,\n\t%s)\nE=%d s=%d E*E/s=%g\n", i,j,cluster[i],cluster[j],E,s,E*E/s;
+		    #printf "Cluster (%d,%d) = \n\t(%s,\n\t%s)\nE=%d s=%d E*E/s=%g\n", i,j,cluster[i],cluster[j],E,s,E*E/s;
 		    cs+=E*E/s
 		}
 	    };
