@@ -1,32 +1,38 @@
 #!/bin/sh
+USAGE="USAGE: $0 sana.exe iterations time-per-iter parallel-spec outdir {list of input networks}
+parallel-spec is either a machine file for distrib_stdin, or '-parallel K' for K processes locally"
 
-PARALLEL="parallel -s sh 35"
+die() { echo "$USAGE" >&2; echo "FATAL ERROR: $*" >&2; exit 1
+}
+
+PARALLEL='distrib_stdin.new -s 0.03 -f $MACHINES'
 
 TMPDIR=/tmp/overseer.$$
 trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
 
-USAGE="USAGE: $0 sana.exe iterations outdir {list of input networks}"
-die() { echo "$USAGE" >&2; echo "$@" >&2; exit 1
-}
-warn() { echo "WARNING: $@" >&2
-}
 parallel_delay() {
     cat > $TMPDIR/pd
     head -1 $TMPDIR/pd | sh &
     sleep 1
     until [ -f "$1" ]; do sleep 1; done
-    tail -n +2 $TMPDIR/pd | $PARALLEL
+    tail -n +2 $TMPDIR/pd | eval $PARALLEL
 }
 
 SANA="$1"
 ITER_EXPR="$2"
-OUTDIR="$3"
+T_ITER="$3"
+MACHINES="$4"
+OUTDIR="$5"
 NAME=`basename "$OUTDIR"`
 export SANA ITER_EXPR NAME
-shift 3
+shift 5
 
 [ -x "$SANA" ] || die "first argument '$SANA' must be an executable file"
+case "$MACHINES" in
+    -parallel*) PARALLEL='parallel -s bash '`echo $MACHINES | awk '{print $NF}'`;;
+    *) [ -f "$MACHINES" ] || die "4th argument '$MACHINES' must be '-parallel N' or a machine list for distrib_stdin";;
+esac
 ITER=`parse "$ITER_EXPR"` || die "'$ITER_EXPR': cannot figure out iteration count"
 if [ -d "$OUTDIR" ]; then
     warn "outdir '$OUTDIR' already exists; continuing"
