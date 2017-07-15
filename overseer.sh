@@ -4,11 +4,13 @@ parallel-spec is either a machine file for distrib_stdin, or '-parallel K' for K
 
 die() { echo "$USAGE" >&2; echo "FATAL ERROR: $*" >&2; exit 1
 }
+warn() { echo "Warning: $*" >&2
+}
 
 PARALLEL='distrib_stdin.new -s 0.03 -f $MACHINES'
 
 TMPDIR=/tmp/overseer.$$
-trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
+trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
 mkdir $TMPDIR
 
 parallel_delay() {
@@ -81,19 +83,27 @@ DENOM=`
 	awk '{m[NR-1]=$1}END{for(i=0;i<NR;i++) if(NR-i>1){D+=(NR-i)^2*m[i];for(j=i+1;j<NR;j++)m[j]-=m[i]}; print D}'
 `
 echo Denominator for ses score is $DENOM
+export DENOM
 for i in `integers $ITER`
 do
-    echo ---- ITER $i ----- `date`
+    echo ''
+    echo -n ---- ITER $i ----- `date`
     i1=`expr $i + 1`
     if [ -f $OUTDIR/dir$i1/$NAME-shadow$i1.el ]; then continue; fi
     mkdir -p $OUTDIR/dir$i1
-    /bin/rm -rf networks/$NAME-shadow$i
     for g
     do
 	bg=`basename $g .gw`
 	bg=`basename $bg .el`
-	named-col-prog 'if(!index(name,"'$bg'"))next; i='$i';ITER='$ITER'; e0=log(tinitial);e1=log(tfinal);printf "'$SANA' -multi-iteration-only -s3 0 -ses 1 -t '$T_ITER' -fg1 '$g' -fg2 '$OUTDIR/dir$i/$NAME-shadow$i.el' -tinitial %g -tdecay %g -o '$OUTDIR/dir$i1/shadow-$bg' 2>'$OUTDIR/dir$i1/shadow-$bg.stderr' -startalignment '$OUTDIR/dir$i/shadow-$bg.out'\n", tinitial*exp((e1-e0)*i/ITER),tdecay/ITER' $OUTDIR/dir-init/schedule.tsv
-    done | parallel_delay networks/$NAME-shadow$i/$NAME-shadow$i.gw
+	echo shadow-$bg.out.align >> $OUTDIR/dir$i1/expected-outFiles.txt
+	named-col-prog 'if(name!="'$bg'")next; i='$i';ITER='$ITER'; e0=log(tinitial);e1=log(tfinal);printf "'$SANA' -multi-iteration-only -s3 0 -ses 1 -t '$T_ITER' -fg1 '$g' -fg2 '$OUTDIR/dir$i/$NAME-shadow$i.el' -tinitial %g -tdecay %g -o '$OUTDIR/dir$i1/shadow-$bg' 2>'$OUTDIR/dir$i1/shadow-$bg.stderr' -startalignment '$OUTDIR/dir$i/shadow-$bg.out'\n", tinitial*exp((e1-e0)*i/ITER),tdecay/ITER' $OUTDIR/dir-init/schedule.tsv
+    done | sort -u > $OUTDIR/dir$i/jobs.txt
+    /bin/rm -rf networks/$NAME-shadow$i
+    while [ `ls $OUTDIR/dir$i1 | fgrep -f $OUTDIR/dir$i1/expected-outFiles.txt | tee $OUTDIR/dir$i/jobs-done.txt | wc -l` -lt `echo "$@" | wc -w` ]; do
+	fgrep -v -f $OUTDIR/dir$i/jobs-done.txt $OUTDIR/dir$i/jobs.txt | parallel_delay networks/$NAME-shadow$i/$NAME-shadow$i.gw # wait until that file is created before parallel'ing
+    done
+    ./shadow2align.sh $OUTDIR/dir$i1/*.align > $DIR/dir$i1/multiAlign.tsv
     ./scripts/create_shadow.py -c -s $MAX_NODES -a $OUTDIR/dir$i1/shadow-*.out -n "$@" >$OUTDIR/dir$i1/$NAME-shadow$i1.el || die "$OUTDIR/dir$i1/$NAME-shadow$i1.el network creation failed"
+    awk '$3>1{sum2+=$3^2}END{printf " SES %g", sum2/'$DENOM'}' $OUTDIR/dir$i1/$NAME-shadow$i1.el
+    #./CIQ.sh $OUTDIR/dir$i1/multiAlign.tsv `echo "$@" | newlines | sed 's/\.gw/.el/'` & # don't wait it takes forever
 done
-awk '$3>1{sum2+=$3^2}END{print "Final score:", sum2/'$DENOM'}' $OUTDIR/dir$ITER/$NAME-shadow$ITER.el
