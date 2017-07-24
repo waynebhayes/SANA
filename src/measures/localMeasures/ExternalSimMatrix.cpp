@@ -21,6 +21,7 @@ void ExternalSimMatrix::initSimMatrix() {
     switch(format) {
     case 0:	loadFormat0();	break;
     case 1:	loadFormat1();	break;
+    case 2: loadFormat2();  break;
     default:				break;
     }
 
@@ -46,6 +47,16 @@ void ExternalSimMatrix::loadFormat1() {
 		ushort m = g2Map[words[i+1]];
 		sims[n][m] = stod(words[i+2]);
 	}
+}
+
+void ExternalSimMatrix::loadFormat2() {
+    vector<string> words = fileToStrings(file, false);
+    for(uint i = 0; i < G1->getNumNodes(); i++){
+        for(uint j = 0; j < G2->getNumNodes(); j++){
+            double sim = stod(words[i*G2->getNumNodes() + j]);
+            sims[i][j] = sim;
+        }
+    }
 }
 
 ExternalSimMatrix::~ExternalSimMatrix() {

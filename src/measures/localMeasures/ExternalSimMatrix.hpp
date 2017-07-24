@@ -10,6 +10,7 @@ private:
     void initSimMatrix();
     void loadFormat0();
     void loadFormat1();
+    void loadFormat2();
     string file;
     int format;
 };
