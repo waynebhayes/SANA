@@ -62,8 +62,8 @@ vector<array<string, 6>> supportedArguments = {
 	{ "-numcand", "double", "3", "(DEPRECATED)Restart Scheme K", "(DEPRECATED)Parameter K of the restart scheme.", "0" },
 	{ "-tcand", "double", "1", "Restart Scheme t2(DEPRECATED)", "(DEPRECATED)Parameter t2 of the restart scheme, in minutes", "0" },
 	{ "-tfin", "double", "3", "Restart Scheme t3(DEPRECATED)", "(DEPRECATED)Parameter t3 of the restart scheme, in minutes", "0" },
-	{ "END Additional options to consider when method is \"sana\" (the default)", "", "banner", "", "", "0" },
 	{ "-use-score-based-schedule", "bool", "false", "Use score based regression", "Enable to use a pbad based linear regression", "0" },
+	{ "END Additional options to consider when method is \"sana\" (the default)", "", "banner", "", "", "0" },
 	//----------------------------------END SANA-----------------------------------------
 
 	//------------------------------------TABU-------------------------------------------
@@ -192,7 +192,7 @@ vector<array<string, 6>> supportedArguments = {
 
 	//---------------------------------SIMILARITY----------------------------------------
 	{ "", "", "banner", "", "More options for \"-mode similarity\"", "0" },
-	{ "-simFormat", "double_vector", "0", "Similarity File Format", "Used in Similarity Mode \"-mode similarity\" and with \"-objfuntype -esim\". Allowed values are 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
+	{ "-simFormat", "double_vector", "0", "Similarity File Format", "Used in Similarity Mode \"-mode similarity\" and with \"-objfuntype -esim\". Allowed values are 2=G1 doubles down by G2 doubles across matrix where node order corresponds to .gw files; 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
 	{ "End More options for \"-mode similarity\"", "", "banner", "", "", "0" },
 	//-------------------------------END SIMILARITY--------------------------------------
 	
