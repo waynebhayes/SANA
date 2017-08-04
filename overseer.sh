@@ -6,6 +6,10 @@ die() { echo "$USAGE" >&2; echo "FATAL ERROR: $*" >&2; exit 1
 }
 warn() { echo "Warning: $*" >&2
 }
+parse() { awk "BEGIN{print ($*)}" </dev/null
+}
+newlines() { /bin/awk '{for(i=1; i<=NF; i++) print $i}' "$@"
+}
 
 PARALLEL='distrib_stdin.new -s 0.03 -f $MACHINES'
 
