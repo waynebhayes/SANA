@@ -39,43 +39,32 @@ ITER=`parse "$ITER_EXPR"` || die "'$ITER_EXPR': cannot figure out iteration coun
 if [ -d "$OUTDIR" ]; then
     warn "outdir '$OUTDIR' already exists; continuing"
     MAX_NODES=`lss $OUTDIR/dir-init/*.align | awk 'NR==1{print $NF}' | xargs cat | wc -l` || die "Couldn't figure out value of MAX_NODES from '$OUTDIR/dir-init/*.align'"
-else
-    mkdir -p "$OUTDIR"/dir-init || die "Cannot make outdir '$OUTDIR'"
+fi
 
-    # NOTE: REMAINDER OF THE COMMAND LINE IS ALL THE INPUT NETWORKS
+mkdir -p "$OUTDIR"/dir-init || die "Cannot make outdir '$OUTDIR'"
 
-    # Create initial random alignment, which also tells us the number of nodes.
-    ./random-multi-alignment.sh "$OUTDIR"/dir-init "$@"
-    MAX_NODES=`lss $OUTDIR/dir-init/*.align | awk 'NR==1{print $NF}' | xargs cat | wc -l`
+# NOTE: REMAINDER OF THE COMMAND LINE IS ALL THE INPUT NETWORKS
 
-    #BIGGEST=`grep -c '^_	' $OUTDIR/dir-init/*.align | sed 's/:/ /' | awk '$2==0{print $1}' | sed -e 's/.*shadow-//' -e 's/.align//'`
+# Create initial random alignment, which also tells us the number of nodes.
+[ -f "$OUTDIR"/dir-init/group.align ] || ./random-multi-alignment.sh "$OUTDIR"/dir-init "$@"
+MAX_NODES=`lss $OUTDIR/dir-init/*.align | awk 'NR==1{print $NF}' | xargs cat | wc -l`
 
-    #for i
-    #do
-    #    case "$i" in
-    #	*.gw) N=`head -n 10 "$i" | awk 'NF==1&&1*$1==$1&&$1>0{print}'`;;
-    #	*.el) N=`newlines < $i | sort -u | wc -l`;;
-    #    esac
-    #    if echo "$i" | grep -e "$BIGGEST" >/dev/null && [ "$N" -eq "$MAX_NODES" ]; then
-    #	BIGGEST_FILE="$i"
-    #    fi
-    #done
-    #[ -f "$BIGGEST_FILE" ] || die "couldn't figure out how to find biggest input network file from '$BIGGEST' and $MAX_NODES"
+mkdir -p $OUTDIR/dir0
+[ -f $OUTDIR/dir0/$NAME-shadow0.el ] || (./scripts/create_shadow.py -s $MAX_NODES -a $OUTDIR/dir-init/shadow-*.align -n "$@" >$OUTDIR/dir0/$NAME-shadow0.el) || die "$NAME-shadow0.el network creation failed"
+mv $OUTDIR/dir-init/shadow-*.align $OUTDIR/dir-init/shadow-*.out $OUTDIR/dir0
 
-    mkdir -p $OUTDIR/dir0
-    ./scripts/create_shadow.py -s $MAX_NODES -a $OUTDIR/dir-init/shadow-*.align -n "$@" >$OUTDIR/dir0/$NAME-shadow0.el || die "$NAME-shadow0.el network creation failed"
-    mv $OUTDIR/dir-init/shadow-*.align $OUTDIR/dir-init/shadow-*.out $OUTDIR/dir0
-
-    # Now get temperature schedule and SES denominator (the latter requires *.out files so don't use -scheduleOnly)
-    mkdir -p $OUTDIR/dir-init
-    /bin/rm -rf networks/$NAME-shadow0
-    ls "$@" | awk '{file=$0;gsub(".*/",""); gsub(".el$",""); gsub(".gw$",""); printf "mkdir -p '$OUTDIR/dir-init';'$SANA' -t 1 -s3 0 -ses 1 -fg1 %s -fg2 '$OUTDIR/dir0/$NAME-shadow0.el' -o '$OUTDIR'/dir-init/%s 2>'$OUTDIR'/dir-init/%s.stderr\n", file,$0,$0}' | parallel_delay networks/$NAME-shadow0/$NAME-shadow0.gw
+# Now get temperature schedule and SES denominator (the latter requires *.out files so don't use -scheduleOnly)
+mkdir -p $OUTDIR/dir-init
+/bin/rm -rf networks/$NAME-shadow0
+touch $OUTDIR/dir-init/schedule.tsv
+while [ `awk '{printf "%s.stderr\n", $1}' $OUTDIR/dir-init/tdecay.txt | tee $OUTDIR/dir-init/schedule.done | wc -l` -lt `echo "$@" | wc -w` ]; do
+    ls "$@" | awk '{file=$0;gsub(".*/",""); gsub(".el$",""); gsub(".gw$",""); printf "mkdir -p '$OUTDIR/dir-init';'$SANA' -t 1 -s3 0 -ses 1 -fg1 %s -fg2 '$OUTDIR/dir0/$NAME-shadow0.el' -o '$OUTDIR'/dir-init/%s 2>'$OUTDIR'/dir-init/%s.stderr\n", file,$0,$0}' | fgrep -v -f $OUTDIR/dir-init/schedule.done | parallel_delay networks/$NAME-shadow0/$NAME-shadow0.gw
     grep '^Initial Temperature: ' $OUTDIR/dir-init/*.stderr | sed -e "s,$OUTDIR/dir-init/,," -e 's/\.stderr//' -e 's/:/ /' | awk '{print $1,$4,$7}' > $OUTDIR/dir-init/tinitial-final.txt
     grep '^tdecay' $OUTDIR/dir-init/*.stderr | sed -e "s,$OUTDIR/dir-init/,," -e 's/.stderr//' -e 's/:/ /' | awk '{print $1,$3}' > $OUTDIR/dir-init/tdecay.txt
-
     echo 'name	tinitial	tfinal	tdecay' | tee $OUTDIR/dir-init/schedule.tsv
     paste $OUTDIR/dir-init/tinitial-final.txt $OUTDIR/dir-init/tdecay.txt | awk '$1==$4{printf "%s\t%s\t%s\t%s\n",$1,$2,$3,$5}' | tee -a $OUTDIR/dir-init/schedule.tsv
-fi
+done
+
 DENOM=`
     cd $OUTDIR/dir-init;
     for i in *.out; do awk '/^G1:/{getline; getline; ;m=$NF;print m}' $i; done |
