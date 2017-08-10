@@ -103,7 +103,7 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   ofstream outfile,
            alignfile;
   reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, outfile, G1.getName(), G2.getName(), method, A);
-  alignfile.open((reportFileName + ".align").c_str());
+  alignfile.open((reportFileName.substr(0,reportFileName.length()-4) + ".align").c_str());
 
   A.write(outfile);
   A.writeEdgeList(&G1, &G2, alignfile);
