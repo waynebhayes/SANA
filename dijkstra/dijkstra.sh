@@ -19,6 +19,10 @@ awk 'BEGIN{N=0}/\|{/{if(NF==1){gsub("[|{}]",""); print N, $0 > "'"$TMPDIR/"'node
 #Now map the simfile to integers: note that the simfile has columns reversed!
 #Note that internally I need to map to 1 so that the boolean existence check works, but back to 0 on output.
 (cat $TMPDIR/nodes1.txt; echo G2; cat $TMPDIR/nodes2.txt; echo simFile; /home/wayne/bin/wzcat $simFile) | 
+    # UNCOMMENT EXACTLY ONE OF THE FOLLOWING AWK SCRIPTS
+    # top one assumes sims are protein names, so it pulls from the second column of nodes*.txt file
     awk '/^simFile$/{simFile=1;next}/^G2$/{G2=1;next}{if(simFile){if(!G1int[$1]||!G2int[$2]) {print "ERROR: cannot find one of the nodes " $1 " or " $2 >"/dev/fd/2"; exit 1}; print G2int[$2]-1,G1int[$1]-1,$3 > "'"$TMPDIR/"'simFile"} else if(G2)G2int[$2]=$1+1;else G1int[$2]=$1+1}'
+    # second one assumes sims are already integers, so it pulls from the first column of nodes*.txt file
+    #awk '/^simFile$/{simFile=1;next}/^G2$/{G2=1;next}{if(simFile){if(!G1int[$1]||!G2int[$2]) {print "ERROR: cannot find one of the nodes " $1 " or " $2 >"/dev/fd/2"; exit 1}; print G2int[$2]-1,G1int[$1]-1,$3 > "'"$TMPDIR/"'simFile"} else if(G2)G2int[$1]=$1+1;else G1int[$1]=$1+1}'
 echo Python-compatible files are now in the directory $TMPDIR:
 /bin/ls -lL $TMPDIR/*
