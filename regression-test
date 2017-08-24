@@ -126,7 +126,7 @@ if [ ! -z "$CompareFile" ]; then
 	echo "$name: ($newItem - $baseItem)/$baseItem, changeFrac: $errorDif, margin $ErrorMargin" >&2
         errorDif=`parse "ABS($errorDif)" | awk '{printf "%.16f\n",$1}'`
         if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
-            REGRESSION_FAILED="true"
+            touch $TMPDIR/failed
 	    echo "$name failed error margin: ($baseItem - $newItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
         fi
     done
@@ -152,12 +152,12 @@ if [ ! -z "$CompareFile" ]; then
     done | parallel -s bash 8
     cat $TMPDIR/networks.locking | while read Network1 Network2; do
 	if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
-	    REGRESSION_FAILED=true
+	    touch $TMPDIR/failed
 	    echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file" >&2
 	fi
     done
 
-    if [ "$REGRESSION_FAILED" = true ];then
+    if [ -f $TMPDIR/failed ] ;then
         exit 1
     else
         exit 0
