@@ -222,7 +222,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 	constantTemp = false;
 	enableTrackProgress = true;
 	iterationsPerStep = 10000000;
-	iterationsPerStep = 10000.+100.*n1+10.*n2+n1*n2*0.1;
+
 
 	//this does not need to be initialized here,
 	//but the space has to be reserved in the
@@ -390,10 +390,8 @@ void SANA::enableRestartScheme(double minutesNewAlignments, uint iterationsPerSt
 	}
 }
 
-double SANA::temperatureFunction(long long int iter, double TInitial, double TDecay) {	
+double SANA::temperatureFunction(long long int iter, double TInitial, double TDecay) {
 	double fraction = iter / (minutes * 60 * getIterPerSecond());
-	//if(iter % iterationsPerStep == 0)
-        //        cerr << fraction << " " << iter << "/" << minutes* 60 * getIterPerSecond() << " guessed rate: " << getIterPerSecond() << " real rate: " << iter/timer.elapsed() << endl;
 	return TInitial * (constantTemp ? 1 : exp(-TDecay*fraction));
 }
 
@@ -508,12 +506,35 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
 		if (interrupt) {
 			return A;
 		}
-		if (iter% (iterationsPerStep) == 0) {
+		if (iter%iterationsPerStep == 0) {
 			trackProgress(iter);
 			if (iter != 0 and timer.elapsed() > maxExecutionSeconds) {
 				return A;
 			}
 		} 
+		SANAIteration();
+	}
+	return A; //dummy return to shut compiler warning
+}
+
+Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIterations,
+		long long int& iter) {
+
+	initDataStructures(startA);
+
+	setInterruptSignal();
+
+	for (; ; iter++) {
+		T = temperatureFunction(iter, TInitial, TDecay);
+		if (interrupt) {
+			return A;
+		}
+		if (iter%iterationsPerStep == 0) {
+			trackProgress(iter);
+		}
+		if (iter != 0 and iter > maxExecutionIterations) {
+			return A;
+		}
 		SANAIteration();
 	}
 	return A; //dummy return to shut compiler warning
@@ -1119,14 +1140,14 @@ void SANA::trackProgress(long long int i) {
 	cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", sampled probability = " << trueAcceptingProbability() << endl;
     //cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << endl;
 
-	//std::ostringstream ss;
-	//ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
+	// std::ostringstream ss;
+	// ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
 
-    //ofstream dump(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(0) + ".csv", std::ofstream::out | std::ofstream::app);
-    //dump.precision(10);
-    //dump << fixed;
-    //dump << timer.elapsed() << "," << currentScore << "," << avgEnergyInc << "," << T << "," << T << "," << trueAcceptingProbability() << "," << lowerTBound << "," << upperTBound << "," << (elapsedEstimate / minutes * 60) << endl;
-    //dump.close();
+ //    ofstream dump(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(0) + ".csv", std::ofstream::out | std::ofstream::app);
+ //    dump.precision(10);
+ //    dump << fixed;
+ //    dump << timer.elapsed() << "," << currentScore << "," << avgEnergyInc << "," << T << "," << T << "," << trueAcceptingProbability() << "," << lowerTBound << "," << upperTBound << "," << (elapsedEstimate / minutes * 60) << endl;
+ //    dump.close();
 	if (not (printDetails or printScores or checkScores)) return;
 	Alignment Al(A);
 	//original one is commented out for testing sec 
@@ -1168,15 +1189,15 @@ void SANA::trackProgress(long long int i) {
 		if (abs(1-ratio) >= .01 &&
 		    (ratio < 1 || SANAtime > .2)) // don't speed it up too soon
 		{
-		    cerr << "avgEnergyInc " << avgEnergyInc << " TInitialScaling " << TInitialScaling << " TInitial " << TInitial << " PBetween " << PBetween << " TDecayScaling " << TDecayScaling << " SANAtime " << SANAtime << endl;
+		    //cerr << "avgEnergyInc " << avgEnergyInc << " TInitialScaling " << TInitialScaling << " TInitial " << TInitial << " PBetween " << PBetween << " TDecayScaling " << TDecayScaling << " SANAtime " << SANAtime << endl;
 		    double shouldBe;
 		    shouldBe = -log(avgEnergyInc/(TInitial*log(PBetween)))/(SANAtime);
 		    if(SANAtime==0 || shouldBe != shouldBe || shouldBe <= 0) 
 			shouldBe = TDecay * (ratio >= 0 ? ratio*ratio : 0.5);
-		    //cerr << "TDecay " << TDecay << " too ";
+		    cerr << "TDecay " << TDecay << " too ";
 		    cerr << (ratio < 1 ? "fast" : "slow") << " shouldBe " << shouldBe;
 		    TDecay = sqrt(TDecay * shouldBe); // geometric mean
-		    TDecay = (TDecay + shouldBe)/2; // arithmetic mean
+		    //TDecay = (TDecay + shouldBe)/2; // arithmetic mean
 		    cerr << "; try " << TDecay << endl;
 		}
 	}
@@ -1573,6 +1594,9 @@ double SANA::pForTInitial(double TInitial) {
  //    pBad = exp(avgEnergyInc/T); // (double)nBad/(EIncs.size());
  //    cerr << " p(Bad) = " << pBad << endl;
 	// return pBad;
+	
+	//Establish the amount of iterations per second before getPforTInitial otherwise it will be calculated with iterationsPerStep = 100000
+	getIterPerSecond();
 
 	uint ITERATIONS = 10000.+100.*n1+10.*n2+n1*n2*0.1; //heuristic value
 	ITERATIONS = 100000;
@@ -1699,6 +1723,24 @@ Alignment SANA::hillClimbingAlignment(long long int idleCountTarget){
     return A;
 }
 
+void SANA::hillClimbingIterations(long long int iterTarget) {
+	// Alignment startA = Alignment::random(n1, n2);
+	Alignment startA = getStartingAlignment();
+	long long int iter = 0;
+
+	//cerr << "We consider that SANA has stagnated if it goes ";
+	//cerr << idleCountTarget << " without improving" << endl;
+
+	initDataStructures(startA);
+	T = 0;
+	for (; iter < iterTarget ; iter++) {
+		if (iter%iterationsPerStep == 0) {
+			trackProgress(iter);
+		}
+		SANAIteration();
+	}
+}
+
 double SANA::expectedNumAccEInc(double temp, const vector<double>& energyIncSample) {
 	double res = 0;
 	for (uint i = 0; i < energyIncSample.size(); i++) {
@@ -1794,7 +1836,7 @@ double SANA::searchTDecay(double TInitial, double minutes) {
 }
 
 double SANA::searchTDecay(double TInitial, uint iterations) {
-	return 0;
+
 	vector<double> EIncs = energyIncSample();
 	cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
@@ -1820,9 +1862,13 @@ double SANA::searchTDecay(double TInitial, uint iterations) {
 	}
 
 	double epsilon = (x_left + x_right)/2;
-	//cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
-	//cerr << "Final T_decay: " << lambda << endl;
-	return 0;
+	cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
+	cerr << "Final epsilon: " << epsilon << endl;
+	long long int iter_t = (long long int)(iterations)*100000000;
+
+	double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t);
+	cerr << "Final T_decay: " << lambda << endl;
+	return lambda;
 }
 
 double SANA::getIterPerSecond() {
@@ -1832,61 +1878,23 @@ double SANA::getIterPerSecond() {
 	return iterPerSecond;
 }
 
-Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIterations,
-		long long int& iter) {
-	initDataStructures(startA);
-	setInterruptSignal();
-	for (; ; iter++) {
-	//	T = temperatureFunction(iter, TInitial, TDecay);
-		T = 0;
-		if (interrupt) {
-			return A;
-		}
-		if (iter%iterationsPerStep == 0) {
-	//		trackProgress(iter);
-		}
-		if (iter != 0 and iter > maxExecutionIterations) {
-			return A;
-		}
-		SANAIteration();
-	}
-	return A; //dummy return to shut compiler warning
-}
-
-void SANA::hillClimbingIterations(long long int iterTarget) {
-	// Alignment startA = Alignment::random(n1, n2);
-	Alignment startA = getStartingAlignment();
-	long long int iter = 0;
-
-	//cerr << "We consider that SANA has stagnated if it goes ";
-	//cerr << idleCountTarget << " without improving" << endl;
-
-	initDataStructures(startA);
-	T = 0;
-	for (; iter < iterTarget ; iter++) {
-		if (iter%iterationsPerStep == 0) {
-			//`trackProgress(iter);
-		}
-		SANAIteration();
-	}
-}
-
-
 void SANA::initIterPerSecond() {
 	cerr << "Determining iteration speed...." << endl;
 	long long int iter = 1E7;
-	long long int it = 0;
-	//simpleRun(getStartingAlignment(), iter, it);
-	hillClimbingIterations(iter);
+    hillClimbingIterations(iter + 1);
 	/*if (iter == 500000) {
 		throw runtime_error("hill climbing stagnated after 0 iterations");
 	}*/
 	double res = iter/timer.elapsed();
-	cerr << "It has been: " << timer.elapsed() << endl;
 	cerr << "SANA does " << to_string(res) << " iterations per second" << endl;
-	
+
 	initializedIterPerSecond = true;
 	iterPerSecond = res;
+	std::ostringstream ss;
+	ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
+	ofstream header(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(0) + ".csv");
+	header << "time,score,avgEnergyInc,T,realTemp,pbad,lower,higher,timer" << endl;
+	header.close();
 }
 
 void SANA::setDynamicTDecay() {
