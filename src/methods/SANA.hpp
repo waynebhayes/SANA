@@ -29,13 +29,27 @@ public:
         uint numCandidates, double minutesPerCandidate, double minutesFinalist);
 
     //set temperature schedule automatically
-    void setTemperatureScheduleAutomatically();
-    void setTInitialByLinearRegression(bool scoreBased = false);
-    void setTInitialByStatisticalTest();
+    bool scoreBasedScheduling = false;
+    void useScoreBasedRegression(bool scoreBased);
+    void searchTemperaturesByLinearRegression();
+    void searchTemperaturesByStatisticalTest();
     void setTDecayAutomatically();
+    //to compute TDecay automatically
+    //returns a value of lambda such that with this TInitial, temperature reaches
+    //0 after a certain number of minutes
+    double solveTDecay();
+
+    void setAcceptableTInitial();
+    void setAcceptableTFinal();
+    void setAcceptableTFinalFromManualTInitial();
+    double findAcceptableTInitial(double temperature);
+    double findAcceptableTFinal(double temperature);
+    double findAcceptableTFinalFromManualTInitial(double temperature);
     
     //set temperature decay dynamically 
     void setDynamicTDecay(); 
+
+    double simpleSearchTInitial();
 
     double elapsedEstimate = 0;
     int order = 0;
@@ -94,6 +108,7 @@ private:
 
     //temperature schedule
     double TInitial;
+    double TFinal;
     double TDecay;
     double minutes = 0;
     bool usingIterations;
@@ -113,7 +128,6 @@ private:
     double trueAcceptingProbability();
     //to compute TInitial automatically
     //returns a value of TInitial such that the temperature is random
-    double searchTInitialByStatisticalTest(), simpleSearchTInitial();
     double scoreForTInitial(double TInitial);
     bool isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore);
     double scoreRandom();

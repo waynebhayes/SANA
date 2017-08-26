@@ -391,8 +391,12 @@ void SANA::enableRestartScheme(double minutesNewAlignments, uint iterationsPerSt
 }
 
 double SANA::temperatureFunction(long long int iter, double TInitial, double TDecay) {
-	double fraction = iter / (minutes * 60 * getIterPerSecond());
-	return TInitial * (constantTemp ? 1 : exp(-TDecay*fraction));
+	double fraction;
+	if(usingIterations)
+		fraction = iter / ((double)(maxIterations)*100000000);
+	else
+		fraction = iter / (minutes * 60 * getIterPerSecond());
+	return TInitial * (constantTemp ? 1 : exp(-TDecay* fraction ));
 }
 
 double SANA::acceptingProbability(double energyInc, double T) {
@@ -1255,105 +1259,237 @@ uint SANA::getHighestIndex() const {
 	return highestIndex;
 }
 
-
-void SANA::setTemperatureScheduleAutomatically() {
-	setTInitialByLinearRegression();
-	setTDecayAutomatically();
+void SANA::useScoreBasedRegression(bool scoreBased) {
+    scoreBasedScheduling = scoreBased;
 }
 
-void SANA::setTInitialByLinearRegression(bool scoreBased) {
-	TInitial = findTInitialByLinearRegression(scoreBased); // Nil's code using fancy statistics
-	//TInitial = simpleSearchTInitial(); // Wayne's simplistic "make it bigger!!" code
+void SANA::searchTemperaturesByLinearRegression() {
+    map<double, double> cache;
+    double a, b;
+
+    std::string testMethod = ( scoreBasedScheduling ? "pbads" : "scores" );
+
+    std::ifstream cacheFile(mkdir(testMethod) + testMethod + "s_" + G1->getName() + "_" + G2->getName() + ".txt");
+    cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes" << endl;
+
+    //set the float precisison of the stream. This is needed whenever a file is written
+    cerr << "Retrieving 100 Samples" << endl;
+    int progress = 0;
+    while (cacheFile >> a >> b){
+        cache[a] = b;
+    }
+    cacheFile.close();
+
+    //Make a file out stream to send scores to the cache file if the temperatures score isn't already there
+    ofstream cacheOutStream(mkdir(testMethod) + testMethod + "s_" + G1->getName() + "_" + G2->getName() + ".txt", std::ofstream::out | std::ofstream::app);
+    cacheOutStream.precision(17);
+    cacheOutStream << scientific;
+    //Map that pairs temperatures (in log space) to pbads, then we add the pairs already in the cache
+    map<double, double> scoreMap;
+    //start first instance of linear regression by filling the map with 20 pairs over 10E-10 to 10E!0
+    double maxx = 0.0;
+    for(double i = -10.0; i < 10.0; i = i + 1.0){
+        if(cache.find(i) == cache.end()){
+            double score = ( scoreBasedScheduling ? scoreForTInitial(pow(10, i)) : pForTInitial(pow(10, i)) );
+            cacheOutStream << i << " " << score << endl;
+            scoreMap[i] = score;
+        }else{
+            scoreMap[i] = cache[i];
+        }
+        maxx = max(maxx, scoreMap[i]);
+        progress++;
+        if(scoreBasedScheduling)
+            cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
+        else
+            cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << scoreMap[i] << endl;
+    }
+    //actually perform the linear regression
+    LinearRegression linearRegression;
+    linearRegression.setup(scoreMap);
+    //The "run" linear regression function returns a tuple
+    tuple<int, double, double, int, double, double, double, double> regressionResult = linearRegression.run();
+    //pull the temperature bounds from the tuple and strech them a bit
+    double lowerEnd = get<2>(regressionResult);
+    double upperEnd = get<5>(regressionResult);
+    double wing = (upperEnd - lowerEnd) / 2;
+    //fill the score map with 30 more pairs betweem the boundaries
+    for(double i = lowerEnd - wing; i < upperEnd + wing; i += (upperEnd - lowerEnd) / 40.0){
+        if(cache.find(i) == cache.end()){
+            double score = ( scoreBasedScheduling ? scoreForTInitial(pow(10, i)) : pForTInitial(pow(10, i)) );
+            cacheOutStream << i << " " << score << endl;
+            scoreMap[i] = score;
+        }else{
+            scoreMap[i] = cache[i];
+        }
+        maxx = max(maxx, scoreMap[i]);
+        progress++;
+        if(scoreBasedScheduling)
+            cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
+        else
+            cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << scoreMap[i] << endl;
+    }
+    cerr << endl;
+    //close the cahce file stream
+    cacheOutStream.close();
+    //run another linear regression instance
+    linearRegression.setup(scoreMap);
+    regressionResult = linearRegression.run();
+    cerr << "lower index: " << get<0>(regressionResult) << " ";
+    cerr << "upper index: " << get<3>(regressionResult) << endl;
+    cerr << "lower temperature: " << pow(10, get<2>(regressionResult)) << " ";
+    cerr << "higher temperature: " << pow(10, get<5>(regressionResult)) << endl;
+    cerr << "line 1 height: " << get<6>(regressionResult) << " ";
+    cerr << "line 3 height: " << get<7>(regressionResult) << endl;
+
+    // cerr << defaultfloat; was getting comiple error
+    TFinal = pow(10, get<2>(regressionResult));
+    TInitial = pow(10, get<5>(regressionResult));
+
+    setAcceptableTInitial();
+    setAcceptableTFinal();
 }
 
-void SANA::setTInitialByStatisticalTest() {
-	TInitial = searchTInitialByStatisticalTest(); // Nil's code using fancy statistics
-	//TInitial = simpleSearchTInitial(); // Wayne's simplistic "make it bigger!!" code
+void SANA::searchTemperaturesByStatisticalTest() {
+    const double NUM_SAMPLES_RANDOM = 100;
+    const double HIGH_THRESHOLD_P = 0.999999;
+    const double LOW_THRESHOLD_P = 0.99;
+
+    cerr<<endl;
+    //find the threshold score between random and not random temperature
+    Timer T;
+    T.start();
+    cerr << "Computing distribution of scores of random alignments ";
+    vector<double> upperBoundKScores(NUM_SAMPLES_RANDOM);
+    for (uint i = 0; i < NUM_SAMPLES_RANDOM; i++) {
+        upperBoundKScores[i] = scoreRandom();
+    }
+    cerr << "(" <<  T.elapsedString() << ")" << endl;
+    NormalDistribution dist(upperBoundKScores);
+    double highThresholdScore = dist.quantile(HIGH_THRESHOLD_P);
+    double lowThresholdScore = dist.quantile(LOW_THRESHOLD_P);
+    cerr << "Mean: " << dist.getMean() << endl;
+    cerr << "sd: " << dist.getSD() << endl;
+    cerr << LOW_THRESHOLD_P << " of random runs have a score <= " << lowThresholdScore << endl;
+    cerr << HIGH_THRESHOLD_P << " of random runs have a score <= " << highThresholdScore << endl;
+
+    double lowerBoundTInitial = 0;
+    double upperBoundTInitial = 1;
+    while (not isRandomTInitial(upperBoundTInitial, highThresholdScore, lowThresholdScore)) {
+        cerr << endl;
+        upperBoundTInitial *= 2;
+    }
+    upperBoundTInitial *= 2;    // one more doubling just to be sure
+    cerr << endl;
+    if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/4;
+
+    uint n1 = G1->getNumNodes();
+    uint n2 = G2->getNumNodes();
+    cerr << "Iterations per run: " << 10000.+100.*n1+10.*n2+n1*n2*0.1 << endl;
+
+    uint count = 0;
+    T.start();
+    while (fabs(lowerBoundTInitial - upperBoundTInitial)/lowerBoundTInitial > 0.05 and
+            count <= 10) {
+        //search in log space
+        double lowerBoundTInitialLog = log2(lowerBoundTInitial+1);
+        double upperBoundTInitialLog = log2(upperBoundTInitial+1);
+        double midTInitialLog = (lowerBoundTInitialLog+upperBoundTInitialLog)/2.;
+        double midTInitial = exp2(midTInitialLog)-1;
+
+        //we prefer false negatives (random scores classified as non-random)
+        //than false positives (non-random scores classified as random)
+        cerr << "Test " << count << " (" << T.elapsedString() << "): ";
+        count++;
+        if (isRandomTInitial(midTInitial, highThresholdScore, lowThresholdScore)) {
+            upperBoundTInitial = midTInitial;
+            cerr << " (random behavior)";
+        }
+        else {
+            lowerBoundTInitial = midTInitial;
+            cerr << " (NOT random behavior)";
+        }
+        cerr << " New range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
+    }
+    //return the top of the range
+    cerr << "Final range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
+    cerr << "Final TInitial: " << upperBoundTInitial << endl;
+    cerr << "Final P(Bad): " << pForTInitial(upperBoundTInitial) << endl;
+
+    TInitial = upperBoundTInitial;
+    TFinal = lowerBoundTInitial;
+
+    setAcceptableTInitial();
+    setAcceptableTFinal();
+}
+
+void SANA::setAcceptableTInitial(){
+    TInitial = findAcceptableTInitial(TInitial);
+}
+
+void SANA::setAcceptableTFinal(){
+    TFinal = findAcceptableTFinal(TFinal);
+}
+
+void SANA::setAcceptableTFinalFromManualTInitial(){
+    TFinal = findAcceptableTFinalFromManualTInitial(TInitial);
+}
+
+double SANA::findAcceptableTInitial(double temperature){
+    double exponent = log10 (temperature);
+    double initialTemperature = pow(10, exponent);
+    double initialProbability = pForTInitial(initialTemperature);
+    cerr << "Searching for an acceptable initial temperature" << endl;
+    do{
+        exponent += 0.1;
+	initialTemperature = pow(10, exponent);
+        initialProbability = pForTInitial(initialTemperature);
+        cerr << "Temperature: " << initialTemperature << " PBad: " << initialProbability << endl;
+    } while(scoreBasedScheduling ? false : initialProbability < 0.99);
+    cerr << "Resulting tInitial: " << initialTemperature << endl;
+    cerr << "Expected initial probability: " << initialProbability << endl;
+    return initialTemperature;  
+}
+
+double SANA::findAcceptableTFinalFromManualTInitial(double temperature){
+    double exponent = log10 (temperature);
+    double finalTemperature = pow(10, exponent);
+    double finalProbability = pForTInitial(finalTemperature);
+    cerr << "Searching for an acceptable final temperature based on the initial temperature" << endl;
+    do{
+        exponent -= 0.2;
+	finalTemperature = pow(10, exponent);
+        finalProbability = pForTInitial(finalTemperature);
+        cerr << "Temperature: " << finalTemperature << " PBad: " << finalProbability << endl;
+    } while(scoreBasedScheduling ? false : finalProbability > 0.00001);
+    cerr << "Resulting tFinal: " << finalTemperature << endl;
+    cerr << "Expected final probability: " << finalProbability << endl;
+    return finalTemperature;    
+}
+
+double SANA::findAcceptableTFinal(double temperature){
+    double exponent = log10 (temperature);
+    double finalTemperature = pow(10, exponent);
+    double finalProbability = pForTInitial(finalTemperature);
+    cerr << "Searching for an acceptable final temperature" << endl;
+    do{
+        exponent -= 0.1;
+	finalTemperature = pow(10, exponent);
+        finalProbability = pForTInitial(finalTemperature);
+        cerr << "Temperature: " << finalTemperature << " PBad: " << finalProbability << endl;
+    } while(scoreBasedScheduling ? false : finalProbability > 0.00001);
+    cerr << "Resulting tFinal: " << finalTemperature << endl;
+    cerr << "Expected final probability: " << finalProbability << endl;
+    return finalTemperature;    
+}
+
+double SANA::solveTDecay() {
+    double tdecay = -log(TFinal * 1.0 * TInitialScaling/(TInitial)) / (1);
+    cerr << "tdecay: " << tdecay << endl;
+    return tdecay;
 }
 
 void SANA::setTDecayAutomatically() {
-	if(maxIterations == 0){
-		TDecay = searchTDecay(TInitial, minutes);
-	}else{
-		TDecay = searchTDecay(TInitial, maxIterations);
-	}
-	//TDecay /= 2; // always seems too fast; dynamic TDecay will fix it.
-}
-
-double SANA::searchTInitialByStatisticalTest() {
-	const double NUM_SAMPLES_RANDOM = 100;
-	const double HIGH_THRESHOLD_P = 0.999999;
-	const double LOW_THRESHOLD_P = 0.99;
-
-	cerr<<endl;
-	//find the threshold score between random and not random temperature
-	Timer T;
-	T.start();
-	cerr << "Computing distribution of scores of random alignments ";
-	vector<double> upperBoundKScores(NUM_SAMPLES_RANDOM);
-	for (uint i = 0; i < NUM_SAMPLES_RANDOM; i++) {
-		upperBoundKScores[i] = scoreRandom();
-	}
-	cerr << "(" <<  T.elapsedString() << ")" << endl;
-	NormalDistribution dist(upperBoundKScores);
-	double highThresholdScore = dist.quantile(HIGH_THRESHOLD_P);
-	double lowThresholdScore = dist.quantile(LOW_THRESHOLD_P);
-	cerr << "Mean: " << dist.getMean() << endl;
-	cerr << "sd: " << dist.getSD() << endl;
-	cerr << LOW_THRESHOLD_P << " of random runs have a score <= " << lowThresholdScore << endl;
-	cerr << HIGH_THRESHOLD_P << " of random runs have a score <= " << highThresholdScore << endl;
-
-	double lowerBoundTInitial = 0;
-	double upperBoundTInitial = 1;
-	while (not isRandomTInitial(upperBoundTInitial, highThresholdScore, lowThresholdScore)) {
-		cerr << endl;
-		upperBoundTInitial *= 2;
-	}
-	upperBoundTInitial *= 2;	// one more doubling just to be sure
-	cerr << endl;
-	if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/4;
-
-	uint n1 = G1->getNumNodes();
-	uint n2 = G2->getNumNodes();
-	cerr << "Iterations per run: " << 10000.+100.*n1+10.*n2+n1*n2*0.1 << endl;
-
-	uint count = 0;
-	T.start();
-	while (fabs(lowerBoundTInitial - upperBoundTInitial)/lowerBoundTInitial > 0.05 and
-			count <= 10) {
-		//search in log space
-		double lowerBoundTInitialLog = log2(lowerBoundTInitial+1);
-		double upperBoundTInitialLog = log2(upperBoundTInitial+1);
-		double midTInitialLog = (lowerBoundTInitialLog+upperBoundTInitialLog)/2.;
-		double midTInitial = exp2(midTInitialLog)-1;
-
-		//we prefer false negatives (random scores classified as non-random)
-		//than false positives (non-random scores classified as random)
-		cerr << "Test " << count << " (" << T.elapsedString() << "): ";
-		count++;
-		if (isRandomTInitial(midTInitial, highThresholdScore, lowThresholdScore)) {
-			upperBoundTInitial = midTInitial;
-			cerr << " (random behavior)";
-		}
-		else {
-			lowerBoundTInitial = midTInitial;
-			cerr << " (NOT random behavior)";
-		}
-		cerr << " New range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
-	}
-	//return the top of the range
-	cerr << "Final range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
-	cerr << "Final TInitial: " << upperBoundTInitial << endl;
-	cerr << "Final P(Bad): " << pForTInitial(upperBoundTInitial) << endl;
-
-	ofstream tout("stats/" + G1->getName() + "_" + G2->getName() + "_" + MC->toString() + ".csv", std::ofstream::out | std::ofstream::app);
-	tout << G1->getName() + "_" + G2->getName() << "," << "stats" << "," << pow(10, upperBoundTInitial) << "," << pForTInitial(pow(10, upperBoundTInitial)) << ",";
-	tout.close();
-
-
-	//lowerTBound = lowerBoundTInitial;
-	upperTBound = upperBoundTInitial;
-	return upperBoundTInitial;
+    TDecay = solveTDecay();
 }
 
 //takes a random alignment, lets it run for a certain number
@@ -1629,7 +1765,6 @@ double SANA::getPforTInitial(const Alignment& startA, double maxExecutionSeconds
 	initDataStructures(startA);
 
 	setInterruptSignal();
-
 	for (; ; iter++) {
 		T = temperatureFunction(iter, TInitial, TDecay);
 		if (interrupt) {

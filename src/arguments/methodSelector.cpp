@@ -121,26 +121,33 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         double tfin = args.doubles["-tfin"];
         ((SANA*) sana)->enableRestartScheme(tnew, iterperstep, numcand, tcand, tfin);
     }
+
+    if (args.strings["-tinitial"] != "by-linear-regression" && args.strings["-tinitial"] != "by-statistical-test") {
+        Timer T;
+        T.start();
+        ((SANA*) sana)->setAcceptableTFinalFromManualTInitial();
+        cerr << endl << "TFinal took " << T.elapsed() << " seconds to complete." << endl << endl;
+    }
+
     if (args.strings["-tinitial"] == "by-linear-regression") {
         Timer T;
         T.start();
-        ((SANA*) sana)->setTInitialByLinearRegression(args.bools["-use-score-based-schedule"]);
+        ((SANA*) sana)-> useScoreBasedRegression(args.bools["-use-score-based-schedule"]);
+        ((SANA*) sana)->searchTemperaturesByLinearRegression();
         cerr << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
     }
     if (args.strings["-tinitial"] == "by-statistical-test") {
         Timer T;
         T.start();
-        ((SANA*) sana)->setTInitialByStatisticalTest();
+        ((SANA*) sana)->searchTemperaturesByStatisticalTest();
         cerr << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
     }
+    
     if (args.strings["-tdecay"] == "auto") {
-        Timer T;
-        T.start();
         ((SANA*) sana)->setTDecayAutomatically();
-        cerr << endl << "TDecay took " << T.elapsed() << " seconds to complete." << endl << endl;
     }
     if (args.bools["-dynamictdecay"]) {
-	((SANA*) sana)->setDynamicTDecay();
+	   ((SANA*) sana)->setDynamicTDecay();
     } 
     if (args.strings["-lock"] != ""){
       sana->setLockFile(args.strings["-lock"] );
