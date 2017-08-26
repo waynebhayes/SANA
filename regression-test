@@ -151,7 +151,7 @@ if [ ! -z "$CompareFile" ]; then
 	echo "echo checking locking between $Network1 and $Network2; ./sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null"
     done | parallel -s bash 8
     cat $TMPDIR/networks.locking | while read Network1 Network2; do
-	if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.out.align" | wc -l` -ne 50 ]]; then
+	if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.align" | wc -l` -ne 50 ]]; then
 	    touch $TMPDIR/failed
 	    echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file" >&2
 	fi
