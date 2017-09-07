@@ -82,6 +82,9 @@ SANA::SANA(Graph* G1, Graph* G2,
 	g2Edges = G2->getNumEdges();
 	score = objectiveScore;
 
+	paretoInitial = MC->getParetoInitial();
+	paretoCapacity = MC->getParetoCapacity();
+
 	G1->getAdjMatrix(G1AdjMatrix);
 	G2->getAdjMatrix(G2AdjMatrix);
 	G1->getAdjLists(G1AdjLists);
@@ -281,6 +284,17 @@ Alignment SANA::run() {
             return *align;
         }
     }
+}
+
+vector<Alignment>* SANA::paretoRun() {
+    long long int iter = 0;
+    vector<Alignment>* align;
+    if(!usingIterations){
+        align = simpleParetoRun(getStartingAlignment(), minutes*60, iter);
+    }else{
+        align = simpleParetoRun(getStartingAlignment(), ((long long int)(maxIterations))*100000000, iter);
+    }
+    return align;
 }
 
 // Used for method #2 of locking
@@ -543,6 +557,33 @@ Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIte
 	}
 	return A; //dummy return to shut compiler warning
 }
+
+vector<Alignment>* SANA::simpleParetoRun(const Alignment& A, double maxExecutionSeconds,
+		long long int& iter) {
+	cout << "\nI'm in!!!\n";
+	int n = MC->numMeasures();
+	vector<string> measures(n);
+	for(int i = 0; i < n; i++)
+		measures[i] = MC->getMeasure(i)->getName();
+	sort(measures.begin(), measures.end());
+	for(int i = 0; i < n; i++)
+		cout << measures[i] << '\n';
+	exit(0);
+	return new vector<Alignment>;
+}
+vector<Alignment>* SANA::simpleParetoRun(const Alignment& A, long long int maxExecutionIterations,
+		long long int& iter) {
+	cout << "\nI'm in!!!\n";
+	int n = MC->numMeasures();
+        vector<string> measures(n);
+        for(int i = 0; i < n; i++)
+                measures[i] = MC->getMeasure(i)->getName();
+        sort(measures.begin(), measures.end());
+        for(int i = 0; i < n; i++)
+                cout << measures[i] << '\n';
+	exit(0);
+	return new vector<Alignment>;
+} 
 
 void SANA::SANAIteration() {
     iterationsPerformed++;
@@ -1760,7 +1801,6 @@ double SANA::pForTInitial(double TInitial) {
 
 double SANA::getPforTInitial(const Alignment& startA, double maxExecutionSeconds,
 		long long int& iter) {
-
 	double result = 0.0;
 	initDataStructures(startA);
 
@@ -1774,10 +1814,10 @@ double SANA::getPforTInitial(const Alignment& startA, double maxExecutionSeconds
 			result = trueAcceptingProbability();
 			if ((iter != 0 and timer.elapsed() > maxExecutionSeconds and sampledProbability.size() > 0) or iter > 5E7) {
 				if(sampledProbability.size() == 0){
-                    return 1;
-                }else{
-                    return result;
-                }
+                        		return 1;
+                		}else{
+                    			return result;
+                		}
 			}
 		} //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
 		SANAIteration();
