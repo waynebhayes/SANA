@@ -47,6 +47,11 @@ public:
     */
     void writeLocalScores(ostream & outfile, Graph const & G1, Graph const & G2, Alignment const & A) const;
 
+    void setParetoInitial(int pi) { paretoInitial = pi; }
+    void setParetoCapacity(int pc) { paretoCapacity = pc; }
+    int getParetoInitial() { return paretoInitial; }
+    int getParetoCapacity() { return paretoCapacity; }
+
 private:
     typedef vector<vector<float> > SimMatrix;
     typedef function<void(SimMatrix &, uint const &, uint const &)> SimMatrixRecipe;
@@ -66,6 +71,8 @@ private:
     void clearWeights();
     void setWeight(const string& measureName, double weight);
 
+    int paretoInitial;
+    int paretoCapacity;
 };
 
 #endif
