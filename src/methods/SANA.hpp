@@ -7,6 +7,7 @@
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
 #include "../utils/randomSeed.hpp"
+#include "../utils/ParetoFront.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 
 class SANA: public Method {
@@ -22,6 +23,7 @@ public:
     ~SANA();
 
     Alignment run();
+    vector<Alignment>* paretoRun();
     void describeParameters(ostream& stream);
     string fileNameSuffix(const Alignment& A);
 
@@ -171,6 +173,10 @@ private:
     double TCWeight;
     string score;
 
+    //For pareto mode
+    int paretoInitial;
+    int paretoCapacity;
+
     //restart scheme
     bool restart;
     //parameters
@@ -260,6 +266,11 @@ private:
         long long int& iter);
     Alignment simpleRun(const Alignment& A, long long int maxExecutionIterations,
         long long int& iter);
+    vector<Alignment>* simpleParetoRun(const Alignment& A, double maxExecutionSeconds,
+        long long int& iter);
+    vector<Alignment>* simpleParetoRun(const Alignment& A, long long int maxExecutionIterations,
+        long long int& iter);
+
     double currentScore;
     double energyInc;
     vector<double> sampledProbability;
@@ -284,6 +295,7 @@ private:
     string haveFolder();
     string mkdir(const std::string& file);
     tuple<int, double, int, double, double, double> regress(double start, double end, int amount);
+
 };
 
 #endif
