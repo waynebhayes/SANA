@@ -8,13 +8,14 @@
 #include "../modes/Experiment.hpp"
 #include "../modes/AnalysisMode.hpp"
 #include "../modes/SimilarityMode.hpp"
+#include "../modes/ParetoMode.hpp"
 
 #include "../utils/utils.hpp"
 
 bool validMode(string name) {
     vector<string> validModes = {
         "cluster", "exp", "param", "alpha", "dbg",
-        "normal", "analysis", "similarity",
+        "normal", "analysis", "similarity", "pareto",
     };
     for (string s : validModes) {
         if (s == name) return true;
@@ -44,6 +45,8 @@ Mode* selectMode(ArgumentParser& args) {
     	mode = new SimilarityMode();
     } else if (name == "normal") {
         mode = new NormalMode();
+    } else if(name == "pareto") {
+	mode = new ParetoMode();
     } else {
         throw runtime_error("Error: unknown mode: " + name);
     }
