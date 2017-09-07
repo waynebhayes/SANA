@@ -28,8 +28,8 @@ vector<array<string, 6>> supportedArguments = {
 	{ "-o", "string", "sana", "Output File basename", "Specifies the basename of output file; actual output files will append (.out, .align, etc) to this.", "0" },
   { "-localScoresFile", "string", "sana", "Local Scores File basename", "Specifies the basename of the local score file; actual output files will append (.out, .align, etc) to this.", "0"},
 	{ "-t", "double", "5", "Runtime in minutes", "The number of minutes to run SANA. Must be non-zero, no upper limit.", "1" },
-	{ "-pathmap1", "integerS", "", "Path Map G1", "Allows mapping a path in G1 to an edge in G2, as if the path were a single edge in G2. Implemented by raising the adjacency list to this power (an integer).", "1" },
-	{ "-pathmap2", "integerS", "", "Path Map G2", "Maps a path in G2 to an edge in G1, as if the path were a single edge in G1.", "1" },
+	{ "-pathmap1", "intS", "", "Path Map G1", "Allows mapping a path in G1 to an edge in G2, as if the path were a single edge in G2. Implemented by raising the adjacency list to this power (an integer).", "1" },
+	{ "-pathmap2", "intS", "", "Path Map G2", "Maps a path in G2 to an edge in G1, as if the path were a single edge in G1.", "1" },
 	{ "-eval", "string", "", "Evaluate Existing Alignment", "Takes an existing alignment, evaluates it, and records the results to sana.out or the specified output file.", "1" },
 	{ "-startalignment", "string", "", "Starting Alignment", "File containing the starting alignment (in the format outputted by SANA). Some methods allow this option, while the rest start with random alignments.", "1" },
 	{ "-truealignment", "string", "", "True Alignment", "Alignment file containing the \"true\" alignment. This is used to evaluate the NC measure. In its absence, NC assumes that the true alignment is the identity (the node with index i in G1 is mapped to the node with index i in G2). In any case, NC is expressed as the fraction of nodes in the smaller network aligned correctly.", "0" },
@@ -45,8 +45,8 @@ vector<array<string, 6>> supportedArguments = {
 
 	//------------------------------------SANA-------------------------------------------
 	{ "", "", "banner", "", "Additional options to consider when method is \"sana\" (the default)", "0" },
-	{ "-tinitial", "doubleS", "auto", "Initial Temperature", "Starting temperature of the simulated annealing. \"auto\" means calculate optimal starting temperature (requires extra CPU time).", "1" },
-	{ "-tdecay", "doubleS", "auto", "Rate of Decay", "Exponential decay parameter of the temperature schedule. \"auto\" means calculate optimal starting temperature (requires extra CPU time).", "1" },
+	{ "-tinitial", "dblS", "auto", "Initial Temperature", "Starting temperature of the simulated annealing. \"auto\" means calculate optimal starting temperature (requires extra CPU time).", "1" },
+	{ "-tdecay", "dblS", "auto", "Rate of Decay", "Exponential decay parameter of the temperature schedule. \"auto\" means calculate optimal starting temperature (requires extra CPU time).", "1" },
 	{ "-combinedScoreAs", "string", "sum", "Score Combo Method", "If multiple objectives are specified, this specifies how to combine them. Choices are: sum, product, inverse, max, min, maxFactor.", "1" },
 	{ "-dynamictdecay", "bool", "0", "Dynamically control temperature decay", "Whether or not tdecay is set to auto, this Boolean specifies if we should dynamically adjust the temperature schedule as the anneal progresses. Gives potentially better results than fixed decay rate.", "1" },
 	{ "-lock", "string", "", "Node-to-Node Locking", "Specify a two column file of node pairs that are locked in the alignment.", "0" },
@@ -109,7 +109,7 @@ vector<array<string, 6>> supportedArguments = {
 	{ "-noded", "double", "0", "Weight of Node Density", "The weight of the Local Node Density objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-edgec", "double", "0", "Weight of Edge Count", "The weight of the Local Edge Count objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-edged", "double", "0", "Weight of Edge Density", "The weight of the Local Edge Density objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
-	{ "-esim", "double_vector", "0", "External Similarity Weight", "The weight of the external similarity file. Used when \"-objfuntype\" is \"generic\". (Pending changes to SANA, these values may be normalized to be in [0,1] after they're read but before they're used.)", "1" },
+	{ "-esim", "dbl_vec", "0", "External Similarity Weight", "The weight of the external similarity file. Used when \"-objfuntype\" is \"generic\". (Pending changes to SANA, these values may be normalized to be in [0,1] after they're read but before they're used.)", "1" },
 	{ "-ewec", "double", "0", "External Weighted Edge Similarity", "The weighted of the external edge similarity file.", "1" },
         { "-graphlet", "double", "0", "Weight of Graphlet Similarity.", "The weight of the Graphlet Objective Function as defined in the original GRAAL paper (2010). Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-graphletlgraal", "double", "0", "Weight of Graphlet Similarity (LGRAAL)", "The weight of LGRAAL's objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
@@ -125,13 +125,13 @@ vector<array<string, 6>> supportedArguments = {
 	{ "-wrappedArgs", "string", "", "Wrapper Function Arguments", "Arguments to pass verbatim to wrapped methods.", "0" },
 	{ "-maxDist", "double", "1", "Radial Distance from Node", "When using nodec, edgec, noded, or edged, the radial distance region over which to compute the count/density. Used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-gofrac", "double", "1", "Fraction of GO_k Terms to Keep", "Used for GO similarity (\"-go_k\"). It is the fraction of GO term ocurrences corresponding to the least frequent terms to be kept.", "1" },
-	{ "-nodecweights", "double_vector", "4 .1 .25 .5 .15", "Weights of Node Density Measure", "Weights w of the Node count/density measure. They are automatically scaled to 1.", "1" },
-	{ "-edgecweights", "double_vector", "4 .1 .25 .5 .15", "Weights of Edge Density Measure", "Weights w of the Edge count/density measure. They are automatically scaled to 1.", "1" },
-	{ "-goweights", "double_vector", "1 1", "Weight and Measure of GO Measures", "Specifies the maximum GO measure and the weight of each one.", "1" },
+	{ "-nodecweights", "dbl_vec", "4 .1 .25 .5 .15", "Weights of Node Density Measure", "Weights w of the Node count/density measure. They are automatically scaled to 1.", "1" },
+	{ "-edgecweights", "dbl_vec", "4 .1 .25 .5 .15", "Weights of Edge Density Measure", "Weights w of the Edge count/density measure. They are automatically scaled to 1.", "1" },
+	{ "-goweights", "dbl_vec", "1 1", "Weight and Measure of GO Measures", "Specifies the maximum GO measure and the weight of each one.", "1" },
 	{ "-wecnodesim", "string", "graphletlgraal", "Weighted Edge Coverage Node Pair Similarity", "Node pair similarity used to weight the edges in the WEC measure. The edges are weighted by taking the average of the scores of an edge's two ending nodes using some node similarity measure which can be different from the default node sim measure.", "1" },
 	{ "-wavenodesim", "string", "nodec", "Weighted Average Node Pair Similarity", "Node pair similarity to use when emulating WAVE.", "1" },
 	{ "-maxGraphletSize", "double", "", "Maximum Graphlet Size", "Chooses the maximum size of graphlets to use. Saves human_gdv and yeast_gdv files ending with the given maximum graphlet size in order to distinguish between different-sized graphlets (e.g. human_gdv4.txt and yeast_gdv4.txt, for maximum graphlet size of 4).", "0" },
-	{ "-simFile", "string_vector", "0", "Similarity File", "Specify an external three columnn (node from G1, node from  G2, similarity) file. These will be given weight according to the -esim argument.", "1" },
+	{ "-simFile", "str_vec", "0", "Similarity File", "Specify an external three columnn (node from G1, node from  G2, similarity) file. These will be given weight according to the -esim argument.", "1" },
         { "-ewecFile", "string", "", "egdvs file", "egdvs output file produced by GREAT", "1"},
         { "-detailedreport", "bool", "false", "Detailed Report", "If false, initialize only basic measures and any measure necessary to run SANA.", "1" },
 	{ "End Further Weight Specification. Combine with \"-method x -objfuntype y\"", "", "banner", "", "", "0" },
@@ -139,7 +139,7 @@ vector<array<string, 6>> supportedArguments = {
 
 	//------------------------------------MODE-------------------------------------------
 	{ "", "", "banner", "", "Mode", "0" },
-	{ "-mode", "string", "normal", "Mode", "Runs SANA in a specified mode. Arguments for this option are: \"cluster\", \"exp\", \"param\", \"alpha\", \"dbg\", \"normal\", \"analysis\", \"similarity\".", "0" },
+	{ "-mode", "string", "normal", "Mode", "Runs SANA in a specified mode. Arguments for this option are: \"cluster\", \"exp\", \"param\", \"alpha\", \"dbg\", \"normal\", \"analysis\", \"similarity\", \"pareto\".", "0" },
 	{ "End Mode", "", "banner", "", "", "0" },
 	//----------------------------------END MODE-----------------------------------------
 
@@ -185,16 +185,23 @@ vector<array<string, 6>> supportedArguments = {
 
 	//---------------------------------ANALYSIS------------------------------------------
 	{ "", "", "banner", "", "More options for \"-mode analysis\"", "0" },
-	{ "-alignFormat", "integerD", "0", "Alignfile Format", "Used in Analysis Mode \"-mode analysis\". alignFormat can be 1, 2, 3, or 4 which mean the following:\n1: sana.out format\n2. edge list format\n3. partial edge list format\n4. mapping format (old sana.out one line).", "0" },
+	{ "-alignFormat", "intD", "0", "Alignfile Format", "Used in Analysis Mode \"-mode analysis\". alignFormat can be 1, 2, 3, or 4 which mean the following:\n1: sana.out format\n2. edge list format\n3. partial edge list format\n4. mapping format (old sana.out one line).", "0" },
 	{ "-alignFile", "string", "", "Alignment File Analysis Mode", "Used with \"-mode analysis\" to specify which pre-existing alignment file is being analyzed. Allowed values are 1=sana.out; 2=edge list; 3=partial edge list; 4=mapping (one line).", "0" },
 	{ "End More options for \"-mode analysis\"", "", "banner", "", "", "0" },
 	//-------------------------------END ANALYSIS----------------------------------------
 
 	//---------------------------------SIMILARITY----------------------------------------
 	{ "", "", "banner", "", "More options for \"-mode similarity\"", "0" },
-	{ "-simFormat", "double_vector", "0", "Similarity File Format", "Used in Similarity Mode \"-mode similarity\" and with \"-objfuntype -esim\". Allowed values are 2=G1 doubles down by G2 doubles across matrix where node order corresponds to .gw files; 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
+	{ "-simFormat", "dbl_vec", "0", "Similarity File Format", "Used in Similarity Mode \"-mode similarity\" and with \"-objfuntype -esim\". Allowed values are 2=G1 doubles down by G2 doubles across matrix where node order corresponds to .gw files; 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
 	{ "End More options for \"-mode similarity\"", "", "banner", "", "", "0" },
 	//-------------------------------END SIMILARITY--------------------------------------
+
+	//----------------------------------PARETO-------------------------------------------
+	{ "", "", "banner", "", "More options for \"-mode pareto\"", "0" },
+	{ "-paretoInitial", "intD", "10", "Initial Pareto Size", "Used in Pareto Mode \"-mode pareto\". This argument specifies the starting number of Alignments in the Pareto Front. All of the starting alignments are the same", "0" },
+	{ "-paretoCapacity", "intD", "200", "Capacity of Pareto Front", "Used in Pareto Mode \"-mode pareto\". The pareto front can potentially hold N (different scores) by X (possible values/precision of the datatype used (i.e. float or double). Therefore, if a capacity is not specified, after the billions of SANA iterations, there may be too many different alignments stored in memory.", "0" },
+	{ "End More options for \"-mode pareto\"", "", "banner", "", "", "0" },
+	//--------------------------------END PARETO-----------------------------------------
 	
 	 //---------------------------------UNDEFINED----------------------------------------
 	{ "-balance", "string", "", "TITLE", "DESCRIPTION", "0" },
@@ -211,12 +218,12 @@ void validateAndAddArguments(){
 	for(uint i = 1; i < supportedArguments.size(); ++i){
 		if(supportedArguments[i][2] != "banner"){
 			if(supportedArguments[i][0] == "") {
-				cerr << "Option: #" << i+1 << " is empty for the Option field. Please specify the Option name in the supportedArguments.cpp file.";
+				cerr << "Option: #" << i+1 << " is empty for the Option field. Please specify the Option name in the supportedArguments.cpp file.\n";
 				exit(1);
 			}
 
 			if(supportedArguments[i][1] == "") {
-				cerr << "Option: #" << i+1 << " is empty for the Type field. Please specify the option Type in the supportedArguments.cpp file.";
+				cerr << "Option: #" << i+1 << " is empty for the Type field. Please specify the option Type in the supportedArguments.cpp file.\n";
                         	exit(1);
 			}
 
@@ -226,32 +233,32 @@ void validateAndAddArguments(){
 			}*/
 
 			if(supportedArguments[i][3] == "") {
-				cerr << "Option: #" << i+1 << " is empty for the Title field. Please specify the Title in the supportedArguments.cpp file.";
+				cerr << "Option: #" << i+1 << " is empty for the Title field. Please specify the Title in the supportedArguments.cpp file.\n";
                         	exit(1);
 			}
 
 			if(supportedArguments[i][4] == "") {
-				cerr << "Option: #" << i+1 << " is empty for the Description field. Please write a description in the supportedArguments.cpp file.";
+				cerr << "Option: #" << i+1 << " is empty for the Description field. Please write a description in the supportedArguments.cpp file.\n";
                         	exit(1);
 			}
 
 			if(supportedArguments[i][5] == "") {
 			}
 
-			if(supportedArguments[i][1] == "string" || supportedArguments[i][1] == "integerS" || supportedArguments[i][1] == "doubleS")
+			if(supportedArguments[i][1] == "string" || supportedArguments[i][1] == "intS" || supportedArguments[i][1] == "dblS")
                 	        stringArgs.push_back(supportedArguments[i][0]);
 
-			else if(supportedArguments[i][1] == "double" || supportedArguments[i][1] == "integerD")
+			else if(supportedArguments[i][1] == "double" || supportedArguments[i][1] == "intD")
 				doubleArgs.push_back(supportedArguments[i][0]);
 
             else if(supportedArguments[i][1] == "bool")
                 boolArgs.push_back(supportedArguments[i][0]);
-			else if(supportedArguments[i][1] == "double_vector")
+			else if(supportedArguments[i][1] == "dbl_vec")
                 doubleVectorArgs.push_back(supportedArguments[i][0]);
-            else if(supportedArguments[i][1] == "string_vector")
+            else if(supportedArguments[i][1] == "str_vec")
                 stringVectorArgs.push_back(supportedArguments[i][0]);
 			else{
-				cerr << "Option: " << supportedArguments[i][0] << " is type " << supportedArguments[i][1] << " which is not supported. Please check to make sure this option has a correct type.";
+				cerr << "Option: " << supportedArguments[i][0] << " is type " << supportedArguments[i][1] << " which is not supported. Please check to make sure this option has a correct type.\n";
 				exit(1);
 			}
 
