@@ -96,7 +96,8 @@ void DebugMode::run(ArgumentParser& args) {
   MeasureCombination M;
   initMeasures(M, G1, G2, args);
   Method* method = initMethod(G1, G2, args, M);
-  ((SANA*) method)->setTemperatureScheduleAutomatically();
+  ((SANA*) method)->searchTemperaturesByLinearRegression();
+	((SANA*) method)->setTDecayAutomatically();
 }
 
 std::string DebugMode::getName(void) {
