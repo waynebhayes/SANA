@@ -786,7 +786,6 @@ vector<vector<uint> > Graph::computeGraphletDegreeVectors() {
 }
 
 map<string,ushort> Graph::getNodeNameToIndexMap() const {
-  if(true && nodeNameToIndexMapInit) {
     string networkFile = "networks/"+name+"/"+name+".gw";
 
     ifstream infile(networkFile.c_str());
@@ -807,6 +806,7 @@ map<string,ushort> Graph::getNodeNameToIndexMap() const {
     }
 
     //read nodes
+    map<string, ushort> res;
     string node;
     for (ushort i = 0; i < (ushort) n; i++) {
         getline(infile, line);
@@ -815,12 +815,10 @@ map<string,ushort> Graph::getNodeNameToIndexMap() const {
             throw runtime_error("Failed to read node "+intToString(i)+" of "+intToString(n)+": "+line+" ("+node+")");
         }
         node = node.substr(2,node.size()-4); //strip |{ and }|
-        ((Graph*)this)->nodeNameToIndexMap[node] = i;
+        res[node] = i;
     }
     infile.close();
-    ((Graph*)this)->nodeNameToIndexMapInit = true;
-  }
-  return nodeNameToIndexMap;
+    return res;
 }
 
 map<ushort,string> Graph::getIndexToNodeNameMap() const {

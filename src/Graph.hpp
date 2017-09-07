@@ -163,9 +163,6 @@ private:
 #endif
     vector<vector<ushort> > adjLists; //neighbors in no particular order
 
-    bool nodeNameToIndexMapInit; // cache the nodeNametoIndexMap
-    map<string,ushort> nodeNameToIndexMap;
-
     //list of the nodes of each connected component, sorted from larger to smaller
     vector<vector<ushort> > connectedComponents;
     //int maxsize;
