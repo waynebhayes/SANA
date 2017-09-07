@@ -28,5 +28,7 @@ vector<string> defaultArguments = {
 "-qmode normal",
 "-combinedScoreAs sum",
 "-sec 0",
-"-maxGraphletSize 5"
+"-maxGraphletSize 5",
+"-paretoInitial 10",
+"-paretoCapacity 200"
 };
