@@ -16,7 +16,8 @@ UTILS_SRC = 								\
 	src/utils/randomSeed.cpp					\
 	src/utils/SkipList.cpp						\
 	src/utils/SeedMatrix.cpp					\
-	src/utils/LinearRegression.cpp
+	src/utils/LinearRegression.cpp					\
+	src/utils/ParetoFront.cpp
 
 ARGUMENTS_SRC = 							\
 	src/arguments/ArgumentParser.cpp				\
@@ -97,7 +98,8 @@ MODES_SRC = 								\
 	src/modes/DebugMode.cpp						\
 	src/modes/ClusterMode.cpp					\
 	src/modes/AnalysisMode.cpp					\
-	src/modes/SimilarityMode.cpp
+	src/modes/SimilarityMode.cpp					\
+	src/modes/ParetoMode.cpp
 
 OTHER_SRC = 							\
 	src/Alignment.cpp                                   	\
