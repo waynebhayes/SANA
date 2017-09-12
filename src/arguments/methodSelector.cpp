@@ -122,7 +122,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         ((SANA*) sana)->enableRestartScheme(tnew, iterperstep, numcand, tcand, tfin);
     }
 
-    if (args.strings["-tinitial"] != "by-linear-regression" && args.strings["-tinitial"] != "by-statistical-test") {
+    if (args.strings["-tinitial"] != "by-linear-regression" && args.strings["-tinitial"] != "by-statistical-test" && args.strings["-tdecay"] == "auto") {
         Timer T;
         T.start();
         ((SANA*) sana)->setAcceptableTFinalFromManualTInitial();
