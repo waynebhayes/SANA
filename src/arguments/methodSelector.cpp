@@ -132,7 +132,6 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     if (args.strings["-tinitial"] == "by-linear-regression") {
         Timer T;
         T.start();
-        ((SANA*) sana)-> useScoreBasedRegression(args.bools["-use-score-based-schedule"]);
         ((SANA*) sana)->searchTemperaturesByLinearRegression();
         cerr << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
     }

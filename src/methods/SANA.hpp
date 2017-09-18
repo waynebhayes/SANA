@@ -32,7 +32,6 @@ public:
 
     //set temperature schedule automatically
     bool scoreBasedScheduling = false;
-    void useScoreBasedRegression(bool scoreBased);
     void searchTemperaturesByLinearRegression();
     void searchTemperaturesByStatisticalTest();
     void setTDecayAutomatically();
