@@ -1300,94 +1300,92 @@ uint SANA::getHighestIndex() const {
 	return highestIndex;
 }
 
-void SANA::useScoreBasedRegression(bool scoreBased) {
-    scoreBasedScheduling = scoreBased;
-}
-
 void SANA::searchTemperaturesByLinearRegression() {
-    map<double, double> cache;
-    double a, b;
 
-    std::string testMethod = ( scoreBasedScheduling ? "pbads" : "scores" );
+	map<double, double> pbadMap;
+	cerr << "Sampling 21 pbads from 1E-10 to 1E10 for linear regression" << endl;
+	for(double i = -10.0; i <= 10.0; i = i + 1.0){
+	    pbadMap[i] = pForTInitial(pow(10, i));
+	  	cerr << i + 11 << "/21 temperature: " << pow(10, i) << " pBad: " << pbadMap[i] << endl;
+	}
+	double exponent;
+	for (exponent = -10; exponent < 11; exponent++){
+	    if(pbadMap[exponent] > 1E-6)
+	        break;
+	}
+	double binarySearchLeftEnd = exponent - 1;
+	double binarySearchRightEnd = exponent;
+	double mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
+	cerr << "Beginning binary search for tFinal. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
+	for(int j = 0; j < 4; j++){
+	    double temperature = pow(10, mid);
+	    double probability = pForTInitial(temperature);
+	    pbadMap[mid] = probability;
+	    cerr << "Temperature: " << temperature << " pbad: " << probability << endl;
+	    if(probability > 1E-6){
+	        binarySearchRightEnd = mid;
+	        mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2; 
+	    } else if(probability < 1E-7){
+	        binarySearchLeftEnd = mid;
+	        mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2; 
+	    }
+	}
+	for (exponent = 10; exponent > -11; exponent--){
+	    if(pbadMap[exponent] < 0.985)
+	        break;
+	}
+	binarySearchLeftEnd = exponent;
+	binarySearchRightEnd = exponent + 1;
+	mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
+	cerr << "Beginning binary search for tInitial. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
+	for(int j = 0; j < 4; j++){
+	    double temperature = pow(10, mid);
+	    double probability = pForTInitial(temperature);
+	    pbadMap[mid] = probability;
+	    cerr << "Temperature: " << temperature << " pbad: " << probability << endl;
+	    if(probability > 0.995){
+	        binarySearchRightEnd = mid;
+	        mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2; 
+	    } else if(probability < 0.985){
+	        binarySearchLeftEnd = mid;
+	        mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2; 
+	    }
+	}
+	LinearRegression linearRegression;
+	linearRegression.setup(pbadMap);
+	tuple<int, double, double, int, double, double, double, double> regressionResult = linearRegression.run();
+	double lowerEnd = get<2>(regressionResult);
+	double upperEnd = get<5>(regressionResult);
+	cerr << "Left endpoint of linear regression " << pow(10, lowerEnd) << endl;
+	cerr << "Right endpoint of linear regression " << pow(10, upperEnd) << endl;
+	double startingTemperature = pow(10,10);
+	double startingExponent = 10;
+	for (auto const& keyValue : pbadMap)
+	{
+	    if(keyValue.second >= 0.985 && keyValue.first >= upperEnd){
+	        startingTemperature = pow(10, keyValue.first);
+	        startingExponent = keyValue.first;
+	        cerr << "Initial temperature is " << startingTemperature << " expected pbad is " << keyValue.second << endl;
+	        break;
+	    }
+	}
+	double endingTemperature = pow(10,-10);
+	double endingExponent = -10;
+	std::map<double,double>::reverse_iterator rit;
+	for (rit=pbadMap.rbegin(); rit!=pbadMap.rend(); ++rit){
+	    if(rit->second < 1E-6 && rit->first <= lowerEnd){
+	        endingTemperature = pow(10, rit->first);
+	        endingExponent = rit->first;
+	        cerr << "Final temperature is " << endingTemperature << " expected pbad is " << rit->second << endl;
+	        break;
+	    }
+	}
 
-    std::ifstream cacheFile(mkdir(testMethod) + testMethod + "s_" + G1->getName() + "_" + G2->getName() + ".txt");
-    cerr << "Finding optimal initial temperature using linear regression fit of scores between temperature extremes" << endl;
+	assert( (pbadMap[get<5>(regressionResult)] - pbadMap[get<2>(regressionResult)]) / (get<5>(regressionResult) - get<2>(regressionResult)) < 0 || TFinal > TInitial );
 
-    //set the float precisison of the stream. This is needed whenever a file is written
-    cerr << "Retrieving 100 Samples" << endl;
-    int progress = 0;
-    while (cacheFile >> a >> b){
-        cache[a] = b;
-    }
-    cacheFile.close();
-
-    //Make a file out stream to send scores to the cache file if the temperatures score isn't already there
-    ofstream cacheOutStream(mkdir(testMethod) + testMethod + "s_" + G1->getName() + "_" + G2->getName() + ".txt", std::ofstream::out | std::ofstream::app);
-    cacheOutStream.precision(17);
-    cacheOutStream << scientific;
-    //Map that pairs temperatures (in log space) to pbads, then we add the pairs already in the cache
-    map<double, double> scoreMap;
-    //start first instance of linear regression by filling the map with 20 pairs over 10E-10 to 10E!0
-    double maxx = 0.0;
-    for(double i = -10.0; i < 10.0; i = i + 1.0){
-        if(cache.find(i) == cache.end()){
-            double score = ( scoreBasedScheduling ? scoreForTInitial(pow(10, i)) : pForTInitial(pow(10, i)) );
-            cacheOutStream << i << " " << score << endl;
-            scoreMap[i] = score;
-        }else{
-            scoreMap[i] = cache[i];
-        }
-        maxx = max(maxx, scoreMap[i]);
-        progress++;
-        if(scoreBasedScheduling)
-            cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
-        else
-            cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << scoreMap[i] << endl;
-    }
-    //actually perform the linear regression
-    LinearRegression linearRegression;
-    linearRegression.setup(scoreMap);
-    //The "run" linear regression function returns a tuple
-    tuple<int, double, double, int, double, double, double, double> regressionResult = linearRegression.run();
-    //pull the temperature bounds from the tuple and strech them a bit
-    double lowerEnd = get<2>(regressionResult);
-    double upperEnd = get<5>(regressionResult);
-    double wing = (upperEnd - lowerEnd) / 2;
-    //fill the score map with 30 more pairs betweem the boundaries
-    for(double i = lowerEnd - wing; i < upperEnd + wing; i += (upperEnd - lowerEnd) / 40.0){
-        if(cache.find(i) == cache.end()){
-            double score = ( scoreBasedScheduling ? scoreForTInitial(pow(10, i)) : pForTInitial(pow(10, i)) );
-            cacheOutStream << i << " " << score << endl;
-            scoreMap[i] = score;
-        }else{
-            scoreMap[i] = cache[i];
-        }
-        maxx = max(maxx, scoreMap[i]);
-        progress++;
-        if(scoreBasedScheduling)
-            cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
-        else
-            cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << scoreMap[i] << endl;
-    }
-    cerr << endl;
-    //close the cahce file stream
-    cacheOutStream.close();
-    //run another linear regression instance
-    linearRegression.setup(scoreMap);
-    regressionResult = linearRegression.run();
-    cerr << "lower index: " << get<0>(regressionResult) << " ";
-    cerr << "upper index: " << get<3>(regressionResult) << endl;
-    cerr << "lower temperature: " << pow(10, get<2>(regressionResult)) << " ";
-    cerr << "higher temperature: " << pow(10, get<5>(regressionResult)) << endl;
-    cerr << "line 1 height: " << get<6>(regressionResult) << " ";
-    cerr << "line 3 height: " << get<7>(regressionResult) << endl;
-
-    // cerr << defaultfloat; was getting comiple error
-    TFinal = pow(10, get<2>(regressionResult));
-    TInitial = pow(10, get<5>(regressionResult));
-
-    setAcceptableTInitial();
-    setAcceptableTFinal();
+	TInitial = startingTemperature;
+	TFinal = endingTemperature;
+   
 }
 
 void SANA::searchTemperaturesByStatisticalTest() {
@@ -1607,7 +1605,7 @@ double SANA::findTInitialByLinearRegression(bool scoreBased){
 	cacheOutStream.precision(17);
 	cacheOutStream << scientific;
 	//Map that pairs temperatures (in log space) to pbads, then we add the pairs already in the cache
-	map<double, double> scoreMap;
+	map<double, double> pbadMap;
 	//start first instance of linear regression by filling the map with 20 pairs over 10E-10 to 10E!0
 	double maxx = 0.0;
 	for(double i = -10.0; i < 10.0; i = i + 1.0){
@@ -1618,20 +1616,20 @@ double SANA::findTInitialByLinearRegression(bool scoreBased){
 			else
 				score = pForTInitial(pow(10, i));
 			cacheOutStream << i << " " << score << endl;
-			scoreMap[i] = score;
+			pbadMap[i] = score;
 		}else{
-			scoreMap[i] = cache[i];
+			pbadMap[i] = cache[i];
 		}
-		maxx = max(maxx, scoreMap[i]);
+		maxx = max(maxx, pbadMap[i]);
 		progress++;
 		if(scoreBased)
-			cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
+			cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << pbadMap[i] << endl;
 		else
-			cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << scoreMap[i] << endl;
+			cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << pbadMap[i] << endl;
 	}
 	//actually perform the linear regression
 	LinearRegression linearRegression;
-	linearRegression.setup(scoreMap);
+	linearRegression.setup(pbadMap);
 	//The "run" linear regression function returns a tuple
 	tuple<int, double, double, int, double, double, double, double> regressionResult = linearRegression.run();
 	//pull the temperature bounds from the tuple and strech them a bit
@@ -1647,23 +1645,23 @@ double SANA::findTInitialByLinearRegression(bool scoreBased){
 			else
 				score = pForTInitial(pow(10, i));
 		    cacheOutStream << i << " " << score << endl;
-			scoreMap[i] = score;
+			pbadMap[i] = score;
 		}else{
-			scoreMap[i] = cache[i];
+			pbadMap[i] = cache[i];
 		}
-		maxx = max(maxx, scoreMap[i]);
+		maxx = max(maxx, pbadMap[i]);
 		progress++;
         if(scoreBased)
-            cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << scoreMap[i] << endl;
+            cerr << progress << "/100 temperature: " << pow(10, i) << " score: " << pbadMap[i] << endl;
         else
-            cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << scoreMap[i] << endl;
+            cerr << progress << "/100 temperature: " << pow(10, i) << " pBad: " << pbadMap[i] << endl;
 	}
 	cerr << endl;
 	//close the cahce file stream
 	cacheOutStream.close();
 	//run another linear regression instance
 	LinearRegression linearRegression2;
-	linearRegression2.setup(scoreMap);
+	linearRegression2.setup(pbadMap);
 	regressionResult = linearRegression2.run();
 	cerr << "lower index: " << get<0>(regressionResult) << " ";
 	cerr << "upper index: " << get<3>(regressionResult) << endl;
