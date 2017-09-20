@@ -21,16 +21,16 @@
 using namespace std;
 
 mt19937 gen(getRandomSeed());
-ranlux24_base fastGen(getRandomSeed());
+//ranlux24_base fastGen(getRandomSeed());
 uniform_real_distribution<> realDis(0, 1);
 
 double randDouble() {
-    return realDis(fastGen);
+    return realDis(gen);
 }
 
 int randInt(int low, int high) {
     uniform_int_distribution<> dis(low, high);
-    return dis(fastGen);
+    return dis(gen);
 }
 
 int randMod(int n) {
