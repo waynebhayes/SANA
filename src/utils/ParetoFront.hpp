@@ -2,55 +2,63 @@
 #define PARETOFRONT_HPP
 
 #include <iostream>
-#include <vector>
 #include <map>
 #include <unordered_map>
+#include <vector>
 #include <stdlib.h>
 #include <time.h>
 #include <algorithm>
+#include <fstream>
 
 using namespace std;
 
 struct greaterThan {
-	bool operator()(const double &a, const double &b) { return a > b; }
+        bool operator()(const double &a, const double &b) { return a > b; }
 };
+
+typedef vector<double>* alignmentPtr;
+typedef pair<multimap<double, alignmentPtr, greaterThan>::iterator, multimap<double, alignmentPtr, greaterThan>::iterator> multiValueIterator;
+typedef multimap<double, alignmentPtr, greaterThan>::iterator singleValueIterator;
 
 class ParetoFront {
-	private:
-		unordered_map<int, vector<double>> findScoresByAlignment;
-		vector<map<double, int, greaterThan>> paretoFront;
-		vector<string> measureNames;
-		int paretoCapacity;
-		int paretoCurrent;
-		int numberOfMeasures;
+        private:
+                unordered_map<alignmentPtr, vector<double>> findScoresByAlignment;
+                vector<multimap<double, alignmentPtr, greaterThan>> paretoFront;
+                vector<string> measureNames;
+				
+                int capacity;
+                int currentSize;
+                int numberOfMeasures;
 
-		void handleDuplicate(int position, double &value);
-		int removeByAlignmentPosition(int alignmentPosition);
-		int removeLowest();
-		int removeRandom();
-	
-		//This member function should most likely not be used, but just in case it's desired.
-		//The idea here is we find one of the alignments whose scores is lowest across the board.
-		int removeAverageLowest();
-		//---------------------------------------------------------------------------------------
-		
-		bool isDominatingAlignment(int alignmentPosition);
-	public:
-		ParetoFront(const int paretoCap, const int numbOfMeas, const vector<string> &names) : paretoCapacity(paretoCap), numberOfMeasures(numbOfMeas) {
-			paretoCurrent = 0;
-			paretoFront = vector<map<double, int, greaterThan>>(numberOfMeasures);
-			measureNames = vector<string>(names);
-			sort(measureNames.begin(), measureNames.end());
-		};
-		
-		int addAlignmentScore(int alignmentPosition, vector<double> &newScores);
-		
-		//This member function should most likely not be used, but just in case it's desired.
-		void updateAlignmentScore(int alignmentPosition, vector<double> &newScores);
-		
-		ostream& printAllScoresByMeasures(ostream &os);
-		ostream& printAllParetoContainerNames(ostream &os);
-		ostream& printAllScoresByAlignments(ostream &os);
+                bool isDominating(vector<double> &scores);
+                char whoDominates(vector<double> &otherScores, vector<double> &newScores);
+		bool initialPass(vector<double> &newScores);
+			
+		alignmentPtr removeAlignment(alignmentPtr alignmentPosition, vector<double> &scores);
+                alignmentPtr removeRandom();
+		vector<alignmentPtr> emptyVector();
+			
+		vector<alignmentPtr> removeNewlyDominiated(singleValueIterator &iterIN, unsigned int i, vector<double>& newScores);
+		vector<alignmentPtr> tryToInsertAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores);
+		vector<alignmentPtr> insertDominatingAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores);
+		vector<alignmentPtr> insertAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores);
+        public:
+                ParetoFront(const int paretoCap, const int numbOfMeas, const vector<string> &names) : capacity(paretoCap), numberOfMeasures(numbOfMeas) {
+                        currentSize = 1;
+                        paretoFront = vector<multimap<double, alignmentPtr, greaterThan>>(numberOfMeasures);
+			for(int i = 0; i < numberOfMeasures; i++)
+				paretoFront[i].insert(pair<double, alignmentPtr>(0, NULL));
+			findScoresByAlignment.insert(pair<alignmentPtr, vector<double>>(NULL, vector<double>(numberOfMeasures, 0)));
+                        measureNames = vector<string>(names);
+                        sort(measureNames.begin(), measureNames.end());
+			srand(time(NULL));
+                };
+
+                vector<alignmentPtr> addAlignmentScores(alignmentPtr algmtPtr, vector<double> &newScores);
+
+                //ostream& printAllScoresByMeasures(ostream &os);
+                //ostream& printAllParetoContainerNames(ostream &os);
+                //ostream& printAllScoresByAlignments(ostream &os);
+		ostream& printAlignmentScores(ostream &os);
 };
-
 #endif
