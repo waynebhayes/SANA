@@ -1,23 +1,36 @@
 #!/bin/sh
 
-USAGE="$0 <multi-align file with K columns> <list of exactly K networks in edgelist format, in the same order the columns of the multi-align file>"
+USAGE="$0 [-V] <multi-align file with K columns> <list of exactly K networks in edgelist format, in the same order the columns of the multi-align file>"
+
+VERBOSE=0
+
+case "$1" in
+-V) VERBOSE=1; shift ;;
+esac
 
 hawk 'ARGIND==1{
-	if(ARGIND-2!=net){printf "reading file %s\n",FILENAME > "/dev/fd/2"; net=ARGIND-2}
+	if(ARGIND-2!=net) {
+	    if('$VERBOSE')printf "reading file %s\n",FILENAME >"/dev/fd/2";
+	    net=ARGIND-2
+	}
 	cluster[FNR-1]="\t"$0"\t";
 	for(i=1;i<=NF;i++) A[FNR-1][i-1]=$i;
 	NC++;
     }
     ARGIND>1{
-	if(ARGIND-2!=net){printf "reading file %s\n",FILENAME > "/dev/fd/2"; net=ARGIND-2;netName[net]=FILENAME}
+	if(ARGIND-2!=net) {
+	    if('$VERBOSE')printf "reading file %s\n",FILENAME >"/dev/fd/2";
+	    net=ARGIND-2;netName[net]=FILENAME
+	}
 	node[net][$1]=1;
 	node[net][$2]=1;
 	edgeList[net][$1][$2]=edgeList[net][$2][$1]=1
+	#printf "%s(%d):%d %s %s\n", FILENAME, net, FNR, $1, $2
 	totalEdges++;
     }
     END{
 	net++;
-	printf "%d total networks with %d total edges\n", net, totalEdges;
+	if('$VERBOSE')printf "%d total networks with %d total edges\n", net, totalEdges > "/dev/fd/2";
 	for(i=0;i<NC;i++)
 	    for(j=i+1;j<NC;j++)
 	    {
@@ -42,6 +55,6 @@ hawk 'ARGIND==1{
 		    cs+=E*E/s
 		}
 	    };
-	printf "totalEdges %d TE %d cs %g cs/TE %g cs/totalEdges %g\n",totalEdges,TE,cs,cs/TE,cs/totalEdges
+	#printf "totalEdges %d TE %d cs %g cs/TE %g cs/totalEdges %g\n",totalEdges,TE,cs,cs/TE,cs/totalEdges
+	printf "totalEdges %d CIQ %g\n",totalEdges,cs/TE
     }' "$@"
-    #/tmp/mp60s/dir-init/AThaliana-CElegans-DMelanogaster-HSapiens-MMusculus-RNorvegicus-SCerevisiae-SPombe.align networks/[A-Z][A-Z][a-z]*/*.el
