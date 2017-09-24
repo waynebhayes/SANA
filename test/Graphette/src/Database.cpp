@@ -7,6 +7,8 @@ Database::Database()
 	: Database(5)
 {}
 
+#define MIN(a,b) ((a)<(b)?(a):(b))
+
 Database::Database(short k)
 	: k_(k)
 {
@@ -18,7 +20,7 @@ Database::Database(short k)
 	rlim.rlim_cur=rlim.rlim_max;
 	if(setrlimit(RLIMIT_NOFILE, &rlim)<0){perror("setrlimit(2)"); exit(1);}
 	if(getrlimit(RLIMIT_NOFILE, &rlim)<0){perror("getrlimit(2)"); exit(1);}
-	MAX_FD=rlim.rlim_cur;
+	MAX_FD=MIN(80000,rlim.rlim_cur);
 	cerr << "MAX_FD is " <<MAX_FD <<endl;
 	ifstream fcanon_map("data/canon_map"+to_string(k)+".txt"), forbit_map("data/orbit_map"+to_string(k)+".txt");
 	ifstream fcanon_list("data/canon_list"+to_string(k)+".txt");
