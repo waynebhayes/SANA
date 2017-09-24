@@ -11,8 +11,8 @@ public:
 private:
     bool NORMALIZE;
     double Permutation(uint M, uint N);
-    double ScoreForOneGOterm(uint M, uint N);
-    double downweightedScore(uint M, uint N);
+    double GOtermValuePerAlignment(uint M, uint N);
+    double GOtermValuePerAlignedPair(uint M, uint N);
     double scoreUpperBound();
 };
 
