@@ -17,7 +17,7 @@ class Database
 public:
 	Database();
 	Database(short k);
-	void addGraph(std::string filename, ullint numSamples);
+	void addGraph(std::string filename, long long int numSamples);
 	
 private:
 	ullint k_, numOrbitId_;
