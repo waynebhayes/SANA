@@ -20,8 +20,8 @@ Database::Database(short k)
 	rlim.rlim_cur=rlim.rlim_max;
 	if(setrlimit(RLIMIT_NOFILE, &rlim)<0){perror("setrlimit(2)"); exit(1);}
 	if(getrlimit(RLIMIT_NOFILE, &rlim)<0){perror("getrlimit(2)"); exit(1);}
-	MAX_FD=MIN(80000,rlim.rlim_cur);
-	cerr << "MAX_FD is " <<MAX_FD <<endl;
+	//MAX_FD=MIN(80000,rlim.rlim_cur);
+	//cerr << "MAX_FD is " <<MAX_FD <<endl;
 	ifstream fcanon_map("data/canon_map"+to_string(k)+".txt"), forbit_map("data/orbit_map"+to_string(k)+".txt");
 	ifstream fcanon_list("data/canon_list"+to_string(k)+".txt");
 	databaseDir = "Database"+to_string(k)+"/";
@@ -52,9 +52,12 @@ Database::Database(short k)
 	forbit_map.close();
 }
 
-void Database::addGraph(string filename, ullint numSamples){
-	int firstfd=-1;
-	//Prepocessing the input filename
+void Database::addGraph(string filename, long long int numSamples){
+	bool printOrbits = false;
+	if(numSamples < 0) {
+	    numSamples = -numSamples;
+	    printOrbits=true;
+	}
 	ifstream fgraph(filename);
 	string graphName = filename;
 	while(graphName.find("/") != string::npos)
@@ -69,94 +72,38 @@ void Database::addGraph(string filename, ullint numSamples){
 	Graph graph(edgelist);
 	//orbit signature for each node
 	vector<vector<bool>> orbitSignature(graph.numNodes(), vector<bool>(numOrbitId_, false));//each row for each node
-	vector<bool> isOpen(numOrbitId_, false);
-	vector<ofstream> forbitId(numOrbitId_);
-	vector<int> orbit2fd(numOrbitId_, -1);
-	vector<int> fd2orbit(MAX_FD, -1);
-	vector<int> fdCount(MAX_FD, 0);
 	ullint indicator = numSamples / 10;
-	for(ullint i = 0; i < numSamples; i++){
+	for(long long int i = 0; i < numSamples; i++){
 		if(i % indicator == 0)
-			cout << (i / indicator) * 10 << "% complete\n";
+			cerr << (i / indicator) * 10 << "% complete\n";
 		auto edge = xrand(0, edgelist.size());
 		Graphette* x = graph.sampleGraphette(k_, edgelist[edge].first, edgelist[edge].second);
-		Graphette* y = this->getCanonicalGraphette(x);
+		Graphette* gCanon = this->getCanonicalGraphette(x);
 		delete x;
-		//save orbit ids in respective directories
-		for(ullint j = 0; j < k_; j++){
-			auto z = y->decimalNumber();
-			ullint l = lower_bound(canonicalGraphette.begin(), canonicalGraphette.end(), z) - canonicalGraphette.begin();
-			ullint id = orbitId_[l][j];
-			if(!isOpen[id]) {
-			    forbitId[id].open(databaseDir+to_string(id)+"/"+graphName, ios_base::app);
-			    if(forbitId[id].fail()) { // time to close some of them
-				int i, biggest, smallest, numClosed=0;
-				// Find the smallest and biggest ones
-				assert(firstfd>0);
-				biggest=smallest=firstfd;
-				for(i=firstfd+1;i<MAX_FD;i++) {
-				    if(fdCount[i] > fdCount[biggest]) biggest=i;
-				    if(fdCount[i] < fdCount[smallest]) smallest=i;
-				}
-				cerr << "ran out of fds, running LRU: most frequent orbit is " << fd2orbit[biggest] << " with count "<< fdCount[biggest];
-				biggest = fdCount[biggest];
-				smallest = fdCount[smallest];
-				// Close those that are not used much
-				for(i=firstfd;i<MAX_FD;i++){
-				    int orbit = fd2orbit[i];
-				    if(fdCount[i] < biggest/8 && orbit > 0) {
-				    //if(fdCount[i] <= 2*smallest && orbit > 0) {
-					assert(orbit>=0 && orbit < numOrbitId_);
-					assert(orbit2fd[orbit]>0 && orbit2fd[orbit]<MAX_FD);
-					assert(isOpen[orbit]);
-					forbitId[orbit].close();
-					++numClosed;
-					isOpen[orbit]=false;
-					orbit2fd[orbit]=-1;
-					fd2orbit[i]=-1;
-				    }
-				    fdCount[i] = 0; // reset for LRU
-				}
-				// Try again
-				forbitId[id].open(databaseDir+to_string(id)+"/"+graphName, ios_base::app);
-				if(forbitId[id].fail()) {
-				    cerr << "really and truly can't open new file\n";
-				    exit(1);
-				} else {
-				    cerr << "; numClosed was "<<numClosed<<endl;
-				}
-			    }
-			    orbit2fd[id]=fileno(forbitId[id]);
-			    fd2orbit[orbit2fd[id]]=id;
-			    isOpen[id] = true;
-			    if(firstfd<0){
-				firstfd=orbit2fd[id];
-				cerr << "firstfd is "<<firstfd<<endl;
-			    }
-			}
-			++fdCount[orbit2fd[id]];
-			forbitId[id] << y->label(j) << " ";
-			for(auto orbit: y->labels()){
-				if(orbit != y->label(j))
-					forbitId[id] << orbit << " ";
-			}
-			forbitId[id] << endl;
-			orbitSignature[y->label(j)][id]= true;
+		auto gCanonInt = gCanon->decimalNumber();
+		cout << gCanonInt << '\t'; // output the integer bitmatrix of the canonical
+		ullint l = lower_bound(canonicalGraphette.begin(), canonicalGraphette.end(), gCanonInt) - canonicalGraphette.begin();
+		// cout << l << '\t'; // output the ordinal of the canonical
+		cout << gCanon->label(0);
+		for(ullint j = 1; j < k_; j++){
+			cout << '\t' << gCanon->label(j);
+			//orbitSignature[gCanon->label(j)][id]= true;
 		}
-		delete y;
+		cout << endl;
+		if(printOrbits) {
+			for(ullint j = 0; j < k_; j++){
+				ullint id = orbitId_[l][j];
+				cout  << '\t' << id << '\t' << gCanon->label(j);
+				for(auto orbit: gCanon->labels()){
+					if(orbit != gCanon->label(j))
+						cout << '\t' << orbit;
+				}
+				cout << endl;
+			}
+		}
+		delete gCanon;
 	}
-	cout << "100% complete\n";
-	for(ullint i = 0; i < numOrbitId_; i++) 
-		if(isOpen[i]) forbitId[i].close();
-	
-	//save orbit signatures as a matrix
-	ofstream fout(databaseDir + graphName + "nodeOrbitMembershipBitVector.txt");
-	fout << "k = " << k_ << " numSamples = " << numSamples << endl;
-	for(auto node: orbitSignature){
-		for(auto id: node) fout << id;
-		fout << endl;
-	}
-	fout.close();
+	cerr << "100% complete\n";
 }
 
 Graphette* Database::getCanonicalGraphette(Graphette* x){
