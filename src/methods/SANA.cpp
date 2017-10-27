@@ -970,7 +970,7 @@ int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort targe
 	if(G1AdjMatrix[source1][source2] and G2AdjMatrix[target1][target2])
 	{
 	    //cerr << "Beer!.......";
-	    //res -= (SQRDIFF(target1,source2) + SQRDIFF(target2,source1))/2;
+	    res += 2 * SQRDIFF(target1,target2);
 	}
 	return res;
 }
