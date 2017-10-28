@@ -26,9 +26,9 @@ class ParetoFront {
                 vector<multimap<double, alignmentPtr, greaterThan>> paretoFront;
                 vector<string> measureNames;
 				
-                int capacity;
-                int currentSize;
-                int numberOfMeasures;
+                unsigned int capacity;
+                unsigned int currentSize;
+                unsigned int numberOfMeasures;
 
                 bool isDominating(vector<double> &scores);
                 char whoDominates(vector<double> &otherScores, vector<double> &newScores);
@@ -43,10 +43,10 @@ class ParetoFront {
 		vector<alignmentPtr> insertDominatingAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores);
 		vector<alignmentPtr> insertAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores);
         public:
-                ParetoFront(const int paretoCap, const int numbOfMeas, const vector<string> &names) : capacity(paretoCap), numberOfMeasures(numbOfMeas) {
+                ParetoFront(const unsigned int paretoCap, const unsigned int numbOfMeas, const vector<string> &names) : capacity(paretoCap), numberOfMeasures(numbOfMeas) {
                         currentSize = 1;
                         paretoFront = vector<multimap<double, alignmentPtr, greaterThan>>(numberOfMeasures);
-			for(int i = 0; i < numberOfMeasures; i++)
+			for(unsigned int i = 0; i < numberOfMeasures; i++)
 				paretoFront[i].insert(pair<double, alignmentPtr>(0, NULL));
 			findScoresByAlignment.insert(pair<alignmentPtr, vector<double>>(NULL, vector<double>(numberOfMeasures, 0)));
                         measureNames = vector<string>(names);
