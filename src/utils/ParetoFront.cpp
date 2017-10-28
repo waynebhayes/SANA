@@ -2,7 +2,7 @@
 
 bool ParetoFront::isDominating(vector<double> &scores)
 {
-	for(int i = 0; i < numberOfMeasures; i++)
+	for(unsigned int i = 0; i < numberOfMeasures; i++)
 		if(scores[i] > paretoFront[i].begin()->first)
 			return true;
 	return false;
@@ -11,7 +11,7 @@ bool ParetoFront::isDominating(vector<double> &scores)
 char ParetoFront::whoDominates(vector<double> &newScores, vector<double> &otherScores)
 {
 	bool scoreA = false, scoreB = false;
-	for(int i = 0; i < numberOfMeasures; i++) {
+	for(unsigned int i = 0; i < numberOfMeasures; i++) {
 		if(newScores[i] > otherScores[i])
 			scoreA = true;
 		else
@@ -27,7 +27,7 @@ char ParetoFront::whoDominates(vector<double> &newScores, vector<double> &otherS
 bool ParetoFront::initialPass(vector<double> &newScores)
 {
 	char twoCounter = 0;
-	for(int i = 0; i < numberOfMeasures; i++){
+	for(unsigned int i = 0; i < numberOfMeasures; i++){
 		singleValueIterator iter = prev(paretoFront[i].end());
 		if(iter->first < newScores[i])
 			twoCounter++;
@@ -39,7 +39,7 @@ bool ParetoFront::initialPass(vector<double> &newScores)
 
 alignmentPtr ParetoFront::removeAlignment(alignmentPtr alignmentPosition, vector<double> &alignmentScores)
 {
-	for(int i = 0; i < numberOfMeasures; i++) {
+	for(unsigned int i = 0; i < numberOfMeasures; i++) {
 		multiValueIterator iterM = paretoFront[i].equal_range(alignmentScores[i]);
 		for(singleValueIterator iterS = iterM.first; iterS != iterM.second; iterS++) {
 			if(iterS->second == alignmentPosition) {
@@ -56,13 +56,12 @@ alignmentPtr ParetoFront::removeRandom()
 {
 	bool test = true;
 	singleValueIterator iter;
-	alignmentPtr toReturn;
 	do {
-		int iterate = rand() % (capacity - 1) + 1;
+		unsigned int iterate = rand() % (capacity - 1) + 1;
 		test = false;
 		iter = paretoFront[0].begin();
 		advance(iter, iterate);
-		for(int i = 1; i < 12; i++) {
+		for(unsigned int i = 1; i < numberOfMeasures; i++) {
 			if(iter == paretoFront[i].begin()) {
 				test = true;
 				break;
@@ -81,7 +80,6 @@ vector<alignmentPtr> ParetoFront::removeNewlyDominiated(singleValueIterator &ite
 {
 	singleValueIterator iter = iterIN;
 	vector<alignmentPtr> dominatedAlignments(0);
-	alignmentPtr otherScores;
 	while(prev(iter)->first == iter->first)
 		iter--;
 	while(iter != paretoFront[i].end()) {
@@ -91,7 +89,7 @@ vector<alignmentPtr> ParetoFront::removeNewlyDominiated(singleValueIterator &ite
 		}
 		vector<double> alignmentScores = findScoresByAlignment[iter->second];
 		if(whoDominates(newScores, alignmentScores) == 1) {
-			for(int j = 0; j < numberOfMeasures; j++) {
+			for(unsigned int j = 0; j < numberOfMeasures; j++) {
 				if(j == i)
 					continue;
 				singleValueIterator iterS = paretoFront[j].lower_bound(alignmentScores[j]);
@@ -198,11 +196,11 @@ vector<alignmentPtr> ParetoFront::addAlignmentScores(alignmentPtr algmtPtr, vect
 
 ostream& ParetoFront::printAlignmentScores(ostream &os)
 {
-	int i = 0;
+	unsigned int i = 0;
 	os << findScoresByAlignment.size() << ' ' << paretoFront[0].size() << ' ' << currentSize << '\n';
 	for(auto iter = findScoresByAlignment.begin(); iter != findScoresByAlignment.end(); iter++)
 	{
-		for(int j = 0; j < numberOfMeasures; j++) {
+		for(unsigned int j = 0; j < numberOfMeasures; j++) {
 			os << (iter->second)[j];
 			if(j < numberOfMeasures - 1)
 				os << " ";
