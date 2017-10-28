@@ -147,9 +147,9 @@ private:
 
     //data structures for the solution space search
     double changeProbability;
-    vector<bool> assignedNodesG2;
-    vector<ushort> unassignedNodesG2;
-    vector<ushort> A;
+    vector<bool> *assignedNodesG2;
+    vector<ushort> *unassignedNodesG2;
+    vector<ushort>* A;
     //initializes all the necessary data structures for a new run
     void initDataStructures(const Alignment& startA);
 
@@ -244,7 +244,7 @@ private:
     //to evaluate local measures incrementally
     bool needLocal;
     double localScoreSum;
-    map<string, double> localScoreSumMap;
+    map<string, double>* localScoreSumMap = new map<string, double>;
     vector<vector<float> > sims;
     map<string, vector<vector<float> > > localSimMatrixMap;
     double localScoreSumIncChangeOp(vector<vector<float> > const & sim, ushort const & source, ushort const & oldTarget, ushort const & newTarget);
@@ -292,6 +292,21 @@ private:
     string haveFolder();
     string mkdir(const std::string& file);
     tuple<int, double, int, double, double, double> regress(double start, double end, int amount);
+
+    //Mostly for pareto front, to hold multiple alignments and scores
+    unordered_set<vector<ushort>*>* storedAlignments = new unordered_set<vector<ushort>*>;
+    unordered_map<vector<ushort>*, vector<bool>*> storedAssignedNodesG2;
+    unordered_map<vector<ushort>*, vector<ushort>*> storedUnassignedNodesG2;
+    unordered_map<vector<ushort>*, int> storedAligEdges;
+    unordered_map<vector<ushort>*, int> storedSquaredAligEdges;
+    unordered_map<vector<ushort>*, int> storedInducedEdges;
+    unordered_map<vector<ushort>*, double> storedLocalScoreSum;
+    unordered_map<vector<ushort>*, double> storedWecSum;
+    unordered_map<vector<ushort>*, double> storedEwecSum;
+    unordered_map<vector<ushort>*, int> storedNcSum;
+    unordered_map<vector<ushort>*, double> storedTCSum;
+    unordered_map<vector<ushort>*, double> storedCurrentScore;
+    unordered_map<vector<ushort>*, map<string, double>*> storedLocalScoreSumMap;
 
 };
 
