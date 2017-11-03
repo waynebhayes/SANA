@@ -42,57 +42,57 @@ Graph::Graph(int n) :
 
 void Graph::setAdjMatrix(vector<bool>& v)
 {
-	int k = 0;
-	for (unsigned int i = 0; i < this->getNumNodes(); i++)
-	{
-		for (unsigned int j = 0; j < this->getNumNodes(); j++)
-		{
-			if (i < j)
-			{
-				adjMatrix[i][j] = v[k];
-				if (v[k])
-				{
-					this->addEdge(i,j);
-				}
-				k++;
-			}
-		}	
-	}		
+    int k = 0;
+    for (unsigned int i = 0; i < this->getNumNodes(); i++)
+    {
+        for (unsigned int j = 0; j < this->getNumNodes(); j++)
+        {
+            if (i < j)
+            {
+                adjMatrix[i][j] = v[k];
+                if (v[k])
+                {
+                    this->addEdge(i,j);
+                }
+                k++;
+            }
+        }    
+    }        
 }
 
 void Graph::print_adjMatrix(bool upper)
 {
-	for (unsigned int i = 0; i < this->getNumNodes(); i++)
-	{
-		for (unsigned int j = 0; j < this->getNumNodes(); j++)
-		{
-			if (upper)
-			{
-				if (i < j)
-					std::cout << adjMatrix[i][j] << " ";
-				else
-					std::cout << "  ";
-			}
-			else
-				std::cout << adjMatrix[i][j] << " ";
-		}
-		std::cout << "\n";
-	}
+    for (unsigned int i = 0; i < this->getNumNodes(); i++)
+    {
+        for (unsigned int j = 0; j < this->getNumNodes(); j++)
+        {
+            if (upper)
+            {
+                if (i < j)
+                    std::cout << adjMatrix[i][j] << " ";
+                else
+                    std::cout << "  ";
+            }
+            else
+                std::cout << adjMatrix[i][j] << " ";
+        }
+        std::cout << "\n";
+    }
 }
 
 uint Graph::getDegree(uint node) const
 {
-	return adjLists[node].size();
+    return adjLists[node].size();
 }
 
 void Graph::set_decimal_representation(int n)
 {
-	decimal_representation = n;
+    decimal_representation = n;
 }
 
 int Graph::get_decimal_representation() const
 {
-	return decimal_representation;
+    return decimal_representation;
 }
 
 void Graph::construct_decimal_representation()
@@ -135,16 +135,16 @@ void Graph::print_adjLists()
 
 void Graph::reset()
 {
-	// vector<vector<bool>> n(adjMatrix.size(), vector<bool>(adjMatrix.size()));
-	// adjMatrix = n;
-	for (vector<bool> m:adjMatrix) {
-		for (uint i = 0; i < m.size(); i++) {
-			m[i] = false;
-		}
-	}
-	// vector<vector<ushort>> item(adjLists.size(), vector<ushort>(0));
-	// adjLists = item;
-	for (uint i = 0; i < adjLists.size(); i++) {
-		adjLists[i] = vector<ushort>(0);
-	}
-}	
+    // vector<vector<bool>> n(adjMatrix.size(), vector<bool>(adjMatrix.size()));
+    // adjMatrix = n;
+    for (vector<bool> m:adjMatrix) {
+        for (uint i = 0; i < m.size(); i++) {
+            m[i] = false;
+        }
+    }
+    // vector<vector<ushort>> item(adjLists.size(), vector<ushort>(0));
+    // adjLists = item;
+    for (uint i = 0; i < adjLists.size(); i++) {
+        adjLists[i] = vector<ushort>(0);
+    }
+}    

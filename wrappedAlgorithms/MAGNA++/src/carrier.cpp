@@ -129,14 +129,14 @@ float* matrix_read(char *file_name, int n1, int n2) {
 //      pos = ftell(fp);
 //      ret = fscanf(fp,"%f",&num);
 //      if (ret==0) {
-//	while((ret = fgetc(fp))) {
-//	  if(ret == '\n') break;
-//	}
+//    while((ret = fgetc(fp))) {
+//      if(ret == '\n') break;
+//    }
 //      }
 //      else {
-//	fseek(fp,pos,SEEK_SET);
-//	break;
-//      }	
+//    fseek(fp,pos,SEEK_SET);
+//    break;
+//      }    
 //    }
 
     while( (ret = fscanf(fp," %f ",&num)) != EOF) {

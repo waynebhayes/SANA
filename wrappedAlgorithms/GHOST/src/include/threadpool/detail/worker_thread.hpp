@@ -46,7 +46,7 @@ namespace boost { namespace threadpool { namespace detail
   , private noncopyable
   {
   public:
-    typedef Pool pool_type;         	   //!< Indicates the pool's type.
+    typedef Pool pool_type;                //!< Indicates the pool's type.
 
   private:
     shared_ptr<pool_type>      m_pool;     //!< Pointer to the pool which created the worker.
@@ -63,48 +63,48 @@ namespace boost { namespace threadpool { namespace detail
       assert(pool);
     }
 
-	
-	/*! Notifies that an exception occurred in the run loop.
-	*/
-	void died_unexpectedly()
-	{
-		m_pool->worker_died_unexpectedly(this->shared_from_this());
-	}
+    
+    /*! Notifies that an exception occurred in the run loop.
+    */
+    void died_unexpectedly()
+    {
+        m_pool->worker_died_unexpectedly(this->shared_from_this());
+    }
 
 
   public:
-	  /*! Executes pool's tasks sequentially.
-	  */
-	  void run()
-	  { 
-		  scope_guard notify_exception(bind(&worker_thread::died_unexpectedly, this));
+      /*! Executes pool's tasks sequentially.
+      */
+      void run()
+      { 
+          scope_guard notify_exception(bind(&worker_thread::died_unexpectedly, this));
 
-		  while(m_pool->execute_task()) {}
+          while(m_pool->execute_task()) {}
 
-		  notify_exception.disable();
-		  m_pool->worker_destructed(this->shared_from_this());
-	  }
-
-
-	  /*! Joins the worker's thread.
-	  */
-	  void join()
-	  {
-		  m_thread->join();
-	  }
+          notify_exception.disable();
+          m_pool->worker_destructed(this->shared_from_this());
+      }
 
 
-	  /*! Constructs a new worker thread and attaches it to the pool.
-	  * \param pool Pointer to the pool.
-	  */
-	  static void create_and_attach(shared_ptr<pool_type> const & pool)
-	  {
-		  shared_ptr<worker_thread> worker(new worker_thread(pool));
-		  if(worker)
-		  {
-			  worker->m_thread.reset(new boost::thread(bind(&worker_thread::run, worker)));
-		  }
-	  }
+      /*! Joins the worker's thread.
+      */
+      void join()
+      {
+          m_thread->join();
+      }
+
+
+      /*! Constructs a new worker thread and attaches it to the pool.
+      * \param pool Pointer to the pool.
+      */
+      static void create_and_attach(shared_ptr<pool_type> const & pool)
+      {
+          shared_ptr<worker_thread> worker(new worker_thread(pool));
+          if(worker)
+          {
+              worker->m_thread.reset(new boost::thread(bind(&worker_thread::run, worker)));
+          }
+      }
 
   };
 

@@ -26,7 +26,7 @@ void bgl_notes() {
 
     typedef std::pair<int, int> Edge;
     Edge edge_array[] = { Edge(A,B), Edge(A,D), Edge(C,A), Edge(D,C),
-    		Edge(C,E), Edge(B,D), Edge(D,E) };
+            Edge(C,E), Edge(B,D), Edge(D,E) };
     const int num_edges = sizeof(edge_array)/sizeof(edge_array[0]);
 
     // declare a graph object
