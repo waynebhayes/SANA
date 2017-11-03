@@ -13,121 +13,121 @@
 // Sort edges by node number, dictionary order on pairs of integers
 
 struct vertex* vertex_malloc(char* name, int number) {
-	struct vertex* v;
-	v = (struct vertex*)malloc(sizeof *v);
+    struct vertex* v;
+    v = (struct vertex*)malloc(sizeof *v);
     if(v==NULL){mg_error("Error allocating vertex. Not enough memory?");mg_quit(EXIT_FAILURE);}
-	
-	int len = strlen(name) + 1;
-	v->name = (char*)malloc(len * sizeof(char));
+    
+    int len = strlen(name) + 1;
+    v->name = (char*)malloc(len * sizeof(char));
     if(v->name==NULL){mg_error("Error allocating vertex name. Not enough memory?");mg_quit(EXIT_FAILURE);}
-	strcpy(v->name, name);
-	v->number = number;
-	return v;
+    strcpy(v->name, name);
+    v->number = number;
+    return v;
 }
 
 int vertex_cmp(struct vertex* v1, struct vertex* v2) {
-	char* name1 = v1->name;
-	char* name2 = v2->name;
-	
-	return strcmp(name1, name2);
+    char* name1 = v1->name;
+    char* name2 = v2->name;
+    
+    return strcmp(name1, name2);
 }
 
 void vertex_print(struct vertex* v) {
-	printf("%s, %d\n", v->name, v->number);
+    printf("%s, %d\n", v->name, v->number);
 }
 
 void vertex_delete(struct vertex* v) {
-	free(v->name);
-	free(v);
+    free(v->name);
+    free(v);
 }
 
 struct edge* edge_malloc(int vertex1, int vertex2) {
-	struct edge* e;
-	e = (struct edge*)malloc(sizeof *e);
+    struct edge* e;
+    e = (struct edge*)malloc(sizeof *e);
     if(e==NULL){mg_error("Error allocating edge. Not enough memory?");mg_quit(EXIT_FAILURE);}    
-	
-	e->vertex1 = vertex1;
-	e->vertex2 = vertex2;
-	
-	return e;
+    
+    e->vertex1 = vertex1;
+    e->vertex2 = vertex2;
+    
+    return e;
 }
 
 int edge_cmp(struct edge* e1, struct edge* e2) {
-	if (e1->vertex1 > e2->vertex1)
-		return 1;
-	else if (e1->vertex1 == e2->vertex1) {
-		if (e1->vertex2 == e2->vertex2)
-			return 0;
-		else if (e1->vertex2 > e2->vertex2)
-			return 1;
-	}
-	return -1;	
+    if (e1->vertex1 > e2->vertex1)
+        return 1;
+    else if (e1->vertex1 == e2->vertex1) {
+        if (e1->vertex2 == e2->vertex2)
+            return 0;
+        else if (e1->vertex2 > e2->vertex2)
+            return 1;
+    }
+    return -1;    
 }
 
 void edge_print(struct edge* e) {
-	printf("(%d, %d)\n", e->vertex1, e->vertex2);
+    printf("(%d, %d)\n", e->vertex1, e->vertex2);
 }
 
 void edge_delete(struct edge* e) {
-	free(e);
+    free(e);
 }
 
 struct graph* graph_malloc(void) {
-	struct graph* g;
-	g = (struct graph*)malloc(sizeof *g);
+    struct graph* g;
+    g = (struct graph*)malloc(sizeof *g);
     if(g==NULL){mg_error("Error allocating graph. Not enough memory?");mg_quit(EXIT_FAILURE);}    
-	
-	g->vertex_set_by_name = NULL;
-	g->n_vertices = 0;
-	g->edge_set = NULL;
-	g->n_edges = 0;
-	
-	return g;
+    
+    g->vertex_set_by_name = NULL;
+    g->n_vertices = 0;
+    g->edge_set = NULL;
+    g->n_edges = 0;
+    
+    return g;
 }
 
-void graph_vertex_malloc(struct graph* g, int n_vertices) {	
-	struct vertex** vertex_set_by_name;
-	struct vertex** vertex_set_by_number;
-	vertex_set_by_name = (struct vertex**)malloc(n_vertices * (sizeof *vertex_set_by_name));
-	vertex_set_by_number = (struct vertex**)malloc(n_vertices * (sizeof *vertex_set_by_name));
+void graph_vertex_malloc(struct graph* g, int n_vertices) {    
+    struct vertex** vertex_set_by_name;
+    struct vertex** vertex_set_by_number;
+    vertex_set_by_name = (struct vertex**)malloc(n_vertices * (sizeof *vertex_set_by_name));
+    vertex_set_by_number = (struct vertex**)malloc(n_vertices * (sizeof *vertex_set_by_name));
 
     if(vertex_set_by_name==NULL || vertex_set_by_number==NULL){
         mg_error("Error allocating vertex set by name/number. Not enough memory?"); mg_quit(EXIT_FAILURE);}    
-		
-	g->vertex_set_by_name = vertex_set_by_name;
-	g->vertex_set_by_number = vertex_set_by_number;
-	g->n_vertices = n_vertices;
+        
+    g->vertex_set_by_name = vertex_set_by_name;
+    g->vertex_set_by_number = vertex_set_by_number;
+    g->n_vertices = n_vertices;
 }
 
-void graph_vertex_realloc(struct graph* g, int n_vertices) {	
-	struct vertex** vertex_set_by_name;
-	struct vertex** vertex_set_by_number;
-	vertex_set_by_name = (struct vertex**)realloc(g->vertex_set_by_name, n_vertices * (sizeof *vertex_set_by_name));
-	vertex_set_by_number = (struct vertex**)realloc(g->vertex_set_by_number, n_vertices * (sizeof *vertex_set_by_name));
+void graph_vertex_realloc(struct graph* g, int n_vertices) {    
+    struct vertex** vertex_set_by_name;
+    struct vertex** vertex_set_by_number;
+    vertex_set_by_name = (struct vertex**)realloc(g->vertex_set_by_name, n_vertices * (sizeof *vertex_set_by_name));
+    vertex_set_by_number = (struct vertex**)realloc(g->vertex_set_by_number, n_vertices * (sizeof *vertex_set_by_name));
 
     if(vertex_set_by_name==NULL || vertex_set_by_number==NULL){
         mg_error("Error allocating vertex set by name/number. Not enough memory?"); mg_quit(EXIT_FAILURE);}    
-		
-	g->vertex_set_by_name = vertex_set_by_name;
-	g->vertex_set_by_number = vertex_set_by_number;
-	g->n_vertices = n_vertices;
+        
+    g->vertex_set_by_name = vertex_set_by_name;
+    g->vertex_set_by_number = vertex_set_by_number;
+    g->n_vertices = n_vertices;
 }
 
 void graph_edge_malloc(struct graph* g, int n_edges) {
-	struct edge** edge_set;
-	edge_set = (struct edge**)malloc(n_edges * (sizeof *edge_set));
+    struct edge** edge_set;
+    edge_set = (struct edge**)malloc(n_edges * (sizeof *edge_set));
     if(edge_set==NULL){mg_error("Error allocating edge set. Not enough memory?");mg_quit(EXIT_FAILURE);}    
-	
-	g->edge_set = edge_set;
-	g->n_edges = n_edges;
+    
+    g->edge_set = edge_set;
+    g->n_edges = n_edges;
 }
 
 void graph_edge_realloc(struct graph* g, int n_edges) {
-	struct edge** edge_set;
-	edge_set = (struct edge**)realloc(g->edge_set, n_edges * (sizeof *edge_set));
-    if(edge_set==NULL){mg_error("Error allocating edge set. Not enough memory?");mg_quit(EXIT_FAILURE);}	
-	g->edge_set = edge_set;
-	g->n_edges = n_edges;
+    struct edge** edge_set;
+    edge_set = (struct edge**)realloc(g->edge_set, n_edges * (sizeof *edge_set));
+    if(edge_set==NULL){mg_error("Error allocating edge set. Not enough memory?");mg_quit(EXIT_FAILURE);}    
+    g->edge_set = edge_set;
+    g->n_edges = n_edges;
 }
 
 void graph_edge_list_read(struct graph* g, FILE *input_file, char* file_name) {
@@ -193,17 +193,17 @@ void graph_edge_list_read(struct graph* g, FILE *input_file, char* file_name) {
 }
 
 struct graph* graph_read(char* file_name) {
-	FILE* input_file = fopen(file_name, "r");
-	if (input_file == NULL) {
-		mg_error("Couldn't open network file: %s", file_name);
-		mg_quit(EXIT_FAILURE);
-	}
+    FILE* input_file = fopen(file_name, "r");
+    if (input_file == NULL) {
+        mg_error("Couldn't open network file: %s", file_name);
+        mg_quit(EXIT_FAILURE);
+    }
     
-//	char input_buffer[16];
-//	fgets(input_buffer, sizeof input_buffer, input_file);
+//    char input_buffer[16];
+//    fgets(input_buffer, sizeof input_buffer, input_file);
 //    rewind(input_file);
 
-	struct graph* g = graph_malloc();
+    struct graph* g = graph_malloc();
     
     //    if(strncmp(input_buffer,"LEDA.GRAPH",10)==0) {
     if(strcmp(".gw",file_name+strlen(file_name)-3) == 0) {
@@ -217,10 +217,10 @@ struct graph* graph_read(char* file_name) {
         graph_edge_list_read(g, input_file, file_name);
     }
 
-	fclose(input_file);
-	printf("Graph %s read. %d vertices, %d edges.\n", file_name, g->n_vertices, g->n_edges);
+    fclose(input_file);
+    printf("Graph %s read. %d vertices, %d edges.\n", file_name, g->n_vertices, g->n_edges);
     //    graph_print_edges(g);
-	return g;
+    return g;
 }
 
 void graph_sif_read(struct graph *g, FILE *input_file, char *file_name) {
@@ -291,167 +291,167 @@ void graph_sif_read(struct graph *g, FILE *input_file, char *file_name) {
 }
 
 void graph_read_vertices(struct graph* g, FILE* input_file, char* file_name) {
-	char input_buffer[1024];
+    char input_buffer[1024];
     int ret;
-	
-	fgets(input_buffer, sizeof input_buffer, input_file);
-	fgets(input_buffer, sizeof input_buffer, input_file);
-	fgets(input_buffer, sizeof input_buffer, input_file);
-	fgets(input_buffer, sizeof input_buffer, input_file);
-	
-	int n_vertices;
-	ret = fscanf(input_file, "%d\n", &n_vertices);
-    if (ret!=1) {
-		mg_error("File format error in network file: %s", file_name);
-        mg_quit(EXIT_FAILURE);
-    }
-	
-	graph_vertex_malloc(g, n_vertices);
-	struct vertex** vertex_set_by_name = g->vertex_set_by_name;
-	struct vertex** vertex_set_by_number = g->vertex_set_by_number;
-
-	int number;
-	char* name;
-	struct vertex* new_vertex;
-	for (number = 0; number < n_vertices; number++) {
-		if (fgets(input_buffer, sizeof input_buffer, input_file)==NULL) {
-            mg_error("File format error in network file: %s", file_name);
-            mg_quit(EXIT_FAILURE);
-        }
-		name = strtok(input_buffer, "|{}");
-		new_vertex = vertex_malloc(name, number);
-		vertex_set_by_name[number] = new_vertex;
-		vertex_set_by_number[number] = new_vertex;
-	}
-	
-	graph_sort_vertices(g);
-}
-
-void graph_read_edges(struct graph* g, FILE* input_file, char* file_name) {
-	char input_buffer[1024];
-    int ret;
-
-	int n_edges;
-	ret = fscanf(input_file, "%d\n", &n_edges);
+    
+    fgets(input_buffer, sizeof input_buffer, input_file);
+    fgets(input_buffer, sizeof input_buffer, input_file);
+    fgets(input_buffer, sizeof input_buffer, input_file);
+    fgets(input_buffer, sizeof input_buffer, input_file);
+    
+    int n_vertices;
+    ret = fscanf(input_file, "%d\n", &n_vertices);
     if (ret!=1) {
         mg_error("File format error in network file: %s", file_name);
         mg_quit(EXIT_FAILURE);
     }
-	
-	graph_edge_malloc(g, n_edges);
-	struct edge** edge_set = g->edge_set;
-	
-	int i;
-	char* vertex1;
-	char* vertex2;
-	for (i = 0; i < n_edges; i++) {
-		if (fgets(input_buffer, sizeof input_buffer, input_file) == NULL) {
+    
+    graph_vertex_malloc(g, n_vertices);
+    struct vertex** vertex_set_by_name = g->vertex_set_by_name;
+    struct vertex** vertex_set_by_number = g->vertex_set_by_number;
+
+    int number;
+    char* name;
+    struct vertex* new_vertex;
+    for (number = 0; number < n_vertices; number++) {
+        if (fgets(input_buffer, sizeof input_buffer, input_file)==NULL) {
             mg_error("File format error in network file: %s", file_name);
             mg_quit(EXIT_FAILURE);
         }
-		vertex1 = strtok(input_buffer, " ");
-		vertex2 = strtok(NULL, " ");
-		// Add things here to retrieve other information
-		edge_set[i] = edge_malloc(atoi(vertex1) - 1, atoi(vertex2) - 1);
-	}
-	
-	graph_sort_edges(g);
+        name = strtok(input_buffer, "|{}");
+        new_vertex = vertex_malloc(name, number);
+        vertex_set_by_name[number] = new_vertex;
+        vertex_set_by_number[number] = new_vertex;
+    }
+    
+    graph_sort_vertices(g);
+}
+
+void graph_read_edges(struct graph* g, FILE* input_file, char* file_name) {
+    char input_buffer[1024];
+    int ret;
+
+    int n_edges;
+    ret = fscanf(input_file, "%d\n", &n_edges);
+    if (ret!=1) {
+        mg_error("File format error in network file: %s", file_name);
+        mg_quit(EXIT_FAILURE);
+    }
+    
+    graph_edge_malloc(g, n_edges);
+    struct edge** edge_set = g->edge_set;
+    
+    int i;
+    char* vertex1;
+    char* vertex2;
+    for (i = 0; i < n_edges; i++) {
+        if (fgets(input_buffer, sizeof input_buffer, input_file) == NULL) {
+            mg_error("File format error in network file: %s", file_name);
+            mg_quit(EXIT_FAILURE);
+        }
+        vertex1 = strtok(input_buffer, " ");
+        vertex2 = strtok(NULL, " ");
+        // Add things here to retrieve other information
+        edge_set[i] = edge_malloc(atoi(vertex1) - 1, atoi(vertex2) - 1);
+    }
+    
+    graph_sort_edges(g);
 }
 
 void graph_print_vertices(struct graph* g) {
-	struct vertex** vertex_set_by_name = g->vertex_set_by_name;
-	int n_vertices = g->n_vertices;
-	
-	int i;
-	for (i = 0; i < n_vertices; i++)
-		vertex_print(vertex_set_by_name[i]);
+    struct vertex** vertex_set_by_name = g->vertex_set_by_name;
+    int n_vertices = g->n_vertices;
+    
+    int i;
+    for (i = 0; i < n_vertices; i++)
+        vertex_print(vertex_set_by_name[i]);
 }
 
 void graph_print_edges(struct graph* g) {
-	struct edge** edge_set = g->edge_set;
-	int n_edges = g->n_edges;
-	
-	int i;
-	for (i = 0; i < n_edges; i++)
-		edge_print(edge_set[i]);
+    struct edge** edge_set = g->edge_set;
+    int n_edges = g->n_edges;
+    
+    int i;
+    for (i = 0; i < n_edges; i++)
+        edge_print(edge_set[i]);
 }
 
 void graph_sort_vertices(struct graph* g) {
-	struct vertex** vertex_set_by_name = g->vertex_set_by_name;
-	
-	int i;
-	// Move through interval
-	for (i = 1; i < g->n_vertices; i++) {
-		int j;
-		// Move the next element in
-		for (j = i; j > 0; j--) {
-			int cmp = vertex_cmp(vertex_set_by_name[j], vertex_set_by_name[j-1]);
-			struct vertex* temp;
-			if (cmp > 0) {
-				temp = vertex_set_by_name[j-1];
-				vertex_set_by_name[j-1] = vertex_set_by_name[j];
-				vertex_set_by_name[j] = temp;
-			}
-			// If no swaps made, element is in its place
-			else break;
-		}
-	}
+    struct vertex** vertex_set_by_name = g->vertex_set_by_name;
+    
+    int i;
+    // Move through interval
+    for (i = 1; i < g->n_vertices; i++) {
+        int j;
+        // Move the next element in
+        for (j = i; j > 0; j--) {
+            int cmp = vertex_cmp(vertex_set_by_name[j], vertex_set_by_name[j-1]);
+            struct vertex* temp;
+            if (cmp > 0) {
+                temp = vertex_set_by_name[j-1];
+                vertex_set_by_name[j-1] = vertex_set_by_name[j];
+                vertex_set_by_name[j] = temp;
+            }
+            // If no swaps made, element is in its place
+            else break;
+        }
+    }
 }
 
 void graph_sort_edges(struct graph* g) {
-	struct edge** edge_set = g->edge_set;
-	
-	int i;
-	// Move through interval
-	for (i = 1; i < g->n_edges; i++) {
-		int j;
-		// Move the next element in
-		for (j = i; j > 0; j--) {
-			int cmp = edge_cmp(edge_set[j], edge_set[j-1]);
-			struct edge* temp;
-			if (cmp == 1) {
-				temp = edge_set[j-1];
-				edge_set[j-1] = edge_set[j];
-				edge_set[j] = temp;
-			}
-			// If no swaps made, element is in its place
-			else break;
-		}
-	}
+    struct edge** edge_set = g->edge_set;
+    
+    int i;
+    // Move through interval
+    for (i = 1; i < g->n_edges; i++) {
+        int j;
+        // Move the next element in
+        for (j = i; j > 0; j--) {
+            int cmp = edge_cmp(edge_set[j], edge_set[j-1]);
+            struct edge* temp;
+            if (cmp == 1) {
+                temp = edge_set[j-1];
+                edge_set[j-1] = edge_set[j];
+                edge_set[j] = temp;
+            }
+            // If no swaps made, element is in its place
+            else break;
+        }
+    }
 }
 
 int graph_find_vertex_number(struct graph* g, char* name) {
-	struct vertex** vertex_set_by_name = g->vertex_set_by_name;
-	int n_vertices = g->n_vertices;
-	
-	struct vertex* v = vertex_malloc(name, -1);
-	
-	int left = 0;
-	int right = n_vertices - 1;
-	int mid = 0;
-	while (right >= left) {
-		mid = (left + right) / 2;
-		int cmp = vertex_cmp(vertex_set_by_name[mid], v);
-		if (cmp > 0)
-			left = mid + 1;
-		else if (cmp < 0)
-			right = mid - 1;
-		else
-			break;
-	}
-	vertex_delete(v);
+    struct vertex** vertex_set_by_name = g->vertex_set_by_name;
+    int n_vertices = g->n_vertices;
+    
+    struct vertex* v = vertex_malloc(name, -1);
+    
+    int left = 0;
+    int right = n_vertices - 1;
+    int mid = 0;
+    while (right >= left) {
+        mid = (left + right) / 2;
+        int cmp = vertex_cmp(vertex_set_by_name[mid], v);
+        if (cmp > 0)
+            left = mid + 1;
+        else if (cmp < 0)
+            right = mid - 1;
+        else
+            break;
+    }
+    vertex_delete(v);
 
-	if (right >= left)
-		return vertex_set_by_name[mid]->number;
-	else
-		return -1;
+    if (right >= left)
+        return vertex_set_by_name[mid]->number;
+    else
+        return -1;
 }
 
 int graph_find_vertex_number_unsorted(struct graph* g, char* name) {
-	struct vertex** vertex_set_by_name = g->vertex_set_by_name;
-	int n_vertices = g->n_vertices;
-	
-	struct vertex* v = vertex_malloc(name, -1);
+    struct vertex** vertex_set_by_name = g->vertex_set_by_name;
+    int n_vertices = g->n_vertices;
+    
+    struct vertex* v = vertex_malloc(name, -1);
 
     int i;
     for(i=0;i<n_vertices;i++) {
@@ -464,162 +464,162 @@ int graph_find_vertex_number_unsorted(struct graph* g, char* name) {
 }
 
 char* graph_find_vertex_name(struct graph* g, int number) {
-	struct vertex** vertex_set_by_number = g->vertex_set_by_number;
-	
-	return vertex_set_by_number[number]->name;
+    struct vertex** vertex_set_by_number = g->vertex_set_by_number;
+    
+    return vertex_set_by_number[number]->name;
 }
 
 int graph_find_edge(struct graph* g, struct edge* e) {
-	int left = 0;
-	int right = g->n_edges - 1;
-	struct edge** edge_set = g->edge_set;
-	while (right >= left) {
-		int mid = (left + right) / 2;
-		int cmp = edge_cmp(edge_set[mid], e);
-		if (cmp == 1)
-			left = mid + 1;
-		else if (cmp == -1)
-			right = mid - 1;
-		else
-			return mid;
-	}
-	return -1;
+    int left = 0;
+    int right = g->n_edges - 1;
+    struct edge** edge_set = g->edge_set;
+    while (right >= left) {
+        int mid = (left + right) / 2;
+        int cmp = edge_cmp(edge_set[mid], e);
+        if (cmp == 1)
+            left = mid + 1;
+        else if (cmp == -1)
+            right = mid - 1;
+        else
+            return mid;
+    }
+    return -1;
 }
 
 int graph_is_edge(struct graph* g, int vertex1, int vertex2, struct edge* e_temp) {
-	// Alloc edge
-	e_temp->vertex1 = vertex1;
-	e_temp->vertex2 = vertex2;
-	
-	int index = graph_find_edge(g, e_temp);
-	if (index >= 0)
-		return 1;
-	
-	// Alloc edge
-	e_temp->vertex1 = vertex2;
-	e_temp->vertex2 = vertex1;
-	
-	index = graph_find_edge(g, e_temp);
-	if (index >= 0)
-		return 1;
-	
-	return 0;
+    // Alloc edge
+    e_temp->vertex1 = vertex1;
+    e_temp->vertex2 = vertex2;
+    
+    int index = graph_find_edge(g, e_temp);
+    if (index >= 0)
+        return 1;
+    
+    // Alloc edge
+    e_temp->vertex1 = vertex2;
+    e_temp->vertex2 = vertex1;
+    
+    index = graph_find_edge(g, e_temp);
+    if (index >= 0)
+        return 1;
+    
+    return 0;
 }
 
 void graph_delete(struct graph* g) {
-	struct vertex** vertex_set_by_name = g->vertex_set_by_name;
-	struct vertex** vertex_set_by_number = g->vertex_set_by_number;
-	int n_vertices = g->n_vertices;
-	struct edge** edge_set = g->edge_set;
-	int n_edges = g->n_edges;
-	
-	int i;
-	for (i = 0; i < n_vertices; i++)
-		vertex_delete(vertex_set_by_name[i]);
-	free(vertex_set_by_name);
-	free(vertex_set_by_number);
-	
-	for (i = 0; i < n_edges; i++)
-		edge_delete(edge_set[i]);
-	free(edge_set);
-	
-	free(g);
+    struct vertex** vertex_set_by_name = g->vertex_set_by_name;
+    struct vertex** vertex_set_by_number = g->vertex_set_by_number;
+    int n_vertices = g->n_vertices;
+    struct edge** edge_set = g->edge_set;
+    int n_edges = g->n_edges;
+    
+    int i;
+    for (i = 0; i < n_vertices; i++)
+        vertex_delete(vertex_set_by_name[i]);
+    free(vertex_set_by_name);
+    free(vertex_set_by_number);
+    
+    for (i = 0; i < n_edges; i++)
+        edge_delete(edge_set[i]);
+    free(edge_set);
+    
+    free(g);
 }
 
 struct alignment* alignment_calloc(struct graph* g1, struct graph* g2) {
-	int m = g1->n_vertices;
-	int n = g2->n_vertices;
-	if (m > n) {
-		printf("alignment_malloc: Size of domain is larger than size of range\n");
-		return NULL;
-	}
-	
-	struct alignment* a;
-	a = (struct alignment*)malloc(sizeof *a);
+    int m = g1->n_vertices;
+    int n = g2->n_vertices;
+    if (m > n) {
+        printf("alignment_malloc: Size of domain is larger than size of range\n");
+        return NULL;
+    }
+    
+    struct alignment* a;
+    a = (struct alignment*)malloc(sizeof *a);
     if(a==NULL){mg_error("Error allocating alignment. Not enough memory?");mg_quit(EXIT_FAILURE);}    
-	
-	struct permutation* p;
-	p = permutation_calloc(n);
-	
-	a->domain = g1;
-	a->range = g2;
-	a->perm = p;
-    //	a->invperm = permutation_calloc(n);
-	
-	a->n_edges_preserved = -1;
-	a->n_edges_induced = -1;
-	a->score = -1.0;
-	a->is_computed = 0;
-	
-	return a;
+    
+    struct permutation* p;
+    p = permutation_calloc(n);
+    
+    a->domain = g1;
+    a->range = g2;
+    a->perm = p;
+    //    a->invperm = permutation_calloc(n);
+    
+    a->n_edges_preserved = -1;
+    a->n_edges_induced = -1;
+    a->score = -1.0;
+    a->is_computed = 0;
+    
+    return a;
 }
 
 void alignment_randomize(struct alignment* a) {
-	struct permutation* p = a->perm;
-	permutation_randomize(p);
+    struct permutation* p = a->perm;
+    permutation_randomize(p);
 }
 
 int alignment_read(struct alignment* a, char* file_name) {
-	struct graph* g1 = a->domain;
-	struct graph* g2 = a->range;
-	int m = g1->n_vertices;
-	int n = g2->n_vertices;
-	
-	FILE* input_file = fopen(file_name, "r");
-	if (input_file == NULL) {
-		mg_error( "Couldn't open alignment file: %s", file_name);
-		mg_quit(EXIT_FAILURE);
-	}
+    struct graph* g1 = a->domain;
+    struct graph* g2 = a->range;
+    int m = g1->n_vertices;
+    int n = g2->n_vertices;
+    
+    FILE* input_file = fopen(file_name, "r");
+    if (input_file == NULL) {
+        mg_error( "Couldn't open alignment file: %s", file_name);
+        mg_quit(EXIT_FAILURE);
+    }
 
-	struct permutation* p = a->perm;
-	int* sequence = p->sequence;
+    struct permutation* p = a->perm;
+    int* sequence = p->sequence;
 
     int ret;
-	int i;
-	char name1[1000];
-	char name2[1000];
-	for (i = 0; i < n; i++)
-		sequence[i] = -1;
-	for (i = 0; i < m; i++) {
-		ret = fscanf(input_file, "%s %s", name1, name2);
+    int i;
+    char name1[1000];
+    char name2[1000];
+    for (i = 0; i < n; i++)
+        sequence[i] = -1;
+    for (i = 0; i < m; i++) {
+        ret = fscanf(input_file, "%s %s", name1, name2);
         if (ret!=2) {
             mg_error( "File format error in alignment file: %s", file_name);
             mg_quit(EXIT_FAILURE);
         }
-		int vertex1 = graph_find_vertex_number(g1, name1);
-		int vertex2 = graph_find_vertex_number(g2, name2);
-		
-		sequence[vertex1] = vertex2;
-	}
-	
-	// Randomize the rest
-	int* mapped_to = (int*)calloc(n, sizeof(int));
+        int vertex1 = graph_find_vertex_number(g1, name1);
+        int vertex2 = graph_find_vertex_number(g2, name2);
+        
+        sequence[vertex1] = vertex2;
+    }
+    
+    // Randomize the rest
+    int* mapped_to = (int*)calloc(n, sizeof(int));
     if(mapped_to==NULL){mg_error("Error allocating vertex map. Not enough memory?");mg_quit(EXIT_FAILURE);}
     
-	for (i = 0; i < n; i++)
-		if (sequence[i] >= 0 && sequence[i] < n)
-			mapped_to[sequence[i]] = 1;
-	int j = 0;
-	for (i = 0; i < n; i++)
-		if (mapped_to[i] == 0) {
-			mapped_to[j] = i;
-			j++;
-		}
-	struct permutation* shuffle_perm = permutation_calloc(n - m);
-	knuth_shuffle(shuffle_perm);
-	for (i = 0; i < n - m; i++)
-		sequence[m+i] = mapped_to[evaluate(shuffle_perm, i)];
-	
-	free(mapped_to);
-	permutation_delete(shuffle_perm);
-	
-	printf("Alignment %s read.\n", file_name);
-	
-	return 0;
+    for (i = 0; i < n; i++)
+        if (sequence[i] >= 0 && sequence[i] < n)
+            mapped_to[sequence[i]] = 1;
+    int j = 0;
+    for (i = 0; i < n; i++)
+        if (mapped_to[i] == 0) {
+            mapped_to[j] = i;
+            j++;
+        }
+    struct permutation* shuffle_perm = permutation_calloc(n - m);
+    knuth_shuffle(shuffle_perm);
+    for (i = 0; i < n - m; i++)
+        sequence[m+i] = mapped_to[evaluate(shuffle_perm, i)];
+    
+    free(mapped_to);
+    permutation_delete(shuffle_perm);
+    
+    printf("Alignment %s read.\n", file_name);
+    
+    return 0;
 }
 
 void alignment_tensor(struct alignment* a3, struct alignment* a1, struct alignment* a2, struct tensor_aux_space* taux) {
-	tensor(a3->perm, a1->perm, a2->perm, taux);
+    tensor(a3->perm, a1->perm, a2->perm, taux);
 }
 
 // template <typename T> int sgn(T val) {
@@ -884,7 +884,7 @@ void alignment_compute(struct alignment* a, struct carrier* rel,
 //    printf("dom: %d, rge: %d, pdeg: %d\n", a->domain->n_vertices,
 //           a->range->n_vertices, a->perm->degree);
 
-	a->is_computed = 1;
+    a->is_computed = 1;
 }
 
 float alignment_nodescore_compute(struct alignment *a, struct carrier *rel) {
@@ -905,36 +905,36 @@ float alignment_nodescore_compute(struct alignment *a, struct carrier *rel) {
 
 
 void alignment_write(struct alignment* a, char* file_name) {
-	struct graph* domain = a->domain;
-	struct graph* range = a->range;
-	int n_vertices = domain->n_vertices;
-	
-	FILE* output_file = NULL;
-	if (file_name != NULL) {
-		output_file = fopen(file_name, "w");
-		if (output_file == NULL) {
-			printf("alignment_write: Couldn't open file: %s\n", file_name);
-			mg_quit(EXIT_FAILURE);
-		}
-	}
-		
-	int i;
-	int j;
-	char* name1;
-	char* name2;
-	for (i = 0; i < n_vertices; i++) {
-		name1 = graph_find_vertex_name(domain, i);
-		j = evaluate(a->perm, i);
-		name2 = graph_find_vertex_name(range, j);
-		if (file_name == NULL)
-			printf("%s %s\n", name1, name2);
-		else
-			fprintf(output_file, "%s %s\n", name1, name2);
-	}
+    struct graph* domain = a->domain;
+    struct graph* range = a->range;
+    int n_vertices = domain->n_vertices;
+    
+    FILE* output_file = NULL;
+    if (file_name != NULL) {
+        output_file = fopen(file_name, "w");
+        if (output_file == NULL) {
+            printf("alignment_write: Couldn't open file: %s\n", file_name);
+            mg_quit(EXIT_FAILURE);
+        }
+    }
+        
+    int i;
+    int j;
+    char* name1;
+    char* name2;
+    for (i = 0; i < n_vertices; i++) {
+        name1 = graph_find_vertex_name(domain, i);
+        j = evaluate(a->perm, i);
+        name2 = graph_find_vertex_name(range, j);
+        if (file_name == NULL)
+            printf("%s %s\n", name1, name2);
+        else
+            fprintf(output_file, "%s %s\n", name1, name2);
+    }
     
     //permutation_print(a->perm);
 
-	fclose(output_file);
+    fclose(output_file);
 }
 
 void alignment_common_subgraph_write(struct alignment* a, char* file_name,
@@ -981,22 +981,22 @@ void alignment_common_subgraph_write(struct alignment* a, char* file_name,
 }
 
 void alignment_graph_write(struct alignment* a, char* file_name) {
-	struct graph* domain = a->domain;
-	struct graph* range = a->range;
-	
-	FILE* output_file = NULL;
-    //	if (file_name != NULL) {
-		output_file = fopen(file_name, "w");
-		if (output_file == NULL) {
-			printf("alignment_graph_write: Couldn't open file: %s\n", file_name);
-			mg_quit(EXIT_FAILURE);
-		}
-    //	}
-		
-	int i;
-	int j;
-	char* name1;
-	char* name2;
+    struct graph* domain = a->domain;
+    struct graph* range = a->range;
+    
+    FILE* output_file = NULL;
+    //    if (file_name != NULL) {
+        output_file = fopen(file_name, "w");
+        if (output_file == NULL) {
+            printf("alignment_graph_write: Couldn't open file: %s\n", file_name);
+            mg_quit(EXIT_FAILURE);
+        }
+    //    }
+        
+    int i;
+    int j;
+    char* name1;
+    char* name2;
 
     for(i=0;i<domain->n_edges;i++) {
         name1 = graph_find_vertex_name(domain, domain->edge_set[i]->vertex1);
@@ -1008,24 +1008,24 @@ void alignment_graph_write(struct alignment* a, char* file_name) {
         name2 = graph_find_vertex_name(range, range->edge_set[i]->vertex2);
         fprintf(output_file, "ran_%s i ran_%s\n", name1, name2);
     }
-	for (i = 0; i < domain->n_vertices; i++) {
-		name1 = graph_find_vertex_name(domain, i);
-		j = evaluate(a->perm, i);
-		name2 = graph_find_vertex_name(range, j);
+    for (i = 0; i < domain->n_vertices; i++) {
+        name1 = graph_find_vertex_name(domain, i);
+        j = evaluate(a->perm, i);
+        name2 = graph_find_vertex_name(range, j);
         fprintf(output_file, "dom_%s a ran_%s\n", name1, name2);
-	}
+    }
     //permutation_print(a->perm);
-	fclose(output_file);
+    fclose(output_file);
 }
 
 void alignment_print(struct alignment* a) {
-	alignment_write(a, NULL);
+    alignment_write(a, NULL);
 }
 
 void alignment_delete(struct alignment* a) {
-	permutation_delete(a->perm);
-    //	permutation_delete(a->invperm);
-	free(a);
+    permutation_delete(a->perm);
+    //    permutation_delete(a->invperm);
+    free(a);
 }
 
 // This returns the fraction of maps that are mapped correctly
@@ -1038,13 +1038,13 @@ float alignment_node_correctness(struct alignment *a) {
 
     //    printf("alignment correctness\n");
 
-	int i,j;
-	char* name1;
-	char* name2;
-	for (i = 0; i < n_dom; i++) {
-		name1 = graph_find_vertex_name(a->domain, i);
-		j = evaluate(a->perm, i);
-		name2 = graph_find_vertex_name(a->range, j);
+    int i,j;
+    char* name1;
+    char* name2;
+    for (i = 0; i < n_dom; i++) {
+        name1 = graph_find_vertex_name(a->domain, i);
+        j = evaluate(a->perm, i);
+        name2 = graph_find_vertex_name(a->range, j);
         sum += (strcmp(name1,name2)==0); // this looks at the whole name
         //sum += (strncmp(name1,name2,1)==0); // this looks at only the first character
         //        printf("dom(%d) %s rge(%d) %s\n", i, name1, j, name2);

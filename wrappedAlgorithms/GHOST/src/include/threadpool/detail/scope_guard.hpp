@@ -29,28 +29,28 @@ namespace boost { namespace threadpool { namespace detail
 class scope_guard
 : private boost::noncopyable
 {
-	function0<void> const m_function;
-	bool                  m_is_active;
+    function0<void> const m_function;
+    bool                  m_is_active;
 
 public:
-	scope_guard(function0<void> const & call_on_exit)
-	: m_function(call_on_exit)
-	, m_is_active(true)
-	{
-	}
+    scope_guard(function0<void> const & call_on_exit)
+    : m_function(call_on_exit)
+    , m_is_active(true)
+    {
+    }
 
-	~scope_guard()
-	{
-		if(m_is_active && m_function)
-		{
-			m_function();
-		}
-	}
+    ~scope_guard()
+    {
+        if(m_is_active && m_function)
+        {
+            m_function();
+        }
+    }
 
-	void disable()
-	{
-		m_is_active = false;
-	}
+    void disable()
+    {
+        m_is_active = false;
+    }
 };
 
 

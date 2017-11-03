@@ -38,16 +38,16 @@ void generate_intermediate_canonical_commands (int num_nodes, int BLOCK_SIZE, st
 void generate_intermediate_canonicals (int num_nodes, int start_file_interval, int end_file_interval, std::string file_name);
 
 void intermediate_canonicals_map (std::vector<unsigned int> &p_canonicals,
-	std::map <unsigned int, std::map<unsigned int, string> > &canonical_map, int num_nodes, int variation);
-	
+    std::map <unsigned int, std::map<unsigned int, string> > &canonical_map, int num_nodes, int variation);
+    
 std::vector<string> filter_intermediate_canonical(int num_nodes, std::vector<std::vector<unsigned int>> &mapping, 
-	std::vector<unsigned int> &p_canonicals);
-	
+    std::vector<unsigned int> &p_canonicals);
+    
 void generate_initial_canonical (int num_nodes, int variation, int block_size, int start, int end);
 void generate_intial_canonical_commands (int num_nodes, int BLOCK_SIZE);
 
 std::vector<string> generate_canonical(int num_nodes, std::vector<std::vector<unsigned int>> &mapping, std::vector<string> &permutations, 
-	int block_size, int start, int end); 
+    int block_size, int start, int end); 
 
 //Isomorphism checking code
 bool GraphAreConnected(Graph *G, int i, int j);

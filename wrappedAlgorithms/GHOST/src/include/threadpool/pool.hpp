@@ -117,7 +117,7 @@ namespace boost { namespace threadpool
     /*! Gets the number of threads in the pool.
     * \return The number of threads.
     */
-    size_t size()	const
+    size_t size()    const
     {
       return m_core->size();
     }
@@ -128,7 +128,7 @@ namespace boost { namespace threadpool
      * \return true, if the task could be scheduled and false otherwise. 
      */  
      bool schedule(task_type const & task)
-     {	
+     {    
        return m_core->schedule(task);
      }
 
@@ -160,13 +160,13 @@ namespace boost { namespace threadpool
 
 
     /*! Indicates that there are no tasks pending. 
-    * \return true if there are no tasks ready for execution.	
+    * \return true if there are no tasks ready for execution.    
     * \remarks This function is more efficient that the check 'pending() == 0'.
     */   
     bool empty() const
     {
       return m_core->empty();
-    }	
+    }    
 
 
     /*! The current thread of execution is blocked until the sum of all active
@@ -176,7 +176,7 @@ namespace boost { namespace threadpool
     void wait(size_t task_threshold = 0) const
     {
       m_core->wait(task_threshold);
-    }	
+    }    
 
 
     /*! The current thread of execution is blocked until the timestamp is met

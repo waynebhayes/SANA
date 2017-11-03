@@ -55,20 +55,20 @@ GOCDict* loadGOC(Network* net1, Network* net2,
 unordered_map<node, set<int> > loadAnnotations(Network* net, string fp){
     
     ifstream infile(fp);
-	if(!infile.good()){
-		throw LineReadException("Failed to load annotations! Check filename.");
-	}
-	unordered_map<node,set<int> > toReturn;
+    if(!infile.good()){
+        throw LineReadException("Failed to load annotations! Check filename.");
+    }
+    unordered_map<node,set<int> > toReturn;
 
-	string line;
-	unsigned int count = 0;
+    string line;
+    unsigned int count = 0;
 
-	while(getline(infile,line)){
-		istringstream iss(line);
+    while(getline(infile,line)){
+        istringstream iss(line);
 
         string a;
         
-		node u;
+        node u;
         
         iss >> a;
         
@@ -81,10 +81,10 @@ unordered_map<node, set<int> > loadAnnotations(Network* net, string fp){
         }
         
         
-		u = net->nodeNameToNode[a];
-		toReturn[u] = anns;
-		count++;
-	}
-	return toReturn;
+        u = net->nodeNameToNode[a];
+        toReturn[u] = anns;
+        count++;
+    }
+    return toReturn;
     
 }

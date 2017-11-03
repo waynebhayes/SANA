@@ -46,7 +46,7 @@ private:
     volatile future_result_type m_result;
 
     mutable mutex m_monitor;
-    mutable condition m_condition_ready;	
+    mutable condition m_condition_ready;    
 
     volatile bool m_is_cancelled;
     volatile bool m_executing;
