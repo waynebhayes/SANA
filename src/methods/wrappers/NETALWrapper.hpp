@@ -6,7 +6,7 @@ using namespace std;
 
 class NETALWrapper: public WrappedMethod {
 public:
-	NETALWrapper(Graph* G1, Graph* G2, string args);
+    NETALWrapper(Graph* G1, Graph* G2, string args);
 
 private:
     void loadDefaultParameters();

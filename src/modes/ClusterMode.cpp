@@ -24,8 +24,8 @@ uint ClusterMode::getOArgValueIndex(const vector<string>& argv) {
 
 void ClusterMode::run(ArgumentParser& args) {
   if (args.strings["-outfolder"] == "") {
-	  cerr << "Specify an output folder to use" << endl;
-	  exit(-1);
+      cerr << "Specify an output folder to use" << endl;
+      exit(-1);
   }
 
   scriptFileNameArg = args.strings["-qsubscriptfile"];

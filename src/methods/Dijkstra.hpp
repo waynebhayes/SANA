@@ -25,7 +25,7 @@ class Dijkstra: public Method {
 
 public:
   Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC, double delta);
-	
+    
   ~Dijkstra();
 
   Alignment run();
@@ -51,13 +51,13 @@ private:
   vector<vector<float> > sims;
 
   bool implementsLocking(){ return false; }
-	
+    
   //beginning of Grady's private variables
   string outputAName;
   unsigned int max_nodes;
-	
+    
   std::unordered_set<ushort> G1_exclude;
-  std::unordered_set<ushort> G2_exclude;	
+  std::unordered_set<ushort> G2_exclude;    
   //std::unordered_set<ushort> current_neighbors;
 
   double delta;
@@ -68,7 +68,7 @@ private:
   unsigned int nodes_aligned;
 
   /* Member functions */
-	
+    
   void make_seed_queue();
   std::pair <ushort, ushort> get_seed(Graph* G1, Graph* G2);
   std::pair <ushort, ushort> best_pair(SkipList & pq) throw(QueueEmptyException);

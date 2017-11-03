@@ -139,19 +139,19 @@ void ArgumentParser::writeArguments() {
     cerr << "=== Parsed arguments ===" << endl;
 
     for (auto it = strings.cbegin(); it != strings.cend(); ++it) {
-    	if ((*it).second == "") continue;
+        if ((*it).second == "") continue;
         cerr << (*it).first << ": " << (*it).second << '\t';
     }
     cerr << endl;
 
     for (auto it = doubles.cbegin(); it != doubles.cend(); ++it) {
-    	if ((*it).second == 0.0) continue;
+        if ((*it).second == 0.0) continue;
         cerr << (*it).first << ": " << (*it).second << '\t';
     }
     cerr << endl;
 
     for (auto it = bools.cbegin(); it != bools.cend(); ++it) {
-    	if ((*it).second == false) continue;
+        if ((*it).second == false) continue;
         cerr << (*it).first << ": " << (*it).second << '\t';
     }
     cerr << endl;

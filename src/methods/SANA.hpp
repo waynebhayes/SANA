@@ -1,7 +1,8 @@
 #ifndef SANA_HPP
 #define SANA_HPP
-#include <map>
 #include "Method.hpp"
+#include <map>
+#include <tuple>
 #include <random>
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/Measure.hpp"
@@ -20,7 +21,7 @@ public:
         double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore 
 #endif
     );
-    ~SANA();
+    ~SANA(){}
 
     Alignment run();
     vector<Alignment>* paretoRun();

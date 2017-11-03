@@ -6,7 +6,7 @@ using namespace std;
 
 class GEDEVOWrapper: public WrappedMethod {
 public:
-	GEDEVOWrapper(Graph* G1, Graph* G2, string args);
+    GEDEVOWrapper(Graph* G1, Graph* G2, string args);
 
 private:
     void loadDefaultParameters();

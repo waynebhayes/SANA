@@ -6,7 +6,7 @@ using namespace std;
 
 class NATALIEWrapper: public WrappedMethod {
 public:
-	NATALIEWrapper(Graph* G1, Graph* G2, string args);
+    NATALIEWrapper(Graph* G1, Graph* G2, string args);
 
 private:
     void loadDefaultParameters();

@@ -40,13 +40,13 @@ Mode* selectMode(ArgumentParser& args) {
     } else if (name == "dbg") {
         mode = new DebugMode();
     } else if (name == "analysis") {
-    	mode = new AnalysisMode();
+        mode = new AnalysisMode();
     } else if (name == "similarity") {
-    	mode = new SimilarityMode();
+        mode = new SimilarityMode();
     } else if (name == "normal") {
         mode = new NormalMode();
     } else if(name == "pareto") {
-	mode = new ParetoMode();
+    mode = new ParetoMode();
     } else {
         throw runtime_error("Error: unknown mode: " + name);
     }

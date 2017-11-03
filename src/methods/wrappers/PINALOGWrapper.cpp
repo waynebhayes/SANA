@@ -4,18 +4,18 @@
 const string PROGRAM = "./pinalog1.0";
 
 PINALOGWrapper::PINALOGWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "PINALOG", args) {
-	wrappedDir = "wrappedAlgorithms/PINALOG";
+    wrappedDir = "wrappedAlgorithms/PINALOG";
 }
 
 void PINALOGWrapper::loadDefaultParameters(){
-	parameters = "";
+    parameters = "";
 }
 
 
 string PINALOGWrapper::convertAndSaveGraph(Graph* graph, string name){
-	name = name + ".pin";
-	graph->writeGraphEdgeListFormatPINALOG(name);
-	return name;
+    name = name + ".pin";
+    graph->writeGraphEdgeListFormatPINALOG(name);
+    return name;
 }
 
 

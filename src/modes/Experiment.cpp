@@ -30,10 +30,10 @@ const string Experiment::methodArgsFile = "experiments/methods.cnf";
 const string Experiment::datasetsFile = "experiments/datasets.cnf";
 
 void Experiment::run(ArgumentParser& args) {
-	if (args.strings["-outfolder"] == "") {
-		cerr << "Specify an output folder to use using -outfolder" << endl;
-		exit(-1);
-	}
+    if (args.strings["-outfolder"] == "") {
+        cerr << "Specify an output folder to use using -outfolder" << endl;
+        exit(-1);
+    }
 
     checkFileExists(methodArgsFile);
     checkFileExists(datasetsFile);
@@ -160,28 +160,28 @@ string Experiment::getSubId(string method, string G1Name, string G2Name, uint nu
 }
 
 string Experiment::createCommand(string method, string G1Name, string G2Name, uint numSub, bool shouldSubmitToCluster) {
-	string command = "./sana ";
-	if(shouldSubmitToCluster) {
-		command += "-mode cluster -qmode normal";
-	} else {
-		command += "-mode normal";
-	}
+    string command = "./sana ";
+    if(shouldSubmitToCluster) {
+        command += "-mode cluster -qmode normal";
+    } else {
+        command += "-mode normal";
+    }
 
-	command += " -g1 " + G1Name + " -g2 " + G2Name;
-	command += " -t " + to_string(t);
-	for (string arg: getMethodArgs(method)) command += " " + arg;
-	for (string arg: experArgs) command += " " + arg;
+    command += " -g1 " + G1Name + " -g2 " + G2Name;
+    command += " -t " + to_string(t);
+    for (string arg: getMethodArgs(method)) command += " " + arg;
+    for (string arg: experArgs) command += " " + arg;
 
-	string subId = getSubId(method, G1Name, G2Name, numSub);
-	command += " -o " + resultsFolder+subId;
+    string subId = getSubId(method, G1Name, G2Name, numSub);
+    command += " -o " + resultsFolder+subId;
 
-	if(shouldSubmitToCluster) {
-		command += " -qsuboutfile " + outsFolder+subId+".out";
-		command += " -qsuberrfile " + errsFolder+subId+".err";
-		command += " -qsubscriptfile " + scriptsFolder+subId+".sh";
-	}
+    if(shouldSubmitToCluster) {
+        command += " -qsuboutfile " + outsFolder+subId+".out";
+        command += " -qsuberrfile " + errsFolder+subId+".err";
+        command += " -qsubscriptfile " + scriptsFolder+subId+".sh";
+    }
 
-	return command;
+    return command;
 }
 
 void Experiment::loadGraphs(map<string, Graph>& graphs) {
@@ -535,7 +535,7 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
         return new GraphletLGraal(G1, G2);
     }
     if (name == "graphletcoseine") {
-    	return new GraphletCosine(G1, G2);
+        return new GraphletCosine(G1, G2);
     }
     if (name == "wecgraphletlgraal") {
         LocalMeasure* wecNodeSim = new GraphletLGraal(G1, G2);

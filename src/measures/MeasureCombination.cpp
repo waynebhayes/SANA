@@ -283,15 +283,15 @@ SimMatrix MeasureCombination::initSim(SimMatrixRecipe recipe) const {
 }
 
 int MeasureCombination::getNumberOfLocalMeasures() const {
-	int localMeasureCount = 0;
-	for (uint i = 0; i < numMeasures(); i++) {
-		Measure* m = measures[i];
-		double w = weights[i];
-		if (w > 0 and m->isLocal()) {
-			localMeasureCount++;
-		}
-	}
-	return localMeasureCount;
+    int localMeasureCount = 0;
+    for (uint i = 0; i < numMeasures(); i++) {
+        Measure* m = measures[i];
+        double w = weights[i];
+        if (w > 0 and m->isLocal()) {
+            localMeasureCount++;
+        }
+    }
+    return localMeasureCount;
 }
 
 double MeasureCombination::getSumLocalWeight() const {
@@ -323,7 +323,7 @@ void MeasureCombination::setWeight(const string& measureName, double weight) {
 
 /*Writes out the local scores file in this format (example only of course):
 Pairwise Alignment  LocalMeasure1       LocalMeasure2       Weighted Sum
-821	723            0.334               0.214               0.548
+821    723            0.334               0.214               0.548
 */
 typedef map<ushort,string> NodeIndexMap;
 void MeasureCombination::writeLocalScores(ostream & outFile, Graph const & G1, Graph const & G2, Alignment const & A) const {

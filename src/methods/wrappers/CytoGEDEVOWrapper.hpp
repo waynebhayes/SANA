@@ -7,7 +7,7 @@ using namespace std;
 
 class CytoGEDEVOWrapper: public WrappedMethod {
 public:
-	CytoGEDEVOWrapper(Graph* G1, Graph* G2, string args);
+    CytoGEDEVOWrapper(Graph* G1, Graph* G2, string args);
 
 private:
     void loadDefaultParameters();

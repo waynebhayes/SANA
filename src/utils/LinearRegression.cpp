@@ -22,11 +22,11 @@ tuple<int, double, double, int, double, double, double, double> LinearRegression
     int indexx = 0;
 
     for (std::map<double, double>::iterator i = chart.begin(); i != chart.end(); i++)
-	{
+    {
         temperatures.push_back(i->first);
-		scores.push_back(i->second);
-		indexx ++;
-	}
+        scores.push_back(i->second);
+        indexx ++;
+    }
 
     double line1Sum;
     double* line2Values;

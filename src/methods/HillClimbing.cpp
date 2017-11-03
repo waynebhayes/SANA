@@ -305,7 +305,7 @@ Alignment HillClimbing::run() {
             executionTime = timer.elapsed();
             return A;
         }
-	numSame = 0;
+    numSame = 0;
 
         currentScore = bestNewCurrentScore;
         aligEdges = bestNewAligEdges;

@@ -19,7 +19,7 @@ void SeedMatrix::init_column_vector(){
     float max = -1;
     for(ushort j = 0; j < sims[i].size(); ++j){
       if(sims[i][j] > max){
-	max = sims[i][j];
+    max = sims[i][j];
       }
     }
     seed_t curr;
@@ -56,7 +56,7 @@ std::pair<ushort,ushort> SeedMatrix::pop_uniform(){
   
   std::cout << (curr.pairs ? "exist" : "NULL") << std::endl;
   std::cout << "(" << curr.getStart() << ", " 
-	    << curr.getEnd() << ")" << std::endl;
+        << curr.getEnd() << ")" << std::endl;
   //don't run a search out here: the top row doesn't exist yet!
   //uint tmp = bin_search(*(curr.pairs), tail, curr.getStart(), curr.getEnd()); 
   //curr.end 
@@ -66,9 +66,9 @@ std::pair<ushort,ushort> SeedMatrix::pop_uniform(){
     if(!column_vector[i].pairs){
       column_vector[i].pairs = create_node(column_vector[i].left_node);
       column_vector[i].end = bin_search(*(column_vector[i].pairs),
-					tail,
-					column_vector[i].getStart(),
-					column_vector[i].getEnd());
+                    tail,
+                    column_vector[i].getStart(),
+                    column_vector[i].getEnd());
     }
   }
   init_ptr = i;
@@ -87,7 +87,7 @@ std::pair<ushort,ushort> SeedMatrix::pop_uniform(){
 
 uint SeedMatrix::bin_search(vector<node_t> & vec, float val, uint i, uint j){
   std::cout << "bin search " << val << " (" 
-	    << i << ", " << j << ") " << std::endl;
+        << i << ", " << j << ") " << std::endl;
   if(i == j || i == j - 1){
     return j;
   }
@@ -149,9 +149,9 @@ void SeedMatrix::debug(){
   for(auto it = column_vector.begin(); it != column_vector.end(); ++it){
     seed_t entry = *it;
     std::cout << "( " << entry.left_node << ", " 
-	      << ((entry.pairs != NULL) ? "exist" : "Null") << ", "
-	      << entry.top << ", " 
-	      << entry.start << ", " 
-	      << entry.end << ") " << std::endl;
+          << ((entry.pairs != NULL) ? "exist" : "Null") << ", "
+          << entry.top << ", " 
+          << entry.start << ", " 
+          << entry.end << ") " << std::endl;
   }
 }

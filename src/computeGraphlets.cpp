@@ -737,9 +737,9 @@ int init(int maxGraphletSize, const char* graphFileName) {
     orbit = (int64**)malloc(n*sizeof(int64*));
     int num_orbits;
     if (GS == 4)
-	num_orbits = 15;
+    num_orbits = 15;
     else if(GS == 5)
-	num_orbits = 73;
+    num_orbits = 73;
     for (int i=0;i<n;i++) orbit[i] = (int64*)calloc(num_orbits,sizeof(int64));
     return 1;
 }
