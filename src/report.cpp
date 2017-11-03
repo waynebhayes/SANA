@@ -32,10 +32,10 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
       stream << endl;
   }
   if(method != NULL) {
-	  stream << "Method: " << method->getName() << endl;
-	  method->describeParameters(stream);
+      stream << "Method: " << method->getName() << endl;
+      method->describeParameters(stream);
 
-	  stream << endl << "execution time = " << method->getExecTime() << endl;
+      stream << endl << "execution time = " << method->getExecTime() << endl;
   }
   stream << endl << "Seed: " << getRandomSeed() << endl;
 
@@ -73,20 +73,20 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
       table[1][6] = to_string(M.eval("ics",A)); table[1][7] = to_string(M.eval("s3",A));
 
       for (int i = 0; i < tableRows-2; i++) {
-	const vector<ushort>& nodes = CS.getConnectedComponents()[i];
-	Graph H = CS.nodeInducedSubgraph(nodes);
-	Alignment newA(nodes);
-	newA.compose(A);
-	table[i+2][0] = "CCS_"+to_string(i); table[i+2][1] = to_string(H.getNumNodes());
-	table[i+2][2] = to_string(H.getNumEdges());
-	table[i+2][3] = to_string(newA.numAlignedEdges(H, G2));
-	table[i+2][4] = to_string(G2.numNodeInducedSubgraphEdges(newA.getMapping()));
-	EdgeCorrectness ec(&H, &G2);
-	table[i+2][5] = to_string(ec.eval(newA));
-	InducedConservedStructure ics(&H, &G2);
-	table[i+2][6] = to_string(ics.eval(newA));
-	SymmetricSubstructureScore s3(&H, &G2);
-	table[i+2][7] = to_string(s3.eval(newA));
+    const vector<ushort>& nodes = CS.getConnectedComponents()[i];
+    Graph H = CS.nodeInducedSubgraph(nodes);
+    Alignment newA(nodes);
+    newA.compose(A);
+    table[i+2][0] = "CCS_"+to_string(i); table[i+2][1] = to_string(H.getNumNodes());
+    table[i+2][2] = to_string(H.getNumEdges());
+    table[i+2][3] = to_string(newA.numAlignedEdges(H, G2));
+    table[i+2][4] = to_string(G2.numNodeInducedSubgraphEdges(newA.getMapping()));
+    EdgeCorrectness ec(&H, &G2);
+    table[i+2][5] = to_string(ec.eval(newA));
+    InducedConservedStructure ics(&H, &G2);
+    table[i+2][6] = to_string(ics.eval(newA));
+    SymmetricSubstructureScore s3(&H, &G2);
+    table[i+2][7] = to_string(s3.eval(newA));
       }
 
       stream << "Common connected subgraphs:" << endl;

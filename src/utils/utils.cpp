@@ -162,15 +162,15 @@ vector<string> fileToStrings(const string& fileName, bool asLines) {
     FILE *fp;
     char buf[10240], pipe = 0;
     if(fileNameLen>=3 && fileName.substr(fileNameLen-3,3) == ".gz"){
-	pipe=1;
-	cerr << "fileToStrings: decompressing using gunzip: " << fileName << endl;
-	string unzip_cmd = "gunzip < " + fileName;
-	fp = popen(unzip_cmd.c_str(), "r");
+    pipe=1;
+    cerr << "fileToStrings: decompressing using gunzip: " << fileName << endl;
+    string unzip_cmd = "gunzip < " + fileName;
+    fp = popen(unzip_cmd.c_str(), "r");
     } else if(fileNameLen>=3 && fileName.substr(fileNameLen-3,3) == ".xz"){
-	pipe=1;
-	cerr << "fileToStrings: decompressing using xzcat: " << fileName << endl;
-	string unzip_cmd = "xzcat < " + fileName;
-	fp = popen(unzip_cmd.c_str(), "r");
+    pipe=1;
+    cerr << "fileToStrings: decompressing using xzcat: " << fileName << endl;
+    string unzip_cmd = "xzcat < " + fileName;
+    fp = popen(unzip_cmd.c_str(), "r");
     } else fp=fopen(fileName.c_str(),"r");
     vector<string> result(0);
     if(asLines) {
@@ -231,7 +231,7 @@ bool folderExists(string folderName) {
 void createFolder(string folderName) {
     if (not folderExists(folderName)) {
         int res = mkdir(folderName.c_str(), ACCESSPERMS);
-	// race condition: if somebody else created it in the meantime (EEXIST), it is OK.
+    // race condition: if somebody else created it in the meantime (EEXIST), it is OK.
         if (res == -1 && errno != EEXIST) throw runtime_error("error creating directory " + folderName + " (errno "+to_string(errno)+", "+strerror(errno)+")");
     }
 }

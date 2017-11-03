@@ -12,19 +12,19 @@ MagnaWrapper::MagnaWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1,
 }
 
 void MagnaWrapper::loadDefaultParameters() {
-	parameters = "";
+    parameters = "";
 }
 
 string MagnaWrapper::convertAndSaveGraph(Graph* graph, string name) {
-	graph->saveInGWFormatWithNames(name + ".gw");
-	return name + ".gw";
+    graph->saveInGWFormatWithNames(name + ".gw");
+    return name + ".gw";
 }
 
 string MagnaWrapper::generateAlignment() {
     exec("cd " + MAGNADIR + "; chmod +x " + MAGNABinary);
     cout << g1File << " " << g2File << endl;
     string cmd = "cd wrappedAlgorithms/MAGNA++; " + MAGNABinary + " -G " + g1File + " -H " + g2File +
-	    " -o " + outputName + " " + GLOBAL_PARAMETERS + parameters;
+        " -o " + outputName + " " + GLOBAL_PARAMETERS + parameters;
     execPrintOutput(cmd);
     return outputName + "_final_alignment.txt";
 }
@@ -36,10 +36,10 @@ Alignment MagnaWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     map<string,ushort> node2Map = G2->getNodeNameToIndexMap();
     
     for (uint i = 0; i < words.size(); i+=2) {
-    	string node1 = words[i];
-    	string node2 = words[i+1];
-    	cout << node1 << " " << node2 << endl;
-    	mapping[node1Map[node1]] = node2Map[node2];
+        string node1 = words[i];
+        string node2 = words[i+1];
+        cout << node1 << " " << node2 << endl;
+        mapping[node1Map[node1]] = node2Map[node2];
     }
     return Alignment(mapping);
 }

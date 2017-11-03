@@ -10,23 +10,23 @@ const string GLOBAL_PARAMETERS = " --undirected --no-prematch --pop 400 ";
 //ARGUMENTS: --maxsecs <seconds> --blastpairlist [3 columns] --pop [400] --threads <N> [recommended runtime is "--maxsame 3000"]
 
 GEDEVOWrapper::GEDEVOWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "GEDEVO", args) {
-	wrappedDir = "wrappedAlgorithms/GEDEVO";
+    wrappedDir = "wrappedAlgorithms/GEDEVO";
 }
 
 void GEDEVOWrapper::loadDefaultParameters() {
-	parameters = "--maxsame 3000"; // maxsame 3000 is what they recommend, runtime many hours
+    parameters = "--maxsame 3000"; // maxsame 3000 is what they recommend, runtime many hours
 }
 
 string GEDEVOWrapper::convertAndSaveGraph(Graph* graph, string name) {
-	string gwFile  = name + ".gw";
-	string ntwFile = name + ".ntw";
+    string gwFile  = name + ".gw";
+    string ntwFile = name + ".ntw";
 
-	graph->saveInGWFormatWithNames(gwFile);
-	exec("mv " + gwFile + " " + wrappedDir + "/" + gwFile);
-	exec("cd " + wrappedDir + "; " + CONVERTER + " " + gwFile + " " + ntwFile);
-	exec("mv " + wrappedDir + "/" + ntwFile + " " + ntwFile);
+    graph->saveInGWFormatWithNames(gwFile);
+    exec("mv " + gwFile + " " + wrappedDir + "/" + gwFile);
+    exec("cd " + wrappedDir + "; " + CONVERTER + " " + gwFile + " " + ntwFile);
+    exec("mv " + wrappedDir + "/" + ntwFile + " " + ntwFile);
 
-	return ntwFile;
+    return ntwFile;
 }
 
 string GEDEVOWrapper::generateAlignment() {
@@ -36,13 +36,13 @@ string GEDEVOWrapper::generateAlignment() {
     G2->saveGraphletsAsSigs(wrappedDir + "/" + g2Sigs);
 
     string cmd = GLOBAL_PARAMETERS + " --save " + alignmentTmpName + " --no-save --groups " +
-		    g1TmpName + " " + g2TmpName +
-		    " --ntw " + g1File +
-		    " --ntw " + g2File +
-		    " --grsig " + g1Sigs + " " + g1TmpName +
-		    " --grsig " + g2Sigs + " " + g2TmpName +
-		    " --no-workfiles " +
-		    " " + parameters;
+            g1TmpName + " " + g2TmpName +
+            " --ntw " + g1File +
+            " --ntw " + g2File +
+            " --grsig " + g1Sigs + " " + g1TmpName +
+            " --grsig " + g2Sigs + " " + g2TmpName +
+            " --no-workfiles " +
+            " " + parameters;
 
     cout << "\n\n\nrunning with: \"" + cmd + "\"" << endl << flush;
 

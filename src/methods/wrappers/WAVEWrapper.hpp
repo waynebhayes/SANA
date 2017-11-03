@@ -6,7 +6,7 @@ using namespace std;
 
 class WAVEWrapper: public WrappedMethod {
 public:
-	WAVEWrapper(Graph* G1, Graph* G2, string args);
+    WAVEWrapper(Graph* G1, Graph* G2, string args);
 
 private:
     void loadDefaultParameters();

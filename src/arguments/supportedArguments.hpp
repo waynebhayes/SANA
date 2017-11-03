@@ -17,7 +17,7 @@ extern vector<array<string, 6>> supportedArguments; //Initially stores informati
 
 void validateAndAddArguments(); //Checks to make sure fields inside supportedArguments are properly filled out and adds them to the four Args datatypes.
 void printAllArgumentDescriptions(); //Used to generate the help text when ./sana -h or ./sana --help is invoked from command line.
-string printItem(const array<string, 6> &item);	//Helper function of printAllArgumentDescriptions() that prints a single argument to the console.
+string printItem(const array<string, 6> &item);    //Helper function of printAllArgumentDescriptions() that prints a single argument to the console.
 string formatDescription(string description); //helper function of printItem() that helps with the formatting of console output.
 bool hasNewLines(const string &item4); //helper function of formatDescription() that evaluates whether a description of an argument should be formatted on many lines.
 string formatWithNewLines(const string &item4); //helper function of formatDescription() that outputs a description of an argument on multiple lines when hasNewLines() evaluates to true.

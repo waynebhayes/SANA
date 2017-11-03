@@ -8,7 +8,7 @@ using namespace std;
 class PINALOGWrapper: public WrappedMethod {
 
 public:
-	PINALOGWrapper(Graph* G1, Graph* G2, string args);
+    PINALOGWrapper(Graph* G1, Graph* G2, string args);
 
 private:
     void loadDefaultParameters();

@@ -32,11 +32,11 @@ int main(int argc, char* argv[]) {
     if(args.doubles["-seed"] != 0) {
         setSeed(args.doubles["-seed"]);
     }
-	if(args.bools["-scheduleOnly"]){
-		scheduleOnly = true;
-	}else{
-		scheduleOnly = false;
-	}
+    if(args.bools["-scheduleOnly"]){
+        scheduleOnly = true;
+    }else{
+        scheduleOnly = false;
+    }
     cerr << "Seed: " << getRandomSeed() << endl;
     Mode* mode = selectMode(args);
     mode->run(args);

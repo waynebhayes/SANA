@@ -4,7 +4,7 @@
 
 class EdgeDensity: public LocalMeasure {
 public:
-	EdgeDensity(Graph* G1, Graph* G2, ushort maxDist);
+    EdgeDensity(Graph* G1, Graph* G2, ushort maxDist);
     virtual ~EdgeDensity();
 private:
     void initSimMatrix();

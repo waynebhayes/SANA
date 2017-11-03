@@ -28,22 +28,22 @@ SkipNode::~SkipNode(){
 void SkipNode::debug(int limit){
   if(limit > 0){
     std::cout << "(Node) key: " << key 
-	      << " value: (" << value.first << ", " 
-	      << value.second << ") " << std::endl;
+          << " value: (" << value.first << ", " 
+          << value.second << ") " << std::endl;
     std::cout << "next_ptrs " << std::endl;
     for(int i = 0; i < MAX_LEVEL; ++i){
       if(forward[i] == NULL){
-	//std::cout << i << ": Null" << std::endl;
+    //std::cout << i << ": Null" << std::endl;
       }else{
-	std::cout << i << ": " 
-		  << "key: " << forward[i]->key
-		  << " value: (" << forward[i]->value.first << ", " 
-		  << forward[i]->value.second << ") " << std::endl;
+    std::cout << i << ": " 
+          << "key: " << forward[i]->key
+          << " value: (" << forward[i]->value.first << ", " 
+          << forward[i]->value.second << ") " << std::endl;
       }
     }
     for(int i = 0; i < MAX_LEVEL; ++i){
       if(forward[i] != NULL){
-	forward[i]->debug(limit-1);
+    forward[i]->debug(limit-1);
       }
     }
   }
@@ -87,7 +87,7 @@ int SkipList::random_height(void){
 void SkipList::insert(float similarity, std::pair<ushort,ushort> entry){
   auto start = std::chrono::steady_clock::now();
   similarity = _isMaxHeap ? (1 - similarity) : similarity;
-	
+    
   SkipNode * curr;
   SkipNode * update[SkipNode::MAX_LEVEL];
   for(int i = 0; i < SkipNode::MAX_LEVEL; ++i){
@@ -121,7 +121,7 @@ void SkipList::insert(float similarity, std::pair<ushort,ushort> entry){
   auto end = std::chrono::steady_clock::now();
   insert_time += std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 }
-	
+    
 bool SkipList::empty(){
   if(this->length < 0){
     std::cerr << "Error:fewer than 0 items in list!" << std::endl;
@@ -151,11 +151,11 @@ void SkipList::removeNode(SkipNode * n){
     curr = start;
     while(curr && (curr->key <= n->key)){
       if(curr->forward[i] == n){
-	found = true;
-	curr->forward[i] = n->forward[i];
-	start = curr;
+    found = true;
+    curr->forward[i] = n->forward[i];
+    start = curr;
       }else{
-	curr = curr->forward[i];
+    curr = curr->forward[i];
       }
     }
   }
@@ -204,7 +204,7 @@ std::pair<ushort,ushort> SkipList::pop_reservoir(){
   partial_cleanup(tail);
   
   while(left_exclude.find(result.first) != left_exclude.end() ||
-	right_exclude.find(result.second) != right_exclude.end()){
+    right_exclude.find(result.second) != right_exclude.end()){
     ++miss_counter;
     if(miss_counter > SkipList::CLEANUP_THRESH){
       this->cleanup();
@@ -222,7 +222,7 @@ std::pair<ushort,ushort> SkipList::pop_reservoir(){
     uint n = 0;
     while(curr && curr->key <= tail){
       if(random_int(++n) == 0){
-	choice = curr;
+    choice = curr;
       }
       curr = curr->forward[0];
     }
@@ -252,7 +252,7 @@ std::pair<ushort,ushort> SkipList::pop_reservoir(){
     uint n = 0;
     while(curr && curr->key <= tail){
       if(random_int(++n) == 0){
-	choice = curr;
+    choice = curr;
       }
       curr = curr->forward[0];
     }
@@ -266,7 +266,7 @@ std::pair<ushort,ushort> SkipList::pop_reservoir(){
       miss_counter = 0;
     }
   }while(left_exclude.find(result.first) != left_exclude.end() ||
-	 right_exclude.find(result.second) != right_exclude.end());
+     right_exclude.find(result.second) != right_exclude.end());
   cumulative_miss += miss_counter;
   this->debug();
   auto end = std::chrono::steady_clock::now();
@@ -290,7 +290,7 @@ std::pair<ushort,ushort> SkipList::pop_distr(){
     float pick_value = uni(rng);
     for(int i = this->level - 1; i >= 0; --i){
       while(curr->forward[i] && (curr->forward[i]->key <= pick_value)){
-	curr = curr->forward[i];
+    curr = curr->forward[i];
       }
     }
     if(!curr->forward[0] || curr->forward[0]->key > start+this->delta){
@@ -298,10 +298,10 @@ std::pair<ushort,ushort> SkipList::pop_distr(){
     }else{ //resevoir sample
       int n = 0;
       while(curr && curr->key <= start+this->delta){
-	if(random_int(++n) == 0){
-	  choice = curr;
-	}
-	curr = curr->forward[0];
+    if(random_int(++n) == 0){
+      choice = curr;
+    }
+    curr = curr->forward[0];
       }
     }
 
@@ -312,7 +312,7 @@ std::pair<ushort,ushort> SkipList::pop_distr(){
       this->cleanup();
     }
   }while(left_exclude.find(result.first) != left_exclude.end() ||
-	 right_exclude.find(result.second) != right_exclude.end());
+     right_exclude.find(result.second) != right_exclude.end());
   miss_counter = 0;
   return result;
   /*
@@ -334,22 +334,22 @@ std::pair<ushort,ushort> SkipList::pop_distr(){
       std::uniform_real_distribution<float> uni(start,start+this->delta);
       float pick_value = uni(rng);
       for(int i = this->level - 1; i >= 0; --i){
-	while(curr->forward[i] && (curr->forward[i]->key <= pick_value)){
-	  curr = curr->forward[i];
-	  if(curr->key <= pick_value){
-	    choice = curr;
+    while(curr->forward[i] && (curr->forward[i]->key <= pick_value)){
+      curr = curr->forward[i];
+      if(curr->key <= pick_value){
+        choice = curr;
 
 
-	      result = choice->value;
-	      std::cout << "result (" << result.first << ", " << result.second << ")" << std::endl;
-	      removeNode(curr);
+          result = choice->value;
+          std::cout << "result (" << result.first << ", " << result.second << ")" << std::endl;
+          removeNode(curr);
 
-	      if(left_exclude.find(result.first) == left_exclude.end() ||
-	      right_exclude.find(result.second) == right_exclude.end()){
-	      return result;
-	      }
-	  }
-	}
+          if(left_exclude.find(result.first) == left_exclude.end() ||
+          right_exclude.find(result.second) == right_exclude.end()){
+          return result;
+          }
+      }
+    }
       }
       curr = choice->forward[0];
       //if(!curr || curr->key > pick_value){
@@ -360,11 +360,11 @@ std::pair<ushort,ushort> SkipList::pop_distr(){
       //}
       ++miss_counter; //count misses in a row
       if(miss_counter > SkipList::CLEANUP_THRESH){
-	this->cleanup();
+    this->cleanup();
       }
     }
   }while(left_exclude.find(result.first) != left_exclude.end() ||
-	 right_exclude.find(result.second) != right_exclude.end());
+     right_exclude.find(result.second) != right_exclude.end());
   miss_counter = 0; //reset after a hit
   removeNode(choice);
   return result;
@@ -391,15 +391,15 @@ void SkipList::partial_cleanup(float tail){
     if(left_exclude.find(curr->value.first) == left_exclude.end() &&
        right_exclude.find(curr->value.second) == right_exclude.end()){
       for(int i = 0; i < curr->height; ++i){
-	update[i]->forward[i] = curr;
-	update[i] = curr;
-	forward[i] = curr->forward[i];
+    update[i]->forward[i] = curr;
+    update[i] = curr;
+    forward[i] = curr->forward[i];
       }
       curr = curr->forward[0];
     }else{ //if curr is dead, delete this node
       this->length--;
       for(int i = 0; i < curr->height; ++i){
-	forward[i] = curr->forward[i];
+    forward[i] = curr->forward[i];
       }
       //prev = curr;
       delete curr;
@@ -439,15 +439,15 @@ void SkipList::cleanup(){
     if(left_exclude.find(curr->value.first) == left_exclude.end() &&
        right_exclude.find(curr->value.second) == right_exclude.end()){
       for(int i = 0; i < curr->height; ++i){
-	update[i]->forward[i] = curr;
-	update[i] = curr;
-	forward[i] = curr->forward[i];
+    update[i]->forward[i] = curr;
+    update[i] = curr;
+    forward[i] = curr->forward[i];
       }
       curr = curr->forward[0];
     }else{ //if curr is dead, delete this node
       this->length--;
       for(int i = 0; i < curr->height; ++i){
-	forward[i] = curr->forward[i];
+    forward[i] = curr->forward[i];
       }
       //prev = curr;
       delete curr;
@@ -525,7 +525,7 @@ bool SkipList::deserialize(std::string fname){
 }
 
 void SkipList::test(){
-	
+    
   //SkipList list(0.10,true);
   /*
     std::cout << "list initialized. empty() = " << list.empty() << std::endl;
@@ -537,7 +537,7 @@ void SkipList::test(){
     std::cout << "testing pop_uniform()" << std::endl;
     std::pair<ushort,ushort> result1 = list.pop_uniform();
     std::cout << "result is (" << result1.first << ", " << result1.second << ")" << std::endl;
-	
+    
     std::cout << "List should be empty " << list.empty() << std::endl;
   */
   /*
@@ -560,7 +560,7 @@ void SkipList::test(){
   list.insert(0.98, std::make_pair(6, 1001));
   list.insert(0.99, std::make_pair(7, 1001));
   */
-	
+    
   /*
   //non-deterministic test
   list.insert(0.90, std::make_pair(1, 1001));
@@ -572,7 +572,7 @@ void SkipList::test(){
   list.insert(0.90, std::make_pair(7, 1001));
   list.insert(0.90, std::make_pair(8, 1001));
   list.insert(0.90, std::make_pair(9, 1001));
-	
+    
   list.insert(0.80, std::make_pair(11, 1001));
   list.insert(0.80, std::make_pair(12, 1001));
   list.insert(0.80, std::make_pair(13, 1001));
@@ -580,7 +580,7 @@ void SkipList::test(){
   list.insert(0.80, std::make_pair(15, 1001));
   list.insert(0.80, std::make_pair(16, 1001));
   */
-	
+    
   //non-deterministic test reverse order
   /*
     list.insert(0.80, std::make_pair(11, 1001));
@@ -589,7 +589,7 @@ void SkipList::test(){
     list.insert(0.80, std::make_pair(14, 1001));
     list.insert(0.80, std::make_pair(15, 1001));
     list.insert(0.80, std::make_pair(16, 1001));
-	
+    
     list.insert(0.70, std::make_pair(101, 1001));
     list.insert(0.70, std::make_pair(102, 1001));
     list.insert(0.70, std::make_pair(103, 1001));
@@ -608,7 +608,7 @@ void SkipList::test(){
     list.insert(0.90, std::make_pair(8, 1001));
   */
   //list.insert(0.90, std::make_pair(9, 1001));
-	
+    
   /*
     std::cout << "testing pop_uniform()" << std::endl;
     while(!list.empty()){
@@ -617,12 +617,12 @@ void SkipList::test(){
     std::cout << "(" << result1.first << ", " << result1.second << ")" << std::endl;
     }
     std::cout << "List should be empty " << list.empty() << std::endl;
-  */	
+  */    
   /*
     std::cout << "next pop should fail: " << std::endl;
     list.pop_uniform();
   */
-	
+    
 }
 
 void SkipList::debug(){

@@ -6,7 +6,7 @@ using namespace std;
 
 class SPINALWrapper: public WrappedMethod {
 public:
-	SPINALWrapper(Graph* G1, Graph* G2, double alpha, string args);
+    SPINALWrapper(Graph* G1, Graph* G2, double alpha, string args);
 
 private:
     void loadDefaultParameters();

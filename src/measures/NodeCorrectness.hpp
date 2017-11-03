@@ -9,7 +9,7 @@ public:
     virtual ~NodeCorrectness();
     double eval(const Alignment& A);
     virtual vector<ushort> getMappingforNC() const;
-    static vector<ushort> convertAlign(const Graph& G1, const Graph& G2, const vector<string>& E);    	
+    static vector<ushort> convertAlign(const Graph& G1, const Graph& G2, const vector<string>& E);        
     static bool fulfillsPrereqs(Graph* G1, Graph* G2);
     
 private:
