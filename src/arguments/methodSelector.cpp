@@ -95,7 +95,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     double TInitial = 0;
     // t_initial "auto" defaults to by-linear-regression
     if (args.strings["-tinitial"] == "auto")
-	args.strings["-tinitial"] = "by-linear-regression";
+    args.strings["-tinitial"] = "by-linear-regression";
     if (args.strings["-tinitial"] != "by-linear-regression" && args.strings["-tinitial"] != "by-statistical-test") {
         TInitial = stod(args.strings["-tinitial"]);
     }
@@ -146,7 +146,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         ((SANA*) sana)->setTDecayAutomatically();
     }
     if (args.bools["-dynamictdecay"]) {
-	   ((SANA*) sana)->setDynamicTDecay();
+       ((SANA*) sana)->setDynamicTDecay();
     } 
     if (args.strings["-lock"] != ""){
       sana->setLockFile(args.strings["-lock"] );
@@ -158,7 +158,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
  
     string aligFile = args.strings["-eval"];
     if (aligFile != "")
-        return new NoneMethod(&G1, &G2, aligFile);	
+        return new NoneMethod(&G1, &G2, aligFile);    
     string name = toLowerCase(args.strings["-method"]);
     string startAligName = args.strings["-startalignment"];
     double alpha = args.doubles["-alpha"];
@@ -192,15 +192,15 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (name == "optnetalign")
        return new OptNetAlignWrapper(&G1, &G2, wrappedArgs);
     if (name == "spinal")
-		return new SPINALWrapper(&G1, &G2, alpha, wrappedArgs);
+        return new SPINALWrapper(&G1, &G2, alpha, wrappedArgs);
     if (name == "great")
-    	return new GREATWrapper(&G1, &G2, wrappedArgs);
+        return new GREATWrapper(&G1, &G2, wrappedArgs);
     if (name == "natalie")
-    	return new NATALIEWrapper(&G1, &G2, wrappedArgs);
+        return new NATALIEWrapper(&G1, &G2, wrappedArgs);
     if (name == "gedevo")
-		return new GEDEVOWrapper(&G1, &G2, wrappedArgs);
+        return new GEDEVOWrapper(&G1, &G2, wrappedArgs);
     if (name == "wave")
-		return new WAVEWrapper(&G1, &G2, wrappedArgs);
+        return new WAVEWrapper(&G1, &G2, wrappedArgs);
     if (name == "sana")
 #ifdef WEIGHTED
         return initSANA(G1, G2, args, M, startAligName);
@@ -214,7 +214,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (name == "none")
         return new NoneMethod(&G1, &G2, startAligName);
     if (name == "magna")
-    	return new MagnaWrapper(&G1, &G2, wrappedArgs);
+        return new MagnaWrapper(&G1, &G2, wrappedArgs);
     if (name == "pinalog")
         return new PINALOGWrapper(&G1, &G2, wrappedArgs);
     if (name == "sana+piswap")

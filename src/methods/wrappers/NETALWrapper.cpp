@@ -5,7 +5,7 @@ using namespace std;
 const string NETALProgram = "./NETAL";
 
 NETALWrapper::NETALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "NETAL", args) {
-	wrappedDir = "wrappedAlgorithms/NETAL";
+    wrappedDir = "wrappedAlgorithms/NETAL";
 }
 
 // a: Alpha 0.0001
@@ -13,12 +13,12 @@ NETALWrapper::NETALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1,
 // c:
 // i: Iterations 2
 void NETALWrapper::loadDefaultParameters() {
-	parameters = "-a 0.0001 -b 0 -c 1 -i 2";
+    parameters = "-a 0.0001 -b 0 -c 1 -i 2";
 }
 
 string NETALWrapper::convertAndSaveGraph(Graph* graph, string name) {
-	graph->writeGraphEdgeListFormatNETAL(name);
-	return name;
+    graph->writeGraphEdgeListFormatNETAL(name);
+    return name;
 }
 
 string NETALWrapper::generateAlignment() {
@@ -47,12 +47,12 @@ Alignment NETALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     vector<ushort> mapping(n1, n2);
 
     for (uint i = 0; i < lines.size(); ++i) {
-    	istringstream line(lines[i]);
+        istringstream line(lines[i]);
         vector<string> words;
         while (line >> word) words.push_back(word);
 
         if (words.size() == 3) {
-	    mapping[atoi(words[0].c_str())] = atoi(words[2].c_str());
+        mapping[atoi(words[0].c_str())] = atoi(words[2].c_str());
         }
     }
     return Alignment(mapping);
@@ -62,5 +62,5 @@ void NETALWrapper::deleteAuxFiles() {
     string evalFile = "\\(" + g1File + "-" + g2File + "*.eval";
 
     exec("cd " + wrappedDir + "; rm " + g1File + " " + g2File + " ../../" + alignmentFile +
-    		" " + evalFile + " simLog.txt alignmentDetails.txt" );
+            " " + evalFile + " simLog.txt alignmentDetails.txt" );
 }

@@ -34,9 +34,9 @@ namespace boost { namespace threadpool
     */  
     template<typename Pool, typename Runnable>
     bool schedule(Pool& pool, shared_ptr<Runnable> const & obj)
-    {	
+    {    
       return pool->schedule(bind(&Runnable::run, obj));
-    }	
+    }    
     
     /*! Schedules a task for asynchronous execution. The task will be executed once only.
     * \param task The task function object.
@@ -47,9 +47,9 @@ namespace boost { namespace threadpool
       bool
     >::type
     schedule(Pool& pool, typename Pool::task_type const & task)
-    {	
+    {    
       return pool.schedule(task);
-    }	
+    }    
 
 
     template<typename Pool>
@@ -58,9 +58,9 @@ namespace boost { namespace threadpool
       bool
     >::type
     schedule(shared_ptr<Pool> const pool, typename Pool::task_type const & task)
-    {	
+    {    
       return pool->schedule(task);
-    }	
+    }    
 
 
 } } // namespace boost::threadpool

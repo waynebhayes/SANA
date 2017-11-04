@@ -6,10 +6,10 @@ using namespace std;
 
 class MIGRAALWrapper: public WrappedMethod {
 public:
-	MIGRAALWrapper(Graph* G1, Graph* G2, string args);
+    MIGRAALWrapper(Graph* G1, Graph* G2, string args);
 
 private:
-	string outputName;
+    string outputName;
 
     void loadDefaultParameters();
     string convertAndSaveGraph(Graph* graph, string name);

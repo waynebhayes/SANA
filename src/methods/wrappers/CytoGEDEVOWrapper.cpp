@@ -10,16 +10,16 @@ const string GLOBAL_PARAMETERS = " --undirected --pop 400 ";
 //ARGUMENTS: --maxsecs <seconds> --blastpairlist [3 columns] --pop [400] --threads <N> [recommended runtime is "--maxsame 3000"]
 
 CytoGEDEVOWrapper::CytoGEDEVOWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "GEDEVO", args) {
-	wrappedDir = "wrappedAlgorithms/CytoGEDEVO";
+    wrappedDir = "wrappedAlgorithms/CytoGEDEVO";
 }
 
 void CytoGEDEVOWrapper::loadDefaultParameters() {
-	parameters = "--maxsame 3000"; // maxsame 3000 is what they recommend, runtime many hours
+    parameters = "--maxsame 3000"; // maxsame 3000 is what they recommend, runtime many hours
 }
 
 string CytoGEDEVOWrapper::convertAndSaveGraph(Graph* graph, string name) {
-	graph->writeGraphEdgeListFormatPISWAP(name + ".txt" );
-	return name + ".txt";
+    graph->writeGraphEdgeListFormatPISWAP(name + ".txt" );
+    return name + ".txt";
 }
 
 string CytoGEDEVOWrapper::generateAlignment() {
@@ -29,9 +29,9 @@ string CytoGEDEVOWrapper::generateAlignment() {
     G2->saveGraphletsAsSigs(wrappedDir + "/" + g2Sigs);
     */
     string cmd = GLOBAL_PARAMETERS + " --save " + alignmentTmpName +
-		    ".gedevo --edgelisth " + g1File +
-		    " --edgelisth " + g2File +
-		    " " + parameters;
+            ".gedevo --edgelisth " + g1File +
+            " --edgelisth " + g2File +
+            " " + parameters;
 
     cout << "\n\n\nrunning with: \"" + cmd + "\"" << endl << flush;
 

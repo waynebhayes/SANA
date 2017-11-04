@@ -6,7 +6,7 @@ using namespace std;
 
 class OptNetAlignWrapper: public WrappedMethod {
 public:
-	OptNetAlignWrapper(Graph* G1, Graph* G2, string args);
+    OptNetAlignWrapper(Graph* G1, Graph* G2, string args);
 
 private:
     void loadDefaultParameters();

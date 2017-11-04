@@ -45,7 +45,7 @@ typedef struct _Option
   double eta;
   int numspecies;
   int nmax;
-	int numthreads;
+    int numthreads;
   std::string alignmentfile;
   std::string avefunsimfile;
   std::string recordsfile;
@@ -66,8 +66,8 @@ typedef struct _Option
   analyze(false), model(false),bscore(false),task(1),edgefactor(0.1),alpha(0.5),beta(1.0),eta(1.0),numspecies(4),nmax(2000)
   {
     profile="./profile.input";
-		numthreads=omp_get_max_threads();
-		resultfolder="./result/four_species/netcoffee/";
+        numthreads=omp_get_max_threads();
+        resultfolder="./result/four_species/netcoffee/";
   }
 }Option;
 
@@ -103,7 +103,7 @@ bool setParser(ArgParser& parser, Option& myoption)
   .refOption("alpha", "Prameter controlling how much topology score contributes to the alignment score. Default is 0.5.", myoption.alpha)
   .refOption("edgefactor", "The factor of the power law normalization. Default is 0.1.", myoption.alpha)
   .refOption("numspecies","Number of the species compared. Default is 4.", myoption.numspecies)
-	.refOption("numthreads","Number of threads running in parallel.", myoption.numthreads)
+    .refOption("numthreads","Number of threads running in parallel.", myoption.numthreads)
   .refOption("formatfile","Profile of input parameters.", myoption.formatfile)
   .refOption("orthologyfile","Training data for orthology model.", myoption.orthologyfile)
   .refOption("randomfile","Training data for random model.", myoption.randomfile)
@@ -122,7 +122,7 @@ bool runParser(ArgParser& myparser, Option& myoption)
 {
   std::string filename;
   ProcessProfile<Option> myprofile(myoption.profile);
-	myprofile.getOption(myoption);
+    myprofile.getOption(myoption);
   myparser.run();
   filename.append(myoption.resultfolder);
   filename.append(myoption.avefunsimfile);
@@ -173,7 +173,7 @@ int main(int argc, char** argv)
     else if(myoption.task==1)
     {
       t.restart();
-			networks.initNetworkPool(myoption.networkfiles,myoption.numthreads);
+            networks.initNetworkPool(myoption.networkfiles,myoption.numthreads);
      // records.createRecords_MNetAligner(myoption.blastfiles,networks);
       t.stop();
       mylog <<"------------------------M-NETALIGNER-------------------------"<<std::endl;
@@ -192,8 +192,8 @@ int main(int argc, char** argv)
     }
     else if(myoption.task==4)
     {
-			records.top10000(myoption.formatfile);
-		}
+            records.top10000(myoption.formatfile);
+        }
   }
 
   if(myparser.given("alignment"))
@@ -240,7 +240,7 @@ int main(int argc, char** argv)
       // Figure out annotation information of proteins.
       // Figure out coverage performance of the alignment.
       networks.initNetworkPool(myoption.networkfiles,myoption.numthreads);
-			//std::cout << "#Annotation information of proteins in " << myoption.alignmentfile <<std::endl;
+            //std::cout << "#Annotation information of proteins in " << myoption.alignmentfile <<std::endl;
       analyzer.readAlignment(myoption.alignmentfile.c_str());/// alignment file must strictly on the format
       analyzer.getAlignmentCoverage(networks);
       //analyzer.getNetworkAnnotation(networks);
@@ -258,8 +258,8 @@ int main(int argc, char** argv)
     {
       // Get average score for match-sets conserved by i species.
       networks.initNetworkPool(myoption.networkfiles,myoption.numthreads);
-			analyzer.getMatchSet_i(myoption.avefunsimfile,networks);/// from aveFunsim.result
-	    //analyzer.getMatchSet_i_2(myoption.alignmentfile,networks);/// from alignmentfile
+            analyzer.getMatchSet_i(myoption.avefunsimfile,networks);/// from aveFunsim.result
+        //analyzer.getMatchSet_i_2(myoption.alignmentfile,networks);/// from alignmentfile
     }
     else if(myoption.task==3)
     {
@@ -268,8 +268,8 @@ int main(int argc, char** argv)
     }
     else if(myoption.task==4)
     {
-			analyzer.getEntropy();
-		}
+            analyzer.getEntropy();
+        }
   }
 
   if(myparser.given("format"))
@@ -293,46 +293,46 @@ int main(int argc, char** argv)
       myformat.removeBiEdges(networks);
     }else if(myoption.task==3)
     {
-	  // discard these match-sets containing only one protein.	
+      // discard these match-sets containing only one protein.    
       FormatType myformat(myoption);
       std::string outfile("./result/alignment_netcoffee.data");
       myformat.formatAlignment(myoption.alignmentfile,outfile);
     }else if(myoption.task==4)
     {
-	  // discard these replicate interaction and self-loop in PPI networks.
-	  FormatType myformat(myoption);
-	  myformat.retrieveKOnumber(myoption.formatfile);
-	}
-	else if(myoption.task==5)
-	{
-	  // format graemlin homology data to evals format.
-	  FormatType myformat(myoption);
-	  networks.initNetworkPool(myoption.networkfiles,myoption.numthreads);
-	  myformat.extractHomologyProteins(myoption.formatfile,networks);
-	}else if(myoption.task==6)
-	{
-		// extract GO association data for a list of proteins.
-		FormatType myformat(myoption);
-		myformat.extractGoAssociation(myoption.formatfile);
-	}
-	else if(myoption.task==7)
-	{
-		// discard isolated nodes in graemlin alignment and format alignment into uniprot_id alignment
-		FormatType myformat(myoption);
-		myformat.extractGraemlinAlignment(myoption.formatfile,myoption.alignmentfile);
-	}
-	else if(myoption.task==8)
-	{
-		// analyse mean entropy and mean normalized entropy for an alignment using KO groups.
-		FormatType myformat(myoption);
-		myformat.retrieveKOgroups(myoption.alignmentfile);
-	}
-	else if(myoption.task==9)
-	{
-		// create a list of all proteins/genes in graemlin data -> GiList-i.txt ->(convert to uniprot acc)->GiList-map-i.txt
-		FormatType myformat(myoption);
-		myformat.retrieveGIlist();
-	}
+      // discard these replicate interaction and self-loop in PPI networks.
+      FormatType myformat(myoption);
+      myformat.retrieveKOnumber(myoption.formatfile);
+    }
+    else if(myoption.task==5)
+    {
+      // format graemlin homology data to evals format.
+      FormatType myformat(myoption);
+      networks.initNetworkPool(myoption.networkfiles,myoption.numthreads);
+      myformat.extractHomologyProteins(myoption.formatfile,networks);
+    }else if(myoption.task==6)
+    {
+        // extract GO association data for a list of proteins.
+        FormatType myformat(myoption);
+        myformat.extractGoAssociation(myoption.formatfile);
+    }
+    else if(myoption.task==7)
+    {
+        // discard isolated nodes in graemlin alignment and format alignment into uniprot_id alignment
+        FormatType myformat(myoption);
+        myformat.extractGraemlinAlignment(myoption.formatfile,myoption.alignmentfile);
+    }
+    else if(myoption.task==8)
+    {
+        // analyse mean entropy and mean normalized entropy for an alignment using KO groups.
+        FormatType myformat(myoption);
+        myformat.retrieveKOgroups(myoption.alignmentfile);
+    }
+    else if(myoption.task==9)
+    {
+        // create a list of all proteins/genes in graemlin data -> GiList-i.txt ->(convert to uniprot acc)->GiList-map-i.txt
+        FormatType myformat(myoption);
+        myformat.retrieveGIlist();
+    }
   }
   mylog.close();
   return 0;

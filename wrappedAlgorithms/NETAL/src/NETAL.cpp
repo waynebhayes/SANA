@@ -10,19 +10,19 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	double aa = 0.0001, bb = 0, cc = 1; // weighting parameters in the paper
+    double aa = 0.0001, bb = 0, cc = 1; // weighting parameters in the paper
     
-	int it = 2;     // Number of iterations when calculating the similarity
-	int rr = 0;     // The type of randomness
-	int pp = 0;     // The percentage of randomness
-	int nn = 1;     // The number of random networks
-	
+    int it = 2;     // Number of iterations when calculating the similarity
+    int rr = 0;     // The type of randomness
+    int pp = 0;     // The percentage of randomness
+    int nn = 1;     // The number of random networks
+    
     char* name1;    // The name of the first network
     char* name2;    // The name of second network
 
-	try
-	{
-		
+    try
+    {
+        
         if(argc < 3) {
             cout << "There should be two files as input!" <<endl;
             return -1;

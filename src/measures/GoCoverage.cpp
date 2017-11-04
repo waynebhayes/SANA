@@ -62,7 +62,7 @@ double GoCoverage::scoreUpperBound() {
         uint goTerm = pair.first;
         uint M = pair.second;
         uint N = goCountG2[goTerm];
-	if(N>M) swap(N,M);
+    if(N>M) swap(N,M);
         if (N > 0) {
             total += GOtermValuePerAlignment(M, N);
         }

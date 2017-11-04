@@ -8,16 +8,16 @@ const string GHOSTBinary  = "MI-GRAAL";
 const string MIGRAALProgram = "./MI-GRAALRunner.py";
 
 MIGRAALWrapper::MIGRAALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "MIGRAAL", args) {
-	wrappedDir = "wrappedAlgorithms/MI-GRAAL";
+    wrappedDir = "wrappedAlgorithms/MI-GRAAL";
 }
 
 void MIGRAALWrapper::loadDefaultParameters() {
-	parameters = "-p 3";
+    parameters = "-p 3";
 }
 
 string MIGRAALWrapper::convertAndSaveGraph(Graph* graph, string name) {
-	graph->saveInGWFormatWithNames(name);
-	return name;
+    graph->saveInGWFormatWithNames(name);
+    return name;
 }
 
 string MIGRAALWrapper::generateAlignment() {
@@ -38,9 +38,9 @@ Alignment MIGRAALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     map<string, ushort> g2nodeMap = G2->getNodeNameToIndexMap();
 
     for (uint i = 0; i < words.size(); i+=2) {
-    	string node1 = words[i];
-    	string node2 = words[i+1];
-    	cout << node1 << " " << node2 << endl;
+        string node1 = words[i];
+        string node2 = words[i+1];
+        cout << node1 << " " << node2 << endl;
         mapping[g1nodeMap[node1]] = g2nodeMap[node2];
     }
     return Alignment(mapping);
