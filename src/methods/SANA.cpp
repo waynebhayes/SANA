@@ -274,7 +274,7 @@ Alignment SANA::run() {
         long long int iter = 0;
         Alignment* align;
         if(!usingIterations){
-            align = new Alignment(simpleRun(getStartingAlignment(), minutes*60, iter));
+            align = new Alignment(simpleRun(getStartingAlignment(), minutes * 60, (long long int) (getIterPerSecond()*minutes*60), iter));
         }else{
             align = new Alignment(simpleRun(getStartingAlignment(), ((long long int)(maxIterations))*100000000, iter));
         }
@@ -290,7 +290,7 @@ vector<Alignment>* SANA::paretoRun() {
     long long int iter = 0;
     vector<Alignment>* alignments;
     if(!usingIterations){
-        alignments = simpleParetoRun(getStartingAlignment(), minutes*60, iter);
+        alignments = simpleParetoRun(getStartingAlignment(), (long long int) (getIterPerSecond()*minutes*60), iter);
     }else{
         alignments = simpleParetoRun(getStartingAlignment(), ((long long int)(maxIterations))*100000000, iter);
     }
@@ -547,7 +547,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
 	return *A; //dummy return to shut compiler warning
 }
 
-Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIterations,
+Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds, long long int maxExecutionIterations,
 		long long int& iter) {
 
 	initDataStructures(startA);
@@ -561,6 +561,10 @@ Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIte
 		}
 		if (iter%iterationsPerStep == 0) {
 			trackProgress(iter);
+			if( iter != 0 and timer.elapsed() > maxExecutionSeconds and currentScore - previousScore < 0.005 ){
+				return *A;
+			}
+			previousScore = currentScore;	
 		}
 		if (iter != 0 and iter > maxExecutionIterations) {
 			return *A;
@@ -568,6 +572,30 @@ Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIte
 		SANAIteration();
 	}
 	return *A; //dummy return to shut compiler warning
+}
+
+Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIterations,
+                long long int& iter) {
+
+        initDataStructures(startA);
+
+        setInterruptSignal();
+
+        for (; ; iter++) {
+                T = temperatureFunction(iter, TInitial, TDecay);
+                if (interrupt) {
+                        return *A;
+                }
+                if (iter%iterationsPerStep == 0) {
+                        trackProgress(iter);
+        
+                }
+                if (iter != 0 and iter > maxExecutionIterations) {
+                        return *A;
+                }
+                SANAIteration();
+        }
+        return *A; //dummy return to shut compiler warning
 }
 
 vector<Alignment>* SANA::simpleParetoRun(const Alignment& A, double maxExecutionSeconds,

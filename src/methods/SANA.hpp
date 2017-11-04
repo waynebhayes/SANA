@@ -264,12 +264,15 @@ private:
         long long int& iter);
     Alignment simpleRun(const Alignment& A, long long int maxExecutionIterations,
         long long int& iter);
+    Alignment simpleRun(const Alignment& startA, double maxExecutionSeconds, long long int maxExecutionIterations,
+        long long int& iter);
     vector<Alignment>* simpleParetoRun(const Alignment& A, double maxExecutionSeconds,
         long long int& iter);
     vector<Alignment>* simpleParetoRun(const Alignment& A, long long int maxExecutionIterations,
         long long int& iter);
 
     double currentScore;
+    double previousScore;
     double energyInc;
     vector<double> sampledProbability;
     void SANAIteration();
