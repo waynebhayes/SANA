@@ -20,7 +20,7 @@ void WrappedMethod::moveFilesToWrappedDir() {
 
 Alignment WrappedMethod::run() {
     if(parameters == "") {
-	loadDefaultParameters();
+    loadDefaultParameters();
     }
 
     g1File = convertAndSaveGraph(G1, g1TmpName);
@@ -37,7 +37,7 @@ Alignment WrappedMethod::run() {
 }
 
 void WrappedMethod::describeParameters(ostream& stream) {
-	stream << parameters;
+    stream << parameters;
 }
 
 string WrappedMethod::fileNameSuffix(const Alignment& A) {

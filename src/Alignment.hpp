@@ -15,7 +15,6 @@ using namespace std;
 
 class Alignment {
 public:
-
     static Alignment loadEdgeList(Graph* G1, Graph* G2, string fileName);
     static Alignment loadEdgeListUnordered(Graph* G1, Graph* G2, string fileName);
     static Alignment loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, bool byName);
@@ -32,7 +31,8 @@ public:
     //this is useful when aligning a network with itself but with
     //shuffled node order
     static Alignment correctMapping(const Graph& G1, const Graph& G2);
-    
+
+    Alignment();
     Alignment(const Alignment& alig);
     Alignment(const vector<ushort>& mapping);
     Alignment(Graph* G1, Graph* G2, const vector<vector<string> >& mapList);
@@ -41,6 +41,7 @@ public:
 
     ushort& operator[](ushort node);
     const ushort& operator[](const ushort node) const;
+    Alignment &operator=(Alignment);
     uint size() const;
 
     void write(ostream& stream) const;

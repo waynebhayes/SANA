@@ -3,7 +3,7 @@
 *
 * This file contains some fundamental scheduling policies for the pool class. 
 * A scheduling policy is realized by a task container which controls the access to
-* the tasks. 	Fundamentally the container determines the order the tasks are processed
+* the tasks.     Fundamentally the container determines the order the tasks are processed
 * by the thread pool. 
 * The task containers need not to be thread-safe because they are used by the pool 
 * in thread-safe way. 
@@ -48,7 +48,7 @@ namespace boost { namespace threadpool
     typedef Task task_type; //!< Indicates the scheduler's task type.
 
   protected:
-    std::deque<task_type> m_container;  //!< Internal task container.	
+    std::deque<task_type> m_container;  //!< Internal task container.    
 
 
   public:
@@ -121,7 +121,7 @@ namespace boost { namespace threadpool
     typedef Task task_type;  //!< Indicates the scheduler's task type.
 
   protected:
-    std::deque<task_type> m_container;  //!< Internal task container.	
+    std::deque<task_type> m_container;  //!< Internal task container.    
 
   public:
     /*! Adds a new task to the scheduler.

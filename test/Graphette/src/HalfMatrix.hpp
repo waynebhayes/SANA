@@ -25,7 +25,7 @@ public:
     void clear();
 private:
     ullint len_;
-   	bool* bitArray_ = NULL;
-   	void encodeBitArray(ullint decimalNumber);
+       bool* bitArray_ = NULL;
+       void encodeBitArray(ullint decimalNumber);
 };
 #endif

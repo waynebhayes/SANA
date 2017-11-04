@@ -27,7 +27,7 @@ public:
   std::pair<ushort,ushort> value;
 
   static constexpr int MAX_LEVEL = 16;
-	
+    
   SkipNode();
   SkipNode(int h, float k, std::pair<ushort,ushort> v);
   ~SkipNode();
@@ -38,9 +38,9 @@ public:
 class SkipList{
 public:
   SkipList(float delta, bool setMaxHeap,
-	   std::unordered_set<ushort> & lex, std::unordered_set<ushort> & rex);
+       std::unordered_set<ushort> & lex, std::unordered_set<ushort> & rex);
   ~SkipList();
-	
+    
 
   void insert(float similarity, std::pair<ushort,ushort> entry);
   bool empty();
@@ -68,7 +68,7 @@ private:
   long length;
   int level;
   float delta;
-	
+    
   SkipNode head;
   static constexpr float SKIPLIST_P = 0.25;
   static constexpr float EPSILON = 0.0000001;

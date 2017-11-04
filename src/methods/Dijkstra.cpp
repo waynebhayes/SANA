@@ -22,7 +22,7 @@ Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC, double d) :
   //min of the two is the max nodes
   //that can be aligned
   max_nodes = n1 < n2 ? n1 : n2;
-	
+    
   //G1->getAdjMatrix(G1AdjMatrix);
   //G2->getAdjMatrix(G2AdjMatrix);
   G1->getAdjLists(G1AdjLists);
@@ -101,14 +101,14 @@ void Dijkstra::update_neighbors(std::pair <ushort, ushort> & seed_pair){
   if(G1_neighbors.empty() || G2_neighbors.empty()){
     return;
   }
-	
+    
   //add the possible neighbors to the neighbor_queue
   best_neighbors(seed_pair, G1_neighbors, G2_neighbors);
 }
 
 void Dijkstra::best_neighbors(std::pair <ushort, ushort> & seed_pair, vector<ushort> & G1_neighbors, vector<ushort> & G2_neighbors){
   vector<vector<double> > small_matrix (G1_neighbors.size(), vector<double> (G2_neighbors.size()));
-	
+    
   /*
     for(std::vector<ushort>::iterator G1_iter = G1_neighbors.begin(); G1_iter != G1_neighbors.end(); ++G1_iter){
     for(std::vector<ushort>::iterator G2_iter = G2_neighbors.begin(); G2_iter != G2_neighbors.end(); ++G2_iter){
@@ -126,16 +126,16 @@ void Dijkstra::best_neighbors(std::pair <ushort, ushort> & seed_pair, vector<ush
       //small_matrix[i][j] = sims[G1_neighbors[i]] [G2_neighbors[j]];
       small_matrix[i][j] = sims[G1_neighbors[i]] [G2_neighbors[j]] * node_w + seed_sim * seed_w;
       if(small_matrix[i][j] > max_sim){
-	max_sim = sims[G1_neighbors[i]] [G2_neighbors[j]];
+    max_sim = sims[G1_neighbors[i]] [G2_neighbors[j]];
       }
     }
   }
-	
+    
   for(unsigned int i = 0; i < G1_neighbors.size(); ++i){
     for(unsigned int j = 0; j < G2_neighbors.size(); ++j){
       //insert pair into priority queue (skip list)
       if(small_matrix[i][j] >= (max_sim - delta)){
-	neighbor_queue.insert(small_matrix[i][j], std::make_pair(G1_neighbors[i], G2_neighbors[j]));
+    neighbor_queue.insert(small_matrix[i][j], std::make_pair(G1_neighbors[i], G2_neighbors[j]));
       }
     }
   }
@@ -192,11 +192,11 @@ Alignment Dijkstra::run() {
       //std::cout << "extend phase" << std::endl;
       start = get_time::now();
       try{
-	std::pair <ushort, ushort> neighbor_pair = best_pair(neighbor_queue);
-	update_neighbors(neighbor_pair);
+    std::pair <ushort, ushort> neighbor_pair = best_pair(neighbor_queue);
+    update_neighbors(neighbor_pair);
       }catch (QueueEmptyException & e){
-	//no more neighbors, get another seed
-	break;
+    //no more neighbors, get another seed
+    break;
       }
       //std::cout << "picked neighbor: (" << neighbor_pair.first << ", " << neighbor_pair.second << ")" << std::endl;
       end = get_time::now();

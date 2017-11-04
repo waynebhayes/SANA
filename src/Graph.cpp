@@ -19,9 +19,9 @@ Graph Graph::multGraph(string name, uint path) {
     return g;
 }
 void Graph::setMaxGraphletSize(double number){
-	if (number == 5) // Only options are 4 or 5
-	    Graph::maxGraphletSize = number;
-	//Graph::computeGraphletDegreeVectors();
+    if (number == 5) // Only options are 4 or 5
+        Graph::maxGraphletSize = number;
+    //Graph::computeGraphletDegreeVectors();
 }
 
 //transform format
@@ -71,10 +71,10 @@ void Graph::edgeList2gw(string fin, string fout) {
 #endif
         string node1 = edges[i][0];
         string node2 = edges[i][1];
-	if(node1 == node2) {
-	    errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1 << '\n';
-	    throw runtime_error(errorMsg.str().c_str());
-	}
+    if(node1 == node2) {
+        errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1 << '\n';
+        throw runtime_error(errorMsg.str().c_str());
+    }
         uint index1 = nodeName2IndexMap[node1];
         uint index2 = nodeName2IndexMap[node2];
         edgeList[i][0] = index1;
@@ -218,11 +218,11 @@ void Graph::loadGwFile(const string& fileName) {
     //read number of nodes
     int n;
     if(line == "-2") {
-	getline(infile, line);
-	istringstream iss2(line);
-	(iss2 >> n);
+    getline(infile, line);
+    istringstream iss2(line);
+    (iss2 >> n);
     } else {
-	n = stoi(line);
+    n = stoi(line);
     }
     if (n <= 0) {
         errorMsg << "Failed to read node number: " << line << " read as " << n;
@@ -285,13 +285,13 @@ void Graph::loadGwFile(const string& fileName) {
         node1--; node2--; //-1 because of remapping
 
         if(adjMatrix[node1][node2] || adjMatrix[node2][node1]){
-	    errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
-	    throw runtime_error(errorMsg.str().c_str());
-	}
+        errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
+        throw runtime_error(errorMsg.str().c_str());
+    }
         if(node1 == node2) {
-	    errorMsg << "self-loops not allowed, node number " << node1 << '\n';
-	    throw runtime_error(errorMsg.str().c_str());
-	}
+        errorMsg << "self-loops not allowed, node number " << node1 << '\n';
+        throw runtime_error(errorMsg.str().c_str());
+    }
         edgeList[i][0] = node1;
         edgeList[i][1] = node2;
 
@@ -795,11 +795,11 @@ map<string,ushort> Graph::getNodeNameToIndexMap() const {
     //read number of nodes
     int n;
     if(line == "-2") {
-	getline(infile, line);
-	istringstream iss2(line);
-	(iss2 >> n);
+    getline(infile, line);
+    istringstream iss2(line);
+    (iss2 >> n);
     } else {
-	n = stoi(line);
+    n = stoi(line);
     }
     if (n <= 0) {
         throw runtime_error("Failed to read node number: " + line);
@@ -1048,7 +1048,7 @@ void Graph::saveInGWFormat(string outputFile) {
 }
 
 void Graph::saveInGWFormatWithNames(string outputFile) {
-	saveInGWFormat(outputFile, getNodeNames(), edgeList);
+    saveInGWFormat(outputFile, getNodeNames(), edgeList);
 }
 
 void Graph::saveInShuffledOrder(string outputFile) {
@@ -1068,7 +1068,7 @@ void Graph::saveGraphletsAsSigs(string outputFile) {
     out.open(outputFile.c_str());
      for (unsigned int i = 0; i < nodeNames.size(); i++) {
          out << nodeNames[i] << "\t";
-	
+    
          for (int j = 0; j < 73; j++) {
              out << graphlets[i][j] << "\t";
          }
@@ -1231,35 +1231,35 @@ bool Graph::sameNodeNames(const Graph& other) const {
 
 
 void Graph::setLockedList(vector<string>& nodes, vector<string> & pairs){
-	map<string,ushort> nodeMap = getNodeNameToIndexMap();
-	const int size = nodeMap.size();
-	vector<bool> locked (size, false);
-	vector<string> lockPairs (size, "");
-	for(uint i = 0; i < nodes.size(); i++){
-		ushort index = nodeMap[nodes[i]];
-		locked[index] = true;
-		lockPairs[index] = pairs[i];
-	}
-	lockedList = locked;
-	lockedTo = lockPairs;
-	lockedCount = nodes.size();
-	updateUnlockedGeneCount();
+    map<string,ushort> nodeMap = getNodeNameToIndexMap();
+    const int size = nodeMap.size();
+    vector<bool> locked (size, false);
+    vector<string> lockPairs (size, "");
+    for(uint i = 0; i < nodes.size(); i++){
+        ushort index = nodeMap[nodes[i]];
+        locked[index] = true;
+        lockPairs[index] = pairs[i];
+    }
+    lockedList = locked;
+    lockedTo = lockPairs;
+    lockedCount = nodes.size();
+    updateUnlockedGeneCount();
 }
 
 vector<bool>& Graph::getLockedList(){
-	return lockedList;
+    return lockedList;
 }
 bool Graph::isLocked(uint index) const
 {
-	return lockedList[index];
+    return lockedList[index];
 }
 
 string Graph::getLockedTo(uint index){
-	return lockedTo[index];
+    return lockedTo[index];
 }
 
 int Graph::getLockedCount(){
-	return lockedCount;
+    return lockedCount;
 }
 
 /**
@@ -1269,18 +1269,18 @@ int Graph::getLockedCount(){
  * 1,2,3,4,5 -> 1,2,5,3,4
  */
 map<ushort, ushort> Graph::getLocking_ReIndexMap() const{
-	map<ushort, ushort> result;
-	int n = getNumNodes();
-	int unlockedIndex = 0;
-	int lockedIndex = n-1;
-	for(int i=0; i<n; i++){
-		if(isLocked(i))
-			result[i] = lockedIndex--;
-		else
-			result[i] = unlockedIndex++;
-	}
-	assert(lockedIndex == n - lockedCount - 1  and unlockedIndex == n - lockedCount);
-	return result;
+    map<ushort, ushort> result;
+    int n = getNumNodes();
+    int unlockedIndex = 0;
+    int lockedIndex = n-1;
+    for(int i=0; i<n; i++){
+        if(isLocked(i))
+            result[i] = lockedIndex--;
+        else
+            result[i] = unlockedIndex++;
+    }
+    assert(lockedIndex == n - lockedCount - 1  and unlockedIndex == n - lockedCount);
+    return result;
 }
 
 
@@ -1324,43 +1324,43 @@ map<ushort, ushort> Graph::getNodeTypes_ReIndexMap() const{
 }
 
 void Graph::reIndexGraph(map<ushort, ushort> reIndexMap){
-	uint n = getNumNodes();
-	// Adj Matrix
+    uint n = getNumNodes();
+    // Adj Matrix
 #ifdef WEIGHTED
-	vector<vector<ushort> > adjMatrixCopy (n, vector<ushort> (n));
+    vector<vector<ushort> > adjMatrixCopy (n, vector<ushort> (n));
 #else
-	vector<vector<bool> > adjMatrixCopy (n, vector<bool> (n));
+    vector<vector<bool> > adjMatrixCopy (n, vector<bool> (n));
 #endif
-	for (uint i = 0; i < n; i++) {
-	     for (uint j = 0; j < n; j++){
-	      	ushort a = reIndexMap[i];
-	       	ushort b = reIndexMap[j];
-	       	adjMatrixCopy[a][b] = adjMatrix[i][j];
-	     }
-	 }
-	adjMatrix = adjMatrixCopy;
+    for (uint i = 0; i < n; i++) {
+         for (uint j = 0; j < n; j++){
+              ushort a = reIndexMap[i];
+               ushort b = reIndexMap[j];
+               adjMatrixCopy[a][b] = adjMatrix[i][j];
+         }
+     }
+    adjMatrix = adjMatrixCopy;
 
-	// Adj List
-	vector<vector<ushort> > adjListsCopy(n, vector<ushort> (0));
-	for (uint i = 0; i < n; i++) {
-	   for(uint j= 0; j < adjLists[i].size(); j++){
-		   ushort a = reIndexMap[i];
-		   ushort b = reIndexMap[adjLists[i][j]];
-		   adjListsCopy[a].push_back(b);
-	   }
-	 }
-	adjLists = adjListsCopy;
-
-
-	// Edge List
-	uint m = edgeList.size();
-	for(uint i = 0; i < m; i++){
-		edgeList[i][0] = reIndexMap[edgeList[i][0]];
-		edgeList[i][1] = reIndexMap[edgeList[i][1]];
-	}
+    // Adj List
+    vector<vector<ushort> > adjListsCopy(n, vector<ushort> (0));
+    for (uint i = 0; i < n; i++) {
+       for(uint j= 0; j < adjLists[i].size(); j++){
+           ushort a = reIndexMap[i];
+           ushort b = reIndexMap[adjLists[i][j]];
+           adjListsCopy[a].push_back(b);
+       }
+     }
+    adjLists = adjListsCopy;
 
 
-	initConnectedComponents();
+    // Edge List
+    uint m = edgeList.size();
+    for(uint i = 0; i < m; i++){
+        edgeList[i][0] = reIndexMap[edgeList[i][0]];
+        edgeList[i][1] = reIndexMap[edgeList[i][1]];
+    }
+
+
+    initConnectedComponents();
 }
 
 void Graph::setNodeTypes(set<string> genes, set<string> miRNAs){

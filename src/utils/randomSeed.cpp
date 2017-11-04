@@ -15,8 +15,8 @@ void setSeed(unsigned int seed) {
 
 unsigned int getRandomSeed() {
     if(!doneInit) {
-	currentSeed = /*rd() +*/ gethostid() + time(0) + getpid(); // rd() fails on Jenkins.
-	doneInit=1;
+    currentSeed = /*rd() +*/ gethostid() + time(0) + getpid(); // rd() fails on Jenkins.
+    doneInit=1;
     }
     return currentSeed;
 }

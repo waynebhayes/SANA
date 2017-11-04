@@ -78,8 +78,8 @@ vector<Alignment>* ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G
     }
     // if locking is enabled but hasnodeType is not
     else if(G1->getLockedCount() > 0){
-     	G1->reIndexGraph(method->getReverseMap(G1->getLocking_ReIndexMap()));
-      	(*A)[0].reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
+         G1->reIndexGraph(method->getReverseMap(G1->getLocking_ReIndexMap()));
+          (*A)[0].reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
     }
     method->checkLockingBeforeReport((*A)[0]);
     method->checkLockingBeforeReport((*A)[0]);

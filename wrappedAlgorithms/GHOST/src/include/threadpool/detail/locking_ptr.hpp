@@ -47,7 +47,7 @@ namespace boost { namespace threadpool { namespace detail
       , m_mutex(*const_cast<Mutex*>(&mtx))
     {   
       // Lock mutex
-	  m_mutex.lock();
+      m_mutex.lock();
     }
 
 

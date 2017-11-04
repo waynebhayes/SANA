@@ -125,27 +125,27 @@ ssize_t** kuhn_match(cell** table, size_t n, size_t m)
     
     for (;;)
     {
-	if (kuhn_isDone(marks, colCovered, n, m))
-	    break;
-	
+    if (kuhn_isDone(marks, colCovered, n, m))
+        break;
+    
         for (;;)
-	{
-	    prime = kuhn_findPrime(table, marks, rowCovered, colCovered, n, m);
-	    if (prime != null)
-	    {
-		kuhn_altMarks(marks, altRow, altCol, colMarks, rowPrimes, prime, n, m);
-		for (i = 0; i < n; i++)
-		{
-		    *(rowCovered + i) = false;
-		    *(colCovered + i) = false;
-		}
-		for (i = n; i < m; i++)
-		    *(colCovered + i) = false;
-		delete[](prime);
-		break;
-	    }
-	    kuhn_addAndSubtract(table, rowCovered, colCovered, n, m);
-	}
+    {
+        prime = kuhn_findPrime(table, marks, rowCovered, colCovered, n, m);
+        if (prime != null)
+        {
+        kuhn_altMarks(marks, altRow, altCol, colMarks, rowPrimes, prime, n, m);
+        for (i = 0; i < n; i++)
+        {
+            *(rowCovered + i) = false;
+            *(colCovered + i) = false;
+        }
+        for (i = n; i < m; i++)
+            *(colCovered + i) = false;
+        delete[](prime);
+        break;
+        }
+        kuhn_addAndSubtract(table, rowCovered, colCovered, n, m);
+    }
     }
     
     delete[](rowCovered);
@@ -183,12 +183,12 @@ void kuhn_reduceRows(cell** t, size_t n, size_t m)
     {
         ti = *(t + i);
         min = *ti;
-	for (j = 1; j < m; j++)
-	    if (min > *(ti + j))
-	        min = *(ti + j);
-	
-	for (j = 0; j < m; j++)
-	    *(ti + j) -= min;
+    for (j = 1; j < m; j++)
+        if (min > *(ti + j))
+            min = *(ti + j);
+    
+    for (j = 0; j < m; j++)
+        *(ti + j) -= min;
     }
 }
 
@@ -212,7 +212,7 @@ byte** kuhn_mark(cell** t, size_t n, size_t m)
     {
       marksi = *(marks + i) = new byte[m];
         for (j = 0; j < m; j++)
- 	    *(marksi + j) = UNMARKED;
+         *(marksi + j) = UNMARKED;
     }
     
     boolean* rowCovered = new boolean[n];
@@ -227,12 +227,12 @@ byte** kuhn_mark(cell** t, size_t n, size_t m)
     
     for (i = 0; i < n; i++)
         for (j = 0; j < m; j++)
-	    if ((!*(rowCovered + i)) && (!*(colCovered + j)) && (*(*(t + i) + j) == 0))
-	    {
-	        *(*(marks + i) + j) = MARKED;
-		*(rowCovered + i) = true;
-		*(colCovered + j) = true;
-	    }
+        if ((!*(rowCovered + i)) && (!*(colCovered + j)) && (*(*(t + i) + j) == 0))
+        {
+            *(*(marks + i) + j) = MARKED;
+        *(rowCovered + i) = true;
+        *(colCovered + j) = true;
+        }
     
     delete[](rowCovered);
     delete[](colCovered);
@@ -255,16 +255,16 @@ boolean kuhn_isDone(byte** marks, boolean* colCovered, size_t n, size_t m)
     size_t i, j;
     for (j = 0; j < m; j++)
         for (i = 0; i < n; i++)
-	    if (*(*(marks + i) + j) == MARKED)
-	    {
-	        *(colCovered + j) = true;
-		break;
-	    }
+        if (*(*(marks + i) + j) == MARKED)
+        {
+            *(colCovered + j) = true;
+        break;
+        }
     
     size_t count = 0;
     for (j = 0; j < m; j++)
         if (*(colCovered + j))
-	    count++;
+        count++;
     
     return count == n;
 }
@@ -288,9 +288,9 @@ size_t* kuhn_findPrime(cell** t, byte** marks, boolean* rowCovered, boolean* col
     
     for (i = 0; i < n; i++)
         if (!*(rowCovered + i))
-	    for (j = 0; j < m; j++)
-	        if ((!*(colCovered + j)) && (*(*(t + i) + j) == 0))
-		  BitSet_set(zeroes, i * m + j);
+        for (j = 0; j < m; j++)
+            if ((!*(colCovered + j)) && (*(*(t + i) + j) == 0))
+          BitSet_set(zeroes, i * m + j);
     
     ssize_t p;
     size_t row, col;
@@ -299,67 +299,67 @@ size_t* kuhn_findPrime(cell** t, byte** marks, boolean* rowCovered, boolean* col
     for (;;)
     {
         p = BitSet_any(zeroes);
-	if (p < 0)
+    if (p < 0)
         {
-	    delete[](zeroes.limbs);
-	    delete(zeroes.first);
-	    delete[](zeroes.next);
-	    delete[](zeroes.prev);
-	    return null;
-	}
-	
-	row = (size_t)p / m;
-	col = (size_t)p % m;
-	
-	*(*(marks + row) + col) = PRIME;
-	
-	markInRow = false;
-	for (j = 0; j < m; j++)
-	    if (*(*(marks + row) + j) == MARKED)
-	    {
-		markInRow = true;
-		col = j;
-	    }
-	
-	if (markInRow)
-	{
-	    *(rowCovered + row) = true;
-	    *(colCovered + col) = false;
-	    
-	    for (i = 0; i < n; i++)
-	        if ((*(*(t + i) + col) == 0) && (row != i))
-		{
-		    if ((!*(rowCovered + i)) && (!*(colCovered + col)))
-		        BitSet_set(zeroes, i * m + col);
-		    else
-		        BitSet_unset(zeroes, i * m + col);
-		}
-	    
-	    for (j = 0; j < m; j++)
-	        if ((*(*(t + row) + j) == 0) && (col != j))
-		{
-		    if ((!*(rowCovered + row)) && (!*(colCovered + j)))
-		        BitSet_set(zeroes, row * m + j);
-		    else
-		        BitSet_unset(zeroes, row * m + j);
-		}
-	    
-	    if ((!*(rowCovered + row)) && (!*(colCovered + col)))
-	        BitSet_set(zeroes, row * m + col);
-	    else
-	        BitSet_unset(zeroes, row * m + col);
-	}
-	else
-	{
-	    size_t* rc = new size_t[2];
-	    *rc = row;
-	    *(rc + 1) = col;
-	    delete[](zeroes.limbs);
-	    delete(zeroes.first);
-	    delete[](zeroes.next);
-	    delete[](zeroes.prev);
-	    return rc;
-	}
+        delete[](zeroes.limbs);
+        delete(zeroes.first);
+        delete[](zeroes.next);
+        delete[](zeroes.prev);
+        return null;
+    }
+    
+    row = (size_t)p / m;
+    col = (size_t)p % m;
+    
+    *(*(marks + row) + col) = PRIME;
+    
+    markInRow = false;
+    for (j = 0; j < m; j++)
+        if (*(*(marks + row) + j) == MARKED)
+        {
+        markInRow = true;
+        col = j;
+        }
+    
+    if (markInRow)
+    {
+        *(rowCovered + row) = true;
+        *(colCovered + col) = false;
+        
+        for (i = 0; i < n; i++)
+            if ((*(*(t + i) + col) == 0) && (row != i))
+        {
+            if ((!*(rowCovered + i)) && (!*(colCovered + col)))
+                BitSet_set(zeroes, i * m + col);
+            else
+                BitSet_unset(zeroes, i * m + col);
+        }
+        
+        for (j = 0; j < m; j++)
+            if ((*(*(t + row) + j) == 0) && (col != j))
+        {
+            if ((!*(rowCovered + row)) && (!*(colCovered + j)))
+                BitSet_set(zeroes, row * m + j);
+            else
+                BitSet_unset(zeroes, row * m + j);
+        }
+        
+        if ((!*(rowCovered + row)) && (!*(colCovered + col)))
+            BitSet_set(zeroes, row * m + col);
+        else
+            BitSet_unset(zeroes, row * m + col);
+    }
+    else
+    {
+        size_t* rc = new size_t[2];
+        *rc = row;
+        *(rc + 1) = col;
+        delete[](zeroes.limbs);
+        delete(zeroes.first);
+        delete[](zeroes.next);
+        delete[](zeroes.prev);
+        return rc;
+    }
     }
 }
 
@@ -392,27 +392,27 @@ void kuhn_altMarks(byte** marks, size_t* altRow, size_t* altCol, ssize_t* colMar
     
     for (i = 0; i < n; i++)
         for (j = 0; j < m; j++)
-	    if (*(*(marks + i) + j) == MARKED)
-	        *(colMarks + j) = (ssize_t)i;
-	    else if (*(*(marks + i) + j) == PRIME)
-	        *(rowPrimes + i) = (ssize_t)j;
+        if (*(*(marks + i) + j) == MARKED)
+            *(colMarks + j) = (ssize_t)i;
+        else if (*(*(marks + i) + j) == PRIME)
+            *(rowPrimes + i) = (ssize_t)j;
     
     ssize_t row, col;
     for (;;)
     {
         row = *(colMarks + *(altCol + index));
-	if (row < 0)
-	    break;
-	
-	index++;
-	*(altRow + index) = (size_t)row;
-	*(altCol + index) = *(altCol + index - 1);
-	
-	col = *(rowPrimes + *(altRow + index));
-	
-	index++;
-	*(altRow + index) = *(altRow + index - 1);
-	*(altCol + index) = (size_t)col;
+    if (row < 0)
+        break;
+    
+    index++;
+    *(altRow + index) = (size_t)row;
+    *(altCol + index) = *(altCol + index - 1);
+    
+    col = *(rowPrimes + *(altRow + index));
+    
+    index++;
+    *(altRow + index) = *(altRow + index - 1);
+    *(altCol + index) = (size_t)col;
     }
     
     byte* markx;
@@ -420,9 +420,9 @@ void kuhn_altMarks(byte** marks, size_t* altRow, size_t* altCol, ssize_t* colMar
     {
         markx = *(marks + *(altRow + i)) + *(altCol + i);
         if (*markx == MARKED)
-	    *markx = UNMARKED;
-	else
-	    *markx = MARKED;
+        *markx = UNMARKED;
+    else
+        *markx = MARKED;
     }
     
     byte* marksi;
@@ -430,8 +430,8 @@ void kuhn_altMarks(byte** marks, size_t* altRow, size_t* altCol, ssize_t* colMar
     {
         marksi = *(marks + i);
         for (j = 0; j < m; j++)
-	    if (*(marksi + j) == PRIME)
-	        *(marksi + j) = UNMARKED;
+        if (*(marksi + j) == PRIME)
+            *(marksi + j) = UNMARKED;
     }
 }
 
@@ -453,18 +453,18 @@ void kuhn_addAndSubtract(cell** t, boolean* rowCovered, boolean* colCovered, siz
     cell min = 0x7FFFffffL;
     for (i = 0; i < n; i++)
         if (!*(rowCovered + i))
-	    for (j = 0; j < m; j++)
-	        if ((!*(colCovered + j)) && (min > *(*(t + i) + j)))
-		    min = *(*(t + i) + j);
+        for (j = 0; j < m; j++)
+            if ((!*(colCovered + j)) && (min > *(*(t + i) + j)))
+            min = *(*(t + i) + j);
     
     for (i = 0; i < n; i++)
         for (j = 0; j < m; j++)
-	{
-	    if (*(rowCovered + i))
-	        *(*(t + i) + j) += min;
-	    if (*(colCovered + j) == false)
-	        *(*(t + i) + j) -= min;
-	}
+    {
+        if (*(rowCovered + i))
+            *(*(t + i) + j) += min;
+        if (*(colCovered + j) == false)
+            *(*(t + i) + j) -= min;
+    }
 }
 
 
@@ -485,11 +485,11 @@ ssize_t** kuhn_assign(byte** marks, size_t n, size_t m)
     {
         *(assignment + i) = new ssize_t[2];
         for (j = 0; j < m; j++)
-	    if (*(*(marks + i) + j) == MARKED)
-	    {
-		**(assignment + i) = (ssize_t)i;
-		*(*(assignment + i) + 1) = (ssize_t)j;
-	    }
+        if (*(*(marks + i) + j) == MARKED)
+        {
+        **(assignment + i) = (ssize_t)i;
+        *(*(assignment + i) + 1) = (ssize_t)j;
+        }
     }
     
     return assignment;
@@ -542,10 +542,10 @@ void BitSet_set(BitSet this_, size_t i)
     if ((!*(this_.limbs + j)) ^ (!old))
     {
         j++;
-	*(this_.prev + *(this_.first)) = j;
-	*(this_.prev + j) = 0;
-	*(this_.next + j) = *(this_.first);
-	*(this_.first) = j;
+    *(this_.prev + *(this_.first)) = j;
+    *(this_.prev + j) = 0;
+    *(this_.next + j) = *(this_.first);
+    *(this_.first) = j;
     }
 }
 
@@ -565,12 +565,12 @@ void BitSet_unset(BitSet this_, size_t i)
     if ((!*(this_.limbs + j)) ^ (!old))
     {
         j++;
-	size_t p = *(this_.prev + j);
-	size_t n = *(this_.next + j);
-	*(this_.prev + n) = p;
-	*(this_.next + p) = n;
-	if (*(this_.first) == j)
-	    *(this_.first) = n;
+    size_t p = *(this_.prev + j);
+    size_t n = *(this_.next + j);
+    *(this_.prev + n) = p;
+    *(this_.next + p) = n;
+    if (*(this_.first) == j)
+        *(this_.first) = n;
     }
 }
 

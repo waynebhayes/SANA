@@ -343,13 +343,13 @@ void Graph::writeGraphEdgeListFormat(const string& fileName) {
 }
 
 void Graph::writeGraphEdgeListFormatNETAL(const string& fileName) {
-	ushort e = getNumEdges();
-	ofstream outfile;
-	outfile.open(fileName.c_str());
-	for (uint i = 0; i < e; i++) {
-		outfile << edgeList[i][0] << "\t" << edgeList[i][1] << endl;
-	}
-	outfile.close();
+    ushort e = getNumEdges();
+    ofstream outfile;
+    outfile.open(fileName.c_str());
+    for (uint i = 0; i < e; i++) {
+        outfile << edgeList[i][0] << "\t" << edgeList[i][1] << endl;
+    }
+    outfile.close();
 }
 
 vector<ushort> Graph::numNodesAround(ushort node, ushort maxDist) const {
@@ -785,7 +785,7 @@ void Graph::saveInGWFormat(string outputFile) {
 }
 
 void Graph::saveInGWFormatWithNames(string outputFile) {
-	saveInGWFormat(outputFile, getNodeNames(), edgeList);
+    saveInGWFormat(outputFile, getNodeNames(), edgeList);
 }
 
 void Graph::saveInShuffledOrder(string outputFile) {
@@ -966,34 +966,34 @@ bool Graph::sameNodeNames(const Graph& other) const {
 
 
 void Graph::setLockedList(vector<string>& nodes, vector<string> & pairs){
-	map<string,ushort> nodeMap = getNodeNameToIndexMap();
-	const int size = nodeMap.size();
-	vector<bool> locked (size, false);
-	vector<string> lockPairs (size, "");
-	for(uint i = 0; i < nodes.size(); i++){
-		ushort index = nodeMap[nodes[i]];
-		locked[index] = true;
-		lockPairs[index] = pairs[i];
-	}
-	lockedList = locked;
-	lockedTo = lockPairs;
-	lockedCount = nodes.size();
+    map<string,ushort> nodeMap = getNodeNameToIndexMap();
+    const int size = nodeMap.size();
+    vector<bool> locked (size, false);
+    vector<string> lockPairs (size, "");
+    for(uint i = 0; i < nodes.size(); i++){
+        ushort index = nodeMap[nodes[i]];
+        locked[index] = true;
+        lockPairs[index] = pairs[i];
+    }
+    lockedList = locked;
+    lockedTo = lockPairs;
+    lockedCount = nodes.size();
 }
 
 vector<bool>& Graph::getLockedList(){
-	return lockedList;
+    return lockedList;
 }
 bool Graph::isLocked(uint index)
 {
-	return lockedList[index];
+    return lockedList[index];
 }
 
 string Graph::getLockedTo(uint index){
-	return lockedTo[index];
+    return lockedTo[index];
 }
 
 int Graph::getLockedCount(){
-	return lockedCount;
+    return lockedCount;
 }
 
 
@@ -1009,57 +1009,57 @@ Graph::Graph(int n) :
 
 void Graph::setAdjMatrix(vector<bool>& v)
 {
-	int k = 0;
-	for (unsigned int i = 0; i < this->getNumNodes(); i++)
-	{
-		for (unsigned int j = 0; j < this->getNumNodes(); j++)
-		{
-			if (i < j)
-			{
-				adjMatrix[i][j] = v[k];
-				if (v[k])
-				{
-					this->addEdge(i,j);
-				}
-				k++;
-			}
-		}	
-	}		
+    int k = 0;
+    for (unsigned int i = 0; i < this->getNumNodes(); i++)
+    {
+        for (unsigned int j = 0; j < this->getNumNodes(); j++)
+        {
+            if (i < j)
+            {
+                adjMatrix[i][j] = v[k];
+                if (v[k])
+                {
+                    this->addEdge(i,j);
+                }
+                k++;
+            }
+        }    
+    }        
 }
 
 void Graph::print_adjMatrix(bool upper)
 {
-	for (unsigned int i = 0; i < this->getNumNodes(); i++)
-	{
-		for (unsigned int j = 0; j < this->getNumNodes(); j++)
-		{
-			if (upper)
-			{
-				if (i < j)
-					std::cout << adjMatrix[i][j] << " ";
-				else
-					std::cout << "  ";
-			}
-			else
-				std::cout << adjMatrix[i][j] << " ";
-		}
-		std::cout << "\n";
-	}
+    for (unsigned int i = 0; i < this->getNumNodes(); i++)
+    {
+        for (unsigned int j = 0; j < this->getNumNodes(); j++)
+        {
+            if (upper)
+            {
+                if (i < j)
+                    std::cout << adjMatrix[i][j] << " ";
+                else
+                    std::cout << "  ";
+            }
+            else
+                std::cout << adjMatrix[i][j] << " ";
+        }
+        std::cout << "\n";
+    }
 }
 
 uint Graph::getDegree(uint node) const
 {
-	return adjLists[node].size();
+    return adjLists[node].size();
 }
 
 void Graph::set_decimal_representation(int n)
 {
-	decimal_representation = n;
+    decimal_representation = n;
 }
 
 int Graph::get_decimal_representation() const
 {
-	return decimal_representation;
+    return decimal_representation;
 }
 
 void Graph::construct_decimal_representation()

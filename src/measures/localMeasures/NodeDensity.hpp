@@ -4,7 +4,7 @@
 
 class NodeDensity: public LocalMeasure {
 public:
-	NodeDensity(Graph* G1, Graph* G2, ushort maxDist);
+    NodeDensity(Graph* G1, Graph* G2, ushort maxDist);
     virtual ~NodeDensity();
 private:
     void initSimMatrix();
