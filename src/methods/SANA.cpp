@@ -228,7 +228,7 @@ Alignment SANA::run() {
         return runRestartPhases();
     else {
         long long int iter = 0;
-        Alignment align    = (usingIterations) ? simpleRun(getStartingAlignment(), minutes * 60, (long long int) (getIterPerSecond()*minutes*60), iter) : 
+        Alignment align    = (!usingIterations) ? simpleRun(getStartingAlignment(), minutes * 60, (long long int) (getIterPerSecond()*minutes*60), iter) : 
                                                  simpleRun(getStartingAlignment(), ((long long int)(maxIterations))*100000000, iter); 
         return (addHillClimbing) ? hillClimbingAlignment(align, (long long int)(10000000)) : align; //arbitrarily chosen, probably too big.
     }
@@ -1198,23 +1198,20 @@ void SANA::searchTemperaturesByLinearRegression() {
     cerr << "Left endpoint of linear regression " << pow(10, lowerEnd) << endl;
     cerr << "Right endpoint of linear regression " << pow(10, upperEnd) << endl;
     double startingTemperature = pow(10,10);
-    double startingExponent = 10;
     for (auto const& keyValue : pbadMap)
     {
         if(keyValue.second >= 0.985 && keyValue.first >= upperEnd){
             startingTemperature = pow(10, keyValue.first);
-            startingExponent = keyValue.first;
             cerr << "Initial temperature is " << startingTemperature << " expected pbad is " << keyValue.second << endl;
             break;
         }
     }
     double endingTemperature = pow(10,-10);
-    double endingExponent = -10;
+    
     std::map<double,double>::reverse_iterator rit;
     for (rit=pbadMap.rbegin(); rit!=pbadMap.rend(); ++rit){
         if(rit->second < 1E-6 && rit->first <= lowerEnd){
             endingTemperature = pow(10, rit->first);
-            endingExponent = rit->first;
             cerr << "Final temperature is " << endingTemperature << " expected pbad is " << rit->second << endl;
             break;
         }
