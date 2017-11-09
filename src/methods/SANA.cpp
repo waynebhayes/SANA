@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <set>
 #include <cmath>
+#include <limits>
 #include <cassert>
 #include <signal.h>
 #include <stdio.h>
@@ -1207,17 +1208,15 @@ void SANA::searchTemperaturesByLinearRegression() {
         }
     }
     double endingTemperature = pow(10,-10);
-    
-    std::map<double,double>::reverse_iterator rit;
-    for (rit=pbadMap.rbegin(); rit!=pbadMap.rend(); ++rit){
-        if(rit->second < 1E-6 && rit->first <= lowerEnd){
-            endingTemperature = pow(10, rit->first);
-            cerr << "Final temperature is " << endingTemperature << " expected pbad is " << rit->second << endl;
-            break;
-        }
-    }
+    double distanceFromTarget = std::numeric_limits<double>::max();
 
-    assert( (pbadMap[get<5>(regressionResult)] - pbadMap[get<2>(regressionResult)]) / (get<5>(regressionResult) - get<2>(regressionResult)) < 0 || TFinal > TInitial );
+    for (auto const& keyValue : pbadMap)
+    {
+    	if (distanceFromTarget > abs(1E-6 - keyValue.second) && pow(10, keyValue.first) <= startingTemperature){
+    		distanceFromTarget = abs(1E-6 - keyValue.second);
+    		endingTemperature = pow(10, keyValue.first);
+    	}
+    }
 
     TInitial = startingTemperature;
     TFinal = endingTemperature;
@@ -1536,7 +1535,7 @@ Alignment SANA::hillClimbingAlignment(long long int idleCountTarget){
 
 void SANA::hillClimbingIterations(long long int iterTarget) {
     Alignment startA = getStartingAlignment();
-    long long int iter = 0;
+    long long int iter = 1;
 
     initDataStructures(startA);
     T = 0;
@@ -1685,7 +1684,7 @@ double SANA::getIterPerSecond() {
 void SANA::initIterPerSecond() {
     cerr << "Determining iteration speed...." << endl;
     long long int iter = 1E7;
-    hillClimbingIterations(iter + 1);
+    hillClimbingIterations(iter - 1);
     /*if (iter == 500000) {
         throw runtime_error("hill climbing stagnated after 0 iterations");
     }*/
