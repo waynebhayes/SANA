@@ -1209,15 +1209,16 @@ void SANA::searchTemperaturesByLinearRegression() {
     }
     double endingTemperature = pow(10,-10);
     double distanceFromTarget = std::numeric_limits<double>::max();
-
+    double endingPbad = 0.0;
     for (auto const& keyValue : pbadMap)
     {
     	if (distanceFromTarget > abs(1E-6 - keyValue.second) && pow(10, keyValue.first) <= startingTemperature){
     		distanceFromTarget = abs(1E-6 - keyValue.second);
     		endingTemperature = pow(10, keyValue.first);
+		endingPbad = keyValue.second;
     	}
     }
-
+    cerr << "Final temperature is " << endingTemperature << " expected pbad is " << endingPbad << endl;
     TInitial = startingTemperature;
     TFinal = endingTemperature;
    
