@@ -235,15 +235,14 @@ Alignment SANA::run() {
     }
 }
 
-vector<Alignment>* SANA::paretoRun() {
+unordered_set<vector<ushort>*>* SANA::paretoRun() {
     long long int iter = 0;
-    vector<Alignment>* alignments;
     if (!usingIterations) {
-        alignments = simpleParetoRun(getStartingAlignment(), (long long int) (getIterPerSecond()*minutes*60), iter);
+        return simpleParetoRun(getStartingAlignment(), (long long int) (getIterPerSecond()*minutes*60), iter);
     } else {
-        alignments = simpleParetoRun(getStartingAlignment(), ((long long int)(maxIterations))*100000000, iter);
+        return simpleParetoRun(getStartingAlignment(), ((long long int)(maxIterations))*100000000, iter);
     }
-    return alignments;
+    return storedAlignments;
 }
 
 // Used for method #2 of locking
@@ -507,38 +506,80 @@ Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIte
         return *A; //dummy return to shut compiler warning
 }
 
-vector<Alignment>* SANA::simpleParetoRun(const Alignment& A, double maxExecutionSeconds,
+unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, double maxExecutionSeconds,
         long long int& iter) {
-    int n = MC->numMeasures();
-    vector<string> measures(n);
-    for(int i = 0; i < n; i++)
-        measures[i] = MC->getMeasure(i)->getName();
-    sort(measures.begin(), measures.end());
-    for(int i = 0; i < n; i++)
-        cout << measures[i] << '\n';
-    exit(0);
-    return new vector<Alignment>;
+
+    initDataStructures(startA);
+    setInterruptSignal();
+    unordered_map<string, int> scoreNamesToIndexes = mapScoresToIndexes();
+    //for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
+        //cout << iter->first << '\n';exit(0);
+
+    for (; ; iter++) {
+        //T = temperatureFunction(iter, TInitial, TDecay);
+        setRandomAlignmentAndMeasures();
+        if (interrupt) {
+            return storedAlignments;
+        }
+        if (iter%iterationsPerStep == 0) {
+			trackProgress(iter);
+			if( iter != 0 and timer.elapsed() > maxExecutionSeconds){
+				return storedAlignments;
+			}	
+		}
+        SANAIteration();
+    }
+
+    return storedAlignments;
 }
-vector<Alignment>* SANA::simpleParetoRun(const Alignment& A, long long int maxExecutionIterations,
+unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, long long int maxExecutionIterations,
         long long int& iter) {
+
+    initDataStructures(startA);
+    setInterruptSignal();
+    unordered_map<string, int> scoreNamesToIndexes = mapScoresToIndexes();
+    //for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
+        //cout << iter->first << '\n';exit(0);
+
+    for (; ; iter++) {
+        //T = temperatureFunction(iter, TInitial, TDecay);
+        setRandomAlignmentAndMeasures();
+        if (interrupt) {
+            return storedAlignments;
+        }
+        if (iter%iterationsPerStep == 0) {
+            trackProgress(iter);
+        }
+        if (iter != 0 and iter > maxExecutionIterations) {
+            return storedAlignments;
+        }
+        SANAIteration();
+    }
+
+    return storedAlignments;
+}
+
+unordered_map<string, int> SANA::mapScoresToIndexes() {
     int n = MC->numMeasures();
-        vector<string> measures(n);
-        for(int i = 0; i < n; i++)
-                measures[i] = MC->getMeasure(i)->getName();
-        sort(measures.begin(), measures.end());
-        for(int i = 0; i < n; i++)
-                cout << measures[i] << '\n';
-    exit(0);
-    return new vector<Alignment>;
-} 
+    vector<string> measureNames(n);
+    for(int i = 0; i < n; i++)
+        measureNames[i] = MC->getMeasure(i)->getName();
+    sort(measureNames.begin(), measureNames.end());
+
+    unordered_map<string, int> toReturn;
+    for(int i = 0; i < n; i++)
+    	toReturn[measureNames[i]] = i;
+    return toReturn;
+}
+
+void SANA::setRandomAlignmentAndMeasures() {
+	cout << "Not Implemented!";
+	exit(0);
+}
 
 void SANA::SANAIteration() {
     iterationsPerformed++;
     (randomReal(gen) < changeProbability) ? performChange() : performSwap();
-    //if(paretoMode)
-        //getRandomAlignment and set all relevant alignment data up using maps
-    //Otherwise, the old datamembers that have been changed to pointers only need to be dereferenced
-    //to run the normal versions of sana (non pareto front sana)
 }
 
 void SANA::performChange() {
@@ -645,10 +686,6 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     bool wasBadMove = false;
     double badProbability = 0;
     
-    if(score == "pareto") {//Short circuit return to let the pareto front decide
-        return makeChange; //what alignments to keep instead of simulated annealing.
-    }
-    
     if(score == "sum") {
         newCurrentScore += ecWeight * (newAligEdges/g1Edges);
         newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
@@ -751,6 +788,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         wasBadMove = maxScore < -1 * minScore;
         badProbability = exp(energyInc/T);
         makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc/T);
+    } else if(score == "pareto") { //Short circuit return to let the pareto front decide
+        return makeChange;         //what alignments to keep instead of simulated annealing.
     }
 
     if(wasBadMove && (iterationsPerformed % 500 == 0 || (TCWeight > 0 && iterationsPerformed % 25 == 0))){ //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
