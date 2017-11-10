@@ -65,14 +65,16 @@ vector<Alignment>* ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G
     T.start();
     //Method* METHOD = new SANA;
     //static_cast<SANA*>(METHOD)->derived_int;
-    vector<Alignment> *A = static_cast<SANA*>(method)->paretoRun();
+    unordered_set<vector<unsigned short>*> *A = static_cast<SANA*>(method)->paretoRun();
     //A->push_back(method->paretoRun());
     T.elapsed();
     cerr << "Executed " << method->getName() << " in " << T.elapsedString() << endl;
 
     // Re Index back to normal (Method #3 of locking)
 
-    if(G1->hasNodeTypes()){
+    // Needs to be reimplemented with unordered_set<vector<unsigned short>>*
+    
+    /*if(G1->hasNodeTypes()){
         G1->reIndexGraph(method->getReverseMap(G1->getNodeTypes_ReIndexMap()));
         (*A)[0].reIndexAfter_Iterations(G1->getNodeTypes_ReIndexMap());
     }
@@ -82,6 +84,6 @@ vector<Alignment>* ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G
           (*A)[0].reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
     }
     method->checkLockingBeforeReport((*A)[0]);
-    method->checkLockingBeforeReport((*A)[0]);
-    return A;
+    method->checkLockingBeforeReport((*A)[0]);*/
+    return new vector<Alignment>;
 }

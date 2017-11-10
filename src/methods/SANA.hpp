@@ -24,7 +24,7 @@ public:
     ~SANA(){}
 
     Alignment run();
-    vector<Alignment>* paretoRun();
+    unordered_set<vector<ushort>*>* paretoRun();
     void describeParameters(ostream& stream);
     string fileNameSuffix(const Alignment& A);
 
@@ -267,9 +267,9 @@ private:
         long long int& iter);
     Alignment simpleRun(const Alignment& startA, double maxExecutionSeconds, long long int maxExecutionIterations,
         long long int& iter);
-    vector<Alignment>* simpleParetoRun(const Alignment& A, double maxExecutionSeconds,
+    unordered_set<vector<ushort>*>* simpleParetoRun(const Alignment& A, double maxExecutionSeconds,
         long long int& iter);
-    vector<Alignment>* simpleParetoRun(const Alignment& A, long long int maxExecutionIterations,
+    unordered_set<vector<ushort>*>* simpleParetoRun(const Alignment& A, long long int maxExecutionIterations,
         long long int& iter);
 
     double currentScore;
@@ -298,6 +298,8 @@ private:
     tuple<int, double, int, double, double, double> regress(double start, double end, int amount);
 
     //Mostly for pareto front, to hold multiple alignments and scores
+    unordered_map<string, int> mapScoresToIndexes();
+    void setRandomAlignmentAndMeasures();
     unordered_set<vector<ushort>*>* storedAlignments = new unordered_set<vector<ushort>*>;
     unordered_map<vector<ushort>*, vector<bool>*> storedAssignedNodesG2;
     unordered_map<vector<ushort>*, vector<ushort>*> storedUnassignedNodesG2;
