@@ -511,13 +511,14 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, d
 
     initDataStructures(startA);
     setInterruptSignal();
-    unordered_map<string, int> scoreNamesToIndexes = mapScoresToIndexes();
-    //for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
+    vector<string> measureNames; vector<double> scores; int numOfMeasures;
+    unordered_map<string, int> scoreNamesToIndexes = mapScoresToIndexes(numOfMeasures, measureNames);
+    ParetoFront paretoFront(paretoCapacity, numOfMeasures, measureNames);//for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
         //cout << iter->first << '\n';exit(0);
 
     for (; ; iter++) {
         //T = temperatureFunction(iter, TInitial, TDecay);
-        setRandomAlignmentAndMeasures();
+        prepareMeasureDataByAlignment();
         if (interrupt) {
             return storedAlignments;
         }
@@ -537,13 +538,24 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
 
     initDataStructures(startA);
     setInterruptSignal();
-    unordered_map<string, int> scoreNamesToIndexes = mapScoresToIndexes();
+    vector<string> measureNames; vector<double> scores; int numOfMeasures;
+    unordered_map<string, int> scoreNamesToIndexes = mapScoresToIndexes(numOfMeasures, measureNames);
+    ParetoFront paretoFront(paretoCapacity, numOfMeasures, measureNames);
     //for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
         //cout << iter->first << '\n';exit(0);
 
     for (; ; iter++) {
         //T = temperatureFunction(iter, TInitial, TDecay);
-        setRandomAlignmentAndMeasures();
+
+        // Get random alignments (and make updates) inside makeChange, under
+        // pareto mode because measureScores are calculated there which is
+        // where these scores would be inserted into the paretoFront.
+        // Successful insert into paretoFront determines what alignments are
+        // good to keep in the first place, which would also determine if we
+        // want "alignment data" (disconnect between ec and alignedEdges etc.)
+        A = paretoFront.procureRandomAlignment();
+        prepareMeasureDataByAlignment();
+        
         if (interrupt) {
             return storedAlignments;
         }
@@ -559,22 +571,29 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
     return storedAlignments;
 }
 
-unordered_map<string, int> SANA::mapScoresToIndexes() {
-    int n = MC->numMeasures();
-    vector<string> measureNames(n);
-    for(int i = 0; i < n; i++)
+unordered_map<string, int> SANA::mapScoresToIndexes(int &numOfMeasures, vector<string> &measureNames) {
+    numOfMeasures = MC->numMeasures();
+    measureNames = vector<string>(numOfMeasures);
+    for(int i = 0; i < numOfMeasures; i++)
         measureNames[i] = MC->getMeasure(i)->getName();
     sort(measureNames.begin(), measureNames.end());
 
     unordered_map<string, int> toReturn;
-    for(int i = 0; i < n; i++)
+    for(int i = 0; i < numOfMeasures; i++)
     	toReturn[measureNames[i]] = i;
     return toReturn;
 }
 
-void SANA::setRandomAlignmentAndMeasures() {
-	cout << "Not Implemented!";
-	exit(0);
+void SANA::prepareMeasureDataByAlignment() {
+    aligEdges        = (needAligEdges or needSec) ?  storedAligEdges[A] : -1;
+    squaredAligEdges = (needSquaredAligEdges) ?  storedSquaredAligEdges[A] : -1;
+    inducedEdges     = (needInducedEdges) ?  storedInducedEdges[A] : -1;
+    TCSum            = (needTC) ?  storedTCSum[A] : -1;
+    localScoreSum    = (needLocal) ? storedLocalScoreSum[A] : -1;
+    wecSum           = (needWec) ?  storedWecSum[A] : -1;
+    ewecSum          = (needEwec) ?  storedEwecSum[A] : -1;
+    ncSum            = (needNC) ? storedNcSum[A] : -1;
+    currentScore     = storedCurrentScore[A];
 }
 
 void SANA::SANAIteration() {
