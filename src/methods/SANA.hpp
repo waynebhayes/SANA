@@ -298,8 +298,8 @@ private:
     tuple<int, double, int, double, double, double> regress(double start, double end, int amount);
 
     //Mostly for pareto front, to hold multiple alignments and scores
-    unordered_map<string, int> mapScoresToIndexes();
-    void setRandomAlignmentAndMeasures();
+    unordered_map<string, int> mapScoresToIndexes(int &numOfMeasures, vector<string> &measureNames);
+    void prepareMeasureDataByAlignment();
     unordered_set<vector<ushort>*>* storedAlignments = new unordered_set<vector<ushort>*>;
     unordered_map<vector<ushort>*, vector<bool>*> storedAssignedNodesG2;
     unordered_map<vector<ushort>*, vector<ushort>*> storedUnassignedNodesG2;

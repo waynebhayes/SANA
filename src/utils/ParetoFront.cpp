@@ -194,6 +194,23 @@ vector<alignmentPtr> ParetoFront::addAlignmentScores(alignmentPtr algmtPtr, vect
     return emptyVector();
 }
 
+const vector<double>& ParetoFront::procureScoresByAlignment(alignmentPtr keyToScores) const
+{
+    auto iter = findScoresByAlignment.find(keyToScores);
+    return iter->second;
+}
+
+alignmentPtr ParetoFront::procureRandomAlignment() const
+{
+    //This can be improved by caching an array of alignmentPointers.
+    //To remove one alignment from the alignmentPointerCache, simply
+    //Find the one to remove, then swap it with the end.
+    unsigned int iterate = rand() % (capacity - 1) + 1;
+    auto iter = findScoresByAlignment.begin();
+    advance(iter, iterate);
+    return iter->first;
+}
+
 ostream& ParetoFront::printAlignmentScores(ostream &os)
 {
     unsigned int i = 0;
