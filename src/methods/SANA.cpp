@@ -214,13 +214,14 @@ Alignment SANA::getStartingAlignment(){
     Alignment randomAlig;
     if (G1->hasNodeTypes()) {
         randomAlig = Alignment::randomAlignmentWithNodeType(G1,G2);
+    	randomAlig.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
     } else if (lockFileName != "") {
         randomAlig = Alignment::randomAlignmentWithLocking(G1,G2);
+	randomAlig.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
     } else {
         return Alignment::random(n1, n2);
     }
 
-    randomAlig.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
     return randomAlig;
 }
 
