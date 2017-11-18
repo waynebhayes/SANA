@@ -49,12 +49,13 @@ void ParetoMode::createFolders(void) {
 
 void ParetoMode::setArgsForParetoMode(ArgumentParser& args) {
     args.doubles["-ec"] = args.doubles["-s3"] = args.doubles["-tc"] = args.doubles["-sec"]
-                        = args.doubles["-wec"] = args.doubles["-nodec"] = args.doubles["-noded"]
-                        = args.doubles["-edgec"] /*= args.doubles["-edged"]*/ = args.doubles["-go"]
-                        = args.doubles["-importance"] = args.doubles["-sequence"] = args.doubles["-graphlet"]
-                        = args.doubles["-graphletlgraal"] = args.doubles["-graphletcosine"] /*= args.doubles["-spc"]*/
+                        = args.doubles["-wec"] /*= args.doubles["-nodec"]*/ = args.doubles["local"]//= args.doubles["-noded"]
+                        //= args.doubles["-edgec"] /*= args.doubles["-edged"]*/ = args.doubles["-go"]
+                        //= args.doubles["-importance"] = args.doubles["-sequence"] = args.doubles["-graphlet"]
+                        //= args.doubles["-graphletlgraal"] = args.doubles["-graphletcosine"] /*= args.doubles["-spc"]*/
                         = args.doubles["-nc"] = args.doubles["-mec"] /*= args.doubles["-ewec"]*/ = args.doubles["-ses"]
                         = 1;
+
     args.strings["-combinedScoreAs"] = "pareto";
     args.strings["-method"] = "sana";
 }
@@ -87,3 +88,4 @@ vector<Alignment>* ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G
     method->checkLockingBeforeReport((*A)[0]);*/
     return new vector<Alignment>;
 }
+    

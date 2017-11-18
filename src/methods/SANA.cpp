@@ -196,6 +196,9 @@ SANA::SANA(Graph* G1, Graph* G2,
     enableTrackProgress = true;
     iterationsPerStep   = 10000000;
 
+    //Make sana think were running in (score == sum) to avoid crashing during linear regression.
+    if(score == "pareto")
+        score = "sum";
 
     /*
     this does not need to be initialized here,
@@ -473,7 +476,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds, l
 			if( iter != 0 and timer.elapsed() > maxExecutionSeconds and currentScore - previousScore < 0.005 ){
 				return *A;
 			}
-			previousScore = currentScore;	
+			previousScore = currentScore;
 		}
 		if (iter != 0 and iter > maxExecutionIterations) {
 			return *A;
@@ -512,20 +515,23 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, d
 
     initDataStructures(startA);
     setInterruptSignal();
-    vector<string> measureNames; vector<double> scores; int numOfMeasures;
-    unordered_map<string, int> scoreNamesToIndexes = mapScoresToIndexes(numOfMeasures, measureNames);
-    ParetoFront paretoFront(paretoCapacity, numOfMeasures, measureNames);//for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
-        //cout << iter->first << '\n';exit(0);
+    vector<string> measureNames; vector<double> scores;
+    scoreNamesToIndexes = mapScoresToIndexes(measureNames);
+    paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
+    score = "pareto";
+    for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
+        cout << iter->first << '\n';
 
     for (; ; iter++) {
         //T = temperatureFunction(iter, TInitial, TDecay);
-        prepareMeasureDataByAlignment();
         if (interrupt) {
             return storedAlignments;
         }
         if (iter%iterationsPerStep == 0) {
 			trackProgress(iter);
 			if( iter != 0 and timer.elapsed() > maxExecutionSeconds){
+				cout << "ending seconds " << timer.elapsed() << " " << maxExecutionSeconds << endl;
+				paretoFront.printAlignmentScores(cout);
 				return storedAlignments;
 			}	
 		}
@@ -539,24 +545,15 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
 
     initDataStructures(startA);
     setInterruptSignal();
-    vector<string> measureNames; vector<double> scores; int numOfMeasures;
-    unordered_map<string, int> scoreNamesToIndexes = mapScoresToIndexes(numOfMeasures, measureNames);
-    ParetoFront paretoFront(paretoCapacity, numOfMeasures, measureNames);
-    //for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
-        //cout << iter->first << '\n';exit(0);
+    vector<string> measureNames; vector<double> scores;
+    scoreNamesToIndexes = mapScoresToIndexes(measureNames);
+    paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
+    score = "pareto";
+    for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
+        cout << iter->first << '\n';
 
     for (; ; iter++) {
-        //T = temperatureFunction(iter, TInitial, TDecay);
-
-        // Get random alignments (and make updates) inside makeChange, under
-        // pareto mode because measureScores are calculated there which is
-        // where these scores would be inserted into the paretoFront.
-        // Successful insert into paretoFront determines what alignments are
-        // good to keep in the first place, which would also determine if we
-        // want "alignment data" (disconnect between ec and alignedEdges etc.)
-        A = paretoFront.procureRandomAlignment();
-        prepareMeasureDataByAlignment();
-        
+    	//T = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
             return storedAlignments;
         }
@@ -564,6 +561,8 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
             trackProgress(iter);
         }
         if (iter != 0 and iter > maxExecutionIterations) {
+        	cout << "ending iterations " << iter << " " << maxExecutionIterations << endl;
+        	paretoFront.printAlignmentScores(cout);
             return storedAlignments;
         }
         SANAIteration();
@@ -572,13 +571,12 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
     return storedAlignments;
 }
 
-unordered_map<string, int> SANA::mapScoresToIndexes(int &numOfMeasures, vector<string> &measureNames) {
+unordered_map<string, int> SANA::mapScoresToIndexes(vector<string> &measureNames) {
     numOfMeasures = MC->numMeasures();
     measureNames = vector<string>(numOfMeasures);
     for(int i = 0; i < numOfMeasures; i++)
         measureNames[i] = MC->getMeasure(i)->getName();
     sort(measureNames.begin(), measureNames.end());
-
     unordered_map<string, int> toReturn;
     for(int i = 0; i < numOfMeasures; i++)
     	toReturn[measureNames[i]] = i;
@@ -594,7 +592,39 @@ void SANA::prepareMeasureDataByAlignment() {
     wecSum           = (needWec) ?  storedWecSum[A] : -1;
     ewecSum          = (needEwec) ?  storedEwecSum[A] : -1;
     ncSum            = (needNC) ? storedNcSum[A] : -1;
-    currentScore     = storedCurrentScore[A];
+    //currentScore     = storedCurrentScore[A];
+}
+
+void SANA::insertCurrentAndPrepareNewMeasureDataByAlignment() {
+	*newA = vector<ushort>(*A);
+	storedAlignments->insert(newA);
+
+    if(needAligEdges or needSec) storedAligEdges[A]        = aligEdges;
+    if(needSquaredAligEdges)     storedSquaredAligEdges[A] = squaredAligEdges;
+    if(needInducedEdges)         storedInducedEdges[A]     = inducedEdges;
+    if(needTC)                   storedTCSum[A]            = TCSum;
+    if(needLocal)                storedLocalScoreSum[A]    = localScoreSum;
+    if(needWec)                  storedWecSum[A]           = wecSum;
+    if(needEwec)                 storedEwecSum[A]          = ewecSum;
+    if(needNC)                   storedNcSum[A]            = ncSum;
+    ///*------------------------>*/storedCurrentScore[A]     = currentScore;
+
+    A = paretoFront.procureRandomAlignment();
+    prepareMeasureDataByAlignment();
+}
+
+void SANA::removeAlignmentData(vector<ushort>* toRemove) {
+    storedAlignments->erase(toRemove);
+
+    if(needAligEdges or needSec) storedAligEdges.erase(toRemove);
+    if(needSquaredAligEdges)     storedSquaredAligEdges.erase(toRemove);
+    if(needInducedEdges)         storedInducedEdges.erase(toRemove);
+    if(needTC)                   storedTCSum.erase(toRemove);
+    if(needLocal)                storedLocalScoreSum.erase(toRemove);
+    if(needWec)                  storedWecSum.erase(toRemove);
+    if(needEwec)                 storedEwecSum.erase(toRemove);
+    if(needNC)                   storedNcSum.erase(toRemove);
+    ///*------------------------>*/storedCurrentScore.erase(toRemove);
 }
 
 void SANA::SANAIteration() {
@@ -639,6 +669,8 @@ void SANA::performChange() {
         ncSum                                = newNcSum;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
+        if(score == "pareto" and (iterationsPerformed % 500 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
+        	insertCurrentAndPrepareNewMeasureDataByAlignment();
 #if 0
         if(randomReal(gen)<=1) {
         double foo = eval(*A);
@@ -689,6 +721,9 @@ void SANA::performSwap() {
         squaredAligEdges    = newSquaredAligEdges;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
+        if(score == "pareto" and (iterationsPerformed % 500 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
+        	insertCurrentAndPrepareNewMeasureDataByAlignment();
+
 #if 0
         if(randomReal(gen)<=1) {
         double foo = eval(*A);
@@ -809,7 +844,46 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         badProbability = exp(energyInc/T);
         makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc/T);
     } else if(score == "pareto") { //Short circuit return to let the pareto front decide
-        return makeChange;         //what alignments to keep instead of simulated annealing.
+        if((iterationsPerformed % 500 != 0))
+        	return true;
+        vector<double> addScores(numOfMeasures);  //what alignments to keep instead of simulated annealing.
+        addScores[scoreNamesToIndexes["ec"]] = (1.0*newAligEdges/g1Edges);
+        addScores[scoreNamesToIndexes["s3"]] = (1.0*newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+        addScores[scoreNamesToIndexes["sec"]] = (1.0*newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
+        addScores[scoreNamesToIndexes["tc"]] = (1.0*newTCSum);
+        addScores[scoreNamesToIndexes["local"]] = (1.0*newLocalScoreSum/n1);
+        addScores[scoreNamesToIndexes["wec"]] = (1.0*newWecSum/(2*g1Edges));
+        //addScores[scoreNamesToIndexes["ewec"]] = ewecWeight * (newEwecSum);
+        addScores[scoreNamesToIndexes["nc"]] = (1.0*newNcSum/trueA.back());
+	#ifdef WEIGHTED
+        addScores[scoreNamesToIndexes["mec"]] += (1.0*newAligEdges/(g1WeightedEdges+g2WeightedEdges));
+        addScores[scoreNamesToIndexes["ses"]] += 1.0*newSquaredAligEdges;
+    #endif
+        	/*cout << "aligEdges: " << newAligEdges << endl;
+        	cout << "g1Edges: " << g1Edges << endl;
+        	cout << "newInducedEdges: " << newInducedEdges << endl;
+        	cout << "g2Edges: " << g2Edges << endl;
+        	cout << "newTCSum: " << newTCSum << endl;
+        	cout << "newLocalScoreSum: " << newLocalScoreSum << endl;
+        	cout << "n1: " << n1 << endl;
+        	cout << "newWecSum: " << newWecSum << endl;
+        	cout << "newNcSum: " << newNcSum << endl;
+        	cout << "trueA_back: " << trueA.back() << endl;
+    #ifdef WEIGHTED
+        	cout << "g1WeightedEdges: " << g1WeightedEdges << endl;
+        	cout << "g2WeightedEdges: " << g2WeightedEdges << endl;
+        	cout << "newSquaredAligEdges: " << newSquaredAligEdges << endl;
+    #endif*/
+        newA = new vector<ushort>(0);
+        vector<vector<ushort>*> toRemove = paretoFront.addAlignmentScores(newA, addScores, makeChange);
+        if(makeChange){
+        	for(unsigned int i = 0; i < toRemove.size(); i++)
+        		removeAlignmentData(toRemove[i]);
+        }
+        //std::cout << "ParetoFront:\n";
+        //paretoFront.printAlignmentScores(cout);
+        //cin.get();
+        return makeChange;         
     }
 
     if(wasBadMove && (iterationsPerformed % 500 == 0 || (TCWeight > 0 && iterationsPerformed % 25 == 0))){ //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
@@ -1201,6 +1275,9 @@ uint SANA::getHighestIndex() const {
 
 void SANA::searchTemperaturesByLinearRegression() {
 
+    //if(score == "pareto") //Running in pareto mode makes this function really slow
+    //	return;             //and I don't know why, but sometimes I disable using this.
+    //                      //otherwise my computer is very slow.
     map<double, double> pbadMap;
     cerr << "Sampling 21 pbads from 1E-10 to 1E10 for linear regression" << endl;
     for(double i = -10.0; i <= 10.0; i = i + 1.0){

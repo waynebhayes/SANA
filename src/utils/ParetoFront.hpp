@@ -31,7 +31,7 @@ class ParetoFront {
         unsigned int numberOfMeasures;
 
         bool isDominating(vector<double> &scores);
-        char whoDominates(vector<double> &otherScores, vector<double> &newScores);
+        int whoDominates(vector<double> &otherScores, vector<double> &newScores);
         bool initialPass(vector<double> &newScores);
             
         alignmentPtr removeAlignment(alignmentPtr alignmentPosition, vector<double> &scores);
@@ -39,28 +39,39 @@ class ParetoFront {
         vector<alignmentPtr> emptyVector();
             
         vector<alignmentPtr> removeNewlyDominiated(singleValueIterator &iterIN, unsigned int i, vector<double>& newScores);
-        vector<alignmentPtr> tryToInsertAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores);
-        vector<alignmentPtr> insertDominatingAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores);
+        vector<alignmentPtr> tryToInsertAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores, bool decision);
+        vector<alignmentPtr> insertDominatingAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores, bool decision);
         vector<alignmentPtr> insertAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores);
     public:
+        ParetoFront() {}
         ParetoFront(const unsigned int paretoCap, const unsigned int numbOfMeas, const vector<string> &names) : capacity(paretoCap), numberOfMeasures(numbOfMeas) {
             currentSize = 1;
             paretoFront = vector<multimap<double, alignmentPtr, greaterThan>>(numberOfMeasures);
             for(unsigned int i = 0; i < numberOfMeasures; i++)
-                paretoFront[i].insert(pair<double, alignmentPtr>(0, NULL));
-            findScoresByAlignment.insert(pair<alignmentPtr, vector<double>>(NULL, vector<double>(numberOfMeasures, 0)));
+                paretoFront[i].insert(pair<double, alignmentPtr>(-500, NULL));
+            findScoresByAlignment.insert(pair<alignmentPtr, vector<double>>(NULL, vector<double>(numberOfMeasures, -500)));
             measureNames = vector<string>(names);
             sort(measureNames.begin(), measureNames.end());
             srand(time(NULL));
         };
+        ParetoFront& operator=(const ParetoFront &other){ //Mostly so I can initialize in paretoSANA
+            this->capacity = other.capacity;
+            this->currentSize = other.currentSize;
+            this->numberOfMeasures = other.numberOfMeasures;
+            this->findScoresByAlignment = other.findScoresByAlignment;
+            this->paretoFront = other.paretoFront;
+            this->measureNames = other.measureNames;
+            return *this;
+        }
 
         const vector<double>& procureScoresByAlignment(alignmentPtr) const;
         alignmentPtr procureRandomAlignment() const;
-        vector<alignmentPtr> addAlignmentScores(alignmentPtr algmtPtr, vector<double> &newScores);
+        vector<alignmentPtr> addAlignmentScores(alignmentPtr algmtPtr, vector<double> &newScores, bool decision);
 
         //ostream& printAllScoresByMeasures(ostream &os);
         //ostream& printAllParetoContainerNames(ostream &os);
         //ostream& printAllScoresByAlignments(ostream &os);
+        ostream& printParetoFront(ostream &os);
         ostream& printAlignmentScores(ostream &os);
 };
 #endif
