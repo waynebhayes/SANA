@@ -297,9 +297,16 @@ private:
     string mkdir(const std::string& file);
     tuple<int, double, int, double, double, double> regress(double start, double end, int amount);
 
+
     //Mostly for pareto front, to hold multiple alignments and scores
-    unordered_map<string, int> mapScoresToIndexes(int &numOfMeasures, vector<string> &measureNames);
+    unordered_map<string, int> mapScoresToIndexes(vector<string> &measureNames);
     void prepareMeasureDataByAlignment();
+    void insertCurrentAndPrepareNewMeasureDataByAlignment();
+    void removeAlignmentData(vector<ushort>* toRemove);
+    int numOfMeasures;
+    ParetoFront paretoFront;
+    vector<ushort>* newA;
+    unordered_map<string, int> scoreNamesToIndexes;
     unordered_set<vector<ushort>*>* storedAlignments = new unordered_set<vector<ushort>*>;
     unordered_map<vector<ushort>*, vector<bool>*> storedAssignedNodesG2;
     unordered_map<vector<ushort>*, vector<ushort>*> storedUnassignedNodesG2;
