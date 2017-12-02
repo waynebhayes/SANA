@@ -10,6 +10,8 @@ parse() { awk "BEGIN{print ($*)}" </dev/null
 }
 newlines() { /bin/awk '{for(i=1; i<=NF; i++) print $i}' "$@"
 }
+parallel() { /home/wayne/bin/bin.x86_64/parallel "$@"
+}
 
 PARALLEL='distrib_stdin.new -s 0.03 -f $MACHINES'
 
