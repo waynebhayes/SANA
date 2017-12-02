@@ -40,7 +40,7 @@ class Graph:
                     node_map[node_a] = node_num
                     edge_list.append([])
                     node_num += 1
-                else:
+                if node_b not in node_map:
                     node_map[node_b] = node_num
                     edge_list.append([])
                     node_num += 1
