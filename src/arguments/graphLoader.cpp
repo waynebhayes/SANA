@@ -74,7 +74,11 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
                 if (fg1.size() > 3 and fg1.substr(fg1.size()-3) == ".gw") {
                     exec("cp "+fg1+" "+g1GWFile);
                 } else {
+                    Timer tConvert;
+                    tConvert.start();
+                    cerr << "Converting g1 to .gw (";
                     Graph::edgeList2gw(fg1, g1GWFile);
+                    cerr << tConvert.elapsedString() << "s)" << endl;
                 }
             } else {
                 throw runtime_error("File not found: "+fg1);
@@ -89,7 +93,11 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
                 if (fg2.size() > 3 and fg2.substr(fg2.size()-3) == ".gw") {
                     exec("cp "+fg2+" "+g2GWFile);
                 } else {
+                    Timer tConvert;
+                    tConvert.start();
+                    cerr << "Converting g2 to .gw (";
                     Graph::edgeList2gw(fg2, g2GWFile);
+                    cerr << tConvert.elapsedString() << "s)" << endl;
                 }
             } else {
                 throw runtime_error("File not found: "+fg2);
@@ -123,26 +131,32 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     }
 
     //
+    Timer tLoad;
+    tLoad.start();
     if (p1 == 1 && p2 == 1){
+        cerr << "Load graphs using Graph::loadGraph(";
         G1 = Graph::loadGraph(g1Name);
         G2 = Graph::loadGraph(g2Name);
         //G1.maxsize = 4;
         //G2.maxsize = 4;
     }
     else{
+        cerr << "Load graphs using Graph::multGraph(";
         G1 = Graph::multGraph(g1Name, p1);
         G2 = Graph::multGraph(g2Name, p2);
     }
+    cerr << tLoad.elapsedString() << "s)" << endl;
 
     if (G1.getNumNodes() > G2.getNumNodes()) {
+        Timer tSwap;
+        tSwap.start();
         Graph G3;
         G3 = G1;
         G1 = G2;
         G2 = G3;
-        cerr << "Switching G1 and G2 because G1 has more nodes than G2." << endl;
+        cerr << "Switching G1 and G2 because G1 has more nodes than G2. (" << tSwap.elapsedString() << "s)" << endl;
     }
 
-    cerr << "load graphs done (" << T.elapsedString() << ")" << endl;
     Timer T2;
     T2.start();
 
@@ -260,12 +274,15 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     G2.setLockedList(validLocksG2, validLocksG1);
 
     // Method #3 of locking
+    Timer tReIndex;
+    tReIndex.start();
     if(args.bools["-nodes-have-types"]){
         G1.reIndexGraph(G1.getNodeTypes_ReIndexMap());
     }
-    else{
+    else if(lockFile != ""){
         G1.reIndexGraph(G1.getLocking_ReIndexMap());
     }
+    cerr << "done reIndexGraph G1 (" << tReIndex.elapsedString() << "s)" << endl;
     /*double maxSize = args.doubles["-maxGraphletSize"];
     //int maxSize2;
     //stringstream convert(maxS
@@ -295,4 +312,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     }
 
     cerr << "locking initialization done (" << T2.elapsedString() << ")" << endl;
+
+
+    cerr << "Total time for loading graphs (" << T.elapsedString() << "s)" << endl;
 }
