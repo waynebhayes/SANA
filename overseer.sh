@@ -12,6 +12,57 @@ newlines() { /bin/awk '{for(i=1; i<=NF; i++) print $i}' "$@"
 }
 parallel() { /home/wayne/bin/bin.x86_64/parallel "$@"
 }
+lss() {
+    LS=/bin/ls; SORT="sort -k +5nr"
+    #LS=/usr/ucb/ls; SORT="sort +3nr"
+
+    # List filenames in order of non-increasing byte size.
+    # Don't descend directories unless the files in them are explicitly listed.
+
+    # This rigamarole needs to be here.  Delete at your own risk.
+    # The loop is fast; no external commands are called.
+
+    # We can't just do "ls -ld $*" because if there are no arguments, all we get is
+    #        drwx------   4 wayne        1024 Sep 24 15:46 .
+    # which isn't what we intended.  Thus, if there are no arguments, we list
+    # everything in the current directory; otherwise, list everything that's
+    # listed on the command line, but don't descend any directories.  But now
+    # we need to recognize if no *files* were listed, but options to ls(1) were
+    # listed.  So we have to erase all the options before asking "was there
+    # anything on the command line?"  The loop is fast; no external commands
+    # are called.  Finally, we need to shift away the options and use "$@"
+    # to pass the list of files, in case the filenames have spaces in them.
+
+    #set -- `getopt aAbcFLnpqu "$@"`
+
+    accept_opts=aAbcFLnpqul
+    files=N
+    opts=
+    while :; do
+	if [ "$#" = 0 ]; then 
+	    break
+	fi
+	case "$1" in
+	    -*) if getopt $accept_opts "$1" >/dev/null; then
+		    opts="$opts $1"
+		    shift
+		else
+		    # getopt prints the error message for us
+		    exit 1
+		fi
+		;;
+	    --) break;;
+	    *)  files=Y
+		break   # files begin here
+		;;
+	esac
+    done
+
+    case "$files" in
+	N) $LS -l $opts | $SORT ;;
+	Y) $LS -ld $opts "$@" | $SORT ;;
+    esac
+}
 
 PARALLEL='distrib_stdin.new -s 0.03 -f $MACHINES'
 
