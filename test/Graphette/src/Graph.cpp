@@ -108,9 +108,9 @@ Graphette* Graph::sampleGraphette(ullint k, ullint node1, ullint node2){
     else {
         vector<bool> visited(numNodes_, false);
         //nodes contains the selected 
-        vector<long long> candidates(numNodes_);
+        vector<long> candidates(numNodes_);
         vector<ullint> nodes;
-        long long len = 0, gone = 0;
+        long len = 0, gone = 0;
         nodes.push_back(node1);
         nodes.push_back(node2);
         visited[node1] = true;
@@ -159,6 +159,7 @@ Graphette* Graph::sampleGraphette(ullint k, ullint node1, ullint node2){
 
 Graphette* Graph::createGraphette(vector<ullint>& nodes){
     vector<bool> bitVector;
+    sort(nodes.begin(), nodes.end());
     for(ullint i=0; i<nodes.size(); i++){
         for(ullint j=i+1; j<nodes.size(); j++){
             bitVector.push_back(adjMatrix_(nodes[i], nodes[j]));
