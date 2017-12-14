@@ -14,24 +14,25 @@ Database::Database(short k)
 {
     /**Just reading the data from canon_map, canon_list, and orbit_map**/
     ullint m, decimal;
-    string permutation;
-    struct rlimit rlim;
-    if(getrlimit(RLIMIT_NOFILE, &rlim)<0){perror("getrlimit(2)"); exit(1);}
-    rlim.rlim_cur=rlim.rlim_max;
-    if(setrlimit(RLIMIT_NOFILE, &rlim)<0){perror("setrlimit(2)"); exit(1);}
-    if(getrlimit(RLIMIT_NOFILE, &rlim)<0){perror("getrlimit(2)"); exit(1);}
-    //MAX_FD=MIN(80000,rlim.rlim_cur);
-    //cerr << "MAX_FD is " <<MAX_FD <<endl;
+    ullint e = k*(k-1)/2;
+    ullint p = pow(2,e);
+    ullint t = 0;
+    
     ifstream fcanon_map("data/canon_map"+to_string(k)+".txt"), forbit_map("data/orbit_map"+to_string(k)+".txt");
     ifstream fcanon_list("data/canon_list"+to_string(k)+".txt");
     databaseDir = "Database"+to_string(k)+"/";
 
     //reading canon_map
-    graphette x;
-    while(fcanon_map >> decimal >> permutation){
-        x.canonicalDecimal = decimal;
-        x.canonicalPermutation = permutation;
-        g.push_back(x);
+    g.resize(p);
+    while(t<p){
+        fcanon_map >> g[t].canonicalDecimal;
+      for(int l=0; l<8; l++){
+	if(l<k)	
+          fcanon_map >> g[t].canonicalPermutation[l];
+	else
+          g[t].canonicalPermutation[l]='\0';
+	}
+	t++;
     }
     fcanon_map.close();
     //reading canon_list and orbit_map
@@ -48,7 +49,6 @@ Database::Database(short k)
         orbitId_.push_back(ids);
     }
     fcanon_list.close();
-    fcanon_map.close();
     forbit_map.close();
 }
 
