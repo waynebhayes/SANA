@@ -5,10 +5,11 @@
 #include "utils/xrand.hpp"
 #include <bits/stdc++.h>
 #include <sys/resource.h>
+#include <math.h>
 
 typedef struct
 {
-    std::string canonicalPermutation;
+    char canonicalPermutation[8];
     long canonicalDecimal;
 }graphette;
 
@@ -21,7 +22,6 @@ public:
     
 private:
     ullint k_, numOrbitId_;
-    int MAX_FD;
     std::string databaseDir;
     std::vector<graphette> g;
     std::vector<ullint> canonicalGraphette;
