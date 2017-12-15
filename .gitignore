@@ -1,0 +1,11 @@
+Makefile
+CMakeCache.txt
+CMakeFiles/
+*.cmake
+
+Testing/
+bin/
+
+test/gtest/
+
+*.a
