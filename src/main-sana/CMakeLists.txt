@@ -8,3 +8,4 @@ target_link_libraries(SANA
     lib-sana)
 
 install(TARGETS SANA DESTINATION bin)
+
