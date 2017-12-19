@@ -12,9 +12,7 @@ Auxiliary functions oblivious to SANA or network alignment but that can come hel
 #include "templateUtils.cpp"
 
 extern bool scheduleOnly;
-#if WEIGHTED
 extern bool multiPairwiseIteration;
-#endif
 
 typedef uint16_t ushort;
 typedef uint32_t uint;

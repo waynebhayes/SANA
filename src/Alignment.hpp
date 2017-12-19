@@ -66,8 +66,8 @@ public:
     static Alignment randomAlignmentWithNodeType(Graph *G1, Graph *G2);
 
     // These two reIndex the alignment based on the reIndex Map from G1
-    void reIndexBefore_Iterations(map<ushort, ushort> reIndexMap);
-    void reIndexAfter_Iterations(map<ushort, ushort> reverseReIndexMap);
+    void reIndexBefore_Iterations(unordered_map<ushort, ushort> reIndexMap);
+    void reIndexAfter_Iterations(unordered_map<ushort, ushort> reverseReIndexMap);
 
     ushort& getBack() { return A.back(); }
 private:

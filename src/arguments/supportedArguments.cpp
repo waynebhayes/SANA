@@ -53,9 +53,8 @@ vector<array<string, 6>> supportedArguments = {
     { "-seed", "double", "RANDOM", "Random Seed", "Serves as a random seed in SANA.", "0" },
     { "-restart", "bool", "false", "(DEPRECATED)Restart Scheme", "(DEPRECATED)Active the restart scheme in SANA.", "0" },
     { "-scheduleOnly", "bool", "false", "Temperature schedule only", "Compute temperature schedule and exit", "0" },
-#ifdef WEIGHTED
     { "-multi-iteration-only", "bool", "false", "Multi-Pairwise Iteration", "Skip all analysis for a normal iteration, just do the anneal", "0"},
-#endif
+
 
     { "-tnew", "double", "3", "(DEPRECATED)Restart Scheme t1", "(DEPRECATED)Parameter t1 of the restart scheme, in minutes", "0" },
     { "-iterperstep", "double", "10000000", "(DEPRECATED)Restart Scheme N", "(DEPRECATED)Parameter N of the restart scheme.", "0" },
@@ -202,7 +201,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-paretoCapacity", "intD", "200", "Capacity of Pareto Front", "Used in Pareto Mode \"-mode pareto\". The pareto front can potentially hold N (different scores) by X (possible values/precision of the datatype used (i.e. float or double). Therefore, if a capacity is not specified, after the billions of SANA iterations, there may be too many different alignments stored in memory.", "0" },
     { "End More options for \"-mode pareto\"", "", "banner", "", "", "0" },
     //--------------------------------END PARETO-----------------------------------------
-    
+
      //---------------------------------UNDEFINED----------------------------------------
     { "-balance", "string", "", "TITLE", "DESCRIPTION", "0" },
     { "-sec", "double", "0", "TITLE", "DESCRIPTION", "0" },
@@ -262,7 +261,7 @@ void validateAndAddArguments(){
                 exit(1);
             }
 
-        }    
+        }
     }
 }
 

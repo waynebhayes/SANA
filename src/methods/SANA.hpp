@@ -15,10 +15,10 @@ class SANA: public Method {
 
 public:
     SANA(Graph* G1, Graph* G2,
-#ifdef WEIGHTED 
+#ifdef WEIGHTED
         double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore, string& startAligName
 #else
-        double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore 
+        double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore
 #endif
     );
     ~SANA(){}
@@ -46,9 +46,9 @@ public:
     double findAcceptableTInitial(double temperature);
     double findAcceptableTFinal(double temperature);
     double findAcceptableTFinalFromManualTInitial(double temperature);
-    
-    //set temperature decay dynamically 
-    void setDynamicTDecay(); 
+
+    //set temperature decay dynamically
+    void setDynamicTDecay();
 
     double simpleSearchTInitial();
 
@@ -101,6 +101,10 @@ private:
     uniform_real_distribution<> randomReal;
     uniform_int_distribution<> G1RandomUnlockedGeneDist;
     uniform_int_distribution<> G1RandomUnlockedmiRNADist;
+    // uniform_int_distribution<> G2RandomUnlockedGeneDist;
+    // uniform_int_distribution<> G2RandomUnlockedmiRNADist;
+
+
     ushort G1RandomUnlockedNode();
     ushort G1RandomUnlockedNode(uint source1); // used in nodes-have-type because
     ushort G1RandomUnlockedNode_Fast();
@@ -117,12 +121,12 @@ private:
     uint iterationsPerformed = 0;
     const double TInitialScaling = 1;
     const double TDecayScaling = 1;
-    //to compute TDecay dynamically 
-    //vector holds "ideal" temperature values at certain execution times 
+    //to compute TDecay dynamically
+    //vector holds "ideal" temperature values at certain execution times
     bool dynamic_tdecay;
-    vector<double> tau; 
+    vector<double> tau;
     double SANAtime;
-    
+
     double T;
     double temperatureFunction(long long int iter, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double T);
@@ -209,7 +213,7 @@ private:
     //to evaluate EC incrementally
     bool needSec;
     double secSum;
-   
+
     //to evaluate S3 incrementally
     bool needInducedEdges;
     int inducedEdges;
@@ -256,7 +260,7 @@ private:
     //other execution options
     bool constantTemp; //tempertare does not decrease as a function of iteration
     bool enableTrackProgress; //shows output periodically
-    void trackProgress(long long int i);
+    void trackProgress(long long int i, bool end = false);
     double avgEnergyInc;
 
 

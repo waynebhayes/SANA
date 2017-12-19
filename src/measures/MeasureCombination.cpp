@@ -45,7 +45,7 @@ void MeasureCombination::addMeasure(Measure* m, double weight) {
 void MeasureCombination::rebalanceWeight(string& input){
     istringstream iss(input);
     vector<string> split{istream_iterator<string>{iss},istream_iterator<string>{}};
-    
+
     for(uint i = 0; i < split.size(); i++){
         string name = split[i];
         int rebalancePos = -1;
@@ -75,9 +75,9 @@ void MeasureCombination::rebalanceWeight(){
     for(uint i = 0; i < measures.size(); i++){
         if(measures[i]->isLocal()){
             double newWeight = weights[i]*(measures[i]->balanceWeight());
-            
+
             cerr << "Rebalancing " << measures[i]->getName() << " from weight = " << weights[i] << " to weight = " << newWeight << ".  This will be renormalized with the other weights before SANA begins." << endl;
-            
+
             weights[i] = newWeight;
         }
     }
@@ -325,7 +325,7 @@ void MeasureCombination::setWeight(const string& measureName, double weight) {
 Pairwise Alignment  LocalMeasure1       LocalMeasure2       Weighted Sum
 821    723            0.334               0.214               0.548
 */
-typedef map<ushort,string> NodeIndexMap;
+typedef unordered_map<ushort,string> NodeIndexMap;
 void MeasureCombination::writeLocalScores(ostream & outFile, Graph const & G1, Graph const & G2, Alignment const & A) const {
   NodeIndexMap mapG1 = G1.getIndexToNodeNameMap();
   NodeIndexMap mapG2 = G2.getIndexToNodeNameMap();

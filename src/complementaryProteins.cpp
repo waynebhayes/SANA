@@ -33,8 +33,8 @@ vector<vector<string> > getProteinPairs(string complementStatus, bool BioGRIDNet
 }
 
 vector<vector<string> > getAlignedPairs(const Graph& G1, const Graph& G2, const Alignment& A) {
-    map<ushort,string> G1Names = G1.getIndexToNodeNameMap();
-    map<ushort,string> G2Names = G2.getIndexToNodeNameMap();
+    unordered_map<ushort,string> G1Names = G1.getIndexToNodeNameMap();
+    unordered_map<ushort,string> G2Names = G2.getIndexToNodeNameMap();
     vector<vector<string> > res(A.size(), vector<string> (2));
     for (uint i = 0; i < A.size(); i++) {
         res[i][0] = G1Names[i];
@@ -85,8 +85,8 @@ void printComplementaryProteinCounts(const Alignment& A, bool BioGRIDNetworks) {
 vector<uint> countProteinPairsInNetworks(const Graph& G1, const Graph& G2, bool BioGRIDNetworks) {
     vector<vector<string> > complementProteins = getProteinPairs("1", BioGRIDNetworks);
     vector<vector<string> > nonComplementProteins = getProteinPairs("0", BioGRIDNetworks);
-    map<ushort,string> G1Names = G1.getIndexToNodeNameMap();
-    map<ushort,string> G2Names = G2.getIndexToNodeNameMap();
+    unordered_map<ushort,string> G1Names = G1.getIndexToNodeNameMap();
+    unordered_map<ushort,string> G2Names = G2.getIndexToNodeNameMap();
     uint n1 = G1.getNumNodes();
     uint n2 = G2.getNumNodes();
 
@@ -142,8 +142,8 @@ void printProteinPairCountInNetworks(bool BioGRIDNetworks) {
     Graph G2 = BioGRIDNetworks ? Graph::loadGraph("HSapiens") : Graph::loadGraph("human");
     vector<vector<string> > complementProteins = getProteinPairs("1", BioGRIDNetworks);
     vector<vector<string> > nonComplementProteins = getProteinPairs("0", BioGRIDNetworks);
-    map<ushort,string> G1Names = G1.getIndexToNodeNameMap();
-    map<ushort,string> G2Names = G2.getIndexToNodeNameMap();
+    unordered_map<ushort,string> G1Names = G1.getIndexToNodeNameMap();
+    unordered_map<ushort,string> G2Names = G2.getIndexToNodeNameMap();
     uint n1 = G1.getNumNodes();
     uint n2 = G2.getNumNodes();
 
@@ -236,8 +236,8 @@ void printLocalTopologicalSimilarities(Graph& G1, Graph& G2, bool BioGRIDNetwork
     vector<vector<string> > nonComplementProteinNames = getProteinPairs("0", BioGRIDNetworks);
     uint nComp = complementProteinNames.size();
     uint nNoComp = nonComplementProteinNames.size();
-    map<string,ushort> G1Indices = G1.getNodeNameToIndexMap();
-    map<string,ushort> G2Indices = G2.getNodeNameToIndexMap();
+    unordered_map<string,ushort> G1Indices = G1.getNodeNameToIndexMap();
+    unordered_map<string,ushort> G2Indices = G2.getNodeNameToIndexMap();
 
     vector<vector<ushort> > complementProteins(nComp, vector<ushort> (2));
     for (uint i = 0; i < nComp; i++) {
