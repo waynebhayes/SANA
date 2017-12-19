@@ -30,10 +30,12 @@ using namespace std;
 class Graph {
 
 public:
-    
+
     void setMaxGraphletSize(double number);
     static Graph loadGraph(string name);
     static Graph multGraph(string name, uint path);
+
+    static void loadFromEdgeListFile(string fin, string graphName, Graph& g);
 
 
     static void saveInGWFormat(string outputFile, const vector<string>& nodeNames,
@@ -50,7 +52,7 @@ public:
     Graph();
     Graph(const Graph& G);
     //double maxsize;
-    
+
     Graph(uint n, const vector<vector<ushort> > edgeList);
 
     string getName() const;
@@ -106,8 +108,8 @@ public:
 
     vector<vector<uint> > loadGraphletDegreeVectors();
 
-    map<string,ushort> getNodeNameToIndexMap() const;
-    map<ushort,string> getIndexToNodeNameMap() const;
+    unordered_map<string,ushort> getNodeNameToIndexMap() const;
+    unordered_map<ushort,string> getIndexToNodeNameMap() const;
 
     void getDistanceMatrix(vector<vector<short> >& dist) const;
 
@@ -133,10 +135,10 @@ public:
     string getLockedTo(uint index);
     int getLockedCount();
 
-    map<ushort, ushort> getLocking_ReIndexMap() const;
-    map<ushort, ushort> getNodeTypes_ReIndexMap() const;
+    unordered_map<ushort, ushort> getLocking_ReIndexMap() const;
+    unordered_map<ushort, ushort> getNodeTypes_ReIndexMap() const;
 
-    void reIndexGraph(map<ushort, ushort> reIndexMap);  // Changes the node indexes according to the map
+    void reIndexGraph(unordered_map<ushort, ushort> reIndexMap);  // Changes the node indexes according to the map
 
     // nodes-have-types
     void setNodeTypes(set<string> genes, set<string> miRNAs);
@@ -173,6 +175,10 @@ private:
     vector<string> lockedTo;  // name of node we lock to in other graph
     int weightedNumEdges = 0;
     int lockedCount = 0;
+
+
+    unordered_map<string,ushort> nodeNameToIndexMap;
+
 
     void updateUnlockedGeneCount();
 

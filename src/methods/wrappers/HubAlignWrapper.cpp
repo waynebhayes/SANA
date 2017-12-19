@@ -33,7 +33,7 @@ void HubAlignWrapper::generateEdgeListFile(int graphNum) {
 
     vector<vector<ushort> > edgeList;
     G->getEdgeList(edgeList);
-    map<ushort,string> names = G->getIndexToNodeNameMap();
+    unordered_map<ushort,string> names = G->getIndexToNodeNameMap();
     uint m = G->getNumEdges();
     vector<vector<string> > edgeListNames(m, vector<string> (2));
     for (uint i = 0; i < m; i++) {
@@ -51,7 +51,7 @@ void HubAlignWrapper::generateEdgeListFile(int graphNum) {
 
 //Examples of executions of HubAlign (if alpha==1 sim file is not needed)
 //./HubAlign Test1.tab Test2.tab –l 0.1 –a 0.7 –d 10 –b similarityFile.txt
-//./HubAlign Test1.tab Test2.tab –l 0.1 –a 1 
+//./HubAlign Test1.tab Test2.tab –l 0.1 –a 1
 void HubAlignWrapper::generateAlignment() {
     //in hubalign alpha is the fraction of topology
     double reversedAlpha = 1 - alpha;

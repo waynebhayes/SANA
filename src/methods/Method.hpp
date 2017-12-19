@@ -23,7 +23,7 @@ public:
     void checkLockingBeforeReport(Alignment A);
     void checkNodeTypesBeforeReport(Alignment A);
 
-    map<ushort,ushort> getReverseMap(const map<ushort,ushort> reverse) const;
+    unordered_map<ushort,ushort> getReverseMap(const unordered_map<ushort,ushort> reverse) const;
 
 protected:
     Graph* G1;
@@ -39,4 +39,3 @@ private:
 };
 
 #endif
-

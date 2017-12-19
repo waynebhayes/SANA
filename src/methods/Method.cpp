@@ -21,6 +21,9 @@ Alignment Method::runAndPrintTime() {
 
     // Re Index back to normal (Method #3 of locking)
 
+    Timer T2;
+    T2.start();
+
     if(G1->hasNodeTypes()){
         G1->reIndexGraph(getReverseMap(G1->getNodeTypes_ReIndexMap()));
         A.reIndexAfter_Iterations(G1->getNodeTypes_ReIndexMap());
@@ -30,7 +33,8 @@ Alignment Method::runAndPrintTime() {
          G1->reIndexGraph(getReverseMap(G1->getLocking_ReIndexMap()));
           A.reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
     }
-    checkLockingBeforeReport(A);
+    cerr << "ReIndex to normal took " << T2.elapsedString() << endl;
+    checkNodeTypesBeforeReport(A);
     checkLockingBeforeReport(A);
     return A;
 }
@@ -41,9 +45,9 @@ void  Method::checkLockingBeforeReport(Alignment A){
     if(G1->getLockedCount() == 0)
         return;
 
-    map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
-    map<string,ushort> g2_IndexMap = G2->getNodeNameToIndexMap();
-    map<ushort,string> g2_NameMap = G2->getIndexToNodeNameMap();
+    unordered_map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
+    unordered_map<string,ushort> g2_IndexMap = G2->getNodeNameToIndexMap();
+    unordered_map<ushort,string> g2_NameMap = G2->getIndexToNodeNameMap();
 
     uint n1 = G1->getNumNodes();
     for(uint i=0; i< n1 ; i++){
@@ -62,11 +66,11 @@ void  Method::checkLockingBeforeReport(Alignment A){
 
 //    if(lockFileName != "" and fileExists(lockFileName)){
 //        checkFileExists(lockFileName);
-//        map<string,ushort> g1_IndexMap = G1->getNodeNameToIndexMap();
-//        map<string,ushort> g2_IndexMap = G2->getNodeNameToIndexMap();
+//        unordered_map<string,ushort> g1_IndexMap = G1->getNodeNameToIndexMap();
+//        unordered_map<string,ushort> g2_IndexMap = G2->getNodeNameToIndexMap();
 //
-//        map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
-//        map<ushort,string> g2_NameMap = G2->getIndexToNodeNameMap();
+//        unordered_map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
+//        unordered_map<ushort,string> g2_NameMap = G2->getIndexToNodeNameMap();
 //
 //        ifstream ifs(lockFileName);
 //        string node1, node2;
@@ -84,8 +88,8 @@ void Method::checkNodeTypesBeforeReport(Alignment A){
     if(!G1->hasNodeTypes())
         return;
 
-    map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
-    map<ushort,string> g2_NameMap = G2->getIndexToNodeNameMap();
+    unordered_map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
+    unordered_map<ushort,string> g2_NameMap = G2->getIndexToNodeNameMap();
 
     uint n1 = G1->getNumNodes();
     for(uint i=0; i< n1 ; i++){
@@ -118,11 +122,10 @@ void Method::setLockFile(string fileName){
 }
 
 
-map<ushort, ushort> Method::getReverseMap(const map<ushort,ushort> reverse) const {
-    map<ushort,ushort> res;
+unordered_map<ushort, ushort> Method::getReverseMap(const unordered_map<ushort,ushort> reverse) const {
+    unordered_map<ushort,ushort> res;
     for (const auto &nameIndexPair : reverse ) {
         res[nameIndexPair.second] = nameIndexPair.first;
     }
     return res;
 }
-

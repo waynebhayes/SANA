@@ -377,7 +377,7 @@ string extractFileNameNoExtension(string s) {
 }
 
 vector<string> removeDuplicates(const vector<string>& v) {
-    set<string> s(v.begin(), v.end());
+    unordered_set<string> s(v.begin(), v.end());
     vector<string> res(0);
     for (string x : s) res.push_back(x);
     return res;

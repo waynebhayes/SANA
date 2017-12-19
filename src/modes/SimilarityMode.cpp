@@ -45,8 +45,8 @@ void SimilarityMode::saveSimilarityMatrix(vector<vector <float> > sim, Graph &G1
             }
         break;
         case 1:
-            map<ushort,string> g1Map = G1.getIndexToNodeNameMap();
-            map<ushort,string>  g2Map = G2.getIndexToNodeNameMap();
+            unordered_map<ushort,string> g1Map = G1.getIndexToNodeNameMap();
+            unordered_map<ushort,string>  g2Map = G2.getIndexToNodeNameMap();
             for(uint i = 0; i < sim.size(); ++i) {
                 for(uint j = 0; j < sim[i].size(); ++j) {
                     outfile << g1Map[i] << " " << g2Map[j] << " " << sim[i][j] << endl;

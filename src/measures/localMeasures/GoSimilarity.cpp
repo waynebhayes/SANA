@@ -133,7 +133,7 @@ void GoSimilarity::assertNoRepeatedEntries(const vector<vector<uint> >& goTerms)
 void GoSimilarity::simpleToInternalFormat(const Graph& G, string GOFileSimpleFormat, string GOFileInternalFormat) {
     string GName = G.getName();
 
-    map<string,ushort> aux = G.getNodeNameToIndexMap();
+    unordered_map<string,ushort> aux = G.getNodeNameToIndexMap();
     unordered_map<string,ushort> nodeToIndexMap(aux.begin(), aux.end());
 
     ifstream infile(GOFileSimpleFormat);
@@ -204,7 +204,7 @@ vector<vector<uint> > GoSimilarity::loadGOTerms(
             if (occurrencesFraction == 1 or
                 acceptedTerms.count(goTerm) == 1) {
 
-                goTerms[i].push_back(goTerm);                
+                goTerms[i].push_back(goTerm);
             }
         }
         i++;
@@ -265,7 +265,7 @@ ushort GoSimilarity::numberAnnotatedProteins(const Graph& G) {
 // proteins which do not have any GO term
 // However, using this messes up SANA's incremental
 // evaluation, because it treates all local measures
-// equally and this is different 
+// equally and this is different
 
 // double GoSimilarity::eval(const Alignment& A) {
 //     double similaritySum = 0;
@@ -315,7 +315,7 @@ vector<uint> GoSimilarity::leastFrequentGoTerms(
         i += 1;
     }
     // cerr << "total go terms: " << counts.size() << endl;
-    // cerr << "total occurrences: " << totalCount << endl;    
+    // cerr << "total occurrences: " << totalCount << endl;
     // cerr << "kept go terms: " << keptTerms.size() << endl;
     // cerr << "kept occurrences: " << partialCount << endl;
     return keptTerms;
@@ -357,4 +357,3 @@ bool GoSimilarity::hasGOData(const Graph& G) {
 bool GoSimilarity::fulfillsPrereqs(Graph* G1, Graph* G2) {
     return hasGOData(*G1) and hasGOData(*G2);
 }
-

@@ -6,12 +6,10 @@
 #include "utils/utils.hpp"
 #include "utils/randomSeed.hpp"
 
-#ifdef WEIGHTED
 bool multiPairwiseIteration;
-#endif
 
 void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
-  const MeasureCombination& M, Method* method, ofstream& stream) {
+  const MeasureCombination& M, Method* method, ofstream& stream, bool multiPairwiseIteration = false) {
 
   Timer T1;
   T1.start();
@@ -19,17 +17,18 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
 
   stream << endl << currentDateTime() << endl << endl;
 
-#ifdef WEIGHTED
-  if(!multiPairwiseIteration)
-#endif
   {
       stream << "G1: " << G1.getName() << endl;
-      G1.printStats(numCCsToPrint, stream);
-      stream << endl;
+      if(!multiPairwiseIteration){
+          G1.printStats(numCCsToPrint, stream);
+          stream << endl;
+      }
 
       stream << "G2: " << G2.getName() << endl;
-      G2.printStats(numCCsToPrint, stream);
-      stream << endl;
+      if(!multiPairwiseIteration){
+          G2.printStats(numCCsToPrint, stream);
+          stream << endl;
+      }
   }
   if(method != NULL) {
       stream << "Method: " << method->getName() << endl;
@@ -39,9 +38,7 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
   }
   stream << endl << "Seed: " << getRandomSeed() << endl;
 
-#ifdef WEIGHTED
   if(!multiPairwiseIteration)
-#endif
   {
       cerr << "  printing stats done (" << T1.elapsedString() << ")" << endl;
       Timer T2;
@@ -97,7 +94,12 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
 }
 
 void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
-  const MeasureCombination& M, Method* method, string reportFileName) {
+  const MeasureCombination& M, Method* method, string reportFileName){
+    saveReport(G1, G2, A, M, method, reportFileName, false);
+  }
+
+void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
+  const MeasureCombination& M, Method* method, string reportFileName, bool multiPairwiseIteration) {
   Timer T;
   T.start();
   ofstream outfile,
@@ -107,7 +109,7 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
 
   A.write(outfile);
   A.writeEdgeList(&G1, &G2, alignfile);
-  makeReport(G1, G2, A, M, method, outfile);
+  makeReport(G1, G2, A, M, method, outfile, multiPairwiseIteration);
   outfile.close();
   alignfile.close();
   cerr << "Took " << T.elapsed() << " seconds to save the alignment and scores." << endl;

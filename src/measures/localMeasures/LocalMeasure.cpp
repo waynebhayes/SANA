@@ -47,8 +47,8 @@ void LocalMeasure::loadBinSimMatrix(string simMatrixFileName) {
 }
 
 void LocalMeasure::writeSimsWithNames(string outfile) {
-    map<ushort,string> mapG1 = G1->getIndexToNodeNameMap();
-    map<ushort,string> mapG2 = G2->getIndexToNodeNameMap();
+    unordered_map<ushort,string> mapG1 = G1->getIndexToNodeNameMap();
+    unordered_map<ushort,string> mapG2 = G2->getIndexToNodeNameMap();
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     ofstream fout(outfile);

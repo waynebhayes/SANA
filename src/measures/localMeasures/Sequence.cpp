@@ -17,8 +17,8 @@ void Sequence::generateBitscoresFile(string bitscoresFile) {
     cerr << "Generating " << bitscoresFile << " ... ";
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
-    map<ushort,string> g1IndexToNodeMap = G1->getIndexToNodeNameMap();
-    map<ushort,string> g2IndexToNodeMap = G2->getIndexToNodeNameMap();
+    unordered_map<ushort,string> g1IndexToNodeMap = G1->getIndexToNodeNameMap();
+    unordered_map<ushort,string> g2IndexToNodeMap = G2->getIndexToNodeNameMap();
     ofstream outfile(bitscoresFile);
     for (uint i = 0; i < n1; i++) {
         for (uint j = 0; j < n2; j++) {
@@ -67,8 +67,8 @@ void Sequence::initSimMatrix() {
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
 
-    map<string,ushort> g1NodeToIndexMap = G1->getNodeNameToIndexMap();
-    map<string,ushort> g2NodeToIndexMap = G2->getNodeNameToIndexMap();
+    unordered_map<string,ushort> g1NodeToIndexMap = G1->getNodeNameToIndexMap();
+    unordered_map<string,ushort> g2NodeToIndexMap = G2->getNodeNameToIndexMap();
 
     string blastFile = "sequence/scores/"+g1Name+"_"+g2Name+"_blast.out";
     if (not fileExists(blastFile)) {

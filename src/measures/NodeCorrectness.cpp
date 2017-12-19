@@ -8,7 +8,7 @@ namespace
 {
     void displayWarnings(bool oneToOneError, bool nodeExistError, unsigned int E, unsigned int R)
     {
-    
+
         if(oneToOneError)
         {
         std::cerr << "WARNING: PROVIDED TRUE ALIGNMENT IS NOT ONE TO ONE" << std::endl;
@@ -16,12 +16,12 @@ namespace
         }
         if ( nodeExistError )
         {
-    
+
         std::cerr << "WARNING: TRUE ALIGNMENT CONTAINS NODES WHICH DO NOT EXIST" << std::endl;
             std::cerr << "         ONLY PAIRS WITH NODES WHICH EXIST HAVE BEEN INCLUDED" << std::endl;
         }
         if( oneToOneError || nodeExistError)
-        {    
+        {
         std::cerr << "         ORIGINAL TRUEALIGNMENT SIZE = " << E << std::endl;
         std::cerr << "         ACTUAL TRUEALIGNMENT SIZE = " << R << std::endl;
         }
@@ -48,18 +48,18 @@ double NodeCorrectness::eval(const Alignment& A) {
 
 vector<ushort> NodeCorrectness::convertAlign(const Graph& G1, const Graph& G2, const vector<string>& E){
     //necessary variables
-    map<string,ushort> mapG1 = G1.getNodeNameToIndexMap();
-    map<string,ushort> mapG2 = G2.getNodeNameToIndexMap();
+    unordered_map<string,ushort> mapG1 = G1.getNodeNameToIndexMap();
+    unordered_map<string,ushort> mapG2 = G2.getNodeNameToIndexMap();
     vector<ushort> alignment(G1.getNumNodes(), G2.getNumNodes());
     //this is the initial size of the provided true alignment file
     alignment.push_back(E.size()/2);
-     
+
     bool exist = true;
     bool used = false;
-    bool oneToOneError = false; 
+    bool oneToOneError = false;
     bool nodeExistError = false;
     bool g2Used[G2.getNumNodes()];
-    
+
     #ifdef TRUEALIGNMENT_ERRORCHECKING
     for(unsigned int i = 0; i < G2.getNumNodes(); ++i)
     g2Used[i] = false;
@@ -72,7 +72,7 @@ vector<ushort> NodeCorrectness::convertAlign(const Graph& G1, const Graph& G2, c
     #ifdef TRUEALIGNMENT_ERRORCHECKING
         try{
     //checks for nodes which do not exist; if either one or both nodes
-    //fail to exist, then that pair is ignored and the size of the 
+    //fail to exist, then that pair is ignored and the size of the
     //true alignment is reduced by one
         g1pos = mapG1.at(n1);
         g2pos = mapG2.at(n2);
@@ -91,11 +91,11 @@ vector<ushort> NodeCorrectness::convertAlign(const Graph& G1, const Graph& G2, c
         oneToOneError = true;
     }
     #endif
-    #ifndef TRUEALIGNMENT_ERRORCHECKING 
+    #ifndef TRUEALIGNMENT_ERRORCHECKING
         g1pos = mapG1[n1];
         g2pos = mapG2[n2];
     #endif
-    
+
         //only if the nodes exist and the pair keeps truealignment 1 to 1,
     //then it will added to the true alignment vector
     //this always happens if errorchecking is off
@@ -108,7 +108,7 @@ vector<ushort> NodeCorrectness::convertAlign(const Graph& G1, const Graph& G2, c
         used = false;
     }
     displayWarnings(oneToOneError, nodeExistError, E.size()/2, alignment.back());
-    
+
     return alignment;
 }
 

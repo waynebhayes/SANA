@@ -24,27 +24,160 @@ void Graph::setMaxGraphletSize(double number){
     //Graph::computeGraphletDegreeVectors();
 }
 
+void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g) {
+  g.name = graphName;
+  g.geneCount = 0;
+  g.miRNACount = 0;
+
+  vector<string> nodes;
+  unordered_map<string,ushort> nodeName2IndexMap;
+  vector<vector<string> > edges = fileToStringsByLines(fin);
+
+  for(int i = 0; i < edges.size(); i++){
+      string node1 = edges[i][0];
+      string node2 = edges[i][1];
+
+      if(nodeName2IndexMap.find(node1) == nodeName2IndexMap.end()){
+          nodeName2IndexMap[node1] = nodes.size();
+          nodes.push_back(node1);
+          g.nodeTypes.push_back("gene");
+          g.geneCount++;
+      }
+
+      if(nodeName2IndexMap.find(node2) == nodeName2IndexMap.end()){
+          nodeName2IndexMap[node2] = nodes.size();
+          nodes.push_back(node2);
+          g.nodeTypes.push_back("miRNA");
+          g.miRNACount++;
+      }
+  }
+
+    uint numNodes = nodes.size();
+#ifdef WEIGHTED
+    vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (3));
+#else
+    vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (2));
+#endif
+    stringstream errorMsg;
+
+    for (uint i = 0; i < edges.size(); i++) {
+#ifdef WEIGHTED
+        string edgeValue;
+        if (edges[i].size() == 2) {
+            edgeValue = '1';
+        }
+        else if (edges[i].size() == 3) {
+            edgeValue = edges[i][2];
+        }
+        else {
+            throw runtime_error("File not in edge-list format: "+fin);
+        }
+#else
+        if (edges[i].size() != 2) {
+            throw runtime_error("File not in edge-list format: "+fin);
+        }
+#endif
+        string node1 = edges[i][0];
+        string node2 = edges[i][1];
+    if(node1 == node2) {
+        errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1 << '\n';
+        throw runtime_error(errorMsg.str().c_str());
+    }
+        uint index1 = nodeName2IndexMap[node1];
+        uint index2 = nodeName2IndexMap[node2];
+        edgeList[i][0] = index1;
+        edgeList[i][1] = index2;
+#ifdef WEIGHTED
+        edgeList[i][2] = stoi(edgeValue);
+#endif
+    }
+
+    int n = nodes.size();
+
+    g.adjLists = vector<vector<ushort> > (n, vector<ushort>(0));
+#ifdef WEIGHTED
+    g.adjMatrix = vector<vector<ushort> > (n, vector<ushort>(n, 0));
+#else
+    g.adjMatrix = vector<vector<bool> > (n, vector<bool>(n, false));
+#endif
+
+    for(int i = 0; i < edgeList.size(); i++){
+        uint node1 = edgeList[i][0];
+        uint node2 = edgeList[i][1];
+
+        if(g.adjMatrix[node1][node2] || g.adjMatrix[node2][node1]){
+            errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
+            throw runtime_error(errorMsg.str().c_str());
+        }
+        if(node1 == node2) {
+          errorMsg << "self-loops not allowed, node number " << node1 << '\n';
+          throw runtime_error(errorMsg.str().c_str());
+        }
+
+        #ifdef WEIGHTED
+                g.adjMatrix[node1][node2] = g.adjMatrix[node2][node1] = edgeList[i][2];
+        #else
+                g.adjMatrix[node1][node2] = g.adjMatrix[node2][node1] = true;
+        #endif
+        g.adjLists[node1].push_back(node2);
+        g.adjLists[node2].push_back(node1);
+
+    }
+    // init rest of graph
+    g.lockedList = vector<bool> (n, false);
+    g.lockedTo = vector<string> (n, "");
+    g.nodeNameToIndexMap = nodeName2IndexMap;
+    g.edgeList  = edgeList;
+    g.updateUnlockedGeneCount();
+    g.initConnectedComponents();
+}
+
+
+
 //transform format
 void Graph::edgeList2gw(string fin, string fout) {
-#ifdef WEIGHTED
-    vector<string> t_nodes = fileToStrings(fin);
-    vector<string> nodes;
-    for (int i = 0; i < t_nodes.size(); i++) {
-        if (i%3 == 2) {
-            continue;
-        }
-        nodes.push_back(t_nodes[i]);
-    }
-    nodes = removeDuplicates(nodes);
-#else
-    vector<string> nodes = removeDuplicates(fileToStrings(fin));
-#endif
-    map<string,uint> nodeName2IndexMap;
+
+  vector<string> nodes;
+  unordered_map<string,uint> nodeName2IndexMap;
+  vector<vector<string> > edges = fileToStringsByLines(fin);
+
+  // TODO set node types here directly instead
+
+  for(int i = 0; i < edges.size(); i++){
+      string node1 = edges[i][0];
+      string node2 = edges[i][1];
+
+      if(nodeName2IndexMap.find(node1) != nodeName2IndexMap.end()){
+          nodeName2IndexMap[node1] = nodes.size();
+          nodes.push_back(node1);
+      }
+
+      if(nodeName2IndexMap.find(node2) != nodeName2IndexMap.end()){
+          nodeName2IndexMap[node2] = nodes.size();
+          nodes.push_back(node2);
+      }
+
+
+  }
+
+// #ifdef WEIGHTED
+//     vector<string> t_nodes = fileToStrings(fin);
+//     for (int i = 0; i < t_nodes.size(); i++) {
+//         if (i%3 == 2) {
+//             continue;
+//         }
+//         nodes.push_back(t_nodes[i]);
+//     }
+//     nodes = removeDuplicates(nodes);
+// #else
+//     nodes = removeDuplicates(fileToStrings(fin));
+// #endif
+
     uint numNodes = nodes.size();
-    for (uint i = 0; i < numNodes; i++) {
-        nodeName2IndexMap[nodes[i]] = i;
-    }
-    vector<vector<string> > edges = fileToStringsByLines(fin);
+    // for (uint i = 0; i < numNodes; i++) {
+    //     nodeName2IndexMap[nodes[i]] = i;
+    // }
+
 #ifdef WEIGHTED
     vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (3));
 #else
@@ -767,10 +900,10 @@ vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
 }
 
 vector<vector<uint> > Graph::computeGraphletDegreeVectors() {
-    std::cout<<"Computing Graphlet Degree Vectors... "<<endl;  
+    std::cout<<"Computing Graphlet Degree Vectors... "<<endl;
     uint n = getNumNodes();
     uint m = getNumEdges();
-   
+
 
     string fileName = "tmp/compute_dgvs.txt";
     ofstream fout(fileName.c_str());
@@ -780,12 +913,17 @@ vector<vector<uint> > Graph::computeGraphletDegreeVectors() {
     }
     fout.close();
     double GraphletSizemax = Graph::maxGraphletSize;
-   
+
     vector<vector<uint> > gdvs = computeGraphlets(GraphletSizemax, fileName);
     return gdvs;
 }
 
-map<string,ushort> Graph::getNodeNameToIndexMap() const {
+unordered_map<string,ushort> Graph::getNodeNameToIndexMap() const {
+
+    if(nodeNameToIndexMap.size() != 0){
+      return nodeNameToIndexMap;
+    }
+
     string networkFile = "networks/"+name+"/"+name+".gw";
 
     ifstream infile(networkFile.c_str());
@@ -806,7 +944,7 @@ map<string,ushort> Graph::getNodeNameToIndexMap() const {
     }
 
     //read nodes
-    map<string, ushort> res;
+    unordered_map<string, ushort> res;
     string node;
     for (ushort i = 0; i < (ushort) n; i++) {
         getline(infile, line);
@@ -821,9 +959,9 @@ map<string,ushort> Graph::getNodeNameToIndexMap() const {
     return res;
 }
 
-map<ushort,string> Graph::getIndexToNodeNameMap() const {
-    map<string,ushort> reverse = getNodeNameToIndexMap();
-    map<ushort,string> res;
+unordered_map<ushort,string> Graph::getIndexToNodeNameMap() const {
+    unordered_map<string,ushort> reverse = getNodeNameToIndexMap();
+    unordered_map<ushort,string> res;
     for (const auto &nameIndexPair : reverse ) {
         res[nameIndexPair.second] = nameIndexPair.first;
     }
@@ -832,7 +970,7 @@ map<ushort,string> Graph::getIndexToNodeNameMap() const {
 
 vector<string> Graph::getNodeNames() const {
     vector<string> result(getNumNodes());
-    map<ushort,string> map = getIndexToNodeNameMap();
+    unordered_map<ushort,string> map = getIndexToNodeNameMap();
     for (ushort i = 0; i < getNumNodes(); i++) {
         result[i] = map[i];
     }
@@ -988,7 +1126,7 @@ void writeGWEdges(ofstream& outfile, const vector<vector<ushort>>& edgeList) {
     outfile << numEdges << endl;
     for (uint i = 0; i < numEdges; i++) {
 #ifdef WEIGHTED
-        outfile << edgeList[i][0]+1 << " " << edgeList[i][1]+1 << " 0 |{"; 
+        outfile << edgeList[i][0]+1 << " " << edgeList[i][1]+1 << " 0 |{";
         outfile << edgeList[i][2] << "}|" << endl;
 #else
         outfile << edgeList[i][0]+1 << " " << edgeList[i][1]+1 << " 0 |{}|" << endl;
@@ -1017,7 +1155,7 @@ void Graph::saveInGWFormatShuffled(string outputFile, const vector<string>& node
     for (uint i = 0; i < n; i++) origPos2NewPos[i] = i;
     randomShuffle(origPos2NewPos);
 
-    map<ushort, ushort> newPos2OrigPos;
+    unordered_map<ushort, ushort> newPos2OrigPos;
     for (uint i = 0; i < n; i++) {
         newPos2OrigPos[origPos2NewPos[i]] = i;
     }
@@ -1053,7 +1191,7 @@ void Graph::saveInGWFormatWithNames(string outputFile) {
 
 void Graph::saveInShuffledOrder(string outputFile) {
     uint numNodes = getNumNodes();
-    map<ushort,string> index2Name = getIndexToNodeNameMap();
+    unordered_map<ushort,string> index2Name = getIndexToNodeNameMap();
     vector<string> nodeNames(numNodes);
     for (uint i = 0; i < numNodes; i++) {
         nodeNames[i] = index2Name[i];
@@ -1068,7 +1206,7 @@ void Graph::saveGraphletsAsSigs(string outputFile) {
     out.open(outputFile.c_str());
      for (unsigned int i = 0; i < nodeNames.size(); i++) {
          out << nodeNames[i] << "\t";
-    
+
          for (int j = 0; j < 73; j++) {
              out << graphlets[i][j] << "\t";
          }
@@ -1231,7 +1369,7 @@ bool Graph::sameNodeNames(const Graph& other) const {
 
 
 void Graph::setLockedList(vector<string>& nodes, vector<string> & pairs){
-    map<string,ushort> nodeMap = getNodeNameToIndexMap();
+    unordered_map<string,ushort> nodeMap = getNodeNameToIndexMap();
     const int size = nodeMap.size();
     vector<bool> locked (size, false);
     vector<string> lockPairs (size, "");
@@ -1268,8 +1406,8 @@ int Graph::getLockedCount(){
  * For example if we have nodes 1,2,3,4,5 with 3,5 being locked they get reIndexed to
  * 1,2,3,4,5 -> 1,2,5,3,4
  */
-map<ushort, ushort> Graph::getLocking_ReIndexMap() const{
-    map<ushort, ushort> result;
+unordered_map<ushort, ushort> Graph::getLocking_ReIndexMap() const{
+    unordered_map<ushort, ushort> result;
     int n = getNumNodes();
     int unlockedIndex = 0;
     int lockedIndex = n-1;
@@ -1291,8 +1429,8 @@ map<ushort, ushort> Graph::getLocking_ReIndexMap() const{
  *         gene, miRNA, Locked gene or miRNA
  *
  */
-map<ushort, ushort> Graph::getNodeTypes_ReIndexMap() const{
-    map<ushort, ushort> result;
+unordered_map<ushort, ushort> Graph::getNodeTypes_ReIndexMap() const{
+    unordered_map<ushort, ushort> result;
     int n = getNumNodes();
     int unlocked_gene_count = 0;
     int unlocked_miRNA_count = 0;
@@ -1323,7 +1461,7 @@ map<ushort, ushort> Graph::getNodeTypes_ReIndexMap() const{
     return result;
 }
 
-void Graph::reIndexGraph(map<ushort, ushort> reIndexMap){
+void Graph::reIndexGraph(unordered_map<ushort, ushort> reIndexMap){
     uint n = getNumNodes();
     // Adj Matrix
 #ifdef WEIGHTED
@@ -1410,11 +1548,8 @@ void Graph::updateUnlockedGeneCount(){
 uint Graph::getWeightedNumEdges() {
     if (weightedNumEdges != 0) return weightedNumEdges;
     weightedNumEdges = 0;
-    for (auto c : edgeList) 
+    for (auto c : edgeList)
         weightedNumEdges += adjMatrix[c[0]][c[1]];
     return weightedNumEdges;
 }
 #endif
-        
-
-
