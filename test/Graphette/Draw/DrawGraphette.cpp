@@ -213,7 +213,7 @@ void printHelp() {
 			  << "If no names file is selected, nodes will be named 0, 1, ...., (k-1)\n"
 			  << "Names file parsing assumes one name per line\n"
 			  << "You may specify a title with -t\n"
-			  << "If less names than nodes, additional nodes will be labled by their index #\n"
+			  << "If less names than nodes, additional nodes will be labeled by their index #\n"
 			  << "If more names than nodes, additional names will be ignored\n";
 	exit(EXIT_SUCCESS);
 }
@@ -290,7 +290,7 @@ void createDotfileFromBit(int numNodes, const string& inputBitstring, const stri
 
 string getPos(int i, int numNodes) {
 	stringstream ss;
-	ss << RADIUS_SCALING * numNodes * cos(2 * PI / numNodes * i) << ", " << RADIUS_SCALING * numNodes * sin(2 * PI / numNodes * i);
+	ss << RADIUS_SCALING * numNodes * cos(PI /2 - (2 * PI / numNodes * i)) << ", " << RADIUS_SCALING * numNodes * sin(PI / 2 - (2 * PI / numNodes * i));
 	return ss.str();
 }
 
