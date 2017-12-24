@@ -2,6 +2,28 @@
 #include <stdlib.h>
 #include <assert.h>
 
+/*
+** This file is intended to take the data/*.txt files and create binary
+** versions in whatever format your local machine uses; these binary versions
+** then allow BLANT/faye to work much faster at sampling.  NOTE however
+** that if we ever use a k greater than 8 (ie., graphlets larger than 8)
+** then this code will need to be rewritten.  Right now it assumes the
+** very nice, compact representation that graphlets of maximum 8 nodes
+** allows: exactly 3 bits required per node to specify the permutation,
+** times 8 nodes, is exactly 24 bits to specify a full permutation from a
+** non-canonical to a canonical.  We also use this representation for k<8,
+** even though it's not as compact as possible, it's good enough.  9 bits
+** will make it more messy: you'd need 4 bits to specify a permutation,
+** times 9 nodes gives 36 bits, which requires 5 bytes (4.5 actually)
+** which doesn't even fit into a 32-bit int.  We'd need to move to 64-bit
+** ints for the intermediate representation (Would be more compact to put
+** two permutations into 9 bytes, but I digress.)  10 nodes would be nice
+** too, then it would be 10*4=40 bits or exactly 5 bytes.  Technically we
+** could go all the way to 16 node graphlets fitting into a 64-bit int or
+** 8 bytes, but that would probably require more RAM than would fit into
+** the known universe.
+*/
+
 #ifndef k
 #ERROR define k as an integer between 3 and 8
 #endif
