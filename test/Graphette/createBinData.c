@@ -30,16 +30,37 @@ void EncodePerm(kperm *p, char perm[k]) // you provide 3 bytes of storage and a 
     for(j=0;j<3;j++) (*p)[j] = ((i32 >> j*8) & 255);
 }
 
+static int siCmp(const void *A, const void *B)
+{
+    const int *a = A, *b = B;
+    return *a-*b;
+}
+
+short int canon2ordinal(int numCanon, int canon_list[numCanon], int canonical)
+{
+    int *found = bsearch(&canonical, canon_list, numCanon, sizeof(canon_list[0]), siCmp);
+    return found-canon_list;
+}
+
 int main(int argc, char *argv[])
 {
+    FILE *fp_ord=fopen("data/canon_list" kString ".txt","r");
+    assert(fp_ord);
+    int numCanon;
+    fscanf(fp_ord, "%d",&numCanon);
+    int canon_list[numCanon];
+    for(int i=0; i<numCanon; i++) fscanf(fp_ord, "%d", &canon_list[i]);
+    fclose(fp_ord);
+
     FILE *fp=fopen("data/canon_map" kString ".txt","r");
     assert(fp);
     int line;
     for(line=0; line < Bk; line++) {
-	int map;
+	int canonical, ordinal;
 	char perm[9];
-	fscanf(fp, "%d%s",&map,perm);
-	K[line]=map;
+	fscanf(fp, "%d%s",&canonical,perm);
+	ordinal=canon2ordinal(numCanon, canon_list, canonical);
+	K[line]=ordinal;
 	for(int i=0;i<k;i++)perm[i] -= '0';
 	EncodePerm(&Permutations[line], perm);
 #if 0  // test output?
