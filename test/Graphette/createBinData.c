@@ -2,8 +2,12 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#define k 8
-#define k_string "8"
+#ifndef k
+#ERROR define k as an integer between 3 and 8
+#endif
+#ifndef kString
+#ERROR must define kString as an string between "3" and "8" corresponding to value of k above
+#endif
 
 typedef unsigned char kperm[3]; // 3 bits per permutation, max 8 permutations = 24 bits
 #define Bk (1 <<(k*(k-1)/2))
@@ -28,7 +32,7 @@ void EncodePerm(kperm *p, char perm[k]) // you provide 3 bytes of storage and a 
 
 int main(int argc, char *argv[])
 {
-    FILE *fp=fopen("data/canon_map" k_string ".txt","r");
+    FILE *fp=fopen("data/canon_map" kString ".txt","r");
     assert(fp);
     int line;
     for(line=0; line < Bk; line++) {
@@ -47,10 +51,10 @@ int main(int argc, char *argv[])
 #endif
     }
     fclose(fp);
-    fp=fopen("data/canon_map" k_string ".bin","wb");
+    fp=fopen("data/canon_map" kString ".bin","wb");
     fwrite((void*)K,sizeof(K[0]),Bk,fp);
     fclose(fp);
-    fp=fopen("data/perm_map" k_string ".bin","wb");
+    fp=fopen("data/perm_map" kString ".bin","wb");
     fwrite((void*)Permutations,sizeof(Permutations[0]),Bk,fp);
     fclose(fp);
 }
