@@ -28,7 +28,10 @@ MAIN = faye
 
 .PHONY: depend clean test test_all regression_test
 
-all:    $(MAIN)
+all:    $(MAIN) bindata
+
+bindata: 
+	for k in 3 4 5 6 7 8; do if [ ! -f data/perm_map$$k.bin -o ! -f data/canon_map$$k.bin ]; then echo creating binary files for k equal to $$k; gcc "-Dk=$$k" "-DkString=\"$$k\"" -o createBinData createBinData.c && ./createBinData; fi; done
 
 $(MAIN): $(OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
