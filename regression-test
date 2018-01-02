@@ -127,7 +127,7 @@ if [ ! -z "$CompareFile" ]; then
         errorDif=`parse "ABS($errorDif)" | awk '{printf "%.16f\n",$1}'`
         if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
             touch $TMPDIR/failed
-	    echo "$name failed error margin: ($baseItem - $newItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
+	    echo "$name failed error margin: ($newItem - $baseItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
         fi
     done
 
