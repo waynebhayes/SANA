@@ -1298,19 +1298,22 @@ uint SANA::getHighestIndex() const {
     return highestIndex;
 }
 
+#define LOG10_LOW_TEMP -10
+#define LOG10_HIGH_TEMP 10
+
 void SANA::searchTemperaturesByLinearRegression() {
 
     //if(score == "pareto") //Running in pareto mode makes this function really slow
     //	return;             //and I don't know why, but sometimes I disable using this.
     //                      //otherwise my computer is very slow.
     map<double, double> pbadMap;
-    cerr << "Sampling 21 pbads from 1E-10 to 1E10 for linear regression" << endl;
-    for(double i = -10.0; i <= 10.0; i = i + 1.0){
+    cerr << "Sampling 21 pbads from 1E-" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
+    for(double i = LOG10_LOW_TEMP; i <= LOG10_HIGH_TEMP; i = i + 1.0){
         pbadMap[i] = pForTInitial(pow(10, i));
         cerr << i + 11 << "/21 temperature: " << pow(10, i) << " pBad: " << pbadMap[i] << endl;
     }
     double exponent;
-    for (exponent = -10; exponent < 11; exponent++){
+    for (exponent = LOG10_LOW_TEMP; exponent <= LOG10_HIGH_TEMP; exponent++){
         if(pbadMap[exponent] > 1E-6)
             break;
     }
@@ -1331,7 +1334,7 @@ void SANA::searchTemperaturesByLinearRegression() {
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
         }
     }
-    for (exponent = 10; exponent > -11; exponent--){
+    for (exponent = LOG10_HIGH_TEMP; exponent >= LOG10_LOW_TEMP; exponent--){
         if(pbadMap[exponent] < 0.985)
             break;
     }
@@ -1359,7 +1362,7 @@ void SANA::searchTemperaturesByLinearRegression() {
     double upperEnd = get<5>(regressionResult);
     cerr << "Left endpoint of linear regression " << pow(10, lowerEnd) << endl;
     cerr << "Right endpoint of linear regression " << pow(10, upperEnd) << endl;
-    double startingTemperature = pow(10,10);
+    double startingTemperature = pow(10,LOG10_HIGH_TEMP);
     for (auto const& keyValue : pbadMap)
     {
         if(keyValue.second >= 0.985 && keyValue.first >= upperEnd){
@@ -1368,7 +1371,7 @@ void SANA::searchTemperaturesByLinearRegression() {
             break;
         }
     }
-    double endingTemperature = pow(10,-10);
+    double endingTemperature = pow(10,LOG10_LOW_TEMP);
     double distanceFromTarget = std::numeric_limits<double>::max();
     double endingPbad = 0.0;
     for (auto const& keyValue : pbadMap)
