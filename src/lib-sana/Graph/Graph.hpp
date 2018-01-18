@@ -18,6 +18,8 @@ public:
 
     unsigned int GetNumNodes() const;
     unsigned int GetNumEdges() const;
+
+    virtual void SetNumNodes(const unsigned int &);
     
 private:
     int numNodes;

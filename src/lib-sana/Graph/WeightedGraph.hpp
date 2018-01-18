@@ -5,7 +5,7 @@
 
 using namespace std;
 
-class WeightedGraph : protected Graph {
+class WeightedGraph : public Graph {
 public:
     WeightedGraph(){};
     ~WeightedGraph(){};

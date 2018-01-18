@@ -1,5 +1,8 @@
 set (Main-SRC
     main.cpp
+    Utility.cpp
+    Utility.hpp
+    Definitions.hpp
 )
 
 add_executable(sana ${Main-SRC})
