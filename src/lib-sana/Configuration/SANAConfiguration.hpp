@@ -2,9 +2,13 @@
 #define SANACONFIGURATION_H
 
 class SANAConfiguration {
+
 public:
     SANAConfiguration() {};
-private:
+
+    bool isPairwise = true;
+
+private:    
 };
 
 #endif

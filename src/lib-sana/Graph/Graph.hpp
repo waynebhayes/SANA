@@ -20,11 +20,16 @@ public:
     unsigned int GetNumEdges() const;
 
     virtual void SetNumNodes(const unsigned int &);
+
+    string getName() const;
     
 private:
     int numNodes;
     int numEdges;
     vector<vector<unsigned int> > adjLists;
+
+    string name;
+
 };
 
 #endif
