@@ -5,6 +5,7 @@
 #include "Graph.hpp"
 #include "SANAResult.hpp"
 #include "PairwiseNetPile.hpp"
+#include "TemperatureSchedule.hpp"
 
 SANA::SANA() {
 
