@@ -1,19 +1,19 @@
 #ifndef TEMPERATURE_SCHEDULE_H
 #define TEMPERATURE_SCHEDULE_H
 
-class TemeratureSchedule {
+class TemperatureSchedule {
 
-    friend class TemeratureScheduleBuilder;
+    friend class TemperatureScheduleBuilder;
 
     public:
         double getTemperature(double time);    
 
     private:
-        TemeratureSchedule(){}
-        ~TemeratureSchedule(){}
+        TemperatureSchedule(){}
+        ~TemperatureSchedule(){}
 
         double TInitial;
-        double Tdecay;
+        double TDecay;
         double TFinal;
 
         double timeFinal;

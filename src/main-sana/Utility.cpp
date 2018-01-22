@@ -40,3 +40,8 @@ Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
 
     return graph;
 }
+
+Graph Utility::LoadGraphFromEdgeList(const string &fileName, const string delimiter = "") {
+    BinaryGraph graph;
+    return graph;
+}
