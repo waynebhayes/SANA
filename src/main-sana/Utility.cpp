@@ -44,5 +44,6 @@ Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
 
 Graph Utility::LoadGraphFromEdgeList(const string &fileName) {
     BinaryGraph graph;
+
     return graph;
 }
