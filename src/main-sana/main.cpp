@@ -8,7 +8,7 @@
 using namespace std;
 
 int main(int argc, char **argv) {
-    vector<Graph> networkList;
+    vector <Graph> networkList;
     for (int i = 1; i < argc; i++) {
         networkList.push_back(Utility::LoadGraphFromLEDAFile(argv[i]));
     }

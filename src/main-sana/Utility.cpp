@@ -3,6 +3,7 @@
 #include "Graph.hpp"
 #include <string>
 #include <fstream>
+#include <iostream> //Only for debugging
 #include <vector>
 #include <sstream>
 
@@ -38,5 +39,10 @@ Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
         graph.AddEdge(node1, node2);
     }
 
+    return graph;
+}
+
+Graph Utility::LoadGraphFromEdgeList(const string &fileName) {
+    BinaryGraph graph;
     return graph;
 }
