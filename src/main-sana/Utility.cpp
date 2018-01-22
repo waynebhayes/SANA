@@ -3,6 +3,7 @@
 #include "Graph.hpp"
 #include <string>
 #include <fstream>
+#include <iostream> //Only for debugging
 #include <vector>
 #include <sstream>
 
@@ -41,7 +42,7 @@ Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
     return graph;
 }
 
-Graph Utility::LoadGraphFromEdgeList(const string &fileName, const string delimiter = "") {
+Graph Utility::LoadGraphFromEdgeList(const string &fileName) {
     BinaryGraph graph;
     return graph;
 }
