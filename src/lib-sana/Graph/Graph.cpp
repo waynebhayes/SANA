@@ -44,6 +44,6 @@ void Graph::RemoveEdge(const unsigned int &node1, const unsigned int &node2) {
     }
 }
 
-void Graph::SetNumNodes(const unsigned long long int &numNodes) {
+void Graph::SetNumNodes(const unsigned int &numNodes) {
     adjLists.resize(numNodes);
 }
