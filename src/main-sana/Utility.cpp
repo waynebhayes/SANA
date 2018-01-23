@@ -1,11 +1,13 @@
 #include "Utility.hpp"
 #include "BinaryGraph.hpp"
+#include "Utils.hpp"
 #include "Graph.hpp"
 #include <string>
 #include <fstream>
 #include <iostream> //Only for debugging
 #include <vector>
 #include <sstream>
+#include <unordered_map>
 
 using namespace std;
 
@@ -44,6 +46,32 @@ Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
 
 Graph Utility::LoadGraphFromEdgeList(const string &fileName) {
     BinaryGraph graph;
+    graph.setName(fileName);
+
+    vector <string> nodes;
+    unordered_map <string, ushort> nodeNameIndexMap;
+    vector < vector<string> > edges = Utils::fileToStringsByLines(fileName);
+
+    for (int i = 0; i < edges.size(); i++) {
+        string node1 = edges[i][0];
+        string node2 = edges[i][1];
+
+        if (nodeNameIndexMap.find(node1) == nodeNameIndexMap.end()) {
+            nodeNameIndexMap[node1] = nodes.size();
+            nodes.push_back(node1);
+            graph.addNodeType("gene");
+            graph.setGeneCount(graph.getGeneCount()+1);
+        }
+
+        if (nodeNameIndexMap.find(node2) == nodeNameIndexMap.end()) {
+            nodeNameIndexMap[node2] = nodes.size();
+            nodes.push_back(node2);
+            graph.addNodeType("miRNA");
+            graph.setMiRNACount(graph.getMiRNACount()+1);
+        }
+    }
+
+    graph.SetNumNodes(nodes.size());
 
     return graph;
 }

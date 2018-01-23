@@ -11,15 +11,15 @@
 using namespace std;
 
 string Graph::getName() const {
-    return this->name;
+    return Graph::name;
 }
 
 void Graph::setName(string name) {
-    this->name = name;
+    Graph::name = name;
 }
 
 unsigned int Graph::GetNumNodes() const {
-	return numNodes;
+	return Graph::numNodes;
 }
 
 void Graph::SetNumNodes(const unsigned int &numNodes) {
@@ -27,7 +27,7 @@ void Graph::SetNumNodes(const unsigned int &numNodes) {
 }
 
 unsigned int Graph::GetNumEdges() const {
-    return numEdges;
+    return Graph::numEdges;
 }
 
 int Graph::RandomNode() {
@@ -77,3 +77,45 @@ void Graph::RemoveRandomEdge() {
     }
     RemoveEdge(node1,node2);
 }
+
+uint Graph::getGeneCount() const {
+    return geneCount;
+}
+
+void Graph::setGeneCount(uint geneCount) {
+    Graph::geneCount = geneCount;
+}
+
+uint Graph::getMiRNACount() const {
+    return miRNACount;
+}
+
+void Graph::setMiRNACount(uint miRNACount) {
+    Graph::miRNACount = miRNACount;
+}
+
+int Graph::getUnlockedGeneCount() const {
+    return unlockedGeneCount;
+}
+
+void Graph::setUnlockedGeneCount(int unlockedGeneCount) {
+    Graph::unlockedGeneCount = unlockedGeneCount;
+}
+
+int Graph::getUnlockedmiRNACount() const {
+    return unlockedmiRNACount;
+}
+
+void Graph::setUnlockedmiRNACount(int unlockedmiRNACount) {
+    Graph::unlockedmiRNACount = unlockedmiRNACount;
+}
+
+const vector<string> &Graph::getNodeTypes() const {
+    return nodeTypes;
+}
+
+void Graph::addNodeType(const string &nodeType) {
+    nodeTypes.push_back(nodeType);
+}
+
+
