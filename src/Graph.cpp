@@ -30,7 +30,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g) {
   g.miRNACount = 0;
 
   vector<string> nodes;
+  nodes.reserve(14000);
   unordered_map<string,ushort> nodeName2IndexMap;
+  nodeName2IndexMap.reserve(1028);
   vector<vector<string> > edges = fileToStringsByLines(fin);
 
   for(int i = 0; i < edges.size(); i++){
@@ -51,8 +53,8 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g) {
           g.miRNACount++;
       }
   }
-
     uint numNodes = nodes.size();
+	nodes.shrink_to_fit();
 #ifdef WEIGHTED
     vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (3));
 #else
@@ -546,6 +548,7 @@ void Graph::initConnectedComponents() {
     ushort n = getNumNodes();
     vector<vector<ushort>* > aux(0);
     unordered_set<ushort> nodes;
+	nodes.reserve(n);
     for (ushort i = 0; i < n; i++) nodes.insert(i);
     while (nodes.size() > 0) {
         ushort u = *nodes.begin();
