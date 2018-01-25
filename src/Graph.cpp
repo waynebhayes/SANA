@@ -54,7 +54,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g) {
       }
   }
     uint numNodes = nodes.size();
-	nodes.shrink_to_fit();
+    nodes.shrink_to_fit();
 #ifdef WEIGHTED
     vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (3));
 #else
@@ -551,7 +551,7 @@ void Graph::initConnectedComponents() {
     ushort n = getNumNodes();
     vector<vector<ushort>* > aux(0);
     unordered_set<ushort> nodes;
-	nodes.reserve(n);
+    nodes.reserve(n);
     for (ushort i = 0; i < n; i++) nodes.insert(i);
     while (nodes.size() > 0) {
         ushort u = *nodes.begin();
