@@ -498,7 +498,10 @@ void Graph::multGwFile(const string& fileName, uint path) {
             throw runtime_error(errorMsg.str().c_str());
         }
         sparse_graph1.set(1,node1,node2);
+        sparse_graph1.set(1,node2,node1);
+
         sparse_graph2.set(1,node1,node2);
+        sparse_graph2.set(1,node2,node1);
     }
     for(uint i=1; i<path ; i++){
         SparseMatrix<int> final = sparse_graph2.multiply(sparse_graph1);
