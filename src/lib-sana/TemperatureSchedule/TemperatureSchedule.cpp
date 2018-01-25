@@ -2,9 +2,6 @@
 #include <unordered_map>
 #include "TemperatureSchedule.hpp"
 
-TemperatureSchedule::TemperatureSchedule() {
-}
-
 void TemperatureSchedule::SetTemperatureDecay(const double &decay) {
     tDecay = decay;
 }
