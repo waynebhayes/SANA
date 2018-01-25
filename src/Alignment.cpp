@@ -194,7 +194,12 @@ ushort& Alignment::operator[] (ushort node) {
 }
 
 Alignment &Alignment::operator=(Alignment other) {
+	const uint n = max(A.size(), other.A.size());
+	A.reserve(n);
+	other.A.reserve(n);
     swap(A, other.A);
+	A.shrink_to_fit();
+	other.A.shrink_to_fit();
     return *this;
 }
 

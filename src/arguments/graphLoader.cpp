@@ -118,11 +118,15 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
             cerr << "Locking the nodes in " << lockFile << endl;
             ifstream ifs(lockFile.c_str());
             string node;
+			column1.reserve(14000);
+			column2.reserve(14000);
             while(ifs >> node){
                 column1.push_back(node);
                 ifs >> node;
                 column2.push_back(node);
             }
+			column1.shrink_to_fit();
+			column2.shrink_to_fit();
         }
         else{
             cerr << "Lock file (" << lockFile << ") does not exist!" << endl;
