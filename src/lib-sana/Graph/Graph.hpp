@@ -6,15 +6,27 @@
 #include <string>
 #include <stdexcept>
 #include <utility>
+
 using namespace std;
+
+class GraphInvalidIndexError : public exception {
+public:
+    GraphInvalidIndexError(const string &message): reason(message) {};
+    virtual const char* what() const throw() {
+        return reason.c_str();
+    }
+private:
+    string reason;
+};
 
 class Graph {
 public:
     Graph(){};
     ~Graph(){};
 
-    virtual void AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight = 1);
-    virtual void RemoveEdge(const unsigned int &node1, const unsigned int &node2);
+    virtual void AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight = 1) throw(GraphInvalidIndexError) ;
+    virtual void RemoveEdge(const unsigned int &node1, const unsigned int &node2) throw(GraphInvalidIndexError);
+  
     virtual void AddRandomEdge();
     virtual void RemoveRandomEdge();
     virtual int RandomNode();
@@ -41,6 +53,13 @@ public:
     const vector<string> &getNodeTypes() const;
     void addNodeType(const string &nodeType);
 
+
+    string GetGraphName() const;
+    string GetNodeName(const unsigned int &nodeIndex) const throw(GraphInvalidIndexError);
+
+    void SetNodeName(const unsigned int &nodeIndex, const string &name) throw(GraphInvalidIndexError);
+    virtual void ClearGraph();
+
 private:
     uint geneCount = 0;
     uint miRNACount = 0;
@@ -53,9 +72,10 @@ private:
     unsigned int numNodes;
     unsigned int numEdges;
     vector<vector<unsigned int> > adjLists;
-
-    string name;
+    vector<string> nodesName;
+    string graphName;
 
 };
+
 
 #endif

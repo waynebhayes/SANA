@@ -4,22 +4,25 @@
 class TemperatureSchedule {
 
     friend class TemperatureScheduleBuilder;
+  
+public:
+    double GetTemperature(const double &progressFrac);    
 
-    public:
-        double getTemperature(double time);    
+    void SetTemperatureInitial(const double &initial);
+    void SetTemperatureDecay(const double &decay);
+  
+ private:
+    TemperatureSchedule(){}
+    ~TemperatureSchedule(){}
 
-    private:
-        TemperatureSchedule(){}
-        ~TemperatureSchedule(){}
+    double TInitial;
+    double TDecay;
+    double TFinal;
 
-        double TInitial;
-        double TDecay;
-        double TFinal;
-
-        double timeFinal;
-        bool useIterations = false;
-
+    double timeFinal;
+    bool useIterations = false;
+  
+    void SearchTemperatureByLinearRegression();
 };
-
 
 #endif

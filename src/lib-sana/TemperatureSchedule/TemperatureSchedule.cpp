@@ -1,9 +1,19 @@
 #include <math.h>
-
+#include <unordered_map>
 #include "TemperatureSchedule.hpp"
 
+void TemperatureSchedule::SetTemperatureDecay(const double &decay) {
+    tDecay = decay;
+}
 
-double TemperatureSchedule::getTemperature(double iter){
-    double fraction = iter / TFinal;
-    return TInitial * exp (-TDecay * fraction);
+void TemperatureSchedule::SetTemperatureInitial(const double &initial) {
+    tInitial = initial;
+}
+
+double TemperatureSchedule::GetTemperature(const double &progressFrac){
+    return tInitial * exp(-tDecay * progressFrac);
+}
+
+void TemperatureSchedule::SearchTemperatureByLinearRegression() {
+    //Hudson's implementation of searching for temperature will go here
 }
