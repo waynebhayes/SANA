@@ -18,11 +18,13 @@ Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
 
     vector<string> LEDAFileFormatExpectation = {"LEDA.GRAPH", "string", "short", "-2"};
     for (int i = 0; i < 4; i++) {
-        if (LEDAFileFormatExpectation[i++] != token) {
+        getline(infile, token);
+        if (LEDAFileFormatExpectation[i] != token) {
             errorMsg << "Failed to read graph : expected correct LEDA graph format";
             throw runtime_error(errorMsg.str().c_str());
         }
     }
+
     int numNodes;
     infile >> numNodes;
     graph.SetNumNodes(numNodes);
@@ -36,7 +38,7 @@ Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
     for (int i = 0; i < numEdges; i++) {
         unsigned int node1, node2;
         infile >> node1 >> node2 >> token >> token;
-        graph.AddEdge(node1, node2);
+        graph.AddEdge(node1-1, node2-1);
     }
 
     return graph;
