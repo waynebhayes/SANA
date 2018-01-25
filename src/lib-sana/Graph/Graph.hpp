@@ -38,22 +38,6 @@ public:
     virtual void SetNumNodes(const unsigned int &);
     void setName(string name);
 
-    uint getGeneCount() const;
-    void setGeneCount(uint geneCount);
-
-    uint getMiRNACount() const;
-    void setMiRNACount(uint miRNACount);
-
-    int getUnlockedGeneCount() const;
-    void setUnlockedGeneCount(int unlockedGeneCount);
-
-    int getUnlockedmiRNACount() const;
-    void setUnlockedmiRNACount(int unlockedmiRNACount);
-
-    const vector<string> &getNodeTypes() const;
-    void addNodeType(const string &nodeType);
-
-
     string GetGraphName() const;
     string GetNodeName(const unsigned int &nodeIndex) const throw(GraphInvalidIndexError);
 
@@ -61,19 +45,12 @@ public:
     virtual void ClearGraph();
 
 private:
-    uint geneCount = 0;
-    uint miRNACount = 0;
-    int unlockedGeneCount = -1;
-    int unlockedmiRNACount = -1;
-    vector <string> nodeTypes;
-
-private:
 
     unsigned int numNodes;
     unsigned int numEdges;
     vector<vector<unsigned int> > adjLists;
-    vector<string> nodesName;
-    string graphName;
+    vector<string> nodeNames;
+    string name;
 
 };
 

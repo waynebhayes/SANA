@@ -12,6 +12,7 @@
 using namespace std;
 
 Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
+    Utils::checkFileExists(fileName);
     BinaryGraph graph;
     graph.setName(fileName);
   
@@ -23,7 +24,10 @@ Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
     for (int i = 0; i < 4; i++) {
         getline(infile, token);
         if (LEDAFileFormatExpectation[i] != token) {
-            errorMsg << "Failed to read graph : expected correct LEDA graph format";
+            errorMsg << "Failed to read graph (" << fileName << ")" 
+                     << ". At line " << i << " expected: " 
+                     << LEDAFileFormatExpectation[i]
+                     << ", got: " << token << ".";
             throw runtime_error(errorMsg.str().c_str());
         }
     }
@@ -34,6 +38,7 @@ Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
 
     for (int i = 0; i < numNodes; i++) {
         infile >> token;
+        graph.SetNodeName(i, token);
     }
 
     int numEdges;
@@ -47,33 +52,43 @@ Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
     return graph;
 }
 
-Graph Utility::LoadGraphFromEdgeList(const string &fileName) {
-    BinaryGraph graph;
-    graph.setName(fileName);
-
-    vector <string> nodes;
-    unordered_map <string, ushort> nodeNameIndexMap;
+BinaryGraph Utility::LoadBinaryGraphFromEdgeList(const string &fileName) {
+    // Todo: replace using this, and do making graph in one pass
+    // Utils::checkFileExists(fileName);
     vector < vector<string> > edges = Utils::fileToStringsByLines(fileName);
 
+    vector <string> nodes;
+    unordered_map <string, ushort> nodeNameToIndexMap;
+
+    // Count number of nodes and index them
     for (int i = 0; i < edges.size(); i++) {
         string node1 = edges[i][0];
         string node2 = edges[i][1];
 
-        if (nodeNameIndexMap.find(node1) == nodeNameIndexMap.end()) {
-            nodeNameIndexMap[node1] = nodes.size();
+        if (nodeNameToIndexMap.find(node1) == nodeNameToIndexMap.end()) {
+            nodeNameToIndexMap[node1] = nodes.size();
             nodes.push_back(node1);
-            graph.addNodeType("gene");
-            graph.setGeneCount(graph.getGeneCount()+1);
         }
 
-        if (nodeNameIndexMap.find(node2) == nodeNameIndexMap.end()) {
-            nodeNameIndexMap[node2] = nodes.size();
+        if (nodeNameToIndexMap.find(node2) == nodeNameToIndexMap.end()) {
+            nodeNameToIndexMap[node2] = nodes.size();
             nodes.push_back(node2);
-            graph.addNodeType("miRNA");
-            graph.setMiRNACount(graph.getMiRNACount()+1);
         }
     }
 
+    BinaryGraph graph;
+    graph.setName(fileName);
     graph.SetNumNodes(nodes.size());
+
+    for(int i = 0; i < nodes.size(); i++)
+        graph.SetNodeName(i, nodes[i]);
+
+    for(int i = 0; i < edges.size(); i++){
+        uint node1 = nodeNameToIndexMap[edges[i][0]];
+        uint node2 = nodeNameToIndexMap[edges[i][1]];
+
+        graph.AddEdge(node1, node2);
+    }
+
     return graph;
 }

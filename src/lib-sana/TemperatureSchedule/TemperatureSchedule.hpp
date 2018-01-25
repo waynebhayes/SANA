@@ -15,9 +15,9 @@ public:
     TemperatureSchedule(){}
     ~TemperatureSchedule(){}
 
-    double TInitial;
-    double TDecay;
-    double TFinal;
+    double tInitial;
+    double tDecay;
+    double tFinal;
 
     double timeFinal;
     bool useIterations = false;
