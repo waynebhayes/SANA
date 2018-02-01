@@ -24,7 +24,7 @@ void Graph::setMaxGraphletSize(double number){
     //Graph::computeGraphletDegreeVectors();
 }
 
-void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g) {
+void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes) {
   g.name = graphName;
   g.geneCount = 0;
   g.miRNACount = 0;
@@ -40,15 +40,19 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g) {
       if(nodeName2IndexMap.find(node1) == nodeName2IndexMap.end()){
           nodeName2IndexMap[node1] = nodes.size();
           nodes.push_back(node1);
-          g.nodeTypes.push_back("gene");
-          g.geneCount++;
+          if(nodesHaveTypes){
+            g.nodeTypes.push_back("gene");
+            g.geneCount++;
+          }
       }
 
       if(nodeName2IndexMap.find(node2) == nodeName2IndexMap.end()){
           nodeName2IndexMap[node2] = nodes.size();
           nodes.push_back(node2);
-          g.nodeTypes.push_back("miRNA");
-          g.miRNACount++;
+          if(nodesHaveTypes){
+            g.nodeTypes.push_back("miRNA");
+            g.miRNACount++;
+          }
       }
   }
 
@@ -128,7 +132,8 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g) {
     g.lockedTo = vector<string> (n, "");
     g.nodeNameToIndexMap = nodeName2IndexMap;
     g.edgeList  = edgeList;
-    g.updateUnlockedGeneCount();
+    if(nodesHaveTypes)
+        g.updateUnlockedGeneCount();
     g.initConnectedComponents();
 }
 
@@ -1527,7 +1532,8 @@ void Graph::setNodeTypes(set<string> genes, set<string> miRNAs){
 }
 
 bool Graph::hasNodeTypes(){
-    return geneCount > 0 || miRNACount > 0;
+    //return geneCount > 0 || miRNACount > 0;
+    return nodesHaveTypesEnabled;
 }
 
 string Graph::getNodeType(uint i){
