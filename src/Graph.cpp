@@ -143,6 +143,9 @@ void Graph::edgeList2gw(string fin, string fout) {
   unordered_map<string,uint> nodeName2IndexMap;
   vector<vector<string> > edges = fileToStringsByLines(fin);
 
+  nodes.reserve(14000);
+  nodeName2IndexMap.reserve(1028);
+
   // TODO set node types here directly instead
 
   for(int i = 0; i < edges.size(); i++){
@@ -176,6 +179,7 @@ void Graph::edgeList2gw(string fin, string fout) {
 // #endif
 
     uint numNodes = nodes.size();
+	nodes.shrink_to_fit();
     // for (uint i = 0; i < numNodes; i++) {
     //     nodeName2IndexMap[nodes[i]] = i;
     // }
@@ -303,20 +307,12 @@ void Graph::getAdjMatrix(vector<vector<ushort> >& adjMatrixCopy) const {
     adjMatrixCopy = vector<vector<ushort> > (n, vector<ushort> (n));
 #else
 void Graph::getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const {
-    uint n = getNumNodes();
-    adjMatrixCopy = vector<vector<bool> > (n, vector<bool> (n));
+    adjMatrixCopy = vector<vector<bool> > (adjMatrix);
 #endif
-    for (uint i = 0; i < n; i++) {
-        for (uint j = 0; j < n; j++) adjMatrixCopy[i][j] = adjMatrix[i][j];
-    }
 }
 
 void Graph::getAdjLists(vector<vector<ushort> >& adjListsCopy) const {
-    uint n = getNumNodes();
-    adjListsCopy = vector<vector<ushort> > (n, vector<ushort> (0));
-    for (uint i = 0; i < n; i++) {
-        adjListsCopy[i] = adjLists[i];
-    }
+    adjListsCopy = vector<vector<ushort> > (adjLists);
 }
 
 void Graph::getEdgeList(vector<vector<ushort> >& edgeListCopy) const {
