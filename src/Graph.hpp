@@ -35,7 +35,7 @@ public:
     static Graph loadGraph(string name);
     static Graph multGraph(string name, uint path);
 
-    static void loadFromEdgeListFile(string fin, string graphName, Graph& g);
+    static void loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
 
 
     static void saveInGWFormat(string outputFile, const vector<string>& nodeNames,
@@ -147,6 +147,7 @@ public:
 
     // nodes-have-types -- TODO make them private later
     vector<string> nodeTypes;
+    bool nodesHaveTypesEnabled = false;
     uint geneCount = 0;
     uint miRNACount = 0;
     int unlockedGeneCount = -1;
