@@ -11,7 +11,7 @@
 
 using namespace std;
 
-Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
+BinaryGraph Utility::LoadBinaryGraphFromLEDAFile(const string &fileName) {
     Utils::checkFileExists(fileName);
     BinaryGraph graph;
     graph.setName(fileName);

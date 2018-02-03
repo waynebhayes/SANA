@@ -10,7 +10,7 @@
 
 using namespace std;
 
-string Graph::getName() const {
+string Graph::GetName() const {
     return name;
 }
 
@@ -102,6 +102,14 @@ string Graph::GetNodeName(const unsigned int &nodeIndex) const throw(GraphInvali
 void Graph::ClearGraph() {
     adjLists.clear();
     numNodes = numEdges = 0;
+}
+
+map<string,ushort> Graph::getNodeNameToIndexMap() const {
+    map<string,ushort> res;
+    for(size_t i = 0; i < GetNumNodes(); ++i) { //Get the number of nodes in the graph
+        res[this->GetNodeName(i)] = i; //At that node position, map the name to the number
+    }
+    return res;
 }
 
 

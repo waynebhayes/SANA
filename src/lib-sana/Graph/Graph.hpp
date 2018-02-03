@@ -2,6 +2,7 @@
 #define GRAPH_H
 
 #include <string>
+#include <map>
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -24,6 +25,8 @@ public:
     Graph(){};
     ~Graph(){};
 
+    map<string,ushort> getNodeNameToIndexMap() const;
+
     virtual void AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight = 1) throw(GraphInvalidIndexError) ;
     virtual void RemoveEdge(const unsigned int &node1, const unsigned int &node2) throw(GraphInvalidIndexError);
   
@@ -33,12 +36,11 @@ public:
 
     unsigned int GetNumNodes() const;
     unsigned int GetNumEdges() const;
-    string getName() const;
+    string GetName() const;
 
     virtual void SetNumNodes(const unsigned int &);
     void setName(string name);
 
-    string GetGraphName() const;
     string GetNodeName(const unsigned int &nodeIndex) const throw(GraphInvalidIndexError);
 
     void SetNodeName(const unsigned int &nodeIndex, const string &name) throw(GraphInvalidIndexError);

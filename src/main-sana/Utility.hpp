@@ -6,7 +6,7 @@ using namespace std;
 
 class Utility {
 public:
-    static Graph LoadGraphFromLEDAFile(const string &);
+    static BinaryGraph LoadBinaryGraphFromLEDAFile(const string &);
     static BinaryGraph LoadBinaryGraphFromEdgeList(const string &);
 };
 
