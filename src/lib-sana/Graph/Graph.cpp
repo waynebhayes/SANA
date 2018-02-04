@@ -34,10 +34,17 @@ int Graph::RandomNode() {
 void Graph::AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight) throw(GraphInvalidIndexError) {
     if (node1 >= numNodes || node2 >= numNodes)
         throw GraphInvalidIndexError("Invalid node index passed into AddEdge");
-
-    adjLists[node1].push_back(node2);
-    adjLists[node2].push_back(node1);
-    ++numEdges;
+    if (node1 > node2) {
+        unsigned int hold = node1;       // Can't change node1 because const
+        unsigned int node1_cpy = node2;  // Three variable swap
+        unsigned int node2_cpy = hold;   // Finale
+        if (adjLists[node1_cpy][node2_cpy] == 0) {
+           adjLists[node1_cpy].push_back(node2_cpy);
+        }
+    } else {
+        adjLists[node1].push_back(node2);
+    }
+    ++numEdges; //Either way we iterate the edge count
 }
 
 void Graph::RemoveEdge(const unsigned int &node1, const unsigned int &node2) throw(GraphInvalidIndexError) {

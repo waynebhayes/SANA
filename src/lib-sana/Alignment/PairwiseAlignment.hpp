@@ -18,6 +18,7 @@ public:
         return A;
     }
     bool printDefinitionErrors(const Graph &G1, const Graph &G2);
+
 private:
     vector <ushort> A;
 };
