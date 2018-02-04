@@ -7,14 +7,19 @@
 class PairwiseAlignment: public Alignment {
 
 public:
-    PairwiseAlignment(){}
-    ~PairwiseAlignment(){}
+    PairwiseAlignment() = default;
+    ~PairwiseAlignment() = default;
     PairwiseAlignment(const PairwiseAlignment &rhs);
-    PairwiseAlignment(Graph *G1, Graph *G2, const vector < vector<string> > &mapList);
 
-    void printDefinitionErrors(const Graph &G1, const Graph &G2);
+    void setVector(vector<ushort> &x) {
+        A = x;
+    }
+    vector<ushort> &getVec() {
+        return A;
+    }
+    bool printDefinitionErrors(const Graph &G1, const Graph &G2);
 private:
-    vector<ushort> A;
+    vector <ushort> A;
 };
 
 #endif

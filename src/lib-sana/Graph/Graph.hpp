@@ -3,6 +3,8 @@
 
 #include <string>
 #include <map>
+#include <unordered_map>
+#include <iostream>
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -25,7 +27,8 @@ public:
     Graph(){};
     ~Graph(){};
 
-    map<string,ushort> getNodeNameToIndexMap() const;
+    unordered_map<string,ushort> getNodeNameToIndexMap() const;
+    unordered_map<ushort,string> getIndexToNodeNameMap() const;
 
     virtual void AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight = 1) throw(GraphInvalidIndexError) ;
     virtual void RemoveEdge(const unsigned int &node1, const unsigned int &node2) throw(GraphInvalidIndexError);

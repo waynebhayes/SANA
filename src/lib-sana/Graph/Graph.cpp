@@ -104,10 +104,19 @@ void Graph::ClearGraph() {
     numNodes = numEdges = 0;
 }
 
-map<string,ushort> Graph::getNodeNameToIndexMap() const {
-    map<string,ushort> res;
+unordered_map<string,ushort> Graph::getNodeNameToIndexMap() const {
+    unordered_map<string,ushort> res;
     for(size_t i = 0; i < GetNumNodes(); ++i) { //Get the number of nodes in the graph
         res[this->GetNodeName(i)] = i; //At that node position, map the name to the number
+    }
+    return res;
+}
+
+unordered_map<ushort,string> Graph::getIndexToNodeNameMap() const {
+    unordered_map<string,ushort> reverse = getNodeNameToIndexMap();
+    unordered_map<ushort,string> res;
+    for (const auto &nameIndexPair : reverse ) {
+        res[nameIndexPair.second] = nameIndexPair.first;
     }
     return res;
 }
