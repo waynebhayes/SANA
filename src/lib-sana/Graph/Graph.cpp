@@ -35,15 +35,13 @@ void Graph::AddEdge(const unsigned int &node1, const unsigned int &node2, const 
     if (node1 >= numNodes || node2 >= numNodes)
         throw GraphInvalidIndexError("Invalid node index passed into AddEdge");
     if (node1 > node2) {
-        unsigned int node1_cpy = node2;  // Const stuff
-        unsigned int node2_cpy = node1;  // Swap the two vars into dummy variables
-        if (adjLists[node1_cpy][node2_cpy] == 0) {
-           adjLists[node1_cpy].push_back(node2_cpy);
+        if (adjLists[node2][node1] == 0) {
+           adjLists[node2].push_back(node1);
         }
     } else {
         adjLists[node1].push_back(node2);
     }
-    ++numEdges; //Either way we iterate the edge count
+    ++numEdges;  // Either way we iterate the edge count
 }
 
 void Graph::RemoveEdge(const unsigned int &node1, const unsigned int &node2) throw(GraphInvalidIndexError) {
