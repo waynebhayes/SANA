@@ -3,7 +3,8 @@
 
 void BinaryGraph::AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int& weight) throw(GraphInvalidIndexError) {
     Graph::AddEdge(node1, node2);
-    adjacencyMatrix[node1][node2] = adjacencyMatrix[node2][node1] = true;
+    if(adjacencyMatrix[node1][node2] == false && node1 != node2)
+        adjacencyMatrix[node1][node2] = adjacencyMatrix[node2][node1] = true;
 }
 
 void BinaryGraph::RemoveEdge(const unsigned int &node1, const unsigned int &node2) throw(GraphInvalidIndexError) {

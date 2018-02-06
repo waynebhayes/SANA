@@ -11,7 +11,7 @@
 
 using namespace std;
 
-Graph Utility::LoadGraphFromLEDAFile(const string &fileName) {
+BinaryGraph Utility::LoadBinaryGraphFromLEDAFile(const string &fileName) {
     Utils::checkFileExists(fileName);
     BinaryGraph graph;
     graph.setName(fileName);
@@ -92,3 +92,21 @@ BinaryGraph Utility::LoadBinaryGraphFromEdgeList(const string &fileName) {
 
     return graph;
 }
+
+PairwiseAlignment Utility::LoadPairwiseAlignmentFromEdgeList(Graph *G1, Graph *G2, const string &filename) {
+    unordered_map<string,ushort> mapG1 = G1->getNodeNameToIndexMap();
+    unordered_map<string,ushort> mapG2 = G2->getNodeNameToIndexMap();
+    vector < vector <string> > mapList = Utils::fileToStringsByLines(filename);
+    ushort n1 = mapList.size();
+    ushort n2 = G2->GetNumNodes();
+    PairwiseAlignment Alig;
+    vector<ushort> init(G1->GetNumNodes(),n2);
+    Alig.setVector(init);
+    for(size_t i = 0; i < n1; ++i) {
+        string nodeG1 = mapList[i][0];
+        string nodeG2 = mapList[i][1];
+        Alig.getVec()[mapG1[nodeG1]] = mapG2[nodeG2];
+    }
+    return Alig;
+}
+

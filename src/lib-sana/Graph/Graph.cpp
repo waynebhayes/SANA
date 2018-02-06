@@ -10,7 +10,7 @@
 
 using namespace std;
 
-string Graph::getName() const {
+string Graph::GetName() const {
     return name;
 }
 
@@ -34,10 +34,14 @@ int Graph::RandomNode() {
 void Graph::AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight) throw(GraphInvalidIndexError) {
     if (node1 >= numNodes || node2 >= numNodes)
         throw GraphInvalidIndexError("Invalid node index passed into AddEdge");
-
-    adjLists[node1].push_back(node2);
-    adjLists[node2].push_back(node1);
-    ++numEdges;
+    if (node1 > node2) {
+        if (adjLists[node2][node1] == 0) {
+           adjLists[node2].push_back(node1);
+        }
+    } else {
+        adjLists[node1].push_back(node2);
+    }
+    ++numEdges;  // Either way we iterate the edge count
 }
 
 void Graph::RemoveEdge(const unsigned int &node1, const unsigned int &node2) throw(GraphInvalidIndexError) {
@@ -102,6 +106,23 @@ string Graph::GetNodeName(const unsigned int &nodeIndex) const throw(GraphInvali
 void Graph::ClearGraph() {
     adjLists.clear();
     numNodes = numEdges = 0;
+}
+
+unordered_map<string,ushort> Graph::getNodeNameToIndexMap() const {
+    unordered_map<string,ushort> res;
+    for(size_t i = 0; i < GetNumNodes(); ++i) { //Get the number of nodes in the graph
+        res[this->GetNodeName(i)] = i; //At that node position, map the name to the number
+    }
+    return res;
+}
+
+unordered_map<ushort,string> Graph::getIndexToNodeNameMap() const {
+    unordered_map<string,ushort> reverse = getNodeNameToIndexMap();
+    unordered_map<ushort,string> res;
+    for (const auto &nameIndexPair : reverse ) {
+        res[nameIndexPair.second] = nameIndexPair.first;
+    }
+    return res;
 }
 
 

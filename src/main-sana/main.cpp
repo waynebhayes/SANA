@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
     }
     vector <Graph> networkList;
     for (int i = 1; i < argc; i++) {
-        networkList.push_back(Utility::LoadGraphFromLEDAFile(argv[i]));
+        networkList.push_back(Utility::LoadBinaryGraphFromLEDAFile(argv[i]));
         //networkList.push_back(Utility::LoadBinaryGraphFromEdgeList(argv[i]));
     }
 
