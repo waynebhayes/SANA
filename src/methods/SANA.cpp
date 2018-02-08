@@ -77,7 +77,20 @@ SANA::SANA(Graph* G1, Graph* G2,
     g2WeightedEdges = G2->getWeightedNumEdges();
 #endif
     g2Edges         = G2->getNumEdges();
-    score           = objectiveScore;
+    if (objectiveScore == "sum")
+        score = Score::sum;
+    else if (objectiveScore == "product")
+        score = Score::product;
+    else if (objectiveScore == "inverse")
+        score = Score::inverse;
+    else if (objectiveScore == "max")
+        score = Score::max;
+    else if (objectiveScore == "min")
+        score = Score::min;
+    else if (objectiveScore == "maxFactor")
+        score = Score::maxFactor;
+    else if (objectiveScore == "pareto")
+        score = Score::pareto;
 
     paretoInitial   = MC->getParetoInitial();
     paretoCapacity  = MC->getParetoCapacity();
@@ -197,8 +210,8 @@ SANA::SANA(Graph* G1, Graph* G2,
     iterationsPerStep   = 10000000;
 
     //Make sana think were running in (score == sum) to avoid crashing during linear regression.
-    if(score == "pareto")
-        score = "sum";
+    if(score == Score::pareto)
+        score = Score::sum;
 
     /*
     this does not need to be initialized here,
@@ -542,7 +555,7 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, d
     vector<string> measureNames; vector<double> scores;
     scoreNamesToIndexes = mapScoresToIndexes(measureNames);
     paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
-    score = "pareto";
+    score = Score::pareto;
     for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
         cout << iter->first << '\n';
 
@@ -572,7 +585,7 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
     vector<string> measureNames; vector<double> scores;
     scoreNamesToIndexes = mapScoresToIndexes(measureNames);
     paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
-    score = "pareto";
+    score = Score::pareto;
     for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
         cout << iter->first << '\n';
 
@@ -693,7 +706,7 @@ void SANA::performChange() {
         ncSum                                = newNcSum;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
-        if(score == "pareto" and (iterationsPerformed % 500 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
+        if(score == Score::pareto and ((iterationsPerformed % 512) == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
         	insertCurrentAndPrepareNewMeasureDataByAlignment();
 #if 0
         if(randomReal(gen)<=1) {
@@ -711,8 +724,8 @@ void SANA::performChange() {
 }
 
 void SANA::performSwap() {
-    ushort source1 =  G1RandomUnlockedNode();
-    ushort source2 =  G1RandomUnlockedNode(source1);
+    ushort source1 = G1RandomUnlockedNode();
+    ushort source2 = G1RandomUnlockedNode(source1);
     ushort target1 = (*A)[source1], target2 = (*A)[source2];
 
     int newAligEdges           = (needAligEdges or needSec) ?  aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
@@ -725,7 +738,7 @@ void SANA::performSwap() {
 
     map<string, double> newLocalScoreSumMap(*localScoreSumMap);
     if (needLocal) {
-        for(auto &item : newLocalScoreSumMap)
+        for (auto &item : newLocalScoreSumMap)
             item.second += localScoreSumIncSwapOp(localSimMatrixMap[item.first], source1, source2, target1, target2);
     }
 
@@ -745,16 +758,17 @@ void SANA::performSwap() {
         squaredAligEdges    = newSquaredAligEdges;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
-        if(score == "pareto" and (iterationsPerformed % 500 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
-        	insertCurrentAndPrepareNewMeasureDataByAlignment();
+        if (score == Score::pareto and (iterationsPerformed % 512 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
+            insertCurrentAndPrepareNewMeasureDataByAlignment();
 
 #if 0
-        if(randomReal(gen)<=1) {
-        double foo = eval(*A);
-        if(fabs(foo - newCurrentScore)>20){
-            cerr << "\nSwap: nCS " << newCurrentScore << " eval " << foo << " nCS - eval " << newCurrentScore-foo << " adj? " << (G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
-            newCurrentScore = newSquaredAligEdges = foo;
-        } else cerr << "s";
+        if (randomReal(gen) <= 1) {
+            double foo = eval(*A);
+            if (fabs(foo - newCurrentScore) > 20) {
+                cerr << "\nSwap: nCS " << newCurrentScore << " eval " << foo << " nCS - eval " << newCurrentScore - foo << " adj? " << (G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
+                newCurrentScore = newSquaredAligEdges = foo;
+            }
+            else cerr << "s";
         }
 #endif
     }
@@ -765,164 +779,187 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     bool wasBadMove = false;
     double badProbability = 0;
 
-    if(score == "sum") {
-        newCurrentScore += ecWeight * (newAligEdges/g1Edges);
-        newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
-        newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
+    switch (score)
+    {
+    case Score::sum:
+    {
+        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
+        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         newCurrentScore += TCWeight * (newTCSum);
-        newCurrentScore += localWeight * (newLocalScoreSum/n1);
-        newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+        newCurrentScore += localWeight * (newLocalScoreSum / n1);
+        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
         newCurrentScore += ewecWeight * (newEwecSum);
-        newCurrentScore += ncWeight * (newNcSum/trueA.back());
+        newCurrentScore += ncWeight * (newNcSum / trueA.back());
 #ifdef WEIGHTED
-        newCurrentScore += mecWeight * (newAligEdges/(g1WeightedEdges+g2WeightedEdges));
+        newCurrentScore += mecWeight * (newAligEdges / (g1WeightedEdges + g2WeightedEdges));
         newCurrentScore += sesWeight * newSquaredAligEdges;
 #endif
-        energyInc = newCurrentScore-currentScore;
+        energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        badProbability = exp(energyInc/T);
-        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
-    } else if(score == "product") {
+        badProbability = exp(energyInc / T);
+        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / T));
+        break;
+    }
+    case Score::product:
+    {
         newCurrentScore = 1;
-        newCurrentScore *= ecWeight * (newAligEdges/g1Edges);
-        newCurrentScore *= s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+        newCurrentScore *= ecWeight * (newAligEdges / g1Edges);
+        newCurrentScore *= s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
         newCurrentScore *= TCWeight * (newTCSum);
-        newCurrentScore *= localWeight * (newLocalScoreSum/n1);
-        newCurrentScore *= secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
-        newCurrentScore *= wecWeight * (newWecSum/(2*g1Edges));
-        newCurrentScore *= ncWeight * (newNcSum/trueA.back());
-        energyInc = newCurrentScore-currentScore;
+        newCurrentScore *= localWeight * (newLocalScoreSum / n1);
+        newCurrentScore *= secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
+        newCurrentScore *= wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore *= ncWeight * (newNcSum / trueA.back());
+        energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        badProbability = exp(energyInc/T);
-        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
-    } else if(score == "max") {
-        double deltaEnergy = max(ncWeight* (newNcSum/trueA.back() - ncSum/trueA.back()), max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
-                            s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
-                            secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
-                    max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
-                        wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges)))));
+        badProbability = exp(energyInc / T);
+        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / T));
+        break;
+    }
+    case Score::max:
+    {
+        double deltaEnergy = max(ncWeight* (newNcSum / trueA.back() - ncSum / trueA.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
+            s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
+            secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
+            max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
+                wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)))));
 
-        newCurrentScore += ecWeight * (newAligEdges/g1Edges);
-        newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
-        newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
-        newCurrentScore += localWeight * (newLocalScoreSum/n1);
-        newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
-        newCurrentScore += ncWeight * (newNcSum/trueA.back());
+        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
+        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
+        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore += localWeight * (newLocalScoreSum / n1);
+        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore += ncWeight * (newNcSum / trueA.back());
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        badProbability = exp(energyInc/T);
-        makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc/T);
-    } else if(score == "min") {
-        double deltaEnergy = min(ncWeight* (newNcSum/trueA.back() - ncSum/trueA.back()), min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
-                                     s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
-                                     secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
-                                 min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
-                                     wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges)))));
+        badProbability = exp(energyInc / T);
+        makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc / T);
+        break;
+    }
+    case Score::min:
+    {
+        double deltaEnergy = min(ncWeight* (newNcSum / trueA.back() - ncSum / trueA.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
+            s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
+            secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
+            min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
+                wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)))));
 
-        newCurrentScore += ecWeight * (newAligEdges/g1Edges);
-        newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
-        newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
-        newCurrentScore += localWeight * (newLocalScoreSum/n1);
-        newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
-        newCurrentScore += ncWeight * (newNcSum/trueA.back());
+        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
+        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
+        newCurrentScore += localWeight * (newLocalScoreSum / n1);
+        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore += ncWeight * (newNcSum / trueA.back());
 
         energyInc = newCurrentScore - currentScore; //is this even used?
         wasBadMove = deltaEnergy < 0;
-        badProbability = exp(energyInc/T);
-        makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(newCurrentScore/T);
-    } else if(score == "inverse") {
-        newCurrentScore += ecWeight/(newAligEdges/g1Edges);
-        newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
-        newCurrentScore += s3Weight/(newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
-        newCurrentScore += localWeight/(newLocalScoreSum/n1);
-        newCurrentScore += wecWeight/(newWecSum/(2*g1Edges));
-        newCurrentScore += ncWeight/(newNcSum/trueA.back());
+        badProbability = exp(energyInc / T);
+        makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(newCurrentScore / T);
+        break;
+    }
+    case Score::inverse:
+    {
+        newCurrentScore += ecWeight / (newAligEdges / g1Edges);
+        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
+        newCurrentScore += s3Weight / (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore += localWeight / (newLocalScoreSum / n1);
+        newCurrentScore += wecWeight / (newWecSum / (2 * g1Edges));
+        newCurrentScore += ncWeight / (newNcSum / trueA.back());
 
-        energyInc = newCurrentScore-currentScore;
+        energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        badProbability = exp(energyInc/T);
-        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
-    } else if(score == "maxFactor") {
-        double maxScore = max(ncWeight*(newNcSum/trueA.back() - ncSum/trueA.back()),max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
-                            s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
-                            secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
-                            max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
-                            wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges)))));
+        badProbability = exp(energyInc / T);
+        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / T));
+        break;
+    }
+    case Score::maxFactor:
+    {
+        double maxScore = max(ncWeight*(newNcSum / trueA.back() - ncSum / trueA.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
+            s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
+            secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
+            max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
+                wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)))));
 
-        double minScore = min(ncWeight*(newNcSum/trueA.back() - ncSum/trueA.back()), min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
-                            s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
-                            secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
-                            min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
-                            wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges)))));
+        double minScore = min(ncWeight*(newNcSum / trueA.back() - ncSum / trueA.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
+            s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
+            secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
+            min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
+                wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)))));
 
-        newCurrentScore += ecWeight * (newAligEdges/g1Edges);
-        newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
-        newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
-        newCurrentScore += localWeight * (newLocalScoreSum/n1);
-        newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
-        newCurrentScore += ncWeight * (newNcSum/trueA.back());
+        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
+        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
+        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore += localWeight * (newLocalScoreSum / n1);
+        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore += ncWeight * (newNcSum / trueA.back());
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = maxScore < -1 * minScore;
-        badProbability = exp(energyInc/T);
-        makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc/T);
-    } else if(score == "pareto") { //Short circuit return to let the pareto front decide
-        if((iterationsPerformed % 500 != 0))
-        	return true;
+        badProbability = exp(energyInc / T);
+        makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc / T);
+        break;
+    }
+    case Score::pareto: //Short circuit return to let the pareto front decide
+    {
+        if ((iterationsPerformed % 512 != 0))
+            return true;
         vector<double> addScores(numOfMeasures);  //what alignments to keep instead of simulated annealing.
-        addScores[scoreNamesToIndexes["ec"]] = (1.0*newAligEdges/g1Edges);
-        addScores[scoreNamesToIndexes["s3"]] = (1.0*newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
-        addScores[scoreNamesToIndexes["sec"]] = (1.0*newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
+        addScores[scoreNamesToIndexes["ec"]] = (1.0*newAligEdges / g1Edges);
+        addScores[scoreNamesToIndexes["s3"]] = (1.0*newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        addScores[scoreNamesToIndexes["sec"]] = (1.0*newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         addScores[scoreNamesToIndexes["tc"]] = (1.0*newTCSum);
-        addScores[scoreNamesToIndexes["local"]] = (1.0*newLocalScoreSum/n1);
-        addScores[scoreNamesToIndexes["wec"]] = (1.0*newWecSum/(2*g1Edges));
+        addScores[scoreNamesToIndexes["local"]] = (1.0*newLocalScoreSum / n1);
+        addScores[scoreNamesToIndexes["wec"]] = (1.0*newWecSum / (2 * g1Edges));
         //addScores[scoreNamesToIndexes["ewec"]] = ewecWeight * (newEwecSum);
-        addScores[scoreNamesToIndexes["nc"]] = (1.0*newNcSum/trueA.back());
-	#ifdef WEIGHTED
-        addScores[scoreNamesToIndexes["mec"]] += (1.0*newAligEdges/(g1WeightedEdges+g2WeightedEdges));
+        addScores[scoreNamesToIndexes["nc"]] = (1.0*newNcSum / trueA.back());
+#ifdef WEIGHTED
+        addScores[scoreNamesToIndexes["mec"]] += (1.0*newAligEdges / (g1WeightedEdges + g2WeightedEdges));
         addScores[scoreNamesToIndexes["ses"]] += 1.0*newSquaredAligEdges;
-    #endif
-        	/*cout << "aligEdges: " << newAligEdges << endl;
-        	cout << "g1Edges: " << g1Edges << endl;
-        	cout << "newInducedEdges: " << newInducedEdges << endl;
-        	cout << "g2Edges: " << g2Edges << endl;
-        	cout << "newTCSum: " << newTCSum << endl;
-        	cout << "newLocalScoreSum: " << newLocalScoreSum << endl;
-        	cout << "n1: " << n1 << endl;
-        	cout << "newWecSum: " << newWecSum << endl;
-        	cout << "newNcSum: " << newNcSum << endl;
-        	cout << "trueA_back: " << trueA.back() << endl;
-    #ifdef WEIGHTED
-        	cout << "g1WeightedEdges: " << g1WeightedEdges << endl;
-        	cout << "g2WeightedEdges: " << g2WeightedEdges << endl;
-        	cout << "newSquaredAligEdges: " << newSquaredAligEdges << endl;
-    #endif*/
+#endif
+        /*cout << "aligEdges: " << newAligEdges << endl;
+        cout << "g1Edges: " << g1Edges << endl;
+        cout << "newInducedEdges: " << newInducedEdges << endl;
+        cout << "g2Edges: " << g2Edges << endl;
+        cout << "newTCSum: " << newTCSum << endl;
+        cout << "newLocalScoreSum: " << newLocalScoreSum << endl;
+        cout << "n1: " << n1 << endl;
+        cout << "newWecSum: " << newWecSum << endl;
+        cout << "newNcSum: " << newNcSum << endl;
+        cout << "trueA_back: " << trueA.back() << endl;
+#ifdef WEIGHTED
+        cout << "g1WeightedEdges: " << g1WeightedEdges << endl;
+        cout << "g2WeightedEdges: " << g2WeightedEdges << endl;
+        cout << "newSquaredAligEdges: " << newSquaredAligEdges << endl;
+#endif*/
         newA = new vector<ushort>(0);
         vector<vector<ushort>*> toRemove = paretoFront.addAlignmentScores(newA, addScores, makeChange);
-        if(makeChange){
-        	for(unsigned int i = 0; i < toRemove.size(); i++)
-        		removeAlignmentData(toRemove[i]);
+        if (makeChange) {
+            for (unsigned int i = 0; i < toRemove.size(); i++)
+                removeAlignmentData(toRemove[i]);
         }
         //std::cout << "ParetoFront:\n";
         //paretoFront.printAlignmentScores(cout);
         //cin.get();
         return makeChange;
+        break;
+    }
     }
 
-    if(wasBadMove && (iterationsPerformed % 500 == 0 || (TCWeight > 0 && iterationsPerformed % 25 == 0))){ //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
-        if(sampledProbability.size() == 1000){
+    if (wasBadMove && (iterationsPerformed % 512 == 0 || (TCWeight > 0 && iterationsPerformed % 32 == 0))) { //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
+        if (sampledProbability.size() == 1000) {
             sampledProbability.erase(sampledProbability.begin());
         }
         sampledProbability.push_back(badProbability);
     }
-
     return makeChange;
 }
 
 int SANA::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
     int res = 0;
-    for (uint i = 0; i < G1AdjLists[source].size(); i++) {
+    const uint n = G1AdjLists[source].size();
+    for (uint i = 0; i < n; i++) {
         ushort neighbor = G1AdjLists[source][i];
         res -= G2AdjMatrix[oldTarget][(*A)[neighbor]];
         res += G2AdjMatrix[newTarget][(*A)[neighbor]];
@@ -932,12 +969,14 @@ int SANA::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget
 
 int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
     int res = 0;
-    for (uint i = 0; i < G1AdjLists[source1].size(); i++) {
+    uint n = G1AdjLists[source1].size();
+    for (uint i = 0; i < n; i++) {
         ushort neighbor = G1AdjLists[source1][i];
         res -= G2AdjMatrix[target1][(*A)[neighbor]];
         res += G2AdjMatrix[target2][(*A)[neighbor]];
     }
-    for (uint i = 0; i < G1AdjLists[source2].size(); i++) {
+    n = G1AdjLists[source2].size();
+    for (uint i = 0; i < n; i++) {
         ushort neighbor = G1AdjLists[source2][i];
         res -= G2AdjMatrix[target2][(*A)[neighbor]];
         res += G2AdjMatrix[target1][(*A)[neighbor]];
@@ -1000,11 +1039,13 @@ int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort targe
 
 int SANA::inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
     int res = 0;
-    for (uint i = 0; i < G2AdjLists[oldTarget].size(); i++) {
+    uint n = G2AdjLists[oldTarget].size();
+    for (uint i = 0; i < n; i++) {
         ushort neighbor = G2AdjLists[oldTarget][i];
         res -= (*assignedNodesG2)[neighbor];
     }
-    for (uint i = 0; i < G2AdjLists[newTarget].size(); i++) {
+    n = G2AdjLists[newTarget].size();
+    for (uint i = 0; i < n; i++) {
         ushort neighbor = G2AdjLists[newTarget][i];
         res += (*assignedNodesG2)[neighbor];
     }

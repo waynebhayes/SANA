@@ -262,9 +262,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
             cerr << "! " <<  G1.miRNACount << " < " << G2.miRNACount << endl;
             throw runtime_error("g1 should have less miRNAs than g2\n ");
         }
-
     }
-
 
     // Getting Valid locks
     if(lockFile != ""){
