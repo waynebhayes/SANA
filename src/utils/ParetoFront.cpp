@@ -225,11 +225,11 @@ ostream& ParetoFront::printParetoFront(ostream &os)
 {
 	os << "ParetoFront:\n";
 	singleValueIterator iters[numberOfMeasures];
-	for(int i = 0; i < numberOfMeasures; i++)
+	for(unsigned i = 0; i < numberOfMeasures; i++)
 		iters[i] = paretoFront[i].begin();
 
 	while(iters[numberOfMeasures-1] != paretoFront[numberOfMeasures-1].end()) {
-		for(int i = 0; i < numberOfMeasures; i++) {
+		for(unsigned i = 0; i < numberOfMeasures; i++) {
 			os << iters[i]->first << ' ';
 			iters[i]++; 
 		}
