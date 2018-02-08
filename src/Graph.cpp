@@ -24,13 +24,15 @@ void Graph::setMaxGraphletSize(double number){
     //Graph::computeGraphletDegreeVectors();
 }
 
-void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g) {
+void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes) {
   g.name = graphName;
   g.geneCount = 0;
   g.miRNACount = 0;
 
   vector<string> nodes;
+  nodes.reserve(14000);
   unordered_map<string,ushort> nodeName2IndexMap;
+  nodeName2IndexMap.reserve(1028);
   vector<vector<string> > edges = fileToStringsByLines(fin);
 
   for(int i = 0; i < edges.size(); i++){
@@ -40,19 +42,23 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g) {
       if(nodeName2IndexMap.find(node1) == nodeName2IndexMap.end()){
           nodeName2IndexMap[node1] = nodes.size();
           nodes.push_back(node1);
-          g.nodeTypes.push_back("gene");
-          g.geneCount++;
+          if(nodesHaveTypes){
+            g.nodeTypes.push_back("gene");
+            g.geneCount++;
+          }
       }
 
       if(nodeName2IndexMap.find(node2) == nodeName2IndexMap.end()){
           nodeName2IndexMap[node2] = nodes.size();
           nodes.push_back(node2);
-          g.nodeTypes.push_back("miRNA");
-          g.miRNACount++;
+          if(nodesHaveTypes){
+            g.nodeTypes.push_back("miRNA");
+            g.miRNACount++;
+          }
       }
   }
-
     uint numNodes = nodes.size();
+    nodes.shrink_to_fit();
 #ifdef WEIGHTED
     vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (3));
 #else
@@ -128,7 +134,8 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g) {
     g.lockedTo = vector<string> (n, "");
     g.nodeNameToIndexMap = nodeName2IndexMap;
     g.edgeList  = edgeList;
-    g.updateUnlockedGeneCount();
+    if(nodesHaveTypes)
+        g.updateUnlockedGeneCount();
     g.initConnectedComponents();
 }
 
@@ -140,6 +147,9 @@ void Graph::edgeList2gw(string fin, string fout) {
   vector<string> nodes;
   unordered_map<string,uint> nodeName2IndexMap;
   vector<vector<string> > edges = fileToStringsByLines(fin);
+
+  nodes.reserve(14000);
+  nodeName2IndexMap.reserve(1028);
 
   // TODO set node types here directly instead
 
@@ -174,6 +184,7 @@ void Graph::edgeList2gw(string fin, string fout) {
 // #endif
 
     uint numNodes = nodes.size();
+	nodes.shrink_to_fit();
     // for (uint i = 0; i < numNodes; i++) {
     //     nodeName2IndexMap[nodes[i]] = i;
     // }
@@ -301,20 +312,12 @@ void Graph::getAdjMatrix(vector<vector<ushort> >& adjMatrixCopy) const {
     adjMatrixCopy = vector<vector<ushort> > (n, vector<ushort> (n));
 #else
 void Graph::getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const {
-    uint n = getNumNodes();
-    adjMatrixCopy = vector<vector<bool> > (n, vector<bool> (n));
+    adjMatrixCopy = vector<vector<bool> > (adjMatrix);
 #endif
-    for (uint i = 0; i < n; i++) {
-        for (uint j = 0; j < n; j++) adjMatrixCopy[i][j] = adjMatrix[i][j];
-    }
 }
 
 void Graph::getAdjLists(vector<vector<ushort> >& adjListsCopy) const {
-    uint n = getNumNodes();
-    adjListsCopy = vector<vector<ushort> > (n, vector<ushort> (0));
-    for (uint i = 0; i < n; i++) {
-        adjListsCopy[i] = adjLists[i];
-    }
+    adjListsCopy = vector<vector<ushort> > (adjLists);
 }
 
 void Graph::getEdgeList(vector<vector<ushort> >& edgeListCopy) const {
@@ -498,7 +501,10 @@ void Graph::multGwFile(const string& fileName, uint path) {
             throw runtime_error(errorMsg.str().c_str());
         }
         sparse_graph1.set(1,node1,node2);
+        sparse_graph1.set(1,node2,node1);
+
         sparse_graph2.set(1,node1,node2);
+        sparse_graph2.set(1,node2,node1);
     }
     for(uint i=1; i<path ; i++){
         SparseMatrix<int> final = sparse_graph2.multiply(sparse_graph1);
@@ -546,6 +552,7 @@ void Graph::initConnectedComponents() {
     ushort n = getNumNodes();
     vector<vector<ushort>* > aux(0);
     unordered_set<ushort> nodes;
+    nodes.reserve(n);
     for (ushort i = 0; i < n; i++) nodes.insert(i);
     while (nodes.size() > 0) {
         ushort u = *nodes.begin();
@@ -1524,7 +1531,8 @@ void Graph::setNodeTypes(set<string> genes, set<string> miRNAs){
 }
 
 bool Graph::hasNodeTypes(){
-    return geneCount > 0 || miRNACount > 0;
+    //return geneCount > 0 || miRNACount > 0;
+    return nodesHaveTypesEnabled;
 }
 
 string Graph::getNodeType(uint i){
