@@ -728,13 +728,13 @@ void SANA::performSwap() {
     ushort source2 = G1RandomUnlockedNode(source1);
     ushort target1 = (*A)[source1], target2 = (*A)[source2];
 
-    int newAligEdges = (needAligEdges or needSec) ? aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    int newTCSum = (needTC) ? TCSum + TCIncSwapOp(source1, source2, target1, target2) : -1;
+    int newAligEdges           = (needAligEdges or needSec) ?  aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
+    int newTCSum               = (needTC) ?  TCSum + TCIncSwapOp(source1, source2, target1, target2) : -1;
     double newSquaredAligEdges = (needSquaredAligEdges) ? squaredAligEdges + squaredAligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    double newWecSum = (needWec) ? wecSum + WECIncSwapOp(source1, source2, target1, target2) : -1;
-    double newEwecSum = (needEwec) ? ewecSum + EWECIncSwapOp(source1, source2, target1, target2) : -1;
-    double newNcSum = (needNC) ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
-    double newLocalScoreSum = (needLocal) ? localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2) : -1;
+    double newWecSum           = (needWec) ?  wecSum + WECIncSwapOp(source1, source2, target1, target2) : -1;
+    double newEwecSum          = (needEwec) ?  ewecSum + EWECIncSwapOp(source1, source2, target1, target2) : -1;
+    double newNcSum            = (needNC) ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
+    double newLocalScoreSum    = (needLocal) ? localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2) : -1;
 
     map<string, double> newLocalScoreSumMap(*localScoreSumMap);
     if (needLocal) {
@@ -746,16 +746,16 @@ void SANA::performSwap() {
     bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
 
     if (makeChange) {
-        (*A)[source1] = target2;
-        (*A)[source2] = target1;
-        aligEdges = newAligEdges;
-        localScoreSum = newLocalScoreSum;
-        TCSum = newTCSum;
-        wecSum = newWecSum;
-        ewecSum = newEwecSum;
-        ncSum = newNcSum;
-        currentScore = newCurrentScore;
-        squaredAligEdges = newSquaredAligEdges;
+        (*A)[source1]       = target2;
+        (*A)[source2]       = target1;
+        aligEdges           = newAligEdges;
+        localScoreSum       = newLocalScoreSum;
+        TCSum               = newTCSum;
+        wecSum              = newWecSum;
+        ewecSum             = newEwecSum;
+        ncSum               = newNcSum;
+        currentScore        = newCurrentScore;
+        squaredAligEdges    = newSquaredAligEdges;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
         if (score == Score::pareto and (iterationsPerformed % 512 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
