@@ -175,6 +175,8 @@ private:
     double ewecWeight;
     double TCWeight;
 
+	string dummy;
+
     enum class Score{sum, product, inverse, max, min, maxFactor, pareto};
     Score score;
 

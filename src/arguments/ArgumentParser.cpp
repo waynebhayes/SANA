@@ -128,7 +128,7 @@ void ArgumentParser::initParsedValues(vector<string> vArg) {
             i = i+k+1;
         }
         else {
-                throw runtime_error("Unknown argument: " + arg + ". See the README for the correct syntax");
+            throw runtime_error("Unknown argument: " + arg + ". See the README for the correct syntax");
         }
         ++i;
     }
