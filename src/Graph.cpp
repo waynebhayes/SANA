@@ -1,7 +1,6 @@
 #include "Graph.hpp"
 #include <sstream>
 #include <unistd.h>
-#include <numeric>
 
 using namespace std;
 
@@ -553,7 +552,7 @@ void Graph::initConnectedComponents() {
     ushort n = getNumNodes();
     vector<vector<ushort>* > aux(0);
     unordered_set<ushort> nodes(n);
-    iota(begin(nodes), end(nodes), 0);
+	for (ushort i = 0; i < n; i++) nodes.insert(i);
 
     while (nodes.size() > 0) {
         ushort u = *nodes.begin();
