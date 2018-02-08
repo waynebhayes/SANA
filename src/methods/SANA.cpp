@@ -210,8 +210,8 @@ SANA::SANA(Graph* G1, Graph* G2,
     iterationsPerStep   = 10000000;
 
     //Make sana think were running in (score == sum) to avoid crashing during linear regression.
-    if(score == "pareto")
-        score = "sum";
+    if(score == Score::pareto)
+        score = Score::sum;
 
     /*
     this does not need to be initialized here,
