@@ -724,21 +724,21 @@ void SANA::performChange() {
 }
 
 void SANA::performSwap() {
-    ushort source1 =  G1RandomUnlockedNode();
-    ushort source2 =  G1RandomUnlockedNode(source1);
+    ushort source1 = G1RandomUnlockedNode();
+    ushort source2 = G1RandomUnlockedNode(source1);
     ushort target1 = (*A)[source1], target2 = (*A)[source2];
 
-    int newAligEdges           = (needAligEdges or needSec) ?  aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    int newTCSum               = (needTC) ?  TCSum + TCIncSwapOp(source1, source2, target1, target2) : -1;
+    int newAligEdges = (needAligEdges or needSec) ? aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
+    int newTCSum = (needTC) ? TCSum + TCIncSwapOp(source1, source2, target1, target2) : -1;
     double newSquaredAligEdges = (needSquaredAligEdges) ? squaredAligEdges + squaredAligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    double newWecSum           = (needWec) ?  wecSum + WECIncSwapOp(source1, source2, target1, target2) : -1;
-    double newEwecSum          = (needEwec) ?  ewecSum + EWECIncSwapOp(source1, source2, target1, target2) : -1;
-    double newNcSum            = (needNC) ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
-    double newLocalScoreSum    = (needLocal) ? localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2) : -1;
+    double newWecSum = (needWec) ? wecSum + WECIncSwapOp(source1, source2, target1, target2) : -1;
+    double newEwecSum = (needEwec) ? ewecSum + EWECIncSwapOp(source1, source2, target1, target2) : -1;
+    double newNcSum = (needNC) ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
+    double newLocalScoreSum = (needLocal) ? localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2) : -1;
 
     map<string, double> newLocalScoreSumMap(*localScoreSumMap);
     if (needLocal) {
-        for(auto &item : newLocalScoreSumMap)
+        for (auto &item : newLocalScoreSumMap)
             item.second += localScoreSumIncSwapOp(localSimMatrixMap[item.first], source1, source2, target1, target2);
     }
 
@@ -746,28 +746,29 @@ void SANA::performSwap() {
     bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
 
     if (makeChange) {
-        (*A)[source1]       = target2;
-        (*A)[source2]       = target1;
-        aligEdges           = newAligEdges;
-        localScoreSum       = newLocalScoreSum;
-        TCSum               = newTCSum;
-        wecSum              = newWecSum;
-        ewecSum             = newEwecSum;
-        ncSum               = newNcSum;
-        currentScore        = newCurrentScore;
-        squaredAligEdges    = newSquaredAligEdges;
+        (*A)[source1] = target2;
+        (*A)[source2] = target1;
+        aligEdges = newAligEdges;
+        localScoreSum = newLocalScoreSum;
+        TCSum = newTCSum;
+        wecSum = newWecSum;
+        ewecSum = newEwecSum;
+        ncSum = newNcSum;
+        currentScore = newCurrentScore;
+        squaredAligEdges = newSquaredAligEdges;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
-        if(score == Score::pareto and (iterationsPerformed % 512 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
-        	insertCurrentAndPrepareNewMeasureDataByAlignment();
+        if (score == Score::pareto and (iterationsPerformed % 512 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
+            insertCurrentAndPrepareNewMeasureDataByAlignment();
 
 #if 0
-        if(randomReal(gen)<=1) {
-        double foo = eval(*A);
-        if(fabs(foo - newCurrentScore)>20){
-            cerr << "\nSwap: nCS " << newCurrentScore << " eval " << foo << " nCS - eval " << newCurrentScore-foo << " adj? " << (G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
-            newCurrentScore = newSquaredAligEdges = foo;
-        } else cerr << "s";
+        if (randomReal(gen) <= 1) {
+            double foo = eval(*A);
+            if (fabs(foo - newCurrentScore) > 20) {
+                cerr << "\nSwap: nCS " << newCurrentScore << " eval " << foo << " nCS - eval " << newCurrentScore - foo << " adj? " << (G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
+                newCurrentScore = newSquaredAligEdges = foo;
+            }
+            else cerr << "s";
         }
 #endif
     }
@@ -781,6 +782,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     switch (score)
     {
     case Score::sum:
+    {
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
@@ -798,7 +800,9 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         badProbability = exp(energyInc / T);
         makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / T));
         break;
+    }
     case Score::product:
+    {
         newCurrentScore = 1;
         newCurrentScore *= ecWeight * (newAligEdges / g1Edges);
         newCurrentScore *= s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
@@ -812,7 +816,9 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         badProbability = exp(energyInc / T);
         makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / T));
         break;
+    }
     case Score::max:
+    {
         double deltaEnergy = max(ncWeight* (newNcSum / trueA.back() - ncSum / trueA.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
@@ -831,7 +837,9 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         badProbability = exp(energyInc / T);
         makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc / T);
         break;
+    }
     case Score::min:
+    {
         double deltaEnergy = min(ncWeight* (newNcSum / trueA.back() - ncSum / trueA.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
@@ -850,7 +858,9 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         badProbability = exp(energyInc / T);
         makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(newCurrentScore / T);
         break;
+    }
     case Score::inverse:
+    {
         newCurrentScore += ecWeight / (newAligEdges / g1Edges);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         newCurrentScore += s3Weight / (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
@@ -863,7 +873,9 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         badProbability = exp(energyInc / T);
         makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / T));
         break;
+    }
     case Score::maxFactor:
+    {
         double maxScore = max(ncWeight*(newNcSum / trueA.back() - ncSum / trueA.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
@@ -888,7 +900,9 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         badProbability = exp(energyInc / T);
         makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc / T);
         break;
+    }
     case Score::pareto: //Short circuit return to let the pareto front decide
+    {
         if ((iterationsPerformed % 512 != 0))
             return true;
         vector<double> addScores(numOfMeasures);  //what alignments to keep instead of simulated annealing.
@@ -930,6 +944,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         //cin.get();
         return makeChange;
         break;
+    }
     }
 
     if (wasBadMove && (iterationsPerformed % 512 == 0 || (TCWeight > 0 && iterationsPerformed % 32 == 0))) { //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
