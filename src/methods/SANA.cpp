@@ -77,20 +77,20 @@ SANA::SANA(Graph* G1, Graph* G2,
     g2WeightedEdges = G2->getWeightedNumEdges();
 #endif
     g2Edges         = G2->getNumEdges();
-	if (objectiveScore == "sum")
-		score = Score::sum;
-	else if (objectiveScore == "product")
-		score = Score::product;
-	else if (objectiveScore == "inverse")
-		score = Score::inverse;
-	else if (objectiveScore == "max")
-		score = Score::max;
-	else if (objectiveScore == "min")
-		score = Score::min;
-	else if (objectiveScore == "maxFactor")
-		score = Score::maxFactor;
-	else if (objectiveScore == "pareto")
-		score = Score::pareto;
+    if (objectiveScore == "sum")
+        score = Score::sum;
+    else if (objectiveScore == "product")
+        score = Score::product;
+    else if (objectiveScore == "inverse")
+        score = Score::inverse;
+    else if (objectiveScore == "max")
+        score = Score::max;
+    else if (objectiveScore == "min")
+        score = Score::min;
+    else if (objectiveScore == "maxFactor")
+        score = Score::maxFactor;
+    else if (objectiveScore == "pareto")
+        score = Score::pareto;
 
     paretoInitial   = MC->getParetoInitial();
     paretoCapacity  = MC->getParetoCapacity();
