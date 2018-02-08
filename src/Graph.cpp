@@ -1,6 +1,8 @@
 #include "Graph.hpp"
 #include <sstream>
 #include <unistd.h>
+#include <numeric>
+
 using namespace std;
 
 Graph Graph::loadGraph(string name) {
@@ -32,7 +34,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
   vector<string> nodes;
   nodes.reserve(14000);
   unordered_map<string,ushort> nodeName2IndexMap;
-  nodeName2IndexMap.reserve(1028);
+  nodeName2IndexMap.reserve(1279);
   vector<vector<string> > edges = fileToStringsByLines(fin);
 
   for(int i = 0; i < edges.size(); i++){
@@ -57,7 +59,6 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
           }
       }
   }
-    uint numNodes = nodes.size();
     nodes.shrink_to_fit();
 #ifdef WEIGHTED
     vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (3));
@@ -149,7 +150,7 @@ void Graph::edgeList2gw(string fin, string fout) {
   vector<vector<string> > edges = fileToStringsByLines(fin);
 
   nodes.reserve(14000);
-  nodeName2IndexMap.reserve(1028);
+  nodeName2IndexMap.reserve(1279);
 
   // TODO set node types here directly instead
 
@@ -183,8 +184,8 @@ void Graph::edgeList2gw(string fin, string fout) {
 //     nodes = removeDuplicates(fileToStrings(fin));
 // #endif
 
-    uint numNodes = nodes.size();
-	nodes.shrink_to_fit();
+    //uint numNodes = nodes.size();
+    nodes.shrink_to_fit();
     // for (uint i = 0; i < numNodes; i++) {
     //     nodeName2IndexMap[nodes[i]] = i;
     // }
@@ -551,9 +552,9 @@ void Graph::initConnectedComponents() {
     //this function takes most of the initialization time
     ushort n = getNumNodes();
     vector<vector<ushort>* > aux(0);
-    unordered_set<ushort> nodes;
-    nodes.reserve(n);
-    for (ushort i = 0; i < n; i++) nodes.insert(i);
+    unordered_set<ushort> nodes(n);
+    iota(begin(nodes), end(nodes), 0);
+
     while (nodes.size() > 0) {
         ushort u = *nodes.begin();
         nodes.erase(nodes.begin());
@@ -1163,6 +1164,7 @@ void Graph::saveInGWFormatShuffled(string outputFile, const vector<string>& node
     randomShuffle(origPos2NewPos);
 
     unordered_map<ushort, ushort> newPos2OrigPos;
+	newPos2OrigPos.reserve(n);
     for (uint i = 0; i < n; i++) {
         newPos2OrigPos[origPos2NewPos[i]] = i;
     }
@@ -1416,6 +1418,7 @@ int Graph::getLockedCount(){
 unordered_map<ushort, ushort> Graph::getLocking_ReIndexMap() const{
     unordered_map<ushort, ushort> result;
     int n = getNumNodes();
+	result.reserve(n);
     int unlockedIndex = 0;
     int lockedIndex = n-1;
     for(int i=0; i<n; i++){
@@ -1439,6 +1442,7 @@ unordered_map<ushort, ushort> Graph::getLocking_ReIndexMap() const{
 unordered_map<ushort, ushort> Graph::getNodeTypes_ReIndexMap() const{
     unordered_map<ushort, ushort> result;
     int n = getNumNodes();
+	result.reserve(n);
     int unlocked_gene_count = 0;
     int unlocked_miRNA_count = 0;
     for(int i=0;i<n;i++){

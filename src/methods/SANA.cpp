@@ -77,7 +77,20 @@ SANA::SANA(Graph* G1, Graph* G2,
     g2WeightedEdges = G2->getWeightedNumEdges();
 #endif
     g2Edges         = G2->getNumEdges();
-    score           = objectiveScore;
+	if (objectiveScore == "sum")
+		score = Score::sum;
+	else if (objectiveScore == "product")
+		score = Score::product;
+	else if (objectiveScore == "inverse")
+		score = Score::inverse;
+	else if (objectiveScore == "max")
+		score = Score::max;
+	else if (objectiveScore == "min")
+		score = Score::min;
+	else if (objectiveScore == "maxFactor")
+		score = Score::maxFactor;
+	else if (objectiveScore == "pareto")
+		score = Score::pareto;
 
     paretoInitial   = MC->getParetoInitial();
     paretoCapacity  = MC->getParetoCapacity();
@@ -693,7 +706,7 @@ void SANA::performChange() {
         ncSum                                = newNcSum;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
-        if(score == "pareto" and (iterationsPerformed % 500 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
+        if(score == "pareto" and (iterationsPerformed & 511 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
         	insertCurrentAndPrepareNewMeasureDataByAlignment();
 #if 0
         if(randomReal(gen)<=1) {
@@ -745,7 +758,7 @@ void SANA::performSwap() {
         squaredAligEdges    = newSquaredAligEdges;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
-        if(score == "pareto" and (iterationsPerformed % 500 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
+        if(score == "pareto" and (iterationsPerformed & 511 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
         	insertCurrentAndPrepareNewMeasureDataByAlignment();
 
 #if 0
@@ -765,7 +778,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     bool wasBadMove = false;
     double badProbability = 0;
 
-    if(score == "sum") {
+    if(score == Score::sum) {
         newCurrentScore += ecWeight * (newAligEdges/g1Edges);
         newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
         newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
@@ -782,7 +795,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         wasBadMove = energyInc < 0;
         badProbability = exp(energyInc/T);
         makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
-    } else if(score == "product") {
+    } else if(score == Score::product) {
         newCurrentScore = 1;
         newCurrentScore *= ecWeight * (newAligEdges/g1Edges);
         newCurrentScore *= s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
@@ -795,7 +808,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         wasBadMove = energyInc < 0;
         badProbability = exp(energyInc/T);
         makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
-    } else if(score == "max") {
+    } else if(score == Score::max) {
         double deltaEnergy = max(ncWeight* (newNcSum/trueA.back() - ncSum/trueA.back()), max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
                             s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
                             secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
@@ -813,7 +826,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         wasBadMove = energyInc < 0;
         badProbability = exp(energyInc/T);
         makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc/T);
-    } else if(score == "min") {
+    } else if(score == Score::min) {
         double deltaEnergy = min(ncWeight* (newNcSum/trueA.back() - ncSum/trueA.back()), min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
                                      s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
                                      secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
@@ -831,7 +844,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         wasBadMove = deltaEnergy < 0;
         badProbability = exp(energyInc/T);
         makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(newCurrentScore/T);
-    } else if(score == "inverse") {
+    } else if(score == Score::inverse) {
         newCurrentScore += ecWeight/(newAligEdges/g1Edges);
         newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
         newCurrentScore += s3Weight/(newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
@@ -843,7 +856,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         wasBadMove = energyInc < 0;
         badProbability = exp(energyInc/T);
         makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
-    } else if(score == "maxFactor") {
+    } else if(score == Score::maxFactor) {
         double maxScore = max(ncWeight*(newNcSum/trueA.back() - ncSum/trueA.back()),max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
                             s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
                             secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
@@ -867,8 +880,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         wasBadMove = maxScore < -1 * minScore;
         badProbability = exp(energyInc/T);
         makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc/T);
-    } else if(score == "pareto") { //Short circuit return to let the pareto front decide
-        if((iterationsPerformed % 500 != 0))
+    } else if(score == Score::pareto) { //Short circuit return to let the pareto front decide
+        if((iterationsPerformed & 511 != 0))
         	return true;
         vector<double> addScores(numOfMeasures);  //what alignments to keep instead of simulated annealing.
         addScores[scoreNamesToIndexes["ec"]] = (1.0*newAligEdges/g1Edges);
@@ -910,7 +923,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         return makeChange;
     }
 
-    if(wasBadMove && (iterationsPerformed % 500 == 0 || (TCWeight > 0 && iterationsPerformed % 25 == 0))){ //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
+    if(wasBadMove && (iterationsPerformed & 511 == 0 || (TCWeight > 0 && iterationsPerformed & 31 == 0))){ //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
         if(sampledProbability.size() == 1000){
             sampledProbability.erase(sampledProbability.begin());
         }
@@ -922,7 +935,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 
 int SANA::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
     int res = 0;
-    for (uint i = 0; i < G1AdjLists[source].size(); i++) {
+    const uint n = G1AdjLists[source].size();
+    for (uint i = 0; i < n; i++) {
         ushort neighbor = G1AdjLists[source][i];
         res -= G2AdjMatrix[oldTarget][(*A)[neighbor]];
         res += G2AdjMatrix[newTarget][(*A)[neighbor]];
@@ -932,12 +946,14 @@ int SANA::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget
 
 int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
     int res = 0;
-    for (uint i = 0; i < G1AdjLists[source1].size(); i++) {
+    uint n = G1AdjLists[source1].size();
+    for (uint i = 0; i < n; i++) {
         ushort neighbor = G1AdjLists[source1][i];
         res -= G2AdjMatrix[target1][(*A)[neighbor]];
         res += G2AdjMatrix[target2][(*A)[neighbor]];
     }
-    for (uint i = 0; i < G1AdjLists[source2].size(); i++) {
+    n = G1AdjLists[source2].size();
+    for (uint i = 0; i < n; i++) {
         ushort neighbor = G1AdjLists[source2][i];
         res -= G2AdjMatrix[target2][(*A)[neighbor]];
         res += G2AdjMatrix[target1][(*A)[neighbor]];
@@ -1000,11 +1016,13 @@ int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort targe
 
 int SANA::inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
     int res = 0;
-    for (uint i = 0; i < G2AdjLists[oldTarget].size(); i++) {
+    uint n = G2AdjLists[oldTarget].size();
+    for (uint i = 0; i < n; i++) {
         ushort neighbor = G2AdjLists[oldTarget][i];
         res -= (*assignedNodesG2)[neighbor];
     }
-    for (uint i = 0; i < G2AdjLists[newTarget].size(); i++) {
+    n = G2AdjLists[newTarget].size();
+    for (uint i = 0; i < n; i++) {
         ushort neighbor = G2AdjLists[newTarget][i];
         res += (*assignedNodesG2)[neighbor];
     }
