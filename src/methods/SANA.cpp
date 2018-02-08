@@ -555,7 +555,7 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, d
     vector<string> measureNames; vector<double> scores;
     scoreNamesToIndexes = mapScoresToIndexes(measureNames);
     paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
-    score = "pareto";
+	score = Score::pareto;
     for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
         cout << iter->first << '\n';
 
@@ -585,7 +585,7 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
     vector<string> measureNames; vector<double> scores;
     scoreNamesToIndexes = mapScoresToIndexes(measureNames);
     paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
-    score = "pareto";
+	score = Score::pareto;
     for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
         cout << iter->first << '\n';
 
@@ -706,7 +706,7 @@ void SANA::performChange() {
         ncSum                                = newNcSum;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
-        if(score == "pareto" and (iterationsPerformed & 511 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
+        if(score == Score::pareto and (iterationsPerformed & 511 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
         	insertCurrentAndPrepareNewMeasureDataByAlignment();
 #if 0
         if(randomReal(gen)<=1) {
@@ -758,7 +758,7 @@ void SANA::performSwap() {
         squaredAligEdges    = newSquaredAligEdges;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
-        if(score == "pareto" and (iterationsPerformed & 511 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
+        if(score == Score::pareto and (iterationsPerformed & 511 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
         	insertCurrentAndPrepareNewMeasureDataByAlignment();
 
 #if 0
