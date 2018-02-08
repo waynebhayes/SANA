@@ -174,7 +174,9 @@ private:
     double sesWeight;
     double ewecWeight;
     double TCWeight;
-    string score;
+
+    enum class Score{sum, product, inverse, max, min, maxFactor, pareto};
+    Score score;
 
     //For pareto mode
     int paretoInitial;

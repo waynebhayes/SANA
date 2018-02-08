@@ -378,13 +378,12 @@ string extractFileNameNoExtension(string s) {
 
 vector<string> removeDuplicates(const vector<string>& v) {
     unordered_set<string> s(v.begin(), v.end());
-    vector<string> res(0);
-    for (string x : s) res.push_back(x);
+    vector<string> res(s.begin(), s.end());
     return res;
 }
 
 vector<string> split(const string& s, char c) {
-    vector<string> res(0);
+    vector<string> res(s.length());
     string currentWord = "";
     for (char x : s) {
         if (x == c) {
