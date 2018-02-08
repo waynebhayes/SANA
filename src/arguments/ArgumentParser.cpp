@@ -128,8 +128,9 @@ void ArgumentParser::initParsedValues(vector<string> vArg) {
             i = i+k+1;
         }
         else {
-			if (arg.size() > 0)
+			if (arg.size() > 1) {
 				throw runtime_error("Unknown argument: " + arg + ". See the README for the correct syntax");
+			}
         }
         ++i;
     }
