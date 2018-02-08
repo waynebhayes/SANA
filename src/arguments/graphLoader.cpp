@@ -118,11 +118,15 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
             cerr << "Locking the nodes in " << lockFile << endl;
             ifstream ifs(lockFile.c_str());
             string node;
+            column1.reserve(14000);
+            column2.reserve(14000);
             while(ifs >> node){
                 column1.push_back(node);
                 ifs >> node;
                 column2.push_back(node);
             }
+            column1.shrink_to_fit();
+            column2.shrink_to_fit();
         }
         else{
             cerr << "Lock file (" << lockFile << ") does not exist!" << endl;
@@ -140,14 +144,14 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
             G1 = Graph::loadGraph(g1Name);
         }
         else{
-            Graph::loadFromEdgeListFile(fg1, g1Name, G1);
+            Graph::loadFromEdgeListFile(fg1, g1Name, G1, args.bools["-nodes-have-types"]);
         }
 
         if(fg2 == ""){
             G2 = Graph::loadGraph(g2Name);
         }
         else {
-            Graph::loadFromEdgeListFile(fg2, g2Name, G2);
+            Graph::loadFromEdgeListFile(fg2, g2Name, G2, args.bools["-nodes-have-types"]);
         }
 
         //G1.maxsize = 4;
@@ -189,6 +193,8 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 
     // For "-nodes-have-types"
     if(args.bools["-nodes-have-types"]){
+        G1.nodesHaveTypesEnabled = true;
+        G2.nodesHaveTypesEnabled = true;
         cerr << "Initializing the node types" << endl;
 //         if(!fileExists(fg1)){
 //             cerr << "fg1 (" << fg1 << ") file does not exists!" << endl;
@@ -245,13 +251,13 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 
         // Currently we have these constraints
         // if(not (genesG1.size() < genesG2.size())){
-        if(not (G1.geneCount < G2.geneCount)){
+        if(not (G1.geneCount <= G2.geneCount)){
             cerr << "g1 should have less genes  than g2 " << endl;
             cerr << "! " <<  G1.geneCount << " < " << G2.geneCount << endl;
             throw runtime_error("g1 should have less genes than g2 \n ");
         }
         // if(not (miRNAsG1.size() < miRNAsG2.size())){
-        if(not (G1.miRNACount < G2.miRNACount)){
+        if(not (G1.miRNACount <= G2.miRNACount)){
             cerr << "g1 should have less miRNAs than g2 " << endl;
             cerr << "! " <<  G1.miRNACount << " < " << G2.miRNACount << endl;
             throw runtime_error("g1 should have less miRNAs than g2\n ");
