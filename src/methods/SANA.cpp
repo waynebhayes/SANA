@@ -555,7 +555,7 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, d
     vector<string> measureNames; vector<double> scores;
     scoreNamesToIndexes = mapScoresToIndexes(measureNames);
     paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
-	score = Score::pareto;
+    score = Score::pareto;
     for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
         cout << iter->first << '\n';
 
@@ -585,7 +585,7 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
     vector<string> measureNames; vector<double> scores;
     scoreNamesToIndexes = mapScoresToIndexes(measureNames);
     paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
-	score = Score::pareto;
+    score = Score::pareto;
     for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
         cout << iter->first << '\n';
 
@@ -706,7 +706,7 @@ void SANA::performChange() {
         ncSum                                = newNcSum;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
-        if(score == Score::pareto and (iterationsPerformed & 511 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
+        if(score == Score::pareto and ((iterationsPerformed % 512) == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
         	insertCurrentAndPrepareNewMeasureDataByAlignment();
 #if 0
         if(randomReal(gen)<=1) {
@@ -758,7 +758,7 @@ void SANA::performSwap() {
         squaredAligEdges    = newSquaredAligEdges;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
-        if(score == Score::pareto and (iterationsPerformed & 511 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
+        if(score == Score::pareto and (iterationsPerformed % 512 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
         	insertCurrentAndPrepareNewMeasureDataByAlignment();
 
 #if 0
@@ -881,7 +881,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         badProbability = exp(energyInc/T);
         makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc/T);
     } else if(score == Score::pareto) { //Short circuit return to let the pareto front decide
-        if((iterationsPerformed & 511 != 0))
+        if((iterationsPerformed % 512 != 0))
         	return true;
         vector<double> addScores(numOfMeasures);  //what alignments to keep instead of simulated annealing.
         addScores[scoreNamesToIndexes["ec"]] = (1.0*newAligEdges/g1Edges);
@@ -923,7 +923,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         return makeChange;
     }
 
-    if(wasBadMove && (iterationsPerformed & 511 == 0 || (TCWeight > 0 && iterationsPerformed & 31 == 0))){ //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
+    if(wasBadMove && (iterationsPerformed % 512 == 0 || (TCWeight > 0 && iterationsPerformed % 32 == 0))){ //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
         if(sampledProbability.size() == 1000){
             sampledProbability.erase(sampledProbability.begin());
         }

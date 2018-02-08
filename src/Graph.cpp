@@ -552,7 +552,7 @@ void Graph::initConnectedComponents() {
     ushort n = getNumNodes();
     vector<vector<ushort>* > aux(0);
     unordered_set<ushort> nodes(n);
-	for (ushort i = 0; i < n; i++) nodes.insert(i);
+    for (ushort i = 0; i < n; i++) nodes.insert(i);
 
     while (nodes.size() > 0) {
         ushort u = *nodes.begin();
@@ -1163,7 +1163,7 @@ void Graph::saveInGWFormatShuffled(string outputFile, const vector<string>& node
     randomShuffle(origPos2NewPos);
 
     unordered_map<ushort, ushort> newPos2OrigPos;
-	newPos2OrigPos.reserve(n);
+    newPos2OrigPos.reserve(n);
     for (uint i = 0; i < n; i++) {
         newPos2OrigPos[origPos2NewPos[i]] = i;
     }
@@ -1417,7 +1417,7 @@ int Graph::getLockedCount(){
 unordered_map<ushort, ushort> Graph::getLocking_ReIndexMap() const{
     unordered_map<ushort, ushort> result;
     int n = getNumNodes();
-	result.reserve(n);
+    result.reserve(n);
     int unlockedIndex = 0;
     int lockedIndex = n-1;
     for(int i=0; i<n; i++){
@@ -1441,7 +1441,7 @@ unordered_map<ushort, ushort> Graph::getLocking_ReIndexMap() const{
 unordered_map<ushort, ushort> Graph::getNodeTypes_ReIndexMap() const{
     unordered_map<ushort, ushort> result;
     int n = getNumNodes();
-	result.reserve(n);
+    result.reserve(n);
     int unlocked_gene_count = 0;
     int unlocked_miRNA_count = 0;
     for(int i=0;i<n;i++){
