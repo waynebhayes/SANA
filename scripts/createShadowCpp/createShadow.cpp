@@ -314,11 +314,15 @@ int main(int argc, const char** argv) {
     std::cout << "LEDA.GRAPH" << std::endl;
     std::cout << "string" << std::endl;
     std::cout << "short" << std::endl;
-    std::cout << "-1" << std::endl;
+    std::cout << "-2" << std::endl;
     std::cout << adjList.size() << std::endl;
     for (int i = 0; i < adjList.size(); i++) {
         std::cout << "|{shadow" << i << "}|" << std::endl;
     }
+    // compute numEdges
+    int numEdges = 0;
+    for (int i = 0; i < adjList.size(); i++) for(auto it = adjList[i].begin(); it != adjList[i].end(); it++) numEdges++;
+    std::cout << numEdges << std::endl;
     for (int i = 0; i < adjList.size(); i++) {
         for (auto it = adjList[i].begin(); it != adjList[i].end(); it++) {
             if (it->first <= i) {
@@ -328,7 +332,8 @@ int main(int argc, const char** argv) {
                 throw std::runtime_error("Lost an edge");
                 continue;
             }
-            std::cout << i << ' ' << it->first << " 0 |{" << it->second << "}|" << std::endl;
+	    // Stupid LEDA numbers nodes from 1, so +1 to the iterators.
+            std::cout << i+1 << ' ' << it->first+1 << " 0 |{" << it->second << "}|" << std::endl;
         }
     }
     return 0;
