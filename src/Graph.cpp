@@ -36,7 +36,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
   nodeName2IndexMap.reserve(1279);
   vector<vector<string> > edges = fileToStringsByLines(fin);
 
-  for(int i = 0; i < edges.size(); i++){
+  for(unsigned i = 0; i < edges.size(); i++){
       string node1 = edges[i][0];
       string node2 = edges[i][1];
 
@@ -107,7 +107,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     g.adjMatrix = vector<vector<bool> > (n, vector<bool>(n, false));
 #endif
 
-    for(int i = 0; i < edgeList.size(); i++){
+    for(unsigned i = 0; i < edgeList.size(); i++){
         uint node1 = edgeList[i][0];
         uint node2 = edgeList[i][1];
 
@@ -153,7 +153,7 @@ void Graph::edgeList2gw(string fin, string fout) {
 
   // TODO set node types here directly instead
 
-  for(int i = 0; i < edges.size(); i++){
+  for(unsigned i = 0; i < edges.size(); i++){
       string node1 = edges[i][0];
       string node2 = edges[i][1];
 
