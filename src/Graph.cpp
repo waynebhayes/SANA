@@ -33,7 +33,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
   vector<string> nodes;
   nodes.reserve(14000);
   unordered_map<string,ushort> nodeName2IndexMap;
-  nodeName2IndexMap.reserve(1279);
+  nodeName2IndexMap.reserve(1657);
   vector<vector<string> > edges = fileToStringsByLines(fin);
 
   for(unsigned i = 0; i < edges.size(); i++){
@@ -149,7 +149,7 @@ void Graph::edgeList2gw(string fin, string fout) {
   vector<vector<string> > edges = fileToStringsByLines(fin);
 
   nodes.reserve(14000);
-  nodeName2IndexMap.reserve(1279);
+  nodeName2IndexMap.reserve(1657);
 
   // TODO set node types here directly instead
 
