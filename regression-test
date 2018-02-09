@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+die() { echo "ERROR: $@" >&2; exit 1
+}
+
 PATH="$PATH:`pwd`/scripts"
 export PATH
 
@@ -54,12 +57,14 @@ if [ -f $OutpuFile ]; then
 fi
 
 Networks_nodes=""
-for network in `ls ./networks | egrep "^(RNorv|SPombe|CEleg|MMus|AThal|DMel|SCere|HSap)"`;do
+for network in `ls -F networks | fgrep / | sed 's,/,,' | egrep "^(RNorv|SPombe|CEleg|MMus|AThal|DMel|SCere|HSap)"`;do
     Networks_nodes=$Networks_nodes${network}" ""`head ./networks/${network}/${network}.gw | sed -n 5p`""\n"
 done
 # sort them largest first (sort -nr) since we're going to run them in parallel start the slowest ones first.
 Biogrid_network=`echo -e $Networks_nodes | sort -k2 -nr | awk '{print $1}'`
 Networks_count=`echo $Biogrid_network | wc -w`
+
+[ -x ./sana ] || die "can't find ./sana executable"
 
 for i in $(seq 1 $Networks_count);do
     for j in $(seq $((i + 1)) $Networks_count); do
