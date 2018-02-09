@@ -960,7 +960,7 @@ int SANA::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget
     int res = 0;
     const uint n = G1AdjLists[source].size();
     ushort neighbor;
-    for (uint i = 0; i < n; i++) {
+    for (uint i = 0; i < n; ++i) {
         neighbor = G1AdjLists[source][i];
         res -= G2AdjMatrix[oldTarget][(*A)[neighbor]];
         res += G2AdjMatrix[newTarget][(*A)[neighbor]];
@@ -973,13 +973,13 @@ int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ush
     const uint n = G1AdjLists[source1].size();
     ushort neighbor;
     uint i = 0;
-    for (; i < n; i++) {
+    for (; i < n; ++i) {
         neighbor = G1AdjLists[source1][i];
         res -= G2AdjMatrix[target1][(*A)[neighbor]];
         res += G2AdjMatrix[target2][(*A)[neighbor]];
     }
     const uint m = G1AdjLists[source2].size();
-    for (i = 0; i < m; i++) {
+    for (i = 0; i < m; ++i) {
         neighbor = G1AdjLists[source2][i];
         res -= G2AdjMatrix[target2][(*A)[neighbor]];
         res += G2AdjMatrix[target1][(*A)[neighbor]];
@@ -998,7 +998,8 @@ static int _edgeVal;
 int SANA::squaredAligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
     int res = 0, diff;
     ushort neighbor;
-    for (uint i = 0; i < G1AdjLists[source].size(); i++) {
+    const uint n = G1AdjLists[source].size();
+    for (uint i = 0; i < n; ++i) {
         neighbor = G1AdjLists[source][i];
         // Account for ushort edges? Or assume smaller graph is edge value 1?
         diff = SQRDIFF(oldTarget, neighbor);
@@ -1016,7 +1017,7 @@ int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort targe
     ushort neighbor;
     const uint n = G1AdjLists[source1].size();
     uint i = 0;
-    for (; i < n; i++) {
+    for (; i < n; ++i) {
         neighbor = G1AdjLists[source1][i];
         diff = SQRDIFF(target1, neighbor);
         assert(fabs(diff)<1100);
@@ -1026,7 +1027,7 @@ int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort targe
         res += diff>0?diff:0;
     }
     const uint m = G1AdjLists[source2].size();
-    for (i = 0; i < m; i++) {
+    for (i = 0; i < m; ++i) {
         neighbor = G1AdjLists[source2][i];
         diff = SQRDIFF(target2, neighbor);
         assert(fabs(diff)<1100);
@@ -1049,12 +1050,12 @@ int SANA::inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTar
     const uint n = G2AdjLists[oldTarget].size();
     ushort neighbor;
     uint i = 0;
-    for (; i < n; i++) {
+    for (; i < n; ++i) {
         neighbor = G2AdjLists[oldTarget][i];
         res -= (*assignedNodesG2)[neighbor];
     }
     const uint m = G2AdjLists[newTarget].size();
-    for (i = 0; i < m; i++) {
+    for (i = 0; i < m; ++i) {
         neighbor = G2AdjLists[newTarget][i];
         res += (*assignedNodesG2)[neighbor];
     }
@@ -1075,7 +1076,7 @@ double SANA::WECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
     double res = 0;
     const uint n = G1AdjLists[source].size();
     ushort neighbor;
-    for (uint j = 0; j < n; j++) {
+    for (uint j = 0; j < n; ++j) {
         neighbor = G1AdjLists[source][j];
         if (G2AdjMatrix[oldTarget][(*A)[neighbor]]) {
             res -= wecSims[source][oldTarget];
@@ -1091,9 +1092,9 @@ double SANA::WECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
 
 double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
     double res = 0;
-    uint n = G1AdjLists[source1].size();
+    const uint n = G1AdjLists[source1].size();
     ushort neighbor;
-    for (uint j = 0; j < n; j++) {
+    for (uint j = 0; j < n; ++j) {
         neighbor = G1AdjLists[source1][j];
         if (G2AdjMatrix[target1][(*A)[neighbor]]) {
             res -= wecSims[source1][target1];
@@ -1104,8 +1105,8 @@ double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort
             res += wecSims[neighbor][(*A)[neighbor]];
         }
     }
-    n = G1AdjLists[source2].size();
-    for (uint j = 0; j < n; j++) {
+    const uint m = G1AdjLists[source2].size();
+    for (uint j = 0; j < m; ++j) {
         neighbor = G1AdjLists[source2][j];
         if (G2AdjMatrix[target2][(*A)[neighbor]]) {
             res -= wecSims[source2][target2];
@@ -1162,8 +1163,8 @@ double SANA::TCIncChangeOp(ushort source, ushort oldTarget, ushort newTarget){
     double deltaTriangles = 0;
     const uint n = G1AdjLists[source].size();
     ushort neighbor1, neighbor2;
-    for(uint i = 0; i < n; i++){
-        for(uint j = i+1; j < n; j++){
+    for(uint i = 0; i < n; ++i){
+        for(uint j = i+1; j < n; ++j){
             neighbor1 = G1AdjLists[source][i];
             neighbor2 = G1AdjLists[source][j];
             if(G1AdjMatrix[neighbor1][neighbor2]){
@@ -1185,10 +1186,10 @@ double SANA::TCIncChangeOp(ushort source, ushort oldTarget, ushort newTarget){
 
 double SANA::TCIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2){
     double deltaTriangles = 0;
-    uint n = G1AdjLists[source1].size();
+    const uint n = G1AdjLists[source1].size();
     ushort neighbor1, neighbor2;
-    for(uint i = 0; i < n; i++){
-        for(uint j = i+1; j < n; j++){
+    for(uint i = 0; i < n; ++i){
+        for(uint j = i+1; j < n; ++j){
             neighbor1 = G1AdjLists[source1][i];
             neighbor2 = G1AdjLists[source1][j];
             if(G1AdjMatrix[neighbor1][neighbor2]){
@@ -1207,9 +1208,9 @@ double SANA::TCIncSwapOp(ushort source1, ushort source2, ushort target1, ushort 
             }
         }
     }
-    n = G1AdjLists[source2].size();
-    for(uint i = 0; i < n; i++){
-        for(uint j = i+1; j < n; j++){
+    const uint m = G1AdjLists[source2].size();
+    for(uint i = 0; i < m; ++i){
+        for(uint j = i+1; j < n; ++j){
             neighbor1 = G1AdjLists[source2][i];
             neighbor2 = G1AdjLists[source2][j];
             if(G1AdjMatrix[neighbor1][neighbor2]){
