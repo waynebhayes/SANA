@@ -3,6 +3,7 @@
 //
 #include <tuple>
 #include <vector>
+#include <assert.h>
 #include "LinearRegression.hpp"
 using namespace std;
 
@@ -38,11 +39,10 @@ tuple<int, double, double, int, double, double, double, double> LinearRegression
     double line2Error;
     double line3Error;
 
-    double smallestError;
-    int bestJ;
-    int bestK;
+    double smallestError = -1;
+    int bestJ = -1, bestK = -1;
     double line1Height;
-    double* line2Coeff;
+    //double* line2Coeff;
     double line3Height;
     double currentError;
 
@@ -68,16 +68,17 @@ tuple<int, double, double, int, double, double, double, double> LinearRegression
                 bestJ = j;
                 bestK = k;
                 line1Height = line1LeastSquares;
-                line2Coeff = line2LeastSquares;
+                // line2Coeff = line2LeastSquares;
                 line3Height = line3LeastSquares;
             }
 
+	    assert(smallestError != -1);
             if (currentError < smallestError) {
                 smallestError = currentError;
                 bestJ = j;
                 bestK = k;
                 line1Height = line1LeastSquares;
-                line2Coeff = line2LeastSquares;
+                // line2Coeff = line2LeastSquares;
                 line3Height = line3LeastSquares;
             }
 
@@ -85,6 +86,7 @@ tuple<int, double, double, int, double, double, double, double> LinearRegression
             line3Sum = incrementalValues(k, SIZE - 1, true, line3Sum, scores);
         }
     }
+    assert(bestJ != -1 && bestK != -1);
     bestJ = bestJ - 1;
     bestK = bestK + 1;
     return std::make_tuple(bestJ, scores[bestJ], temperatures[bestJ], bestK, scores[bestK], temperatures[bestK], line1Height, line3Height);
