@@ -1210,7 +1210,7 @@ double SANA::TCIncSwapOp(ushort source1, ushort source2, ushort target1, ushort 
     }
     const uint m = G1AdjLists[source2].size();
     for(uint i = 0; i < m; ++i){
-        for(uint j = i+1; j < n; ++j){
+        for(uint j = i+1; j < m; ++j){
             neighbor1 = G1AdjLists[source2][i];
             neighbor2 = G1AdjLists[source2][j];
             if(G1AdjMatrix[neighbor1][neighbor2]){
