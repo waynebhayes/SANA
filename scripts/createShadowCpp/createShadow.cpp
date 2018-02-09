@@ -1,3 +1,10 @@
+/*
+Sample Run (assuming shadow is the compiled binary)
+
+./shadow -s13276 
+    networks/HSapiens/HSapiens.gw networks/SCerevisiae/SCerevisiae.gw networks/RNorvegicus/RNorvegicus.gw 
+    HS.oneline.align SC.oneline.align RN.oneline.align > shadow3.gw
+*/
 #include <vector>
 #include <string>
 #include <iostream>
@@ -93,6 +100,7 @@ namespace shadow_graph {
             iss >> numEdges;
 
             adjList = std::vector<std::vector<Pair> >(numNodes, std::vector<Pair>(0));
+            std::cerr << "\tNodes: " << numNodes << ", Edges: " << numEdges << std::endl;
             for (int i = 0; i < numEdges; i++) {
                 getline(reader, line);
                 iss.str(line);
@@ -102,13 +110,14 @@ namespace shadow_graph {
                 unsigned short weight;
                 char dump;
                 if (!(iss >> node1 >> node2 >> dump >> dump >> dump)) {
-                    std::cerr << "Failed to read edge: " << line << std::endl;
+                    std::cerr << "Failed to read edge ( " << i << "th edge) : " << line << std::endl;
                     throw std::runtime_error("EdgeParsingError");
                 }
+                
                 if (!(iss >> weight)) {
                     weight = 1;
                 }
-                weight = weight > 0 ? weight : 1;
+                //weight = weight > 0 ? weight : 1;
                 node1--;
                 node2--;
                 this->adjList[node1].push_back(Pair(node2,weight));
@@ -172,6 +181,10 @@ namespace shadow_graph {
                 }
             }
     };
+    /**
+        Expects a one liner format of alignment
+        Basically one line text file, and the i-th element index of aligned node of i-th node in shadow network
+    */
     void loadAlignment(std::vector<unsigned short> & alignment, std::string & s) {
         std::ifstream reader;
         std::string line;
@@ -198,6 +211,7 @@ int main(int argc, const char** argv) {
     args::ValueFlag<int> shadowNodeSize(required, "shadowNodeSize", "number of shadowNodes", 
                                             {'s',"shadowNodeSize"});
     args::PositionalList<std::string> networks(required, "networks", "Network filenames");
+
     try {
         parser.ParseCLI(argc, argv);
     } catch (args::Help) {
@@ -213,6 +227,7 @@ int main(int argc, const char** argv) {
         std::cerr << parser;
         return 2;
     }
+
     // TODO: allow for different alignment file formats
     // bool useCompact = false;
     // if (compact) {
@@ -228,6 +243,18 @@ int main(int argc, const char** argv) {
     //     }
     // }
     std::vector<std::string> pos_args = args::get(networks);
+    // Check Existance of files
+    for(int i = 0; i < pos_args.size(); i++){
+        std::ifstream f(pos_args[i]);
+        if(!f.good()){
+            std::cerr << "Failed to load file: " << pos_args[i] << std::endl;
+            throw std::runtime_error("Network file not found");
+        }
+        f.close();
+    }
+
+
+    // Separte network and alignment filenames
     std::vector<std::string> network_files(pos_args.size() / 2);
     std::vector<std::string> alignment_files(pos_args.size() / 2);
     int offset = pos_args.size() / 2;
@@ -236,40 +263,77 @@ int main(int argc, const char** argv) {
         alignment_files[i] = pos_args.at(i + offset);
     }
     assert(network_files.size() == alignment_files.size());
+
+
     std::vector<std::unordered_map<int, int>> adjList(args::get(shadowNodeSize));
     shadow_graph::Graph tempGraph;
-    for (int i = 0; i < network_files.size(); i++) {
+    for (int gi = 0; gi < network_files.size(); gi++) {
+        std::cerr << "graph " << gi << ": " << network_files.at(gi) << std::endl;
         //Construct/store graph
-        tempGraph.load(network_files.at(i));
+        tempGraph.load(network_files.at(gi));
         // Load alignment
         std::vector<unsigned short> tempAlig(0);
-        shadow_graph::loadAlignment(tempAlig, alignment_files.at(i));
-        for (int peg = 0; i < tempAlig.size(); i++) {
-            unsigned short hole = tempAlig.at(i);
-            for (int j = 0; j < tempGraph.adjList[i].size(); j++) {
-                unsigned short end_peg = tempGraph.adjList[i][j].first;
-                if (end_peg < peg) {
+        shadow_graph::loadAlignment(tempAlig, alignment_files.at(gi));
+        for (int peg = 0; peg < tempAlig.size(); peg++) {
+            
+            // neighbors of peg
+            for (int j = 0; j < tempGraph.adjList[peg].size(); j++) {
+                unsigned short end_peg = tempGraph.adjList[peg][j].first;
+               
+                // only traverse each edge once
+                if(peg  == end_peg){
+                    std::cerr << "selfloop: " << peg << " " << end_peg << std::endl;
+                    throw std::runtime_error("Selfloop");
+                }
+                if(peg > end_peg) {
                     continue;
                 }
+
+                unsigned short hole     = tempAlig.at(peg);
                 unsigned short end_hole = tempAlig.at(end_peg);
-                adjList[end_peg][end_hole] += tempGraph.adjList[i][j].second;
+                
+                // we store edge wegiht only one side, from smaller node index to bigger
+                if(hole > end_hole)
+                    std::swap(hole, end_hole);
+                
+                adjList[hole][end_hole] += tempGraph.adjList[peg][j].second;
+
+                // debugging
+                // if(adjList[hole][end_hole] >= 2){
+                    // std::cerr << peg << " " << end_peg << std::endl;
+                //     std::cerr << hole << " " << end_hole << " " << adjList[hole][end_hole] << " <- " << tempGraph.adjList[peg][j].second << std::endl;
+                //     throw 1;
+                // }
             }
         }
     }
+
+    std::cerr << std::endl;
+    std::cerr << "outputting shadow graph with nodes = " << adjList.size() << std::endl;
+
     std::cout << "LEDA.GRAPH" << std::endl;
     std::cout << "string" << std::endl;
     std::cout << "short" << std::endl;
-    std::cout << "-1" << std::endl;
+    std::cout << "-2" << std::endl;
     std::cout << adjList.size() << std::endl;
     for (int i = 0; i < adjList.size(); i++) {
         std::cout << "|{shadow" << i << "}|" << std::endl;
     }
+    // compute numEdges
+    int numEdges = 0;
+    for (int i = 0; i < adjList.size(); i++) for(auto it = adjList[i].begin(); it != adjList[i].end(); it++) numEdges++;
+    std::cout << numEdges << std::endl;
     for (int i = 0; i < adjList.size(); i++) {
         for (auto it = adjList[i].begin(); it != adjList[i].end(); it++) {
-            if (it->first < i) {
+            if (it->first <= i) {
+                // this should not happen
+                // We only assigned edge value from lower index to higher index nodes
+                std::cerr << it->first << " " << i << std::endl;
+                throw std::runtime_error("Lost an edge");
                 continue;
             }
-            std::cout << i << ' ' << it->first << " 0 |{" << it->second << "}|" << std::endl;
+	    // Stupid LEDA numbers nodes from 1, so +1 to the iterators.
+            std::cout << i+1 << ' ' << it->first+1 << " 0 |{" << it->second << "}|" << std::endl;
         }
     }
     return 0;
