@@ -970,15 +970,16 @@ int SANA::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget
 
 int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
     int res = 0;
-    uint n = G1AdjLists[source1].size();
+    const uint n = G1AdjLists[source1].size();
     ushort neighbor;
-    for (uint i = 0; i < n; i++) {
+    uint i = 0;
+    for (; i < n; i++) {
         neighbor = G1AdjLists[source1][i];
         res -= G2AdjMatrix[target1][(*A)[neighbor]];
         res += G2AdjMatrix[target2][(*A)[neighbor]];
     }
-    n = G1AdjLists[source2].size();
-    for (uint i = 0; i < n; i++) {
+    const uint m = G1AdjLists[source2].size();
+    for (i = 0; i < m; i++) {
         neighbor = G1AdjLists[source2][i];
         res -= G2AdjMatrix[target2][(*A)[neighbor]];
         res += G2AdjMatrix[target1][(*A)[neighbor]];
@@ -1013,7 +1014,9 @@ int SANA::squaredAligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort ne
 int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
     int res = 0, diff;
     ushort neighbor;
-    for (uint i = 0; i < G1AdjLists[source1].size(); i++) {
+    const uint n = G1AdjLists[source1].size();
+    uint i = 0;
+    for (; i < n; i++) {
         neighbor = G1AdjLists[source1][i];
         diff = SQRDIFF(target1, neighbor);
         assert(fabs(diff)<1100);
@@ -1022,7 +1025,8 @@ int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort targe
         assert(fabs(diff)<1100);
         res += diff>0?diff:0;
     }
-    for (uint i = 0; i < G1AdjLists[source2].size(); i++) {
+    const uint m = G1AdjLists[source2].size();
+    for (i = 0; i < m; i++) {
         neighbor = G1AdjLists[source2][i];
         diff = SQRDIFF(target2, neighbor);
         assert(fabs(diff)<1100);
@@ -1042,14 +1046,15 @@ int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort targe
 
 int SANA::inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
     int res = 0;
-    uint n = G2AdjLists[oldTarget].size();
+    const uint n = G2AdjLists[oldTarget].size();
     ushort neighbor;
-    for (uint i = 0; i < n; i++) {
+    uint i = 0;
+    for (; i < n; i++) {
         neighbor = G2AdjLists[oldTarget][i];
         res -= (*assignedNodesG2)[neighbor];
     }
-    n = G2AdjLists[newTarget].size();
-    for (uint i = 0; i < n; i++) {
+    const uint m = G2AdjLists[newTarget].size();
+    for (i = 0; i < m; i++) {
         neighbor = G2AdjLists[newTarget][i];
         res += (*assignedNodesG2)[neighbor];
     }
