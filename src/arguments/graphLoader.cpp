@@ -162,7 +162,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         G1 = Graph::multGraph(g1Name, p1);
         G2 = Graph::multGraph(g2Name, p2);
     }
-    cerr << tLoad.elapsedString() << "s)" << endl;
+    cerr << tLoad.elapsedString() << ")" << endl;
 
     if (G1.getNumNodes() > G2.getNumNodes()) {
         Timer tSwap;
@@ -310,7 +310,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     else if(lockFile != ""){
         G1.reIndexGraph(G1.getLocking_ReIndexMap());
     }
-    cerr << "done reIndexGraph G1 (" << tReIndex.elapsedString() << "s)" << endl;
+    cerr << "done reIndexGraph G1 (" << tReIndex.elapsedString() << ")" << endl;
     /*double maxSize = args.doubles["-maxGraphletSize"];
     //int maxSize2;
     //stringstream convert(maxS
@@ -334,5 +334,5 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         throw runtime_error("One of the networks has 0 edges");
     }
 
-    cerr << "Total time for loading graphs (" << T.elapsedString() << "s)" << endl;
+    cerr << "Total time for loading graphs (" << T.elapsedString() << ")" << endl;
 }
