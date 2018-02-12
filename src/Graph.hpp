@@ -33,6 +33,7 @@ public:
 
     void setMaxGraphletSize(double number);
     static Graph loadGraph(string name);
+    static Graph loadGraphFromPath(string path, string name, bool nodesHaveTypes = false);
     static Graph multGraph(string name, uint path);
 
     static void loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);

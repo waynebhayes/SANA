@@ -12,6 +12,22 @@ Graph Graph::loadGraph(string name) {
     return g;
 }
 
+Graph Graph::loadGraphFromPath(string path, string name, bool nodesHaveTypes){
+    Graph g;
+    string format = path.substr(path.size()-3);
+    if(format == ".gw"){
+        g.loadGwFile(path);
+        g.name = name;
+    }
+    else if(format == ".el"){
+        Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
+    }
+    else
+        throw runtime_error("Unsupported graph format: " + format);
+
+    return g;
+}
+
 Graph Graph::multGraph(string name, uint path) {
     Graph g;
     g.multGwFile("networks/"+name+"/"+name+".gw", path);
