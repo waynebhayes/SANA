@@ -14,6 +14,7 @@ Graph Graph::loadGraph(string name) {
 
 Graph Graph::loadGraphFromPath(string path, string name, bool nodesHaveTypes){
     Graph g;
+    g.path = path;
     string format = path.substr(path.size()-3);
     if(format == ".gw"){
         g.loadGwFile(path);
@@ -947,7 +948,8 @@ unordered_map<string,ushort> Graph::getNodeNameToIndexMap() const {
       return nodeNameToIndexMap;
     }
 
-    string networkFile = "networks/"+name+"/"+name+".gw";
+    // string networkFile = "networks/"+name+"/"+name+".gw";
+    string networkFile = this -> path;
 
     ifstream infile(networkFile.c_str());
     string line;
