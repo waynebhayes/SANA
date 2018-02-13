@@ -158,6 +158,7 @@ public:
 private:
     double maxGraphletSize = 4; //default is 4, 5 is too big
     string name;
+    string path;
     //double maxsize;
     vector<vector<ushort> > edgeList; //edges in no particular order
 #ifdef WEIGHTED
