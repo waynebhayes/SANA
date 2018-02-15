@@ -355,8 +355,6 @@ void writeEdgesLower(ofstream& outfile, const vector<string>& inputBitstrings, i
 	}
 }
 
-//<< "[color=\"" << COLORS[z] << "\"]" <<
-
 void printGraphConversionInstruction(const string& filename) {
 	stringstream ss;
 	ss << "neato -n -Tpdf " << filename << ".dot -o " << filename << ".pdf";
