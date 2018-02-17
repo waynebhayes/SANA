@@ -74,7 +74,7 @@ parallel_delay() {
     cat > $TMPDIR/pd
     head -1 $TMPDIR/pd | sh &
     sleep 1
-    until [ -f "$1" ]; do sleep 1; done
+    until [ -d "$1" ]; do sleep 1; done
     tail -n +2 $TMPDIR/pd | eval $PARALLEL
 }
 
@@ -114,26 +114,32 @@ mv $OUTDIR/dir-init/*-shadow.align $OUTDIR/dir-init/*-shadow.out $OUTDIR/dir0
 mkdir -p $OUTDIR/dir-init
 /bin/rm -rf networks/$NAME-shadow0
 touch $OUTDIR/dir-init/schedule.tsv
-while [ `awk '{printf "%s.stderr\n", $1}' $OUTDIR/dir-init/tdecay.txt | tee $OUTDIR/dir-init/schedule.done | wc -l` -lt `echo "$@" | wc -w` ]; do
-    ls "$@" | awk '{file=$0;gsub(".*/",""); gsub(".el$",""); gsub(".gw$",""); printf "mkdir -p '$OUTDIR/dir-init';'$SANA' -t 1 -s3 0 -ses 1 -fg1 %s -fg2 '$OUTDIR/dir0/$NAME-shadow0.gw' -o '$OUTDIR'/dir-init/%s 2>'$OUTDIR'/dir-init/%s.stderr\n", file,$0,$0}' | fgrep -v -f $OUTDIR/dir-init/schedule.done | parallel_delay networks/$NAME-shadow0/$NAME-shadow0.gw
-    grep '^Initial Temperature: ' $OUTDIR/dir-init/*.stderr | sed -e "s,$OUTDIR/dir-init/,," -e 's/\.stderr//' -e 's/:/ /' | awk '{print $1,$4,$7}' > $OUTDIR/dir-init/tinitial-final.txt
-    grep '^tdecay' $OUTDIR/dir-init/*.stderr | sed -e "s,$OUTDIR/dir-init/,," -e 's/.stderr//' -e 's/:/ /' | awk '{print $1,$3}' > $OUTDIR/dir-init/tdecay.txt
+if false; then
+    while [ `awk '{printf "%s.stderr\n", $1}' $OUTDIR/dir-init/tdecay.txt | tee $OUTDIR/dir-init/schedule.done | wc -l` -lt `echo "$@" | wc -w` ]; do
+	ls "$@" | awk '{file=$0;gsub(".*/",""); gsub(".el$",""); gsub(".gw$",""); printf "mkdir -p '$OUTDIR/dir-init';'$SANA' -t 1 -s3 0 -ses 1 -fg1 %s -fg2 '$OUTDIR/dir0/$NAME-shadow0.gw' -o '$OUTDIR'/dir-init/%s 2>'$OUTDIR'/dir-init/%s.stderr\n", file,$0,$0}' | fgrep -v -f $OUTDIR/dir-init/schedule.done | parallel_delay networks/$NAME-shadow0/$NAME-shadow0.gw
+	grep '^Initial Temperature: ' $OUTDIR/dir-init/*.stderr | sed -e "s,$OUTDIR/dir-init/,," -e 's/\.stderr//' -e 's/:/ /' | awk '{print $1,$4,$7}' > $OUTDIR/dir-init/tinitial-final.txt
+	grep '^tdecay' $OUTDIR/dir-init/*.stderr | sed -e "s,$OUTDIR/dir-init/,," -e 's/.stderr//' -e 's/:/ /' | awk '{print $1,$3}' > $OUTDIR/dir-init/tdecay.txt
+	echo 'name	tinitial	tfinal	tdecay' | tee $OUTDIR/dir-init/schedule.tsv
+	paste $OUTDIR/dir-init/tinitial-final.txt $OUTDIR/dir-init/tdecay.txt | awk '$1==$4{printf "%s\t%s\t%s\t%s\n",$1,$2,$3,$5}' | tee -a $OUTDIR/dir-init/schedule.tsv
+    done
+else
     echo 'name	tinitial	tfinal	tdecay' | tee $OUTDIR/dir-init/schedule.tsv
-    paste $OUTDIR/dir-init/tinitial-final.txt $OUTDIR/dir-init/tdecay.txt | awk '$1==$4{printf "%s\t%s\t%s\t%s\n",$1,$2,$3,$5}' | tee -a $OUTDIR/dir-init/schedule.tsv
-done
+    ls "$@" | awk '{file=$0;gsub(".*/",""); gsub(".el$",""); gsub(".gw$","");printf "%s	1e-10	1e-20	0\n",$1}' | tee -a $OUTDIR/dir-init/schedule.tsv
+fi
 
-DENOM=`
-    cd $OUTDIR/dir-init;
-    for i in *.out; do awk '/^G1:/{getline; getline; ;m=$NF;print m}' $i; done |
-	sort -n |
-	awk '{m[NR-1]=$1}END{for(i=0;i<NR;i++) if(NR-i>1){D+=(NR-i)^2*m[i];for(j=i+1;j<NR;j++)m[j]-=m[i]}; print D}'
-`
-echo Denominator for ses score is $DENOM
+#DENOM=`
+#    cd $OUTDIR/dir0;
+#    for i in *.out; do awk '/^G1:/{getline; getline; ;m=$NF;print m}' $i; done |
+#	sort -n |
+#	awk '{m[NR-1]=$1}END{for(i=0;i<NR;i++) if(NR-i>1){D+=(NR-i)^2*m[i];for(j=i+1;j<NR;j++)m[j]-=m[i]}; print D}'
+#`
+DENOM=1
+echo Denominator for SES score is $DENOM
 export DENOM
 for i in `integers $ITER`
 do
     echo ''
-    echo -n ---- ITER $i ----- `date`
+    echo ---- ITER $i ----- `date`
     i1=`expr $i + 1`
     mkdir -p $OUTDIR/dir$i1
     if [ -f $OUTDIR/dir$i1/$NAME-shadow$i1.gw ]; then continue; fi
@@ -141,15 +147,16 @@ do
     do
 	bg=`basename $g .gw`
 	bg=`basename $bg .el`
-	echo shadow-$bg.out.align >> $OUTDIR/dir$i1/expected-outFiles.txt
-	named-col-prog 'if(name!="'$bg'")next; i='$i';ITER='$ITER'; e0=log(tinitial);e1=log(tfinal);printf "mkdir -p '$OUTDIR/dir$i1';'$SANA' -multi-iteration-only -s3 0 -ses 1 -t '$T_ITER' -fg1 '$g' -fg2 '$OUTDIR/dir$i/$NAME-shadow$i.gw' -tinitial %g -tdecay %g -o '$OUTDIR/dir$i1/shadow-$bg' 2>'$OUTDIR/dir$i1/shadow-$bg.stderr' -startalignment '$OUTDIR/dir$i/shadow-$bg.out'\n", tinitial*exp((e1-e0)*i/ITER),tdecay/ITER' $OUTDIR/dir-init/schedule.tsv
+	echo $bg-shadow.align >> $OUTDIR/dir$i1/expected-outFiles.txt
+	named-col-prog 'if(name!="'$bg'")next; i='$i';ITER='$ITER'; e0=log(tinitial);e1=log(tfinal);printf "mkdir -p '$OUTDIR/dir$i1';'$SANA' -multi-iteration-only -s3 0 -ses 1 -t '$T_ITER' -fg1 '$g' -fg2 '$OUTDIR/dir$i/$NAME-shadow$i.gw' -tinitial %g -tdecay %g -o '$OUTDIR/dir$i1/$bg-shadow' 2>'$OUTDIR/dir$i1/$bg-shadow.stderr' -startalignment '$OUTDIR/dir$i/$bg-shadow.out'\n", tinitial*exp((e1-e0)*i/ITER),tdecay/ITER' $OUTDIR/dir-init/schedule.tsv
     done | sort -u > $OUTDIR/dir$i/jobs.txt
     /bin/rm -rf networks/$NAME-shadow$i
     while [ `ls $OUTDIR/dir$i1 | fgrep -f $OUTDIR/dir$i1/expected-outFiles.txt | tee $OUTDIR/dir$i/jobs-done.txt | wc -l` -lt `echo "$@" | wc -w` ]; do
-	sed 's/\.out\.align/.stderr/' $OUTDIR/dir$i/jobs-done.txt | fgrep -v -f - $OUTDIR/dir$i/jobs.txt | parallel_delay networks/$NAME-shadow$i/$NAME-shadow$i.gw # wait until that file is created before parallel'ing
+	sed 's/\.out\.align/.stderr/' $OUTDIR/dir$i/jobs-done.txt | fgrep -v -f - $OUTDIR/dir$i/jobs.txt | parallel_delay networks/$NAME-shadow$i/autogenerated # wait until that directory is created before parallel'ing
     done
-    ./shadow2align.sh $OUTDIR/dir$i1/*.align > $DIR/dir$i1/multiAlign.tsv
+    ./shadow2align.sh $OUTDIR/dir$i1/*.align > $OUTDIR/dir$i1/multiAlign.tsv
     ./createShadow -s$MAX_NODES "$@" $OUTDIR/dir$i1/*-shadow.out >$OUTDIR/dir$i1/$NAME-shadow$i1.gw || die "$OUTDIR/dir$i1/$NAME-shadow$i1.gw network creation failed"
-    awk '$3>1{sum2+=$3^2}END{printf " SES %g", sum2/'$DENOM'}' $OUTDIR/dir$i1/$NAME-shadow$i1.gw
-    #./CIQ.sh $OUTDIR/dir$i1/multiAlign.tsv `echo "$@" | newlines | sed 's/\.gw/.el/'` & # don't wait it takes forever
+    awk '{gsub("[|{}]","")}$4>1{sum2+=$4^2}END{printf " SES %g", sum2/'$DENOM'}' $OUTDIR/dir$i1/$NAME-shadow$i1.gw
 done
+echo "Computer CIQ... may take awhile..."
+./CIQ.sh $OUTDIR/dir$i1/multiAlign.tsv `echo "$@" | newlines | sed 's/\.gw/.el/'` # don't wait it takes forever
