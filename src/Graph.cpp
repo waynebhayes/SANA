@@ -326,7 +326,7 @@ uint Graph::getNumConnectedComponents() const {
 #ifdef WEIGHTED
 void Graph::getAdjMatrix(vector<vector<ushort> >& adjMatrixCopy) const {
     uint n = getNumNodes();
-    adjMatrixCopy = vector<vector<ushort> > (n, vector<ushort> (n));
+    adjMatrixCopy = vector<vector<ushort> > (adjMatrix);
 #else
 void Graph::getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const {
     adjMatrixCopy = vector<vector<bool> > (adjMatrix);
@@ -365,17 +365,18 @@ void Graph::loadGwFile(const string& fileName) {
     stringstream errorMsg;
 
     ifstream infile(fileName.c_str());
-    string line;
+    string line;  
     //ignore header
-    for (int i = 0; i < 4; i++) getline(infile, line);
+    for (int i = 0; i < 4; i++) 
+        getline(infile, line);
     //read number of nodes
     int n;
     if(line == "-2") {
-    getline(infile, line);
-    istringstream iss2(line);
-    (iss2 >> n);
+        getline(infile, line);
+        istringstream iss2(line);
+        (iss2 >> n);
     } else {
-    n = stoi(line);
+        n = stoi(line);
     }
     if (n <= 0) {
         errorMsg << "Failed to read node number: " << line << " read as " << n;
@@ -436,15 +437,15 @@ void Graph::loadGwFile(const string& fileName) {
         }
 #endif
         node1--; node2--; //-1 because of remapping
-
+        
         if(adjMatrix[node1][node2] || adjMatrix[node2][node1]){
-        errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
-        throw runtime_error(errorMsg.str().c_str());
-    }
+            errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
+            throw runtime_error(errorMsg.str().c_str());
+        }
         if(node1 == node2) {
-        errorMsg << "self-loops not allowed, node number " << node1 << '\n';
-        throw runtime_error(errorMsg.str().c_str());
-    }
+            errorMsg << "self-loops not allowed, node number " << node1 << '\n';
+            throw runtime_error(errorMsg.str().c_str());
+        }
         edgeList[i][0] = node1;
         edgeList[i][1] = node2;
 
