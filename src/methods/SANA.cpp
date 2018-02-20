@@ -798,7 +798,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
         badProbability = exp(energyInc / T);
-        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / T));
+        makeChange = (energyInc >= 0 or randomReal(gen) <= badProbability);
         break;
     }
     case Score::product:
