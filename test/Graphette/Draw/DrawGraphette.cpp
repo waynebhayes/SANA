@@ -19,21 +19,21 @@ using std::ofstream;
 using std::ifstream;
 using std::vector;
 
-void parseInput(int argc, char* argv[], int& numNodes, vector<string>& inputBitstrings, string& outputFile, string& namesFile, bool& isUpper, string& graphTitle);	
+void parseInput(int argc, char* argv[], int& numNodes, vector<string>& inputBitstrings, string& outputFile, string& namesFile, bool& isUpper, string& graphTitle, int& edgewidth);	
 void printUsage();
 void printHelp();
 string toBitString(unsigned long long inputDecimalNum, int numNodes);
 string appendLeadingZeros(const string& inputBitstring, int numNodes);
 
-void createDotfileFromBit(int numNodes, const vector<string>& inputBitstring, const string& outputFile, const string& namesFile, bool isUpper, const string& graphTitle);
+void createDotfileFromBit(int numNodes, const vector<string>& inputBitstring, const string& outputFile, const string& namesFile, bool isUpper, const string& graphTitle, int edgewidth);
 string getPos(int i, int numNodes);
-void writeEdges(ofstream& outfile, const vector<string>& inputBitstrings, int numNodes, bool isUpper);
-void writeEdgesUpper(ofstream& outfile, const vector<string>& inputBitstrings, int numNodes);
-void writeEdgesLower(ofstream& outfile, const vector<string>& inputBitstrings, int numNodes);
+void writeEdges(ofstream& outfile, const vector<string>& inputBitstrings, int numNodes, bool isUpper, int edgewidth);
+void writeEdgesUpper(ofstream& outfile, const vector<string>& inputBitstrings, int numNodes, int edgewidth);
+void writeEdgesLower(ofstream& outfile, const vector<string>& inputBitstrings, int numNodes, int edgewidth);
 void printGraphConversionInstruction(const string& fileName);
 
 const int RADIUS_SCALING = 25;
-const string USAGE = "USAGE: ./graphette2dot <-k number_of_nodes> <-b bitstring | -d decimal_representation> <-o output_filename> [-n input_filename] [-u | -l] [-t title] -h for verbose help\n";
+const string USAGE = "USAGE: ./graphette2dot <-k number_of_nodes> <-b bitstring | -d decimal_representation> <-o output_filename> [-n input_filename] [-u | -l] [-t title] [-ew edge width] -h for verbose help\n";
 const string NODE_ARGS = "shape = \"none\", fontsize = 24.0";
 const string TITLE_ARGS = "fontsize = 24.0";
 const string DECIMAL_INPUT_WARNING = "Warning. Decimal input was used with k > 11. Edge information may have been lost.\n";
@@ -44,13 +44,14 @@ int main(int argc, char* argv[]) {
 	int numNodes = 0;
 	vector<string> inputBitstrings;
 	string outputFile = "", namesFile = "", graphTitle = "";
+	int edgewidth = 1;
 	//Defaults to lower row major bitstring/decimal interpretation
 	bool isUpper = false;
 
 	//Parses input passing variables by reference.
-	parseInput(argc, argv, numNodes, inputBitstrings, outputFile, namesFile, isUpper, graphTitle);
+	parseInput(argc, argv, numNodes, inputBitstrings, outputFile, namesFile, isUpper, graphTitle, edgewidth);
 
-	createDotfileFromBit(numNodes, inputBitstrings, outputFile, namesFile, isUpper, graphTitle);
+	createDotfileFromBit(numNodes, inputBitstrings, outputFile, namesFile, isUpper, graphTitle, edgewidth);
 
 	printGraphConversionInstruction(outputFile);
 
@@ -62,7 +63,7 @@ int main(int argc, char* argv[]) {
  * Doesn't allow for repeated inputs.
  * Prints usage and exits if invalid input is passed.
  * */
-void parseInput(int argc, char* argv[], int& numNodes, vector<string>& inputBitstrings, string& outputFile, string& namesFile, bool& isUpper, string& graphTitle) {
+void parseInput(int argc, char* argv[], int& numNodes, vector<string>& inputBitstrings, string& outputFile, string& namesFile, bool& isUpper, string& graphTitle, int& edgewidth) {
 	bool k = false, input = false, o = false, n = false, matrixType = false, title = false;
 	unsigned long long inputDecimalNum = 0;	
 	for (int i = 1; i < argc; i++) {
@@ -174,6 +175,13 @@ void parseInput(int argc, char* argv[], int& numNodes, vector<string>& inputBits
 
 			graphTitle = argv[i + 1];
 			i++;
+		} else if (strcmp(argv[i], "-ew") == 0) {
+			if (i + 1 >= argc) {
+				cerr << "No following argument to " << argv[i] << '\n';
+				printUsage();				
+			}
+			edgewidth = atoi(argv[i+1]);
+			i++;
 		}
 		else {
 			cerr << "Unrecognized argument: " << argv[i] << "\n";
@@ -181,7 +189,7 @@ void parseInput(int argc, char* argv[], int& numNodes, vector<string>& inputBits
 		}
 	}
 
-	//Check if k, inputType, and output file were selected
+	//Check if k, input data, and output file were selected
 	if (!(k && input && o))
 		printUsage();
 
@@ -209,6 +217,7 @@ void printHelp() {
 			  << "If no names file is selected, nodes will be named 0, 1, ...., (k-1)\n"
 			  << "Names file parsing assumes one name per line\n"
 			  << "You may specify a title with -t\n"
+			  << "You may specify an edge width with -ew. 1 is default\n"
 			  << "If less names than nodes, additional nodes will be labeled by their index #\n"
 			  << "If more names than nodes, additional names will be ignored\n";
 	exit(EXIT_SUCCESS);
@@ -221,7 +230,7 @@ void printHelp() {
  * extra names become isolated nodes and additional nodes aren't labeled.
  * Then the edges are written to the file.
  * */
-void createDotfileFromBit(int numNodes, const vector<string>& inputBitstrings, const string& outputFile, const string& namesFile, bool isUpper, const string& graphTitle) {
+void createDotfileFromBit(int numNodes, const vector<string>& inputBitstrings, const string& outputFile, const string& namesFile, bool isUpper, const string& graphTitle, int edgewidth) {
 	int finalBitstringSize = (numNodes * (numNodes - 1)) / 2;
 	int size;
 	for (string inputBitstring : inputBitstrings) {
@@ -277,7 +286,7 @@ void createDotfileFromBit(int numNodes, const vector<string>& inputBitstrings, c
 		i++;
 	}
 
-	writeEdges(outfile, inputBitstrings, numNodes, isUpper);
+	writeEdges(outfile, inputBitstrings, numNodes, isUpper, edgewidth);
 	if (graphTitle != "") {
 		outfile << "labelloc=\"b\";\n"
 				<< "label=\"" << graphTitle << "\"\n"
@@ -294,23 +303,27 @@ string getPos(int i, int numNodes) {
 }
 
 //Wrapper function to choose edge writing function based on matrix representation.
-void writeEdges(ofstream& outfile, const vector<string>& inputBitstrings, int numNodes, bool isUpper) {
+void writeEdges(ofstream& outfile, const vector<string>& inputBitstrings, int numNodes, bool isUpper, int edgewidth) {
 	if (isUpper)
-		writeEdgesUpper(outfile, inputBitstrings, numNodes);
+		writeEdgesUpper(outfile, inputBitstrings, numNodes, edgewidth);
 	else
-		writeEdgesLower(outfile, inputBitstrings, numNodes);
+		writeEdgesLower(outfile, inputBitstrings, numNodes, edgewidth);
 }
 
 //Assuming row major
-void writeEdgesUpper(ofstream& outfile, const vector<string>& inputBitstrings, int numNodes) {
+void writeEdgesUpper(ofstream& outfile, const vector<string>& inputBitstrings, int numNodes, int edgewidth) {
 	size_t size = inputBitstrings[0].size();
 	int i = 0, j = 1, color = 0;
+	string penwidth = "";
+	if (edgewidth != 1) {
+		penwidth = (", penwidth=" + std::to_string(edgewidth));
+	}
 	for (size_t k = 0; k < size; k++) {
 		//Look at every string if they have an edge
 		color = 0;
 		for (string inputBitstring : inputBitstrings) {
 			if (inputBitstring[k] == '1')
-				outfile << "n" << i << " -- " << "n" << j << "[color=" << COLORS[color] << "]" << "\n";
+				outfile << "n" << i << " -- " << "n" << j << "[color=" << COLORS[color] << penwidth << "]" << "\n";
 			else if (inputBitstring[k] != '0')
 				cerr << "Unknown input: " << inputBitstring[k] << " in input bitstring.\n";
 
@@ -331,15 +344,19 @@ void writeEdgesUpper(ofstream& outfile, const vector<string>& inputBitstrings, i
 }
 
 //Assuming row major
-void writeEdgesLower(ofstream& outfile, const vector<string>& inputBitstrings, int numNodes) {
+void writeEdgesLower(ofstream& outfile, const vector<string>& inputBitstrings, int numNodes, int edgewidth) {
 	size_t size = inputBitstrings[0].size();
 	unsigned int i = 1, j = 0, color = 0;
+	string penwidth = "";
+	if (edgewidth != 1) {
+		penwidth = (", penwidth=" + std::to_string(edgewidth));
+	}
 	for (size_t k = 0; k < size; k++) {
 		//Look at every string if they have an edge
 		color = 0;
 		for (string inputBitstring : inputBitstrings) {
 			if (inputBitstring[k] == '1')
-				outfile << "n" << i << " -- " << "n" << j << "[color=" << COLORS[color] << "]" << "\n";
+				outfile << "n" << i << " -- " << "n" << j << "[color=" << COLORS[color] << penwidth << "]" << "\n";
 			else if (inputBitstring[k] != '0')
 				cerr << "Unknown input: " << inputBitstring[k] << " in input bitstring.\n";
 
@@ -354,8 +371,6 @@ void writeEdgesLower(ofstream& outfile, const vector<string>& inputBitstrings, i
 		}
 	}
 }
-
-//<< "[color=\"" << COLORS[z] << "\"]" <<
 
 void printGraphConversionInstruction(const string& filename) {
 	stringstream ss;
