@@ -8,5 +8,11 @@ SquaredEdgeScore::~SquaredEdgeScore() {
 }
 
 double SquaredEdgeScore::eval(const Alignment& A) {
-    return (double) A.numSquaredAlignedEdges(*G1, *G2);
+    static double SES_DENOM;
+    if(SES_DENOM == 0.0){
+	extern char *getetv(char*);
+	char *s = getenv((char*)"SES_DENOM");
+	assert(1==sscanf(s, "%lf",&SES_DENOM));
+    }
+    return (double) A.numSquaredAlignedEdges(*G1, *G2) / SES_DENOM;
 }
