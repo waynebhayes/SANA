@@ -100,7 +100,7 @@ namespace shadow_graph {
             iss >> numEdges;
 
             adjList = std::vector<std::vector<Pair> >(numNodes, std::vector<Pair>(0));
-            std::cerr << "\tNodes: " << numNodes << ", Edges: " << numEdges << std::endl;
+            //std::cerr << "\tNodes: " << numNodes << ", Edges: " << numEdges << std::endl;
             for (int i = 0; i < numEdges; i++) {
                 getline(reader, line);
                 iss.str(line);
@@ -268,7 +268,7 @@ int main(int argc, const char** argv) {
     std::vector<std::unordered_map<int, int>> adjList(args::get(shadowNodeSize));
     shadow_graph::Graph tempGraph;
     for (int gi = 0; gi < network_files.size(); gi++) {
-        std::cerr << "graph " << gi << ": " << network_files.at(gi) << std::endl;
+        //std::cerr << "graph " << gi << ": " << network_files.at(gi) << std::endl;
         //Construct/store graph
         tempGraph.load(network_files.at(gi));
         // Load alignment
@@ -308,8 +308,8 @@ int main(int argc, const char** argv) {
         }
     }
 
-    std::cerr << std::endl;
-    std::cerr << "outputting shadow graph with nodes = " << adjList.size() << std::endl;
+    //std::cerr << std::endl;
+    //std::cerr << "outputting shadow graph with nodes = " << adjList.size() << std::endl;
 
     std::cout << "LEDA.GRAPH" << std::endl;
     std::cout << "string" << std::endl;
