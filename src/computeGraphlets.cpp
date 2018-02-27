@@ -774,13 +774,16 @@ std::vector<std::vector<uint> > computeGraphlets(int maxGraphletSize, string gra
     return res;
 }
 
-// int main(int argc, char *argv[]) {
-//     if (!init(argc, argv)) {
-//         cerr << "Stopping!" << endl;
-//         return 0;
-//     }
-//     if (GS==4) count4();
-//     if (GS==5) count5();
-//     writeResults(GS);
-//     return 0;
-// }
+#if 0
+int main(int argc, char *argv[]) {
+    if(argc == 1) cerr << "USAGE: ORCA filename; first line of filename is n m, followed by edges.\n" ;;
+    if (!init(argc, argv[1])) {
+        cerr << "Stopping!" << endl;
+        return 0;
+    }
+    if (GS==4) count4();
+    if (GS==5) count5();
+    writeResults(GS);
+    return 0;
+}
+#endif
