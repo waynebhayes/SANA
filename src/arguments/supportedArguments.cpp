@@ -209,7 +209,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-balance-all", "bool", "", "TITLE", "DESCRIPTION", "0" },
     { "-usingIterations", "bool", "", "TITLE", "DESCRIPTION", "0" },
     { "-add-hill-climbing", "bool", "", "TITLE", "DESCRIPTION", "0" },
-    { "-gocov", "double", "", "Go Coverage", "DESCRIPTION", "0" }
+    { "-netgo", "double", "", "NetGo", "DESCRIPTION", "0" }
      //-------------------------------END UNDEFINED--------------------------------------
 };
 

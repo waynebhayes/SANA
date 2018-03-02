@@ -34,7 +34,7 @@ MEASURES_SRCS = 							\
 	src/measures/MultiEdgeCorrectness.cpp 				\
         src/measures/ExternalWeightedEdgeConservation.cpp               \
 	src/measures/GoAverage.cpp      				\
-	src/measures/GoCoverage.cpp      				\
+	src/measures/NetGO.cpp      				\
 	src/measures/InducedConservedStructure.cpp			\
 	src/measures/InvalidMeasure.cpp             			\
 	src/measures/LargestCommonConnectedSubgraph.cpp			\
