@@ -8,7 +8,7 @@
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/LargestCommonConnectedSubgraph.hpp"
 #include "../measures/NodeCorrectness.hpp"
-#include "../measures/GoCoverage.hpp"
+#include "../measures/NetGO.hpp"
 #include "../measures/ShortestPathConservation.hpp"
 #include "../measures/InvalidMeasure.hpp"
 #include "../measures/InducedConservedStructure.hpp"
@@ -560,9 +560,9 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
             return new InvalidMeasure();
         }
     }
-    if (name == "gocov") {
+    if (name == "netgo") {
         if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            return new GoCoverage(G1, G2);
+            return new NetGO(G1, G2);
         } else {
             return new InvalidMeasure();
         }

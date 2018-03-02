@@ -7,7 +7,7 @@
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/LargestCommonConnectedSubgraph.hpp"
 #include "../measures/NodeCorrectness.hpp"
-#include "../measures/GoCoverage.hpp"
+#include "../measures/NetGO.hpp"
 #include "../measures/ShortestPathConservation.hpp"
 #include "../measures/InvalidMeasure.hpp"
 #include "../measures/localMeasures/GoSimilarity.hpp"

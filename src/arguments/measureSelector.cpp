@@ -9,7 +9,7 @@
 #include "../measures/SymmetricEdgeCoverage.hpp"
 #include "../measures/LargestCommonConnectedSubgraph.hpp"
 #include "../measures/GoAverage.hpp"
-#include "../measures/GoCoverage.hpp"
+#include "../measures/NetGO.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/ShortestPathConservation.hpp"
@@ -267,8 +267,8 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
             double goWeight = getWeight("go", G1, G2, args);
             M.addMeasure(m, goWeight);
         }
-        if (detRep || args.doubles["-gocov"] > 0) {
-            m = new GoCoverage(&G1, &G2);
+        if (detRep || args.doubles["-netgo"] > 0) {
+            m = new NetGO(&G1, &G2);
             M.addMeasure(m);
         }
         //commented because it takes really long to compute,
