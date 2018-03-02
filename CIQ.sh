@@ -1,12 +1,21 @@
-#!/bin/sh
+#!/bin/bash
 
 USAGE="$0 [-V] <multi-align file with K columns> <list of exactly K networks in edgelist format, in the same order the columns of the multi-align file>"
 
 VERBOSE=0
 
+TMPDIR=/tmp/CIQ$$
+trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
+mkdir $TMPDIR
+
 case "$1" in
 -V) VERBOSE=1; shift ;;
 esac
+
+totalNodes=`sed 's/_//g' "$1" | wc -w`
+nodesCovered=`sed 's/_//g' "$1" | awk 'NF>1{print}' | wc -w`
+NCV=`parse "$nodesCovered/$totalNodes"`
+echo "NCV $NCV"
 
 hawk 'ARGIND==1{
 	if(ARGIND-2!=net) {
@@ -55,6 +64,8 @@ hawk 'ARGIND==1{
 		    cs+=E*E/s
 		}
 	    };
-	#printf "totalEdges %d TE %d cs %g cs/TE %g cs/totalEdges %g\n",totalEdges,TE,cs,cs/TE,cs/totalEdges
-	printf "totalEdges %d CIQ %g\n",totalEdges,cs/TE
-    }' "$@"
+	printf "totalEdges %d TE %d cs %g cs/TE %g cs/totalEdges %g\n",totalEdges,TE,cs,cs/TE,cs/totalEdges
+	#printf "totalEdges %d CIQ %g\n",totalEdges,cs/TE
+    }' "$@" | tee $TMPDIR/CIQ.out
+CIQ=`awk '{print $NF}' $TMPDIR/CIQ.out`
+echo -n "NCV-CIQ "; echo "sqrt($NCV*$CIQ)"
