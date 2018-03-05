@@ -944,13 +944,13 @@ vector<vector<uint> > Graph::computeGraphletDegreeVectors() {
 }
 
 unordered_map<string,ushort> Graph::getNodeNameToIndexMap() const {
-
     if(nodeNameToIndexMap.size() != 0){
       return nodeNameToIndexMap;
     }
 
-    // string networkFile = "networks/"+name+"/"+name+".gw";
-    string networkFile = this -> path;
+    string networkFile = "networks/"+name+"/"+name+".gw";
+    if(this -> path != "")
+        networkFile = this -> path;
 
     ifstream infile(networkFile.c_str());
     string line;
