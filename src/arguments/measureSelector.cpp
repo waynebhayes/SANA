@@ -319,24 +319,27 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     }
 
     if (args.strings["-truealignment"] != "") {
-    vector<string> edges = fileToStrings(args.strings["-truealignment"]);
-    double ncWeight = 0;
-    try{
-        ncWeight = getWeight("nc", G1, G2, args);    
-    }catch(...){
-    }
-    m = new NodeCorrectness(NodeCorrectness::convertAlign(G1, G2, edges));
-        M.addMeasure(m, ncWeight);
-    } else if (G1.sameNodeNames(G2)) {
-    Alignment a(Alignment::correctMapping(G1,G2));
-    vector<ushort> mapping = a.getMapping();
-    mapping.push_back(G1.getNumNodes());
-    double ncWeight = 0;
+        vector<string> edges = fileToStrings(args.strings["-truealignment"]);
+        double ncWeight = 0;
         try{
-        ncWeight = getWeight("nc", G1, G2, args);
-    }catch(...){
-    }    
-    m = new NodeCorrectness(mapping);
+            ncWeight = getWeight("nc", G1, G2, args);    
+        }
+        catch(...){
+        }
+        m = new NodeCorrectness(NodeCorrectness::convertAlign(G1, G2, edges));
+        M.addMeasure(m, ncWeight);
+    } 
+    else if (G1.sameNodeNames(G2)) {
+        Alignment a(Alignment::correctMapping(G1,G2));
+        vector<ushort> mapping = a.getMapping();
+        mapping.push_back(G1.getNumNodes());
+        double ncWeight = 0;
+        try{
+            ncWeight = getWeight("nc", G1, G2, args);
+        }
+        catch(...){
+        }    
+        m = new NodeCorrectness(mapping);
         M.addMeasure(m, ncWeight);
     }
 
