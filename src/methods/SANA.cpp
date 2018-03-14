@@ -1361,8 +1361,8 @@ uint SANA::getHighestIndex() const {
     return highestIndex;
 }
 
-#define LOG10_LOW_TEMP -30
-#define LOG10_HIGH_TEMP -10
+#define LOG10_LOW_TEMP -10
+#define LOG10_HIGH_TEMP 10
 
 void SANA::searchTemperaturesByLinearRegression() {
 
