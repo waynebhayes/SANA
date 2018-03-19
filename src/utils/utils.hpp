@@ -10,6 +10,12 @@ Auxiliary functions oblivious to SANA or network alignment but that can come hel
 */
 
 #include "templateUtils.cpp"
+#include "cereal/types/unordered_map.hpp"
+#include "cereal/types/memory.hpp"
+#include "cereal/types/vector.hpp"
+#include "cereal/types/string.hpp"
+#include "cereal/archives/binary.hpp"
+#include "cereal/access.hpp"
 
 extern bool scheduleOnly;
 extern bool multiPairwiseIteration;
@@ -80,4 +86,6 @@ string extractFileNameNoExtension(string s);
 vector<string> removeDuplicates(const vector<string>& v);
 
 vector<string> split(const string& s, char c);
+
+bool newerGraphAvailable(const char* graphDir, const char* binaryDir);
 #endif

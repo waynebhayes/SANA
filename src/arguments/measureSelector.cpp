@@ -97,7 +97,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableDoubleMeasures = {
-        "ec","s3","tc","sec","wec","nodec","noded","edgec","edged", "go","importance",
+        "ec","s3","ics","tc","sec","wec","nodec","noded","edgec","edged", "go","importance",
         "sequence","graphlet","graphletlgraal", "graphletcosine", "spc", "nc","mec", "ewec", "ses"
     };
     double total = 0;
@@ -186,6 +186,9 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 
     m = new EdgeCorrectness(&G1, &G2);
     M.addMeasure(m, getWeight("ec", G1, G2, args));
+
+    m = new InducedConservedStructure(&G1, &G2);
+    M.addMeasure(m, getWeight("ics", G1, G2, args));
 
     m = new MultiEdgeCorrectness(&G1, &G2);
     M.addMeasure(m, getWeight("mec", G1, G2, args));
