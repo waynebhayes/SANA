@@ -1562,6 +1562,9 @@ string Graph::getNodeType(uint i){
 }
 
 void Graph::updateUnlockedGeneCount(){
+   if(!nodesHaveTypesEnabled)
+        return;
+
    unlockedGeneCount = 0;
    unlockedmiRNACount = 0;
    int n = getNumNodes();
