@@ -17,6 +17,7 @@ void NormalMode::run(ArgumentParser& args) {
 
     MeasureCombination M;
     initMeasures(M, G1, G2, args);
+
     Method* method;
     method = initMethod(G1, G2, args, M);
 

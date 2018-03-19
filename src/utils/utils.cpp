@@ -398,3 +398,13 @@ vector<string> split(const string& s, char c) {
     if (currentWord != "") res.push_back(currentWord);
     return res;
 }
+
+bool newerGraphAvailable(const char* graphDir, const char* binaryDir)
+{
+    struct stat st;
+    stat(graphDir, &st);
+    time_t graphTime = st.st_mtime;
+    if (stat(binaryDir, &st) != 0)
+		return true;
+    return (graphTime > st.st_mtime);
+}

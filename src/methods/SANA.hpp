@@ -166,6 +166,7 @@ private:
     bool scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges);
     double ecWeight;
     double s3Weight;
+    double icsWeight;
     double wecWeight;
     double secWeight;
     double ncWeight;

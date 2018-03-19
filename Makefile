@@ -2,7 +2,7 @@ CC = g++
 
 #CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g3
 #CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -D WEIGHTED #-pg -ggdb -Bstatic #-static 
-CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-ggdb #-pg #-ggdb
+CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -I "src/utils" #-D WEIGHTED #-ggdb #-pg
 
 INCLUDES =
 LFLAGS =
@@ -173,7 +173,6 @@ clear_cache:
 
 depend: $(SRCS)
 	makedepend $(INCLUDES) $^
-
 
 # Here is the targets for making the wrappedAlgorithms
 optnetalign:

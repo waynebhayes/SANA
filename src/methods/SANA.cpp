@@ -21,6 +21,7 @@
 
 #include "SANA.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
+#include "../measures/InducedConservedStructure.hpp"
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/TriangleCorrectness.hpp"
@@ -140,6 +141,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     this->MC  = MC;
     ecWeight  = MC->getWeight("ec");
     s3Weight  = MC->getWeight("s3");
+    icsWeight  = MC->getWeight("ics");
     secWeight = MC->getWeight("sec");
     mecWeight = MC->getWeight("mec");
     sesWeight = MC->getWeight("ses");
@@ -178,9 +180,9 @@ SANA::SANA(Graph* G1, Graph* G2,
 
     restart              = false; //restart scheme
     dynamic_tdecay       = false; //temperature decay dynamically
-    needAligEdges        = ecWeight > 0 || s3Weight > 0 || wecWeight > 0 || secWeight > 0 || mecWeight > 0; //to evaluate EC incrementally
+    needAligEdges        = icsWeight > 0 || ecWeight > 0 || s3Weight > 0 || wecWeight > 0 || secWeight > 0 || mecWeight > 0; //to evaluate EC incrementally
     needSquaredAligEdges = sesWeight > 0; // to evaluate SES incrementally
-    needInducedEdges     = s3Weight > 0; //to evaluate S3 incrementally
+    needInducedEdges     = s3Weight > 0 || icsWeight > 0; //to evaluate S3 & ICS incrementally
     needWec              = wecWeight > 0; //to evaluate WEC incrementally
     needEwec             = ewecWeight>0; //to evaluate EWEC incrementally
     needSec              = secWeight > 0; //to evaluate SEC incrementally
@@ -785,6 +787,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     {
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         newCurrentScore += TCWeight * (newTCSum);
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
@@ -806,6 +809,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore = 1;
         newCurrentScore *= ecWeight * (newAligEdges / g1Edges);
         newCurrentScore *= s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore *= icsWeight * (newAligEdges / newInducedEdges);
         newCurrentScore *= TCWeight * (newTCSum);
         newCurrentScore *= localWeight * (newLocalScoreSum / n1);
         newCurrentScore *= secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
@@ -819,6 +823,9 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     }
     case Score::max:
     {
+	// this is a terrible way to compute the max; we should loop through all of them and figure out which is the biggest
+	// and in fact we haven't yet integrated icsWeight here yet, so assert so
+	assert(icsWeight == 0.0);
         double deltaEnergy = max(ncWeight* (newNcSum / trueA.back() - ncSum / trueA.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
@@ -828,6 +835,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
         newCurrentScore += ncWeight * (newNcSum / trueA.back());
@@ -840,6 +848,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     }
     case Score::min:
     {
+	// see comment above in max
+	assert(icsWeight == 0.0);
         double deltaEnergy = min(ncWeight* (newNcSum / trueA.back() - ncSum / trueA.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
@@ -848,6 +858,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
@@ -864,6 +875,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += ecWeight / (newAligEdges / g1Edges);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         newCurrentScore += s3Weight / (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore += icsWeight / (newAligEdges / newInducedEdges);
         newCurrentScore += localWeight / (newLocalScoreSum / n1);
         newCurrentScore += wecWeight / (newWecSum / (2 * g1Edges));
         newCurrentScore += ncWeight / (newNcSum / trueA.back());
@@ -876,6 +888,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     }
     case Score::maxFactor:
     {
+	assert(icsWeight == 0.0);
         double maxScore = max(ncWeight*(newNcSum / trueA.back() - ncSum / trueA.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
@@ -891,6 +904,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
         newCurrentScore += ncWeight * (newNcSum / trueA.back());
@@ -908,6 +922,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         vector<double> addScores(numOfMeasures);  //what alignments to keep instead of simulated annealing.
         addScores[scoreNamesToIndexes["ec"]] = (1.0*newAligEdges / g1Edges);
         addScores[scoreNamesToIndexes["s3"]] = (1.0*newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        addScores[scoreNamesToIndexes["ics"]] = (1.0*newAligEdges / newInducedEdges);
         addScores[scoreNamesToIndexes["sec"]] = (1.0*newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         addScores[scoreNamesToIndexes["tc"]] = (1.0*newTCSum);
         addScores[scoreNamesToIndexes["local"]] = (1.0*newLocalScoreSum / n1);
@@ -1266,8 +1281,9 @@ void SANA::trackProgress(long long int i, bool end) {
     if (printScores) {
         SymmetricSubstructureScore S3(G1, G2);
         EdgeCorrectness EC(G1, G2);
+        InducedConservedStructure ICS(G1, G2);
         SymmetricEdgeCoverage SEC(G1,G2);
-        cerr << "S3: " << S3.eval(Al) << "  EC: " << EC.eval(Al) << "  SEC: " << SEC.eval(Al) <<endl;
+        cerr << "S3: " << S3.eval(Al) << "  EC: " << EC.eval(Al) << "  ICS: " << ICS.eval(Al) << "  SEC: " << SEC.eval(Al) <<endl;
     }
     if (checkScores) {
         double realScore = eval(Al);
@@ -1361,19 +1377,39 @@ uint SANA::getHighestIndex() const {
     return highestIndex;
 }
 
-#define LOG10_LOW_TEMP -10
-#define LOG10_HIGH_TEMP 10
+static double LOG10_LOW_TEMP, LOG10_HIGH_TEMP;
 
 void SANA::searchTemperaturesByLinearRegression() {
 
     //if(score == "pareto") //Running in pareto mode makes this function really slow
     //	return;             //and I don't know why, but sometimes I disable using this.
     //                      //otherwise my computer is very slow.
+    assert(LOG10_LOW_TEMP == 0.0);
+    if(pForTInitial(pow(10, LOG10_LOW_TEMP)) == 0)
+    {
+	cerr << "zero is too low a starting temperature; increase until we find a nonzero pBad\n";
+	LOG10_LOW_TEMP = 1.0;
+	while(pForTInitial(pow(10, LOG10_LOW_TEMP)) == 0.0) // keep increasing til we find a nonzero pBad
+	    cerr << "LOG10_LOW_TEMP is now " << (LOG10_LOW_TEMP *= 2) << endl;
+	LOG10_LOW_TEMP /= 2; // back it off to pBad = 0
+    }
+    else
+    {
+	cerr << "zero is too high a starting temperature; decrease until we find a zero pBad\n";
+	LOG10_LOW_TEMP = -1.0;
+	while(pForTInitial(pow(10, LOG10_LOW_TEMP)) > 0)
+	    cerr << "LOG10_LOW_TEMP is now " << (LOG10_LOW_TEMP *= 2) << endl; // double down until we find pBad == 0
+    }
+    cerr << "Now find LOG10_HIGH_TEMP\n";
+    for(int i=1; pForTInitial(pow(10, (LOG10_HIGH_TEMP = LOG10_LOW_TEMP + (1<<i)))) < 0.999; i++)
+	cerr << "LOG10_HIGH_TEMP is now " << LOG10_HIGH_TEMP << endl;
+
     map<double, double> pbadMap;
-    cerr << "Sampling 21 pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
-    for(double i = LOG10_LOW_TEMP; i <= LOG10_HIGH_TEMP; i = i + 1.0){
-        pbadMap[i] = pForTInitial(pow(10, i));
-        cerr << i << " temperature: " << pow(10, i) << " pBad: " << pbadMap[i] << endl;
+    cerr << "Sampling pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
+    for(double log_temp = LOG10_LOW_TEMP; log_temp <= LOG10_HIGH_TEMP; log_temp = log_temp + 1.0){
+        pbadMap[log_temp] = pForTInitial(pow(10, log_temp));
+        cerr << log_temp << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << endl;
+	if(pbadMap[log_temp] == 1.0) break;
     }
     double exponent;
     for (exponent = LOG10_LOW_TEMP; exponent <= LOG10_HIGH_TEMP; exponent++){
