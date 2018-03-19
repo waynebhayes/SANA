@@ -1370,10 +1370,10 @@ void SANA::searchTemperaturesByLinearRegression() {
     //	return;             //and I don't know why, but sometimes I disable using this.
     //                      //otherwise my computer is very slow.
     map<double, double> pbadMap;
-    cerr << "Sampling 21 pbads from 1E-" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
+    cerr << "Sampling 21 pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
     for(double i = LOG10_LOW_TEMP; i <= LOG10_HIGH_TEMP; i = i + 1.0){
         pbadMap[i] = pForTInitial(pow(10, i));
-        cerr << i + 11 << "/21 temperature: " << pow(10, i) << " pBad: " << pbadMap[i] << endl;
+        cerr << i << " temperature: " << pow(10, i) << " pBad: " << pbadMap[i] << endl;
     }
     double exponent;
     for (exponent = LOG10_LOW_TEMP; exponent <= LOG10_HIGH_TEMP; exponent++){
