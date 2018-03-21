@@ -10,6 +10,7 @@ public:
     PairwiseAlignment() = default;
     ~PairwiseAlignment() = default;
     PairwiseAlignment(const PairwiseAlignment &rhs);
+    unsigned int numAlignedEdges(const Graph &G1, const Graph &G2) const;
 
     void setVector(vector<ushort> &x) {
         A = x;

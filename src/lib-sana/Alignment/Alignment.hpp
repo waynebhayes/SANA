@@ -8,7 +8,7 @@ class Alignment {
 public:
     Alignment(){}
     ~Alignment(){}
-
+    virtual unsigned int numAlignedEdges(const Graph &G1, const Graph &G2) const;
 private:
 
 };

@@ -125,4 +125,8 @@ unordered_map<ushort,string> Graph::getIndexToNodeNameMap() const {
     return res;
 }
 
+const vector < vector<unsigned int> >& Graph::getAdjList() const {
+    return adjLists;
+}
+
 
