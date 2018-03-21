@@ -2,8 +2,8 @@
 // Created by taylor on 3/21/18.
 //
 
-#ifndef SANA_EDGECORRECTNESS_HPP
-#define SANA_EDGECORRECTNESS_HPP
+#ifndef EDGECORRECTNESS_HPP
+#define EDGECORRECTNESS_HPP
 #include "Measure.hpp"
 
 class EdgeCorrectness: public Measure {
@@ -15,4 +15,4 @@ public:
 private:
 
 };
-#endif //SANA_EDGECORRECTNESS_HPP
+#endif

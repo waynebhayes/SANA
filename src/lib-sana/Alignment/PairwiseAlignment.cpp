@@ -1,6 +1,4 @@
 #include "PairwiseAlignment.hpp"
-#include "Graph.hpp"
-#include "Utils.hpp"
 #include <algorithm>
 
 using namespace std;

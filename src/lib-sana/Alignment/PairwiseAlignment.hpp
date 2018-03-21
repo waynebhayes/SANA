@@ -1,7 +1,5 @@
 #ifndef PAIRWISE_ALIGNMENT_H
 #define PAIRWISE_ALIGNMENT_H
-
-#include "Graph.hpp"
 #include "Alignment.hpp"
 
 class PairwiseAlignment: public Alignment {
@@ -21,7 +19,7 @@ public:
     bool printDefinitionErrors(const Graph &G1, const Graph &G2);
 
 private:
-    vector <ushort> A;
+    vector <ushort> A = {};
 };
 
 #endif

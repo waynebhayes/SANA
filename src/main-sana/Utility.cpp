@@ -1,7 +1,5 @@
 #include "Utility.hpp"
-#include "BinaryGraph.hpp"
 #include "Utils.hpp"
-#include "Graph.hpp"
 #include <string>
 #include <fstream>
 #include <iostream> //Only for debugging
