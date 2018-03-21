@@ -218,27 +218,27 @@ void validateAndAddArguments(){
     for(uint i = 1; i < supportedArguments.size(); ++i){
         if(supportedArguments[i][2] != "banner"){
             if(supportedArguments[i][0] == "") {
-                cerr << "Option: #" << i+1 << " is empty for the Option field. Please specify the Option name in the supportedArguments.cpp file.\n";
+                cout << "Option: #" << i+1 << " is empty for the Option field. Please specify the Option name in the supportedArguments.cpp file.\n";
                 exit(1);
             }
 
             if(supportedArguments[i][1] == "") {
-                cerr << "Option: #" << i+1 << " is empty for the Type field. Please specify the option Type in the supportedArguments.cpp file.\n";
+                cout << "Option: #" << i+1 << " is empty for the Type field. Please specify the option Type in the supportedArguments.cpp file.\n";
                             exit(1);
             }
 
             /*if(supportedArguments[i][2] == "") {
-                cerr << "Option: #" << i+1 << " is empty for the Default Type field. Please specify the Default Type in the supportedArguments.cpp file.";
+                cout << "Option: #" << i+1 << " is empty for the Default Type field. Please specify the Default Type in the supportedArguments.cpp file.";
                             exit(1);
             }*/
 
             if(supportedArguments[i][3] == "") {
-                cerr << "Option: #" << i+1 << " is empty for the Title field. Please specify the Title in the supportedArguments.cpp file.\n";
+                cout << "Option: #" << i+1 << " is empty for the Title field. Please specify the Title in the supportedArguments.cpp file.\n";
                             exit(1);
             }
 
             if(supportedArguments[i][4] == "") {
-                cerr << "Option: #" << i+1 << " is empty for the Description field. Please write a description in the supportedArguments.cpp file.\n";
+                cout << "Option: #" << i+1 << " is empty for the Description field. Please write a description in the supportedArguments.cpp file.\n";
                             exit(1);
             }
 
@@ -258,7 +258,7 @@ void validateAndAddArguments(){
             else if(supportedArguments[i][1] == "str_vec")
                 stringVectorArgs.push_back(supportedArguments[i][0]);
             else{
-                cerr << "Option: " << supportedArguments[i][0] << " is type " << supportedArguments[i][1] << " which is not supported. Please check to make sure this option has a correct type.\n";
+                cout << "Option: " << supportedArguments[i][0] << " is type " << supportedArguments[i][1] << " which is not supported. Please check to make sure this option has a correct type.\n";
                 exit(1);
             }
 

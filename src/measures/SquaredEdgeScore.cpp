@@ -16,7 +16,7 @@ double SquaredEdgeScore::eval(const Alignment& A) {
         if(s) assert(1==sscanf(s, "%lf",&SES_DENOM));
 	else
 	{
-	    cerr << "Warning: SES_DENOM should be an environment variables; setting to 1 for now\n";
+	    cout << "Warning: SES_DENOM should be an environment variables; setting to 1 for now\n";
 	    SES_DENOM = 1;
 	}
     }

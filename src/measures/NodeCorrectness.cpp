@@ -11,19 +11,19 @@ namespace
 
         if(oneToOneError)
         {
-        std::cerr << "WARNING: PROVIDED TRUE ALIGNMENT IS NOT ONE TO ONE" << std::endl;
-        std::cerr << "         ONLY ONE TO ONE PAIRS HAVE BEEN INCLUDED" << std::endl;
+        std::cout << "WARNING: PROVIDED TRUE ALIGNMENT IS NOT ONE TO ONE" << std::endl;
+        std::cout << "         ONLY ONE TO ONE PAIRS HAVE BEEN INCLUDED" << std::endl;
         }
         if ( nodeExistError )
         {
 
-        std::cerr << "WARNING: TRUE ALIGNMENT CONTAINS NODES WHICH DO NOT EXIST" << std::endl;
-            std::cerr << "         ONLY PAIRS WITH NODES WHICH EXIST HAVE BEEN INCLUDED" << std::endl;
+        std::cout << "WARNING: TRUE ALIGNMENT CONTAINS NODES WHICH DO NOT EXIST" << std::endl;
+            std::cout << "         ONLY PAIRS WITH NODES WHICH EXIST HAVE BEEN INCLUDED" << std::endl;
         }
         if( oneToOneError || nodeExistError)
         {
-        std::cerr << "         ORIGINAL TRUEALIGNMENT SIZE = " << E << std::endl;
-        std::cerr << "         ACTUAL TRUEALIGNMENT SIZE = " << R << std::endl;
+        std::cout << "         ORIGINAL TRUEALIGNMENT SIZE = " << E << std::endl;
+        std::cout << "         ACTUAL TRUEALIGNMENT SIZE = " << R << std::endl;
         }
     }
 }

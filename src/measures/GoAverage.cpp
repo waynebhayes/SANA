@@ -42,18 +42,18 @@ double GoAverage::eval(const Alignment& A) {
 
     Timer t;
     t.start();
-    cerr << "Executing " << pairwiseScript << endl;
+    cout << "Executing " << pairwiseScript << endl;
     //python pairwise.py terms1.txt terms2.txt alignment.aln output.trm
     execPrintOutput("python "+pairwiseScript+" "+pairwiseScriptParameters);
-    cerr << "Done (" << t.elapsedString() << ")" << endl;
+    cout << "Done (" << t.elapsedString() << ")" << endl;
 
     string itgomScript = "go/itgom.py";
 
     t.start();
-    cerr << "Executing " << itgomScript << endl;
+    cout << "Executing " << itgomScript << endl;
     //python itgom.py term_pairs.trm
     execPrintOutput("python "+itgomScript+" "+pairwiseScriptOutputFile);
-    cerr << "Done (" << t.elapsedString() << ")" << endl;
+    cout << "Done (" << t.elapsedString() << ")" << endl;
 
     string simScript = "go/protein_pair_sim.py";
 
@@ -64,10 +64,10 @@ double GoAverage::eval(const Alignment& A) {
     simScriptParameters+=" "+alignmentFile+" "+itgomScriptOutputFile+" "+simScriptOutputFile;
 
     t.start();
-    cerr << "Executing " << simScript << endl;
+    cout << "Executing " << simScript << endl;
     //python protein_pair_sim.py terms1.txt terms2.txt alignment.aln file.sim output.txt
     string result = exec("python "+simScript+" "+simScriptParameters);
-    cerr << "Done (" << t.elapsedString() << ")" << endl;
+    cout << "Done (" << t.elapsedString() << ")" << endl;
 
     double score = stod(result);
 

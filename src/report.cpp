@@ -40,7 +40,7 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
 
   if(!multiPairwiseIteration)
   {
-      cerr << "  printing stats done (" << T1.elapsedString() << ")" << endl;
+      cout << "  printing stats done (" << T1.elapsedString() << ")" << endl;
       Timer T2;
       T2.start();
 
@@ -48,7 +48,7 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
       M.printMeasures(A, stream);
       stream << endl;
 
-      cerr << "  printing scores done (" << T2.elapsedString() << ")" << endl;
+      cout << "  printing scores done (" << T2.elapsedString() << ")" << endl;
       Timer T3;
       T3.start();
 
@@ -89,7 +89,7 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
       stream << "Common connected subgraphs:" << endl;
       printTable(table, 2, stream);
       stream << endl;
-      cerr << "  printing tables done (" << T2.elapsedString() << ")" << endl;
+      cout << "  printing tables done (" << T2.elapsedString() << ")" << endl;
   }
 }
 
@@ -112,7 +112,7 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
   makeReport(G1, G2, A, M, method, outfile, multiPairwiseIteration);
   outfile.close();
   alignfile.close();
-  cerr << "Took " << T.elapsed() << " seconds to save the alignment and scores." << endl;
+  cout << "Took " << T.elapsed() << " seconds to save the alignment and scores." << endl;
 }
 
 void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
@@ -120,14 +120,14 @@ void saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
   Timer T;
   T.start();
   if(M.getSumLocalWeight() <= 0) { //This is how needLocal is calculated in SANA.cpp
-    cerr << "No local measures provided, not writing local scores file." << endl;
+    cout << "No local measures provided, not writing local scores file." << endl;
     return;
   }
   ofstream outfile;
   ensureFileNameExistsAndOpenOutFile("local measure", localMeasureFileName, outfile, G1.getName(), G2.getName(), method, A);
   M.writeLocalScores(outfile, G1, G2, A);
   outfile.close();
-  cerr << "Took " << T.elapsed() << " seconds to save hte alignment and scores." << endl;
+  cout << "Took " << T.elapsed() << " seconds to save hte alignment and scores." << endl;
 }
 
 /*"Ensure" here means ensure that there is a valid file to output to.
@@ -160,11 +160,11 @@ string  ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFi
   outfile.open(outFileName.c_str());
 
   if(not outfile.is_open()){
-    cerr << "Problem saving " << fileType << " file to specified location. Saving to sana program file." << endl;
+    cout << "Problem saving " << fileType << " file to specified location. Saving to sana program file." << endl;
     outFileName = outFileName.substr(outFileName.find_last_of("/")+1);
     outfile.open(outFileName.c_str());
   }
 
-  cerr << "Saving " << fileType << " as \"" << outFileName << "\"" << endl;
+  cout << "Saving " << fileType << " as \"" << outFileName << "\"" << endl;
   return outFileName;
 }

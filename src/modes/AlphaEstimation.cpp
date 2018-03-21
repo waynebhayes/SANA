@@ -54,7 +54,7 @@ void AlphaEstimation::init(string alphaFile) {
         networkPairs.push_back(content[i]);
     }
 
-    cerr << "Loading graphs...";
+    cout << "Loading graphs...";
     Timer T;
     T.start();
     for (auto pair : networkPairs) {
@@ -67,12 +67,12 @@ void AlphaEstimation::init(string alphaFile) {
             graphs[g2Name] = Graph::loadGraph(g2Name);
         }
     }
-    cerr << "graph loading done ("+T.elapsedString()+")" << endl;
+    cout << "graph loading done ("+T.elapsedString()+")" << endl;
 
-    cerr << "Computing alphas...";
+    cout << "Computing alphas...";
     T.start();
     computeAlphas();
-    cerr << "AlphaEstimation::init done ("+T.elapsedString()+")" << endl;
+    cout << "AlphaEstimation::init done ("+T.elapsedString()+")" << endl;
 }
 
 double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasure) {
@@ -142,7 +142,7 @@ void AlphaEstimation::computeAlphas() {
     alphas = vector<vector<double> > (nMethods, vector<double> (nPairs, -1));
     for (uint i = 0; i < nMethods; i++) {
         string methodName = methods[i];
-        cerr << methodName << endl;
+        cout << methodName << endl;
         Measure* topMeasure;
         for (uint j = 0; j < nPairs; j++) {
             string g1Name = networkPairs[j][0];

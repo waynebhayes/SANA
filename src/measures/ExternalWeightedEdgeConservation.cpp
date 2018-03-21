@@ -77,7 +77,7 @@ void ExternalWeightedEdgeConservation::loadMatrix(std::string scoresFile){
 
     std::ifstream infile(scoresFile);
     if( !infile  ) {
-        std::cerr << "Can't open file " << scoresFile << std::endl;
+        std::cout << "Can't open file " << scoresFile << std::endl;
         std::exit( -1 );
     }
     std::string line;

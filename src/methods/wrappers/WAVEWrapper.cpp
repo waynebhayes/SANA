@@ -9,7 +9,7 @@ WAVEWrapper::WAVEWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G
 }
 
 void WAVEWrapper::loadDefaultParameters() {
-    cerr << "ERROR: WAVE needs a similarity file.  Use -wrappedArgs \"similarityFile\" to specify the file" << endl;
+    cout << "ERROR: WAVE needs a similarity file.  Use -wrappedArgs \"similarityFile\" to specify the file" << endl;
     exit(-1);
     parameters = "";
 }

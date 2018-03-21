@@ -67,9 +67,9 @@ void HubAlignWrapper::generateAlignment() {
     if (reversedAlpha < 1) {
         cmd += " -b " + similarityFile;
     }
-    cerr << "Executing " << cmd << endl;
+    cout << "Executing " << cmd << endl;
     execPrintOutput(cmd);
-    cerr << "Done" << endl;
+    cout << "Done" << endl;
 }
 
 void HubAlignWrapper::deleteAuxFiles() {

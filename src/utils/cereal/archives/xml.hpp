@@ -394,13 +394,13 @@ namespace cereal
         }
         catch( rapidxml::parse_error const & )
         {
-          //std::cerr << "-----Original-----" << std::endl;
+          //std::cout << "-----Original-----" << std::endl;
           //stream.seekg(0);
           //std::cout << std::string( std::istreambuf_iterator<char>( stream ), std::istreambuf_iterator<char>() ) << std::endl;
 
-          //std::cerr << "-----Error-----" << std::endl;
-          //std::cerr << e.what() << std::endl;
-          //std::cerr << e.where<char>() << std::endl;
+          //std::cout << "-----Error-----" << std::endl;
+          //std::cout << e.what() << std::endl;
+          //std::cout << e.where<char>() << std::endl;
           throw Exception("XML Parsing failed - likely due to invalid characters or invalid naming");
         }
 

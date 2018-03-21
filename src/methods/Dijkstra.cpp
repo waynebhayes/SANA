@@ -180,7 +180,7 @@ Alignment Dijkstra::run() {
       update_neighbors(seed_pair);
     }catch (QueueEmptyException & e){
       //can't recover from this
-      std::cerr << "Error: no more seeds " << std::endl;
+      std::cout << "Error: no more seeds " << std::endl;
       break;
     }
 

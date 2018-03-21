@@ -63,7 +63,7 @@ void MeasureCombination::rebalanceWeight(string& input){
 
         double newWeight = weights[rebalancePos]*(measures[rebalancePos]->balanceWeight());
 
-        cerr << "Rebalancing " << name << " from weight = " << weights[rebalancePos] << " to weight = " << newWeight << ".  This will be renormalized with the other weights before SANA begins." << endl;
+        cout << "Rebalancing " << name << " from weight = " << weights[rebalancePos] << " to weight = " << newWeight << ".  This will be renormalized with the other weights before SANA begins." << endl;
 
         weights[rebalancePos]=newWeight;
     }
@@ -71,12 +71,12 @@ void MeasureCombination::rebalanceWeight(string& input){
 }
 
 void MeasureCombination::rebalanceWeight(){
-    cerr << "Rebalancing all local measures." << endl;
+    cout << "Rebalancing all local measures." << endl;
     for(uint i = 0; i < measures.size(); i++){
         if(measures[i]->isLocal()){
             double newWeight = weights[i]*(measures[i]->balanceWeight());
 
-            cerr << "Rebalancing " << measures[i]->getName() << " from weight = " << weights[i] << " to weight = " << newWeight << ".  This will be renormalized with the other weights before SANA begins." << endl;
+            cout << "Rebalancing " << measures[i]->getName() << " from weight = " << weights[i] << " to weight = " << newWeight << ".  This will be renormalized with the other weights before SANA begins." << endl;
 
             weights[i] = newWeight;
         }

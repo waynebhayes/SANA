@@ -61,7 +61,7 @@ void ParetoMode::setArgsForParetoMode(ArgumentParser& args) {
 }
 
 vector<Alignment>* ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2) {
-    cerr << "Start execution of " << method->getName() << " in Pareto Mode." << endl;
+    cout << "Start execution of " << method->getName() << " in Pareto Mode." << endl;
     Timer T;
     T.start();
     //Method* METHOD = new SANA;
@@ -69,7 +69,7 @@ vector<Alignment>* ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G
     unordered_set<vector<unsigned short>*> *A = static_cast<SANA*>(method)->paretoRun();
     //A->push_back(method->paretoRun());
     T.elapsed();
-    cerr << "Executed " << method->getName() << " in " << T.elapsedString() << endl;
+    cout << "Executed " << method->getName() << " in " << T.elapsedString() << endl;
 
     // Re Index back to normal (Method #3 of locking)
 

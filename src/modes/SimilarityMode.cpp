@@ -16,7 +16,7 @@ void SimilarityMode::run(ArgumentParser& args) {
     MeasureCombination M;
     initMeasures(M, G1, G2, args);
     if(M.getNumberOfLocalMeasures() == 0) {
-        cerr << "ERROR: need at least one local measure to produce similarity matrix." << endl;
+        cout << "ERROR: need at least one local measure to produce similarity matrix." << endl;
         exit(-1);
     }
 
@@ -32,7 +32,7 @@ void SimilarityMode::saveSimilarityMatrix(vector<vector <float> > sim, Graph &G1
     outfile.open(file.c_str());
 
     if (not outfile.is_open()) {
-        cerr << "Problem saving similarity to specified location. Saving to sana program file." << endl;
+        cout << "Problem saving similarity to specified location. Saving to sana program file." << endl;
         exit(-1);
     }
 

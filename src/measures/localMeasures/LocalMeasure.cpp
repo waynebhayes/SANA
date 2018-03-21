@@ -37,11 +37,11 @@ void LocalMeasure::loadBinSimMatrix(string simMatrixFileName) {
         readMatrixFromBinaryFile(sims, simMatrixFileName);
     }
     else {
-        cerr << "Computing " << simMatrixFileName << " ... ";
+        cout << "Computing " << simMatrixFileName << " ... ";
         Timer T;
         T.start();
         initSimMatrix();
-        cerr << "Loading binary sim matrix done (" << T.elapsedString() << ")" << endl;
+        cout << "Loading binary sim matrix done (" << T.elapsedString() << ")" << endl;
         writeMatrixToBinaryFile(sims, simMatrixFileName);
     }
 }

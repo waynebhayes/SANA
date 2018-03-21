@@ -533,20 +533,20 @@ void TabuSearch::trackProgress(long long unsigned int i) {
     bool printDetails = false;
     bool printScores = false;
     bool checkScores = true;
-    cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore << endl;
+    cout << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore << endl;
     if (not (printDetails or printScores or checkScores)) return;
     Alignment Al(A);
-    if (printDetails) cerr << " (" << Al.numAlignedEdges(*G1, *G2) << ", " << G2->numNodeInducedSubgraphEdges(A) << ")";
+    if (printDetails) cout << " (" << Al.numAlignedEdges(*G1, *G2) << ", " << G2->numNodeInducedSubgraphEdges(A) << ")";
     if (printScores) {
         SymmetricSubstructureScore S3(G1, G2);
         EdgeCorrectness EC(G1, G2);
-        cerr << "S3: " << S3.eval(Al) << "  EC: " << EC.eval(Al) << endl;
+        cout << "S3: " << S3.eval(Al) << "  EC: " << EC.eval(Al) << endl;
     }
     if (checkScores) {
         double realScore = eval(Al);
         if (realScore-currentScore > 0.000001) {
-            cerr << "internal error: incrementally computed score (" << currentScore;
-            cerr << ") is not correct (" << realScore << ")" << endl;
+            cout << "internal error: incrementally computed score (" << currentScore;
+            cout << ") is not correct (" << realScore << ")" << endl;
         }
     }
 }

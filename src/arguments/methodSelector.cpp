@@ -126,20 +126,20 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         Timer T;
         T.start();
         ((SANA*) sana)->setAcceptableTFinalFromManualTInitial();
-        cerr << endl << "TFinal took " << T.elapsed() << " seconds to complete." << endl << endl;
+        cout << endl << "TFinal took " << T.elapsed() << " seconds to complete." << endl << endl;
     }
 
     if (args.strings["-tinitial"] == "by-linear-regression") {
         Timer T;
         T.start();
         ((SANA*) sana)->searchTemperaturesByLinearRegression();
-        cerr << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
+        cout << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
     }
     if (args.strings["-tinitial"] == "by-statistical-test") {
         Timer T;
         T.start();
         ((SANA*) sana)->searchTemperaturesByStatisticalTest();
-        cerr << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
+        cout << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
     }
     
     if (args.strings["-tdecay"] == "auto") {

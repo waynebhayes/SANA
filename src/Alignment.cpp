@@ -71,23 +71,23 @@ Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, 
             bool nodeG1Misplaced = false;
             bool nodeG2Misplaced = false;
             if(mapG1.find(nodeG1) == mapG1.end()){
-                cerr << nodeG1 << " not in G1 " << G1->getName();
+                cout << nodeG1 << " not in G1 " << G1->getName();
                 if(mapG2.find(nodeG1) != mapG2.end()){
-                    cerr << ", but it is in G2. Will switch if appropriate." << endl;
+                    cout << ", but it is in G2. Will switch if appropriate." << endl;
                     nodeG1Misplaced = true;
                 }else{
-                    cerr << endl;
+                    cout << endl;
                     continue;
                 }
             }
             if (mapG2.find(nodeG2) == mapG2.end()){
-                cerr << nodeG2 << " not in G2 " << G2->getName();
+                cout << nodeG2 << " not in G2 " << G2->getName();
                 if(mapG1.find(nodeG2) != mapG1.end()){
-                    //cerr << " is in G1, though." << endl;
-                    cerr << ", but it is in G1. Will switch if appropriate." << endl;
+                    //cout << " is in G1, though." << endl;
+                    cout << ", but it is in G1. Will switch if appropriate." << endl;
                     nodeG2Misplaced = true;
                 }else{
-                    cerr << endl;
+                    cout << endl;
                     continue;
                 }
             }
@@ -95,7 +95,7 @@ Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, 
                 string temp = nodeG1;
                 nodeG1 = nodeG2;
                 nodeG2 = temp;
-                cerr << nodeG1 << " and " << nodeG2 << " swapped." << endl;
+                cout << nodeG1 << " and " << nodeG2 << " swapped." << endl;
             }
             A[mapG1[nodeG1]] = mapG2[nodeG2];
         } else {
@@ -391,7 +391,7 @@ Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
             string node2 = G1->getLockedTo(i);
             uint node2Index = g2_IndexMap[node2];
             if(G1->nodeTypes[i] != G2-> nodeTypes[node2Index]){
-                cerr << "Invalid lock -- cannot lock a gene to a miRNA " << node1 <<  ", " << node2 << endl;
+                cout << "Invalid lock -- cannot lock a gene to a miRNA " << node1 <<  ", " << node2 << endl;
             }
             assert (G1->nodeTypes[i] == G2-> nodeTypes[node2Index]);
             A[i] = node2Index;

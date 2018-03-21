@@ -1321,7 +1321,6 @@ void Graph::saveGraphletsAsSigs(string outputFile) {
      out.close();
 }
 
-
 Graph Graph::randomNodeInducedSubgraph(uint numNodes) {
     uint n = getNumNodes();
     if (numNodes > n) cerr << "the subgraph cannot have more nodes" << endl;

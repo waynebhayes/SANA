@@ -11,8 +11,8 @@
 
 Alignment loadAlignment(int format, string file, Graph &G1, Graph &G2) {
     if(format == 0 || file == "") {
-        cerr << "When using analysis mode specify you must specify both -alignFile and -alignFormat." << endl;
-        cerr << " The following are supported" << endl
+        cout << "When using analysis mode specify you must specify both -alignFile and -alignFormat." << endl;
+        cout << " The following are supported" << endl
              << "1: sana.out format" << endl
              << "2: edge list format" << endl
              << "3: partial edge list format" << endl
@@ -30,7 +30,7 @@ Alignment loadAlignment(int format, string file, Graph &G1, Graph &G2) {
     case 4:
         return Alignment::loadPartialEdgeList(&G1, &G2, file, false);
     default:
-        cerr << "Unsupported alignment format. The following are supported" << endl
+        cout << "Unsupported alignment format. The following are supported" << endl
              << "1: sana.out format" << endl
              << "2: edge list format" << endl
              << "3: partial edge list format" << endl

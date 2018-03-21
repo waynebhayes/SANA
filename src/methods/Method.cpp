@@ -12,12 +12,12 @@ string Method::getName() {
 }
 
 Alignment Method::runAndPrintTime() {
-    cerr << "Start execution of " << name << endl;
+    cout << "Start execution of " << name << endl;
     Timer T;
     T.start();
     Alignment A = run();
     execTime = T.elapsed();
-    cerr << "Executed " << name << " in " << T.elapsedString() << endl;
+    cout << "Executed " << name << " in " << T.elapsedString() << endl;
 
     // Re Index back to normal (Method #3 of locking)
 
@@ -33,7 +33,7 @@ Alignment Method::runAndPrintTime() {
          G1->reIndexGraph(getReverseMap(G1->getLocking_ReIndexMap()));
           A.reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
     }
-    cerr << "ReIndex to normal took " << T2.elapsedString() << endl;
+    cout << "ReIndex to normal took " << T2.elapsedString() << endl;
     checkNodeTypesBeforeReport(A);
     checkLockingBeforeReport(A);
     return A;
@@ -57,8 +57,8 @@ void  Method::checkLockingBeforeReport(Alignment A){
         string node2 = G1->getLockedTo(i);
         uint pairIndex = g2_IndexMap[node2];
         if(A[i] != pairIndex){
-            cerr << A[i] << " != " << pairIndex << " <---> ";
-            cerr << g2_NameMap[A[i]] << " != "<< node2 << endl;
+            cout << A[i] << " != " << pairIndex << " <---> ";
+            cout << g2_NameMap[A[i]] << " != "<< node2 << endl;
             throw runtime_error(node1 + " is not locked to " + node2);
         }
     }
@@ -76,8 +76,8 @@ void  Method::checkLockingBeforeReport(Alignment A){
 //        string node1, node2;
 //        while(ifs >> node1 >> node2){
 //            if(A[g1_IndexMap[node1]] != g2_IndexMap[node2]){
-//                cerr << A[g1_IndexMap[node1]] << " != " << g2_IndexMap[node2] << endl;
-//                cerr <<    g2_NameMap[A[g1_IndexMap[node1]]] << " != " << node2 << endl;
+//                cout << A[g1_IndexMap[node1]] << " != " << g2_IndexMap[node2] << endl;
+//                cout <<    g2_NameMap[A[g1_IndexMap[node1]]] << " != " << node2 << endl;
 //                throw runtime_error(node1 + " is not locked to " + node2);
 //            }
 //        }
@@ -94,7 +94,7 @@ void Method::checkNodeTypesBeforeReport(Alignment A){
     uint n1 = G1->getNumNodes();
     for(uint i=0; i< n1 ; i++){
         if(G1->getNodeType(i) != G2->getNodeType(A[i])){
-            cerr << g1_NameMap[i] << "( " << G1->getNodeType(i) << " ) should not be aligned to " <<
+            cout << g1_NameMap[i] << "( " << G1->getNodeType(i) << " ) should not be aligned to " <<
                  g2_NameMap[A[i]] << "( " << G2->getNodeType(A[i]) << " )" << endl;
             throw runtime_error(g1_NameMap[i] + "( " + G1->getNodeType(i) + " ) should not be aligned to "
                     + g2_NameMap[A[i]] + "( " + G2->getNodeType(A[i]) + " )");
@@ -115,7 +115,7 @@ void Method::setLockFile(string fileName){
             lockFileName = fileName;
         }
         else{
-            cerr << "Lock file (" << fileName << ") does not exists!" << endl;
+            cout << "Lock file (" << fileName << ") does not exists!" << endl;
             throw runtime_error("Lock file not found: " + fileName);
         }
     }

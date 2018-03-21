@@ -75,7 +75,7 @@ void DebugMode::run(ArgumentParser& args) {
   // uint n = G1.getNumNodes();
   // while (n >= 5){
   //   n /= 2;
-  //   cerr << n;
+  //   cout << n;
   //   G1 = G1.randomNodeInducedSubgraph(n);
   //   G1.saveInGWFormat("subgeo"+intToString(n)+".gw");
   // }

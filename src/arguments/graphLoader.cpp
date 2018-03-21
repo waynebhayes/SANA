@@ -22,7 +22,8 @@ the network definitions are parsed and the necessary network files are created.
 
  */
 void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
-    cerr << "Initializing graphs..." << endl;
+    cout << unitbuf;
+    cout << "Initializing graphs..." << endl;
     Timer T;
     T.start();
     string fg1 = args.strings["-fg1"], fg2 = args.strings["-fg2"], path1 = args.strings["-pathmap1"], path2 = args.strings["-pathmap2"];
@@ -59,12 +60,12 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     string g1GWFile, g2GWFile;
     g1GWFile = g1Folder+"/"+g1Name+".gw";
     // if (fileExists(g1GWFile) and fg1 != "") {
-    //     cerr << "Warning: argument of -fg1 (" << fg1 <<
+    //     cout << "Warning: argument of -fg1 (" << fg1 <<
     //             ") ignored because there already exists a network named " << g1Name << endl;
     // }
     g2GWFile = g2Folder+"/"+g2Name+".gw";
     // if (fileExists(g2GWFile) and fg2 != "") {
-    //     cerr << "Warning: argument of -fg2 (" << fg2 <<
+    //     cout << "Warning: argument of -fg2 (" << fg2 <<
     //             ") ignored because there already exists a network named " << g2Name << endl;
     // }
 
@@ -76,9 +77,9 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
             //     } else {
             //         Timer tConvert;
             //         tConvert.start();
-            //         cerr << "Converting g1 to .gw (";
+            //         cout << "Converting g1 to .gw (";
             //         Graph::edgeList2gw(fg1, g1GWFile);
-            //         cerr << tConvert.elapsedString() << "s)" << endl;
+            //         cout << tConvert.elapsedString() << "s)" << endl;
             //     }
             // } else {
             //     throw runtime_error("File not found: "+fg1);
@@ -95,9 +96,9 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
             //     } else {
             //         Timer tConvert;
             //         tConvert.start();
-            //         cerr << "Converting g2 to .gw (";
+            //         cout << "Converting g2 to .gw (";
             //         Graph::edgeList2gw(fg2, g2GWFile);
-            //         cerr << tConvert.elapsedString() << "s)" << endl;
+            //         cout << tConvert.elapsedString() << "s)" << endl;
             //     }
             // } else {
             //     throw runtime_error("File not found: "+fg2);
@@ -115,7 +116,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     if(lockFile != ""){
         if(fileExists(lockFile)){
             checkFileExists(lockFile);
-            cerr << "Locking the nodes in " << lockFile << endl;
+            cout << "Locking the nodes in " << lockFile << endl;
             ifstream ifs(lockFile.c_str());
             string node;
             column1.reserve(14000);
@@ -129,7 +130,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
             column2.shrink_to_fit();
         }
         else{
-            cerr << "Lock file (" << lockFile << ") does not exist!" << endl;
+            cout << "Lock file (" << lockFile << ") does not exist!" << endl;
             throw runtime_error("Lock file not found: " + lockFile);
         }
     }
@@ -172,13 +173,13 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     
     if (!updateG1 && !updateG2)
     {
-        cerr << "Loading graphs using Graph::loadGraphFromBinary (";
+        cout << "Loading graphs using Graph::loadGraphFromBinary (";
         G1 = Graph::loadGraphFromBinary(g1Name, lockFile, args.bools["-nodes-have-types"]);
         G2 = Graph::loadGraphFromBinary(g2Name, lockFile, args.bools["-nodes-have-types"]);	
     }
     else {
     if (p1 == 1 && p2 == 1){
-        cerr << "Loading graphs using Graph::loadGraph (";
+        cout << "Loading graphs using Graph::loadGraph (";
 
         if(fg1 == ""){
             G1 = Graph::loadGraph(g1Name);
@@ -200,12 +201,12 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         //G2.maxsize = 4;
     }
     else{
-        cerr << "Loading graphs using Graph::multGraph(";
+        cout << "Loading graphs using Graph::multGraph(";
         G1 = Graph::multGraph(g1Name, p1);
         G2 = Graph::multGraph(g2Name, p2);
     }
     }
-    cerr << tLoad.elapsedString() << ")" << endl;
+    cout << tLoad.elapsedString() << ")" << endl;
 
     if (G1.getNumNodes() > G2.getNumNodes()) {
         Timer tSwap;
@@ -214,7 +215,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         G3 = G1;
         G1 = G2;
         G2 = G3;
-        cerr << "Switching G1 and G2 because G1 has more nodes than G2. (" << tSwap.elapsedString() << "s)" << endl;
+        cout << "Switching G1 and G2 because G1 has more nodes than G2. (" << tSwap.elapsedString() << "s)" << endl;
     }
 
     Timer T2;
@@ -238,13 +239,13 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     if(args.bools["-nodes-have-types"]){
         G1.nodesHaveTypesEnabled = true;
         G2.nodesHaveTypesEnabled = true;
-        cerr << "Initializing node types" << endl;
+        cout << "Initializing node types" << endl;
 //         if(!fileExists(fg1)){
-//             cerr << "fg1 (" << fg1 << ") file does not exists!" << endl;
+//             cout << "fg1 (" << fg1 << ") file does not exists!" << endl;
 //             throw runtime_error("fg1 (" + fg1 + ") file does not exists!");
 //         }
 //         if(!fileExists(fg1)){
-//             cerr << "fg2 (" << fg2 << ") file does not exists!" << endl;
+//             cout << "fg2 (" << fg2 << ") file does not exists!" << endl;
 //             throw runtime_error("fg1 (" + fg2 + ") file does not exists!");
 //         }
 //
@@ -295,21 +296,21 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         // Currently we have these constraints
         // if(not (genesG1.size() < genesG2.size())){
         if(not (G1.geneCount <= G2.geneCount)){
-            cerr << "g1 should have less genes than g2 " << endl;
-            cerr << "! " <<  G1.geneCount << " < " << G2.geneCount << endl;
+            cout << "g1 should have less genes than g2 " << endl;
+            cout << "! " <<  G1.geneCount << " < " << G2.geneCount << endl;
             throw runtime_error("g1 should have less genes than g2 \n ");
         }
         // if(not (miRNAsG1.size() < miRNAsG2.size())){
         if(not (G1.miRNACount <= G2.miRNACount)){
-            cerr << "g1 should have less miRNAs than g2 " << endl;
-            cerr << "! " <<  G1.miRNACount << " < " << G2.miRNACount << endl;
+            cout << "g1 should have less miRNAs than g2 " << endl;
+            cout << "! " <<  G1.miRNACount << " < " << G2.miRNACount << endl;
             throw runtime_error("g1 should have less miRNAs than g2\n ");
         }
     }
 
     // Getting Valid locks
     if(lockFile != ""){
-        cerr << "Initializing locking with lock file " + lockFile << endl;
+        cout << "Initializing locking with lock file " + lockFile << endl;
 
         vector<string> validLocksG1;
         vector<string> validLocksG2;
@@ -337,18 +338,18 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         G2.setLockedList(validLocksG2, validLocksG1);
 
         if(column1.size() > 0 && column1.size() != validLocksG1.size()){
-            cerr << "Warning: Out of " << column1.size() << " locks only ";
-            cerr << validLocksG1.size() << " were valid locks. [Invalid locks are ignored]" << endl;
+            cout << "Warning: Out of " << column1.size() << " locks only ";
+            cout << validLocksG1.size() << " were valid locks. [Invalid locks are ignored]" << endl;
         }
 
     }
-    cerr << "Locking initialization done (" << T2.elapsedString() << ")" << endl;
+    cout << "Locking initialization done (" << T2.elapsedString() << ")" << endl;
 	
     if (updateG1 || updateG2)
     {
     // Method #3 of locking
     Timer tReIndex;
-	cerr << "Reindexing graph 1..." << endl;
+	cout << "Reindexing graph 1..." << endl;
     tReIndex.start();
     if(args.bools["-nodes-have-types"]){
         G1.reIndexGraph(G1.getNodeTypes_ReIndexMap());
@@ -356,7 +357,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     else if(lockFile != ""){
         G1.reIndexGraph(G1.getLocking_ReIndexMap());
     }
-    cerr << "Done reIndexGraph G1 (" << tReIndex.elapsedString() << ")" << endl;
+    cout << "Done reIndexGraph G1 (" << tReIndex.elapsedString() << ")" << endl;
     /*double maxSize = args.doubles["-maxGraphletSize"];
     //int maxSize2;
     //stringstream convert(maxS
@@ -366,13 +367,13 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 
     }*/
     Timer tSerialize;
-    cerr << "Serializing graphs..." << endl;
+    cout << "Serializing graphs..." << endl;
     tSerialize.start();
     Graph::serializeGraph(G1, G1.getName(), G1.nodesHaveTypesEnabled);
     G1.serializeMap();
     Graph::serializeGraph(G2, G2.getName(), G2.nodesHaveTypesEnabled);
     G2.serializeMap();
-    cerr << "Done serializing Graphs (" << tSerialize.elapsedString() << ")" << endl;
+    cout << "Done serializing Graphs (" << tSerialize.elapsedString() << ")" << endl;
     }
 
     double rewiredFraction = args.doubles["-rewire"];
@@ -390,5 +391,5 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         throw runtime_error("One of the networks has 0 edges");
     }
 
-    cerr << "Total time for loading graphs (" << T.elapsedString() << ")" << endl;
+    cout << "Total time for loading graphs (" << T.elapsedString() << ")" << endl;
 }

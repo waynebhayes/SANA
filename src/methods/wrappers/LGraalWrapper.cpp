@@ -81,9 +81,9 @@ void LGraalWrapper::generateAlignment() {
     cmd += " -B " + similarityFile + " -o " + lgraalOutputFile;
     cmd += " -I " + intToString(iterlimit) + " -L " + to_string(timelimit);
     cmd += " -a " + to_string(alpha);
-    cerr << "Executing " << cmd << endl;
+    cout << "Executing " << cmd << endl;
     execPrintOutput(cmd);
-    cerr << "Done" << endl;
+    cout << "Done" << endl;
 }
 
 void LGraalWrapper::deleteAuxFiles() {
