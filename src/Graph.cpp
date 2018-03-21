@@ -378,7 +378,7 @@ uint Graph::getNumNodes() const {
 }
 
 uint Graph::getNumEdges() const {
-    /*
+#if 0
     cout << "Size statistics for Graph " << name << endl;
     cout << "adjList.size() = " << adjLists.size() << endl;
     cout << "adjMatrix.size() = " << adjMatrix.size() << endl;
@@ -392,7 +392,8 @@ uint Graph::getNumEdges() const {
     cout << "geneCount = " << geneCount << endl;
     cout << "unlockedGeneCount = " << unlockedGeneCount << endl;
     cout << "unlockedmiRNACount = " << unlockedmiRNACount << endl;
-    cout << "lockedCount = " << lockedCount << endl;*/
+    cout << "lockedCount = " << lockedCount << endl;
+#endif
     return edgeList.size();
 }
 
