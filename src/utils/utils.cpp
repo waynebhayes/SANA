@@ -405,6 +405,6 @@ bool newerGraphAvailable(const char* graphDir, const char* binaryDir)
     stat(graphDir, &st);
     time_t graphTime = st.st_mtime;
     if (stat(binaryDir, &st) != 0)
-		return true;
+        return true;
     return (graphTime > st.st_mtime);
 }

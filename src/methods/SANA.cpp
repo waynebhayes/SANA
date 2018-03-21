@@ -141,7 +141,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     this->MC  = MC;
     ecWeight  = MC->getWeight("ec");
     s3Weight  = MC->getWeight("s3");
-    icsWeight  = MC->getWeight("ics");
+    icsWeight = MC->getWeight("ics");
     secWeight = MC->getWeight("sec");
     mecWeight = MC->getWeight("mec");
     sesWeight = MC->getWeight("ses");

@@ -40,7 +40,7 @@ public:
 	
     static Graph loadGraphFromBinary(string graphName, string lockFile, bool nodesHaveTypes);
     static void serializeGraph(Graph G, string outputName, bool typedNodes);
-	void serializeMap();
+    void serializeMap();
 
     static void saveInGWFormat(string outputFile, const vector<string>& nodeNames,
         const vector<vector<ushort>>& edgeList);
@@ -205,8 +205,9 @@ private:
     void serialize(Archive& archive)
     {
         archive(CEREAL_NVP(adjLists), CEREAL_NVP(adjMatrix), CEREAL_NVP(edgeList), CEREAL_NVP(lockedList),
-            CEREAL_NVP(lockedTo), CEREAL_NVP(nodeTypes), CEREAL_NVP(miRNACount), CEREAL_NVP(geneCount), CEREAL_NVP(connectedComponents),
-            CEREAL_NVP(unlockedGeneCount), CEREAL_NVP(unlockedmiRNACount), CEREAL_NVP(lockedCount));
+                CEREAL_NVP(lockedTo), CEREAL_NVP(nodeTypes), CEREAL_NVP(miRNACount), CEREAL_NVP(geneCount), 
+                CEREAL_NVP(connectedComponents), CEREAL_NVP(unlockedGeneCount), CEREAL_NVP(unlockedmiRNACount), 
+                CEREAL_NVP(lockedCount));
     }
 };
 
