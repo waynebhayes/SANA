@@ -7,7 +7,7 @@
 using namespace std;
 
 const uint Importance::d = 10;
-const double Importance::lambda = 0.2;
+const double Importance::lambda = 0.2; // best value according to the HubAlign paper.
 
 Importance::Importance(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "importance") {
     string fileName = autogenMatricesFolder+G1->getName()+"_"+G2->getName()+"_importance.bin";
@@ -40,8 +40,18 @@ struct DegreeComp {
         this->adjLists = adjLists;
     }
 
+    // Note: the paper provides a deterministic algorithm that, unfortunately, means that nodes that "in spirit"
+    // should have the same importance---meaning they have the same degree at some point---will end up with
+    // different importances due to one being deleted before the other.  This is bad because if you simply
+    // reorder the nodes in the input file, you can get a *wildly* different answer.  We probably need to
+    // ameliorate this by flipping a coin if they have equal degree, thus *introducing* randomness intentionally
+    // but hopefully will reduce the wild fluctuations seen between slight variations of the input network.
     bool operator() (ushort i, ushort j) {
-        return ((*adjLists)[i].size() < (*adjLists)[j].size());
+        int size1 = (*adjLists)[i].size(), size2 = (*adjLists)[j].size();
+        if (size1 == size2)
+	    return 0;
+	else
+	    return (size1 < size2);
     }
 
     vector<vector<ushort> > const *adjLists;
@@ -130,7 +140,7 @@ vector<double> Importance::getImportances(const Graph& G) {
         its neighbors."
         It is not clear whether when a node is removed it loses its weight.
         The wording seems to indicate so, but then all the nodes with degree <=10 (d)
-        would end up with weight 0, and many mappins would be random (this is no longer
+        would end up with weight 0, and many mappings would be random (this is no longer
         true when also adding sequnece similarity).
         I assume here that they don't keep their weight (to change this, comment the previous line)
         Note: in a test, the scores were similar in both cases */
