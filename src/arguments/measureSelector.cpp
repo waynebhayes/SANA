@@ -284,6 +284,7 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
         if (shouldInit("importance", G1, G2, args)) {
             m = new Importance(&G1, &G2);
             double impWeight = getWeight("importance", G1, G2, args);
+	    assert(impWeight > 0.0);
             M.addMeasure(m, impWeight);
         }
     }

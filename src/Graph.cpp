@@ -103,9 +103,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
   g.miRNACount = 0;
 
   vector<string> nodes;
-  nodes.reserve(14000);
+  nodes.reserve(14000); // for now, the maximum number of nodes we expect.
   unordered_map<string,ushort> nodeName2IndexMap;
-  nodeName2IndexMap.reserve(1657);
+  nodeName2IndexMap.reserve(14000);
   vector<vector<string> > edges = fileToStringsByLines(fin);
 
   for(unsigned i = 0; i < edges.size(); i++){
@@ -494,11 +494,11 @@ void Graph::loadGwFile(const string& fileName) {
         node1--; node2--; //-1 because of remapping
         
         if(adjMatrix[node1][node2] || adjMatrix[node2][node1]){
-            errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
+            errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1+1 << " " << node2+1 << '\n';
             throw runtime_error(errorMsg.str().c_str());
         }
         if(node1 == node2) {
-            errorMsg << "self-loops not allowed, node number " << node1 << '\n';
+            errorMsg << "self-loops not allowed, node number " << node1+1 << '\n';
             throw runtime_error(errorMsg.str().c_str());
         }
         edgeList[i][0] = node1;
