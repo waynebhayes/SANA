@@ -664,17 +664,17 @@ int init(int maxGraphletSize, const char* graphFileName) {
     // open input, output files
     GS = maxGraphletSize;
     if (GS!=4 && GS!=5) {
-        cerr << "Incorrect graphlet size " << maxGraphletSize << ". Should be 4 or 5." << endl;
+        cout << "Incorrect graphlet size " << maxGraphletSize << ". Should be 4 or 5." << endl;
         return 0;
     }
     fin.open(graphFileName, fstream::in);
     // fout.open(argv[3], fstream::out | fstream::binary);
     if (fin.fail()) {
-        cerr << "Failed to open file " << graphFileName << endl;
+        cout << "Failed to open file " << graphFileName << endl;
         return 0;
     }
     // if (fout.fail()) {
-    //     cerr << "Failed to open file " << argv[3] << endl;
+    //     cout << "Failed to open file " << argv[3] << endl;
     //     return 0;
     // }
     // read input graph
@@ -686,11 +686,11 @@ int init(int maxGraphletSize, const char* graphFileName) {
         int a,b;
         fin >> a >> b;
         if (!(0<=a && a<n) || !(0<=b && b<n)) {
-            cerr << "Node ids should be between 0 and n-1." << endl;
+            cout << "Node ids should be between 0 and n-1." << endl;
             return 0;
         }
         if (a==b) {
-            cerr << "Self loops (edge from x to x) are not allowed." << endl;
+            cout << "Self loops (edge from x to x) are not allowed." << endl;
             return 0;
         }
         deg[a]++; deg[b]++;
@@ -702,7 +702,7 @@ int init(int maxGraphletSize, const char* graphFileName) {
     fprintf(stderr,"max degree: %d\n",d_max);
     fin.close();
     if ((int)(set<PAIR>(edges,edges+m).size())!=m) {
-        cerr << "Input file contains duplicate undirected edges." << endl;
+        cout << "Input file contains duplicate undirected edges." << endl;
         return 0;
     }
     // set up adjacency matrix if it's smaller than 100MB
@@ -776,9 +776,9 @@ std::vector<std::vector<uint> > computeGraphlets(int maxGraphletSize, string gra
 
 #if 0
 int main(int argc, char *argv[]) {
-    if(argc == 1) cerr << "USAGE: ORCA filename; first line of filename is n m, followed by edges.\n" ;;
+    if(argc == 1) cout << "USAGE: ORCA filename; first line of filename is n m, followed by edges.\n" ;;
     if (!init(argc, argv[1])) {
-        cerr << "Stopping!" << endl;
+        cout << "Stopping!" << endl;
         return 0;
     }
     if (GS==4) count4();

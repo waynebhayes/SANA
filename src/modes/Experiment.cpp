@@ -31,7 +31,7 @@ const string Experiment::datasetsFile = "experiments/datasets.cnf";
 
 void Experiment::run(ArgumentParser& args) {
     if (args.strings["-outfolder"] == "") {
-        cerr << "Specify an output folder to use using -outfolder" << endl;
+        cout << "Specify an output folder to use using -outfolder" << endl;
         exit(-1);
     }
 
@@ -111,10 +111,10 @@ void Experiment::makeSubmissions(bool shouldSubmitToCluster) {
                 string subId = getSubId(method, pair[0], pair[1], i);
                 string resultFile = resultsFolder+subId + ".out";
                 if (not fileExists(resultFile)) {
-                    cerr << "SUBMIT "+subId << endl;
+                    cout << "SUBMIT "+subId << endl;
                     execWithoutPrintingErr(cmd);
                 } else {
-                    cerr << "OMIT   "+subId << endl;
+                    cout << "OMIT   "+subId << endl;
                 }
             }
         }
@@ -185,7 +185,7 @@ string Experiment::createCommand(string method, string G1Name, string G2Name, ui
 }
 
 void Experiment::loadGraphs(map<string, Graph>& graphs) {
-    cerr << "Loading graphs...";
+    cout << "Loading graphs...";
     Timer T;
     T.start();
 
@@ -196,7 +196,7 @@ void Experiment::loadGraphs(map<string, Graph>& graphs) {
             }
         }
     }
-    cerr << "Experiment::loadGraphs done ("+T.elapsedString()+")" << endl;
+    cout << "Experiment::loadGraphs done ("+T.elapsedString()+")" << endl;
 }
 
 string Experiment::getResultId(string method, string G1Name, string G2Name,
@@ -261,7 +261,7 @@ void Experiment::collectResults() {
         Graph* G2 = &graphs[G2Name];
         Timer T;
         T.start();
-        cerr << "("+G1Name+", "+G2Name+") ";
+        cout << "("+G1Name+", "+G2Name+") ";
 
         for (string measureName : measures) {
             Measure* measure = loadMeasure(G1, G2, measureName);
@@ -274,7 +274,7 @@ void Experiment::collectResults() {
             }
             delete measure;
         }
-        cerr << " ("+T.elapsedString()+")" << endl;
+        cout << " ("+T.elapsedString()+")" << endl;
     }
 }
 
@@ -519,13 +519,13 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
         return new LargestCommonConnectedSubgraph(G1, G2);
     }
     if (name == "nodec") {
-        cerr << "Warning: the weights of 'nodec' might be ";
-        cerr << "different than the ones used in the experiment" << endl;
+        cout << "Warning: the weights of 'nodec' might be ";
+        cout << "different than the ones used in the experiment" << endl;
         return new NodeCount(G1, G2, {0.1, 0.25, 0.5, 0.15});
     }
     if (name == "edgec") {
-        cerr << "Warning: the weights of 'edgec' might be ";
-        cerr << "different than the ones used in the experiment" << endl;
+        cout << "Warning: the weights of 'edgec' might be ";
+        cout << "different than the ones used in the experiment" << endl;
         return new EdgeCount(G1, G2, {0.1, 0.25, 0.5, 0.15});
     }
     if (name == "graphlet") {
@@ -542,16 +542,16 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
         return new WeightedEdgeConservation(G1, G2, wecNodeSim);
     }
     if (name == "wecnodec") {
-        cerr << "Warning: the weights of 'nodec' might be ";
-        cerr << "different than the ones used in the experiment" << endl;
+        cout << "Warning: the weights of 'nodec' might be ";
+        cout << "different than the ones used in the experiment" << endl;
         LocalMeasure* wecNodeSim = new NodeCount(G1, G2, {0.1, 0.25, 0.5, 0.15});
         return new WeightedEdgeConservation(G1, G2, wecNodeSim);
     }
     if (name.size() == 3 and name[0] == 'g' and name[1] == 'o' and
         name[2] >= '1' and name[2] <= '9') {
         if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            cerr << "Warning: the fraction of kept GO terms might be ";
-            cerr << "different than the ones used in the experiment" << endl;
+            cout << "Warning: the fraction of kept GO terms might be ";
+            cout << "different than the ones used in the experiment" << endl;
             uint k = name[2] - '0';
             vector<double> weights(k, 0);
             weights[k-1] = 1;

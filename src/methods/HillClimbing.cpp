@@ -140,7 +140,7 @@ Alignment HillClimbing::run() {
     timer.start();
     for (long long unsigned int i = 0; ; i++) {
         if (i%100 == 0) {
-            cerr << timer.elapsedString() << " " << currentScore << endl;
+            cout << timer.elapsedString() << " " << currentScore << endl;
         }
         double bestNewCurrentScore = currentScore;
 

@@ -137,30 +137,30 @@ void ArgumentParser::initParsedValues(vector<string> vArg) {
 
 // This will only print initialized arguments now as opposed to all arguments supported.
 void ArgumentParser::writeArguments() {
-    cerr << "=== Parsed arguments ===" << endl;
+    cout << "=== Parsed arguments ===" << endl;
 
     for (auto it = strings.cbegin(); it != strings.cend(); ++it) {
         if ((*it).second == "") continue;
-        cerr << (*it).first << ": " << (*it).second << '\t';
+        cout << (*it).first << ": " << (*it).second << '\t';
     }
-    cerr << endl;
+    cout << endl;
 
     for (auto it = doubles.cbegin(); it != doubles.cend(); ++it) {
         if ((*it).second == 0.0) continue;
-        cerr << (*it).first << ": " << (*it).second << '\t';
+        cout << (*it).first << ": " << (*it).second << '\t';
     }
-    cerr << endl;
+    cout << endl;
 
     for (auto it = bools.cbegin(); it != bools.cend(); ++it) {
         if ((*it).second == false) continue;
-        cerr << (*it).first << ": " << (*it).second << '\t';
+        cout << (*it).first << ": " << (*it).second << '\t';
     }
-    cerr << endl;
+    cout << endl;
 
     for (auto it = doubleVectors.cbegin(); it != doubleVectors.cend(); ++it) {
-        cerr << (*it).first << ": ";
+        cout << (*it).first << ": ";
         for (uint i = 0; i < (*it).second.size(); i++)
-            cerr << (*it).second[i] << " ";
-        cerr << endl;
+            cout << (*it).second[i] << " ";
+        cout << endl;
     }
 }

@@ -14,7 +14,7 @@ Sequence::Sequence(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "sequence") {
 }
 
 void Sequence::generateBitscoresFile(string bitscoresFile) {
-    cerr << "Generating " << bitscoresFile << " ... ";
+    cout << "Generating " << bitscoresFile << " ... ";
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     unordered_map<ushort,string> g1IndexToNodeMap = G1->getIndexToNodeNameMap();
@@ -27,7 +27,7 @@ void Sequence::generateBitscoresFile(string bitscoresFile) {
             }
         }
     }
-    cerr << "done" << endl;
+    cout << "done" << endl;
 }
 
 unordered_map<string,string> Sequence::initNameMap(string curatedFastaFile) {

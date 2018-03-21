@@ -67,10 +67,10 @@ double betaDerivedAlpha(string methodName, string G1Name, string G2Name, double 
 
     double topFactor = beta*topScore;
     double seqFactor = (1-beta)*seqScore;
-    cerr << "method: " << methodName << endl;
-    cerr << "G: " << G1Name << " " << G2Name << endl;
-    cerr << "beta: " << beta << endl;
-    cerr << "alpha: " << topFactor/(topFactor+seqFactor) << endl;
+    cout << "method: " << methodName << endl;
+    cout << "G: " << G1Name << " " << G2Name << endl;
+    cout << "beta: " << beta << endl;
+    cout << "alpha: " << topFactor/(topFactor+seqFactor) << endl;
     return topFactor/(topFactor+seqFactor);
 }
 
@@ -170,7 +170,7 @@ bool shouldInit(string measureName, Graph& G1, Graph& G2, ArgumentParser& args) 
 }
 
 void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& args) {
-    cerr << "Initializing measures... ";
+    cout << "Initializing measures... ";
     Timer T;
     T.start();
     Measure *m;
@@ -362,9 +362,9 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     //not necessary, as getWeight returns normalized weight:
     // M.normalize();
     
-    cerr << "done (" << T.elapsedString() << ")" << endl;
+    cout << "done (" << T.elapsedString() << ")" << endl;
 
-    cerr << "=== optimize: ===" << endl;
+    cout << "=== optimize: ===" << endl;
     M.printWeights(cerr);
-    cerr << endl;
+    cout << endl;
 }

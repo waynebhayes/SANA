@@ -16,7 +16,7 @@ PISwapWrapper::PISwapWrapper(Graph* G1, Graph* G2, double alpha, string starting
 }
 
 void PISwapWrapper::loadDefaultParameters() {
-    cerr << "ERROR: PISWAP needs a similarity file (using sequence) whether or not you are optimizing using sequence or using the Hungarian algorithm. Use -wrappedArgs \"similarityFile\" to specify the similarity file. An additional starting alignment file can be specified with -startalignment \".align file\" to simply improve an alignment and not use the Hungarian algorithm. Also make sure to specify alpha, 1 is all topology and 0 is all sequence." << endl;
+    cout << "ERROR: PISWAP needs a similarity file (using sequence) whether or not you are optimizing using sequence or using the Hungarian algorithm. Use -wrappedArgs \"similarityFile\" to specify the similarity file. An additional starting alignment file can be specified with -startalignment \".align file\" to simply improve an alignment and not use the Hungarian algorithm. Also make sure to specify alpha, 1 is all topology and 0 is all sequence." << endl;
     exit(-1);
     parameters = "";
     

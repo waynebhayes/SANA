@@ -14,7 +14,7 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
     if(argc == 1) {
-        cerr << "Usage: ./sana [OPTION] [ARG(S)] [OPTION] [ARG(S)]...\n"
+        cout << "Usage: ./sana [OPTION] [ARG(S)] [OPTION] [ARG(S)]...\n"
        << "Try \'./sana --help\' or \'./sana -h\' for more information."
        << endl;
         exit(0);
@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
     }else{
         scheduleOnly = false;
     }
-    cerr << "Seed: " << getRandomSeed() << endl;
+    cout << "Seed: " << getRandomSeed() << endl;
     Mode* mode = selectMode(args);
     mode->run(args);
     delete mode;

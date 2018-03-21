@@ -24,7 +24,7 @@ uint ClusterMode::getOArgValueIndex(const vector<string>& argv) {
 
 void ClusterMode::run(ArgumentParser& args) {
   if (args.strings["-outfolder"] == "") {
-      cerr << "Specify an output folder to use" << endl;
+      cout << "Specify an output folder to use" << endl;
       exit(-1);
   }
 

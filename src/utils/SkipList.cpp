@@ -124,7 +124,7 @@ void SkipList::insert(float similarity, std::pair<ushort,ushort> entry){
     
 bool SkipList::empty(){
   if(this->length < 0){
-    std::cerr << "Error:fewer than 0 items in list!" << std::endl;
+    std::cout << "Error:fewer than 0 items in list!" << std::endl;
     //could throw an exception if needed
   }
   return this->length <= 0;
@@ -501,7 +501,7 @@ bool SkipList::deserialize(std::string fname){
 
   std::ifstream file(fname, std::ifstream::in);
   if(!file.is_open() || !file.good()){
-    std::cerr << "no file found" << std::endl;
+    std::cout << "no file found" << std::endl;
     return false;
   }
   ushort height = 1, n1 = 0, n2 = 0;
