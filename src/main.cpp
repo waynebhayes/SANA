@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
        << endl;
         exit(0);
     }
-
+    cout << unitbuf;
     validateAndAddArguments();
 
     ArgumentParser args(stringArgs, doubleArgs, boolArgs, doubleVectorArgs, stringVectorArgs);

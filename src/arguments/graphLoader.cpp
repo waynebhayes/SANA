@@ -22,7 +22,6 @@ the network definitions are parsed and the necessary network files are created.
 
  */
 void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
-    cout << unitbuf;
     cout << "Initializing graphs..." << endl;
     Timer T;
     T.start();

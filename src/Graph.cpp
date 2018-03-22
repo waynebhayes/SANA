@@ -55,7 +55,7 @@ void Graph::serializeGraph(Graph G, string outputName, bool typedNodes)
         cereal::BinaryOutputArchive oArchive(ofs);
         oArchive(G);
     }
-    cerr << outputName << " serialized" << endl;
+    cout << outputName << " serialized" << endl;
     ofs.close();
 }
 
@@ -93,7 +93,7 @@ Graph Graph::loadGraphFromBinary(string graphName, string lockFile, bool nodesHa
     }
     g.name = graphName;
     g.updateUnlockedGeneCount();
-    //cerr << g.name << " deserialized" << endl;
+    //cout << g.name << " deserialized" << endl;
     ifs.close();
     return g;
 }
@@ -747,9 +747,9 @@ void Graph::getDistanceMatrix(vector<vector<short> >& dist) const {
     else {
         Timer T;
         T.start();
-        cerr << "Computing "+name+" distance matrix...";
+        cout << "Computing "+name+" distance matrix...";
         computeDistanceMatrix(dist);
-        cerr << "Graph::getDistanceMatrix done (" << T.elapsedString() << ")" << endl;
+        cout << "Graph::getDistanceMatrix done (" << T.elapsedString() << ")" << endl;
         writeMatrixToFile(dist, distMatrixFile);
     }
 }
@@ -991,11 +991,11 @@ vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
         readMatrixFromBinaryFile(gdvs, gdvsFileName);
         return gdvs;
     }
-    cerr << "Computing " << gdvsFileName << " ... ";
+    cout << "Computing " << gdvsFileName << " ... ";
     Timer T;
     T.start();
     vector<vector<uint> > gdvs = computeGraphletDegreeVectors();
-    cerr << "Graph::loadGraphletDegreeVectors done (" << T.elapsedString() << ")" << endl;
+    cout << "Graph::loadGraphletDegreeVectors done (" << T.elapsedString() << ")" << endl;
     writeMatrixToBinaryFile(gdvs, gdvsFileName);
     string readeableVersionFile = autogenFilesFolder() + name + "_gdv"+ oss.str() + ".txt";
     writeMatrixToFile(gdvs, readeableVersionFile);
@@ -1158,7 +1158,8 @@ struct Sphere {
 //model GEO-GD expansion from paper:
 //GEOMETRIC EVOLUTIONARY DYNAMICS OF PROTEIN INTERACTION NETWORKS
 void Graph::GeoGeneDuplicationModel(uint numNodes, uint numEdges, string outputFile) {
-    if (numNodes < 5) cerr << "The minimum number of nodes is 5";
+    if (numNodes < 5) 
+        cerr << "The minimum number of nodes is 5";
     const double epsilon = 1;
     //initial network
     Point center = Point(0,0,0);
@@ -1323,7 +1324,8 @@ void Graph::saveGraphletsAsSigs(string outputFile) {
 
 Graph Graph::randomNodeInducedSubgraph(uint numNodes) {
     uint n = getNumNodes();
-    if (numNodes > n) cerr << "the subgraph cannot have more nodes" << endl;
+    if (numNodes > n) 
+        cerr << "the subgraph cannot have more nodes" << endl;
     vector<ushort> v(getNumNodes());
     for (uint i = 0; i < getNumNodes(); i++) v[i] = i;
     randomShuffle(v);
@@ -1347,7 +1349,7 @@ bool Graph::isWellDefined() {
                 isWellDefined = false;
             }
             if (neighbor == i) {
-                cerr << "Adjacency list ill defined: node " << i << " adjacent to itself" << endl;
+                cerr  << "Adjacency list ill defined: node " << i << " adjacent to itself" << endl;
                 isWellDefined = false;
 
             }

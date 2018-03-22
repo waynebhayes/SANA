@@ -250,20 +250,20 @@ Alignment SANA::run() {
         long long int iter = 0;
         Alignment align;
         if(!usingIterations) {
-          cerr << "usingIterations = 0" << endl;
+          cout << "usingIterations = 0" << endl;
           align = simpleRun(getStartingAlignment(), minutes * 60, (long long int) (getIterPerSecond()*minutes*60), iter);
         }
         else {
-          cerr << "usingIterations = 1" << endl;
+          cout << "usingIterations = 1" << endl;
           align = simpleRun(getStartingAlignment(), ((long long int)(maxIterations))*10000000, iter);
         }
 
         if(addHillClimbing){
             Timer hill;
             hill.start();
-            cerr << "Adding HillClimbing at the end.. ";
+            cout << "Adding HillClimbing at the end.. ";
             align = hillClimbingAlignment(align, (long long int)(10000000)); //arbitrarily chosen, probably too big.
-            cerr << hill.elapsedString() << endl;
+            cout << hill.elapsedString() << endl;
         }
         return align;
     }
@@ -714,10 +714,10 @@ void SANA::performChange() {
         if(randomReal(gen)<=1) {
         double foo = eval(*A);
         if(fabs(foo - newCurrentScore)>20){
-            cerr << "\nChange: nCS " << newCurrentScore << " (nSAE) " << newSquaredAligEdges << " eval " << foo << " nCS - eval " << newCurrentScore-foo;
-            //cerr << "source " << source << " oldTarget " << oldTarget << " newTarget " << newTarget << " adj? " << G2AdjMatrix[oldTarget][newTarget] << endl;
+            cout << "\nChange: nCS " << newCurrentScore << " (nSAE) " << newSquaredAligEdges << " eval " << foo << " nCS - eval " << newCurrentScore-foo;
+            //cout << "source " << source << " oldTarget " << oldTarget << " newTarget " << newTarget << " adj? " << G2AdjMatrix[oldTarget][newTarget] << endl;
             newCurrentScore = newSquaredAligEdges = foo;
-        } else cerr << "c";
+        } else cout << "c";
         }
 #endif
         currentScore     = newCurrentScore;
@@ -767,10 +767,10 @@ void SANA::performSwap() {
         if (randomReal(gen) <= 1) {
             double foo = eval(*A);
             if (fabs(foo - newCurrentScore) > 20) {
-                cerr << "\nSwap: nCS " << newCurrentScore << " eval " << foo << " nCS - eval " << newCurrentScore - foo << " adj? " << (G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
+                cout << "\nSwap: nCS " << newCurrentScore << " eval " << foo << " nCS - eval " << newCurrentScore - foo << " adj? " << (G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
                 newCurrentScore = newSquaredAligEdges = foo;
             }
-            else cerr << "s";
+            else cout << "s";
         }
 #endif
     }
@@ -1270,20 +1270,21 @@ void SANA::trackProgress(long long int i, bool end) {
     bool printScores = false;
     bool checkScores = true;
 
-    cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
-    cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", sampled probability = " << trueAcceptingProbability() << endl;
+    cout << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
+    cout <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", sampled probability = " << trueAcceptingProbability() << endl;
 
     if (not (printDetails or printScores or checkScores)) return;
     Alignment Al(*A);
     //original one is commented out for testing sec
-    //if (printDetails) cerr << " (" << Al.numAlignedEdges(*G1, *G2) << ", " << G2->numNodeInducedSubgraphEdges(*A) << ")";
-    if (printDetails) cerr << "Al.numAlignedEdges = " << Al.numAlignedEdges(*G1, *G2) << ", g1Edges = " <<g1Edges<< " ,g2Edges = "<<g2Edges<< endl;
+    //if (printDetails) cout << " (" << Al.numAlignedEdges(*G1, *G2) << ", " << G2->numNodeInducedSubgraphEdges(*A) << ")";
+    if (printDetails) 
+        cout << "Al.numAlignedEdges = " << Al.numAlignedEdges(*G1, *G2) << ", g1Edges = " <<g1Edges<< " ,g2Edges = "<<g2Edges<< endl;
     if (printScores) {
         SymmetricSubstructureScore S3(G1, G2);
         EdgeCorrectness EC(G1, G2);
         InducedConservedStructure ICS(G1, G2);
         SymmetricEdgeCoverage SEC(G1,G2);
-        cerr << "S3: " << S3.eval(Al) << "  EC: " << EC.eval(Al) << "  ICS: " << ICS.eval(Al) << "  SEC: " << SEC.eval(Al) <<endl;
+        cout << "S3: " << S3.eval(Al) << "  EC: " << EC.eval(Al) << "  ICS: " << ICS.eval(Al) << "  SEC: " << SEC.eval(Al) <<endl;
     }
     if (checkScores) {
         double realScore = eval(Al);
@@ -1317,16 +1318,16 @@ void SANA::trackProgress(long long int i, bool end) {
             shouldBe = -log(avgEnergyInc/(TInitial*log(PBetween)))/(SANAtime);
             if(SANAtime==0 || shouldBe != shouldBe || shouldBe <= 0)
             shouldBe = TDecay * (ratio >= 0 ? ratio*ratio : 0.5);
-            cerr << "TDecay " << TDecay << " too ";
-            cerr << (ratio < 1 ? "fast" : "slow") << " shouldBe " << shouldBe;
+            cout << "TDecay " << TDecay << " too ";
+            cout << (ratio < 1 ? "fast" : "slow") << " shouldBe " << shouldBe;
             TDecay = sqrt(TDecay * shouldBe); // geometric mean
-            cerr << "; try " << TDecay << endl;
+            cout << "; try " << TDecay << endl;
         }
     }
 }
 
 Alignment SANA::runRestartPhases() {
-    cerr << "new alignments phase" << endl;
+    cout << "new alignments phase" << endl;
     Timer T;
     T.start();
     newAlignmentsCount = 0;
@@ -1342,13 +1343,13 @@ Alignment SANA::runRestartPhases() {
         }
         newAlignmentsCount++;
     }
-    cerr << "candidates phase" << endl;
+    cout << "candidates phase" << endl;
     vector<long long int> iters(numCandidates, iterationsPerStep);
     for (uint i = 0; i < numCandidates; i++) {
         candidates[i] = simpleRun(candidates[i], minutesPerCandidate*60, iters[i]);
         candidatesScores[i] = currentScore;
     }
-    cerr << "finalist phase" << endl;
+    cout << "finalist phase" << endl;
     uint i = getHighestIndex();
     return simpleRun(candidates[i], minutesFinalist*60, iters[i]);
 }
@@ -1386,10 +1387,10 @@ void SANA::searchTemperaturesByLinearRegression() {
     //	return;             //and I don't know why, but sometimes I disable using this.
     //                      //otherwise my computer is very slow.
     map<double, double> pbadMap;
-    cerr << "Sampling pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
+    cout << "Sampling pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
     for(double log_temp = LOG10_LOW_TEMP; log_temp <= LOG10_HIGH_TEMP; log_temp = log_temp + 1.0){
         pbadMap[log_temp] = pForTInitial(pow(10, log_temp));
-        cerr << log_temp << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << endl;
+        cout << log_temp << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << endl;
     }
     double exponent;
     for (exponent = LOG10_LOW_TEMP; exponent <= LOG10_HIGH_TEMP; exponent++){
@@ -1399,12 +1400,12 @@ void SANA::searchTemperaturesByLinearRegression() {
     double binarySearchLeftEnd = exponent - 1;
     double binarySearchRightEnd = exponent;
     double mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-    cerr << "Beginning binary search for tFinal. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
+    cout << "Beginning binary search for tFinal. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
     for(int j = 0; j < 4; j++){
         double temperature = pow(10, mid);
         double probability = pForTInitial(temperature);
         pbadMap[mid] = probability;
-        cerr << "Temperature: " << temperature << " pbad: " << probability << endl;
+        cout << "Temperature: " << temperature << " pbad: " << probability << endl;
         if(probability > 1E-6){
             binarySearchRightEnd = mid;
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
@@ -1420,12 +1421,12 @@ void SANA::searchTemperaturesByLinearRegression() {
     binarySearchLeftEnd = exponent;
     binarySearchRightEnd = exponent + 1;
     mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-    cerr << "Beginning binary search for tInitial. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
+    cout << "Beginning binary search for tInitial. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
     for(int j = 0; j < 4; j++){
         double temperature = pow(10, mid);
         double probability = pForTInitial(temperature);
         pbadMap[mid] = probability;
-        cerr << "Temperature: " << temperature << " pbad: " << probability << endl;
+        cout << "Temperature: " << temperature << " pbad: " << probability << endl;
         if(probability > 0.995){
             binarySearchRightEnd = mid;
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
@@ -1439,14 +1440,14 @@ void SANA::searchTemperaturesByLinearRegression() {
     tuple<int, double, double, int, double, double, double, double> regressionResult = linearRegression.run();
     double lowerEnd = get<2>(regressionResult);
     double upperEnd = get<5>(regressionResult);
-    cerr << "Left endpoint of linear regression " << pow(10, lowerEnd) << endl;
-    cerr << "Right endpoint of linear regression " << pow(10, upperEnd) << endl;
+    cout << "Left endpoint of linear regression " << pow(10, lowerEnd) << endl;
+    cout << "Right endpoint of linear regression " << pow(10, upperEnd) << endl;
     double startingTemperature = pow(10,LOG10_HIGH_TEMP);
     for (auto const& keyValue : pbadMap)
     {
         if(keyValue.second >= 0.985 && keyValue.first >= upperEnd){
             startingTemperature = pow(10, keyValue.first);
-            cerr << "Initial temperature is " << startingTemperature << " expected pbad is " << keyValue.second << endl;
+            cout << "Initial temperature is " << startingTemperature << " expected pbad is " << keyValue.second << endl;
             break;
         }
     }
@@ -1461,7 +1462,7 @@ void SANA::searchTemperaturesByLinearRegression() {
 		endingPbad = keyValue.second;
     	}
     }
-    cerr << "Final temperature is " << endingTemperature << " expected pbad is " << endingPbad << endl;
+    cout << "Final temperature is " << endingTemperature << " expected pbad is " << endingPbad << endl;
     TInitial = startingTemperature;
     TFinal = endingTemperature;
 
@@ -1476,33 +1477,33 @@ void SANA::searchTemperaturesByStatisticalTest() {
     //find the threshold score between random and not random temperature
     Timer T;
     T.start();
-    cerr << "Computing distribution of scores of random alignments ";
+    cout << "Computing distribution of scores of random alignments ";
     vector<double> upperBoundKScores(NUM_SAMPLES_RANDOM);
     for (uint i = 0; i < NUM_SAMPLES_RANDOM; i++) {
         upperBoundKScores[i] = scoreRandom();
     }
-    cerr << "(" <<  T.elapsedString() << ")" << endl;
+    cout << "(" <<  T.elapsedString() << ")" << endl;
     NormalDistribution dist(upperBoundKScores);
     double highThresholdScore = dist.quantile(HIGH_THRESHOLD_P);
     double lowThresholdScore = dist.quantile(LOW_THRESHOLD_P);
-    cerr << "Mean: " << dist.getMean() << endl;
-    cerr << "sd: " << dist.getSD() << endl;
-    cerr << LOW_THRESHOLD_P << " of random runs have a score <= " << lowThresholdScore << endl;
-    cerr << HIGH_THRESHOLD_P << " of random runs have a score <= " << highThresholdScore << endl;
+    cout << "Mean: " << dist.getMean() << endl;
+    cout << "sd: " << dist.getSD() << endl;
+    cout << LOW_THRESHOLD_P << " of random runs have a score <= " << lowThresholdScore << endl;
+    cout << HIGH_THRESHOLD_P << " of random runs have a score <= " << highThresholdScore << endl;
 
     double lowerBoundTInitial = 0;
     double upperBoundTInitial = 1;
     while (not isRandomTInitial(upperBoundTInitial, highThresholdScore, lowThresholdScore)) {
-        cerr << endl;
+        cout << endl;
         upperBoundTInitial *= 2;
     }
     upperBoundTInitial *= 2;    // one more doubling just to be sure
-    cerr << endl;
+    cout << endl;
     if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/4;
 
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
-    cerr << "Iterations per run: " << 10000.+100.*n1+10.*n2+n1*n2*0.1 << endl;
+    cout << "Iterations per run: " << 10000.+100.*n1+10.*n2+n1*n2*0.1 << endl;
 
     uint count = 0;
     T.start();
@@ -1516,22 +1517,22 @@ void SANA::searchTemperaturesByStatisticalTest() {
 
         //we prefer false negatives (random scores classified as non-random)
         //than false positives (non-random scores classified as random)
-        cerr << "Test " << count << " (" << T.elapsedString() << "): ";
+        cout << "Test " << count << " (" << T.elapsedString() << "): ";
         count++;
         if (isRandomTInitial(midTInitial, highThresholdScore, lowThresholdScore)) {
             upperBoundTInitial = midTInitial;
-            cerr << " (random behavior)";
+            cout << " (random behavior)";
         }
         else {
             lowerBoundTInitial = midTInitial;
-            cerr << " (NOT random behavior)";
+            cout << " (NOT random behavior)";
         }
-        cerr << " New range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
+        cout << " New range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
     }
     //return the top of the range
-    cerr << "Final range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
-    cerr << "Final TInitial: " << upperBoundTInitial << endl;
-    cerr << "Final P(Bad): " << pForTInitial(upperBoundTInitial) << endl;
+    cout << "Final range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
+    cout << "Final TInitial: " << upperBoundTInitial << endl;
+    cout << "Final P(Bad): " << pForTInitial(upperBoundTInitial) << endl;
 
     TInitial = upperBoundTInitial;
     TFinal = lowerBoundTInitial;
@@ -1556,15 +1557,15 @@ double SANA::findAcceptableTInitial(double temperature){
     double exponent = log10 (temperature);
     double initialTemperature = pow(10, exponent);
     double initialProbability = pForTInitial(initialTemperature);
-    cerr << "Searching for an acceptable initial temperature" << endl;
+    cout << "Searching for an acceptable initial temperature" << endl;
     do{
         exponent += 0.1;
         initialTemperature = pow(10, exponent);
         initialProbability = pForTInitial(initialTemperature);
-        cerr << "Temperature: " << initialTemperature << " PBad: " << initialProbability << endl;
+        cout << "Temperature: " << initialTemperature << " PBad: " << initialProbability << endl;
     } while(initialProbability < 0.99);
-    cerr << "Resulting tInitial: " << initialTemperature << endl;
-    cerr << "Expected initial probability: " << initialProbability << endl;
+    cout << "Resulting tInitial: " << initialTemperature << endl;
+    cout << "Expected initial probability: " << initialProbability << endl;
     return initialTemperature;
 }
 
@@ -1572,15 +1573,15 @@ double SANA::findAcceptableTFinalFromManualTInitial(double temperature){
     double exponent = log10 (temperature);
     double finalTemperature = pow(10, exponent);
     double finalProbability = pForTInitial(finalTemperature);
-    cerr << "Searching for an acceptable final temperature based on the initial temperature" << endl;
+    cout << "Searching for an acceptable final temperature based on the initial temperature" << endl;
     do{
         exponent -= 0.2;
         finalTemperature = pow(10, exponent);
         finalProbability = pForTInitial(finalTemperature);
-        cerr << "Temperature: " << finalTemperature << " PBad: " << finalProbability << endl;
+        cout << "Temperature: " << finalTemperature << " PBad: " << finalProbability << endl;
     } while(finalProbability > 0.00001);
-    cerr << "Resulting tFinal: " << finalTemperature << endl;
-    cerr << "Expected final probability: " << finalProbability << endl;
+    cout << "Resulting tFinal: " << finalTemperature << endl;
+    cout << "Expected final probability: " << finalProbability << endl;
     return finalTemperature;
 }
 
@@ -1588,21 +1589,21 @@ double SANA::findAcceptableTFinal(double temperature){
     double exponent = log10 (temperature);
     double finalTemperature = pow(10, exponent);
     double finalProbability = pForTInitial(finalTemperature);
-    cerr << "Searching for an acceptable final temperature" << endl;
+    cout << "Searching for an acceptable final temperature" << endl;
     do{
         exponent -= 0.1;
         finalTemperature = pow(10, exponent);
         finalProbability = pForTInitial(finalTemperature);
-        cerr << "Temperature: " << finalTemperature << " PBad: " << finalProbability << endl;
+        cout << "Temperature: " << finalTemperature << " PBad: " << finalProbability << endl;
     } while(finalProbability > 0.00001);
-    cerr << "Resulting tFinal: " << finalTemperature << endl;
-    cerr << "Expected final probability: " << finalProbability << endl;
+    cout << "Resulting tFinal: " << finalTemperature << endl;
+    cout << "Expected final probability: " << finalProbability << endl;
     return finalTemperature;
 }
 
 double SANA::solveTDecay() {
     double tdecay = -log(TFinal * 1.0 * TInitialScaling/(TInitial)) / (1);
-    cerr << "tdecay: " << tdecay << endl;
+    cout << "tdecay: " << tdecay << endl;
     return tdecay;
 }
 
@@ -1663,12 +1664,12 @@ double SANA::pForTInitial(double TInitial) {
     // T = TInitial;
     // double pBad;
     // vector<double> EIncs = energyIncSample(T);
- //    cerr << "Trying TInitial " << T;
+ //    cout << "Trying TInitial " << T;
  //    //uint nBad = 0;
  //    //for(uint i=0; i<EIncs.size();i++)
     // //nBad += (randomReal(gen) <= exp(EIncs[i]/T));
  //    pBad = exp(avgEnergyInc/T); // (double)nBad/(EIncs.size());
- //    cerr << " p(Bad) = " << pBad << endl;
+ //    cout << " p(Bad) = " << pBad << endl;
     // return pBad;
 
     //Establish the amount of iterations per second before getPforTInitial otherwise it will be calculated with iterationsPerStep = 100000
@@ -1728,7 +1729,7 @@ bool SANA::isRandomTInitial(double TInitial, double highThresholdScore, double l
     const double NUM_SAMPLES = 5;
 
     double score = scoreForTInitial(TInitial);
-    cerr << "T_initial = " << TInitial << ", score = " << score;
+    cout << "T_initial = " << TInitial << ", score = " << score;
     //quick filter all the scores that are obviously not random
     if (score > highThresholdScore) return false;
     if (score < lowThresholdScore) return true;
@@ -1756,7 +1757,7 @@ Alignment SANA::hillClimbingAlignment(Alignment startAlignment, long long int id
     uint idleCount = 0;
     T = 0;
     initDataStructures(startAlignment); //this is redundant, but it's not that big of a deal.  Resets true probability.
-    cerr << "Beginning Final Pure Hill Climbing Stage" << endl;
+    cout << "Beginning Final Pure Hill Climbing Stage" << endl;
     while(idleCount < idleCountTarget){
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
@@ -1807,7 +1808,7 @@ vector<double> SANA::energyIncSample(double temp) {
     //of A and currentScore (besides iterPerSecond)
 
     double iter = iterPerSecond;
-    //cerr << "Hill climbing score: " << currentScore << endl;
+    //cout << "Hill climbing score: " << currentScore << endl;
     //generate a sample of energy increments, with size equal to the number of iterations per second
     vector<double> EIncs(0);
     T = temp;
@@ -1827,9 +1828,9 @@ double SANA::simpleSearchTInitial() {
     do {
         T *= 2;
         vector<double> EIncs = energyIncSample(T);
-        cerr << "Trying TInitial " << T;
+        cout << "Trying TInitial " << T;
         pBad = exp(avgEnergyInc/T); // (double)nBad/(EIncs.size());
-        cerr << " p(Bad) = " << pBad << endl;
+        cout << " p(Bad) = " << pBad << endl;
     } while(pBad < 0.9999999); // How close to 1? I pulled this out of my ass.
     return T;
 }
@@ -1843,13 +1844,13 @@ double SANA::searchTDecay(double TInitial, double minutes) {
     //new TDecay method uses upper and lower tbounds
     if(lowerTBound != 0){
         double tdecay = -log(lowerTBound * 1.0 * TInitialScaling/(upperTBound)) / (1);
-        cerr << "\ntdecay: " << tdecay << "\n";
+        cout << "\ntdecay: " << tdecay << "\n";
         return tdecay;
     }
 
     //old TDecay method
     vector<double> EIncs = energyIncSample();
-    cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
+    cout << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
     //find the temperature epsilon such that the expected number of these energy samples accepted is 1
     //by bisection, since the expected number is monotically increasing in epsilon
@@ -1861,7 +1862,7 @@ double SANA::searchTDecay(double TInitial, double minutes) {
     double EMax = vectorMax(EIncs);
     double x_left = abs(EMax)/log(N);
     double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
-    cerr << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
+    cout << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
 
     const uint NUM_ITER = 100;
     for (uint i = 0; i < NUM_ITER; i++) {
@@ -1873,19 +1874,19 @@ double SANA::searchTDecay(double TInitial, double minutes) {
     }
 
     double epsilon = (x_left + x_right)/2;
-    cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
-    cerr << "Final epsilon: " << epsilon << endl;
+    cout << "Final range: (" << x_left << ", " << x_right << ")" << endl;
+    cout << "Final epsilon: " << epsilon << endl;
 
 
     double lambda = log((TInitial)/epsilon)/(iter_t);
-    cerr << "Final T_decay: " << lambda << endl;
+    cout << "Final T_decay: " << lambda << endl;
     return lambda;
 }
 
 double SANA::searchTDecay(double TInitial, uint iterations) {
 
     vector<double> EIncs = energyIncSample();
-    cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
+    cout << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
     //find the temperature epsilon such that the expected number of thes e energy samples accepted is 1
     //by bisection, since the expected number is monotically increasing in epsilon
@@ -1897,7 +1898,7 @@ double SANA::searchTDecay(double TInitial, uint iterations) {
     double EMax = vectorMax(EIncs);
     double x_left = abs(EMax)/log(N);
     double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
-    cerr << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
+    cout << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
 
     const uint NUM_ITER = 100;
     for (uint i = 0; i < NUM_ITER; i++) {
@@ -1909,12 +1910,12 @@ double SANA::searchTDecay(double TInitial, uint iterations) {
     }
 
     double epsilon = (x_left + x_right)/2;
-    cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
-    cerr << "Final epsilon: " << epsilon << endl;
+    cout << "Final range: (" << x_left << ", " << x_right << ")" << endl;
+    cout << "Final epsilon: " << epsilon << endl;
     long long int iter_t = (long long int)(iterations)*100000000;
 
     double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t);
-    cerr << "Final T_decay: " << lambda << endl;
+    cout << "Final T_decay: " << lambda << endl;
     return lambda;
 }
 
@@ -1928,7 +1929,7 @@ double SANA::getIterPerSecond() {
 void SANA::initIterPerSecond() {
     Timer T;
     T.start();
-    cerr << "Determining iteration speed...." << endl;
+    cout << "Determining iteration speed...." << endl;
 
     long long int iter = 1E6;
 
@@ -1937,7 +1938,7 @@ void SANA::initIterPerSecond() {
         throw runtime_error("hill climbing stagnated after 0 iterations");
     }*/
     double res = iter/timer.elapsed();
-    cerr << "SANA does " << to_string(res)
+    cout << "SANA does " << to_string(res)
          << " iterations per second (took " << T.elapsedString()
          << " doing " << iter << " iterations)" << endl;
 
