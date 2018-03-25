@@ -162,9 +162,9 @@ def parse_cmd(args):
     if len(args) < 4:
         print(INPUT_MSG)
         raise InputError  
-    elif args[1] == "-t":
+    elif args[1] in ("-t", "-tw"):
         MULTI = False
-    elif args[1] == "-c":
+    elif args[1] in ("-c", "-cw"):
         MULTI = True
     else:
         print(INPUT_MSG)
@@ -195,8 +195,13 @@ if __name__ == '__main__':
 
     
     parse_cmd(sys.argv)
-  
-    total = TOTAL
+    write_lambda =  lambda graph, write_file: nx.write_edgelist(graph, write_file)
+    if 'w' in sys.argv[1]:
+        write_data = write_lambda
+    else:
+        write_data = lambda x,y: x
+        
+    total = TOTAL 
     if MULTI: #Setting up data structures and control flow for if transformation is a linear combination of 3+ graphs
         gcolors = [i for i in range(len(PATHS) + 3)]
         COLOR =mpl.colors.ListedColormap(['white', *MULTI_COLORS[:len(PATHS)], 'black'])
@@ -221,6 +226,10 @@ if __name__ == '__main__':
         sharedg = getEdgesCommon(different_edges)
         fig = plt.figure(figsize=(10,10))
         sparse = nx.to_scipy_sparse_matrix(sharedg).tocoo()
+        write_file = ""
+        for filename, weight in zip(PATHS, WEIGHTS):
+            write_file += filename + "_" + str(weight) + "," 
+        write_data(sharedg, write_file)
         size = 1/math.sqrt(len(sparse.data) // 8)
         plt.scatter(sparse.row, sparse.col, c=sparse.data,  cmap=COLOR, norm=NORM, s= size)
         plt.show()
@@ -271,6 +280,8 @@ if __name__ == '__main__':
             updateColor(g1,  current_edges, frame,  ending_edges, total)
             
             plt.clf()
+            write_data(g1, PATH1 + "_to_" + PATH2 + "_" + str(frame))
+            
             sparse = nx.to_scipy_sparse_matrix(g1).tocoo()
         
             #draws the actual picture using pyplot that will be in animation
