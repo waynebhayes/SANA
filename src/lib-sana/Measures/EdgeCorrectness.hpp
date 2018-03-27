@@ -4,7 +4,7 @@
 
 #ifndef EDGECORRECTNESS_HPP
 #define EDGECORRECTNESS_HPP
-#include "Measure.hpp"
+#include <Measure.hpp>
 
 class EdgeCorrectness: public Measure {
 public:

@@ -10,6 +10,9 @@ public:
     PairwiseAlignment(const PairwiseAlignment &rhs);
     unsigned int numAlignedEdges(const Graph &G1, const Graph &G2) const;
 
+    const ushort& operator[](const ushort &idx) const {
+        return A[idx];
+    }
     void setVector(vector<ushort> &x) {
         A = x;
     }

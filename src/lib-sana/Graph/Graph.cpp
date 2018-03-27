@@ -129,4 +129,26 @@ const vector < vector<unsigned int> >& Graph::getAdjList() const {
     return adjLists;
 }
 
+void Graph::getCopyAdjList(vector<vector<ushort> > &adjListCopy) const {
+    adjListCopy.resize(adjLists.size()); //resize so we have the correct number of rows
+    ushort curr_row = 0;
+    for(auto r : adjLists) {
+        for(auto c : r) {
+            adjListCopy[curr_row].push_back(ushort(c)); //So we push back the list at each row of adjLists
+            //while casting to ushort
+        }
+    }
+}
 
+
+void Graph::genAdjMatrix(vector<vector<bool> > &adjMatrixCopy) const {
+    //Make a adjMatrix of bools
+    adjMatrixCopy.resize(this->GetNumNodes());
+    int curr_row = 0;
+    for(const auto i : adjLists) { //For every row
+        for(const auto j : i) { //For the elements of the row list
+            adjMatrixCopy[curr_row][j] = true;
+        }
+        ++curr_row;
+    }
+}

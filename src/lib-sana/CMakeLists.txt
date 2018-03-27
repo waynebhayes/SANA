@@ -14,6 +14,6 @@ ENDMACRO()
 
 HEADER_DIRECTORIES(Included-headers-directories)
 
-add_library(lib-sana ${lib_sources} ${lib_headers} Measures/Measure.cpp Measures/Measure.hpp Measures/EdgeCorrectness.hpp)
+add_library(lib-sana ${lib_sources} ${lib_headers} Measures/Measure.cpp Measures/Measure.hpp Measures/EdgeCorrectness.hpp Measures/ExternalWeightedEdgeConservation.cpp Measures/ExternalWeightedEdgeConservation.hpp)
 
 target_include_directories(lib-sana PUBLIC ${Included-headers-directories})

@@ -7,10 +7,13 @@ class Alignment {
 public:
     Alignment(){}
     ~Alignment(){}
+    virtual void setVector(vector<ushort> &x) = 0;
+    virtual vector<ushort> &getVec() = 0;
     virtual unsigned int numAlignedEdges(const Graph &G1, const Graph &G2) const = 0;
+    virtual const ushort& operator[](const ushort &idx) const = 0;
 
 private:
-
+    vector <ushort> A = {};
 };
 
 #endif
