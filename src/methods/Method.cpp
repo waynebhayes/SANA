@@ -62,26 +62,6 @@ void  Method::checkLockingBeforeReport(Alignment A){
             throw runtime_error(node1 + " is not locked to " + node2);
         }
     }
-
-
-//    if(lockFileName != "" and fileExists(lockFileName)){
-//        checkFileExists(lockFileName);
-//        unordered_map<string,ushort> g1_IndexMap = G1->getNodeNameToIndexMap();
-//        unordered_map<string,ushort> g2_IndexMap = G2->getNodeNameToIndexMap();
-//
-//        unordered_map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
-//        unordered_map<ushort,string> g2_NameMap = G2->getIndexToNodeNameMap();
-//
-//        ifstream ifs(lockFileName);
-//        string node1, node2;
-//        while(ifs >> node1 >> node2){
-//            if(A[g1_IndexMap[node1]] != g2_IndexMap[node2]){
-//                cout << A[g1_IndexMap[node1]] << " != " << g2_IndexMap[node2] << endl;
-//                cout <<    g2_NameMap[A[g1_IndexMap[node1]]] << " != " << node2 << endl;
-//                throw runtime_error(node1 + " is not locked to " + node2);
-//            }
-//        }
-//    }
 }
 
 void Method::checkNodeTypesBeforeReport(Alignment A){
