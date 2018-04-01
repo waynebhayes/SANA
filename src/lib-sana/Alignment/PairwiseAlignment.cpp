@@ -52,3 +52,11 @@ unsigned int PairwiseAlignment::numAlignedEdges(const Graph &G1, const Graph &G2
     }
     return totalAligned;
 }
+
+typedef unordered_map<ushort,string> NodeIndexMap;
+void PairwiseAlignment::dumpEdgeList(const Graph &G1, const Graph &G2, ostream &edgeListStream) const {
+    NodeIndexMap mapG1 = G1.getIndexToNodeNameMap();
+    NodeIndexMap mapG2 = G2.getIndexToNodeNameMap();
+    for(uint i = 0; i < size(); ++i)
+        edgeListStream << mapG1[i] << "\t" << mapG2[A[i]] << endl;
+}
