@@ -1327,10 +1327,19 @@ Graph Graph::randomNodeInducedSubgraph(uint numNodes) {
     if (numNodes > n) 
         cerr << "the subgraph cannot have more nodes" << endl;
     vector<ushort> v(getNumNodes());
-    for (uint i = 0; i < getNumNodes(); i++) v[i] = i;
+    for (uint i = 0; i < n; i++) v[i] = i;
     randomShuffle(v);
     v = vector<ushort> (v.begin(), v.begin()+numNodes);
     return nodeInducedSubgraph(v);
+}
+
+Graph Graph::randomNodeShuffle(vector<ushort> &shuffle) {
+    uint n = getNumNodes();
+    for (uint i = 0; i < n; i++) shuffle[i] = i;
+    assert(shuffle.size() == n);
+    randomShuffle(shuffle);
+    shuffle = vector<ushort> (shuffle.begin(), shuffle.end());
+    return nodeInducedSubgraph(shuffle);
 }
 
 bool Graph::isWellDefined() {

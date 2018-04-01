@@ -44,8 +44,10 @@ struct DegreeComp {
     // should have the same importance---meaning they have the same degree at some point---will end up with
     // different importances due to one being deleted before the other.  This is bad because if you simply
     // reorder the nodes in the input file, you can get a *wildly* different answer.  We probably need to
-    // ameliorate this by flipping a coin if they have equal degree, thus *introducing* randomness intentionally
-    // but hopefully will reduce the wild fluctuations seen between slight variations of the input network.
+    // ameliorate this in some way.  Ideas: easiest is probably to intentionally introduce randomness, compute
+    // "importance" many times based on random shuffles of the node/edge orderings.  Probably a better idea is
+    // to figure out some way to delete all equally-valued importance nodes simultaneously rather than imposing
+    // an arbitrary order.
     bool operator() (ushort i, ushort j) {
         int size1 = (*adjLists)[i].size(), size2 = (*adjLists)[j].size();
         if (size1 == size2)
@@ -81,8 +83,9 @@ void Importance::removeFromAdjList(vector<ushort>& list, ushort u) {
 
 void Importance::normalizeImportances(vector<double>& v) {
     double maxim = 0;
-    for (double d : v) {
-        if (d > maxim) maxim = d;
+    for (double val : v) {
+	assert(val >= 0);
+        if (val > maxim) maxim = val;
     }
     for (uint i = 0; i < v.size(); i++) {
         v[i] = v[i]/maxim;
@@ -170,13 +173,33 @@ void Importance::initSimMatrix() {
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
-    vector<double> scoresG1 = getImportances(*G1);
-    vector<double> scoresG2 = getImportances(*G2);
-    for (uint i = 0; i < n1; i++) {
-        for (uint j = 0; j < n2; j++) {
-            sims[i][j] = min(scoresG1[i],scoresG2[j]);
-        }
+
+    vector<vector<ushort> > adjListsG1(n1), adjListG1Shuf(n1);
+    vector<vector<ushort> > adjListsG2(n2), adjListG2Shuf(n2);
+    G1->getAdjLists(adjListsG1);
+    G2->getAdjLists(adjListsG2);
+#define NUM_SHUFFLES 30
+    cout << "Creating average importances from " << NUM_SHUFFLES << " shuffles of the nodes of G1 and G2\n";
+    for(uint shuf = 0 ; shuf < NUM_SHUFFLES; shuf++)
+    {
+	vector<ushort> shuffle1(n1), shuffle2(n2);
+	Graph H1 = G1->randomNodeShuffle(shuffle1);
+	Graph H2 = G2->randomNodeShuffle(shuffle2);
+	H1.getAdjLists(adjListG1Shuf);
+	H2.getAdjLists(adjListG2Shuf);
+	for(uint i=0; i<n1; i++)
+	    assert(adjListsG1[shuffle1[i]].size() == adjListG1Shuf[i].size());
+	for(uint i=0; i<n2; i++)
+	    assert(adjListsG2[shuffle2[i]].size() == adjListG2Shuf[i].size());
+	vector<double> scoresH1 = getImportances(H1);
+	vector<double> scoresH2 = getImportances(H2);
+	for (uint i = 0; i < n1; i++)
+	    for (uint j = 0; j < n2; j++)
+		sims[shuffle1[i]][shuffle2[j]] += min(scoresH1[i],scoresH2[j]);
     }
+    for (uint i = 0; i < n1; i++)
+	for (uint j = 0; j < n2; j++)
+	    sims[i][j] /= NUM_SHUFFLES;
 }
 
 bool Importance::hasNodesWithEnoughDegree(const Graph& G) {

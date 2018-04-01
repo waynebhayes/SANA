@@ -23,6 +23,7 @@
 #include "../measures/SymmetricSubstructureScore.hpp"
 #include "../measures/InducedConservedStructure.hpp"
 #include "../measures/EdgeCorrectness.hpp"
+#include "../measures/SquaredEdgeScore.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/TriangleCorrectness.hpp"
 #include "../measures/NodeCorrectness.hpp"
@@ -796,7 +797,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += ncWeight * (newNcSum / trueA.back());
 #ifdef WEIGHTED
         newCurrentScore += mecWeight * (newAligEdges / (g1WeightedEdges + g2WeightedEdges));
-        newCurrentScore += sesWeight * newSquaredAligEdges;
+        newCurrentScore += sesWeight * newSquaredAligEdges / SquaredEdgeScore::getDenom();
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -931,7 +932,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         addScores[scoreNamesToIndexes["nc"]] = (1.0*newNcSum / trueA.back());
 #ifdef WEIGHTED
         addScores[scoreNamesToIndexes["mec"]] += (1.0*newAligEdges / (g1WeightedEdges + g2WeightedEdges));
-        addScores[scoreNamesToIndexes["ses"]] += 1.0*newSquaredAligEdges;
+        addScores[scoreNamesToIndexes["ses"]] += 1.0*newSquaredAligEdges/SquaredEdgeScore::getDenom();
 #endif
         /*cout << "aligEdges: " << newAligEdges << endl;
         cout << "g1Edges: " << g1Edges << endl;

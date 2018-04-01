@@ -127,6 +127,7 @@ public:
     void saveGraphletsAsSigs(string outputFile);
 
     Graph randomNodeInducedSubgraph(uint numNodes);
+    Graph randomNodeShuffle(vector<ushort> &shuffle);
 
     bool isWellDefined();
 

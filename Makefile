@@ -1,8 +1,8 @@
 CC = g++
 
-#CXXFLAGS = -Wall -fno-inline -O2 -std=c++11 -g3
-#CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -D WEIGHTED #-pg -ggdb -Bstatic #-static 
-CXXFLAGS = -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -I "src/utils" #-D WEIGHTED #-ggdb #-pg
+#CXXFLAGS = -I "src/utils" -Wall -fno-inline -O2 -std=c++11 -g3
+#CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -D WEIGHTED #-pg -ggdb -Bstatic #-static 
+CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-ggdb -D WEIGHTED ##-pg
 
 INCLUDES =
 LFLAGS =
