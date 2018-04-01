@@ -307,9 +307,11 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         }
     }
 
-    // Getting Valid locks
-    if(lockFile != ""){
-        cout << "Initializing locking with lock file " + lockFile << endl;
+    // Getting locks
+    if(lockFile != "" || args.bools["-lock-same-names"]){
+        cout << "Initializing locking: " << endl;
+        cout << "\t lock file:       " << lockFile << endl;
+        cout << "\t lock-same-names: " << args.bools["-lock-same-names"] << endl;
 
         vector<string> validLocksG1;
         vector<string> validLocksG2;
@@ -329,6 +331,21 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
                 validLocksG1.push_back(nodeG1);
                 validLocksG2.push_back(nodeG2);
             }
+        }
+
+
+        if(args.bools["-lock-same-names"]){
+            // iterate each node in G1 and see if same name exists in G2
+            int lockedWithSameName = 0;
+            for(auto node : mapG1){
+                string name = node.first;
+                if( mapG2.find(name) != mapG2.end() ){
+                    validLocksG1.push_back(name);
+                    validLocksG2.push_back(name);
+                    lockedWithSameName++;
+                }            
+            }            
+            cout << "Locked " << lockedWithSameName << " nodes since lock-same-nodes is on" << endl; 
         }
 
 
