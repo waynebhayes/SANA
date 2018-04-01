@@ -6,11 +6,14 @@
 #include "localMeasures/LocalMeasure.hpp"
 #include "../Graph.hpp"
 
+double SES_DENOM;
+
 class SquaredEdgeScore : public Measure {
 public:
     SquaredEdgeScore(Graph* G1, Graph* G2);
     virtual ~SquaredEdgeScore();
     double eval(const Alignment& A);
+    static double getDenom(void);
 private:
 };
 #endif
