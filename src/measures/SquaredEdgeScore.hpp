@@ -6,7 +6,7 @@
 #include "localMeasures/LocalMeasure.hpp"
 #include "../Graph.hpp"
 
-double SES_DENOM;
+extern double SES_DENOM;
 
 class SquaredEdgeScore : public Measure {
 public:
