@@ -15,6 +15,8 @@ SquaredEdgeScore::SquaredEdgeScore(Graph* G1, Graph* G2) : Measure(G1, G2, "ses"
 SquaredEdgeScore::~SquaredEdgeScore() {
 }
 
+double SES_DENOM;
+
 double SquaredEdgeScore::getDenom(void){return SES_DENOM;}
 
 double SquaredEdgeScore::eval(const Alignment& A) {
