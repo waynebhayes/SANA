@@ -11,6 +11,7 @@
 
 class Measure {
     public:
+        Measure() : G1(nullptr),G2(nullptr),name("") {}
         Measure(Graph* G1, Graph* G2, string name);
         virtual ~Measure();
         virtual double eval(const Alignment& A) = 0;
