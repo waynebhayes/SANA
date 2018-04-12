@@ -33,7 +33,7 @@ public:
                                              double occurrencesFraction);
 
 private:
-    static const string biogridGOFile = "go/gene2go";
+    static const string biogridGOFile;
 
     vector<double> countWeights;
     double occurrencesFraction;

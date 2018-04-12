@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include "GoAverage.hpp"
+#include "GoSimilarity.hpp"
 
 GoAverage::GoAverage(Graph *G1, Graph *G2) : Measure(G1,G2,"goavg") {}
 
@@ -17,8 +18,8 @@ double GoAverage::eval(const Alignment &A) {
     string G2GoFile = "../../../networks/"+G2Name+"/go/"+G1Name+"_gene_association.txt";
 
     //TODO: Implement helper function to retrieve "Simple Go File Name"
-    string G1GoSimpleFile = getGoSimpleFileName(*G1);
-    string G2GoSimpleFile = getGoSimpleFileName(*G2);
+    string G1GoSimpleFile = GoSimilarity::getGoSimpleFileName(*G1);
+    string G2GoSimpleFile = GoSimilarity::getGoSimpleFileName(*G2);
 
     //TODO: Assert Simple File Exists and Format is Correct
     //Assert(G1GoSimpleFile Exists)
