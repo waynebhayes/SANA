@@ -38,7 +38,7 @@ public:
 
     static void loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
 	
-    static Graph loadGraphFromBinary(string graphName, string lockFile, bool nodesHaveTypes);
+    static Graph loadGraphFromBinary(string graphName, string lockFile, bool nodesHaveTypes, bool lockedSameName);
     static void serializeGraph(Graph G, string outputName, bool typedNodes);
     void serializeMap();
 
