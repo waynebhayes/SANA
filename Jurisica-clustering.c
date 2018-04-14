@@ -6,34 +6,43 @@
 #include <strings.h>
 #include "misc.h"
 #include "sets.h"
+#include "bintree.h"
 
-#define NUM_GENES 24252
-#define NUM_mRNAs 59530
-static char *gName[NUM_GENES], *rName[NUM_mRNAs];
+#define MAX_GENES 25000 // 24252
+#define MAX_mRNAs 60000 // 59530
+static char *gName[MAX_GENES], *rName[MAX_mRNAs];
 static int numGenes, numRNAs;
+static BINTREE *gNameTree, *rNameTree;
+static SET *myGenes[MAX_mRNAs];
 
 void ReadFile(FILE *fp)
 {
     char line[BUFSIZ], word1[BUFSIZ], word2[BUFSIZ];
     int lineNum = 0;
+    if(!gNameTree) gNameTree = BinTreeAlloc(unbalanced, strcmp, strdup, free, NULL, NULL);
+    if(!rNameTree) rNameTree = BinTreeAlloc(unbalanced, strcmp, strdup, free, NULL, NULL);
 
     while(fgets(line, sizeof(line), fp))
     {
-	int i;
-	assert(2 == sscanf(line, "%s %s", word1, word2));
-	for(i=0; i < numGenes; i++)
-	    if(strcmp(gName[i], word1) == 0)
-		/* add it to the set */;
-	if(i == numGenes)
+	int idGene, idRNA;
+	assert(2 == sscanf(line, "%s\t%s\n", word1, word2));
+	if(!BinTreeLookup(gNameTree, (foint)word1, &idGene))
+	{
+	    idGene = numGenes;
+	    BinTreeInsert(gNameTree, (foint)word1, (foint)numGenes);
 	    gName[numGenes++] = strdup(word1);
-	assert(numGenes <= NUM_GENES);
-
-	for(i=0; i < numRNAs; i++)
-	    if(strcmp(rName[i], word2) == 0)
-		/* add it to the set */;
-	if(i == numRNAs)
+	    //printf("%d %s\n", numGenes, word1);
+	    assert(numGenes <= MAX_GENES);
+	}
+	if(!BinTreeLookup(rNameTree, (foint)word2, &idRNA))
+	{
+	    idRNA = numRNAs;
+	    BinTreeInsert(rNameTree, (foint)word2, (foint)numRNAs);
 	    rName[numRNAs++] = strdup(word2);
-	assert(numRNAs <= NUM_mRNAs);
+	    //printf("%d %s\n", numRNAs, word2);
+	    assert(numRNAs <= MAX_mRNAs);
+	}
+	SetAdd(myGenes[idRNA], idGene);
 
 	lineNum++;
     }
@@ -41,7 +50,9 @@ void ReadFile(FILE *fp)
 
 int main(int argc, char *argv[])
 {
-    int argn = 1;
+    int argn = 1, i, j;
+
+    for(i=0; i<MAX_mRNAs; i++) myGenes[i] = SetAlloc(MAX_GENES);
     
     if(argn == argc)
 	ReadFile(stdin);
@@ -54,11 +65,18 @@ int main(int argc, char *argv[])
 		perror(argv[argn]);
 	    else
 	    {
+		printf("FILENAME %d (%s)\n", argn, argv[argn]);
 		ReadFile(in);
 		fclose(in);
 	    }
 	    ++argn;
 	}
+    }
+
+    SET *tmp = SetAlloc(MAX_GENES);
+    for(i=0; i<numRNAs; i++) for(j=i+1; j<numRNAs; j++)
+    {
+	printf("%s\t%s\t%d\n", rName[i], rName[j], SetCardinality(SetXOR(tmp, myGenes[i],myGenes[j])));
     }
     return 0;
 }
