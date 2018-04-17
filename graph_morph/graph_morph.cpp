@@ -6,6 +6,10 @@
 #include <string>
 #include <string.h>
 #include <stdexcept>
+#include <vector>
+#include <cassert>
+=======
+
 
 std::string input_error_prompt = "currently the expected input is:\nFor transformation: graph_morph -t transition_number(integer) edgelist1(file path) edgelist2(file path) output_directory(file path directory)\nFor combination: graph_morph -c weight1(float). . . weightn(float) edgelist1(file path) . . .  edgelist2(file path) output_directory(file path directory)\ndirectory should be a path with a '\\' or '/' depending on system\nEdge list files should have rows of two integers\n";
 enum morph_mode {transformation, combination};
@@ -157,6 +161,47 @@ void combo_multi(std::string name, graph graphs[], float weights[], graph & outp
 			 	
 }
 
+void permute(graph & original, graph & to_permute)
+{
+	std::unordered_map<int, int> permute_map;
+	std::vector<int> unique_nodes;
+
+	for(graph::iterator e = original.begin(); e != original.end(); ++e)
+	{
+		if(permute_map.find(e->first) == permute_map.end())
+		{
+			permute_map[e->first];
+			unique_nodes.push_back(e->first);
+		}
+
+		if(permute_map.find(e->second) == permute_map.end())
+		{
+			permute_map[e->second];
+			unique_nodes.push_back(e->second);
+		}
+		
+	}
+
+	std::random_shuffle(unique_nodes.begin(), unique_nodes.end());
+	
+	
+	for(auto pair = permute_map.begin(); pair != permute_map.end(); ++pair){
+		permute_map[pair->first] = unique_nodes.back();
+		unique_nodes.pop_back();
+		//std:: cout << pair->first << " " << permute_map[pair->first] << std::endl;
+	}	
+	
+	for(graph::iterator e = original.begin(); e != original.end(); ++e)
+	{
+
+		//std::cout << e->first << ":" << permute_map[e->first] << " " << e->second << ":" << permute_map[e->second] << std::endl;
+		to_permute.insert(edge(permute_map[e->first], permute_map[e->second]));
+	}
+	
+	assert(original.size() == to_permute.size());
+
+
+}
 morph_mode parse_args(int args, char * param[])
 {
 	morph_mode to_return;
@@ -183,7 +228,8 @@ int main(int argc, char *argv[])
 {
 
 	
-	
+	std::string rand_opt("*rand");
+
 	morph_mode m = parse_args(argc, argv);
 	std::string dump_folder = argv[argc - 1];
 	if(m == transformation)
@@ -197,18 +243,25 @@ int main(int argc, char *argv[])
 		graph g2;
 		try{
 			f1.open(f_name1);
-			f2.open(f_name2);
-			
 			edges_from_file(g1, f1);
-			edges_from_file(g2, f2);
+			if(f_name2 == rand_opt)
+				permute(g1, g2);
+			else
+			{
+				f2.open(f_name2);
+				edges_from_file(g2, f2);
+			}
 		}
 		catch (...){
 		
 			throw std::invalid_argument("Issue opening and parsing files, ensure edgelist files consist of rows of two integers");
 		}
 		f1.close();
-		f2.close();
-		transform_full(dump_folder  + f_name1 + std::string("_to_") +  f_name2, g1, g2, 1, transitions);
+		if(f_name2 != rand_opt)
+			f2.close();
+		else
+			f_name2 = std::string("rand");
+		transform_full(dump_folder  + f_name1 + std::string("_to_") +  f_name2 , g1, g2, 1, transitions);
 	}
 	else if(m == combination)
 	{
