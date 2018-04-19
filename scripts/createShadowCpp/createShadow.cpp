@@ -12,8 +12,11 @@ Sample Run (assuming shadow is the compiled binary)
 #include <sstream>
 #include <assert.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <stdexcept>
 #include "argparse.hpp"
+
+typedef std::pair<std::string, std::string> StringPair;
 
 namespace fnv {
     constexpr static unsigned int FNV_PRIME  = 0x01000193;
@@ -197,7 +200,94 @@ namespace shadow_graph {
         }
         reader.close();
     }
+    void loadEdgeListAlignment(std::vector<StringPair> &alignment, std::string & s){
+        std::ifstream reader;
+        std::string line;
+        reader.open(s);
+
+        std::string a,b;
+        while(reader >> a >> b){
+            alignment.push_back(StringPair(a,b));
+        }
+        reader.close();
+    }
+
 }
+
+void output_GW_Format( std::vector<std::unordered_map<int, int>> &adjList){
+    std::cout << "LEDA.GRAPH" << std::endl;
+    std::cout << "string" << std::endl;
+    std::cout << "short" << std::endl;
+    std::cout << "-2" << std::endl;
+
+    // Print nodes
+    std::cout << adjList.size() << std::endl;
+    for (int i = 0; i < adjList.size(); i++) {
+        std::cout << "|{shadow" << i << "}|" << std::endl;
+    }
+
+    // compute numEdges
+    int numEdges = 0;
+    for (int i = 0; i < adjList.size(); i++) 
+        for(auto it = adjList[i].begin(); it != adjList[i].end(); it++) 
+            numEdges++;
+    
+    // Print edges
+    std::cout << numEdges << std::endl;
+    for (int i = 0; i < adjList.size(); i++) {
+        for (auto it = adjList[i].begin(); it != adjList[i].end(); it++) {
+            if (it->first <= i) {
+                // this should not happen
+                // We only assigned edge value from lower index to higher index nodes
+                std::cerr << it->first << " " << i << std::endl;
+                throw std::runtime_error("Lost an edge");
+                continue;
+            }
+	    // Stupid LEDA numbers nodes from 1, so +1 to the iterators.
+            std::cout << i+1 << ' ' << it->first+1 << " 0 |{" << it->second << "}|" << std::endl;
+        }
+    }
+}
+
+
+void output_el_Format( std::vector<std::unordered_map<int, int>> &adjList, 
+                            std::vector<std::string> &shadowNames, 
+                            std::vector<bool> &nodeTypes,
+                            bool nodesHaveTypes){
+    std::cerr << "printing out .el" << std::endl;
+    for (int i = 0; i < adjList.size(); i++) {
+        for (auto it = adjList[i].begin(); it != adjList[i].end(); it++) {
+            if (it->first <= i) {
+                // this should not happen
+                // We only assigned edge value from lower index to higher index nodes
+                std::cerr << it->first << " " << i << std::endl;
+                throw std::runtime_error("Lost an edge");
+                continue;
+            }
+            
+            if(nodesHaveTypes){
+                bool firstType  = nodeTypes[i];
+                bool secondType = nodeTypes[it->first];
+
+                if(firstType == secondType){
+                    // two of same kind cannot have edge
+                    std::cerr << i << " " << it -> first << std::endl;
+                    std::cerr << shadowNames[i] << " " << shadowNames[it -> first] << std::endl;
+                    throw std::runtime_error("two of same kind cannot have edge");
+                }
+                
+                if(firstType)
+                    std::cout << shadowNames[it->first] << " " << shadowNames[i] << " " << it->second << std::endl;
+                else
+                    std::cout << shadowNames[i] << " " << shadowNames[it->first] << " " << it->second << std::endl;
+            }
+            else {
+                std::cout << shadowNames[i] << " " << shadowNames[it->first] << " " << it->second << std::endl;
+            }
+        }      
+    }
+}
+
 
 int main(int argc, const char** argv) {
     static_assert(fnv::hash("FNV Hash Test") == 0xF38B3DB9, "fnv1a_32::hash failure");
@@ -205,6 +295,11 @@ int main(int argc, const char** argv) {
 
     args::ArgumentParser parser("Executable to create the shadow network");
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
+
+    args::Group opt(parser, "Optional Flag", args::Group::Validators::DontCare);
+    args::Flag nodesHaveTypesFlag(opt, "haveTypes", "Enables -nodes-have-types", {'n', "nodes-have-types"});
+    args::ValueFlag<std::string> shadowNamesFlag(opt, "shadowNames", "Block size", {"shadowNames"});
+
     // args::Flag compact(parser, "compact", "Alignment file format", {'c',"compact"});
     // args::ValueFlag<std::string> format(parser, "format", "Output format", {'f',"format"});
     args::Group required(parser, "", args::Group::Validators::All);
@@ -253,6 +348,45 @@ int main(int argc, const char** argv) {
         f.close();
     }
 
+    // Read Shadow Names from file
+    std::string shadowNamesFile = args::get(shadowNamesFlag);
+    std::unordered_map<std::string, unsigned short> shadowName2Index; // TODO
+    std::vector<std::string> shadowNames;
+    std::vector<bool> nodeTypes;   // 0 gene, 1 miRNA
+    if(args::get(nodesHaveTypesFlag)){
+        std::ifstream f(shadowNamesFile);
+        if(!f.good()){
+            std::cerr << "Failed to load file: " << shadowNamesFile << std::endl;
+            throw std::runtime_error("ShadowNames file not found");
+        }
+        bool type = 0;
+        std::string line;
+        std::string node;
+        while(getline(f, line)) {
+            std::istringstream iss(line);
+            iss.str(line);
+            iss.clear();
+
+            iss >> node;
+            if((!iss >> type)){
+                type = 0;
+                // assmuing its miRNA if starring with MNEST
+                if(node.substr(0, 5) == " MNEST")
+                    type = 1;
+            }
+            shadowName2Index[node] = shadowNames.size(); //basically current index
+            shadowNames.push_back(node);
+            nodeTypes.push_back(type);
+        }
+        if(shadowNames.size() != args::get(shadowNodeSize)){
+            std::cerr << "Number of shadow node names (" << shadowNames.size() 
+                  << ") doest not match number of shadow nodes (" 
+                  << args::get(shadowNodeSize) << ")" << std::endl;
+
+            throw std::runtime_error("Number of ShadowNames != Shadow nodes count");
+        }
+    }
+   
 
     // Separte network and alignment filenames
     std::vector<std::string> network_files(pos_args.size() / 2);
@@ -264,22 +398,37 @@ int main(int argc, const char** argv) {
     }
     assert(network_files.size() == alignment_files.size());
 
+    std::cerr << "Starting to make Shadow graph " << std::endl;
 
     std::vector<std::unordered_map<int, int>> adjList(args::get(shadowNodeSize));
     shadow_graph::Graph tempGraph;
     for (int gi = 0; gi < network_files.size(); gi++) {
-        //std::cerr << "graph " << gi << ": " << network_files.at(gi) << std::endl;
-        //Construct/store graph
+        std::cerr << "graph " << gi << ": " << network_files.at(gi);        
+        
         tempGraph.load(network_files.at(gi));
+
+        std::cerr << ", nodes = " << tempGraph.adjList.size() << std::endl;
+
         // Load alignment
-        std::vector<unsigned short> tempAlig(0);
-        shadow_graph::loadAlignment(tempAlig, alignment_files.at(gi));
-        for (int peg = 0; peg < tempAlig.size(); peg++) {
+        std::vector<unsigned short> tempAligOneline(0);
+        std::vector<StringPair> tempAlig(0);
+        
+        if(args::get(nodesHaveTypesFlag)){
+            shadow_graph::loadEdgeListAlignment(tempAlig, alignment_files.at(gi));
+        }
+        else {
+            shadow_graph::loadAlignment(tempAligOneline, alignment_files.at(gi));
+        }
+
+        int n = args::get(nodesHaveTypesFlag) ? tempAlig.size(): tempAligOneline.size();
+     //   std::cerr << "~~ " << n << " " << tempGraph.adjList.size() << std::endl;
+        assert(n == tempGraph.adjList.size()); // alignment size should be same as graph node count
+
+        for (int peg = 0; peg < n; peg++) {
             
             // neighbors of peg
             for (int j = 0; j < tempGraph.adjList[peg].size(); j++) {
                 unsigned short end_peg = tempGraph.adjList[peg][j].first;
-               
                 // only traverse each edge once
                 if(peg  == end_peg){
                     std::cerr << "selfloop: " << peg << " " << end_peg << std::endl;
@@ -289,15 +438,41 @@ int main(int argc, const char** argv) {
                     continue;
                 }
 
-                unsigned short hole     = tempAlig.at(peg);
-                unsigned short end_hole = tempAlig.at(end_peg);
-                
+                unsigned short hole     = -1;
+                unsigned short end_hole = -1;
+
+                if(args::get(nodesHaveTypesFlag)){
+                    // expects edge list alignment
+                    std::string name1 = tempAlig.at(peg).second;
+                    std::string name2 = tempAlig.at(end_peg).second;
+                    
+                    bool test1 = shadowName2Index.find(name1) == shadowName2Index.end();
+                    bool test2 = shadowName2Index.find(name2) == shadowName2Index.end();
+
+                    if(test1){
+                        std::cerr << "Gene name not found: " << name1 << std::endl;
+                        throw std::runtime_error("Gene " + name1 + " not found in shadow network");
+                    }
+                    if(test2){
+                        std::cerr << "MiRNA name not found: " << name2 << std::endl;
+                        throw std::runtime_error("MiRNA " + name2 + " not found in shadow network");
+                    }
+
+                    hole     = shadowName2Index[name1];
+                    end_hole = shadowName2Index[name2];
+                }
+                else {
+                    // expects one line interger alignment
+                    hole     = tempAligOneline.at(peg);
+                    end_hole = tempAligOneline.at(end_peg);
+                }
+
                 // we store edge wegiht only one side, from smaller node index to bigger
                 if(hole > end_hole)
                     std::swap(hole, end_hole);
-                
+                        
                 adjList[hole][end_hole] += tempGraph.adjList[peg][j].second;
-
+                
                 // debugging
                 // if(adjList[hole][end_hole] >= 2){
                     // std::cerr << peg << " " << end_peg << std::endl;
@@ -308,33 +483,10 @@ int main(int argc, const char** argv) {
         }
     }
 
-    //std::cerr << std::endl;
-    //std::cerr << "outputting shadow graph with nodes = " << adjList.size() << std::endl;
+    if(args::get(nodesHaveTypesFlag))
+        output_el_Format(adjList, shadowNames, nodeTypes, true);
+    else
+        output_GW_Format(adjList);
 
-    std::cout << "LEDA.GRAPH" << std::endl;
-    std::cout << "string" << std::endl;
-    std::cout << "short" << std::endl;
-    std::cout << "-2" << std::endl;
-    std::cout << adjList.size() << std::endl;
-    for (int i = 0; i < adjList.size(); i++) {
-        std::cout << "|{shadow" << i << "}|" << std::endl;
-    }
-    // compute numEdges
-    int numEdges = 0;
-    for (int i = 0; i < adjList.size(); i++) for(auto it = adjList[i].begin(); it != adjList[i].end(); it++) numEdges++;
-    std::cout << numEdges << std::endl;
-    for (int i = 0; i < adjList.size(); i++) {
-        for (auto it = adjList[i].begin(); it != adjList[i].end(); it++) {
-            if (it->first <= i) {
-                // this should not happen
-                // We only assigned edge value from lower index to higher index nodes
-                std::cerr << it->first << " " << i << std::endl;
-                throw std::runtime_error("Lost an edge");
-                continue;
-            }
-	    // Stupid LEDA numbers nodes from 1, so +1 to the iterators.
-            std::cout << i+1 << ' ' << it->first+1 << " 0 |{" << it->second << "}|" << std::endl;
-        }
-    }
     return 0;
 }
