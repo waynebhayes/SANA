@@ -148,10 +148,12 @@ namespace shadow_graph {
                 }
                 weight = weight > 0 ? weight : 1;
                 if (node_map.find(node1) == node_map.end()) {
+                    rev_node_map[nodes] = node1;
                     node_map[node1] = nodes++;
                     adjList.push_back(std::vector<Pair>(0));
                 }
                 if (node_map.find(node2) == node_map.end()) {
+                    rev_node_map[nodes] = node2;
                     node_map[node2] = nodes++;
                     adjList.push_back(std::vector<Pair>(0));
                 }
@@ -164,6 +166,7 @@ namespace shadow_graph {
         public:
             typedef std::pair<unsigned short, unsigned short> Pair;
             std::unordered_map<std::string, unsigned short> node_map;
+            std::unordered_map<unsigned short, std::string> rev_node_map;
             std::vector<std::vector<Pair> > adjList;
             unsigned short nodes = 0;
             void clear() {
@@ -200,14 +203,16 @@ namespace shadow_graph {
         }
         reader.close();
     }
-    void loadEdgeListAlignment(std::vector<StringPair> &alignment, std::string & s){
+    //void loadEdgeListAlignment(std::vector<StringPair> &alignment, std::string & s){
+    void loadEdgeListAlignment(std::unordered_map<std::string, std::string>  &alignment, std::string & s){
         std::ifstream reader;
         std::string line;
         reader.open(s);
 
         std::string a,b;
         while(reader >> a >> b){
-            alignment.push_back(StringPair(a,b));
+            //alignment.push_back(StringPair(a,b));
+            alignment[a] = b;
         }
         reader.close();
     }
@@ -271,8 +276,9 @@ void output_el_Format( std::vector<std::unordered_map<int, int>> &adjList,
 
                 if(firstType == secondType){
                     // two of same kind cannot have edge
-                    std::cerr << i << " " << it -> first << std::endl;
-                    std::cerr << shadowNames[i] << " " << shadowNames[it -> first] << std::endl;
+                    std::cerr << "type:  " << firstType << " " << secondType << std::endl;
+                    std::cerr << "ids: " << i << " " << it -> first << std::endl;
+                    std::cerr << "names: " << shadowNames[i] << " " << shadowNames[it -> first] << std::endl;
                     throw std::runtime_error("two of same kind cannot have edge");
                 }
                 
@@ -366,12 +372,11 @@ int main(int argc, const char** argv) {
             std::istringstream iss(line);
             iss.str(line);
             iss.clear();
-
             iss >> node;
-            if((!iss >> type)){
+            if(!(iss >> type)){    
                 type = 0;
                 // assmuing its miRNA if starring with MNEST
-                if(node.substr(0, 5) == " MNEST")
+                if(node.find("shadow") != std::string::npos)
                     type = 1;
             }
             shadowName2Index[node] = shadowNames.size(); //basically current index
@@ -410,8 +415,9 @@ int main(int argc, const char** argv) {
         std::cerr << ", nodes = " << tempGraph.adjList.size() << std::endl;
 
         // Load alignment
-        std::vector<unsigned short> tempAligOneline(0);
-        std::vector<StringPair> tempAlig(0);
+        std::vector<unsigned short> tempAligOneline(0); 
+        //std::vector<StringPair> tempAlig(0);
+        std::unordered_map<std::string, std::string> tempAlig;
         
         if(args::get(nodesHaveTypesFlag)){
             shadow_graph::loadEdgeListAlignment(tempAlig, alignment_files.at(gi));
@@ -443,8 +449,8 @@ int main(int argc, const char** argv) {
 
                 if(args::get(nodesHaveTypesFlag)){
                     // expects edge list alignment
-                    std::string name1 = tempAlig.at(peg).second;
-                    std::string name2 = tempAlig.at(end_peg).second;
+                    std::string name1 = tempAlig[tempGraph.rev_node_map[peg]];  // tempAlig.at(peg).second;
+                    std::string name2 = tempAlig[tempGraph.rev_node_map[end_peg]];// tempAlig.at(end_peg).second;
                     
                     bool test1 = shadowName2Index.find(name1) == shadowName2Index.end();
                     bool test2 = shadowName2Index.find(name2) == shadowName2Index.end();
@@ -460,6 +466,8 @@ int main(int argc, const char** argv) {
 
                     hole     = shadowName2Index[name1];
                     end_hole = shadowName2Index[name2];
+
+                    // std::cerr << ".. " << name1 << " " << name2 << " " << hole << " " << end_hole << std::endl;
                 }
                 else {
                     // expects one line interger alignment
