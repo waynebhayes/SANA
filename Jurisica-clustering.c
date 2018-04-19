@@ -1,6 +1,3 @@
-/*
-*/
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
@@ -8,8 +5,8 @@
 #include "sets.h"
 #include "bintree.h"
 
-#define MAX_GENES 25000 // 24252
-#define MAX_mRNAs 60000 // 59530
+#define MAX_GENES 24252
+#define MAX_mRNAs 59530
 static char *gName[MAX_GENES], *rName[MAX_mRNAs];
 static int numGenes, numRNAs;
 static BINTREE *gNameTree, *rNameTree;
@@ -29,17 +26,17 @@ void ReadFile(FILE *fp)
 	if(!BinTreeLookup(gNameTree, (foint)word1, &idGene))
 	{
 	    idGene = numGenes;
+	    fprintf(stderr, "GENE %d %s\n", numGenes, word1);
 	    BinTreeInsert(gNameTree, (foint)word1, (foint)numGenes);
 	    gName[numGenes++] = strdup(word1);
-	    //printf("%d %s\n", numGenes, word1);
 	    assert(numGenes <= MAX_GENES);
 	}
 	if(!BinTreeLookup(rNameTree, (foint)word2, &idRNA))
 	{
 	    idRNA = numRNAs;
+	    fprintf(stderr, "miRNA %d %s\n", numRNAs, word2);
 	    BinTreeInsert(rNameTree, (foint)word2, (foint)numRNAs);
 	    rName[numRNAs++] = strdup(word2);
-	    //printf("%d %s\n", numRNAs, word2);
 	    assert(numRNAs <= MAX_mRNAs);
 	}
 	SetAdd(myGenes[idRNA], idGene);
@@ -65,18 +62,29 @@ int main(int argc, char *argv[])
 		perror(argv[argn]);
 	    else
 	    {
-		printf("FILENAME %d (%s)\n", argn, argv[argn]);
+		fprintf(stderr, "FILENAME %d (%s)\n", argn, argv[argn]);
 		ReadFile(in);
 		fclose(in);
 	    }
 	    ++argn;
 	}
     }
-
+    for(i=0; i<MAX_mRNAs; i++) fprintf(stderr, "CARDINALITY %d %d\n", i, SetCardinality(myGenes[i]));
     SET *tmp = SetAlloc(MAX_GENES);
-    for(i=0; i<numRNAs; i++) for(j=i+1; j<numRNAs; j++)
+
+#define THREE_COLUMN 0 // set to zero to get the 60,000 x 60,000 ASCII matrix
+
+    for(i=0; i<numRNAs; i++)
     {
-	printf("%s\t%s\t%d\n", rName[i], rName[j], SetCardinality(SetXOR(tmp, myGenes[i],myGenes[j])));
+#if THREE_COLUMN
+	for(j=i+1; j<numRNAs; j++)
+	    printf("%d\t%d\t%d\n", i, j, SetCardinality(SetXOR(tmp, myGenes[i],myGenes[j])));
+#else
+	printf("%d", SetCardinality(SetXOR(tmp, myGenes[i],myGenes[0])));
+	for(j=1; j<numRNAs; j++)
+	    printf("\t%d", SetCardinality(SetXOR(tmp, myGenes[i],myGenes[j])));
+	printf("\n");
+#endif
     }
     return 0;
 }
