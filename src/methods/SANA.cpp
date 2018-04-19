@@ -1010,6 +1010,14 @@ int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ush
 }
 
 static int _edgeVal;
+// UGLY GORY HACK BELOW!! Sometimes the edgeVal is crazily wrong, like way above 1,000, when it
+// cannot possibly be greater than the number of networks we're aligning when WEIGHTED is on.
+// It happens only rarely, so here I ask if the edgeVal is less than 1,000; if it's less than 1,000
+// then we assume it's OK, otherwise we just ignore this edge entirely and say the diff is 0.
+// Second problem: even if the edgeVal is correct, I couldn't seem to figure out the difference
+// between the value of this ladder and the ladder with one edge added or removed.  Mathematically
+// it should be edgeVal^2 - (edgeVal+1)^2 which is (2e + 1), but for some reason I had to make
+// it 2*(e+1).  That seemed to work better.  So yeah... big ugly hack.
 #define SQRDIFF(i,j) ((_edgeVal=G2AdjMatrix[i][(*A)[j]]), 2*((_edgeVal<1000?_edgeVal:0) + 1))
 int SANA::squaredAligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
     int res = 0, diff;
