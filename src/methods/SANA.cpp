@@ -33,6 +33,8 @@
 #include "../utils/LinearRegression.hpp"
 #include "../utils/utils.hpp"
 
+#define FinalPBad 1e-10
+
 using namespace std;
 
 void SANA::initTau(void) {
@@ -1403,7 +1405,7 @@ void SANA::searchTemperaturesByLinearRegression() {
     }
     double exponent;
     for (exponent = LOG10_LOW_TEMP; exponent <= LOG10_HIGH_TEMP; exponent++){
-        if(pbadMap[exponent] > 1E-6)
+        if(pbadMap[exponent] > FinalPBad)
             break;
     }
     double binarySearchLeftEnd = exponent - 1;
@@ -1415,10 +1417,10 @@ void SANA::searchTemperaturesByLinearRegression() {
         double probability = pForTInitial(temperature);
         pbadMap[mid] = probability;
         cout << "Temperature: " << temperature << " pbad: " << probability << endl;
-        if(probability > 1E-6){
+        if(probability > FinalPBad){
             binarySearchRightEnd = mid;
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-        } else if(probability < 1E-7){
+        } else if(probability < FinalPBad/10){
             binarySearchLeftEnd = mid;
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
         }
@@ -1465,8 +1467,8 @@ void SANA::searchTemperaturesByLinearRegression() {
     double endingPbad = 0.0;
     for (auto const& keyValue : pbadMap)
     {
-    	if (distanceFromTarget > abs(1E-6 - keyValue.second) && pow(10, keyValue.first) <= startingTemperature){
-    		distanceFromTarget = abs(1E-6 - keyValue.second);
+    	if (distanceFromTarget > abs(FinalPBad - keyValue.second) && pow(10, keyValue.first) <= startingTemperature){
+    		distanceFromTarget = abs(FinalPBad - keyValue.second);
     		endingTemperature = pow(10, keyValue.first);
 		endingPbad = keyValue.second;
     	}
