@@ -249,12 +249,20 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
     vector<vector<ushort> > G1EdgeList;
     G1.getEdgeList(G1EdgeList);
 #ifdef WEIGHTED
-        vector<vector<ushort> > G2AdjMatrix;
+    vector<vector<ushort> > G2AdjMatrix;
 #else
     vector<vector<bool> > G2AdjMatrix;
 #endif
     G2.getAdjMatrix(G2AdjMatrix);
 
+#if 0
+    Pseudo-code (assuming you have initially removed g1 from g2)
+    for every entry (i,j) in the lower triangle of the G2 adjacency matrix
+	rungs = G2.adjMatrix(i,j)
+	if there is an edge between the *pegs* in the hole (i,j), then rungs++
+	count += rungs * rungs;
+    end for
+#endif
     uint count = 0;
     for (const auto& edge: G1EdgeList) {
         ushort node1 = edge[0], node2 = edge[1];
