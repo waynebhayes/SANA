@@ -14,6 +14,7 @@ public:
     const ushort& operator[](const ushort &idx) const {
         return A[idx];
     }
+    vector <ushort> getMapping() const;
     void setVector(vector<ushort> &x) {
         A = x;
     }

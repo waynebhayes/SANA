@@ -60,3 +60,8 @@ void PairwiseAlignment::dumpEdgeList(const Graph &G1, const Graph &G2, ostream &
     for(uint i = 0; i < size(); ++i)
         edgeListStream << mapG1[i] << "\t" << mapG2[A[i]] << endl;
 }
+
+vector<ushort> PairwiseAlignment::getMapping() const {
+    return A;
+}
+

@@ -43,6 +43,7 @@ public:
 
     unsigned int GetNumNodes() const;
     unsigned int GetNumEdges() const;
+    unsigned int NumNodeInducedSubgraphEdges(const vector <ushort>& subgraphNodes) const;
     string GetName() const;
 
     virtual void SetNumNodes(const unsigned int &);
