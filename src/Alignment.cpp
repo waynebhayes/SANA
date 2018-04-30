@@ -258,15 +258,30 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
 #if 0
     Pseudo-code (assuming you have initially removed g1 from g2)
     for every entry (i,j) in the lower triangle of the G2 adjacency matrix
-	rungs = G2.adjMatrix(i,j)
-	if there is an edge between the *pegs* in the hole (i,j), then rungs++
-	count += rungs * rungs;
+        rungs = G2.adjMatrix(i,j)
+        if there is an edge between the *pegs* in the hole (i,j), then rungs++
+        count += rungs * rungs;
     end for
 #endif
-    uint count = 0;
+
+
+#ifdef WEIGHTED
+    // Before computing rung sizes, we need to add the edges
+    // from G1 that we pruned back to G2
     for (const auto& edge: G1EdgeList) {
-        ushort node1 = edge[0], node2 = edge[1];
-        count += pow((G2AdjMatrix[A[node1]][A[node2]] + 1), 2);
+        ushort hole1 = A[edge[0]];
+        ushort hole2 = A[edge[1]];
+        G2AdjMatrix[hole1][hole2] += 1;
+    }
+#endif
+
+    uint count = 0;
+    uint n2 = G2.getNumNodes(); 
+    for(uint i = 0; i < n2; i++){
+        for(uint j = 0; j < i; j++){
+            int rungs  = G2AdjMatrix[i][j];
+            count += rungs * rungs;
+        }
     }
     return count;
 }
