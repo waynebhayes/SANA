@@ -133,10 +133,27 @@ SANA::SANA(Graph* G1, Graph* G2,
     initializedIterPerSecond = false;
 
     //data structures for the solution space search
-    uint ramificationChange = n1*(n2-n1);
-    uint ramificationSwap   = n1*(n1-1)/2;
-    uint totalRamification  = ramificationSwap + ramificationChange;
-    changeProbability       = (double) ramificationChange/totalRamification;
+    assert(G1->hasNodeTypes() == G2->hasNodeTypes());
+    uint ramificationChange[2], ramificationSwap[2], totalRamification[2];
+    if(G1->hasNodeTypes()) {
+	assert(G1->geneCount <= G2->geneCount);
+	assert(G1->miRNACount <= G2->miRNACount);
+	ramificationChange[0] = G1->geneCount*(G2->geneCount - G1->geneCount);
+	ramificationChange[1] = G1->miRNACount*(G2->miRNACount - G1->miRNACount);
+	ramificationSwap[0]   = G1->geneCount*(G1->geneCount - 1)/2;
+	ramificationSwap[1]   = G1->miRNACount*(G1->miRNACount - 1)/2;
+	totalRamification[0]  = ramificationSwap[0] + ramificationChange[0];
+	totalRamification[1]  = ramificationSwap[1] + ramificationChange[1];
+	changeProbability[0]       = (double) ramificationChange[0]/totalRamification[0];
+	changeProbability[1]       = (double) ramificationChange[1]/totalRamification[1];
+    }
+    else
+    {
+	ramificationChange[0] = n1*(n2-n1);
+	ramificationSwap[0]   = n1*(n1-1)/2;
+	totalRamification[0]  = ramificationSwap[0] + ramificationChange[0];
+	changeProbability[0] = (double)ramificationChange[0]/totalRamification[0];
+    }
 
     initTau();
 
@@ -671,12 +688,22 @@ void SANA::removeAlignmentData(vector<ushort>* toRemove) {
 
 void SANA::SANAIteration() {
     iterationsPerformed++;
-    (randomReal(gen) < changeProbability) ? performChange() : performSwap();
+    if(G1->hasNodeTypes())
+    {
+	// Choose the type here based on counts (and locking...)
+	// For example if no locking, then prob (gene) >> prob (miRNA)
+	// And if locking, then arrange prob(gene) and prob(miRNA) appropriately
+	int type = /* something clever */ 0;
+	(randomReal(gen) < changeProbability[type]) ? performChange(type) : performSwap(type);
+    }
+    else
+	(randomReal(gen) < changeProbability[0]) ? performChange(0) : performSwap(0);
 }
 
-void SANA::performChange() {
+void SANA::performChange(int type) {
     ushort source       = G1RandomUnlockedNode();
     ushort oldTarget    = (*A)[source];
+    
     uint newTargetIndex = G2RandomUnlockedNode(oldTarget);
     ushort newTarget    = (*unassignedNodesG2)[newTargetIndex];
 
@@ -728,7 +755,7 @@ void SANA::performChange() {
     }
 }
 
-void SANA::performSwap() {
+void SANA::performSwap(int type) {
     ushort source1 = G1RandomUnlockedNode();
     ushort source2 = G1RandomUnlockedNode(source1);
     ushort target1 = (*A)[source1], target2 = (*A)[source2];
