@@ -151,7 +151,7 @@ private:
     double expectedNumAccEInc(double temp, const vector<double>& energyIncSample);
 
     //data structures for the solution space search
-    double changeProbability;
+    double changeProbability[2];
     vector<bool> *assignedNodesG2;
     vector<ushort> *unassignedNodesG2;
     vector<ushort>* A;
@@ -284,8 +284,8 @@ private:
     double energyInc;
     vector<double> sampledProbability;
     void SANAIteration();
-    void performChange();
-    void performSwap();
+    void performChange(int type);
+    void performSwap(int type);
 
 
     //others
