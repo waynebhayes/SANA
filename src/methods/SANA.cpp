@@ -401,6 +401,8 @@ double SANA::trueAcceptingProbability(){
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
+    nodesHaveType = G1->hasNodeTypes();
+
     A = new vector<ushort>(startA.getMapping());
     storedAlignments->insert(A);
 
@@ -426,7 +428,6 @@ void SANA::initDataStructures(const Alignment& startA) {
         }
     }
     assert(index == unlockedG1);
-    nodesHaveType = G1->hasNodeTypes();
 
     if (needAligEdges or needSec) {
         aligEdges          = startA.numAlignedEdges(*G1, *G2);
@@ -1995,40 +1996,55 @@ void SANA::setDynamicTDecay() {
 
 #ifdef WEIGHTED
 void SANA::prune(string& startAligName) {
+    std::cerr << "Starting to prune using " <<  startAligName << std::endl;
     int n = G1->getNumNodes();
     vector<ushort> alignment;
-    ifstream infile(startAligName.c_str());
-    string line;
-    getline(infile, line);
-    istringstream iss(line);
+    
     stringstream errorMsg;
-    int shadow_node{0};
-    for (int i = 0; i < n; i++) {
-        if (!(iss >> shadow_node)) {
-            errorMsg << "Format is not all integers, or not enought integers: " << line;
-            throw runtime_error(errorMsg.str().c_str());
-        }
-        if (shadow_node < 0) {
-            errorMsg << "Shadow node: " << shadow_node << " < 0";
-            throw runtime_error(errorMsg.str().c_str());
-        }
-        alignment.push_back(shadow_node);
+    string format = startAligName.substr(startAligName.size()-6);
+    assert(format == ".align"); // currently only edgelist format is supported
+
+    
+    Alignment align =  Alignment::loadEdgeList(G1, G2, startAligName);
+    if(G1->hasNodeTypes())
+        align.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
+    else if (lockFileName != "")
+        align.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
+
+    unordered_map<ushort, ushort> reIndexedMap;
+    if(G1->hasNodeTypes())
+        reIndexedMap = G1->getNodeTypes_ReIndexMap();
+    else if (lockFileName != "")
+        reIndexedMap = G1->getLocking_ReIndexMap();
+    else{
+       for(int i=0;i<n;i++)
+            reIndexedMap[i] = i;
     }
-    infile.close();
+
+    alignment = align.getMapping();
+    
+        
+    std::cerr << alignment.size() << " " << n << std::endl;
     if ((int)alignment.size() != n) {
         errorMsg << "Alignment size (" << alignment.size() << ") less than number of nodes (" << n <<")";
         throw runtime_error(errorMsg.str().c_str());
     }
     set<pair<int,int>> removedEdges;
     for (int i = 0; i < n; i++) {
-        shadow_node = alignment[i];
+        int g1_node1 = reIndexedMap[i];
+        int shadow_node = alignment[g1_node1];
         int m = G1AdjLists[i].size();
         for (int j = 0; j < m; j++) {
             if (G1AdjLists[i][j] < i)
                 continue;
-            int shadow_end = alignment[G1AdjLists[i][j]];
-            G2AdjMatrix[shadow_node][shadow_end] -= G1AdjMatrix[i][G1AdjLists[i][j]];
-            G2AdjMatrix[shadow_end][shadow_node] -= G1AdjMatrix[i][G1AdjLists[i][j]];
+            int g1_node2 = reIndexedMap[G1AdjLists[i][j]];
+            int shadow_end = alignment[g1_node2];
+
+            assert(G1AdjMatrix[g1_node1][g1_node2] == 0 || G2AdjMatrix[shadow_node][shadow_end] > 0);
+            assert(G1AdjMatrix[g1_node2][g1_node1] ==0 || G2AdjMatrix[shadow_end][shadow_node] > 0);
+
+            G2AdjMatrix[shadow_node][shadow_end] -= G1AdjMatrix[g1_node1][g1_node2];
+            G2AdjMatrix[shadow_end][shadow_node] -= G1AdjMatrix[g1_node1][g1_node2];
             if (G2AdjMatrix[shadow_node][shadow_end] == 0) {
                     removedEdges.insert(pair<int,int>(shadow_node,shadow_end));
             }
