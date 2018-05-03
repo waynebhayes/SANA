@@ -62,6 +62,7 @@ public:
 
     //returns an approximation of the the logarithm in base e of the size of the search space
     double searchSpaceSizeLog();
+    string startAligName = "";
     void prune(string& startAligName);
 
 private:

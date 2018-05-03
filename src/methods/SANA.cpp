@@ -105,6 +105,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 #ifdef WEIGHTED
     if (startAligName != "") {
         prune(startAligName);
+        this->startAligName = startAligName;
     }
 #endif
     G2->getAdjLists(G2AdjLists);
@@ -250,16 +251,23 @@ SANA::SANA(Graph* G1, Graph* G2,
 
 Alignment SANA::getStartingAlignment(){
     Alignment randomAlig;
-    if (G1->hasNodeTypes()) {
+
+    if(this->startAligName != "")
+        randomAlig = Alignment::loadEdgeList(G1, G2, startAligName);
+    else if (G1->hasNodeTypes()) 
         randomAlig = Alignment::randomAlignmentWithNodeType(G1,G2);
-    	randomAlig.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
-    } else if (lockFileName != "") {
+    else if (lockFileName != "")
         randomAlig = Alignment::randomAlignmentWithLocking(G1,G2);
-	    randomAlig.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
-    } else {
+    else
         randomAlig = Alignment::random(n1, n2);
-    }
     
+    // Doing a Rexindexing if required
+    if (G1->hasNodeTypes()) {    
+    	randomAlig.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
+    } 
+    else if (lockFileName != "") {
+	    randomAlig.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
+    }
     return randomAlig;
 }
 
