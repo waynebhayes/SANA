@@ -1,5 +1,5 @@
 #!/bin/sh
-USAGE="USAGE: $0 [-nodes-have-types] OUTDIR {list of network files, LEDA or edgelist accepted}"
+USAGE="USAGE: $0 {true | false, representing --nodes-have-types} OUTDIR {list of network files, LEDA or edgelist accepted}"
 die() { echo "ERROR: $@" >&2; echo "$USAGE" >&2; exit 1
 }
 
@@ -19,10 +19,11 @@ cat "$@" | awk 'BEGIN{srand();srand(int(2^30*rand())+PROCINFO["pid"]+PROCINFO["p
     }'
 }
 
-TYPES=false
 case "$1" in
--nodes-have-types) TYPES=true; shift ;;
+    true|false) ;;
+    *) die "first argument must be 'true' or 'false', representing whether nodes have types" ;;
 esac
+TYPES="$1"; shift
 
 OUTDIR="$1"; shift
 [ -d "$OUTDIR" ] || die "first argument must be name of output directory, and it must already exist"
@@ -54,8 +55,8 @@ done
 GROUP=group
 #SHADOW_NODES=`cd $TMPDIR && grep . *.numNodes | sed -e 's/\.numNodes//' -e 's/:/ /' | sort -k 2n | tail -1 | awk '{print $2}'`
 echo "WARNING: this isn't actually random yet, it's a fixed starting alignment" >&2
-paste $TMPDIR/*.1.nodes | sed -e 's/		/	_	/g' -e 's/		/	_	/g' -e 's/^	/_	/' -e 's/	$/	_/' > $TMPDIR/$GROUP.align
-paste $TMPDIR/*.2.nodes 2>/dev/null | sed -e 's/		/	_	/g' -e 's/		/	_	/g' -e 's/^	/_	/' -e 's/	$/	_/' >> $TMPDIR/$GROUP.align
+paste $TMPDIR/*.1.nodes | sed -e 's/		/	_	/g' -e 's/		/	_	/g' -e 's/^	/_	/' -e 's/	$/	_/' > $TMPDIR/$GROUP.multiAlign
+paste $TMPDIR/*.2.nodes 2>/dev/null | sed -e 's/		/	_	/g' -e 's/		/	_	/g' -e 's/^	/_	/' -e 's/	$/	_/' >> $TMPDIR/$GROUP.multiAlign
 
 (
     cd $TMPDIR
@@ -64,7 +65,7 @@ paste $TMPDIR/*.2.nodes 2>/dev/null | sed -e 's/		/	_	/g' -e 's/		/	_	/g' -e 's/
     do
 	b=`basename $i .1.nodes`
 	N=`expr $N + 1`
-	cut -f$N $GROUP.align | awk '$1!="_"{printf "%s\tshadow%d\n",$1,NR-1}' | tee $b-shadow.align | awk '{printf "%d ", NR-1}END{print ""}' | tee $b-shadow.out > /dev/null #shadow-$b.out
+	cut -f$N $GROUP.multiAlign | awk '$1!="_"{if(/MNEST/)printf("%s\tmRNA-%04d\n",$1,MNEST++);else printf("%s\t%s\n",$1,$1);}' | tee $b-shadow.align | awk '{printf "%d ", NR-1}END{print ""}' | tee $b-shadow.out > /dev/null #shadow-$b.out
     done
 )
-mv $TMPDIR/*.align $TMPDIR/*.out "$OUTDIR"
+mv $TMPDIR/*[Aa]lign $TMPDIR/*.out "$OUTDIR"
