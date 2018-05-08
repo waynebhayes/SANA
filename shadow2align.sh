@@ -13,10 +13,10 @@ hawk 'function Fatal(s){printf "FATAL ERROR: %s\n",s >"/dev/fd/2"; exit(1);}
 	if(ARGIND!=net){net=ARGIND;netName[net-1]=FILENAME;if('$VERBOSE')printf "reading file %s\n",FILENAME >"/dev/fd/2"}
 	if(index($1,"shadow")>0)
 	    {shadowNode=$1;mappedNode=$2}
-	else if(index($2,"shadow")>0)
+	else #if(index($2,"shadow")>0)
 	    {shadowNode=$2;mappedNode=$1}
-	else
-	    Fatal(sprintf("%s: no shadow node listed on line %d (%s)\n",FILENAME,FNR,$0))
+	#else
+	#    Fatal(sprintf("%s: no shadow node listed on line %d (%s)\n",FILENAME,FNR,$0))
 	if(shadowMap[shadowNode][net-1])
 	    Fatal(sprintf("%s: shadow node %s already has value %s on on line %d (%s)\n",FILENAME,shadowNode,shadowMap[shadowNode][net-1],FNR,$0))
 	shadowMap[shadowNode][net-1]=mappedNode
