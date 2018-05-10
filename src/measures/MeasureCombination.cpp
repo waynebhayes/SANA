@@ -336,13 +336,21 @@ void MeasureCombination::writeLocalScores(ostream & outFile, Graph const & G1, G
       outFile << setw(COL_WIDTH) << left << mapping.first;
   outFile << setw(COL_WIDTH) << left << "Weighted Sum" << endl;
   ostringstream edgeStream;
+#define GENERATE_FULL_SIM_FILE 0
+#if GENERATE_FULL_SIM_FILE
+#define OTHER j
+  for(uint i = 0; i < mapG1.size(); i++)
+  for(uint j = 0; j < mapG2.size(); j++) {
+#else // output only aligned pairs
+#define OTHER A[i]
   for(uint i = 0; i < A.size(); ++i) {
-      edgeStream << mapG1[i] << "\t" << mapG2[A[i]];
+#endif
+      edgeStream << mapG1[i] << "\t" << mapG2[OTHER];
       outFile << setw(COL_WIDTH) << edgeStream.str();
       edgeStream.str("");
       edgeStream.clear();
       for(auto const & mapping : localScoreSimMap)
-          outFile << setw(COL_WIDTH) << left << setprecision(PRECISION) << mapping.second[i][A[i]];
-      outFile << setw(COL_WIDTH) << left << setprecision(PRECISION) << localAggregatedSim[i][A[i]] << endl;
+          outFile << setw(COL_WIDTH) << left << setprecision(PRECISION) << mapping.second[i][OTHER];
+      outFile << setw(COL_WIDTH) << left << setprecision(PRECISION) << localAggregatedSim[i][OTHER] << endl;
   }
 }
