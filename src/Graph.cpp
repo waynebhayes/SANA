@@ -205,7 +205,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         uint node2 = edgeList[i][1];
 
         if(g.adjMatrix[node1][node2] || g.adjMatrix[node2][node1]){
-            errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
+            //errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
+	    unordered_map<ushort,string> index2name = g.getIndexToNodeNameMap();
+	    errorMsg << "In graph[" << graphName << "]: duplicate edges not allowed (in either direction), node names are " << index2name[node1] << " " << index2name[node2] << '\n';
             throw runtime_error(errorMsg.str().c_str());
         }
         if(node1 == node2) {
@@ -538,6 +540,7 @@ void Graph::loadGwFile(const string& fileName) {
         
         if(adjMatrix[node1][node2] || adjMatrix[node2][node1]){
             errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1+1 << " " << node2+1 << '\n';
+	    //errorMsg << "In graph [" << graphName << "]: duplicate edges not allowed (in either direction), node names are " << nodeName2IndexMap[node1+1] << " " << nodeName2IndexMap[node2+1] << '\n';
             throw runtime_error(errorMsg.str().c_str());
         }
         if(node1 == node2) {
