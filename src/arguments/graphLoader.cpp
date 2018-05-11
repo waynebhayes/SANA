@@ -336,9 +336,9 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         Timer tSerialize;
         cout << "Serializing graphs..." << endl;
         tSerialize.start();
-        Graph::serializeGraph(G1, G1.getName(), G1.nodesHaveTypesEnabled);
+        Graph::serializeGraph(G1, G1.getName(), G1.nodesHaveTypesEnabled, usingLocks);
         G1.serializeMap();
-        Graph::serializeGraph(G2, G2.getName(), G2.nodesHaveTypesEnabled);
+        Graph::serializeGraph(G2, G2.getName(), G2.nodesHaveTypesEnabled, usingLocks);
         G2.serializeMap();
         cout << "Done serializing Graphs (" << tSerialize.elapsedString() << ")" << endl;
     }

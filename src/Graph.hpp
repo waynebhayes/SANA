@@ -39,7 +39,7 @@ public:
     static void loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
 	
     static Graph loadGraphFromBinary(string graphName, string lockFile, bool nodesHaveTypes, bool lockedSameName);
-    static void serializeGraph(Graph G, string outputName, bool typedNodes);
+    static void serializeGraph(Graph G, string outputName, bool typedNodes, bool locked);
     void serializeMap();
 
     static void saveInGWFormat(string outputFile, const vector<string>& nodeNames,
