@@ -525,6 +525,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
         }
         SANAIteration();
     }
+    trackProgress(iter);
     return *A;
 }
 
@@ -540,16 +541,16 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds, l
 		if (iter%iterationsPerStep == 0) {
 			trackProgress(iter);
 			if( iter != 0 and timer.elapsed() > maxExecutionSeconds and currentScore - previousScore < 0.005 ){
-				break; // return *A;
+				break;
 			}
 			previousScore = currentScore;
 		}
 		if (iter != 0 and iter > maxExecutionIterations) {
-			break; // return *A;
+			break;
 		}
 		SANAIteration();
 	}
-  // trackProgress(iter);
+	trackProgress(iter);
 	return *A; //dummy return to shut compiler warning
 }
 
@@ -591,20 +592,21 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, d
         cout << iter->first << '\n';
 
     for (; ; iter++) {
-        //T = temperatureFunction(iter, TInitial, TDecay);
-        if (interrupt) {
-            return storedAlignments;
-        }
-        if (iter%iterationsPerStep == 0) {
-			trackProgress(iter);
-			if( iter != 0 and timer.elapsed() > maxExecutionSeconds){
-				cout << "ending seconds " << timer.elapsed() << " " << maxExecutionSeconds << endl;
-				paretoFront.printAlignmentScores(cout);
-				return storedAlignments;
-			}
-		}
-        SANAIteration();
+	//T = temperatureFunction(iter, TInitial, TDecay);
+	if (interrupt) {
+	    return storedAlignments;
+	}
+	if (iter%iterationsPerStep == 0) {
+	    trackProgress(iter);
+	    if( iter != 0 and timer.elapsed() > maxExecutionSeconds){
+		cout << "ending seconds " << timer.elapsed() << " " << maxExecutionSeconds << endl;
+		paretoFront.printAlignmentScores(cout);
+		return storedAlignments;
+	    }
+	}
+	SANAIteration();
     }
+    trackProgress(iter);
 
     return storedAlignments;
 }
@@ -635,7 +637,7 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
         }
         SANAIteration();
     }
-
+    trackProgress(iter);
     return storedAlignments;
 }
 
@@ -1318,7 +1320,7 @@ void SANA::trackProgress(long long int i, bool end) {
     bool checkScores = true;
 
     cout << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
-    cout <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", sampled probability = " << trueAcceptingProbability() << endl;
+    cout <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", pBad = " << trueAcceptingProbability() << endl;
 
     if (not (printDetails or printScores or checkScores)) return;
     Alignment Al(*A);
@@ -1818,6 +1820,7 @@ Alignment SANA::hillClimbingAlignment(Alignment startAlignment, long long int id
         }
         iter++;
     }
+    trackProgress(iter);
     return *A;
 }
 
@@ -1837,6 +1840,7 @@ void SANA::hillClimbingIterations(long long int iterTarget) {
         }
         SANAIteration();
     }
+    trackProgress(iter);
 }
 
 double SANA::expectedNumAccEInc(double temp, const vector<double>& energyIncSample) {
