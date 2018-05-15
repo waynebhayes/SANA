@@ -304,7 +304,7 @@ Alignment SANA::run() {
 	unordered_map<ushort,string> G2Index2Name = G2->getIndexToNodeNameMap();
 	printf("######## core frequencies#########\n");
 	for(ushort i=0; i<n1; i++) for(ushort j=0; j<n2; j++)
-	    printf("%s %s  %lu / %lu = %g weighted %g / %g = %g\n", G1Index2Name[i].c_str(), G2Index2Name[j].c_str(),
+	    printf("%s %s  %lu / %lu = %.16f weighted %.16f / %.16f = %.16f\n", G1Index2Name[i].c_str(), G2Index2Name[j].c_str(),
 		coreFreq[i][j], coreCount[i],
 		coreFreq[i][j]/(double)coreCount[i],
 		weightedCoreFreq[i][j], totalCoreWeight[i],
