@@ -15,10 +15,9 @@ class SANA: public Method {
 
 public:
     SANA(Graph* G1, Graph* G2,
+      double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore
 #ifdef WEIGHTED
-        double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore, string& startAligName
-#else
-        double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore
+	, string& startAligName
 #endif
     );
     ~SANA(){}
@@ -64,6 +63,8 @@ public:
     double searchSpaceSizeLog();
     string startAligName = "";
     void prune(string& startAligName);
+    vector<vector<ulong>> getCoreFreq();
+    vector<ulong> getCoreCount();
 
 private:
     int maxTriangles = 0;
@@ -255,6 +256,10 @@ private:
     double localScoreSum;
     map<string, double>* localScoreSumMap = new map<string, double>;
     vector<vector<float> > sims;
+    vector<vector<ulong> > coreFreq;
+    vector<ulong> coreCount; // number of times this node in g1 was sampled.
+    vector<vector<double> > weightedCoreFreq; // weighted by pBad below
+    vector<double> totalCoreWeight; // sum of all pBads, for each node in G1.
     map<string, vector<vector<float> > > localSimMatrixMap;
     double localScoreSumIncChangeOp(vector<vector<float> > const & sim, ushort const & source, ushort const & oldTarget, ushort const & newTarget);
     double localScoreSumIncSwapOp(vector<vector<float> > const & sim, ushort const & source1, ushort const & source2, ushort const & target1, ushort const & target2);

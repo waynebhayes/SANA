@@ -217,6 +217,11 @@ SANA::SANA(Graph* G1, Graph* G2,
         wecSims                          = (*wecSimsP);
     }
 
+    coreFreq        = vector<vector<ulong> > (n1, vector<ulong>(n2, 0));
+    coreCount       = vector<ulong>(n1, 0);
+    weightedCoreFreq= vector<vector<double> > (n1, vector<double>(n2, 0));
+    totalCoreWeight = vector<double>(n1, 0);
+
     //to evaluate local measures incrementally
     if (needLocal) {
         sims              = MC->getAggregatedLocalSims();
@@ -293,6 +298,19 @@ Alignment SANA::run() {
             align = hillClimbingAlignment(align, (long long int)(10000000)); //arbitrarily chosen, probably too big.
             cout << hill.elapsedString() << endl;
         }
+#define PRINT_CORES 0
+#if PRINT_CORES
+	unordered_map<ushort,string> G1Index2Name = G1->getIndexToNodeNameMap();
+	unordered_map<ushort,string> G2Index2Name = G2->getIndexToNodeNameMap();
+	printf("######## core frequencies#########\n");
+	for(ushort i=0; i<n1; i++) for(ushort j=0; j<n2; j++)
+	    printf("%s %s  %lu / %lu = %g weighted %g / %g = %g\n", G1Index2Name[i].c_str(), G2Index2Name[j].c_str(),
+		coreFreq[i][j], coreCount[i],
+		coreFreq[i][j]/(double)coreCount[i],
+		weightedCoreFreq[i][j], totalCoreWeight[i],
+		weightedCoreFreq[i][j]/totalCoreWeight[i]
+		);
+#endif
         return align;
     }
 }
@@ -764,6 +782,15 @@ void SANA::performChange(int type) {
         currentScore     = newCurrentScore;
         squaredAligEdges = newSquaredAligEdges;
     }
+
+    // Statistics on the emerging core alignment.
+    // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
+    static double pBad;
+    if(trueAcceptingProbability()>0) pBad = trueAcceptingProbability();
+    coreCount[source]++;
+    coreFreq[source][(*A)[source]]++;
+    weightedCoreFreq[source][(*A)[source]] += pBad;
+    totalCoreWeight[source] += pBad;
 }
 
 void SANA::performSwap(int type) {
@@ -815,6 +842,21 @@ void SANA::performSwap(int type) {
         }
 #endif
     }
+
+    // Statistics on the emerging core alignment.
+    // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
+    static double pBad;
+    if(trueAcceptingProbability()>0) pBad = trueAcceptingProbability();
+
+    coreCount[source1]++;
+    coreFreq[source1][(*A)[source1]]++;
+    weightedCoreFreq[source1][(*A)[source1]] += pBad;
+    totalCoreWeight[source1] += pBad;
+
+    coreCount[source2]++;
+    coreFreq[source2][(*A)[source2]]++;
+    weightedCoreFreq[source2][(*A)[source2]] += pBad;
+    totalCoreWeight[source2] += pBad;
 }
 
 bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges) {
@@ -1402,6 +1444,15 @@ Alignment SANA::runRestartPhases() {
     uint i = getHighestIndex();
     return simpleRun(candidates[i], minutesFinalist*60, iters[i]);
 }
+
+vector<ulong> SANA::getCoreCount() {
+    return coreCount;
+}
+
+vector<vector<ulong>> SANA::getCoreFreq() {
+    return coreFreq;
+}
+
 
 uint SANA::getLowestIndex() const {
     double lowestScore = candidatesScores[0];
