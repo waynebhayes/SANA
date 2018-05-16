@@ -101,7 +101,7 @@ shift 5
 
 [ -x "$SANA" ] || die "first argument '$SANA' must be an executable file"
 case "$MACHINES" in
-    -parallel*) PARALLEL='parallel -s bash '`echo $MACHINES | awk '{print $NF}'`;;
+    -parallel*) PARALLEL='parallel -s bash '`echo $MACHINES | awk '{print $NF-1}'`;;
     *) [ -f "$MACHINES" ] || die "4th argument '$MACHINES' must be '-parallel N' or a machine list for distrib_stdin";;
 esac
 ITER=`parse "$ITER_EXPR"` || die "'$ITER_EXPR': cannot figure out iteration count"
@@ -128,7 +128,7 @@ mv $OUTDIR/dir-init/*-shadow.align $OUTDIR/dir-init/*-shadow.out $OUTDIR/dir0
 
 echo -n "Computing SES denominator..."
 SES_DENOM=`numEdges "$@" | sort -n |
-	awk '{m[NR-1]=$1}END{for(i=0;i<NR;i++) if(NR-i>1){D+=(NR-i)^2*m[i];for(j=i+1;j<NR;j++)m[j]-=m[i]}; print D}'`
+	awk '{m[NR-1]=$1}END{for(i=0;i<NR;i++) if(NR-i>=1){D+=(NR-i)^2*m[i];for(j=i+1;j<NR;j++)m[j]-=m[i]}; print D}'`
 echo Denominator for SES score is $SES_DENOM
 export SES_DENOM
 # Now get temperature schedule and SES denominator (the latter requires *.out files so don't use -scheduleOnly)
