@@ -68,12 +68,14 @@ public:
     uint getNumEdges() const;
     const vector<vector<ushort> >& getConnectedComponents() const;
     uint getNumConnectedComponents() const;
+#ifndef NO_ADJ_MATRIX
 #ifdef WEIGHTED
     void getAdjMatrix(vector<vector<ushort> >& adjMatrixCopy) const;
     void setAdjMatrix(vector<vector<ushort> >& adjMatrixCopy);
 #else
     void getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const;
     void setAdjMatrix(vector<vector<bool> >& adjMatrixCopy);
+#endif
 #endif
     void getAdjLists(vector<vector<ushort> >& adjListsCopy) const;
     void getEdgeList(vector<vector<ushort> > & edgeListCopy) const;
@@ -165,10 +167,12 @@ private:
     string path;
     //double maxsize;
     vector<vector<ushort> > edgeList; //edges in no particular order
+#ifndef NO_ADJ_MATRIX
 #ifdef WEIGHTED
     vector<vector<ushort> > adjMatrix;
 #else
     vector<vector<bool> > adjMatrix;
+#endif
 #endif
     vector<vector<ushort> > adjLists; //neighbors in no particular order
 
