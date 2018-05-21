@@ -216,12 +216,12 @@ SANA::SANA(Graph* G1, Graph* G2,
         vector<vector<float> >* wecSimsP = m->getSimMatrix();
         wecSims                          = (*wecSimsP);
     }
-
+#ifdef CORES
     coreFreq        = vector<vector<ulong> > (n1, vector<ulong>(n2, 0));
     coreCount       = vector<ulong>(n1, 0);
     weightedCoreFreq= vector<vector<double> > (n1, vector<double>(n2, 0));
     totalCoreWeight = vector<double>(n1, 0);
-
+#endif
     //to evaluate local measures incrementally
     if (needLocal) {
         sims              = MC->getAggregatedLocalSims();
@@ -300,6 +300,9 @@ Alignment SANA::run() {
         }
 #define PRINT_CORES 0
 #if PRINT_CORES
+#ifndef CORES
+#error must have CORES macro defined to print them
+#endif
 	unordered_map<ushort,string> G1Index2Name = G1->getIndexToNodeNameMap();
 	unordered_map<ushort,string> G2Index2Name = G2->getIndexToNodeNameMap();
 	printf("######## core frequencies#########\n");
@@ -782,7 +785,7 @@ void SANA::performChange(int type) {
         currentScore     = newCurrentScore;
         squaredAligEdges = newSquaredAligEdges;
     }
-
+#ifdef CORES
     // Statistics on the emerging core alignment.
     // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
     static double pBad;
@@ -791,6 +794,7 @@ void SANA::performChange(int type) {
     coreFreq[source][(*A)[source]]++;
     weightedCoreFreq[source][(*A)[source]] += pBad;
     totalCoreWeight[source] += pBad;
+#endif
 }
 
 void SANA::performSwap(int type) {
@@ -842,7 +846,7 @@ void SANA::performSwap(int type) {
         }
 #endif
     }
-
+#ifdef CORES
     // Statistics on the emerging core alignment.
     // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
     static double pBad;
@@ -857,6 +861,7 @@ void SANA::performSwap(int type) {
     coreFreq[source2][(*A)[source2]]++;
     weightedCoreFreq[source2][(*A)[source2]] += pBad;
     totalCoreWeight[source2] += pBad;
+#endif
 }
 
 bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges) {
@@ -1445,14 +1450,14 @@ Alignment SANA::runRestartPhases() {
     return simpleRun(candidates[i], minutesFinalist*60, iters[i]);
 }
 
+#ifdef CORES
 vector<ulong> SANA::getCoreCount() {
     return coreCount;
 }
-
 vector<vector<ulong>> SANA::getCoreFreq() {
     return coreFreq;
 }
-
+#endif
 
 uint SANA::getLowestIndex() const {
     double lowestScore = candidatesScores[0];
