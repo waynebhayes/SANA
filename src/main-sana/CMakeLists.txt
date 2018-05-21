@@ -1,11 +1,14 @@
 set (Main-SRC
     main.cpp
+    Utility.cpp
+    Utility.hpp
+    Definitions.hpp
 )
 
-add_executable(SANA ${Main-SRC})
+add_executable(sana ${Main-SRC})
 
-target_link_libraries(SANA 
+target_link_libraries(sana 
     lib-sana)
 
-install(TARGETS SANA DESTINATION bin)
+install(TARGETS sana DESTINATION bin)
 
