@@ -49,17 +49,17 @@ void Graph::RemoveEdge(const unsigned int &node1, const unsigned int &node2) thr
         throw GraphInvalidIndexError("Invalid node index passed into RemoveEdge");
 
     //update adjacency lists
-    for (uint i = 0; i < adjLists[node1].size(); i++) {
+    for (unsigned int i = 0; i < adjLists[node1].size(); i++) {
         if (adjLists[node1][i] == node2) {
-            ushort lastNeighbor = adjLists[node1][adjLists[node1].size()-1];
+            unsigned int lastNeighbor = adjLists[node1][adjLists[node1].size()-1];
             adjLists[node1][i] = lastNeighbor;
             adjLists[node1].pop_back();
             break;
         }
     }
-    for (uint i = 0; i < adjLists[node2].size(); i++) {
+    for (unsigned int i = 0; i < adjLists[node2].size(); i++) {
         if (adjLists[node2][i] == node1) {
-            ushort lastNeighbor = adjLists[node2][adjLists[node2].size()-1];
+            unsigned int lastNeighbor = adjLists[node2][adjLists[node2].size()-1];
             adjLists[node2][i] = lastNeighbor;
             adjLists[node2].pop_back();
             break;
