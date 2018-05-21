@@ -203,6 +203,8 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         uint node1 = edgeList[i][0];
         uint node2 = edgeList[i][1];
 
+	// the below should be abstracted into a function, eg g.connected(node1, node2)
+	// Inside that function is the only place you'd need to know if adjMatrix exists or not.
         if(g.adjMatrix[node1][node2] || g.adjMatrix[node2][node1]){
             //errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
 	    unordered_map<ushort,string> index2name = g.getIndexToNodeNameMap();
@@ -214,6 +216,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
           throw runtime_error(errorMsg.str().c_str());
         }
 
+		// These should be abstracted into g.connect(node1, node2) to cause these two nodes
+		// to get an edge between them.
+		// Note that when WEIGHTED is on, the adjacency matrix contains full integers, not just bits.
         #ifdef WEIGHTED
                 g.adjMatrix[node1][node2] = g.adjMatrix[node2][node1] = edgeList[i][2];
         #else
