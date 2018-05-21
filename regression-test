@@ -57,7 +57,7 @@ if [ -f $OutpuFile ]; then
 fi
 
 Networks_nodes=""
-for network in `ls -F networks | fgrep / | sed 's,/,,' | egrep "^(RNorv|SPombe|CEleg|MMus|AThal|DMel|SCere|HSap)"`;do
+for network in AThaliana CElegans DMelanogaster HSapiens MMusculus RNorvegicus SCerevisiae SPombe; do
     Networks_nodes=$Networks_nodes${network}" ""`head ./networks/${network}/${network}.gw | sed -n 5p`""\n"
 done
 # sort them largest first (sort -nr) since we're going to run them in parallel start the slowest ones first.
