@@ -1,7 +1,7 @@
 #include "WeightedGraph.hpp"
 
-void WeightedGraph::AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int& weight) throw(GraphInvalidIndexError) {
-    Graph::AddEdge(node1, node2);
+void WeightedGraph::AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int& weight = 1) {
+    Graph::AddEdge(node1, node2, weight);
     adjacencyMatrix[node1][node2] = adjacencyMatrix[node2][node1] = weight;
 }
 
