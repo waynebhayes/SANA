@@ -63,9 +63,10 @@ public:
     double searchSpaceSizeLog();
     string startAligName = "";
     void prune(string& startAligName);
+#ifdef CORES
     vector<vector<ulong>> getCoreFreq();
     vector<ulong> getCoreCount();
-
+#endif
 private:
     int maxTriangles = 0;
 
@@ -256,10 +257,12 @@ private:
     double localScoreSum;
     map<string, double>* localScoreSumMap = new map<string, double>;
     vector<vector<float> > sims;
+#ifdef CORES
     vector<vector<ulong> > coreFreq;
     vector<ulong> coreCount; // number of times this node in g1 was sampled.
     vector<vector<double> > weightedCoreFreq; // weighted by pBad below
     vector<double> totalCoreWeight; // sum of all pBads, for each node in G1.
+#endif
     map<string, vector<vector<float> > > localSimMatrixMap;
     double localScoreSumIncChangeOp(vector<vector<float> > const & sim, ushort const & source, ushort const & oldTarget, ushort const & newTarget);
     double localScoreSumIncSwapOp(vector<vector<float> > const & sim, ushort const & source1, ushort const & source2, ushort const & target1, ushort const & target2);
