@@ -314,9 +314,11 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 	
     if (updateG1 || updateG2)
     {
+#ifdef REINDEX
         // Method #3 of locking
         Timer tReIndex;
 	    cout << "Reindexing graph 1..." << endl;
+
         tReIndex.start();
         if(args.bools["-nodes-have-types"]){
             G1.reIndexGraph(G1.getNodeTypes_ReIndexMap());
@@ -325,6 +327,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
             G1.reIndexGraph(G1.getLocking_ReIndexMap());
         }
         cout << "Done reIndexGraph G1 (" << tReIndex.elapsedString() << ")" << endl;
+#endif
         /*double maxSize = args.doubles["-maxGraphletSize"];
         //int maxSize2;
         //stringstream convert(maxS
