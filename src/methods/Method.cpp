@@ -19,8 +19,8 @@ Alignment Method::runAndPrintTime() {
     execTime = T.elapsed();
     cout << "Executed " << name << " in " << T.elapsedString() << endl;
 
+#ifdef REINDEX
     // Re Index back to normal (Method #3 of locking)
-
     Timer T2;
     T2.start();
 
@@ -34,6 +34,7 @@ Alignment Method::runAndPrintTime() {
           A.reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
     }
     cout << "ReIndex to normal took " << T2.elapsedString() << endl;
+#endif    
     checkNodeTypesBeforeReport(A);
     checkLockingBeforeReport(A);
     return A;
