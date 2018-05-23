@@ -159,6 +159,8 @@ public:
     uint miRNACount = 0;
     int unlockedGeneCount = -1;
     int unlockedmiRNACount = -1;
+    vector<uint> geneIndexList;
+    vector<uint> miRNAIndexList;
     void removeEdge(ushort node1, ushort node2);
 
 private:

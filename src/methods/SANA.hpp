@@ -104,8 +104,8 @@ private:
     uniform_real_distribution<> randomReal;
     uniform_int_distribution<> G1RandomUnlockedGeneDist;
     uniform_int_distribution<> G1RandomUnlockedmiRNADist;
-    // uniform_int_distribution<> G2RandomUnlockedGeneDist;
-    // uniform_int_distribution<> G2RandomUnlockedmiRNADist;
+    uniform_int_distribution<> G2RandomUnassignedGeneDist;
+    uniform_int_distribution<> G2RandomUnassignedmiRNADist;
 
 
     ushort G1RandomUnlockedNode();
