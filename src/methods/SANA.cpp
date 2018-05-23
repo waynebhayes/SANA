@@ -121,6 +121,9 @@ SANA::SANA(Graph* G1, Graph* G2,
     G1RandomUnlockedmiRNADist = uniform_int_distribution<>(0, G1->unlockedmiRNACount - 1);
     randomReal                = uniform_real_distribution<>(0, 1);
 
+    G2RandomUnassignedGeneDist = uniform_int_distribution<>(0, G2->geneCount - G1->geneCount -1);
+    G2RandomUnassignedmiRNADist = uniform_int_distribution<>(0, G2->miRNACount - G1->miRNACount -1);
+
     //temperature schedule
     this->TInitial        = TInitial;
     this->TDecay          = TDecay;
@@ -267,12 +270,15 @@ Alignment SANA::getStartingAlignment(){
         randomAlig = Alignment::random(n1, n2);
     
     // Doing a Rexindexing if required
+#ifdef REINDEX    
     if (G1->hasNodeTypes()) {    
     	randomAlig.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
     } 
     else if (lockFileName != "") {
 	    randomAlig.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
     }
+#endif
+
     return randomAlig;
 }
 
@@ -334,20 +340,45 @@ inline ushort SANA::G1RandomUnlockedNode_Fast() {
 }
 
 inline ushort SANA::G1RandomUnlockedNode(){
-    return G1RandomUnlockedNodeDist(gen);
+    #ifdef REINDEX
+        return G1RandomUnlockedNodeDist(gen);
+    #else
+        return G1RandomUnlockedNode_Fast();
+    #endif
 }
 
 // Gives a random unlocked nodes with the same type as source1
+// Only called from performswap
 inline ushort SANA::G1RandomUnlockedNode(uint source1){
     if(!nodesHaveType){
-        return G1RandomUnlockedNodeDist(gen);
+        return SANA::G1RandomUnlockedNode();
     }
     else{
-        bool isGene = source1 < (uint) G1->unlockedGeneCount;
-        if(isGene)
-            return G1RandomUnlockedGeneDist(gen);
-        else
-            return G1->unlockedGeneCount + G1RandomUnlockedmiRNADist(gen);
+        bool reIndex = false;
+        #ifdef REINDEX
+            reIndex  = true;
+        #endif
+
+        // Checking node type and returning one with same type
+        if(reIndex){
+            bool isGene = source1 < (uint) G1->unlockedGeneCount;
+            if(isGene)
+                return G1RandomUnlockedGeneDist(gen);
+            else
+                return G1->unlockedGeneCount + G1RandomUnlockedmiRNADist(gen);    
+        }
+        else {
+            bool isGene = G1->nodeTypes[source1] == "gene";
+            if(isGene){
+                int index = G1RandomUnlockedGeneDist(gen);
+                return G1->geneIndexList[index]; 
+            }
+            else{
+                int index =  G1RandomUnlockedmiRNADist(gen);
+                return G1->miRNAIndexList[index]; 
+            }
+        }
+        
     }
 }
 
@@ -2072,26 +2103,32 @@ void SANA::prune(string& startAligName) {
     string format = startAligName.substr(startAligName.size()-6);
     assert(format == ".align"); // currently only edgelist format is supported
 
+
     
     Alignment align =  Alignment::loadEdgeList(G1, G2, startAligName);
+#ifdef REINDEX
     if(G1->hasNodeTypes())
         align.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
     else if (lockFileName != "")
         align.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
 
-    unordered_map<ushort, ushort> reIndexedMap;
+#endif        
+
+
+    unordered_map<ushort, ushort> reIndexedMap;    
+    // This is when no reIndexing is done, just to simplify the code
+    for(int i=0;i<n;i++)
+        reIndexedMap[i] = i;
+
+#ifdef REINDEX
     if(G1->hasNodeTypes())
         reIndexedMap = G1->getNodeTypes_ReIndexMap();
     else if (lockFileName != "")
         reIndexedMap = G1->getLocking_ReIndexMap();
-    else{
-       for(int i=0;i<n;i++)
-            reIndexedMap[i] = i;
-    }
-
-    alignment = align.getMapping();
+#endif
     
-        
+    alignment = align.getMapping();
+            
     std::cerr << alignment.size() << " " << n << std::endl;
     if ((int)alignment.size() != n) {
         errorMsg << "Alignment size (" << alignment.size() << ") less than number of nodes (" << n <<")";
