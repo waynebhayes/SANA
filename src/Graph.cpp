@@ -137,6 +137,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
           nodes.push_back(node1);
           if(nodesHaveTypes){
             g.nodeTypes.push_back("gene");
+            g.geneIndexList.push_back(nodeName2IndexMap[node1]);
             g.geneCount++;
           }
       }
@@ -146,6 +147,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
           nodes.push_back(node2);
           if(nodesHaveTypes){
             g.nodeTypes.push_back("miRNA");
+            g.miRNAIndexList.push_back(nodeName2IndexMap[node2]);
             g.miRNACount++;
           }
       }
