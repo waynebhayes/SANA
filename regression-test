@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+PARALLEL='parallel -s bash 8'  # run in parallel on jenkins
+#PARALLEL=bash # if you don't have the parallel program
+
 die() { echo "ERROR: $@" >&2; exit 1
 }
 
@@ -72,7 +75,7 @@ for i in $(seq 1 $Networks_count);do
         Network1=`echo -e $Biogrid_network | awk '{print $'$j'}'`
         echo "echo Running $Network1-$Network2; ./sana -g1 $Network1 -g2 $Network2 -o '$OutputDir/$Network1-$Network2' &> '$OutputDir/$Network1-$Network2.progress'"
     done
-done | parallel -s bash 8  # run in parallel on jenkins
+done | eval $PARALLEL
 
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
@@ -154,7 +157,7 @@ if [ ! -z "$CompareFile" ]; then
     done
     cat $TMPDIR/networks.locking | while read Network1 Network2; do
 	echo "echo checking locking between $Network1 and $Network2; ./sana -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null"
-    done | parallel -s bash 8
+    done | eval $PARALLEL
     cat $TMPDIR/networks.locking | while read Network1 Network2; do
 	if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.align" | wc -l` -ne 50 ]]; then
 	    touch $TMPDIR/failed
