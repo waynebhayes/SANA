@@ -204,7 +204,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     for(unsigned i = 0; i < edgeList.size(); i++){
         uint node1 = edgeList[i][0];
         uint node2 = edgeList[i][1];
-
+		
+		g.connected(node1,node2,edgeList,i,g);
+/*
 	// the below should be abstracted into a function, eg g.connected(node1, node2)
 	// Inside that function is the only place you'd need to know if adjMatrix exists or not.
         if(g.adjMatrix[node1][node2] || g.adjMatrix[node2][node1]){
@@ -225,7 +227,8 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
                 g.adjMatrix[node1][node2] = g.adjMatrix[node2][node1] = edgeList[i][2];
         #else
                 g.adjMatrix[node1][node2] = g.adjMatrix[node2][node1] = true;
-        #endif
+
+        #endif*/
         g.adjLists[node1].push_back(node2);
         g.adjLists[node2].push_back(node1);
 
@@ -238,6 +241,58 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     if(nodesHaveTypes)
         g.updateUnlockedGeneCount();
     g.initConnectedComponents();
+}
+
+void Graph::connected(uint node1, uint node2, vector<vector<ushort>> edgeList, unsigned int i,Graph& g){
+	stringstream errorMsg;
+#ifndef NO_ADJ_MATRIX
+	// the below should be abstracted into a function, eg g.connected(node1, node2)
+	// Inside that function is the only place you'd need to know if adjMatrix exists or not.
+    if(g.adjMatrix[node1][node2] || g.adjMatrix[node2][node1]){
+		//errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
+	    unordered_map<ushort,string> index2name = g.getIndexToNodeNameMap();
+	    errorMsg << "In graph[" << g.name << "]: duplicate edges not allowed (in either direction), node names are " << index2name[node1] << " " << index2name[node2] << '\n';
+		throw runtime_error(errorMsg.str().c_str());
+    }
+    if(node1 == node2) {
+		errorMsg << "self-loops not allowed, node number " << node1 << '\n';
+        throw runtime_error(errorMsg.str().c_str());
+    }
+
+	// These should be abstracted into g.connect(node1, node2) to cause these two nodes
+	// to get an edge between them.
+	// Note that when WEIGHTED is on, the adjacency matrix contains full integers, not just bits.
+	#ifdef WEIGHTED
+		g.adjMatrix[node1][node2] = g.adjMatrix[node2][node1] = edgeList[i][2];
+	#else
+		g.adjMatrix[node1][node2] = g.adjMatrix[node2][node1] = true;
+	#endif
+
+#else
+	if(std::find(g.adjLists[node1].begin(),g.adjLists[node1].end(),node2) != g.adjLists[node1].end() ||
+		std::find(g.adjLists[node2].begin(),g.adjLists[node2].end(),node1) != g.adjLists[node2].end()){
+			
+		//duplicate insert already in adjLists
+		unordered_map<ushort,string> index2name = g.getIndexToNodeNameMap();
+	    errorMsg << "In graph[" << name << "]: duplicate edges not allowed (in either direction), node names are " << index2name[node1] << " " << index2name[node2] << '\n';
+		throw runtime_error(errorMsg.str().c_str());
+	}
+	if(node1 == node2){
+		errorMsg << "self-loops not allowed, node number " << node1 << '\n';
+        throw runtime_error(errorMsg.str().c_str());
+	}
+	
+	#ifdef WEIGHTED
+		g.adjLists[node1].push_back(node2);
+		g.adjLists[node1].push_back(edgeList[i][2]);
+		g.adjLists[node2].push_back(node1);
+		g.adjLists[node1].push_back(edgeList[i][2]);
+	#else
+		g.adjLists[node1].push_back(node2);
+		g.adjLists[node2].push_back(node1);
+	#endif
+
+#endif
 }
 
 
