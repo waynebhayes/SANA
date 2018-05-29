@@ -6,7 +6,6 @@
 #define SANA_MEASURE_H
 #include <string>
 
-template <class T>
 class Measure {
     std::string name;
 public:
