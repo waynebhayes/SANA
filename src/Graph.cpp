@@ -156,7 +156,7 @@ Graph Graph::loadGraphFromBinary(string graphName, string lockFile, bool nodesHa
     }
     g.name = graphName;
     g.updateUnlockedGeneCount();
-    //cout << g.name << " deserialized" << endl;
+    cout << g.name << " has been deserialized." << endl;
     return g;
 }
 
