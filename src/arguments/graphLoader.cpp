@@ -362,11 +362,11 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         std::this_thread::sleep_for (std::chrono::seconds(1));
         Graph::serializeGraph(G1, G1.getName(), G1.nodesHaveTypesEnabled, usingLocks);
         std::this_thread::sleep_for (std::chrono::seconds(1));
-        G1.serializeMap();
-        std::this_thread::sleep_for (std::chrono::seconds(1));
+        //G1.serializeMap();
+        //std::this_thread::sleep_for (std::chrono::seconds(1));
         Graph::serializeGraph(G2, G2.getName(), G2.nodesHaveTypesEnabled, usingLocks);
-        std::this_thread::sleep_for (std::chrono::seconds(1));
-        G2.serializeMap();
+        //std::this_thread::sleep_for (std::chrono::seconds(1));
+        //G2.serializeMap();
         cout << "Done serializing Graphs (" << tSerialize.elapsedString() << ")" << endl;
     }
 
