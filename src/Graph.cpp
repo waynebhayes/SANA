@@ -394,7 +394,10 @@ Graph::Graph() :
     unlockedGeneCount(0),
     unlockedmiRNACount(0),
     connectedComponents(vector<vector<ushort>>(0)),
-    nodeTypes(vector<string>(0))
+    nodeTypes(vector<string>(0)),
+    geneIndexList(vector<uint>(0)),
+    miRNAIndexList(vector<uint>(0)),
+    nodeNameToIndexMap(unordered_map<string,ushort>(0))
     {}
 
 Graph::Graph(const Graph& G) {
@@ -410,8 +413,13 @@ Graph::Graph(const Graph& G) {
     nodeTypes = vector<string> (G.nodeTypes);
     lockedTo = vector<string> (G.lockedTo);
     lockedCount = G.lockedCount;
+    nodeNameToIndexMap = G.nodeNameToIndexMap;
     geneCount = G.geneCount;
     miRNACount = G.miRNACount;
+    unlockedGeneCount = G.unlockedGeneCount;
+    unlockedmiRNACount = G.unlockedmiRNACount;
+    geneIndexList = G.geneIndexList;
+    miRNAIndexList = G.miRNAIndexList;
 }
 
 Graph::Graph(uint n, const vector<vector<ushort> > edges) {
