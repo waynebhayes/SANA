@@ -77,8 +77,8 @@ void Method::checkNodeTypesBeforeReport(Alignment A){
         if(G1->getNodeType(i) != G2->getNodeType(A[i])){
             cout << g1_NameMap[i] << "( " << G1->getNodeType(i) << " ) should not be aligned to " <<
                  g2_NameMap[A[i]] << "( " << G2->getNodeType(A[i]) << " )" << endl;
-            throw runtime_error(g1_NameMap[i] + "( " + G1->getNodeType(i) + " ) should not be aligned to "
-                    + g2_NameMap[A[i]] + "( " + G2->getNodeType(A[i]) + " )");
+            throw runtime_error(g1_NameMap[i] + "( " + to_string(G1->getNodeType(i)) + " ) should not be aligned to "
+                    + g2_NameMap[A[i]] + "( " + to_string(G2->getNodeType(A[i])) + " )");
         }
     }
 }
