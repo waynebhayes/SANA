@@ -20,15 +20,18 @@
 
 using namespace std;
 
-mt19937 gen(getRandomSeed());
+//mt19937 gen(getRandomSeed());
 //ranlux24_base fastGen(getRandomSeed());
-uniform_real_distribution<> realDis(0, 1);
+//uniform_real_distribution<> realDis(0, 1);
 
 double randDouble() {
+    mt19937 gen(getRandomSeed());
+    uniform_real_distribution<> realDis(0, 1);
     return realDis(gen);
 }
 
 int randInt(int low, int high) {
+    mt19937 gen(getRandomSeed());
     uniform_int_distribution<> dis(low, high);
     return dis(gen);
 }
