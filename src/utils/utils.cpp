@@ -25,15 +25,17 @@ using namespace std;
 //uniform_real_distribution<> realDis(0, 1);
 
 double randDouble() {
-    mt19937 gen(getRandomSeed());
-    uniform_real_distribution<> realDis(0, 1);
-    return realDis(gen);
+    static mt19937 gen(getRandomSeed());
+    static uniform_real_distribution<> realDis(0, 1);
+    double ret = realDis(gen);
+    return ret;
 }
 
 int randInt(int low, int high) {
-    mt19937 gen(getRandomSeed());
-    uniform_int_distribution<> dis(low, high);
-    return dis(gen);
+    static mt19937 gen(getRandomSeed());
+    static uniform_int_distribution<> dis(low, high);
+    int ret = dis(gen);
+    return ret;
 }
 
 int randMod(int n) {
