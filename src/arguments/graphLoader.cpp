@@ -193,13 +193,13 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     
     if (!updateG1 && !updateG2)
     {
-        cout << "Loading graphs using Graph::loadGraphFromBinary (";
+        cout << "Loading graphs using Graph::loadGraphFromBinary()" << endl;
         G1 = Graph::loadGraphFromBinary(g1Name, lockFile, args.bools["-nodes-have-types"], args.bools["-lock-same-names"]);
         G2 = Graph::loadGraphFromBinary(g2Name, lockFile, args.bools["-nodes-have-types"], args.bools["-lock-same-names"]);
     }
     else {
     if (p1 == 1 && p2 == 1){
-        cout << "Loading graphs using Graph::loadGraph (";
+        cout << "Loading graphs using Graph::loadGraph()" << endl;
 
         if(fg1 == ""){
             G1 = Graph::loadGraph(g1Name);
@@ -221,12 +221,12 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         //G2.maxsize = 4;
     }
     else{
-        cout << "Loading graphs using Graph::multGraph(";
+        cout << "Loading graphs using Graph::multGraph()" << endl;
         G1 = Graph::multGraph(g1Name, p1);
         G2 = Graph::multGraph(g2Name, p2);
     }
     }
-    cout << tLoad.elapsedString() << ")" << endl;
+    cout << "Loading completed in " << tLoad.elapsedString() << endl;
 
     if (G1.getNumNodes() > G2.getNumNodes()) {
         Timer tSwap;
