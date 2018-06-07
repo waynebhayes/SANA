@@ -161,7 +161,7 @@ Graph Graph::loadGraphFromBinary(string graphName, string lockFile, bool nodesHa
     }
     g.name = graphName;
     g.updateUnlockedGeneCount();
-    cout << g.name << " has been deserialized." << endl;
+    cout << "\t" << g.name << " has been deserialized." << endl;
     return g;
 }
 
@@ -172,10 +172,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     string cmd = "awk '{ for (i=1; i<=NF; ++i) a[tolower($i)]++ } END { print length(a) }' ";
     cmd += fin;
     size_t nodeLen = atoi(exec(cmd).c_str());
-    vector<string> nodes;
-    nodes.reserve(nodeLen); // for now, the maximum number of nodes we expect.
+    vector<string> nodes(nodeLen, "");
     unordered_map<string,ushort> nodeName2IndexMap;
-    nodeName2IndexMap.reserve(14000);
+    nodeName2IndexMap.reserve(nodeLen);
     vector<vector<string> > edges = fileToStringsByLines(fin);
 
     string node1s;
@@ -205,7 +204,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             }
         }
     }
-    nodes.shrink_to_fit();
+
 #ifdef WEIGHTED
     vector<vector<ushort>> edgeList(vecLen, vector<ushort> (3));
 #else
@@ -248,14 +247,15 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
 
     g.adjLists = vector<vector<ushort> > (nodeLen, vector<ushort>(0));
 #ifdef WEIGHTED
-    g.adjMatrix = vector<vector<ushort> > (nodeLen, vector<ushort>(n, 0));
+    g.adjMatrix = vector<vector<ushort> > (nodeLen, vector<ushort>(nodeLen, 0));
 #else
-    g.adjMatrix = vector<vector<bool> > (nodeLen, vector<bool>(n, false));
+    g.adjMatrix = vector<vector<bool> > (nodeLen, vector<bool>(nodeLen, false));
 #endif
 
     uint node1;
     uint node2;
-    for(unsigned i = 0; i < vecLen; ++i){
+    const size_t edgeListLen = edgeList.size();
+    for(unsigned i = 0; i < edgeListLen; ++i){
         node1 = edgeList[i][0];
         node2 = edgeList[i][1];
 
