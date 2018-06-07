@@ -171,8 +171,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     g.miRNACount = 0;
     string cmd = "awk '{ for (i=1; i<=NF; ++i) a[tolower($i)]++ } END { print length(a) }' ";
     cmd += fin;
-    size_t nodeLen = atoi(exec(cmd).c_str());
-    vector<string> nodes(nodeLen, "");
+    size_t nodeLen = atoi(exec(cmd).c_str()) + 1;
+    vector<string> nodes;
+    nodes.reserve(nodeLen);
     unordered_map<string,ushort> nodeName2IndexMap;
     nodeName2IndexMap.reserve(nodeLen);
     vector<vector<string> > edges = fileToStringsByLines(fin);
@@ -244,14 +245,13 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         edgeList[i][2] = stoi(edgeValue);
 #endif
     }
-
-    g.adjLists = vector<vector<ushort> > (nodeLen, vector<ushort>(0));
+    const size_t nodeSize = nodes.size();
+    g.adjLists = vector<vector<ushort> > (nodeSize, vector<ushort>(0));
 #ifdef WEIGHTED
-    g.adjMatrix = vector<vector<ushort> > (nodeLen, vector<ushort>(nodeLen, 0));
+    g.adjMatrix = vector<vector<ushort> > (nodeSize, vector<ushort>(nodeSize, 0));
 #else
-    g.adjMatrix = vector<vector<bool> > (nodeLen, vector<bool>(nodeLen, false));
+    g.adjMatrix = vector<vector<bool> > (nodeSize, vector<bool>(nodeSize, false));
 #endif
-
     uint node1;
     uint node2;
     const size_t edgeListLen = edgeList.size();
@@ -285,8 +285,8 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
 
     }
     // init rest of graph
-    g.lockedList = vector<bool> (nodeLen, false);
-    g.lockedTo = vector<string> (nodeLen, "");
+    g.lockedList = vector<bool> (nodeSize, false);
+    g.lockedTo = vector<string> (nodeSize, "");
     g.nodeNameToIndexMap = nodeName2IndexMap;
     g.edgeList = edgeList;
     if(nodesHaveTypes)
