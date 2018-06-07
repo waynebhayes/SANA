@@ -31,6 +31,9 @@ class Graph {
 
 public:
 
+    static const int NODE_TYPE_GENE;  //= 1;
+    static const int NODE_TYPE_MIRNA; // = 2;
+
     void setMaxGraphletSize(double number);
     static Graph loadGraph(string name);
     static Graph loadGraphFromPath(string path, string name, bool nodesHaveTypes = false);
@@ -147,13 +150,13 @@ public:
 
     void reIndexGraph(unordered_map<ushort, ushort> reIndexMap);  // Changes the node indexes according to the map
 
-    // nodes-have-types
-    void setNodeTypes(set<string> genes, set<string> miRNAs);
-    string getNodeType(uint i);
+    //string getNodeType(uint i);
+    int getNodeType(uint i);
     bool hasNodeTypes();
 
     // nodes-have-types -- TODO make them private later
-    vector<string> nodeTypes;
+    //vector<string> nodeTypes;
+    vector<int> nodeTypes;
     bool nodesHaveTypesEnabled = false;
     uint geneCount = 0;
     uint miRNACount = 0;

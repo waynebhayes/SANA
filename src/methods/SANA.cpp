@@ -354,21 +354,15 @@ inline ushort SANA::G1RandomUnlockedNode(uint source1){
         return SANA::G1RandomUnlockedNode();
     }
     else{
-        bool reIndex = false;
-        #ifdef REINDEX
-            reIndex  = true;
-        #endif
-
         // Checking node type and returning one with same type
-        if(reIndex){
+        #ifdef REINDEX
             bool isGene = source1 < (uint) G1->unlockedGeneCount;
             if(isGene)
                 return G1RandomUnlockedGeneDist(gen);
             else
                 return G1->unlockedGeneCount + G1RandomUnlockedmiRNADist(gen);    
-        }
-        else {
-            bool isGene = G1->nodeTypes[source1] == "gene";
+        #else       
+            bool isGene = G1->nodeTypes[source1] == Graph::NODE_TYPE_GENE; //"gene";
             if(isGene){
                 int index = G1RandomUnlockedGeneDist(gen);
                 return G1->geneIndexList[index]; 
@@ -377,8 +371,7 @@ inline ushort SANA::G1RandomUnlockedNode(uint source1){
                 int index =  G1RandomUnlockedmiRNADist(gen);
                 return G1->miRNAIndexList[index]; 
             }
-        }
-        
+        #endif
     }
 }
 

@@ -261,9 +261,6 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         G2.nodesHaveTypesEnabled = true;
         cout << "Initializing node types" << endl;
 
-        // G1.setNodeTypes(genesG1, miRNAsG1);
-        // G2.setNodeTypes(genesG2, miRNAsG2);
-
         // Currently we have these constraints
         // if(not (genesG1.size() < genesG2.size())){
         if(not (G1.geneCount <= G2.geneCount)){
