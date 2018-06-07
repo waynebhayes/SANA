@@ -242,9 +242,9 @@ void createFolder(string folderName) {
 }
 
 string exec(string cmd) {
-    cerr << "exec(" + cmd + ");" << endl;
+    cout << "exec(" + cmd + ");" << endl;
     FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) throw "Error executing " + cmd;
+    if (!pipe) throw "Error executing " + cmd + "\n";
     char buffer[128];
     string result = "";
     while(!feof(pipe)) {
