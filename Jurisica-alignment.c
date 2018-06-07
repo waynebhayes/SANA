@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
+#include <unistd.h>
 #include "misc.h"
 #include "sets.h"
 #include "bintree.h"
@@ -63,23 +64,30 @@ void ReadFile(FILE *fp, int speciesInt)
 static SET *_alignment[MAX_HOLES][MAX_SPECIES];
 
 // Our goal is to minimize the difference between connection sets across the alignment.
-// Another way to say this is that we want to minimize the number of bits we see turned
-// on when looking down from above the alignment.  Formally, this means we want to
-// minimize the sum, across all holes, of the cardinality of the union of all the connection sets.
+// To do this, we union all the connection sets together over each hole to get the full
+// connection set above the hole, and then add up the XORs of each to that total; the
+// sum of the XORs is the objective we're trying to minimize.
 long ObjectiveOverHole(int hole)
 {
-    int level;
-    long value;
-    SET *fullUnion = SetAlloc(MAX_GENES);
+    int level, numPegs = 0;
+    long value = 0;
+    SET *fullUnion = SetAlloc(MAX_GENES), *XOR = SetAlloc(MAX_GENES);
     for(level=0; level<numSpecies; level++)
 	if(_alignment[hole][level])
 	    SetUnion(fullUnion, fullUnion, _alignment[hole][level]);
-    value = SetCardinality(fullUnion);
+    for(level=0; level<numSpecies; level++)
+	if(_alignment[hole][level])
+	{
+	    ++numPegs;
+	    value += SetCardinality(SetXOR(XOR, fullUnion, _alignment[hole][level]));
+	}
     SetFree(fullUnion);
+    SetFree(XOR);
+    if(numPegs == 1) value += numGenes; // make it really unsavoury to be a lonely peg.
     return value;
 }
 
-long Objective()
+long Objective(void)
 {
     long result = 0;
     int hole;
@@ -88,30 +96,42 @@ long Objective()
     return result;
 }
 
+static long int _currentObjective;
+
 void HillClimbing(long iterations)
 {
-    int i, sameCount = 0;
+    long i, sameCount = 0;
     for(i=0; i<iterations;i++)
     {
+	if(i % 10000000==0) fprintf(stderr, "i=%ld, Objective = %ld\n", i, _currentObjective);
 	int peg1, peg2, level = numSpecies * drand48();
-	peg1 = species2numRNAs[level] * drand48();
-	peg2 = species2numRNAs[level] * drand48();
-	if(peg1==peg2) continue;
+	if(species2numRNAs[level] < 2) continue;
+	do {
+	    peg1 =  drand48() * MAX_HOLES; //species2numRNAs[level];
+	    peg2 =  drand48() * MAX_HOLES; //species2numRNAs[level];
+	} while (peg1==peg2 || (!_alignment[peg1][level] && !_alignment[peg2][level]));
 	SET *set1 = _alignment[peg1][level];
 	SET *set2 = _alignment[peg2][level];
-	long oldVal = Objective();
+	long oldTower1 = ObjectiveOverHole(peg1);
+	long oldTower2 = ObjectiveOverHole(peg2);
 	// Now check the swap
 	_alignment[peg1][level] = set2;
 	_alignment[peg2][level] = set1;
-	long newVal = Objective();
-	if(newVal < oldVal)
+	long newTower1 = ObjectiveOverHole(peg1);
+	long newTower2 = ObjectiveOverHole(peg2);
+	long change = (newTower1-oldTower1)+(newTower2-oldTower2);
+	if(change < 0) // good move!
+	{
 	    sameCount = 0;
+	    _currentObjective += change;
+	}
 	else //it's a BAD move so reset
 	{
 	    _alignment[peg1][level] = set1;
 	    _alignment[peg2][level] = set2;
-	    if(sameCount++>1000) return;
+	    if(sameCount++>1000000) return;
 	}
+	//assert(_currentObjective == Objective());
 	//printf("%ld (%ld -> %ld)", i, oldVal, newVal); fflush(stdout);
     }
 }
@@ -174,14 +194,15 @@ void InitializeAlignment(void)
 int main(int argc, char *argv[])
 {
     srand48(time(NULL)+getpid());
-    int argn = 1, i, j;
-    //fprintf(stderr,"Initializing mRNA sets\n");
+    int argn = 1, i;
+    fprintf(stderr,"Initializing mRNA sets...");
     for(i=0; i<MAX_mRNAs; i++) SetResize(&geneSet[i],MAX_GENES);
     
     if(argn == argc)
 	Fatal("Need some files!");
     else
     {
+	fprintf(stderr, "reading files...");
 	while(argn < argc)
 	{
 	    FILE *in;
@@ -220,10 +241,13 @@ int main(int argc, char *argv[])
 #endif
     }
 #endif
+    fprintf(stderr, "Intial Random Alignment...\n");fflush(stderr);
     InitializeAlignment();
-    printf("Objective Function: Initial %d, ", Objective());
-    HillClimbing(1000000);
-    printf("Final %d\n", Objective());
-    //PrintAlignment();
+    _currentObjective = Objective();
+    double startTime=uTime();
+    printf("Objective Function: Initial %ld, ", _currentObjective); fflush(stdout);
+    HillClimbing(100000000);
+    printf("Final %ld, time = %g\n", _currentObjective, uTime()-startTime);
+    PrintAlignment();
     return 0;
 }
