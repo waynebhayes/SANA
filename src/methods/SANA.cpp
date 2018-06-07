@@ -364,7 +364,7 @@ inline ushort SANA::G1RandomUnlockedNode(uint source1){
             else
                 return G1->unlockedGeneCount + G1RandomUnlockedmiRNADist(gen);    
         #else       
-            bool isGene = G1->nodeTypes[source1] == Graph::NODE_TYPE_GENE; //"gene";
+            bool isGene = G1->nodeTypes[source1] == Graph::NODE_TYPE_GENE;
             if(isGene){
                 int index = G1RandomUnlockedGeneDist(gen);
                 return G1->geneIndexList[index]; 
@@ -377,7 +377,7 @@ inline ushort SANA::G1RandomUnlockedNode(uint source1){
     }
 }
 
-// Return index of the unassigned node
+// Return index of the unassigned node in the unassginedNodesG2 (or unassignedgenesG2, ...)
 inline ushort SANA::G2RandomUnlockedNode(uint target1){
     if(!nodesHaveType){
         return G2RandomUnlockedNode_Fast();
@@ -790,10 +790,16 @@ void SANA::performChange(int type) {
         newTarget    = (*unassignedNodesG2)[newTargetIndex];
     else{
         isGene = G2->nodeTypes[oldTarget] == Graph::NODE_TYPE_GENE;
-        if(isGene)
+        if(isGene){
+            if(unassignedgenesG2->size() == 0)
+                return; // cannot perform change, all genes are assigned
             newTarget = (*unassignedgenesG2)[newTargetIndex];
-        else
+        }
+        else{
+            if(unassignedmiRNAsG2->size() == 0)
+                return; // cannot perform change, all miRNA are assigned
             newTarget = (*unassignedmiRNAsG2)[newTargetIndex];
+        }
     }
     
 
