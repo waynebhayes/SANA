@@ -2,7 +2,7 @@ CC = g++
 
 #CXXFLAGS = -I "src/utils" -Wall -fno-inline -O2 -std=c++11 -g3
 #CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DWEIGHTED #-pg -ggdb -Bstatic #-static 
-CXXFLAGS = -ggdb -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DWEIGHTED #-DCORES -ggdb #-pg
+CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-DWEIGHTED #-DCORES -ggdb #-pg
 
 INCLUDES =
 LFLAGS =

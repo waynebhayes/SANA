@@ -41,7 +41,6 @@ wrappedAlgorithms/PISWAP/networkx/*.pyc
 wrappedAlgorithms/PISWAP/networkx/*/*.pyc
 wrappedAlgorithms/PISWAP/networkx/*/*/*.pyc
 
-Makefile
 sana.out
 *.localscores
 
