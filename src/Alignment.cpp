@@ -448,7 +448,7 @@ Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
                 }
                 else
                 {
-                    cout << "Broken node type\n";
+                    cout << "Unknown node type\n";
                 }
 
             }
