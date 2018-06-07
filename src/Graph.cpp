@@ -171,7 +171,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     g.miRNACount = 0;
     string cmd = "awk '{ for (i=1; i<=NF; ++i) a[tolower($i)]++ } END { print length(a) }' ";
     cmd += fin;
-    size_t nodeLen = atoi(exec(cmd).c_str()) + 1;
+    size_t nodeLen = atoi(exec(cmd).c_str());
     vector<string> nodes;
     nodes.reserve(nodeLen);
     unordered_map<string,ushort> nodeName2IndexMap;
