@@ -242,9 +242,9 @@ void createFolder(string folderName) {
 }
 
 string exec(string cmd) {
-    cerr << "exec(" + cmd + ");" << endl;
+    cout << "exec(" + cmd + ");" << endl;
     FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) throw "Error executing " + cmd;
+    if (!pipe) throw "Error executing " + cmd + "\n";
     char buffer[128];
     string result = "";
     while(!feof(pipe)) {
@@ -412,22 +412,4 @@ bool newerGraphAvailable(const char* graphDir, const char* binaryDir)
     if (stat(binaryDir, &st) != 0)
         return true;
     return (graphTime > st.st_mtime);
-}
-
-int exec(const char* cmd) {
-    char buffer[128];
-    std::string result = "";
-    FILE* pipe = popen(cmd, "r");
-    if (!pipe) throw std::runtime_error("popen() failed");
-    try {
-        while (!feof(pipe)) {
-            if (fgets(buffer, 128, pipe) != NULL)
-                result += buffer;
-        }
-    } catch (...) {
-        pclose(pipe);
-        throw;
-    }
-    pclose(pipe);
-    return atoi(result.c_str());
 }
