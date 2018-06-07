@@ -1,3 +1,13 @@
+/*
+** The incremental Objective could probably be even faster. Currently we need to recompute the objective value
+** of two entire towers when we simply swap 2 pegs at one level of that tower.  Instead, we should only need
+** to recompute that level, which will reduce incremental computation by another factor of numSpecies (ie., 535
+** in the case of the full run). To do that we'd need to keep track of the fullUnion incrementally by keeping
+** track, at each bit position, how many species contribute to that unionBit.  When that count gets to zero,
+** we can turn off that bit in the fullUnion.  This is basically like a shadow network, except it'll be a
+** shadowUnion.
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
@@ -10,7 +20,7 @@
 #define MAX_GENES 24252
 #define MAX_mRNAs 59530
 #define MAX_SPECIES 535
-#define MAX_HOLES 5000 // Homo_sapiens has about 4300 mRNAs so this should be plenty.
+#define MAX_HOLES MAX_mRNAs // Homo_sapiens has about 4300 mRNAs but let's be pessimistic since we heavily penalize lonely pegs
 static char *gName[MAX_GENES], *rName[MAX_mRNAs], *speciesName[MAX_SPECIES];
 static int numGenes, numRNAs, numSpecies, species2numRNAs[MAX_SPECIES];
 static unsigned short int speciesRNAid[MAX_SPECIES][MAX_HOLES];
