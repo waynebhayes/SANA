@@ -157,6 +157,8 @@ private:
     double changeProbability[2];
     vector<bool> *assignedNodesG2;
     vector<ushort> *unassignedNodesG2;
+    vector<ushort> *unassignedmiRNAsG2;
+    vector<ushort> *unassignedgenesG2;
     vector<ushort>* A;
     //initializes all the necessary data structures for a new run
     void initDataStructures(const Alignment& startA);

@@ -252,6 +252,8 @@ SANA::SANA(Graph* G1, Graph* G2,
     */
     assignedNodesG2       = new vector<bool> (n2);
     unassignedNodesG2     = new vector<ushort> (n2-n1);
+    unassignedgenesG2     = new vector<ushort> (G2->geneCount - G1->geneCount);
+    unassignedmiRNAsG2    = new vector<ushort> (G2->miRNACount - G1->miRNACount);
     A                     = new vector<ushort> (n1);
     avgEnergyInc          = -0.00001; //to track progress
     this->addHillClimbing = addHillClimbing;
@@ -375,15 +377,25 @@ inline ushort SANA::G1RandomUnlockedNode(uint source1){
     }
 }
 
+// Return index of the unassigned node
 inline ushort SANA::G2RandomUnlockedNode(uint target1){
     if(!nodesHaveType){
         return G2RandomUnlockedNode_Fast();
     } else {
-        ushort node;
-        do {
-            node = G2RandomUnlockedNode_Fast(); // gives back unlocked G2 node
-        } while(G2->nodeTypes[target1] != G2->nodeTypes[(*unassignedNodesG2)[node]]);
-        return node;
+        bool isGene = G2->nodeTypes[target1] == Graph::NODE_TYPE_GENE;
+        if(isGene){
+            int index = G2RandomUnassignedGeneDist(gen);
+            return index;
+        }
+        else {
+            int index = G2RandomUnassignedmiRNADist(gen);
+            return index;
+        }
+        // ushort node;
+        // do {
+        //     node = G2RandomUnlockedNode_Fast(); // gives back unlocked G2 node
+        // } while(G2->nodeTypes[target1] != G2->nodeTypes[(*unassignedNodesG2)[node]]);
+        // return node;
     }
 }
 
@@ -465,9 +477,19 @@ void SANA::initDataStructures(const Alignment& startA) {
     }
     storedAssignedNodesG2[A] = assignedNodesG2;
     unassignedNodesG2        = new vector<ushort> (n2-n1);
+    unassignedgenesG2        = new vector<ushort> ();
+    unassignedmiRNAsG2       = new vector<ushort> ();
+    
+    unassignedgenesG2->reserve(G2->geneCount - G1->geneCount);
+    unassignedmiRNAsG2->reserve(G2->miRNACount - G1->miRNACount);
     for (uint i = 0, j = 0; i < n2; i++) {
         if (not (*assignedNodesG2)[i]) {
             (*unassignedNodesG2)[j++] = i;
+
+            if(G2->nodeTypes[i] == Graph::NODE_TYPE_GENE)
+                unassignedgenesG2->push_back(i);
+            else
+                unassignedmiRNAsG2->push_back(i);
         }
     }
     storedUnassignedNodesG2[A] = unassignedNodesG2;
@@ -761,7 +783,19 @@ void SANA::performChange(int type) {
     ushort oldTarget    = (*A)[source];
     
     uint newTargetIndex = G2RandomUnlockedNode(oldTarget);
-    ushort newTarget    = (*unassignedNodesG2)[newTargetIndex];
+
+    ushort newTarget = -1;
+    bool isGene;
+    if(!nodesHaveType)
+        newTarget    = (*unassignedNodesG2)[newTargetIndex];
+    else{
+        isGene = G2->nodeTypes[oldTarget] == Graph::NODE_TYPE_GENE;
+        if(isGene)
+            newTarget = (*unassignedgenesG2)[newTargetIndex];
+        else
+            newTarget = (*unassignedmiRNAsG2)[newTargetIndex];
+    }
+    
 
     int newAligEdges           = (needAligEdges or needSec) ?  aligEdges + aligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
     double newSquaredAligEdges = (needSquaredAligEdges) ?  squaredAligEdges + squaredAligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
@@ -782,7 +816,19 @@ void SANA::performChange(int type) {
     bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
     if (makeChange) {
         (*A)[source]                         = newTarget;
-        (*unassignedNodesG2)[newTargetIndex] = oldTarget;
+
+        if(!nodesHaveType)
+            (*unassignedNodesG2)[newTargetIndex] = oldTarget;
+        else {
+            if(isGene){
+                (*unassignedgenesG2)[newTargetIndex] = oldTarget;
+            }
+            else {
+                (*unassignedmiRNAsG2)[newTargetIndex] = oldTarget;
+            }
+        }
+
+
         (*assignedNodesG2)[oldTarget]        = false;
         (*assignedNodesG2)[newTarget]        = true;
         aligEdges                            = newAligEdges;
