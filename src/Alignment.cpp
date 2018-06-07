@@ -433,7 +433,6 @@ Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
                     int j = randMod(randSize);
                     while (G2AssignedNodes[G2_UnlockedGeneIndexes[j]])
                         j = randMod(randSize);
-                    assert(randSize > j  && j >= 0);
                     A[i] = G2_UnlockedGeneIndexes[j];
                     G2AssignedNodes[G2_UnlockedGeneIndexes[j]] = true;
                 }
@@ -442,13 +441,8 @@ Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
                     int j = randMod(randSize);
                     while (G2AssignedNodes[G2_UnlockedRNAIndexes[j]])
                         j = randMod(randSize);
-                    assert(randSize > j  && j >= 0);
                     A[i] = G2_UnlockedRNAIndexes[j];
                     G2AssignedNodes[G2_UnlockedRNAIndexes[j]] = true;
-                }
-                else
-                {
-                    cout << "Unknown node type\n";
                 }
 
             }
