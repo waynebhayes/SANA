@@ -166,51 +166,57 @@ Graph Graph::loadGraphFromBinary(string graphName, string lockFile, bool nodesHa
 }
 
 void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes) {
-  g.name = graphName;
-  g.geneCount = 0;
-  g.miRNACount = 0;
+    g.name = graphName;
+    g.geneCount = 0;
+    g.miRNACount = 0;
+    string cmd = "awk '{ for (i=1; i<=NF; ++i) a[tolower($i)]++ } END { print length(a) }' ";
+    cmd += fin;
+    size_t nodeLen = atoi(exec(cmd).c_str());
+    vector<string> nodes;
+    nodes.reserve(nodeLen); // for now, the maximum number of nodes we expect.
+    unordered_map<string,ushort> nodeName2IndexMap;
+    nodeName2IndexMap.reserve(14000);
+    vector<vector<string> > edges = fileToStringsByLines(fin);
 
-  vector<string> nodes;
-  nodes.reserve(14000); // for now, the maximum number of nodes we expect.
-  unordered_map<string,ushort> nodeName2IndexMap;
-  nodeName2IndexMap.reserve(14000);
-  vector<vector<string> > edges = fileToStringsByLines(fin);
+    string node1s;
+    string node2s;
+    const size_t vecLen = edges.size();
+    for(unsigned i = 0; i < vecLen; ++i){
+        node1s = edges[i][0];
+        node2s = edges[i][1];
 
-  for(unsigned i = 0; i < edges.size(); i++){
-      string node1 = edges[i][0];
-      string node2 = edges[i][1];
+        if(nodeName2IndexMap.find(node1s) == nodeName2IndexMap.end()){
+            nodeName2IndexMap[node1s] = nodes.size();
+            nodes.push_back(node1s);
+            if(nodesHaveTypes){
+                g.nodeTypes.push_back(Graph::NODE_TYPE_GENE);//"gene");
+                g.geneIndexList.push_back(nodeName2IndexMap[node1s]);
+                ++g.geneCount;
+            }
+        }
 
-      if(nodeName2IndexMap.find(node1) == nodeName2IndexMap.end()){
-          nodeName2IndexMap[node1] = nodes.size();
-          nodes.push_back(node1);
-          if(nodesHaveTypes){
-            g.nodeTypes.push_back(Graph::NODE_TYPE_GENE);//"gene");
-            g.geneIndexList.push_back(nodeName2IndexMap[node1]);
-            g.geneCount++;
-          }
-      }
-
-      if(nodeName2IndexMap.find(node2) == nodeName2IndexMap.end()){
-          nodeName2IndexMap[node2] = nodes.size();
-          nodes.push_back(node2);
-          if(nodesHaveTypes){
-            g.nodeTypes.push_back(Graph::NODE_TYPE_MIRNA);//"miRNA");
-            g.miRNAIndexList.push_back(nodeName2IndexMap[node2]);
-            g.miRNACount++;
-          }
-      }
-  }
+       if(nodeName2IndexMap.find(node2s) == nodeName2IndexMap.end()){
+            nodeName2IndexMap[node2s] = nodes.size();
+            nodes.push_back(node2s);
+            if(nodesHaveTypes){
+                g.nodeTypes.push_back(Graph::NODE_TYPE_MIRNA);//"miRNA");
+                g.miRNAIndexList.push_back(nodeName2IndexMap[node2s]);
+                ++g.miRNACount;
+            }
+        }
+    }
     nodes.shrink_to_fit();
 #ifdef WEIGHTED
-    vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (3));
+    vector<vector<ushort>> edgeList(vecLen, vector<ushort> (3));
 #else
-    vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (2));
+    vector<vector<ushort>> edgeList(vecLen, vector<ushort> (2));
 #endif
     stringstream errorMsg;
-
-    for (uint i = 0; i < edges.size(); i++) {
+    string edgeValue;
+    uint index1;
+    uint index2;
+    for (uint i = 0; i < vecLen; ++i) {
 #ifdef WEIGHTED
-        string edgeValue;
         if (edges[i].size() == 2) {
             edgeValue = '1';
         }
@@ -225,14 +231,14 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             throw runtime_error("File not in edge-list format: "+fin);
         }
 #endif
-        string node1 = edges[i][0];
-        string node2 = edges[i][1];
-    if(node1 == node2) {
-        errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1 << '\n';
-        throw runtime_error(errorMsg.str().c_str());
-    }
-        uint index1 = nodeName2IndexMap[node1];
-        uint index2 = nodeName2IndexMap[node2];
+        node1s = edges[i][0];
+        node2s = edges[i][1];
+        if(node1s == node2s) {
+            errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1s << '\n';
+            throw runtime_error(errorMsg.str().c_str());
+        }
+        index1 = nodeName2IndexMap[node1s];
+        index2 = nodeName2IndexMap[node2s];
         edgeList[i][0] = index1;
         edgeList[i][1] = index2;
 #ifdef WEIGHTED
@@ -240,18 +246,18 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
 #endif
     }
 
-    int n = nodes.size();
-
-    g.adjLists = vector<vector<ushort> > (n, vector<ushort>(0));
+    g.adjLists = vector<vector<ushort> > (nodeLen, vector<ushort>(0));
 #ifdef WEIGHTED
-    g.adjMatrix = vector<vector<ushort> > (n, vector<ushort>(n, 0));
+    g.adjMatrix = vector<vector<ushort> > (nodeLen, vector<ushort>(n, 0));
 #else
-    g.adjMatrix = vector<vector<bool> > (n, vector<bool>(n, false));
+    g.adjMatrix = vector<vector<bool> > (nodeLen, vector<bool>(n, false));
 #endif
 
-    for(unsigned i = 0; i < edgeList.size(); i++){
-        uint node1 = edgeList[i][0];
-        uint node2 = edgeList[i][1];
+    uint node1;
+    uint node2;
+    for(unsigned i = 0; i < vecLen; ++i){
+        node1 = edgeList[i][0];
+        node2 = edgeList[i][1];
 
 	// the below should be abstracted into a function, eg g.connected(node1, node2)
 	// Inside that function is the only place you'd need to know if adjMatrix exists or not.
@@ -279,10 +285,10 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
 
     }
     // init rest of graph
-    g.lockedList = vector<bool> (n, false);
-    g.lockedTo = vector<string> (n, "");
+    g.lockedList = vector<bool> (nodeLen, false);
+    g.lockedTo = vector<string> (nodeLen, "");
     g.nodeNameToIndexMap = nodeName2IndexMap;
-    g.edgeList  = edgeList;
+    g.edgeList = edgeList;
     if(nodesHaveTypes)
         g.updateUnlockedGeneCount();
     g.initConnectedComponents();
@@ -384,6 +390,13 @@ string Graph::getName() const {
 }
 
 Graph::Graph() :
+    nodeTypes(vector<int>(0)),
+    geneCount(0),
+    miRNACount(0),
+    unlockedGeneCount(0),
+    unlockedmiRNACount(0),
+    geneIndexList(vector<uint>(0)),
+    miRNAIndexList(vector<uint>(0)),
     edgeList(vector<vector<ushort> > (0)),
 #ifdef WEIGHTED
     adjMatrix(vector<vector<ushort> > (0)),
@@ -391,17 +404,10 @@ Graph::Graph() :
     adjMatrix(vector<vector<bool> > (0)),
 #endif
     adjLists(vector<vector<ushort> > (0)),
+    connectedComponents(vector<vector<ushort>>(0)),
     lockedList(vector<bool> (0)),
     lockedTo(vector<string>(0)),
     lockedCount(0),
-    miRNACount(0),
-    geneCount(0),
-    unlockedGeneCount(0),
-    unlockedmiRNACount(0),
-    connectedComponents(vector<vector<ushort>>(0)),
-    nodeTypes(vector<int>(0)),
-    geneIndexList(vector<uint>(0)),
-    miRNAIndexList(vector<uint>(0)),
     nodeNameToIndexMap(unordered_map<string,ushort>(0))
     {}
 
@@ -463,7 +469,7 @@ uint Graph::getNumNodes() const {
 
 uint Graph::getNumEdges() const {
 #if 0
-    cout << "Size statistics for Graph " << name << endl;
+    cout << "Statistics for Graph " << name << endl;
     cout << "adjList.size() = " << adjLists.size() << endl;
     cout << "adjMatrix.size() = " << adjMatrix.size() << endl;
     cout << "edgeList.size() = " << edgeList.size() << endl;
@@ -487,7 +493,6 @@ uint Graph::getNumConnectedComponents() const {
 
 #ifdef WEIGHTED
 void Graph::getAdjMatrix(vector<vector<ushort> >& adjMatrixCopy) const {
-    uint n = getNumNodes();
     adjMatrixCopy = vector<vector<ushort> > (adjMatrix);
 #else
 void Graph::getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const {
@@ -529,7 +534,7 @@ void Graph::loadGwFile(const string& fileName) {
     ifstream infile(fileName.c_str());
     string line;  
     //ignore header
-    for (int i = 0; i < 4; i++) 
+    for (int i = 0; i < 4; ++i) 
         getline(infile, line);
     //read number of nodes
     int n;
@@ -546,7 +551,7 @@ void Graph::loadGwFile(const string& fileName) {
     }
     //read (and ditch) nodes
     string node;
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; ++i) {
         getline(infile, line);
         istringstream iss(line);
         if (!(iss >> node)) {
@@ -577,12 +582,14 @@ void Graph::loadGwFile(const string& fileName) {
     geneCount = miRNACount = 0;
 
     //read edges
-    for (int i = 0; i < m; i++) {
+    ushort node1;
+    ushort node2;
+    char dump;
+    ushort edgeValue;
+    for (int i = 0; i < m; ++i) {
         getline(infile, line);
         istringstream iss(line);
-        ushort node1, node2;
 #ifdef WEIGHTED
-        char dump;
         if (!(iss >> node1 >> node2 >> dump >> dump >> dump)) {
 #else
         if (!(iss >> node1 >> node2)) {
@@ -592,7 +599,6 @@ void Graph::loadGwFile(const string& fileName) {
         }
 
 #ifdef WEIGHTED
-        ushort edgeValue;
         if (!(iss >> edgeValue)) {
             errorMsg << "No edge value: " << line;
             edgeValue = 1;

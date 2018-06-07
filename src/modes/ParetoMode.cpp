@@ -66,7 +66,7 @@ vector<Alignment>* ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G
     T.start();
     //Method* METHOD = new SANA;
     //static_cast<SANA*>(METHOD)->derived_int;
-    unordered_set<vector<unsigned short>*> *A = static_cast<SANA*>(method)->paretoRun();
+    //unordered_set<vector<unsigned short>*> *A = static_cast<SANA*>(method)->paretoRun();
     //A->push_back(method->paretoRun());
     T.elapsed();
     cout << "Executed " << method->getName() << " in " << T.elapsedString() << endl;
