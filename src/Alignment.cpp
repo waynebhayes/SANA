@@ -400,9 +400,9 @@ Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
         for(ushort i=0;i<n2;i++){
             if(G2->isLocked(i))
                 continue;
-            if(G2->nodeTypes[i] == "gene")
+            if(G2->nodeTypes[i] == Graph::NODE_TYPE_GENE) //  "gene")
                 G2_UnlockedGeneIndexes.push_back(i);
-            else if(G2->nodeTypes[i] == "miRNA")
+            else if(G2->nodeTypes[i] == Graph::NODE_TYPE_MIRNA) // "miRNA")
                 G2_UnlockedRNAIndexes.push_back(i);
         }
 
@@ -428,7 +428,7 @@ Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
 
         for (uint i = 0; i < n1; i++) {
             if (A[i] == n2) {
-                if(G1->nodeTypes[i] == "gene"){
+                if(G1->nodeTypes[i] == Graph::NODE_TYPE_GENE){ // "gene"){
                     int randSize = G2_UnlockedGeneIndexes.size();
                     int j = randMod(randSize);
                     while (G2AssignedNodes[G2_UnlockedGeneIndexes[j]])
@@ -436,7 +436,7 @@ Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
                     A[i] = G2_UnlockedGeneIndexes[j];
                     G2AssignedNodes[G2_UnlockedGeneIndexes[j]] = true;
                 }
-                else if(G1->nodeTypes[i] == "miRNA"){
+                else if(G1->nodeTypes[i] == Graph::NODE_TYPE_MIRNA){// "miRNA"){
                     int randSize = G2_UnlockedRNAIndexes.size();
                     int j = randMod(randSize);
                     while (G2AssignedNodes[G2_UnlockedRNAIndexes[j]])
