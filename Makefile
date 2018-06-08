@@ -107,7 +107,8 @@ OTHER_SRC = 							\
 	src/computeGraphlets.cpp                            	\
 	src/Graph.cpp                                       	\
 	src/main.cpp                                        	\
-	src/report.cpp
+	src/report.cpp                                              \
+	src/convert.cpp
 
 
 SRCS = $(UTILS_SRC) $(MEASURES_SRCS) $(METHODS_SRC) $(METHOD_WRAPPERS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)

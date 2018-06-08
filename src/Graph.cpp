@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <unistd.h>
-
+#include "convert.hpp"
 using namespace std;
 
 
@@ -31,8 +31,8 @@ Graph Graph::loadGraphFromPath(string path, string name, bool nodesHaveTypes){
         g.loadGwFile(path);
         g.name = name;
     }
-    else if(format == ".el"){
-        Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
+    else if(find_type(path)){
+        Graph::loadFromEdgeListFile(convert(path), name, g, nodesHaveTypes);
     }
     else
         throw runtime_error("Unsupported graph format: " + format);
