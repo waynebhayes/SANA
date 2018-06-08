@@ -41,5 +41,6 @@ int main(int argc, char* argv[]) {
     Mode* mode = selectMode(args);
     mode->run(args);
     delete mode;
+    remove("tmpel");
     return 0;
 }
