@@ -223,7 +223,7 @@ namespace shadow_graph {
             unsigned short nodes = 0;
             void clear() {
                 node_map.clear();
-                for (int i = 0; i < adjList.size(); i++) {
+                for (unsigned int i = 0; i < adjList.size(); ++i) {
                     adjList[i].clear();
                 }
                 adjList.clear();
@@ -279,21 +279,21 @@ void output_GW_Format( std::vector<std::unordered_map<int, int>> &adjList){
 
     // Print nodes
     std::cout << adjList.size() << std::endl;
-    for (int i = 0; i < adjList.size(); i++) {
+    for (unsigned int i = 0; i < adjList.size(); ++i) {
         std::cout << "|{shadow" << i << "}|" << std::endl;
     }
 
     // compute numEdges
     int numEdges = 0;
-    for (int i = 0; i < adjList.size(); i++) 
-        for(auto it = adjList[i].begin(); it != adjList[i].end(); it++) 
-            numEdges++;
+    for (unsigned int i = 0; i < adjList.size(); ++i) 
+        for(auto it = adjList[i].begin(); it != adjList[i].end(); ++it) 
+            ++numEdges;
     
     // Print edges
     std::cout << numEdges << std::endl;
-    for (int i = 0; i < adjList.size(); i++) {
-        for (auto it = adjList[i].begin(); it != adjList[i].end(); it++) {
-            if (it->first <= i) {
+    for (unsigned int i = 0; i < adjList.size(); ++i) {
+        for (auto it = adjList[i].begin(); it != adjList[i].end(); ++it) {
+            if ((unsigned) it->first <= i) {
                 // this should not happen
                 // We only assigned edge value from lower index to higher index nodes
                 std::cerr << it->first << " " << i << std::endl;
@@ -312,9 +312,9 @@ void output_el_Format( std::vector<std::unordered_map<int, int>> &adjList,
                             std::vector<bool> &nodeTypes,
                             bool nodesHaveTypes){
     std::cerr << "printing out .el" << std::endl;
-    for (int i = 0; i < adjList.size(); i++) {
-        for (auto it = adjList[i].begin(); it != adjList[i].end(); it++) {
-            if (it->first <= i) {
+    for (unsigned int i = 0; i < adjList.size(); ++i) {
+        for (auto it = adjList[i].begin(); it != adjList[i].end(); ++it) {
+            if ((unsigned) it->first <= i) {
                 // this should not happen
                 // We only assigned edge value from lower index to higher index nodes
                 std::cerr << it->first << " " << i << std::endl;
@@ -386,7 +386,7 @@ int main(int argc, const char** argv) {
     // if (compact) {
     //     useCompact = true;
     // }
-    GraphType g = GraphType::gw;
+    //GraphType g = GraphType::gw;
     // if (format) {
     //     try {
     //         g = getGraphType(args::get(format).c_str());
@@ -397,7 +397,7 @@ int main(int argc, const char** argv) {
     // }
     std::vector<std::string> pos_args = args::get(networks);
     // Check Existance of files
-    for(int i = 0; i < pos_args.size(); i++){
+    for(unsigned int i = 0; i < pos_args.size(); ++i){
         std::ifstream f(pos_args[i]);
         if(!f.good()){
             std::cerr << "Failed to load file: " << pos_args[i] << std::endl;
@@ -435,7 +435,7 @@ int main(int argc, const char** argv) {
             shadowNames.push_back(node);
             nodeTypes.push_back(type);
         }
-        if(shadowNames.size() != args::get(shadowNodeSize)){
+        if(shadowNames.size() != (unsigned) args::get(shadowNodeSize)){
             std::cerr << "Number of shadow node names (" << shadowNames.size() 
                   << ") doest not match number of shadow nodes (" 
                   << args::get(shadowNodeSize) << ")" << std::endl;
@@ -449,7 +449,7 @@ int main(int argc, const char** argv) {
     std::vector<std::string> network_files(pos_args.size() / 2);
     std::vector<std::string> alignment_files(pos_args.size() / 2);
     int offset = pos_args.size() / 2;
-    for (int i = 0; i < (pos_args.size() / 2); i++) {
+    for (unsigned int i = 0; i < (pos_args.size() / 2); ++i) {
         network_files[i] = pos_args.at(i);
         alignment_files[i] = pos_args.at(i + offset);
     }
@@ -459,7 +459,7 @@ int main(int argc, const char** argv) {
 
     std::vector<std::unordered_map<int, int>> adjList(args::get(shadowNodeSize));
     shadow_graph::Graph tempGraph;
-    for (int gi = 0; gi < network_files.size(); gi++) {
+    for (unsigned int gi = 0; gi < network_files.size(); ++gi) {
         std::cerr << "graph " << gi << ": " << network_files.at(gi);        
         
         tempGraph.load(network_files.at(gi));
@@ -478,14 +478,14 @@ int main(int argc, const char** argv) {
             shadow_graph::loadAlignment(tempAligOneline, alignment_files.at(gi));
         }
 
-        int n = args::get(nodesHaveTypesFlag) ? tempAlig.size(): tempAligOneline.size();
+        unsigned int n = args::get(nodesHaveTypesFlag) ? tempAlig.size(): tempAligOneline.size();
      //   std::cerr << "~~ " << n << " " << tempGraph.adjList.size() << std::endl;
         assert(n == tempGraph.adjList.size()); // alignment size should be same as graph node count
 
-        for (int peg = 0; peg < n; peg++) {
+        for (unsigned int peg = 0; peg < n; ++peg) {
             
             // neighbors of peg
-            for (int j = 0; j < tempGraph.adjList[peg].size(); j++) {
+            for (unsigned int j = 0; j < tempGraph.adjList[peg].size(); ++j) {
                 unsigned short end_peg = tempGraph.adjList[peg][j].first;
                 // only traverse each edge once
                 if(peg  == end_peg){
