@@ -15,6 +15,14 @@ Sample Run (assuming shadow is the compiled binary)
 #include <unordered_set>
 #include <stdexcept>
 #include "argparse.hpp"
+#include "../../src/utils/cereal/types/unordered_map.hpp"
+#include "../../src/utils/cereal/types/memory.hpp"
+#include "../../src/utils/cereal/types/vector.hpp"
+#include "../../src/utils/cereal/types/string.hpp"
+#include "../../src/utils/cereal/types/utility.hpp"
+#include "../../src/utils/cereal/archives/binary.hpp"
+#include "../../src/utils/cereal/access.hpp"
+
 
 typedef std::pair<std::string, std::string> StringPair;
 
@@ -162,6 +170,15 @@ namespace shadow_graph {
             }
             this->nodes=nodes - 1;
             reader.close();
+        }
+        //serialization
+        
+        friend class cereal::access;
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(Pair), CEREAL_NVP(node_map), CEREAL_NVP(rev_node_map), CEREAL_NVP(adjList),
+                    CEREAL_NVP(nodes));
         }
         public:
             typedef std::pair<unsigned short, unsigned short> Pair;

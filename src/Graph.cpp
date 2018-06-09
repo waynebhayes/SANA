@@ -169,18 +169,28 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     g.name = graphName;
     g.geneCount = 0;
     g.miRNACount = 0;
-    string cmd = "awk '{ for (i=1; i<=NF; ++i) a[tolower($i)]++ } END { print length(a) }' ";
+    string cmd = "awk '{ for (i=1; i<=NF; ++i) a[tolower($i)]++ } END { print length(a) \" \" NR }' "; // print NR = number of lines
     cmd += fin;
-    size_t nodeLen = atoi(exec(cmd).c_str());
+    string toParse = exec(cmd);
+    string tmp;
+    stringstream parseSS(toParse);
+    parseSS >> tmp;
+    const size_t nodeLen = atoi(tmp.c_str());
+    parseSS >> tmp;
+    const size_t vecLen = atoi(tmp.c_str());
+
     vector<string> nodes;
     nodes.reserve(nodeLen);
     unordered_map<string,ushort> nodeName2IndexMap;
     nodeName2IndexMap.reserve(nodeLen);
-    vector<vector<string> > edges = fileToStringsByLines(fin);
+
+    vector<vector<string> > edges;
+    edges.reserve(vecLen);
+    memExactFileParseByLine(edges, fin);
 
     string node1s;
     string node2s;
-    const size_t vecLen = edges.size();
+
     for(unsigned i = 0; i < vecLen; ++i){
         node1s = edges[i][0];
         node2s = edges[i][1];
@@ -571,6 +581,8 @@ void Graph::loadGwFile(const string& fileName) {
     adjLists = vector<vector<ushort> > (n, vector<ushort>(0));
 #ifdef WEIGHTED
     adjMatrix = vector<vector<ushort> > (n, vector<ushort>(n, 0));
+    char dump;
+    ushort edgeValue;
 #else
     adjMatrix = vector<vector<bool> > (n, vector<bool>(n, false));
 #endif
@@ -584,8 +596,7 @@ void Graph::loadGwFile(const string& fileName) {
     //read edges
     ushort node1;
     ushort node2;
-    char dump;
-    ushort edgeValue;
+
     for (int i = 0; i < m; ++i) {
         getline(infile, line);
         istringstream iss(line);

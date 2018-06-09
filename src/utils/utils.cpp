@@ -175,7 +175,7 @@ vector<string> fileToStrings(const string& fileName, bool asLines) {
     string unzip_cmd = "xzcat < " + fileName;
     fp = popen(unzip_cmd.c_str(), "r");
     } else fp=fopen(fileName.c_str(),"r");
-    vector<string> result(0);
+    vector<string> result;
     if(asLines) {
         while (fgets(buf, sizeof(buf), fp)){string line(buf); result.push_back(line);}
     }
@@ -200,6 +200,20 @@ vector<vector<string> > fileToStringsByLines(const string& fileName) {
     }
     ifs.close();
     return result;
+}
+
+void memExactFileParseByLine(vector<vector<string> >& result, const string& fileName) {
+    checkFileExists(fileName);
+    ifstream ifs(fileName.c_str());
+    string line;
+    while (getline(ifs, line)) {
+        istringstream iss(line);
+        vector<string> words;
+        words.reserve(2);
+        copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter(words));
+        result.push_back(words);
+    }
+    ifs.close();
 }
 
 string extractDecimals(double value, int count) {

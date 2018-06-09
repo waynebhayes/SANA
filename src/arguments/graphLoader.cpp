@@ -226,7 +226,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         G2 = Graph::multGraph(g2Name, p2);
     }
     }
-    cout << "Loading completed in " << tLoad.elapsedString() << endl;
+    cout << "Graph loading completed in " << tLoad.elapsedString() << endl;
 
     if (G1.getNumNodes() > G2.getNumNodes()) {
         Timer tSwap;
