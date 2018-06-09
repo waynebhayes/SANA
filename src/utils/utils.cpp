@@ -195,6 +195,7 @@ vector<vector<string> > fileToStringsByLines(const string& fileName) {
     while (getline(ifs, line)) {
         istringstream iss(line);
         vector<string> words;
+        words.reserve(2);
         copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter(words));
         result.push_back(words);
     }
@@ -254,7 +255,7 @@ void createFolder(string folderName) {
 }
 
 string exec(string cmd) {
-    cout << "exec(" + cmd + ");" << endl;
+    //cout << "exec(" + cmd + ");" << endl;
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) throw "Error executing " + cmd + "\n";
     char buffer[128];

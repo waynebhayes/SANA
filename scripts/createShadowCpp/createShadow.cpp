@@ -170,6 +170,7 @@ namespace shadow_graph {
             }
             this->nodes=nodes - 1;
             reader.close();
+            //writeBin(*this, filename);
         }
         //serialization
         
@@ -177,9 +178,43 @@ namespace shadow_graph {
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(Pair), CEREAL_NVP(node_map), CEREAL_NVP(rev_node_map), CEREAL_NVP(adjList),
+            archive(CEREAL_NVP(node_map), CEREAL_NVP(rev_node_map), CEREAL_NVP(adjList),
                     CEREAL_NVP(nodes));
         }
+        
+        void writeBin(Graph& G, std::string& fileName)
+        {
+            std::string::size_type pos = fileName.find('.');
+            if (pos != std::string::npos)
+            {
+                fileName = fileName.substr(0, pos);
+            }
+            const std::string outName = fileName + ".bin";
+            std::ofstream ofs(outName, std::ofstream::binary | std::ofstream::out);
+            
+            if (ofs.is_open())
+            {
+                cereal::BinaryOutputArchive oArchive(ofs);
+                oArchive(G);
+                ofs.close();
+            }
+        }
+        
+        void readBin(Graph& G, std::string& fileName)
+        {
+            std::string::size_type pos = fileName.find('.');
+            if (pos != std::string::npos)
+            {
+                fileName = fileName.substr(0, pos);
+            }
+            std::ifstream ifs(fileName + ".bin", std::ifstream::binary | std::ifstream::in);
+            if (ifs.is_open()) {
+                cereal::BinaryInputArchive iArchive(ifs);
+                iArchive(G);
+                ifs.close();
+            }
+        }
+        
         public:
             typedef std::pair<unsigned short, unsigned short> Pair;
             std::unordered_map<std::string, unsigned short> node_map;
