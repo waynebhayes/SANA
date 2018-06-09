@@ -8,17 +8,13 @@ LIBS =
 SRC = 							\
 	createShadow.cpp
 
-
 SRCS = $(SRC)
 OBJDIR = _objs
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
-#MAIN = sana_dbg
 MAIN = createShadow
 
-.PHONY: depend clean test test_all regression_test
-
-all:    $(MAIN)
+all: $(MAIN)
 
 $(MAIN): $(OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)

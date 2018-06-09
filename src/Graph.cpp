@@ -162,7 +162,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     g.name = graphName;
     g.geneCount = 0;
     g.miRNACount = 0;
-    string cmd = "awk '{ for (i=1; i<=NF; ++i) a[tolower($i)]++ } END { print length(a) \" \" NR }' "; // print NR = number of lines
+    string cmd = "awk '{ for (i=1; i<=NF; ++i) a[tolower($i)]++ } END { print length(a) \" \" NR }' ";
     cmd += fin;
     string toParse = exec(cmd);
     string tmp;
