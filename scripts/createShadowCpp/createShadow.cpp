@@ -189,9 +189,7 @@ namespace shadow_graph {
             {
                 fileName = fileName.substr(0, pos);
             }
-            const std::string outName = fileName + ".bin";
-            std::ofstream ofs(outName, std::ofstream::binary | std::ofstream::out);
-            
+            std::ofstream ofs(fileName + ".bin", std::ofstream::binary | std::ofstream::out);
             if (ofs.is_open())
             {
                 cereal::BinaryOutputArchive oArchive(ofs);
