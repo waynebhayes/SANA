@@ -194,8 +194,8 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     if (!updateG1 && !updateG2)
     {
         cout << "Loading graphs using Graph::loadGraphFromBinary()" << endl;
-        G1 = Graph::loadGraphFromBinary(g1Name, lockFile, args.bools["-nodes-have-types"], args.bools["-lock-same-names"]);
-        G2 = Graph::loadGraphFromBinary(g2Name, lockFile, args.bools["-nodes-have-types"], args.bools["-lock-same-names"]);
+        Graph::loadGraphFromBinary(G1, g1Name, lockFile, args.bools["-nodes-have-types"], args.bools["-lock-same-names"]);
+        Graph::loadGraphFromBinary(G2, g2Name, lockFile, args.bools["-nodes-have-types"], args.bools["-lock-same-names"]);
     }
     else {
     if (p1 == 1 && p2 == 1){
@@ -226,7 +226,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         G2 = Graph::multGraph(g2Name, p2);
     }
     }
-    cout << "Loading completed in " << tLoad.elapsedString() << endl;
+    cout << "Graph loading completed in " << tLoad.elapsedString() << endl;
 
     if (G1.getNumNodes() > G2.getNumNodes()) {
         Timer tSwap;
@@ -356,14 +356,9 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         Timer tSerialize;
         cout << "Serializing graphs..." << endl;
         tSerialize.start();
-        std::this_thread::sleep_for (std::chrono::seconds(1));
         Graph::serializeGraph(G1, G1.getName(), G1.nodesHaveTypesEnabled, usingLocks);
         std::this_thread::sleep_for (std::chrono::seconds(1));
-        //G1.serializeMap();
-        //std::this_thread::sleep_for (std::chrono::seconds(1));
         Graph::serializeGraph(G2, G2.getName(), G2.nodesHaveTypesEnabled, usingLocks);
-        //std::this_thread::sleep_for (std::chrono::seconds(1));
-        //G2.serializeMap();
         cout << "Done serializing Graphs (" << tSerialize.elapsedString() << ")" << endl;
     }
 
