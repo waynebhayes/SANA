@@ -2,9 +2,9 @@
 ** The incremental Objective could probably be even faster. Currently we need to recompute the objective value
 ** of two entire towers when we simply swap 2 pegs at one level of that tower.  Instead, we should only need
 ** to recompute that level, which will reduce incremental computation by another factor of numSpecies (ie., 535
-** in the case of the full run). To do that we'd need to keep track of the fullUnion incrementally by keeping
+** in the case of the full run). To do that we'd need to keep track of the setUnion incrementally by keeping
 ** track, at each bit position, how many species contribute to that unionBit.  When that count gets to zero,
-** we can turn off that bit in the fullUnion.  This is basically like a shadow network, except it'll be a
+** we can turn off that bit in the setUnion.  This is basically like a shadow network, except it'll be a
 ** shadowUnion.
 */
 
@@ -14,13 +14,14 @@
 #include <unistd.h>
 #include "misc.h"
 #include "sets.h"
+#include "multisets.h"
 #include "bintree.h"
 #include "rand48.h"
 
 #define MAX_GENES 24252
 #define MAX_mRNAs 59530
 #define MAX_SPECIES 535
-#define MAX_HOLES MAX_mRNAs // Homo_sapiens has about 4300 mRNAs but let's be pessimistic since we heavily penalize lonely pegs
+#define MAX_HOLES 5000 //MAX_mRNAs // Homo_sapiens has about 4300 mRNAs but let's be pessimistic since we heavily penalize lonely pegs
 static char *gName[MAX_GENES], *rName[MAX_mRNAs], *speciesName[MAX_SPECIES];
 static int numGenes, numRNAs, numSpecies, species2numRNAs[MAX_SPECIES];
 static unsigned short int speciesRNAid[MAX_SPECIES][MAX_HOLES];
@@ -36,7 +37,9 @@ void ReadFile(FILE *fp, int speciesInt)
 
     while(fgets(line, sizeof(line), fp))
     {
-	long idGene, idRNA; // THESE NEED TO BE LONG SINCE FOINT HAS SIZE 8
+	long idGene, idRNA; // THESE NEED TO BE LONG (sizeof foint) since BinTreeLookup writes a foint into their addresses!
+	// Could fix it by adding a parameter to BinTreeLookup which is sizeof the info we're looking up...
+	assert(sizeof(foint) == sizeof(idRNA));
 	assert(2 == sscanf(line, "%s\t%s\n", word1, word2));
 	if(!BinTreeLookup(gNameTree, (foint)word1, &idGene))
 	{
@@ -72,27 +75,73 @@ void ReadFile(FILE *fp, int speciesInt)
 // locality of reference, we store the tower above the hole in a row of the matrix even
 // though we *think* of it as a column.
 static SET *_alignment[MAX_HOLES][MAX_SPECIES];
+static MULTISET *_shadowUnion[MAX_HOLES];
+
+// _numDiffs tells us, for each of the genes (ie edges emating from pegs), *how many* total
+// pegs *disagree* with the _shadowUnion for that gene.  This allows us to incrementally
+// update the objective quickly when one of the elements of _shadowUnion reaches zero or
+// jumps up from zero to nonzero: essentially every element in every peg over that hole
+// that previously disagreed, now agrees, and vice versa.  I we have N pegs over a hole
+// and at each element we know that D of them disagreed, then if the shadowUnion flips
+// then every such elemental count should swap to N-D.
+// For example, say 5 pegs agree to connect to exactly one gene G but a 6th peg connects
+// to G plus to 10 other genes. In that case the shadowUnion will have 11 elements,
+// 10 of them with multiplicity 1 and one of them with multiplcity 6; in that case
+// the element with multiplcity 6 will have _numDiffs equal to 0 but the ones with
+// multiplicity 1 will all have numDiffs equal to 5 since 5 pegs disagree with the union
+// at that element.  If we remove the outlier peg, then there are 5 pegs left (newPegCount),
+// all agree with each other; the 10 elements that had multiplicity 1 (and numDiffs equal to 5)
+// will have multiplicity snap to 0 and the corresponding numDiffs become (newPegCount - numDiffs)
+// = (5-5) = 0.  This allows us to incrementally update the objective quickly.
+static MULTISET *_numDiffs[MAX_HOLES];
+static long _shadowObjective[MAX_HOLES];
 
 // Our goal is to minimize the difference between connection sets across the alignment.
 // To do this, we union all the connection sets together over each hole to get the full
 // connection set above the hole, and then add up the XORs of each to that total; the
 // sum of the XORs is the objective we're trying to minimize.
+SET *SetUnionOverHole(SET *setUnion, int hole)
+{
+    int level;
+    if(setUnion)
+    {
+	assert(setUnion->n == MAX_GENES);
+	SetEmpty(setUnion);
+    }
+    else
+	setUnion = SetAlloc(MAX_GENES);
+    for(level=0; level<numSpecies; level++)
+	if(_alignment[hole][level])
+	    SetUnion(setUnion, setUnion, _alignment[hole][level]);
+    return setUnion;
+}
+
+long ObjectiveAtHoleLevel(SET *setUnion, int hole, int level)
+{
+    static SET *XOR;
+    if(!XOR) XOR = SetAlloc(MAX_GENES);
+    return SetCardinality(SetXOR(XOR, setUnion, _alignment[hole][level]));
+}
+
 long ObjectiveOverHole(int hole)
 {
     int level, numPegs = 0;
     long value = 0;
-    SET *fullUnion = SetAlloc(MAX_GENES), *XOR = SetAlloc(MAX_GENES);
-    for(level=0; level<numSpecies; level++)
-	if(_alignment[hole][level])
-	    SetUnion(fullUnion, fullUnion, _alignment[hole][level]);
+    SET *setUnion = SetAlloc(MAX_GENES), *XOR = SetAlloc(MAX_GENES), *tmp=SetAlloc(MAX_GENES);
+    SetUnionOverHole(setUnion, hole);
+    assert(SetEq(MultisetToSet(tmp, _shadowUnion[hole]), setUnion));
     for(level=0; level<numSpecies; level++)
 	if(_alignment[hole][level])
 	{
 	    ++numPegs;
-	    value += SetCardinality(SetXOR(XOR, fullUnion, _alignment[hole][level]));
+	    long tmp1 = ObjectiveAtHoleLevel(setUnion, hole, level);
+	    long tmp2 = SetCardinality(SetXOR(XOR, setUnion, _alignment[hole][level]));
+	    assert(tmp1==tmp2);
+	    value += tmp2;
 	}
-    SetFree(fullUnion);
+    SetFree(setUnion);
     SetFree(XOR);
+    SetFree(tmp);
     if(numPegs == 1) value += numGenes; // make it really unsavoury to be a lonely peg.
     return value;
 }
@@ -106,16 +155,18 @@ long Objective(void)
     return result;
 }
 
-static long int _currentObjective;
+static long int _currentObjective, _currentFastObjective;
 
 void HillClimbing(long iterations)
 {
     long i, sameCount = 0;
+    SET *setUnion1 = SetAlloc(MAX_GENES), *setUnion2 = SetAlloc(MAX_GENES), *XOR = SetAlloc(MAX_GENES);
+    SET *setUnion = SetAlloc(MAX_GENES);
     for(i=0; i<iterations;i++)
     {
-	if(i % 10000000==0) fprintf(stderr, "i=%ld, Objective = %ld\n", i, _currentObjective);
+	if(i % 10000==0) fprintf(stderr, "i=%ld, Objective = %ld\n", i, _currentObjective);
 	int peg1, peg2, level = numSpecies * drand48();
-	if(species2numRNAs[level] < 2) continue;
+	// if(species2numRNAs[level] < 2) continue; // No, let the one mRNA move around.
 	do {
 	    peg1 =  drand48() * MAX_HOLES; //species2numRNAs[level];
 	    peg2 =  drand48() * MAX_HOLES; //species2numRNAs[level];
@@ -124,23 +175,66 @@ void HillClimbing(long iterations)
 	SET *set2 = _alignment[peg2][level];
 	long oldTower1 = ObjectiveOverHole(peg1);
 	long oldTower2 = ObjectiveOverHole(peg2);
+
+	MultisetToSet(setUnion1, _shadowUnion[peg1]);
+	MultisetToSet(setUnion2, _shadowUnion[peg2]);
+	SetUnionOverHole(setUnion, peg1);
+	assert(SetEq(setUnion, setUnion1));
+	SetUnionOverHole(setUnion, peg2);
+	assert(SetEq(setUnion, setUnion2));
+#if 0
+	assert(oldTower1 == _shadowObjective[peg1]);
+	assert(oldTower2 == _shadowObjective[peg2]);
+	long oldShadow1 = SetCardinality(SetXOR(XOR, setUnion1, set1));
+	long oldShadow2 = SetCardinality(SetXOR(XOR, setUnion2, set2));
+	MultisetDeleteSet(_shadowUnion[peg1], set1);
+	MultisetDeleteSet(_shadowUnion[peg2], set2);
+	MultisetAddSet(_shadowUnion[peg1], set2);
+	MultisetAddSet(_shadowUnion[peg2], set1);
+	MultisetToSet(setUnion1, _shadowUnion[peg1]);
+	MultisetToSet(setUnion2, _shadowUnion[peg2]);
+	long newShadow1 = SetCardinality(SetXOR(XOR, setUnion1, set2));
+	long newShadow2 = SetCardinality(SetXOR(XOR, setUnion2, set1));
+	long fastChange = newShadow1+newShadow2 - (oldShadow1+oldShadow2);
+
+	MultisetToSet(setUnion1, _shadowUnion[peg1]);
+	MultisetToSet(setUnion2, _shadowUnion[peg2]);
+	long newShadow1 = ObjectiveAtHoleLevel(setUnion1, peg1, level);
+	long newShadow2 = ObjectiveAtHoleLevel(setUnion2, peg2, level);
+	long fastChange = (newShadow1-oldShadow1)+(newShadow2-oldShadow2);
+#endif
 	// Now check the swap
+	MultisetDeleteSet(_shadowUnion[peg1], set1);
+	MultisetDeleteSet(_shadowUnion[peg2], set2);
+	MultisetAddSet(_shadowUnion[peg1], set2);
+	MultisetAddSet(_shadowUnion[peg2], set1);
 	_alignment[peg1][level] = set2;
 	_alignment[peg2][level] = set1;
 	long newTower1 = ObjectiveOverHole(peg1);
 	long newTower2 = ObjectiveOverHole(peg2);
+
 	long change = (newTower1-oldTower1)+(newTower2-oldTower2);
-	if(change < 0) // good move!
+	//assert(fastChange == change);
+
+	if(change <= 0) // good move!
 	{
-	    sameCount = 0;
+	    if(change < 0) sameCount = 0;
 	    _currentObjective += change;
+	    //_currentFastObjective += fastChange;
 	}
 	else //it's a BAD move so reset
 	{
+#if 1
+	    MultisetDeleteSet(_shadowUnion[peg2], set1);
+	    MultisetDeleteSet(_shadowUnion[peg1], set2);
+	    MultisetAddSet(_shadowUnion[peg2], set2);
+	    MultisetAddSet(_shadowUnion[peg1], set1);
+#endif
 	    _alignment[peg1][level] = set1;
 	    _alignment[peg2][level] = set2;
 	    if(sameCount++>1000000) return;
 	}
+	//assert(_currentFastObjective == _currentObjective);
 	//assert(_currentObjective == Objective());
 	//printf("%ld (%ld -> %ld)", i, oldVal, newVal); fflush(stdout);
     }
@@ -191,14 +285,36 @@ void PrintAlignment(void)
 void InitializeAlignment(void)
 {
     int level, hole;
+    for(hole=0; hole < MAX_HOLES; hole++)
+    {
+	_shadowUnion[hole] = MultisetAlloc(MAX_GENES);
+	assert(_shadowUnion[hole]);
+    }
+
     for(level = 0; level < numSpecies; level++)
     {
 	int nRNAs = species2numRNAs[level], permutation[MAX_HOLES];
 	assert(nRNAs < MAX_HOLES);
 	RandomPermutation(nRNAs, permutation);
 	for(hole=0; hole < nRNAs; hole++)
-	    _alignment[hole][level] = &geneSet[speciesRNAid[level][permutation[hole]]];
+	{
+	    MultisetAddSet(_shadowUnion[hole],
+		(_alignment[hole][level] = &geneSet[speciesRNAid[level][permutation[hole]]])
+	    );
+	}
     }
+
+    SET *setUnion = SetAlloc(MAX_GENES), *tmp = SetAlloc(MAX_GENES);
+    _currentFastObjective = 0;
+    for(hole=0; hole < MAX_HOLES; hole++)
+    {
+	SetUnionOverHole(setUnion, hole);
+	MultisetToSet(tmp, _shadowUnion[hole]);
+	assert(SetEq(setUnion, tmp));
+	//_currentFastObjective += (_shadowObjective[hole] = ObjectiveOverHole(hole));
+    }
+    SetFree(setUnion);
+    SetFree(tmp);
 }
 
 int main(int argc, char *argv[])
