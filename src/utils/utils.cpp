@@ -426,3 +426,24 @@ bool newerGraphAvailable(const char* graphDir, const char* binaryDir)
         return true;
     return (graphTime > st.st_mtime);
 }
+
+pair<unsigned, unsigned> countVecLens(string& fileName) //overcounts # of nodes marginally
+{
+    int i = 0;
+    unordered_set<string> nodes;
+    nodes.reserve(14000);
+    ifstream ifs(fileName);
+    if (ifs.is_open())
+    {
+        string tmp;
+        while (ifs.good())
+        {
+            ifs >> tmp;
+            nodes.insert(tmp);
+            ++i;
+        }
+    }
+    i /= 2;
+    pair<unsigned, unsigned> ret { nodes.size(), i };
+    return ret;
+}

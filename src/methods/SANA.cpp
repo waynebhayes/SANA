@@ -785,7 +785,7 @@ void SANA::performChange(int type) {
     uint newTargetIndex = G2RandomUnlockedNode(oldTarget);
 
     ushort newTarget = -1;
-    bool isGene;
+    bool isGene = false;
     if(!nodesHaveType)
         newTarget    = (*unassignedNodesG2)[newTargetIndex];
     else{
