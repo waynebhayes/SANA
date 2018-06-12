@@ -579,7 +579,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
     initDataStructures(startA);
     setInterruptSignal();
 
-    for (; ; iter++) {
+    for (; ; ++iter) {
         T = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
             break;
@@ -600,7 +600,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds, l
 		long long int& iter) {
     initDataStructures(startA);
     setInterruptSignal();
-	for (; ; iter++) {
+	for (; ; ++iter) {
 		T = temperatureFunction(iter, TInitial, TDecay);
 		if (interrupt) {
 			break; // return *A;
@@ -628,7 +628,7 @@ Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIte
 
         setInterruptSignal();
 
-        for (; ; iter++) {
+        for (; ; ++iter) {
                 T = temperatureFunction(iter, TInitial, TDecay);
                 if (interrupt) {
                         break; // return *A;
@@ -658,7 +658,7 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, d
     for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
         cout << iter->first << '\n';
 
-    for (; ; iter++) {
+    for (; ; ++iter) {
 	//T = temperatureFunction(iter, TInitial, TDecay);
 	if (interrupt) {
 	    return storedAlignments;
@@ -686,10 +686,10 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
     scoreNamesToIndexes = mapScoresToIndexes(measureNames);
     paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
     score = Score::pareto;
-    for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
+    for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); ++iter)
         cout << iter->first << '\n';
 
-    for (; ; iter++) {
+    for (; ; ++iter) {
     	//T = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
             return storedAlignments;
@@ -711,11 +711,11 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
 unordered_map<string, int> SANA::mapScoresToIndexes(vector<string> &measureNames) {
     numOfMeasures = MC->numMeasures();
     measureNames = vector<string>(numOfMeasures);
-    for(int i = 0; i < numOfMeasures; i++)
+    for(int i = 0; i < numOfMeasures; ++i)
         measureNames[i] = MC->getMeasure(i)->getName();
     sort(measureNames.begin(), measureNames.end());
     unordered_map<string, int> toReturn;
-    for(int i = 0; i < numOfMeasures; i++)
+    for(int i = 0; i < numOfMeasures; ++i)
     	toReturn[measureNames[i]] = i;
     return toReturn;
 }
@@ -765,7 +765,7 @@ void SANA::removeAlignmentData(vector<ushort>* toRemove) {
 }
 
 void SANA::SANAIteration() {
-    iterationsPerformed++;
+    ++iterationsPerformed;
     if(G1->hasNodeTypes())
     {
 	// Choose the type here based on counts (and locking...)
@@ -1115,7 +1115,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newA = new vector<ushort>(0);
         vector<vector<ushort>*> toRemove = paretoFront.addAlignmentScores(newA, addScores, makeChange);
         if (makeChange) {
-            for (unsigned int i = 0; i < toRemove.size(); i++)
+            for (unsigned int i = 0; i < toRemove.size(); ++i)
                 removeAlignmentData(toRemove[i]);
         }
         //std::cout << "ParetoFront:\n";
@@ -1517,7 +1517,7 @@ Alignment SANA::runRestartPhases() {
     }
     cout << "candidates phase" << endl;
     vector<long long int> iters(numCandidates, iterationsPerStep);
-    for (uint i = 0; i < numCandidates; i++) {
+    for (uint i = 0; i < numCandidates; ++i) {
         candidates[i] = simpleRun(candidates[i], minutesPerCandidate*60, iters[i]);
         candidatesScores[i] = currentScore;
     }
@@ -1538,7 +1538,7 @@ vector<vector<ulong>> SANA::getCoreFreq() {
 uint SANA::getLowestIndex() const {
     double lowestScore = candidatesScores[0];
     uint lowestIndex = 0;
-    for (uint i = 1; i < numCandidates; i++) {
+    for (uint i = 1; i < numCandidates; ++i) {
         if (candidatesScores[i] < lowestScore) {
             lowestScore = candidatesScores[i];
             lowestIndex = i;
@@ -1550,7 +1550,7 @@ uint SANA::getLowestIndex() const {
 uint SANA::getHighestIndex() const {
     double highestScore = candidatesScores[0];
     uint highestIndex = 0;
-    for (uint i = 1; i < numCandidates; i++) {
+    for (uint i = 1; i < numCandidates; ++i) {
         if (candidatesScores[i] > highestScore) {
             highestScore = candidatesScores[i];
             highestIndex = i;
@@ -1569,12 +1569,12 @@ void SANA::searchTemperaturesByLinearRegression() {
     //                      //otherwise my computer is very slow.
     map<double, double> pbadMap;
     cout << "Sampling pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
-    for(double log_temp = LOG10_LOW_TEMP; log_temp <= LOG10_HIGH_TEMP; log_temp = log_temp + 1.0){
+    for(double log_temp = LOG10_LOW_TEMP; log_temp <= LOG10_HIGH_TEMP; log_temp += 1.0){
         pbadMap[log_temp] = pForTInitial(pow(10, log_temp));
         cout << log_temp << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << endl;
     }
     double exponent;
-    for (exponent = LOG10_LOW_TEMP; exponent <= LOG10_HIGH_TEMP; exponent++){
+    for (exponent = LOG10_LOW_TEMP; exponent <= LOG10_HIGH_TEMP; ++exponent){
         if(pbadMap[exponent] > FinalPBad)
             break;
     }
@@ -1582,7 +1582,7 @@ void SANA::searchTemperaturesByLinearRegression() {
     double binarySearchRightEnd = exponent;
     double mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
     cout << "Beginning binary search for tFinal. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
-    for(int j = 0; j < 4; j++){
+    for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
         double probability = pForTInitial(temperature);
         pbadMap[mid] = probability;
@@ -1603,7 +1603,7 @@ void SANA::searchTemperaturesByLinearRegression() {
     binarySearchRightEnd = exponent + 1;
     mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
     cout << "Beginning binary search for tInitial. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
-    for(int j = 0; j < 4; j++){
+    for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
         double probability = pForTInitial(temperature);
         pbadMap[mid] = probability;
@@ -1660,7 +1660,7 @@ void SANA::searchTemperaturesByStatisticalTest() {
     T.start();
     cout << "Computing distribution of scores of random alignments ";
     vector<double> upperBoundKScores(NUM_SAMPLES_RANDOM);
-    for (uint i = 0; i < NUM_SAMPLES_RANDOM; i++) {
+    for (uint i = 0; i < NUM_SAMPLES_RANDOM; ++i) {
         upperBoundKScores[i] = scoreRandom();
     }
     cout << "(" <<  T.elapsedString() << ")" << endl;
@@ -1886,7 +1886,7 @@ double SANA::getPforTInitial(const Alignment& startA, double maxExecutionSeconds
     initDataStructures(startA);
 
     setInterruptSignal();
-    for (; ; iter++) {
+    for (; ; ++iter) {
         T = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
             return result;
@@ -1916,7 +1916,7 @@ bool SANA::isRandomTInitial(double TInitial, double highThresholdScore, double l
     if (score < lowThresholdScore) return true;
     //make sure that alignments that passed the first test are truly random
     //(among NUM_SAMPLES runs, at least one of them has a p-value smaller than LOW_THRESHOLD_P)
-    for (uint i = 0; i < NUM_SAMPLES; i++) {
+    for (uint i = 0; i < NUM_SAMPLES; ++i) {
         if (scoreForTInitial(TInitial) <= lowThresholdScore) return true;
     }
     return false;
@@ -1946,11 +1946,11 @@ Alignment SANA::hillClimbingAlignment(Alignment startAlignment, long long int id
         double oldScore = currentScore;
         SANAIteration();
         if(abs(oldScore-currentScore) < 0.00001){
-            idleCount++;
+            ++idleCount;
         }else{
             idleCount = 0;
         }
-        iter++;
+        ++iter;
     }
     trackProgress(iter);
     return *A;
@@ -1966,7 +1966,7 @@ void SANA::hillClimbingIterations(long long int iterTarget) {
 
     initDataStructures(startA);
     T = 0;
-    for (; iter < iterTarget ; iter++) {
+    for (; iter < iterTarget ; ++iter) {
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
         }
@@ -1977,7 +1977,7 @@ void SANA::hillClimbingIterations(long long int iterTarget) {
 
 double SANA::expectedNumAccEInc(double temp, const vector<double>& energyIncSample) {
     double res = 0;
-    for (uint i = 0; i < energyIncSample.size(); i++) {
+    for (uint i = 0; i < energyIncSample.size(); ++i) {
         res += exp(energyIncSample[i]/temp);
     }
     return res;
@@ -1995,7 +1995,7 @@ vector<double> SANA::energyIncSample(double temp) {
     //generate a sample of energy increments, with size equal to the number of iterations per second
     vector<double> EIncs(0);
     T = temp;
-    for (uint i = 0; i < iter; i++) {
+    for (uint i = 0; i < iter; ++i) {
         SANAIteration();
         if (energyInc < 0) {
             EIncs.push_back(energyInc);
@@ -2048,7 +2048,7 @@ double SANA::searchTDecay(double TInitial, double minutes) {
     cout << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
 
     const uint NUM_ITER = 100;
-    for (uint i = 0; i < NUM_ITER; i++) {
+    for (uint i = 0; i < NUM_ITER; ++i) {
         double x_mid = (x_left + x_right)/2;
         double y = expectedNumAccEInc(x_mid, EIncs);
         if (y < 1) x_left = x_mid;
@@ -2084,7 +2084,7 @@ double SANA::searchTDecay(double TInitial, uint iterations) {
     cout << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
 
     const uint NUM_ITER = 100;
-    for (uint i = 0; i < NUM_ITER; i++) {
+    for (uint i = 0; i < NUM_ITER; ++i) {
         double x_mid = (x_left + x_right)/2;
         double y = expectedNumAccEInc(x_mid, EIncs);
         if (y < 1) x_left = x_mid;
@@ -2180,11 +2180,11 @@ void SANA::prune(string& startAligName) {
         throw runtime_error(errorMsg.str().c_str());
     }
     set<pair<int,int>> removedEdges;
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; ++i) {
         int g1_node1 = reIndexedMap[i];
         int shadow_node = alignment[g1_node1];
         int m = G1AdjLists[i].size();
-        for (int j = 0; j < m; j++) {
+        for (int j = 0; j < m; ++j) {
             if (G1AdjLists[i][j] < i)
                 continue;
             int g1_node2 = reIndexedMap[G1AdjLists[i][j]];
