@@ -442,8 +442,8 @@ pair<unsigned, unsigned> countVecLens(string& fileName) //overcounts # of nodes 
             nodes.insert(tmp);
             ++i;
         }
+        ifs.close();
     }
-    i /= 2;
-    pair<unsigned, unsigned> ret { nodes.size(), i };
+    pair<unsigned, unsigned> ret { nodes.size(), i / 2};
     return ret;
 }
