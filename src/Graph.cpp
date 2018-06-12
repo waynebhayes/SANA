@@ -160,6 +160,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     pair<unsigned, unsigned> vecLens = countVecLens(fin);
     const size_t nodeLen = vecLens.first;
     const size_t vecLen = vecLens.second;
+    //cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
     g.name = graphName;
     g.geneCount = 0;
     g.miRNACount = 0;
@@ -173,6 +174,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     const size_t nodeLen = atoi(tmp.c_str());
     parseSS >> tmp;
     const size_t vecLen = atoi(tmp.c_str());
+    cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
     */
 
     vector<string> nodes;
