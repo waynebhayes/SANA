@@ -238,7 +238,7 @@ namespace shadow_graph {
                 
                 struct stat st;
     
-                if (stat(binName.c_str(), &st) != 0)
+                if (stat(binName.c_str(), &st) == 0)
                 {
                     readBin(*this, fileName);
                     return;
