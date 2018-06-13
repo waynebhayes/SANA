@@ -157,14 +157,12 @@ void Graph::loadGraphFromBinary(Graph& g, string graphName, string lockFile, boo
 }
 
 void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes) {
+#if 0 // cool C++ count nodes
     pair<unsigned, unsigned> vecLens = countVecLens(fin);
     const size_t nodeLen = vecLens.first;
     const size_t vecLen = vecLens.second;
     //cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
-    g.name = graphName;
-    g.geneCount = 0;
-    g.miRNACount = 0;
-    /*
+#else // yucky awk code to count nodes
     string cmd = "awk '{ for (i=1; i<=NF; ++i) a[tolower($i)]++ } END { print length(a) \" \" NR }' ";
     cmd += fin;
     string toParse = exec(cmd);
@@ -175,7 +173,10 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     parseSS >> tmp;
     const size_t vecLen = atoi(tmp.c_str());
     cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
-    */
+#endif
+    g.name = graphName;
+    g.geneCount = 0;
+    g.miRNACount = 0;
 
     vector<string> nodes;
     nodes.reserve(nodeLen);
