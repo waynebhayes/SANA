@@ -137,7 +137,7 @@ mkdir -p $OUTDIR/dir000
 /bin/rm -rf networks/$NAME-shadow0
 touch $OUTDIR/dir000/schedule.tsv $OUTDIR/dir000/tdecay.txt
 TIME_LIMIT=`parse "60*($T_ITER+20)"`
-TIME_LIMIT2=`parse "$TIME_LIMIT+30"`
+TIME_LIMIT2=`parse "20*($TIME_LIMIT)"`
 if true; then
     ITER=000
     while [ `awk '{printf "%s.stdout\n", $1}' $OUTDIR/dir000/schedule.tsv | tee $OUTDIR/dir000/schedule.done | wc -l` -lt `echo name "$@" | wc -w` ]; do
@@ -184,4 +184,4 @@ do
     awk '{gsub("[|{}]","")}$3>1{sum2+=$3^2}END{printf " SES %g\n", sum2/'$SES_DENOM'}' $OUTDIR/dir$i1/$NAME-shadow$i1.el
 done
 echo "Computing CIQ... may take awhile..."
-./CIQ.sh $OUTDIR/dir$i1/multiAlign.tsv `echo "$@" | newlines | sed 's/\.gw/.el/'`
+#/CIQ.sh $OUTDIR/dir$i1/multiAlign.tsv `echo "$@" | newlines | sed 's/\.gw/.el/'`
