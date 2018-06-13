@@ -151,6 +151,9 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     if (args.strings["-lock"] != ""){
       sana->setLockFile(args.strings["-lock"] );
     }
+    if(args.bools["-lock-same-names"] && args.strings["-lock"].size()== 0){
+        sana->setLockFile("/dev/null");
+    }
     return sana;
 }
 
