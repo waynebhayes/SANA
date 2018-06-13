@@ -362,6 +362,9 @@ void output_el_Format( std::vector<std::unordered_map<int, int>> &adjList,
 
 
 int main(int argc, const char** argv) {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(NULL);
+
     static_assert(fnv::hash("FNV Hash Test") == 0xF38B3DB9, "fnv1a_32::hash failure");
     assert(getGraphType(".gw") == GraphType::gw);
 
