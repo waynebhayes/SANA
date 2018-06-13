@@ -1,11 +1,9 @@
 /*
 ** The incremental Objective could probably be even faster. Currently we need to recompute the objective value
-** of two entire towers when we simply swap 2 pegs at one level of that tower.  Instead, we should only need
-** to recompute that level, which will reduce incremental computation by another factor of numSpecies (ie., 535
-** in the case of the full run). To do that we'd need to keep track of the setUnion incrementally by keeping
-** track, at each bit position, how many species contribute to that unionBit.  When that count gets to zero,
-** we can turn off that bit in the setUnion.  This is basically like a shadow network, except it'll be a
-** shadowUnion.
+** of two entire towers when we simply swap 2 pegs at one level of that tower. To do better we'd need to keep
+** track of the setUnion incrementally by keeping track, at each bit position, how many species contribute to
+** that unionBit.  When that count gets to zero, we can turn off that bit in the setUnion.  This is basically
+** like a shadow network, except it'll be a shadowUnion.
 */
 
 #include <stdlib.h>
@@ -32,8 +30,8 @@ void ReadFile(FILE *fp, int speciesInt)
 {
     char line[BUFSIZ], word1[BUFSIZ], word2[BUFSIZ];
     int lineNum = 0;
-    if(!gNameTree) gNameTree = BinTreeAlloc(unbalanced, strcmp, strdup, free, NULL, NULL);
-    if(!rNameTree) rNameTree = BinTreeAlloc(unbalanced, strcmp, strdup, free, NULL, NULL);
+    if(!gNameTree)gNameTree=BinTreeAlloc(unbalanced, (pCmpFcn)strcmp, (pFointCopyFcn)strdup, (pFointFreeFcn)free, NULL, NULL);
+    if(!rNameTree)rNameTree=BinTreeAlloc(unbalanced, (pCmpFcn)strcmp, (pFointCopyFcn)strdup, (pFointFreeFcn)free, NULL, NULL);
 
     while(fgets(line, sizeof(line), fp))
     {
@@ -41,18 +39,18 @@ void ReadFile(FILE *fp, int speciesInt)
 	// Could fix it by adding a parameter to BinTreeLookup which is sizeof the info we're looking up...
 	assert(sizeof(foint) == sizeof(idRNA));
 	assert(2 == sscanf(line, "%s\t%s\n", word1, word2));
-	if(!BinTreeLookup(gNameTree, (foint)word1, &idGene))
+	if(!BinTreeLookup(gNameTree, (foint)word1, (foint*)&idGene))
 	{
 	    idGene = numGenes;
 	    //fprintf(stderr, "GENE %d %s\n", numGenes, word1);
 	    BinTreeInsert(gNameTree, (foint)word1, (foint)idGene);
 	    gName[numGenes] = strdup(word1);
 	    assert(numGenes <= MAX_GENES);
-	    assert(BinTreeLookup(gNameTree, (foint)word1, &idGene));
+	    assert(BinTreeLookup(gNameTree, (foint)word1, (foint*)&idGene));
 	    assert(idGene == numGenes);
 	    ++numGenes;
 	}
-	if(!BinTreeLookup(rNameTree, (foint)word2, &idRNA))
+	if(!BinTreeLookup(rNameTree, (foint)word2, (foint*)&idRNA))
 	{
 	    idRNA = numRNAs;
 	    //fprintf(stderr, "miRNA %d %s\n", numRNAs, word2);
@@ -60,7 +58,7 @@ void ReadFile(FILE *fp, int speciesInt)
 	    rName[numRNAs] = strdup(word2);
 	    assert(numRNAs <= MAX_mRNAs);
 	    speciesRNAid[speciesInt][species2numRNAs[speciesInt]++] = idRNA;
-	    assert(BinTreeLookup(rNameTree, (foint)word2, &idRNA));
+	    assert(BinTreeLookup(rNameTree, (foint)word2, (foint*)&idRNA));
 	    assert(idRNA == numRNAs);
 	    ++numRNAs;
 	}
@@ -77,23 +75,34 @@ void ReadFile(FILE *fp, int speciesInt)
 static SET *_alignment[MAX_HOLES][MAX_SPECIES];
 static MULTISET *_shadowUnion[MAX_HOLES];
 
-// _numDiffs tells us, for each of the genes (ie edges emating from pegs), *how many* total
-// pegs *disagree* with the _shadowUnion for that gene.  This allows us to incrementally
-// update the objective quickly when one of the elements of _shadowUnion reaches zero or
-// jumps up from zero to nonzero: essentially every element in every peg over that hole
-// that previously disagreed, now agrees, and vice versa.  I we have N pegs over a hole
-// and at each element we know that D of them disagreed, then if the shadowUnion flips
-// then every such elemental count should swap to N-D.
-// For example, say 5 pegs agree to connect to exactly one gene G but a 6th peg connects
-// to G plus to 10 other genes. In that case the shadowUnion will have 11 elements,
-// 10 of them with multiplicity 1 and one of them with multiplcity 6; in that case
-// the element with multiplcity 6 will have _numDiffs equal to 0 but the ones with
-// multiplicity 1 will all have numDiffs equal to 5 since 5 pegs disagree with the union
-// at that element.  If we remove the outlier peg, then there are 5 pegs left (newPegCount),
-// all agree with each other; the 10 elements that had multiplicity 1 (and numDiffs equal to 5)
-// will have multiplicity snap to 0 and the corresponding numDiffs become (newPegCount - numDiffs)
-// = (5-5) = 0.  This allows us to incrementally update the objective quickly.
-static MULTISET *_numDiffs[MAX_HOLES];
+/* _numDisagree tells us, for each of the genes (ie edges emating from pegs
+** above a certain hole), how many total pegs disagree with the _shadowUnion
+** for that gene.  This allows us to incrementally update the objective
+** quickly when one of the elements of _shadowUnion reaches zero or jumps up
+** from zero to nonzero: essentially every element in every peg over that
+** hole that previously disagreed, now agrees, and vice versa.  If we have
+** N pegs over a hole and at each element e we know that D[e] of them disagreed,
+** then if the shadowUnion flips at edge e then the count D[e] should swap
+** to D[e]=N-D[e]; let's call that the complement of D[e] with respect to N.
+** For example, say 5 pegs agree to connect to exactly one gene
+** G but a 6th peg connects to G plus to 4 other genes. (You can picture this
+** by holding your left hand vertically; the 5 fingers are each single edges emanating
+** from 5 pegs; they line up on top of each other
+** pointing at the same gene; your right hand held horizontally splayed out with the
+** middle finger above the left hand.  5Left + middle = 6 pointing at gene G; 4 other
+** fingers pointing at other genes.) In that case the
+** shadowUnion will have 5 elements, 4 of them with multiplicity 1 and one
+** of them with multiplcity 6; in that case N=6 pegs; the element with multiplcity
+** 6 will have _numDisagree equal to 0 but the ones with multiplicity 1 will
+** all have numDisagree equal to 5 since 5 pegs disagree with the union
+** at that element.  If we remove the outlier peg, then there are 5 pegs
+** left (newPegCount=5), all agree with each other; the 4 elements that had
+** multiplicity 1 (all with D[e]=5) will disappear, leaving multiplicity
+** D[e]=newPegCount-D[e]=0. This allows us to incrementally update the objective
+** quickly. In fact the same trick may help us to compute CIQ quickly in SANA.
+*/
+static MULTISET *_numDisagree[MAX_HOLES];
+static FREQTYPE _numPegs[MAX_HOLES]; // FREQTYPE since that's what MULTISETS can store.
 static long _shadowObjective[MAX_HOLES];
 
 // Our goal is to minimize the difference between connection sets across the alignment.
@@ -142,6 +151,7 @@ long ObjectiveOverHole(int hole)
     SetFree(setUnion);
     SetFree(XOR);
     SetFree(tmp);
+    assert(numPegs = _numPegs[hole]);
     if(numPegs == 1) value += numGenes; // make it really unsavoury to be a lonely peg.
     return value;
 }
