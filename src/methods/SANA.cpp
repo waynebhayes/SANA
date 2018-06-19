@@ -480,16 +480,19 @@ void SANA::initDataStructures(const Alignment& startA) {
     unassignedgenesG2        = new vector<ushort> ();
     unassignedmiRNAsG2       = new vector<ushort> ();
     
-    unassignedgenesG2->reserve(G2->geneCount - G1->geneCount);
-    unassignedmiRNAsG2->reserve(G2->miRNACount - G1->miRNACount);
-    for (uint i = 0, j = 0; i < n2; i++) {
-        if (not (*assignedNodesG2)[i]) {
-            (*unassignedNodesG2)[j++] = i;
+    if(nodesHaveType){
+        cerr << "Seperating unassigned genes and miRNAs in G2" << endl;
+        unassignedgenesG2->reserve(G2->geneCount - G1->geneCount);
+        unassignedmiRNAsG2->reserve(G2->miRNACount - G1->miRNACount);
+        for (uint i = 0, j = 0; i < n2; i++) {
+            if (not (*assignedNodesG2)[i]) {
+                (*unassignedNodesG2)[j++] = i;
 
-            if(G2->nodeTypes[i] == Graph::NODE_TYPE_GENE)
-                unassignedgenesG2->push_back(i);
-            else
-                unassignedmiRNAsG2->push_back(i);
+                if(G2->nodeTypes[i] == Graph::NODE_TYPE_GENE)
+                    unassignedgenesG2->push_back(i);
+                else
+                    unassignedmiRNAsG2->push_back(i);
+            }
         }
     }
     storedUnassignedNodesG2[A] = unassignedNodesG2;
