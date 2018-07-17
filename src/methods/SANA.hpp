@@ -130,9 +130,9 @@ private:
     vector<double> tau;
     double SANAtime;
 
-    double T;
+    double Temperature;
     double temperatureFunction(long long int iter, double TInitial, double TDecay);
-    double acceptingProbability(double energyInc, double T);
+    double acceptingProbability(double energyInc, double Temperature);
     double trueAcceptingProbability();
     //to compute TInitial automatically
     //returns a value of TInitial such that the temperature is random
