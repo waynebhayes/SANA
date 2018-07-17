@@ -457,8 +457,8 @@ double SANA::temperatureFunction(long long int iter, double TInitial, double TDe
     return TInitial * (constantTemp ? 1 : exp(-TDecay* fraction ));
 }
 
-double SANA::acceptingProbability(double energyInc, double T) {
-    return energyInc >= 0 ? 1 : exp(energyInc/T);
+double SANA::acceptingProbability(double energyInc, double Temperature) {
+    return energyInc >= 0 ? 1 : exp(energyInc/Temperature);
 }
 
 double SANA::trueAcceptingProbability(){
@@ -584,7 +584,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
     setInterruptSignal();
 
     for (; ; ++iter) {
-        T = temperatureFunction(iter, TInitial, TDecay);
+        Temperature = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
             break;
         }
@@ -605,7 +605,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds, l
     initDataStructures(startA);
     setInterruptSignal();
 	for (; ; ++iter) {
-		T = temperatureFunction(iter, TInitial, TDecay);
+		Temperature = temperatureFunction(iter, TInitial, TDecay);
 		if (interrupt) {
 			break; // return *A;
 		}
@@ -633,7 +633,7 @@ Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIte
         setInterruptSignal();
 
         for (; ; ++iter) {
-                T = temperatureFunction(iter, TInitial, TDecay);
+                Temperature = temperatureFunction(iter, TInitial, TDecay);
                 if (interrupt) {
                         break; // return *A;
                 }
@@ -663,7 +663,7 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, d
         cout << iter->first << '\n';
 
     for (; ; ++iter) {
-	//T = temperatureFunction(iter, TInitial, TDecay);
+	//Temperature = temperatureFunction(iter, TInitial, TDecay);
 	if (interrupt) {
 	    return storedAlignments;
 	}
@@ -694,7 +694,7 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
         cout << iter->first << '\n';
 
     for (; ; ++iter) {
-    	//T = temperatureFunction(iter, TInitial, TDecay);
+    	//Temperature = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
             return storedAlignments;
         }
@@ -968,7 +968,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        badProbability = exp(energyInc / T);
+        badProbability = exp(energyInc / Temperature);
         makeChange = (energyInc >= 0 or randomReal(gen) <= badProbability);
         break;
     }
@@ -985,8 +985,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore *= ncWeight * (newNcSum / trueA.back());
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        badProbability = exp(energyInc / T);
-        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / T));
+        badProbability = exp(energyInc / Temperature);
+        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / Temperature));
         break;
     }
     case Score::max:
@@ -1010,8 +1010,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        badProbability = exp(energyInc / T);
-        makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc / T);
+        badProbability = exp(energyInc / Temperature);
+        makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc / Temperature);
         break;
     }
     case Score::min:
@@ -1034,8 +1034,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 
         energyInc = newCurrentScore - currentScore; //is this even used?
         wasBadMove = deltaEnergy < 0;
-        badProbability = exp(energyInc / T);
-        makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(newCurrentScore / T);
+        badProbability = exp(energyInc / Temperature);
+        makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(newCurrentScore / Temperature);
         break;
     }
     case Score::inverse:
@@ -1050,8 +1050,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        badProbability = exp(energyInc / T);
-        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / T));
+        badProbability = exp(energyInc / Temperature);
+        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / Temperature));
         break;
     }
     case Score::maxFactor:
@@ -1079,8 +1079,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = maxScore < -1 * minScore;
-        badProbability = exp(energyInc / T);
-        makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc / T);
+        badProbability = exp(energyInc / Temperature);
+        makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc / Temperature);
         break;
     }
     case Score::pareto: //Short circuit return to let the pareto front decide
@@ -1447,7 +1447,7 @@ void SANA::trackProgress(long long int i, bool end) {
     bool checkScores = true;
 
     cout << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
-    cout <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << ", pBad = " << trueAcceptingProbability() << endl;
+    cout <<  " P(" << avgEnergyInc << ", " << Temperature << ") = " << acceptingProbability(avgEnergyInc, Temperature) << ", pBad = " << trueAcceptingProbability() << endl;
 
     if (not (printDetails or printScores or checkScores)) return;
     Alignment Al(*A);
@@ -1486,7 +1486,7 @@ void SANA::trackProgress(long long int i, bool end) {
         double PBetween = PLow + betweenFraction * (PHigh - PLow);
 
         // if the ratio if off by more than a few percent, adjust.
-        double ratio = acceptingProbability(avgEnergyInc, T) / PBetween;
+        double ratio = acceptingProbability(avgEnergyInc, Temperature) / PBetween;
         if (abs(1-ratio) >= .01 &&
             (ratio < 1 || SANAtime > .2)) // don't speed it up too soon
         {
@@ -1504,10 +1504,10 @@ void SANA::trackProgress(long long int i, bool end) {
 
 Alignment SANA::runRestartPhases() {
     cout << "new alignments phase" << endl;
-    Timer T;
-    T.start();
+    Timer TImer;
+    TImer.start();
     newAlignmentsCount = 0;
-    while (T.elapsed() < minutesNewAlignments*60) {
+    while (TImer.elapsed() < minutesNewAlignments*60) {
         long long int iter = 0;
         // Alignment A = simpleRun(Alignment::random(n1, n2), 0.0, iter);
         Alignment A = simpleRun(getStartingAlignment(), 0.0, iter);
@@ -1660,14 +1660,14 @@ void SANA::searchTemperaturesByStatisticalTest() {
 
     cerr<<endl;
     //find the threshold score between random and not random temperature
-    Timer T;
-    T.start();
+    Timer TImer;
+    TImer.start();
     cout << "Computing distribution of scores of random alignments ";
     vector<double> upperBoundKScores(NUM_SAMPLES_RANDOM);
     for (uint i = 0; i < NUM_SAMPLES_RANDOM; ++i) {
         upperBoundKScores[i] = scoreRandom();
     }
-    cout << "(" <<  T.elapsedString() << ")" << endl;
+    cout << "(" <<  TImer.elapsedString() << ")" << endl;
     NormalDistribution dist(upperBoundKScores);
     double highThresholdScore = dist.quantile(HIGH_THRESHOLD_P);
     double lowThresholdScore = dist.quantile(LOW_THRESHOLD_P);
@@ -1691,7 +1691,7 @@ void SANA::searchTemperaturesByStatisticalTest() {
     cout << "Iterations per run: " << 10000.+100.*n1+10.*n2+n1*n2*0.1 << endl;
 
     uint count = 0;
-    T.start();
+    TImer.start();
     while (fabs(lowerBoundTInitial - upperBoundTInitial)/lowerBoundTInitial > 0.05 and
             count <= 10) {
         //search in log space
@@ -1702,7 +1702,7 @@ void SANA::searchTemperaturesByStatisticalTest() {
 
         //we prefer false negatives (random scores classified as non-random)
         //than false positives (non-random scores classified as random)
-        cout << "Test " << count << " (" << T.elapsedString() << "): ";
+        cout << "Test " << count << " (" << TImer.elapsedString() << "): ";
         count++;
         if (isRandomTInitial(midTInitial, highThresholdScore, lowThresholdScore)) {
             upperBoundTInitial = midTInitial;
@@ -1846,14 +1846,14 @@ string SANA::mkdir(const std::string& file){
 
 double SANA::pForTInitial(double TInitial) {
 
-    // T = TInitial;
+    // Temperature = TInitial;
     // double pBad;
-    // vector<double> EIncs = energyIncSample(T);
- //    cout << "Trying TInitial " << T;
+    // vector<double> EIncs = energyIncSample(Temperature);
+ //    cout << "Trying TInitial " << Temperature;
  //    //uint nBad = 0;
  //    //for(uint i=0; i<EIncs.size();i++)
-    // //nBad += (randomReal(gen) <= exp(EIncs[i]/T));
- //    pBad = exp(avgEnergyInc/T); // (double)nBad/(EIncs.size());
+    // //nBad += (randomReal(gen) <= exp(EIncs[i]/Temperature));
+ //    pBad = exp(avgEnergyInc/Temperature); // (double)nBad/(EIncs.size());
  //    cout << " p(Bad) = " << pBad << endl;
     // return pBad;
 
@@ -1891,7 +1891,7 @@ double SANA::getPforTInitial(const Alignment& startA, double maxExecutionSeconds
 
     setInterruptSignal();
     for (; ; ++iter) {
-        T = temperatureFunction(iter, TInitial, TDecay);
+        Temperature = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
             return result;
         }
@@ -1940,7 +1940,7 @@ double SANA::searchSpaceSizeLog() {
 Alignment SANA::hillClimbingAlignment(Alignment startAlignment, long long int idleCountTarget){
     long long int iter = 0;
     uint idleCount = 0;
-    T = 0;
+    Temperature = 0;
     initDataStructures(startAlignment); //this is redundant, but it's not that big of a deal.  Resets true probability.
     cout << "Beginning Final Pure Hill Climbing Stage" << endl;
     while(idleCount < idleCountTarget){
@@ -1969,7 +1969,7 @@ void SANA::hillClimbingIterations(long long int iterTarget) {
     long long int iter = 1;
 
     initDataStructures(startA);
-    T = 0;
+    Temperature = 0;
     for (; iter < iterTarget ; ++iter) {
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
@@ -1998,7 +1998,7 @@ vector<double> SANA::energyIncSample(double temp) {
     //cout << "Hill climbing score: " << currentScore << endl;
     //generate a sample of energy increments, with size equal to the number of iterations per second
     vector<double> EIncs(0);
-    T = temp;
+    Temperature = temp;
     for (uint i = 0; i < iter; ++i) {
         SANAIteration();
         if (energyInc < 0) {
@@ -2010,16 +2010,16 @@ vector<double> SANA::energyIncSample(double temp) {
 }
 
 double SANA::simpleSearchTInitial() {
-    T = .5e-6;
+    Temperature = .5e-6;
     double pBad;
     do {
-        T *= 2;
-        vector<double> EIncs = energyIncSample(T);
-        cout << "Trying TInitial " << T;
-        pBad = exp(avgEnergyInc/T); // (double)nBad/(EIncs.size());
+        Temperature *= 2;
+        vector<double> EIncs = energyIncSample(Temperature);
+        cout << "Trying TInitial " << Temperature;
+        pBad = exp(avgEnergyInc/Temperature); // (double)nBad/(EIncs.size());
         cout << " p(Bad) = " << pBad << endl;
     } while(pBad < 0.9999999); // How close to 1? I pulled this out of my ass.
-    return T;
+    return Temperature;
 }
 
 double SANA::searchTDecay(double TInitial, double minutes) {
@@ -2114,8 +2114,8 @@ double SANA::getIterPerSecond() {
 }
 
 void SANA::initIterPerSecond() {
-    Timer T;
-    T.start();
+    Timer TImer;
+    TImer.start();
     cout << "Determining iteration speed...." << endl;
 
     long long int iter = 1E6;
@@ -2126,7 +2126,7 @@ void SANA::initIterPerSecond() {
     }*/
     double res = iter/timer.elapsed();
     cout << "SANA does " << to_string(res)
-         << " iterations per second (took " << T.elapsedString()
+         << " iterations per second (took " << TImer.elapsedString()
          << " doing " << iter << " iterations)" << endl;
 
     initializedIterPerSecond = true;
@@ -2134,7 +2134,7 @@ void SANA::initIterPerSecond() {
     std::ostringstream ss;
     ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
     ofstream header(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(0) + ".csv");
-    header << "time,score,avgEnergyInc,T,realTemp,pbad,lower,higher,timer" << endl;
+    header << "time,score,avgEnergyInc,Temperature,realTemp,pbad,lower,higher,timer" << endl;
     header.close();
 }
 
