@@ -85,7 +85,7 @@ for i in $(seq 1 $Networks_count);do
         Network2=`echo -e $Biogrid_network | awk '{print $'$i'}'`
         Network1=`echo -e $Biogrid_network | awk '{print $'$j'}'`
         progress="$OutputDir/$Network1-$Network2.progress"
-        cIt=`grep -o "[0-9]*.[0-9]* iterations" ./$progress | awk '{print $1}'`
+        cIt=`grep -o "[0-9]*.[0-9]* iterations" ./$progress | awk '{print $1}' | sort -u`
         Iterations="$Iterations $cIt"
         printf "%-30s | %-20s\n" "$Network1-$Network2" "$cIt" >> $OutputFile
 
