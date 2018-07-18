@@ -106,7 +106,7 @@ PrintTestScores()
             Network2=`echo -e $Biogrid_network | awk '{print $'$i'}'`
             Network1=`echo -e $Biogrid_network | awk '{print $'$j'}'`
             progress="$OutputDir/$Network1-$Network2.out"
-            Score=`grep -o "^$1: 0.[0-9]\+$" ./$progress | awk '{print $2}'`
+            Score=`grep -o "^$1: 0.[0-9]\+$" ./$progress | awk '{print $2}' | sort -u`
             Scores=$Scores" "$Score
             printf "%-30s | %-20s\n" "$Network1-$Network2" "$Score" >> $OutputFile
         done
