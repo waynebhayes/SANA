@@ -121,7 +121,7 @@ RNorvegicus-MMusculus          | 0.580335
 SPombe-CElegans                | 0.401388            
 RNorvegicus-CElegans           | 0.46039             
 RNorvegicus-SPombe             | 0.490783            
-s3 Score Average: 0.425312
+s3 Score Average: 0.404921
 Checking lccs score
 Networks Pair                  | lccs score          
 DMelanogaster-HSapiens         | 0.279468            
