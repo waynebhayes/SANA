@@ -1828,7 +1828,7 @@ string SANA::getFolder(){
     //create (if neccessary) and return the path of the measure combinations respcetive cache folder
     stringstream ss;
     ss << "mkdir -p " << "cache-pbad" << "/" << MC->toString() << "/";
-    system(ss.str().c_str());
+    (void)system(ss.str().c_str());
     stringstream sf;
     sf << "cache-pbad" << "/" << MC->toString() << "/";
     return sf.str();
@@ -1838,7 +1838,7 @@ string SANA::mkdir(const std::string& file){
     //create (if neccessary) and return the path of a path folder in the cache
     stringstream ss;
     ss << "mkdir -p " << getFolder() << file << "/";
-    system(ss.str().c_str());
+    (void)system(ss.str().c_str());
     stringstream sf;
     sf << getFolder() << file << "/";
     return sf.str();
