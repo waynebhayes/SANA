@@ -2,6 +2,7 @@
 #include <sstream>
 #include <fstream>
 #include <iterator>
+#include <iostream>
 #include "Random.hpp"
 #include "Utils.hpp"
 
@@ -48,5 +49,37 @@ void Utils::checkFileExists(const string &fileName) {
 }
 
 
+bool Utils::checkFileExistsBool(const string &fileName) {
+    if(FILE *file = fopen(fileName.c_str(), "r")) {
+        fclose(file);
+        return true;
+    }
+    return false;
+}
 
+string Utils::exec(string cmd) {
+    cerr << "exec(" + cmd + ");" << endl;
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe) throw "Error executing " + cmd;
+    char buffer[128];
+    string result = "";
+    while(!feof(pipe)) {
+        if(fgets(buffer, 128, pipe) != NULL)
+            result += buffer;
+    }
+    pclose(pipe);
+    return result;
+}
 
+void Utils::execPrintOutput(string cmd) {
+    cmd += " 2>&1";
+    cerr << "exec(" + cmd + ");" << endl;
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe) throw "Error executing " + cmd;
+    char buffer[128];
+    while(!feof(pipe)) {
+        if(fgets(buffer, 128, pipe) != NULL)
+            cerr << buffer;
+    }
+    pclose(pipe);
+}

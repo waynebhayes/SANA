@@ -4,9 +4,9 @@
 #include <fstream>
 #include <string>
 #include <stdexcept>
-#include <unordered_set>
 #include <utility>
 #include <sstream>
+#include <unordered_set>
 
 using namespace std;
 
@@ -125,4 +125,43 @@ unordered_map<ushort,string> Graph::getIndexToNodeNameMap() const {
     return res;
 }
 
+const vector < vector<unsigned int> >& Graph::getAdjList() const {
+    return adjLists;
+}
 
+void Graph::getCopyAdjList(vector<vector<ushort> > &adjListCopy) const {
+    adjListCopy.resize(adjLists.size()); //resize so we have the correct number of rows
+    ushort curr_row = 0;
+    for(auto r : adjLists) {
+        for(auto c : r) {
+            adjListCopy[curr_row].push_back(ushort(c)); //So we push back the list at each row of adjLists
+            //while casting to ushort
+        }
+    }
+}
+
+
+void Graph::genAdjMatrix(vector<vector<bool> > &adjMatrixCopy) const {
+    //Make a adjMatrix of bools
+    adjMatrixCopy.resize(this->GetNumNodes());
+    int curr_row = 0;
+    for(const auto i : adjLists) { //For every row
+        for(const auto j : i) { //For the elements of the row list
+            adjMatrixCopy[curr_row][j] = true;
+        }
+        ++curr_row;
+    }
+}
+
+unsigned int Graph::NumNodeInducedSubgraphEdges(const vector<ushort> &subgraphNodes) const {
+    std::unordered_set<unsigned int> nodeSet(subgraphNodes.begin(),subgraphNodes.end());
+    uint count = 0;
+    for (uint i = 0; i < subgraphNodes.size(); i++) {
+        ushort node1 = subgraphNodes[i];
+        for (uint j = 0; j < adjLists[node1].size(); j++) {
+            ushort node2 = adjLists[node1][j];
+            count += nodeSet.count(node2);
+        }
+    }
+    return count/2;
+}

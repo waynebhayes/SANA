@@ -1,6 +1,7 @@
-#include "Graph.hpp"
-#include "BinaryGraph.hpp"
+#ifndef UTILITY_HPP
+#define UTILITY_HPP
 #include <string>
+#include "BinaryGraph.hpp"
 #include "PairwiseAlignment.hpp"
 
 using namespace std;
@@ -11,5 +12,7 @@ public:
     static BinaryGraph LoadBinaryGraphFromEdgeList(const string &);
     static PairwiseAlignment LoadPairwiseAlignmentFromEdgeList(Graph *G1, Graph *G2, const string &filename);
 };
+
+#endif
 
 

@@ -29,6 +29,10 @@ public:
 
     unordered_map<string,ushort> getNodeNameToIndexMap() const;
     unordered_map<ushort,string> getIndexToNodeNameMap() const;
+    const vector < vector<unsigned int> >& getAdjList() const;
+    void getCopyAdjList(vector < vector<ushort> > &adjListCopy) const;
+
+    void genAdjMatrix(vector < vector<bool> > &adjMatrixCopy) const;
 
     virtual void AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight) throw(GraphInvalidIndexError);
     virtual void RemoveEdge(const unsigned int &node1, const unsigned int &node2) throw(GraphInvalidIndexError);
@@ -39,6 +43,7 @@ public:
 
     unsigned int GetNumNodes() const;
     unsigned int GetNumEdges() const;
+    unsigned int NumNodeInducedSubgraphEdges(const vector <ushort>& subgraphNodes) const;
     string GetName() const;
 
     virtual void SetNumNodes(const unsigned int &);
