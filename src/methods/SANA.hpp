@@ -83,13 +83,8 @@ private:
     double g2WeightedEdges;
 #endif
     double g2Edges; //stored as double because it appears in division
-#ifdef WEIGHTED
-    vector<vector<ushort> > G1AdjMatrix;
-    vector<vector<ushort> > G2AdjMatrix;
-#else
-    vector<vector<bool> > G1AdjMatrix;
-    vector<vector<bool> > G2AdjMatrix;
-#endif
+    Matrix G1Matrix;
+    Matrix G2Matrix;
     vector<vector<ushort> > G1AdjLists;
     vector<vector<ushort> > G2AdjLists;
 

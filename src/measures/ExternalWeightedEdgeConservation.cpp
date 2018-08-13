@@ -6,8 +6,8 @@
 ExternalWeightedEdgeConservation::ExternalWeightedEdgeConservation(Graph* G1, Graph* G2, std::string scoresFile) : Measure(G1, G2, "ewec"){
     G1->getAdjLists(adjListG1);
     G2->getAdjLists(adjListG2);
-    G1->getAdjMatrix(adjMatrixG1);
-    G2->getAdjMatrix(adjMatrixG2);
+    G1->getMatrix(matrixG1);
+    G2->getMatrix(matrixG2);
     nodeNamesG1 = G1->getNodeNames();
     nodeNamesG2 = G2->getNodeNames();
     loadMatrix(scoresFile);
@@ -21,7 +21,7 @@ double ExternalWeightedEdgeConservation::eval(const Alignment& A){
     double score = 0;
     for (const auto& edge: edgeListG1) {
         ushort node1 = edge[0], node2 = edge[1];
-        if (adjMatrixG2[A[node1]][A[node2]]) {
+        if (matrixG2.get(A[node1], A[node2])) {
             std::string n1s = nodeNamesG1[node1], n2s = nodeNamesG1[node2];
             std::string an1s = nodeNamesG2[A[node1]], an2s = nodeNamesG2[A[node2]];
             int e1 = getRowIndex(n1s, n2s); //Row for G1 and Col for G2
