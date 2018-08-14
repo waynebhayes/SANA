@@ -34,6 +34,7 @@
 #include "../utils/utils.hpp"
 
 #define FinalPBad 1e-10
+#define InitialPBad 0.985
 
 using namespace std;
 
@@ -1575,7 +1576,7 @@ void SANA::searchTemperaturesByLinearRegression() {
     cout << "Sampling pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
     for(double log_temp = LOG10_LOW_TEMP; log_temp <= LOG10_HIGH_TEMP; log_temp += 1.0){
         pbadMap[log_temp] = pForTInitial(pow(10, log_temp));
-        cout << log_temp << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << endl;
+        cout << log_temp << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
     }
     double exponent;
     for (exponent = LOG10_LOW_TEMP; exponent <= LOG10_HIGH_TEMP; ++exponent){
@@ -1590,7 +1591,7 @@ void SANA::searchTemperaturesByLinearRegression() {
         double temperature = pow(10, mid);
         double probability = pForTInitial(temperature);
         pbadMap[mid] = probability;
-        cout << "Temperature: " << temperature << " pbad: " << probability << endl;
+        cout << "Temperature: " << temperature << " pbad: " << probability << " score: " << eval(*A) << endl;
         if(probability > FinalPBad){
             binarySearchRightEnd = mid;
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
@@ -1600,7 +1601,7 @@ void SANA::searchTemperaturesByLinearRegression() {
         }
     }
     for (exponent = LOG10_HIGH_TEMP; exponent >= LOG10_LOW_TEMP; exponent--){
-        if(pbadMap[exponent] < 0.985)
+        if(pbadMap[exponent] < InitialPBad)
             break;
     }
     binarySearchLeftEnd = exponent;
@@ -1611,11 +1612,11 @@ void SANA::searchTemperaturesByLinearRegression() {
         double temperature = pow(10, mid);
         double probability = pForTInitial(temperature);
         pbadMap[mid] = probability;
-        cout << "Temperature: " << temperature << " pbad: " << probability << endl;
+        cout << "Temperature: " << temperature << " pbad: " << probability << " score: " << eval(*A) << endl;
         if(probability > 0.995){
             binarySearchRightEnd = mid;
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-        } else if(probability < 0.985){
+        } else if(probability < InitialPBad){
             binarySearchLeftEnd = mid;
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
         }
@@ -1630,7 +1631,7 @@ void SANA::searchTemperaturesByLinearRegression() {
     double startingTemperature = pow(10,LOG10_HIGH_TEMP);
     for (auto const& keyValue : pbadMap)
     {
-        if(keyValue.second >= 0.985 && keyValue.first >= upperEnd){
+        if(keyValue.second >= InitialPBad && keyValue.first >= upperEnd){
             startingTemperature = pow(10, keyValue.first);
             cout << "Initial temperature is " << startingTemperature << " expected pbad is " << keyValue.second << endl;
             break;
@@ -1650,7 +1651,6 @@ void SANA::searchTemperaturesByLinearRegression() {
     cout << "Final temperature is " << endingTemperature << " expected pbad is " << endingPbad << endl;
     TInitial = startingTemperature;
     TFinal = endingTemperature;
-
 }
 
 void SANA::searchTemperaturesByStatisticalTest() {
@@ -1676,7 +1676,7 @@ void SANA::searchTemperaturesByStatisticalTest() {
     cout << LOW_THRESHOLD_P << " of random runs have a score <= " << lowThresholdScore << endl;
     cout << HIGH_THRESHOLD_P << " of random runs have a score <= " << highThresholdScore << endl;
 
-    double lowerBoundTInitial = 0;
+    double lowerBoundTInitial = exp(LOG10_LOW_TEMP);
     double upperBoundTInitial = 1;
     while (not isRandomTInitial(upperBoundTInitial, highThresholdScore, lowThresholdScore)) {
         cout << endl;
@@ -1684,7 +1684,7 @@ void SANA::searchTemperaturesByStatisticalTest() {
     }
     upperBoundTInitial *= 2;    // one more doubling just to be sure
     cout << endl;
-    if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/4;
+    //if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/4;
 
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
@@ -1693,7 +1693,7 @@ void SANA::searchTemperaturesByStatisticalTest() {
     uint count = 0;
     TImer.start();
     while (fabs(lowerBoundTInitial - upperBoundTInitial)/lowerBoundTInitial > 0.05 and
-            count <= 10) {
+            count <= 100) {
         //search in log space
         double lowerBoundTInitialLog = log2(lowerBoundTInitial+1);
         double upperBoundTInitialLog = log2(upperBoundTInitial+1);
@@ -1721,9 +1721,10 @@ void SANA::searchTemperaturesByStatisticalTest() {
 
     TInitial = upperBoundTInitial;
     TFinal = lowerBoundTInitial;
-
+#if 0
     setAcceptableTInitial();
     setAcceptableTFinal();
+#endif
 }
 
 void SANA::setAcceptableTInitial(){
@@ -1760,11 +1761,11 @@ double SANA::findAcceptableTFinalFromManualTInitial(double temperature){
     double finalProbability = pForTInitial(finalTemperature);
     cout << "Searching for an acceptable final temperature based on the initial temperature" << endl;
     do{
-        exponent -= 0.2;
+        exponent -= 1.0;
         finalTemperature = pow(10, exponent);
         finalProbability = pForTInitial(finalTemperature);
         cout << "Temperature: " << finalTemperature << " PBad: " << finalProbability << endl;
-    } while(finalProbability > 0.00001);
+    } while(finalProbability > FinalPBad);
     cout << "Resulting tFinal: " << finalTemperature << endl;
     cout << "Expected final probability: " << finalProbability << endl;
     return finalTemperature;
@@ -1776,11 +1777,11 @@ double SANA::findAcceptableTFinal(double temperature){
     double finalProbability = pForTInitial(finalTemperature);
     cout << "Searching for an acceptable final temperature" << endl;
     do{
-        exponent -= 0.1;
+        exponent -= 1;
         finalTemperature = pow(10, exponent);
         finalProbability = pForTInitial(finalTemperature);
         cout << "Temperature: " << finalTemperature << " PBad: " << finalProbability << endl;
-    } while(finalProbability > 0.00001);
+    } while(finalProbability > FinalPBad);
     cout << "Resulting tFinal: " << finalTemperature << endl;
     cout << "Expected final probability: " << finalProbability << endl;
     return finalTemperature;
@@ -1790,6 +1791,10 @@ double SANA::solveTDecay() {
     double tdecay = -log(TFinal * 1.0 * TInitialScaling/(TInitial)) / (1);
     cout << "tdecay: " << tdecay << endl;
     return tdecay;
+}
+
+void SANA::setTDecay(double t) {
+    TDecay = t;
 }
 
 void SANA::setTDecayAutomatically() {
@@ -2023,19 +2028,16 @@ double SANA::simpleSearchTInitial() {
 }
 
 double SANA::searchTDecay(double TInitial, double minutes) {
-
-    double iter_t = minutes*60*getIterPerSecond();
-
-    //commented out this method because it was bugged.
-
+#if 0
     //new TDecay method uses upper and lower tbounds
     if(lowerTBound != 0){
         double tdecay = -log(lowerTBound * 1.0 * TInitialScaling/(upperTBound)) / (1);
         cout << "\ntdecay: " << tdecay << "\n";
         return tdecay;
     }
-
+#else
     //old TDecay method
+    //double iter_t = minutes*60*getIterPerSecond();
     vector<double> EIncs = energyIncSample();
     cout << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
@@ -2049,7 +2051,7 @@ double SANA::searchTDecay(double TInitial, double minutes) {
     double EMax = vectorMax(EIncs);
     double x_left = abs(EMax)/log(N);
     double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
-    cout << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
+    cout << "Starting range for epsilon: (" << x_left << ", " << x_right << ")" << endl;
 
     const uint NUM_ITER = 100;
     for (uint i = 0; i < NUM_ITER; ++i) {
@@ -2064,10 +2066,11 @@ double SANA::searchTDecay(double TInitial, double minutes) {
     cout << "Final range: (" << x_left << ", " << x_right << ")" << endl;
     cout << "Final epsilon: " << epsilon << endl;
 
-
-    double lambda = log((TInitial)/epsilon)/(iter_t);
+    double lambda = log(TInitial/epsilon); // /(iter_t);
     cout << "Final T_decay: " << lambda << endl;
+    assert(-1e300 < lambda && lambda < 1e300); // ensure it's actually a number.
     return lambda;
+#endif
 }
 
 double SANA::searchTDecay(double TInitial, uint iterations) {
@@ -2105,6 +2108,10 @@ double SANA::searchTDecay(double TInitial, uint iterations) {
     cout << "Final T_decay: " << lambda << endl;
     return lambda;
 }
+
+double SANA::getTInitial(void) { return TInitial; }
+double SANA::getTFinal(void) { return TFinal; }
+double SANA::getTDecay(void) { return TDecay; }
 
 double SANA::getIterPerSecond() {
     if (not initializedIterPerSecond) {

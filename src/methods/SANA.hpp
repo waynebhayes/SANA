@@ -33,6 +33,7 @@ public:
     //set temperature schedule automatically
     void searchTemperaturesByLinearRegression();
     void searchTemperaturesByStatisticalTest();
+    void setTDecay(double t);
     void setTDecayAutomatically();
     //to compute TDecay automatically
     //returns a value of lambda such that with this TInitial, temperature reaches
@@ -67,6 +68,13 @@ public:
     vector<vector<ulong>> getCoreFreq();
     vector<ulong> getCoreCount();
 #endif
+    //to compute TDecay automatically
+    //returns a value of lambda such that with this TInitial, temperature reaches
+    //0 after a certain number of minutes
+    double searchTDecay(double TInitial, double minutes);
+    double searchTDecay(double TInitial, uint iterations);
+    double getTInitial(void), getTFinal(void), getTDecay(void);
+
 private:
     int maxTriangles = 0;
 
@@ -139,11 +147,6 @@ private:
     double scoreForTInitial(double TInitial);
     bool isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore);
     double scoreRandom();
-    //to compute TDecay automatically
-    //returns a value of lambda such that with this TInitial, temperature reaches
-    //0 after a certain number of minutes
-    double searchTDecay(double TInitial, double minutes);
-    double searchTDecay(double TInitial, uint iterations);
 
     bool initializedIterPerSecond;
     double iterPerSecond;
