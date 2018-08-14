@@ -28,13 +28,8 @@ private:
     std::vector<std::vector<int>> rowIndex;
     std::vector<std::vector<ushort> > adjListG1;
     std::vector<std::vector<ushort> > adjListG2;
-#ifdef WEIGHTED
-    std::vector<std::vector<ushort> > adjMatrixG1;
-    std::vector<std::vector<ushort> > adjMatrixG2;
-#else
-    std::vector<std::vector<bool> > adjMatrixG1;
-    std::vector<std::vector<bool> > adjMatrixG2;
-#endif
+    Matrix matrixG1;
+    Matrix matrixG2;
     std::vector<std::string> nodeNamesG1;
     std::vector<std::string> nodeNamesG2;
 

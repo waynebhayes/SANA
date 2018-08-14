@@ -230,17 +230,13 @@ void Alignment::writeEdgeList(Graph const * G1, Graph const * G2, ostream& edgeL
 uint Alignment::numAlignedEdges(const Graph& G1, const Graph& G2) const {
     vector<vector<ushort> > G1EdgeList;
     G1.getEdgeList(G1EdgeList);
-#ifdef WEIGHTED
-        vector<vector<ushort> > G2AdjMatrix;
-#else
-    vector<vector<bool> > G2AdjMatrix;
-#endif
-    G2.getAdjMatrix(G2AdjMatrix);
+    Matrix G2Matrix;
+    G2.getMatrix(G2Matrix);
 
     uint count = 0;
     for (const auto& edge: G1EdgeList) {
         ushort node1 = edge[0], node2 = edge[1];
-        count += G2AdjMatrix[A[node1]][A[node2]];
+        count += G2Matrix.get(A[node1], A[node2]);
     }
     return count;
 }
@@ -248,12 +244,8 @@ uint Alignment::numAlignedEdges(const Graph& G1, const Graph& G2) const {
 int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
     vector<vector<ushort> > G1EdgeList;
     G1.getEdgeList(G1EdgeList);
-#ifdef WEIGHTED
-    vector<vector<ushort> > G2AdjMatrix;
-#else
-    vector<vector<bool> > G2AdjMatrix;
-#endif
-    G2.getAdjMatrix(G2AdjMatrix);
+    Matrix G2Matrix;
+    G2.getMatrix(G2Matrix);
 
 #if 0
     Pseudo-code (assuming you have initially removed g1 from g2)
@@ -271,7 +263,7 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
     for (const auto& edge: G1EdgeList) {
         ushort hole1 = A[edge[0]];
         ushort hole2 = A[edge[1]];
-        G2AdjMatrix[hole1][hole2] += 1;
+        G2Matrix[hole1][hole2] += 1;
     }
 #endif
 
@@ -279,7 +271,7 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
     uint n2 = G2.getNumNodes(); 
     for(uint i = 0; i < n2; i++){
         for(uint j = 0; j < i; j++){
-            int rungs  = G2AdjMatrix[i][j];
+            int rungs  = G2Matrix.get(i, j);
             count += rungs * rungs;
         }
     }
@@ -291,19 +283,15 @@ Graph Alignment::commonSubgraph(const Graph& G1, const Graph& G2) const {
 
     vector<vector<ushort> > G1EdgeList;
     G1.getEdgeList(G1EdgeList);
-#ifdef WEIGHTED
-        vector<vector<ushort> > G2AdjMatrix;
-#else
-        vector<vector<bool> > G2AdjMatrix;
-#endif
+    Matrix G2Matrix;
 
-    G2.getAdjMatrix(G2AdjMatrix);
+    G2.getMatrix(G2Matrix);
 
     //only add edges preserved by alignment
     vector<vector<ushort> > edgeList(0);
     for (const auto& edge: G1EdgeList) {
         ushort node1 = edge[0], node2 = edge[1];
-        if (G2AdjMatrix[A[node1]][A[node2]]) {
+        if (G2Matrix.get(A[node1], A[node2])) {
             edgeList.push_back(edge);
         }
     }

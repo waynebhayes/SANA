@@ -22,8 +22,8 @@
 #include "utils/utils.hpp"
 #include "utils/Timer.hpp"
 #include "computeGraphlets.hpp"
-#include "utils/utils.hpp"
-#include "SparseMatrix.h"
+#include "utils/Matrix.hpp"
+
 
 using namespace std;
 
@@ -71,15 +71,12 @@ public:
     uint getNumEdges() const;
     const vector<vector<ushort> >& getConnectedComponents() const;
     uint getNumConnectedComponents() const;
+
 #ifndef NO_ADJ_MATRIX
-#ifdef WEIGHTED
-    void getAdjMatrix(vector<vector<ushort> >& adjMatrixCopy) const;
-    void setAdjMatrix(vector<vector<ushort> >& adjMatrixCopy);
-#else
-    void getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const;
-    void setAdjMatrix(vector<vector<bool> >& adjMatrixCopy);
+    void getMatrix(Matrix& matrix) const;
+    void setMatrix(Matrix& matrix);
 #endif
-#endif
+
     void getAdjLists(vector<vector<ushort> >& adjListsCopy) const;
     void getEdgeList(vector<vector<ushort> > & edgeListCopy) const;
 
@@ -173,11 +170,7 @@ private:
     //double maxsize;
     vector<vector<ushort> > edgeList; //edges in no particular order
 #ifndef NO_ADJ_MATRIX
-#ifdef WEIGHTED
-    vector<vector<ushort> > adjMatrix;
-#else
-    vector<vector<bool> > adjMatrix;
-#endif
+    Matrix matrix;
 #endif
     vector<vector<ushort> > adjLists; //neighbors in no particular order
 
@@ -214,7 +207,7 @@ private:
     template<class Archive>
     void serialize(Archive& archive)
     {
-        archive(CEREAL_NVP(adjLists), CEREAL_NVP(adjMatrix), CEREAL_NVP(edgeList), CEREAL_NVP(lockedList),
+        archive(CEREAL_NVP(adjLists), CEREAL_NVP(matrix), CEREAL_NVP(edgeList), CEREAL_NVP(lockedList),
                 CEREAL_NVP(lockedTo), CEREAL_NVP(nodeTypes), CEREAL_NVP(miRNACount), CEREAL_NVP(geneCount), 
                 CEREAL_NVP(connectedComponents), CEREAL_NVP(unlockedGeneCount), CEREAL_NVP(unlockedmiRNACount), 
                 CEREAL_NVP(lockedCount), CEREAL_NVP(geneIndexList), CEREAL_NVP(miRNAIndexList), CEREAL_NVP(nodeNameToIndexMap));

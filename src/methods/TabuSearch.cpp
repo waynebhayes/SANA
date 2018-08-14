@@ -37,8 +37,8 @@ TabuSearch::TabuSearch(Graph* G1, Graph* G2,
     n1 = G1->getNumNodes();
     n2 = G2->getNumNodes();
     g1Edges = G1->getNumEdges();
-    G1->getAdjMatrix(G1AdjMatrix);
-    G2->getAdjMatrix(G2AdjMatrix);
+    G1->getMatrix(G1Matrix);
+    G2->getMatrix(G2Matrix);
     G1->getAdjLists(G1AdjLists);
     G2->getAdjLists(G2AdjLists);
 
@@ -421,8 +421,8 @@ int TabuSearch::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort new
     int res = 0;
     for (uint i = 0; i < G1AdjLists[source].size(); i++) {
         ushort neighbor = G1AdjLists[source][i];
-        res -= G2AdjMatrix[oldTarget][A[neighbor]];
-        res += G2AdjMatrix[newTarget][A[neighbor]];
+        res -= G2Matrix.get(oldTarget, A[neighbor]);
+        res += G2Matrix.get(newTarget, A[neighbor]);
     }
     return res;
 }
@@ -431,20 +431,20 @@ int TabuSearch::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target
     int res = 0;
     for (uint i = 0; i < G1AdjLists[source1].size(); i++) {
         ushort neighbor = G1AdjLists[source1][i];
-        res -= G2AdjMatrix[target1][A[neighbor]];
-        res += G2AdjMatrix[target2][A[neighbor]];
+        res -= G2Matrix.get(target1, A[neighbor]);
+        res += G2Matrix.get(target2, A[neighbor]);
     }
     for (uint i = 0; i < G1AdjLists[source2].size(); i++) {
         ushort neighbor = G1AdjLists[source2][i];
-        res -= G2AdjMatrix[target2][A[neighbor]];
-        res += G2AdjMatrix[target1][A[neighbor]];
+        res -= G2Matrix.get(target2, A[neighbor]);
+        res += G2Matrix.get(target1, A[neighbor]);
     }
     //address case swapping between adjacent nodes with adjacent images:
 #ifdef WEIGHTED
     throw runtime_error("TabuSearch not implemented for weighted Graphs");
-    res += 2*(G1AdjMatrix[source1][source2] > 0 and G2AdjMatrix[target1][target2] > 0); 
+    res += 2*(G1Matrix.get(source1, source2) > 0 and G2Matrix.get(target1, target2) > 0); 
 #else
-    res += 2*(G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
+    res += 2*(G1Matrix.get(source1, source2) & G2Matrix.get(target1, target2));
 #endif
     return res;
 }
@@ -460,7 +460,7 @@ int TabuSearch::inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort 
         res += assignedNodesG2[neighbor];
     }
     //address case changing between adjacent nodes:
-    res -= G2AdjMatrix[oldTarget][newTarget];
+    res -= G2Matrix.get(oldTarget, newTarget);
     return res;
 }
 
@@ -479,11 +479,11 @@ double TabuSearch::WECIncChangeOp(ushort source, ushort oldTarget, ushort newTar
     double res = 0;
     for (uint j = 0; j < G1AdjLists[source].size(); j++) {
         ushort neighbor = G1AdjLists[source][j];
-        if (G2AdjMatrix[oldTarget][A[neighbor]]) {
+        if (G2Matrix.get(oldTarget, A[neighbor])) {
             res -= wecSims[source][oldTarget];
             res -= wecSims[neighbor][A[neighbor]];
         }
-        if (G2AdjMatrix[newTarget][A[neighbor]]) {
+        if (G2Matrix.get(newTarget, A[neighbor])) {
             res += wecSims[source][newTarget];
             res += wecSims[neighbor][A[neighbor]];
         }
@@ -495,22 +495,22 @@ double TabuSearch::WECIncSwapOp(ushort source1, ushort source2, ushort target1, 
     double res = 0;
     for (uint j = 0; j < G1AdjLists[source1].size(); j++) {
         ushort neighbor = G1AdjLists[source1][j];
-        if (G2AdjMatrix[target1][A[neighbor]]) {
+        if (G2Matrix.get(target1, A[neighbor])) {
             res -= wecSims[source1][target1];
             res -= wecSims[neighbor][A[neighbor]];
         }
-        if (G2AdjMatrix[target2][A[neighbor]]) {
+        if (G2Matrix.get(target2, A[neighbor])) {
             res += wecSims[source1][target2];
             res += wecSims[neighbor][A[neighbor]];
         }
     }
     for (uint j = 0; j < G1AdjLists[source2].size(); j++) {
         ushort neighbor = G1AdjLists[source2][j];
-        if (G2AdjMatrix[target2][A[neighbor]]) {
+        if (G2Matrix.get(target2, A[neighbor])) {
             res -= wecSims[source2][target2];
             res -= wecSims[neighbor][A[neighbor]];
         }
-        if (G2AdjMatrix[target1][A[neighbor]]) {
+        if (G2Matrix.get(target1, A[neighbor])) {
             res += wecSims[source2][target1];
             res += wecSims[neighbor][A[neighbor]];
         }
@@ -518,9 +518,9 @@ double TabuSearch::WECIncSwapOp(ushort source1, ushort source2, ushort target1, 
     //address case swapping between adjacent nodes with adjacent images:
 #ifdef WEIGHTED
     throw runtime_error("TabuSearch not implemented for weighted Graphs");
-    if (G1AdjMatrix[source1][source2] > 0 and G2AdjMatrix[target1][target2] > 0) {
+    if (G1Matrix.get(source1, source2) > 0 and G2Matrix.get(target1, target2) > 0) {
 #else
-    if (G1AdjMatrix[source1][source2] and G2AdjMatrix[target1][target2]) {
+    if (G1Matrix.get(source1, source2) and G2Matrix.get(target1, target2)) {
 #endif
         res += 2*wecSims[source1][target1];
         res += 2*wecSims[source2][target2];
