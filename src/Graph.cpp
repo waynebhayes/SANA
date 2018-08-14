@@ -257,11 +257,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     nodes.shrink_to_fit();
     const size_t nodeSize = nodes.size();
     g.adjLists = vector<vector<ushort> > (nodeSize, vector<ushort>(0));
-#ifdef WEIGHTED
-    g.adjMatrix = vector<vector<ushort> > (nodeSize, vector<ushort>(nodeSize, 0));
-#else
-    g.adjMatrix = vector<vector<bool> > (nodeSize, vector<bool>(nodeSize, false));
-#endif
+    g.matrix = Matrix(nodeSize);
     uint node1;
     uint node2;
     const size_t edgeListLen = edgeList.size();
@@ -269,13 +265,11 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     for(unsigned i = 0; i < edgeListLen; ++i){
         node1 = edgeList[i][0];
         node2 = edgeList[i][1];
-
-	// the below should be abstracted into a function, eg g.connected(node1, node2)
-	// Inside that function is the only place you'd need to know if adjMatrix exists or not.
-        if(g.adjMatrix[node1][node2] || g.adjMatrix[node2][node1]){
+        if(g.matrix.isConnected(node1, node2)){
             //errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
 	    unordered_map<ushort,string> index2name = g.getIndexToNodeNameMap();
-	    errorMsg << "In graph[" << graphName << "]: duplicate edges not allowed (in either direction), node names are " << index2name[node1] << " " << index2name[node2] << '\n';
+	    errorMsg << "In graph[" << graphName << "]: duplicate edges not allowed (in either direction), node names are " 
+                     << index2name[node1] << " " << index2name[node2] << '\n';
             throw runtime_error(errorMsg.str().c_str());
         }
         if(node1 == node2) {
@@ -283,17 +277,14 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
           throw runtime_error(errorMsg.str().c_str());
         }
 
-		// These should be abstracted into g.connect(node1, node2) to cause these two nodes
-		// to get an edge between them.
-		// Note that when WEIGHTED is on, the adjacency matrix contains full integers, not just bits.
+        // Note that when WEIGHTED is on, the adjacency matrix contains full integers, not just bits.
         #ifdef WEIGHTED
-                g.adjMatrix[node1][node2] = g.adjMatrix[node2][node1] = edgeList[i][2];
+            g.matrix.connect(edgeList[i][2], node1, node2);
         #else
-                g.adjMatrix[node1][node2] = g.adjMatrix[node2][node1] = true;
+            g.matrix.connect(true, node1, node2);
         #endif
         g.adjLists[node1].push_back(node2);
         g.adjLists[node2].push_back(node1);
-
     }
     // init rest of graph
     g.lockedList = vector<bool> (nodeSize, false);
@@ -409,11 +400,7 @@ Graph::Graph() :
     geneIndexList(vector<uint>(0)),
     miRNAIndexList(vector<uint>(0)),
     edgeList(vector<vector<ushort> > (0)),
-#ifdef WEIGHTED
-    adjMatrix(vector<vector<ushort> > (0)),
-#else
-    adjMatrix(vector<vector<bool> > (0)),
-#endif
+    matrix(0),
     adjLists(vector<vector<ushort> > (0)),
     connectedComponents(vector<vector<ushort>>(0)),
     lockedList(vector<bool> (0)),
@@ -424,11 +411,7 @@ Graph::Graph() :
 
 Graph::Graph(const Graph& G) {
     edgeList = vector<vector<ushort> > (G.edgeList);
-#ifdef WEIGHTED
-    adjMatrix = vector<vector<ushort> > (G.adjMatrix);
-#else
-    adjMatrix = vector<vector<bool> > (G.adjMatrix);
-#endif
+    matrix = Matrix (G.matrix);
     adjLists = vector<vector<ushort> > (G.adjLists);
     connectedComponents = vector<vector<ushort> > (G.connectedComponents);
     lockedList = vector<bool> (G.lockedList);
@@ -446,11 +429,7 @@ Graph::Graph(const Graph& G) {
 
 Graph::Graph(uint n, const vector<vector<ushort> > edges) {
     adjLists = vector<vector<ushort> > (n, vector<ushort> (0));
-#ifdef WEIGHTED
-    adjMatrix = vector<vector<ushort> > (n, vector<ushort> (n, 0));
-#else
-    adjMatrix = vector<vector<bool> > (n, vector<bool> (n, false));
-#endif
+    matrix = Matrix(n);
     edgeList = edges;
 
     lockedList = vector<bool> (n, false);
@@ -465,9 +444,9 @@ Graph::Graph(uint n, const vector<vector<ushort> > edges) {
         adjLists[node1].push_back(node2);
         adjLists[node2].push_back(node1);
 #ifdef WEIGHTED
-        adjMatrix[node1][node2] = adjMatrix[node2][node1] = 1;
+        matrix.connect(1, node1, node2);
 #else
-        adjMatrix[node1][node2] = adjMatrix[node2][node1] = true;
+        matrix.connect(true, node1, node2); 
 #endif
     }
     updateUnlockedGeneCount();
@@ -482,7 +461,7 @@ uint Graph::getNumEdges() const {
 #if 0
     cout << "Statistics for Graph " << name << endl;
     cout << "adjList.size() = " << adjLists.size() << endl;
-    cout << "adjMatrix.size() = " << adjMatrix.size() << endl;
+    cout << "matrix.size() = " << matrix.size() << endl;
     cout << "edgeList.size() = " << edgeList.size() << endl;
     cout << "nodeNameToIndexMap.size() = " << nodeNameToIndexMap.size() << endl;
     cout << "lockedList.size() = " << lockedList.size() << endl;
@@ -502,13 +481,8 @@ uint Graph::getNumConnectedComponents() const {
     return connectedComponents.size();
 }
 
-#ifdef WEIGHTED
-void Graph::getAdjMatrix(vector<vector<ushort> >& adjMatrixCopy) const {
-    adjMatrixCopy = vector<vector<ushort> > (adjMatrix);
-#else
-void Graph::getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const {
-    adjMatrixCopy = vector<vector<bool> > (adjMatrix);
-#endif
+void Graph::getMatrix(Matrix& matrixCopy) const {
+    matrixCopy = matrix;
 }
 
 void Graph::getAdjLists(vector<vector<ushort> >& adjListsCopy) const {
@@ -522,12 +496,9 @@ void Graph::getEdgeList(vector<vector<ushort> >& edgeListCopy) const {
 const vector<vector<ushort> >& Graph::getConnectedComponents() const {
     return connectedComponents;
 }
-#ifdef WEIGHTED
-void Graph::setAdjMatrix(vector<vector<ushort> >& adjMatrixCopy) {
-#else
-void Graph::setAdjMatrix(vector<vector<bool> >& adjMatrixCopy) {
-#endif
-    adjMatrix = adjMatrixCopy;
+
+void Graph::setMatrix(Matrix& matrixCopy) {
+    matrix = matrixCopy;
 }
 
 void Graph::setAdjLists(vector<vector<ushort> >& adjListsCopy) {
@@ -580,12 +551,10 @@ void Graph::loadGwFile(const string& fileName) {
     }
 
     adjLists = vector<vector<ushort> > (n, vector<ushort>(0));
+    matrix = Matrix(n);
 #ifdef WEIGHTED
-    adjMatrix = vector<vector<ushort> > (n, vector<ushort>(n, 0));
     char dump;
     ushort edgeValue;
-#else
-    adjMatrix = vector<vector<bool> > (n, vector<bool>(n, false));
 #endif
     edgeList = vector<vector<ushort> > (m, vector<ushort>(2));
     lockedList = vector<bool> (n, false);
@@ -618,7 +587,7 @@ void Graph::loadGwFile(const string& fileName) {
 #endif
         node1--; node2--; //-1 because of remapping
         
-        if(adjMatrix[node1][node2] || adjMatrix[node2][node1]){
+        if(matrix.isConnected(node1, node2)){
             errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1+1 << " " << node2+1 << '\n';
 	    //errorMsg << "In graph [" << graphName << "]: duplicate edges not allowed (in either direction), node names are " << nodeName2IndexMap[node1+1] << " " << nodeName2IndexMap[node2+1] << '\n';
             throw runtime_error(errorMsg.str().c_str());
@@ -631,9 +600,9 @@ void Graph::loadGwFile(const string& fileName) {
         edgeList[i][1] = node2;
 
 #ifdef WEIGHTED
-        adjMatrix[node1][node2] = adjMatrix[node2][node1] = edgeValue;
+        matrix.connect(edgeValue, node1, node2);
 #else
-        adjMatrix[node1][node2] = adjMatrix[node2][node1] = true;
+        matrix.connect(true, node1, node2);
 #endif
         adjLists[node1].push_back(node2);
         adjLists[node2].push_back(node1);
@@ -680,11 +649,7 @@ void Graph::multGwFile(const string& fileName, uint path) {
     SparseMatrix<int> sparse_graph2(n);
 
     adjLists = vector<vector<ushort> > (n, vector<ushort>(0));
-#ifdef WEIGHTED
-    adjMatrix = vector<vector<ushort> > (n, vector<ushort>(n, 0));
-#else
-    adjMatrix = vector<vector<bool> > (n, vector<bool>(n, false));
-#endif
+    matrix = Matrix(n);
     //edgeList = vector<vector<ushort> > (m, vector<ushort>(2));
     lockedList = vector<bool> (n, false);
     lockedTo = vector<string> (n, "");
@@ -727,8 +692,7 @@ void Graph::multGwFile(const string& fileName, uint path) {
     for(int i=1;i<=n;i++){
         for(int j=1;j<= n;j++){
             if(sparse_graph2.get(i,j) > 0){
-                adjMatrix[i-1][j-1] = true;
-                adjMatrix[j-1][i-1] = true;
+                matrix.connect(true, i - 1, j - 1);
                 adjLists[i-1].push_back(j-1);
                 adjLists[j-1].push_back(i-1);
                 edgeList[count][0] = i-1;
@@ -801,11 +765,7 @@ Graph Graph::nodeInducedSubgraph(const vector<ushort>& nodes) const {
     unordered_set<ushort> nodeSet(nodes.begin(), nodes.end());
     Graph G;
     G.adjLists = vector<vector<ushort> > (n, vector<ushort> (0));
-#ifdef WEIGHTED
-    G.adjMatrix = vector<vector<ushort> > (n, vector<ushort> (n, 0));
-#else
-    G.adjMatrix = vector<vector<bool> > (n, vector<bool> (n, false));
-#endif
+    G.matrix = Matrix(n);
     //only add edges between induced nodes
     for (const auto& edge: edgeList) {
         ushort node1 = edge[0], node2 = edge[1];
@@ -819,9 +779,9 @@ Graph Graph::nodeInducedSubgraph(const vector<ushort>& nodes) const {
             newEdge[1] = newNode2;
             G.edgeList.push_back(newEdge);
 #ifdef WEIGHTED
-            G.adjMatrix[newNode1][newNode2] = G.adjMatrix[newNode2][newNode1] = adjMatrix[node1][node2];
+            G.matrix.connect(matrix.get(node1, node2), newNode1, newNode2);
 #else
-            G.adjMatrix[newNode1][newNode2] = G.adjMatrix[newNode2][newNode1] = true;
+            G.matrix.connect(true, newNode1, newNode2);
 #endif
         }
     }
@@ -988,7 +948,7 @@ ushort Graph::randomNode() {
 
 //note: does not update CCs
 void Graph::addEdge(ushort node1, ushort node2) {
-    adjMatrix[node1][node2] = adjMatrix[node2][node1] = true;
+    matrix.connect(true, node1, node2);
     vector<ushort> edge(2);
     edge[0] = node1;
     edge[1] = node2;
@@ -999,7 +959,8 @@ void Graph::addEdge(ushort node1, ushort node2) {
 
 //note: does not update CCs
 void Graph::removeEdge(ushort node1, ushort node2) {
-    adjMatrix[node1][node2] = adjMatrix[node2][node1] = false;
+    matrix.set(false, node1, node2);
+    matrix.set(false, node2, node1);
     uint m = getNumEdges();
     //update edge list
     for (uint i = 0; i < m; i++) {
@@ -1033,7 +994,7 @@ void Graph::removeEdge(ushort node1, ushort node2) {
 //note: does not update CCs
 void Graph::addRandomEdge() {
     ushort node1 = 0, node2 = 0;
-    while (node1 == node2 or adjMatrix[node1][node2]) {
+    while (node1 == node2 or matrix.get(node1, node2)) {
         node1 = randomNode();
         node2 = randomNode();
     }
@@ -1043,7 +1004,7 @@ void Graph::addRandomEdge() {
 //note: does not update CCs
 void Graph::removeRandomEdge() {
     ushort node1 = 0, node2 = 0;
-    while (node1 == node2 or not adjMatrix[node1][node2]) {
+    while (node1 == node2 or not matrix.get(node1, node2)) {
         node1 = randomNode();
         node2 = randomNode();
     }
@@ -1451,7 +1412,7 @@ bool Graph::isWellDefined() {
     //check that all indices in adj lists are within bounds
     //check that every edge in the adj lists appears in the adj matrix
     //check that no node is neighbor to itself in the adj lists
-    uint numNodes = adjMatrix.size();
+    uint numNodes = matrix.size();
     for (uint i = 0; i < adjLists.size(); i++) {
         for (uint j = 0; j < adjLists[i].size(); j++) {
             uint neighbor = adjLists[i][j];
@@ -1465,8 +1426,8 @@ bool Graph::isWellDefined() {
                 isWellDefined = false;
 
             }
-            if (not adjMatrix[i][neighbor] or not adjMatrix[i][neighbor]) {
-                cerr << "node " << i << " adjacent to node " << adjMatrix[i][neighbor];
+            if (not matrix.get(i, neighbor) or not matrix.get(i, neighbor)) {
+                cerr << "node " << i << " adjacent to node " << matrix.get(i, neighbor);
                 cerr << " in the adj lists but not on the adj matrix" << endl;
                 isWellDefined = false;
             }
@@ -1481,7 +1442,7 @@ bool Graph::isWellDefined() {
     }
     //check that no node is adj to itself in the adj matrix
     for (uint i = 0; i < numNodes; i++) {
-        if (adjMatrix[i][i]) {
+        if (matrix.get(i, i)) {
             cerr << "Adjacency matrix ill defined: node " << i << " adjacent to itself" << endl;
             isWellDefined = false;
         }
@@ -1490,12 +1451,12 @@ bool Graph::isWellDefined() {
     //check that every edge in the adj matrix appears in the adj lists (twice)
     for (uint i = 0; i < numNodes; i++) {
         for (uint j = 0; j < i; j++) {
-            if (adjMatrix[i][j] != adjMatrix[j][i]) {
+            if (matrix.get(i, j) != matrix.get(j, i)) {
                 cerr << "Adjacency matrix ill defined: node (" << i << "," << j;
                 cerr << ") is not symmetric" << endl;
                 isWellDefined = false;
             }
-            if (adjMatrix[i][j]) {
+            if (matrix.get(i, j)) {
                 bool found = false;
                 for (uint k = 0; not found and k < adjLists[i].size(); k++) {
                     if (adjLists[i][k] == j) {
@@ -1536,7 +1497,7 @@ bool Graph::isWellDefined() {
             cerr << "Edge list ill defined: node out of range" << edgeList[i][0] << endl;
             isWellDefined = false;
         }
-        if (not adjMatrix[edgeList[i][0]][edgeList[i][1]]) {
+        if (not matrix.get(edgeList[i][0], edgeList[i][1])) {
             cerr << "Nodes " << edgeList[i][0] << " and " << edgeList[i][1];
             cerr << " adjacent in the edge list but not in the adjacency matrix" << endl;
             isWellDefined = false;
@@ -1557,7 +1518,7 @@ bool Graph::isWellDefined() {
     //check that every edge in adj matrix appears in the edge list
     for (uint i = 0; i < numNodes; i++) {
         for (uint j = 0; j < i; j++) {
-            if (adjMatrix[i][j]) {
+            if (matrix.get(i, j)) {
                 bool found = false;
                 for (uint k = 0; not found and k < edgeList.size(); k++) {
                     if ((edgeList[k][0] == i and edgeList[k][1] == j) or
@@ -1683,20 +1644,15 @@ unordered_map<ushort, ushort> Graph::getNodeTypes_ReIndexMap() const{
 
 void Graph::reIndexGraph(unordered_map<ushort, ushort> reIndexMap){
     uint n = getNumNodes();
-    // Adj Matrix
-#ifdef WEIGHTED
-    vector<vector<ushort> > adjMatrixCopy (n, vector<ushort> (n));
-#else
-    vector<vector<bool> > adjMatrixCopy (n, vector<bool> (n));
-#endif
+    Matrix matrixCopy(n);
     for (uint i = 0; i < n; i++) {
          for (uint j = 0; j < n; j++){
-              ushort a = reIndexMap[i];
+               ushort a = reIndexMap[i];
                ushort b = reIndexMap[j];
-               adjMatrixCopy[a][b] = adjMatrix[i][j];
+               matrixCopy.set(matrix.get(i, j), a, b);
          }
      }
-    adjMatrix = adjMatrixCopy;
+    matrix = matrixCopy;
 
     // Adj List
     vector<vector<ushort> > adjListsCopy(n, vector<ushort> (0));
@@ -1751,7 +1707,7 @@ uint Graph::getWeightedNumEdges() {
     if (weightedNumEdges != 0) return weightedNumEdges;
     weightedNumEdges = 0;
     for (auto c : edgeList)
-        weightedNumEdges += adjMatrix[c[0]][c[1]];
+        weightedNumEdges += matrix.get(c[0], c[1]);
     return weightedNumEdges;
 }
 #endif

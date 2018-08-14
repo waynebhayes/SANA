@@ -2,7 +2,7 @@ CC = g++
 
 #CXXFLAGS = -I "src/utils" -Wall -fno-inline -O2 -std=c++11 -g3
 #CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DWEIGHTED #-pg -ggdb -Bstatic #-static 
-CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-DWEIGHTED -DCORES -ggdb #-pg
+CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-DSPARSE #-DWEIGHTED -DCORES -ggdb #-pg
 
 INCLUDES =
 LFLAGS =
@@ -17,7 +17,8 @@ UTILS_SRC = 								\
 	src/utils/SkipList.cpp						\
 	src/utils/SeedMatrix.cpp					\
 	src/utils/LinearRegression.cpp					\
-	src/utils/ParetoFront.cpp
+	src/utils/ParetoFront.cpp                                       \
+        src/utils/Matrix.cpp                                            
 
 ARGUMENTS_SRC = 							\
 	src/arguments/ArgumentParser.cpp				\
