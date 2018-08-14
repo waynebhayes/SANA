@@ -93,7 +93,7 @@ public:
         return sets[which].size() != 0 && sets[which].get(element - which * sqrt_n);
     }
 
-		template <class Archive>
+    template <class Archive>
     void serialize(Archive & archive) {
         archive(sets, n, sqrt_n);
     }
