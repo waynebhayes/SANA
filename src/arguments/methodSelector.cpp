@@ -92,18 +92,16 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 #else
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
 #endif
-    double TInitial = 0;
-    // t_initial "auto" defaults to by-linear-regression
+    double TInitial = 0, TDecay = 0;
+    // First see if explicit values for TInitial or TDecay were given on the command line.
     if (args.strings["-tinitial"] == "auto")
-    args.strings["-tinitial"] = "by-linear-regression";
-    if (args.strings["-tinitial"] != "by-linear-regression" && args.strings["-tinitial"] != "by-statistical-test") {
+	args.strings["-tinitial"] = "by-linear-regression";
+    if (args.strings["-tinitial"] != "by-statistical-test" && args.strings["-tinitial"] != "by-linear-regression")
         TInitial = stod(args.strings["-tinitial"]);
-    }
-
-    double TDecay = 0;
-    if (args.strings["-tdecay"] != "auto") {
+    if (args.strings["-tdecay"] == "auto")
+	args.strings["-tdecay"] = "by-linear-regression";
+    if (args.strings["-tdecay"] != "by-statistical-test" && args.strings["-tdecay"] != "by-linear-regression")
         TDecay = stod(args.strings["-tdecay"]);
-    }
 
     Method* sana;
 
@@ -113,6 +111,33 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 #else
     sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"], args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"]);
 #endif
+    // t_initial "auto" defaults to by-linear-regression
+    if (args.strings["-tinitial"] == "by-linear-regression") {
+        Timer T;
+        T.start();
+        ((SANA*) sana)->searchTemperaturesByLinearRegression();
+        cout << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
+    } else if (args.strings["-tinitial"] == "by-statistical-test") {
+        Timer T;
+        T.start();
+        ((SANA*) sana)->searchTemperaturesByStatisticalTest();
+        cout << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
+    }
+
+    Timer T;
+    T.start();
+    if(args.strings["-tdecay"] == "by-linear-regression") {
+	if (args.strings["-tinitial"] == "by-linear-regression" || args.strings["-tinitial"] == "by-statistical-test"){
+	    ((SANA*) sana)->setTDecayAutomatically();
+	} else
+	    ((SANA*) sana)->setAcceptableTFinalFromManualTInitial();
+    } else if(args.strings["-tdecay"] == "by-statistical-test") {
+	TDecay = ((SANA*) sana)->searchTDecay(((SANA*)sana)->getTInitial(), args.doubles["-t"]);
+	((SANA*) sana)->setTDecay(TDecay);
+    }
+    cout << endl << "TFinal took " << T.elapsed() << " seconds to complete." << endl << endl;
+
+
     if (args.bools["-restart"]) {
         double tnew = args.doubles["-tnew"];
         uint iterperstep = args.doubles["-iterperstep"];
@@ -122,29 +147,6 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         ((SANA*) sana)->enableRestartScheme(tnew, iterperstep, numcand, tcand, tfin);
     }
 
-    if (args.strings["-tinitial"] != "by-linear-regression" && args.strings["-tinitial"] != "by-statistical-test" && args.strings["-tdecay"] == "auto") {
-        Timer T;
-        T.start();
-        ((SANA*) sana)->setAcceptableTFinalFromManualTInitial();
-        cout << endl << "TFinal took " << T.elapsed() << " seconds to complete." << endl << endl;
-    }
-
-    if (args.strings["-tinitial"] == "by-linear-regression") {
-        Timer T;
-        T.start();
-        ((SANA*) sana)->searchTemperaturesByLinearRegression();
-        cout << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
-    }
-    if (args.strings["-tinitial"] == "by-statistical-test") {
-        Timer T;
-        T.start();
-        ((SANA*) sana)->searchTemperaturesByStatisticalTest();
-        cout << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
-    }
-    
-    if (args.strings["-tdecay"] == "auto") {
-        ((SANA*) sana)->setTDecayAutomatically();
-    }
     if (args.bools["-dynamictdecay"]) {
        ((SANA*) sana)->setDynamicTDecay();
     } 
