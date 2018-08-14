@@ -22,10 +22,8 @@ vector<vector<double> > Importance::initEdgeWeights(const Graph& G) {
     vector<vector<double> > edgeWeights(n, vector<double> (n, 0));
 #ifdef WEIGHTED
     throw runtime_error("Importance not implemented for weighted Graphs");
-    Matrix matrix(n);
-#else
-    Matrix matrix(n);
 #endif
+    Matrix matrix(n);
     G.getMatrix(matrix);
     for (uint i = 0; i < n; i++) {
         for (uint j = 0; j < n; j++) {
