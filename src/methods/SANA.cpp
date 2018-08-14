@@ -2194,12 +2194,12 @@ void SANA::prune(string& startAligName) {
             int g1_node2 = reIndexedMap[G1AdjLists[i][j]];
             int shadow_end = alignment[g1_node2];
 
-            assert(G1Matrix[g1_node1][g1_node2] == 0 || G2Matrix[shadow_node][shadow_end] > 0);
-            assert(G1Matrix[g1_node2][g1_node1] ==0 || G2Matrix[shadow_end][shadow_node] > 0);
+            assert(G1Matrix.get(g1_node1, g1_node2) == 0 || G2Matrix.get(shadow_node, shadow_end) > 0);
+            assert(G1Matrix.get(g1_node2, g1_node1) ==0 || G2Matrix.get(shadow_end, shadow_node) > 0);
 
-            G2Matrix[shadow_node][shadow_end] -= G1Matrix[g1_node1][g1_node2];
-            G2Matrix[shadow_end][shadow_node] -= G1Matrix[g1_node1][g1_node2];
-            if (G2Matrix[shadow_node][shadow_end] == 0) {
+            G2Matrix.set(G2Matrix.get(shadow_node, shadow_end) - G1Matrix.get(g1_node1, g1_node2), shadow_node, shadow_end);
+            G2Matrix.set(G2Matrix.get(shadow_end, shadow_node) - G1Matrix.get(g1_node1, g1_node2), shadow_end, shadow_node);
+            if (G2Matrix.get(shadow_node, shadow_end) == 0) {
                     removedEdges.insert(pair<int,int>(shadow_node,shadow_end));
             }
         }

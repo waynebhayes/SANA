@@ -277,11 +277,11 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
           throw runtime_error(errorMsg.str().c_str());
         }
 
-		// Note that when WEIGHTED is on, the adjacency matrix contains full integers, not just bits.
+        // Note that when WEIGHTED is on, the adjacency matrix contains full integers, not just bits.
         #ifdef WEIGHTED
-                g.matrix.connect(edgeList[i][2], node1, node2);
+            g.matrix.connect(edgeList[i][2], node1, node2);
         #else
-                g.matrix.connect(true, node1, node2);
+            g.matrix.connect(true, node1, node2);
         #endif
         g.adjLists[node1].push_back(node2);
         g.adjLists[node2].push_back(node1);
@@ -779,7 +779,7 @@ Graph Graph::nodeInducedSubgraph(const vector<ushort>& nodes) const {
             newEdge[1] = newNode2;
             G.edgeList.push_back(newEdge);
 #ifdef WEIGHTED
-            G.matrix.connect(matrix[node1][node2], newNode1, newNode2);
+            G.matrix.connect(matrix.get(node1, node2), newNode1, newNode2);
 #else
             G.matrix.connect(true, newNode1, newNode2);
 #endif
@@ -1707,7 +1707,7 @@ uint Graph::getWeightedNumEdges() {
     if (weightedNumEdges != 0) return weightedNumEdges;
     weightedNumEdges = 0;
     for (auto c : edgeList)
-        weightedNumEdges += matrix[c[0]][c[1]];
+        weightedNumEdges += matrix.get(c[0], c[1]);
     return weightedNumEdges;
 }
 #endif

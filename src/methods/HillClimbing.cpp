@@ -232,7 +232,7 @@ Alignment HillClimbing::run() {
                 }
                 //address case swapping between adjacent nodes with adjacent images:
 #ifdef WEIGHTED
-                newAligEdges += (-1 << 1) & (G1Matrix[source1][source2] + G2Matrix[target1][target2]);
+                newAligEdges += (-1 << 1) & (G1Matrix.get(source1, source2) + G2Matrix.get(target1, target2));
 #else
                 newAligEdges += 2*(G1Matrix.get(source1, source2) & G2Matrix.get(target1, target2));
 #endif

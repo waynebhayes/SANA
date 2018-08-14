@@ -263,7 +263,7 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
     for (const auto& edge: G1EdgeList) {
         ushort hole1 = A[edge[0]];
         ushort hole2 = A[edge[1]];
-        G2Matrix[hole1][hole2] += 1;
+        G2Matrix.set(G2Matrix.get(hole1, hole2) + 1, hole1, hole2);
     }
 #endif
 
