@@ -45,8 +45,7 @@ public:
                 true : false;
     }
 
-
-		template <class Archive>
+    template <class Archive>
     void serialize(Archive & archive) {
         archive(array, n);
     }
