@@ -20,16 +20,25 @@ void ParetoMode::run(ArgumentParser& args) {
     initMeasures(M, G1, G2, args);
     Method* method;
     method = initMethod(G1, G2, args, M);
-    //Alignment A = method->runAndPrintTime();
-    vector<Alignment> *B = runParetoMode(method, &G1, &G2);
-    Alignment A = Alignment((*B)[0]);
-    //Alignment A = method->run();
+    vector<Alignment> B = runParetoMode(method, &G1, &G2);
+    cout << "Size: " << B.size() << endl;
+    for(int i = 0; i < B.size(); i++) {
+	cout << "Iteration: " << i << endl;
+        Alignment A = Alignment(B[i]);
+        cout << "One" << endl; 
 
-    A.printDefinitionErrors(G1,G2);
-    assert(A.isCorrectlyDefined(G1, G2) and "Resulting alignment is not correctly defined");
+        A.printDefinitionErrors(G1,G2);
+        cout << "Two" << endl; 
+        assert(A.isCorrectlyDefined(G1, G2) and "Resulting alignment is not correctly defined");
+        cout << "Three" << endl; 
 
-    saveReport(G1, G2, A, M, method, args.strings["-o"]);
-    saveLocalMeasures(G1, G2, A, M, method, args.strings["-localScoresFile"]);
+        string reportName = args.strings["-o"] + "_" + to_string(i);
+        saveReport(G1, G2, A, M, method, reportName);
+        cout << "Four" << endl;
+        string localMeasuresFileName = args.strings["-localScoresFile"] + "_" + to_string(i);
+        saveLocalMeasures(G1, G2, A, M, method, localMeasuresFileName);
+        cout << "Five" << endl;
+    }
     delete method;
 }
 
@@ -60,13 +69,16 @@ void ParetoMode::setArgsForParetoMode(ArgumentParser& args) {
     args.strings["-method"] = "sana";
 }
 
-vector<Alignment>* ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2) {
+vector<Alignment> ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2) {
     cout << "Start execution of " << method->getName() << " in Pareto Mode." << endl;
     Timer T;
     T.start();
     //Method* METHOD = new SANA;
     //static_cast<SANA*>(METHOD)->derived_int;
-    //unordered_set<vector<unsigned short>*> *A = static_cast<SANA*>(method)->paretoRun();
+    unordered_set<vector<unsigned short>*> *A = static_cast<SANA*>(method)->paretoRun();
+    vector<Alignment> alignments;
+    for(auto i = A->begin(); i != A->end(); i++)
+        alignments.push_back( Alignment(**i) );
     //A->push_back(method->paretoRun());
     T.elapsed();
     cout << "Executed " << method->getName() << " in " << T.elapsedString() << endl;
@@ -75,17 +87,17 @@ vector<Alignment>* ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G
 
     // Needs to be reimplemented with unordered_set<vector<unsigned short>>*
     
-    /*if(G1->hasNodeTypes()){
+    if(G1->hasNodeTypes()){
         G1->reIndexGraph(method->getReverseMap(G1->getNodeTypes_ReIndexMap()));
-        (*A)[0].reIndexAfter_Iterations(G1->getNodeTypes_ReIndexMap());
+        alignments[0].reIndexAfter_Iterations(G1->getNodeTypes_ReIndexMap());
     }
     // if locking is enabled but hasnodeType is not
     else if(G1->getLockedCount() > 0){
          G1->reIndexGraph(method->getReverseMap(G1->getLocking_ReIndexMap()));
-          (*A)[0].reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
+          alignments[0].reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
     }
-    method->checkLockingBeforeReport((*A)[0]);
-    method->checkLockingBeforeReport((*A)[0]);*/
-    return new vector<Alignment>;
+    method->checkLockingBeforeReport(alignments[0]);
+    method->checkLockingBeforeReport(alignments[0]);
+    return alignments;
 }
     

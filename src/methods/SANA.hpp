@@ -183,8 +183,8 @@ private:
     Score score;
 
     //For pareto mode
-    int paretoInitial;
-    int paretoCapacity;
+    unsigned int paretoInitial;
+    unsigned int paretoCapacity;
 
     //restart scheme
     bool restart;
@@ -315,17 +315,32 @@ private:
 
 
     //Mostly for pareto front, to hold multiple alignments and scores
-    unordered_map<string, int> mapScoresToIndexes(vector<string> &measureNames);
+    unordered_map<string, int> mapScoresToIndexes();
     void prepareMeasureDataByAlignment();
-    void insertCurrentAndPrepareNewMeasureDataByAlignment();
+    void insertCurrentAndPrepareNewMeasureDataByAlignment(vector<double> &addScores);
+    vector<double> translateScoresToVector();
+    void initializeParetoFront();
     void removeAlignmentData(vector<ushort>* toRemove);
+    vector<double> getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum,
+                                     double newLocalScoreSum, double newWecSum, double newNcSum,
+                                     double newEwecSum, double newSquaredAligEdges);
+    bool dominates(vector<double> &left, vector<double> &right);
     int numOfMeasures;
+    vector<string> measureNames;
+    int currentMeasure;
+    vector<double> currentScores;
     ParetoFront paretoFront;
-    vector<ushort>* newA;
+    vector<ushort>* newA = new vector<ushort>(0);
+    vector<bool>* newAN = new vector<bool>(0);
+    vector<ushort>* newUAN = new vector<ushort>(0);
+    vector<ushort>* newUmiRNA = new vector<ushort>(0);
+    vector<ushort>* newUG = new vector<ushort>(0);
     unordered_map<string, int> scoreNamesToIndexes;
     unordered_set<vector<ushort>*>* storedAlignments = new unordered_set<vector<ushort>*>;
     unordered_map<vector<ushort>*, vector<bool>*> storedAssignedNodesG2;
     unordered_map<vector<ushort>*, vector<ushort>*> storedUnassignedNodesG2;
+    unordered_map<vector<ushort>*, vector<ushort>*> storedUnassignedmiRNAsG2;
+    unordered_map<vector<ushort>*, vector<ushort>*> storedUnassignedgenesG2;
     unordered_map<vector<ushort>*, int> storedAligEdges;
     unordered_map<vector<ushort>*, int> storedSquaredAligEdges;
     unordered_map<vector<ushort>*, int> storedInducedEdges;

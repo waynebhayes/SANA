@@ -15,7 +15,7 @@ public:
 
     static void createFolders();
     void setArgsForParetoMode(ArgumentParser& args);
-    vector<Alignment>* runParetoMode(Method *M, Graph *G1, Graph *G2);
+    vector<Alignment> runParetoMode(Method *M, Graph *G1, Graph *G2);
 };
 
 #endif /* PARETOMODE_HPP_ */
