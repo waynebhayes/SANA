@@ -22,7 +22,7 @@ void ParetoMode::run(ArgumentParser& args) {
     method = initMethod(G1, G2, args, M);
     vector<Alignment> B = runParetoMode(method, &G1, &G2);
     cout << "Size: " << B.size() << endl;
-    for(int i = 0; i < B.size(); i++) {
+    for(unsigned int i = 0; i < B.size(); i++) {
 	cout << "Iteration: " << i << endl;
         Alignment A = Alignment(B[i]);
         cout << "One" << endl; 
