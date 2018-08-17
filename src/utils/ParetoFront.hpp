@@ -2,6 +2,7 @@
 #define PARETOFRONT_HPP
 
 #include <iostream>
+#include <iomanip>
 #include <map>
 #include <unordered_map>
 #include <vector>
@@ -9,6 +10,7 @@
 #include <time.h>
 #include <algorithm>
 #include <fstream>
+#include <cassert>
 
 using namespace std;
 
@@ -35,12 +37,12 @@ class ParetoFront {
         bool initialPass(vector<double> &newScores);
             
         alignmentPtr removeAlignment(alignmentPtr alignmentPosition, vector<double> &scores);
-        alignmentPtr removeRandom();
+        alignmentPtr removeRandom(alignmentPtr dontRemove);
         vector<alignmentPtr> emptyVector();
             
         vector<alignmentPtr> removeNewlyDominiated(singleValueIterator &iterIN, unsigned int i, vector<double>& newScores);
-        vector<alignmentPtr> tryToInsertAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores, bool decision);
-        vector<alignmentPtr> insertDominatingAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores, bool decision);
+        vector<alignmentPtr> tryToInsertAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores, bool &decision);
+        vector<alignmentPtr> insertDominatingAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores, bool &decision);
         vector<alignmentPtr> insertAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores);
     public:
         ParetoFront() {}
@@ -64,14 +66,16 @@ class ParetoFront {
             return *this;
         }
 
-        const vector<double>& procureScoresByAlignment(alignmentPtr) const;
+        vector<double> procureScoresByAlignment(alignmentPtr) const;
         alignmentPtr procureRandomAlignment() const;
-        vector<alignmentPtr> addAlignmentScores(alignmentPtr algmtPtr, vector<double> &newScores, bool decision);
+        vector<alignmentPtr> addAlignmentScores(alignmentPtr algmtPtr, vector<double> &newScores, bool &decision);
 
         //ostream& printAllScoresByMeasures(ostream &os);
         //ostream& printAllParetoContainerNames(ostream &os);
         //ostream& printAllScoresByAlignments(ostream &os);
         ostream& printParetoFront(ostream &os);
         ostream& printAlignmentScores(ostream &os);
+        unsigned int size();
+        int getRandomMeasure();
 };
 #endif
