@@ -1313,7 +1313,7 @@ static int _edgeVal;
 // between the value of this ladder and the ladder with one edge added or removed.  Mathematically
 // it should be edgeVal^2 - (edgeVal+1)^2 which is (2e + 1), but for some reason I had to make
 // it 2*(e+1).  That seemed to work better.  So yeah... big ugly hack.
-#define SQRDIFF(i,j) ((_edgeVal=G2Matrix.get(i, j)), 2*((_edgeVal<1000?_edgeVal:0) + 1))
+#define SQRDIFF(i,j) ((_edgeVal=G2Matrix.get(i, (*A)[j])), 2*((_edgeVal<1000?_edgeVal:0) + 1))
 int SANA::squaredAligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
     int res = 0, diff;
     ushort neighbor;
@@ -1359,7 +1359,7 @@ int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort targe
     // address case swapping between adjacent nodes with adjacent images:
     if(G1Matrix.get(source1, source2) and G2Matrix.get(target1, target2))
     {
-        res += 2 * SQRDIFF(target1,target2);
+        res += 2 * SQRDIFF(target1,source2);
     }
     return res;
 }
