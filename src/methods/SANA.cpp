@@ -1691,8 +1691,9 @@ uint SANA::getHighestIndex() const {
     return highestIndex;
 }
 
-#define LOG10_LOW_TEMP -10
-#define LOG10_HIGH_TEMP 10
+#define LOG10_LOW_TEMP -10.0
+#define LOG10_HIGH_TEMP 10.0
+#define LOG10_NUM_STEPS 20 // looping through 0 <= i <= LOG10_NUM_STEPS
 
 void SANA::searchTemperaturesByLinearRegression() {
 
@@ -1700,20 +1701,23 @@ void SANA::searchTemperaturesByLinearRegression() {
     //	return;             //and I don't know why, but sometimes I disable using this.
     //                      //otherwise my computer is very slow.
     map<double, double> pbadMap;
-    cout << "Sampling pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
-    for(double log_temp = LOG10_LOW_TEMP; log_temp <= LOG10_HIGH_TEMP; log_temp += 1.0){
+    cout << "Sampling " << 1+LOG10_NUM_STEPS << " pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
+    int T_i;
+    double log_temp;
+    for(T_i = 0; T_i <= LOG10_NUM_STEPS; T_i++){
+	log_temp = LOG10_LOW_TEMP + T_i*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
         pbadMap[log_temp] = pForTInitial(pow(10, log_temp));
-        cout << log_temp << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
+        cout << T_i << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
     }
-    double exponent;
-    for (exponent = LOG10_LOW_TEMP; exponent <= LOG10_HIGH_TEMP; ++exponent){
-        if(pbadMap[exponent] > FinalPBad)
+    for (T_i=0; T_i <= LOG10_NUM_STEPS; T_i++){
+	log_temp = LOG10_LOW_TEMP + T_i*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
+        if(pbadMap[log_temp] > FinalPBad)
             break;
     }
-    double binarySearchLeftEnd = exponent - 1;
-    double binarySearchRightEnd = exponent;
+    double binarySearchLeftEnd = LOG10_LOW_TEMP + (T_i-1)*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
+    double binarySearchRightEnd = log_temp;
     double mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-    cout << "Beginning binary search for tFinal. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
+    cout << "Increasing sample density near tFinal. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
     for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
         double probability = pForTInitial(temperature);
@@ -1727,14 +1731,15 @@ void SANA::searchTemperaturesByLinearRegression() {
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
         }
     }
-    for (exponent = LOG10_HIGH_TEMP; exponent >= LOG10_LOW_TEMP; exponent--){
-        if(pbadMap[exponent] < InitialPBad)
+    for (T_i = LOG10_NUM_STEPS; T_i >= 0; T_i--){
+	log_temp = LOG10_LOW_TEMP + T_i*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
+        if(pbadMap[log_temp] < InitialPBad)
             break;
     }
-    binarySearchLeftEnd = exponent;
-    binarySearchRightEnd = exponent + 1;
+    binarySearchLeftEnd = log_temp;
+    binarySearchRightEnd = LOG10_LOW_TEMP + (T_i+1)*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
     mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-    cout << "Beginning binary search for tInitial. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
+    cout << "Increasing sample density near tInitial. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
     for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
         double probability = pForTInitial(temperature);
@@ -1751,8 +1756,13 @@ void SANA::searchTemperaturesByLinearRegression() {
     LinearRegression linearRegression;
     linearRegression.setup(pbadMap);
     tuple<int, double, double, int, double, double, double, double> regressionResult = linearRegression.run();
+    // bestJ, scores[bestJ], temperatures[bestJ], bestK, scores[bestK], temperatures[bestK], line1Height, line3Height;
     double lowerEnd = get<2>(regressionResult);
     double upperEnd = get<5>(regressionResult);
+    cout << "The three lines are: "<<endl;
+    cout << "HillClimbing: y= " << get<6>(regressionResult) << " until x= " << pow(10,lowerEnd) << endl;
+    cout << "GoldilocksZone: starts above, ends at x= " << pow(10,upperEnd) << endl;;
+    cout << "RandomRegion: y= " << get<7>(regressionResult) << endl;;
     cout << "Left endpoint of linear regression " << pow(10, lowerEnd) << endl;
     cout << "Right endpoint of linear regression " << pow(10, upperEnd) << endl;
     double startingTemperature = pow(10,LOG10_HIGH_TEMP);
