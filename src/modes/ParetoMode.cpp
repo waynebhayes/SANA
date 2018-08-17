@@ -21,8 +21,8 @@ void ParetoMode::run(ArgumentParser& args) {
     Method* method;
     method = initMethod(G1, G2, args, M);
     vector<Alignment> alignments = runParetoMode(method, &G1, &G2);
-    printAlignments(alignments);
-    printEdgeLists(&G1, &G2, alignments);
+    printAlignments(alignments, args.strings["-o"]);
+    printEdgeLists(&G1, &G2, alignments, args.strings["-o"]);
     for(unsigned int i = 0; i < alignments.size(); i++) {
         Alignment A = Alignment(alignments[i]);
 
@@ -97,8 +97,11 @@ vector<Alignment> ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2
     return alignments;
 }
 
-void ParetoMode::printAlignments(vector<Alignment>& alignments) {
-    ofstream output("sana.out");
+void ParetoMode::printAlignments(vector<Alignment>& alignments, const string &fileName) {
+    string outputFileName = fileName;
+    if(outputFileName.rfind(".out") + 4 != outputFileName.size())
+        outputFileName = outputFileName + ".out";
+    ofstream output(outputFileName);
     for(unsigned int j = 0; j < alignments[0].size(); j++) {
         for(unsigned int i = 0; i < alignments.size(); i++) {
             output << alignments[i][j];
@@ -112,10 +115,14 @@ void ParetoMode::printAlignments(vector<Alignment>& alignments) {
 }
 
 typedef unordered_map<ushort,string> NodeIndexMap;
-void ParetoMode::printEdgeLists(Graph* G1, Graph* G2, vector<Alignment>& alignments) {
+void ParetoMode::printEdgeLists(Graph* G1, Graph* G2, vector<Alignment>& alignments, const string &fileName) {
+    string outputFileName = fileName;
+    if(outputFileName.find(".out") != string::npos && outputFileName.rfind(".out") + 4 == outputFileName.size())
+        outputFileName = outputFileName.substr(0, outputFileName.size() - 4);
+    outputFileName = outputFileName + ".align";
     NodeIndexMap mapG1 = G1->getIndexToNodeNameMap();
     NodeIndexMap mapG2 = G2->getIndexToNodeNameMap();
-    ofstream edgeListStream("sana.align");
+    ofstream edgeListStream(outputFileName);
     for (unsigned int j = 0; j < alignments[0].size(); j++) {
         edgeListStream << mapG1[j];
         for(unsigned int i = 0; i < alignments.size(); i++)
