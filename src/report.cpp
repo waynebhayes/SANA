@@ -106,14 +106,14 @@ void saveReport(const Graph& G1, Graph& G2, const Alignment& A,
            alignfile;
   reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, outfile, G1.getName(), G2.getName(), method, A);
 
-  if(!reportFileName.find("_pareto_")) {
+  if(reportFileName.find("_pareto_") == string::npos) {
     alignfile.open((reportFileName.substr(0,reportFileName.length()-4) + ".align").c_str());
     A.write(outfile);
     A.writeEdgeList(&G1, &G2, alignfile);
   }
   makeReport(G1, G2, A, M, method, outfile, multiPairwiseIteration);
   outfile.close();
-  if(!reportFileName.find("_pareto_"))
+  if(reportFileName.find("_pareto_") == string::npos)
     alignfile.close();
   cout << "Took " << T.elapsed() << " seconds to save the alignment and scores." << endl;
 }
