@@ -659,7 +659,10 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, d
 	    trackProgress(iter);
 	    if( iter != 0 and timer.elapsed() > maxExecutionSeconds){
 		cout << "ending seconds " << timer.elapsed() << " " << maxExecutionSeconds << endl;
-		paretoFront.printAlignmentScores(cout);
+                ofstream output("ParetoFrontScores.out");
+                paretoFront.printAlignmentScores(output);
+                output.close();
+		paretoFront.printAlignmentScores(cout); cout << endl;
 		return storedAlignments;
 	    }
 	}
@@ -690,7 +693,10 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
         }
         if (iter != 0 and iter > maxExecutionIterations) {
         	cout << "ending iterations " << iter << " " << maxExecutionIterations << endl;
-        	paretoFront.printAlignmentScores(cout);
+                ofstream output("ParetoFrontScores.out");
+                paretoFront.printAlignmentScores(output);
+                output.close();
+        	paretoFront.printAlignmentScores(cout); cout << endl;
             return storedAlignments;
         }
         SANAIteration();
@@ -793,40 +799,42 @@ void SANA::prepareMeasureDataByAlignment() {
 }
 
 void SANA::insertCurrentAndPrepareNewMeasureDataByAlignment(vector<double> &addScores) {
-    if(!(newA->empty())) //to avoid allocating a new alignment when we don't need to...
-        newA = new vector<ushort>(0);
     bool inserted = false;
-    vector<vector<ushort>*> toRemove = paretoFront.addAlignmentScores(newA, addScores, inserted);
+    vector<vector<ushort>*> toRemove = paretoFront.addAlignmentScores(A, addScores, inserted);
     if (inserted) {
         for (unsigned int i = 0; i < toRemove.size(); i++)
             removeAlignmentData(toRemove[i]);
-        *newA = vector<ushort>(*A);
-        storedAlignments->insert(newA);
 
-        storedAssignedNodesG2[newA] = new vector<bool>(*assignedNodesG2);
-        if(!nodesHaveType)
-            storedUnassignedNodesG2[newA] = new vector<ushort>(*unassignedNodesG2);
-        else {
-            storedUnassignedmiRNAsG2[newA] = new vector<ushort>(*unassignedmiRNAsG2);
-            storedUnassignedgenesG2[newA] = new vector<ushort>(*unassignedgenesG2);
-        }
-
-        if(needAligEdges or needSec) storedAligEdges[newA]        = aligEdges;
-        if(needSquaredAligEdges)     storedSquaredAligEdges[newA] = squaredAligEdges;
-        if(needInducedEdges)         storedInducedEdges[newA]     = inducedEdges;
-        if(needTC)                   storedTCSum[newA]            = TCSum;
-        if(needLocal)                storedLocalScoreSum[newA]    = localScoreSum;
-        if(needWec)                  storedWecSum[newA]           = wecSum;
-        if(needEwec)                 storedEwecSum[newA]          = ewecSum;
-        if(needNC)                   storedNcSum[newA]            = ncSum;
-        /*------------------------>*/storedCurrentScore[newA]     = currentScore;
+        insertCurrentAlignmentAndData();
     }
     else
         delete A;
     assert(paretoFront.size() == storedAlignments->size() and "Number of elements in paretoFront and storedAlignments don't match.");
-    A = paretoFront.procureRandomAlignment(); //are you allowed to return pointer from paretoFront?
+    A = paretoFront.procureRandomAlignment();
     assert(storedAlignments->find(A) != storedAlignments->end() && "There exists an alignment in the Pareto front which does not exist inside storedAlignments");
     prepareMeasureDataByAlignment();
+}
+
+void SANA::insertCurrentAlignmentAndData() {
+    storedAlignments->insert(A);
+
+    storedAssignedNodesG2[A]        = assignedNodesG2;
+    if(!nodesHaveType)
+        storedUnassignedNodesG2[A]  = unassignedNodesG2;
+    else {
+        storedUnassignedmiRNAsG2[A] = unassignedmiRNAsG2;
+        storedUnassignedgenesG2[A]  = unassignedgenesG2;
+    }
+
+    if(needAligEdges or needSec) storedAligEdges[A]        = aligEdges;
+    if(needSquaredAligEdges)     storedSquaredAligEdges[A] = squaredAligEdges;
+    if(needInducedEdges)         storedInducedEdges[A]     = inducedEdges;
+    if(needTC)                   storedTCSum[A]            = TCSum;
+    if(needLocal)                storedLocalScoreSum[A]    = localScoreSum;
+    if(needWec)                  storedWecSum[A]           = wecSum;
+    if(needEwec)                 storedEwecSum[A]          = ewecSum;
+    if(needNC)                   storedNcSum[A]            = ncSum;
+    /*------------------------>*/storedCurrentScore[A]     = currentScore;
 }
 
 void SANA::removeAlignmentData(vector<ushort>* toRemove) {
@@ -865,11 +873,11 @@ void SANA::initializeParetoFront() {
     vector<double> addScores = translateScoresToVector();
     insertCurrentAndPrepareNewMeasureDataByAlignment(addScores);
     cout << "Initializing " << paretoInitial << " random alignments." << endl;
-    cout << "Current size:";
+    cout << "Current size: ";
     while(paretoFront.size() < paretoInitial) {
         cout << paretoFront.size() << ", ";
         Alignment newAlig = getStartingAlignment();
-        initDataStructures(newAlig); //<-----Somehow fix this memory leak! (Caused by paretoFront code).
+        initDataStructures(newAlig);
         addScores = translateScoresToVector();
         insertCurrentAndPrepareNewMeasureDataByAlignment(addScores);
     }

@@ -37,7 +37,7 @@ class ParetoFront {
         bool initialPass(vector<double> &newScores);
             
         alignmentPtr removeAlignment(alignmentPtr alignmentPosition, vector<double> &scores);
-        alignmentPtr removeRandom();
+        alignmentPtr removeRandom(alignmentPtr dontRemove);
         vector<alignmentPtr> emptyVector();
             
         vector<alignmentPtr> removeNewlyDominiated(singleValueIterator &iterIN, unsigned int i, vector<double>& newScores);

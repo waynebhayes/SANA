@@ -55,15 +55,19 @@ alignmentPtr ParetoFront::removeAlignment(alignmentPtr alignmentPosition, vector
     return alignmentPosition;
 }
 
-alignmentPtr ParetoFront::removeRandom()
+alignmentPtr ParetoFront::removeRandom(alignmentPtr dontRemove)
 {
-    bool test = true;
+    bool test;
     singleValueIterator iter;
     do {
-        unsigned int iterate = rand() % (capacity - 1) + 1;
         test = false;
+        unsigned int iterate = rand() % capacity;
         iter = paretoFront[0].begin();
         advance(iter, iterate);
+        if(iter->second == dontRemove) {
+            test = true;
+            continue;
+        }
         for(unsigned int i = 1; i < numberOfMeasures; i++) {
             if(iter == paretoFront[i].begin()) {
                 test = true;
@@ -160,9 +164,7 @@ vector<alignmentPtr> ParetoFront::tryToInsertAlignmentScore(alignmentPtr algmtPt
     if(currentSize < capacity)
         currentSize++;
     else
-        toReturn.push_back(removeRandom());
-    //if(toReturn.size() == 0)
-        //toReturn.push_back(NULL);
+        toReturn.push_back(removeRandom(algmtPtr));
     return toReturn;
 }
 
@@ -180,15 +182,12 @@ vector<alignmentPtr> ParetoFront::insertDominatingAlignmentScore(alignmentPtr al
             minDistanceIndexFromEnd = i;
         }
     }
-    //findScoresByAlignment[iterators[0]->second] = vector<double>(newScores);
     findScoresByAlignment[algmtPtr] = vector<double>(newScores);
     vector<alignmentPtr> toReturn = removeNewlyDominiated(iterators[minDistanceIndexFromEnd], minDistanceIndexFromEnd, newScores);
     if(currentSize < capacity)
         currentSize++;
     else
-        toReturn.push_back(removeRandom());
-    //if(toReturn.size() == 0)
-        //toReturn.push_back(NULL);
+        toReturn.push_back(removeRandom(algmtPtr));
     return toReturn;
 }
 
@@ -245,13 +244,13 @@ ostream& ParetoFront::printParetoFront(ostream &os)
 ostream& ParetoFront::printAlignmentScores(ostream &os)
 {
     unsigned int i = 0;
-    //os << findScoresByAlignment.size() << ' ' << paretoFront[0].size() << ' ' << currentSize << '\n';
+    os << "Pareto Front size: " << currentSize << ", " << "The Pareto Front scores are as follows: \n";
     for(unsigned int j = 0; j < numberOfMeasures; j++) {
         if(measureNames[j].size() <= 10)
-            cout << setw(10) << right << measureNames[j] << ' ';
+            os << setw(10) << right << measureNames[j] << ' ';
         else
-            cout << setw(10) << right << measureNames[j].substr(0, 10) << ' ';
-    } cout << '\n';
+            os << setw(10) << right << measureNames[j].substr(0, 10) << ' ';
+    } os << '\n';
     for(auto iter = findScoresByAlignment.begin(); iter != findScoresByAlignment.end(); iter++)
     {
         for(unsigned int j = 0; j < numberOfMeasures; j++) {

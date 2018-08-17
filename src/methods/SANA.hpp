@@ -319,8 +319,9 @@ private:
     void prepareMeasureDataByAlignment();
     void insertCurrentAndPrepareNewMeasureDataByAlignment(vector<double> &addScores);
     vector<double> translateScoresToVector();
-    void initializeParetoFront();
+    void insertCurrentAlignmentAndData();
     void removeAlignmentData(vector<ushort>* toRemove);
+    void initializeParetoFront();
     vector<double> getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum,
                                      double newLocalScoreSum, double newWecSum, double newNcSum,
                                      double newEwecSum, double newSquaredAligEdges);
@@ -330,7 +331,6 @@ private:
     int currentMeasure;
     vector<double> currentScores;
     ParetoFront paretoFront;
-    vector<ushort>* newA = new vector<ushort>(0);
     vector<bool>* newAN = new vector<bool>(0);
     vector<ushort>* newUAN = new vector<ushort>(0);
     vector<ushort>* newUmiRNA = new vector<ushort>(0);
