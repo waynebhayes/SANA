@@ -29,6 +29,6 @@ vector<string> defaultArguments = {
 "-combinedScoreAs sum",
 "-sec 0",
 "-maxGraphletSize 5",
-"-paretoInitial 10",
+"-paretoInitial 3",
 "-paretoCapacity 200"
 };

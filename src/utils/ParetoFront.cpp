@@ -55,15 +55,19 @@ alignmentPtr ParetoFront::removeAlignment(alignmentPtr alignmentPosition, vector
     return alignmentPosition;
 }
 
-alignmentPtr ParetoFront::removeRandom()
+alignmentPtr ParetoFront::removeRandom(alignmentPtr dontRemove)
 {
-    bool test = true;
+    bool test;
     singleValueIterator iter;
     do {
-        unsigned int iterate = rand() % (capacity - 1) + 1;
         test = false;
+        unsigned int iterate = rand() % capacity;
         iter = paretoFront[0].begin();
         advance(iter, iterate);
+        if(iter->second == dontRemove) {
+            test = true;
+            continue;
+        }
         for(unsigned int i = 1; i < numberOfMeasures; i++) {
             if(iter == paretoFront[i].begin()) {
                 test = true;
@@ -83,7 +87,7 @@ vector<alignmentPtr> ParetoFront::removeNewlyDominiated(singleValueIterator &ite
 {
     //singleValueIterator iter = paretoFront[i].begin();
     alignmentPtr address = iter->second;
-    vector<alignmentPtr> dominatedAlignments(0);
+    vector<alignmentPtr> dominatedAlignments = emptyVector();
     while(iter != paretoFront[i].begin() && prev(iter)->first == iter->first)
         iter = prev(iter);
     while(iter != paretoFront[i].end()) {
@@ -117,7 +121,7 @@ vector<alignmentPtr> ParetoFront::removeNewlyDominiated(singleValueIterator &ite
     return dominatedAlignments;
 }
 
-vector<alignmentPtr> ParetoFront::tryToInsertAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores, bool decision)
+vector<alignmentPtr> ParetoFront::tryToInsertAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores, bool &decision)
 {
     double minDistanceFromBeginning = 0;
     double minDistanceFromEnd = (unsigned int)(0-1);
@@ -154,21 +158,19 @@ vector<alignmentPtr> ParetoFront::tryToInsertAlignmentScore(alignmentPtr algmtPt
             paretoFront[i].erase(iterators[i]);
         return emptyVector();
     }
-    decision = true; //decision to keep alignment is true.
+    decision = true; //decision to keep/insert alignment is true.
     findScoresByAlignment.insert(pair<alignmentPtr, vector<double>>(algmtPtr, newScores));
     vector<alignmentPtr> toReturn = removeNewlyDominiated(iterators[minDistanceIndexFromEnd], minDistanceIndexFromEnd, newScores);
     if(currentSize < capacity)
         currentSize++;
     else
-        toReturn.push_back(removeRandom());
-    if(toReturn.size() == 0)
-        toReturn.push_back(NULL);
+        toReturn.push_back(removeRandom(algmtPtr));
     return toReturn;
 }
 
-vector<alignmentPtr> ParetoFront::insertDominatingAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores, bool decision)
+vector<alignmentPtr> ParetoFront::insertDominatingAlignmentScore(alignmentPtr algmtPtr, vector<double> &newScores, bool &decision)
 {
-    decision = true;
+    decision = true; //decision to keep/insert alignment is true.
     double minDistanceFromEnd = (unsigned int)(0-1);
     unsigned int minDistanceIndexFromEnd = 0;
     vector<singleValueIterator> iterators(numberOfMeasures);
@@ -180,34 +182,35 @@ vector<alignmentPtr> ParetoFront::insertDominatingAlignmentScore(alignmentPtr al
             minDistanceIndexFromEnd = i;
         }
     }
-    //findScoresByAlignment[iterators[0]->second] = vector<double>(newScores);
     findScoresByAlignment[algmtPtr] = vector<double>(newScores);
     vector<alignmentPtr> toReturn = removeNewlyDominiated(iterators[minDistanceIndexFromEnd], minDistanceIndexFromEnd, newScores);
     if(currentSize < capacity)
         currentSize++;
     else
-        toReturn.push_back(removeRandom());
-    if(toReturn.size() == 0)
-        toReturn.push_back(NULL);
+        toReturn.push_back(removeRandom(algmtPtr));
     return toReturn;
 }
 
-vector<alignmentPtr> ParetoFront::addAlignmentScores(alignmentPtr algmtPtr, vector<double> &newScores, bool decision)
+vector<alignmentPtr> ParetoFront::addAlignmentScores(alignmentPtr algmtPtr, vector<double> &newScores, bool &decision)
 {
     decision = false;
-    if(isDominating(newScores)) {
-        return insertDominatingAlignmentScore(algmtPtr, newScores, decision);
-    }
-    else if(initialPass(newScores)) {
-        return tryToInsertAlignmentScore(algmtPtr, newScores, decision);
-    }
-    return emptyVector();
+    vector<alignmentPtr> toReturn = emptyVector();
+    if(isDominating(newScores))
+        toReturn = insertDominatingAlignmentScore(algmtPtr, newScores, decision);
+    else if(initialPass(newScores))
+        toReturn = tryToInsertAlignmentScore(algmtPtr, newScores, decision);
+    //-------------------------------Error checking---------------------------------
+    assert(currentSize == findScoresByAlignment.size() && "Size variable inside Pareto front does not equal size of datastructure(s) holding Pareto front");
+    for(auto i = paretoFront.begin(); i != paretoFront.end(); i++)
+        assert(currentSize == i->size() && "Size variable inside Pareto front does not equal size of datastructure(s) holding Pareto front");
+    //------------------------------------------------------------------------------
+    return toReturn;
 }
 
-const vector<double>& ParetoFront::procureScoresByAlignment(alignmentPtr keyToScores) const
+vector<double> ParetoFront::procureScoresByAlignment(alignmentPtr keyToScores) const
 {
     auto iter = findScoresByAlignment.find(keyToScores);
-    return iter->second;
+    return vector<double>(iter->second);
 }
 
 alignmentPtr ParetoFront::procureRandomAlignment() const
@@ -215,7 +218,7 @@ alignmentPtr ParetoFront::procureRandomAlignment() const
     //This can be improved by caching an array of alignmentPointers.
     //To remove one alignment from the alignmentPointerCache, simply
     //Find the one to remove, then swap it with the end.
-    unsigned int iterate = rand() % (capacity - 1) + 1;
+    unsigned int iterate = rand() % currentSize;
     auto iter = findScoresByAlignment.begin();
     advance(iter, iterate);
     return iter->first;
@@ -241,11 +244,20 @@ ostream& ParetoFront::printParetoFront(ostream &os)
 ostream& ParetoFront::printAlignmentScores(ostream &os)
 {
     unsigned int i = 0;
-    os << findScoresByAlignment.size() << ' ' << paretoFront[0].size() << ' ' << currentSize << '\n';
+    os << "Pareto Front size: " << currentSize << ", " << "The Pareto Front scores are as follows: \n";
+    for(unsigned int j = 0; j < numberOfMeasures; j++) {
+        if(measureNames[j].size() <= 10)
+            os << setw(10) << right << measureNames[j] << ' ';
+        else
+            os << setw(10) << right << measureNames[j].substr(0, 10) << ' ';
+    } os << '\n';
     for(auto iter = findScoresByAlignment.begin(); iter != findScoresByAlignment.end(); iter++)
     {
         for(unsigned int j = 0; j < numberOfMeasures; j++) {
-            os << (iter->second)[j];
+            if((iter->second)[j] >= 0)
+                os << setw(10) << right << setprecision(8) << fixed << (iter->second)[j];
+            else
+                os << setw(10) << right << setprecision(7) << fixed << (iter->second)[j];
             if(j < numberOfMeasures - 1)
                 os << " ";
         }
@@ -254,4 +266,14 @@ ostream& ParetoFront::printAlignmentScores(ostream &os)
             os << "\n";
     }
     return os;
+}
+
+unsigned int ParetoFront::size()
+{
+    return currentSize;
+}
+
+int ParetoFront::getRandomMeasure()
+{
+    return rand() % numberOfMeasures;
 }

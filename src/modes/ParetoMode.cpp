@@ -20,16 +20,20 @@ void ParetoMode::run(ArgumentParser& args) {
     initMeasures(M, G1, G2, args);
     Method* method;
     method = initMethod(G1, G2, args, M);
-    //Alignment A = method->runAndPrintTime();
-    vector<Alignment> *B = runParetoMode(method, &G1, &G2);
-    Alignment A = Alignment((*B)[0]);
-    //Alignment A = method->run();
+    vector<Alignment> alignments = runParetoMode(method, &G1, &G2);
+    printAlignments(alignments, args.strings["-o"]);
+    printEdgeLists(&G1, &G2, alignments, args.strings["-o"]);
+    for(unsigned int i = 0; i < alignments.size(); i++) {
+        Alignment A = Alignment(alignments[i]);
 
-    A.printDefinitionErrors(G1,G2);
-    assert(A.isCorrectlyDefined(G1, G2) and "Resulting alignment is not correctly defined");
+        A.printDefinitionErrors(G1,G2);
+        assert(A.isCorrectlyDefined(G1, G2) and "Resulting alignment is not correctly defined");
 
-    saveReport(G1, G2, A, M, method, args.strings["-o"]);
-    saveLocalMeasures(G1, G2, A, M, method, args.strings["-localScoresFile"]);
+        string reportName = args.strings["-o"] + "_pareto_" + to_string(i);
+        saveReport(G1, G2, A, M, method, reportName);
+        string localMeasuresFileName = args.strings["-localScoresFile"] + "_pareto_" + to_string(i);
+        saveLocalMeasures(G1, G2, A, M, method, localMeasuresFileName);
+    }
     delete method;
 }
 
@@ -60,14 +64,16 @@ void ParetoMode::setArgsForParetoMode(ArgumentParser& args) {
     args.strings["-method"] = "sana";
 }
 
-vector<Alignment>* ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2) {
+vector<Alignment> ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2) {
     cout << "Start execution of " << method->getName() << " in Pareto Mode." << endl;
     Timer T;
     T.start();
-    //Method* METHOD = new SANA;
-    //static_cast<SANA*>(METHOD)->derived_int;
-    //unordered_set<vector<unsigned short>*> *A = static_cast<SANA*>(method)->paretoRun();
-    //A->push_back(method->paretoRun());
+    unordered_set<vector<unsigned short>*> *A = static_cast<SANA*>(method)->paretoRun();
+    
+    vector<Alignment> alignments;
+    for(auto i = A->begin(); i != A->end(); i++)
+        alignments.push_back( Alignment(**i) );
+    
     T.elapsed();
     cout << "Executed " << method->getName() << " in " << T.elapsedString() << endl;
 
@@ -75,17 +81,54 @@ vector<Alignment>* ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G
 
     // Needs to be reimplemented with unordered_set<vector<unsigned short>>*
     
-    /*if(G1->hasNodeTypes()){
-        G1->reIndexGraph(method->getReverseMap(G1->getNodeTypes_ReIndexMap()));
-        (*A)[0].reIndexAfter_Iterations(G1->getNodeTypes_ReIndexMap());
+    for(unsigned int i = 0; i < alignments.size(); i++) {
+        if(G1->hasNodeTypes()){
+            G1->reIndexGraph(method->getReverseMap(G1->getNodeTypes_ReIndexMap()));
+            alignments[i].reIndexAfter_Iterations(G1->getNodeTypes_ReIndexMap());
+        }
+        // if locking is enabled but hasnodeType is not
+        else if(G1->getLockedCount() > 0){
+            G1->reIndexGraph(method->getReverseMap(G1->getLocking_ReIndexMap()));
+            alignments[i].reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
+        }
+        method->checkLockingBeforeReport(alignments[i]);
+        method->checkLockingBeforeReport(alignments[i]);
     }
-    // if locking is enabled but hasnodeType is not
-    else if(G1->getLockedCount() > 0){
-         G1->reIndexGraph(method->getReverseMap(G1->getLocking_ReIndexMap()));
-          (*A)[0].reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
-    }
-    method->checkLockingBeforeReport((*A)[0]);
-    method->checkLockingBeforeReport((*A)[0]);*/
-    return new vector<Alignment>;
+    return alignments;
 }
-    
+
+void ParetoMode::printAlignments(vector<Alignment>& alignments, const string &fileName) {
+    string outputFileName = fileName;
+    if(outputFileName.rfind(".out") + 4 != outputFileName.size())
+        outputFileName = outputFileName + ".out";
+    ofstream output(outputFileName);
+    for(unsigned int j = 0; j < alignments[0].size(); j++) {
+        for(unsigned int i = 0; i < alignments.size(); i++) {
+            output << alignments[i][j];
+            if(i < alignments.size()-1)
+                output << '\t';
+        }
+        if(j < alignments[0].size() - 1)
+            output << endl;
+    }
+    output.close();
+}
+
+typedef unordered_map<ushort,string> NodeIndexMap;
+void ParetoMode::printEdgeLists(Graph* G1, Graph* G2, vector<Alignment>& alignments, const string &fileName) {
+    string outputFileName = fileName;
+    if(outputFileName.find(".out") != string::npos && outputFileName.rfind(".out") + 4 == outputFileName.size())
+        outputFileName = outputFileName.substr(0, outputFileName.size() - 4);
+    outputFileName = outputFileName + ".align";
+    NodeIndexMap mapG1 = G1->getIndexToNodeNameMap();
+    NodeIndexMap mapG2 = G2->getIndexToNodeNameMap();
+    ofstream edgeListStream(outputFileName);
+    for (unsigned int j = 0; j < alignments[0].size(); j++) {
+        edgeListStream << mapG1[j];
+        for(unsigned int i = 0; i < alignments.size(); i++)
+            edgeListStream << "\t" << mapG2[alignments[i][j]];
+        if(j < alignments[0].size() - 1)
+            edgeListStream << endl;
+    }
+    edgeListStream.close();
+}

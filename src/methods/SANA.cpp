@@ -34,6 +34,7 @@
 #include "../utils/utils.hpp"
 
 #define FinalPBad 1e-10
+#define InitialPBad 0.985
 
 using namespace std;
 
@@ -469,13 +470,11 @@ void SANA::initDataStructures(const Alignment& startA) {
     nodesHaveType = G1->hasNodeTypes();
 
     A = new vector<ushort>(startA.getMapping());
-    storedAlignments->insert(A);
 
     assignedNodesG2 = new vector<bool> (n2, false);
     for (uint i = 0; i < n1; i++) {
         (*assignedNodesG2)[(*A)[i]] = true;
     }
-    storedAssignedNodesG2[A] = assignedNodesG2;
     unassignedNodesG2        = new vector<ushort> (n2-n1);
     unassignedgenesG2        = new vector<ushort> ();
     unassignedmiRNAsG2       = new vector<ushort> ();
@@ -496,7 +495,6 @@ void SANA::initDataStructures(const Alignment& startA) {
 	    }
 	}
     }
-    storedUnassignedNodesG2[A] = unassignedNodesG2;
     //  Init unlockedNodesG1
     uint unlockedG1            = n1 - G1->getLockedCount();
     unLockedNodesG1            = vector<ushort> (unlockedG1);
@@ -509,18 +507,15 @@ void SANA::initDataStructures(const Alignment& startA) {
     assert(index == unlockedG1);
 
     if (needAligEdges or needSec) {
-        aligEdges          = startA.numAlignedEdges(*G1, *G2);
-        storedAligEdges[A] = aligEdges;
+        aligEdges = startA.numAlignedEdges(*G1, *G2);
     }
 
     if (needSquaredAligEdges) {
-        squaredAligEdges          = startA.numSquaredAlignedEdges(*G1, *G2);
-        storedSquaredAligEdges[A] = squaredAligEdges;
+        squaredAligEdges = startA.numSquaredAlignedEdges(*G1, *G2);
     }
 
     if (needInducedEdges) {
-        inducedEdges          = G2->numNodeInducedSubgraphEdges(*A);
-        storedInducedEdges[A] = inducedEdges;
+        inducedEdges = G2->numNodeInducedSubgraphEdges(*A);
     }
 
     if (needLocal) {
@@ -528,40 +523,34 @@ void SANA::initDataStructures(const Alignment& startA) {
         for (uint i = 0; i < n1; i++) {
             localScoreSum += sims[i][(*A)[i]];
         }
-        storedLocalScoreSum[A] = localScoreSum;
     }
 
     if (needWec) {
         Measure* wec    = MC->getMeasure("wec");
         double wecScore = wec->eval(*A);
         wecSum          = wecScore*2*g1Edges;
-        storedWecSum[A] = wecSum;
     }
 
     if(needEwec){
-        ewec             = (ExternalWeightedEdgeConservation*)(MC->getMeasure("ewec"));
-        ewecSum          = ewec->eval(*A);
-        storedEwecSum[A] = ewecSum;
+        ewec    = (ExternalWeightedEdgeConservation*)(MC->getMeasure("ewec"));
+        ewecSum = ewec->eval(*A);
     }
 
     if (needNC) {
-        Measure* nc    = MC->getMeasure("nc");
-        ncSum          = (nc->eval(*A))*trueA.back();
-        storedNcSum[A] = ncSum;
+        Measure* nc = MC->getMeasure("nc");
+        ncSum       = (nc->eval(*A))*trueA.back();
     }
 
     if(needTC){
-        Measure* tc = MC->getMeasure("tc");
+        Measure* tc  = MC->getMeasure("tc");
         maxTriangles = ((TriangleCorrectness*)tc)->getMaxTriangles();
-        TCSum = tc->eval(*A);
-        storedTCSum[A] = TCSum;
+        TCSum        = tc->eval(*A);
     }
 
     iterationsPerformed = 0;
     sampledProbability.clear();
 
     currentScore = eval(startA);
-    storedCurrentScore[A] = currentScore;
     timer.start();
 }
 
@@ -655,15 +644,14 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, d
 
     initDataStructures(startA);
     setInterruptSignal();
-    vector<string> measureNames; vector<double> scores;
-    scoreNamesToIndexes = mapScoresToIndexes(measureNames);
+    vector<double> scores;
+    scoreNamesToIndexes = mapScoresToIndexes();
     paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
     score = Score::pareto;
-    for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); iter++)
-        cout << iter->first << '\n';
+    initializeParetoFront();
 
     for (; ; ++iter) {
-	//Temperature = temperatureFunction(iter, TInitial, TDecay);
+	Temperature = temperatureFunction(iter, TInitial, TDecay);
 	if (interrupt) {
 	    return storedAlignments;
 	}
@@ -671,7 +659,10 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, d
 	    trackProgress(iter);
 	    if( iter != 0 and timer.elapsed() > maxExecutionSeconds){
 		cout << "ending seconds " << timer.elapsed() << " " << maxExecutionSeconds << endl;
-		paretoFront.printAlignmentScores(cout);
+                ofstream output("ParetoFrontScores.out");
+                paretoFront.printAlignmentScores(output);
+                output.close();
+		paretoFront.printAlignmentScores(cout); cout << endl;
 		return storedAlignments;
 	    }
 	}
@@ -686,15 +677,14 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
 
     initDataStructures(startA);
     setInterruptSignal();
-    vector<string> measureNames; vector<double> scores;
-    scoreNamesToIndexes = mapScoresToIndexes(measureNames);
+    vector<double> scores;
+    scoreNamesToIndexes = mapScoresToIndexes();
     paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
     score = Score::pareto;
-    for(auto iter = scoreNamesToIndexes.begin(); iter != scoreNamesToIndexes.end(); ++iter)
-        cout << iter->first << '\n';
+    initializeParetoFront();
 
     for (; ; ++iter) {
-    	//Temperature = temperatureFunction(iter, TInitial, TDecay);
+    	Temperature = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
             return storedAlignments;
         }
@@ -703,7 +693,10 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
         }
         if (iter != 0 and iter > maxExecutionIterations) {
         	cout << "ending iterations " << iter << " " << maxExecutionIterations << endl;
-        	paretoFront.printAlignmentScores(cout);
+                ofstream output("ParetoFrontScores.out");
+                paretoFront.printAlignmentScores(output);
+                output.close();
+        	paretoFront.printAlignmentScores(cout); cout << endl;
             return storedAlignments;
         }
         SANAIteration();
@@ -712,19 +705,75 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
     return storedAlignments;
 }
 
-unordered_map<string, int> SANA::mapScoresToIndexes(vector<string> &measureNames) {
-    numOfMeasures = MC->numMeasures();
+unordered_map<string, int> SANA::mapScoresToIndexes() {
+    //numOfMeasures = MC->numMeasures(); Currently, SANA uses arbitrary measures and ignores others (even when defined).
+    numOfMeasures = 8;
+    #ifdef WEIGHTED
+    numOfMeasures = 10;
+    #endif
     measureNames = vector<string>(numOfMeasures);
-    for(int i = 0; i < numOfMeasures; ++i)
-        measureNames[i] = MC->getMeasure(i)->getName();
-    sort(measureNames.begin(), measureNames.end());
+    /*for(int i = 0; i < numOfMeasures; ++i)
+        measureNames[i] = MC->getMeasure(i)->getName();*/
+    //SANA is using these predifined measures:-----------------------------------------------------
+    measureNames[0] = "ec";
+    measureNames[1] = "ics";
+    measureNames[2] = "s3";
+    measureNames[3] = "sec";
+    measureNames[4] = "tc";
+    measureNames[5] = "local";
+    measureNames[6] = "wec";
+    measureNames[7] = "nc";
+    #ifdef WEIGHTED
+    measureNames[8] = "mec";
+    measureNames[9] = "ses";
+    #endif
+    //---------------------------------------------------------------------------------------------
+    sort(measureNames.begin(), measureNames.end()); //Must be sorted to function correctly.
+    measureNames.resize(distance(measureNames.begin(), unique(measureNames.begin(), measureNames.end()))); //Removes any duplicate measure names. Somehow, ICS measure appears twice... a good check to perform.
     unordered_map<string, int> toReturn;
     for(int i = 0; i < numOfMeasures; ++i)
     	toReturn[measureNames[i]] = i;
     return toReturn;
 }
 
+vector<double> SANA::translateScoresToVector() {
+    vector<double> addScores(numOfMeasures);
+    addScores[scoreNamesToIndexes["ec"]] = double(aligEdges) / g1Edges;
+    addScores[scoreNamesToIndexes["s3"]] = double(aligEdges) / (g1Edges + inducedEdges - aligEdges);
+    addScores[scoreNamesToIndexes["ics"]] = double(aligEdges) / inducedEdges;
+    addScores[scoreNamesToIndexes["sec"]] = double(aligEdges) / (g1Edges + aligEdges) / g2Edges * 0.5;
+    addScores[scoreNamesToIndexes["tc"]] = TCSum;
+    addScores[scoreNamesToIndexes["local"]] = double(localScoreSum) / n1;
+    addScores[scoreNamesToIndexes["wec"]] = double(wecSum) / (2 * g1Edges);
+    //addScores[scoreNamesToIndexes["ewec"]] = ewecSum;
+    addScores[scoreNamesToIndexes["nc"]] = double(ncSum) / trueA.back();
+#ifdef WEIGHTED
+    addScores[scoreNamesToIndexes["mec"]] = double(aligEdges) / (g1WeightedEdges + g2WeightedEdges);
+    addScores[scoreNamesToIndexes["ses"]] = squaredAligEdges;
+#endif
+    return addScores;
+}
+
+vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double newEwecSum, double newSquaredAligEdges) {
+    vector<double> addScores(numOfMeasures);
+    addScores[scoreNamesToIndexes["ec"]] = double(newAligEdges) / g1Edges;
+    addScores[scoreNamesToIndexes["s3"]] = double(newAligEdges) / (g1Edges + newInducedEdges - newAligEdges);
+    addScores[scoreNamesToIndexes["ics"]] = double(newAligEdges) / newInducedEdges;
+    addScores[scoreNamesToIndexes["sec"]] = (double(newAligEdges) / g1Edges + newAligEdges / g2Edges)*0.5;
+    addScores[scoreNamesToIndexes["tc"]] = double(newTCSum);
+    addScores[scoreNamesToIndexes["local"]] = double(newLocalScoreSum) / n1;
+    addScores[scoreNamesToIndexes["wec"]] = double(newWecSum) / (2 * g1Edges);
+    //addScores[scoreNamesToIndexes["ewec"]] = ewecWeight * (newEwecSum);
+    addScores[scoreNamesToIndexes["nc"]] = double(newNcSum) / trueA.back();
+#ifdef WEIGHTED
+    addScores[scoreNamesToIndexes["mec"]] = double(newAligEdges) / (g1WeightedEdges + g2WeightedEdges);
+    addScores[scoreNamesToIndexes["ses"]] = double(newSquaredAligEdges) / SquaredEdgeScore::getDenom();
+#endif	
+    return addScores;
+}
+
 void SANA::prepareMeasureDataByAlignment() {
+    assert(storedAlignments->find(A) != storedAlignments->end() and "Alignment does not exist in the Pareto front.");
     aligEdges        = (needAligEdges or needSec) ?  storedAligEdges[A] : -1;
     squaredAligEdges = (needSquaredAligEdges) ?  storedSquaredAligEdges[A] : -1;
     inducedEdges     = (needInducedEdges) ?  storedInducedEdges[A] : -1;
@@ -733,12 +782,49 @@ void SANA::prepareMeasureDataByAlignment() {
     wecSum           = (needWec) ?  storedWecSum[A] : -1;
     ewecSum          = (needEwec) ?  storedEwecSum[A] : -1;
     ncSum            = (needNC) ? storedNcSum[A] : -1;
-    //currentScore     = storedCurrentScore[A];
+    currentScore     = storedCurrentScore[A];
+
+    currentScores = paretoFront.procureScoresByAlignment(A);
+    currentMeasure = paretoFront.getRandomMeasure();
+
+    assignedNodesG2 = new vector<bool>(*storedAssignedNodesG2[A]);
+    if(!nodesHaveType)
+        unassignedNodesG2 = new vector<ushort>(*storedUnassignedNodesG2[A]);
+    else {
+        unassignedmiRNAsG2 = new vector<ushort>(*storedUnassignedmiRNAsG2[A]);
+        unassignedgenesG2 = new vector<ushort>(*storedUnassignedgenesG2[A]);
+    }
+
+    A = new vector<ushort>(*A);
 }
 
-void SANA::insertCurrentAndPrepareNewMeasureDataByAlignment() {
-	*newA = vector<ushort>(*A);
-	storedAlignments->insert(newA);
+void SANA::insertCurrentAndPrepareNewMeasureDataByAlignment(vector<double> &addScores) {
+    bool inserted = false;
+    vector<vector<ushort>*> toRemove = paretoFront.addAlignmentScores(A, addScores, inserted);
+    if (inserted) {
+        for (unsigned int i = 0; i < toRemove.size(); i++)
+            removeAlignmentData(toRemove[i]);
+
+        insertCurrentAlignmentAndData();
+    }
+    else
+        delete A;
+    assert(paretoFront.size() == storedAlignments->size() and "Number of elements in paretoFront and storedAlignments don't match.");
+    A = paretoFront.procureRandomAlignment();
+    assert(storedAlignments->find(A) != storedAlignments->end() && "There exists an alignment in the Pareto front which does not exist inside storedAlignments");
+    prepareMeasureDataByAlignment();
+}
+
+void SANA::insertCurrentAlignmentAndData() {
+    storedAlignments->insert(A);
+
+    storedAssignedNodesG2[A]        = assignedNodesG2;
+    if(!nodesHaveType)
+        storedUnassignedNodesG2[A]  = unassignedNodesG2;
+    else {
+        storedUnassignedmiRNAsG2[A] = unassignedmiRNAsG2;
+        storedUnassignedgenesG2[A]  = unassignedgenesG2;
+    }
 
     if(needAligEdges or needSec) storedAligEdges[A]        = aligEdges;
     if(needSquaredAligEdges)     storedSquaredAligEdges[A] = squaredAligEdges;
@@ -748,14 +834,28 @@ void SANA::insertCurrentAndPrepareNewMeasureDataByAlignment() {
     if(needWec)                  storedWecSum[A]           = wecSum;
     if(needEwec)                 storedEwecSum[A]          = ewecSum;
     if(needNC)                   storedNcSum[A]            = ncSum;
-    ///*------------------------>*/storedCurrentScore[A]     = currentScore;
-
-    A = paretoFront.procureRandomAlignment();
-    prepareMeasureDataByAlignment();
+    /*------------------------>*/storedCurrentScore[A]     = currentScore;
 }
 
 void SANA::removeAlignmentData(vector<ushort>* toRemove) {
     storedAlignments->erase(toRemove);
+
+    vector<bool>* removeAssignedNodesG2 = storedAssignedNodesG2[toRemove];
+    storedAssignedNodesG2.erase(toRemove);
+    delete removeAssignedNodesG2;
+    if(!nodesHaveType) {
+        vector<ushort>* removeUnassignedNodesG2 = storedUnassignedNodesG2[toRemove];
+        storedUnassignedNodesG2.erase(toRemove);
+        delete removeUnassignedNodesG2;
+    }
+    else {
+        vector<ushort>* removeUnassignedmiRNAsG2 = storedUnassignedmiRNAsG2[toRemove];
+        vector<ushort>* removeUnassignedgenesG2 = storedUnassignedgenesG2[toRemove];
+        storedUnassignedmiRNAsG2.erase(toRemove);
+        storedUnassignedgenesG2.erase(toRemove);
+        delete removeUnassignedmiRNAsG2;
+        delete removeUnassignedgenesG2;
+    }
 
     if(needAligEdges or needSec) storedAligEdges.erase(toRemove);
     if(needSquaredAligEdges)     storedSquaredAligEdges.erase(toRemove);
@@ -765,7 +865,30 @@ void SANA::removeAlignmentData(vector<ushort>* toRemove) {
     if(needWec)                  storedWecSum.erase(toRemove);
     if(needEwec)                 storedEwecSum.erase(toRemove);
     if(needNC)                   storedNcSum.erase(toRemove);
-    ///*------------------------>*/storedCurrentScore.erase(toRemove);
+    //TAKE CARE OF THE MEMORY LEAK!
+    delete toRemove;
+}
+
+void SANA::initializeParetoFront() {
+    vector<double> addScores = translateScoresToVector();
+    insertCurrentAndPrepareNewMeasureDataByAlignment(addScores);
+    cout << "Initializing " << paretoInitial << " random alignments." << endl;
+    cout << "Current size: ";
+    while(paretoFront.size() < paretoInitial) {
+        cout << paretoFront.size() << ", ";
+        Alignment newAlig = getStartingAlignment();
+        initDataStructures(newAlig);
+        addScores = translateScoresToVector();
+        insertCurrentAndPrepareNewMeasureDataByAlignment(addScores);
+    }
+    cout << paretoFront.size() << endl;
+}
+
+bool SANA::dominates(vector<double> &left, vector<double> &right) {
+    for(unsigned int i = 0; i < left.size(); i++)
+        if(left[i] < right[i])
+            return false;
+    return true;
 }
 
 void SANA::SANAIteration() {
@@ -850,8 +973,6 @@ void SANA::performChange(int type) {
         ncSum                                = newNcSum;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
-        if(score == Score::pareto and ((iterationsPerformed % 512) == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
-        	insertCurrentAndPrepareNewMeasureDataByAlignment();
 #if 0
         if(randomReal(gen)<=1) {
         double foo = eval(*A);
@@ -864,6 +985,12 @@ void SANA::performChange(int type) {
 #endif
         currentScore     = newCurrentScore;
         squaredAligEdges = newSquaredAligEdges;
+    }
+    if(score == Score::pareto and ((iterationsPerformed % 10000) == 0)) {
+        /*vector<double> addScores = getMeasureScores(aligEdges, inducedEdges, TCSum, localScoreSum,
+                                                    wecSum, ncSum, ewecSum, squaredAligEdges);*/
+        vector<double> addScores = translateScoresToVector();
+        insertCurrentAndPrepareNewMeasureDataByAlignment(addScores);
     }
 #ifdef CORES
     // Statistics on the emerging core alignment.
@@ -912,9 +1039,6 @@ void SANA::performSwap(int type) {
         squaredAligEdges    = newSquaredAligEdges;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
-        if (score == Score::pareto and (iterationsPerformed % 512 == 0)) //maybe create a boolean for pareto mode to avoid string comparison.
-            insertCurrentAndPrepareNewMeasureDataByAlignment();
-
 #if 0
         if (randomReal(gen) <= 1) {
             double foo = eval(*A);
@@ -925,6 +1049,12 @@ void SANA::performSwap(int type) {
             else cout << "s";
         }
 #endif
+    }
+    if(score == Score::pareto and ((iterationsPerformed % 10000) == 0)) {
+        /*vector<double> addScores = getMeasureScores(aligEdges, inducedEdges, TCSum, localScoreSum,
+                                                    wecSum, ncSum, ewecSum, squaredAligEdges);*/
+        vector<double> addScores = translateScoresToVector();
+        insertCurrentAndPrepareNewMeasureDataByAlignment(addScores);
     }
 #ifdef CORES
     // Statistics on the emerging core alignment.
@@ -1083,49 +1213,47 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc / Temperature);
         break;
     }
-    case Score::pareto: //Short circuit return to let the pareto front decide
-    {
-        if ((iterationsPerformed % 512 != 0))
-            return true;
-        vector<double> addScores(numOfMeasures);  //what alignments to keep instead of simulated annealing.
-        addScores[scoreNamesToIndexes["ec"]] = (1.0*newAligEdges / g1Edges);
-        addScores[scoreNamesToIndexes["s3"]] = (1.0*newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        addScores[scoreNamesToIndexes["ics"]] = (1.0*newAligEdges / newInducedEdges);
-        addScores[scoreNamesToIndexes["sec"]] = (1.0*newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        addScores[scoreNamesToIndexes["tc"]] = (1.0*newTCSum);
-        addScores[scoreNamesToIndexes["local"]] = (1.0*newLocalScoreSum / n1);
-        addScores[scoreNamesToIndexes["wec"]] = (1.0*newWecSum / (2 * g1Edges));
-        //addScores[scoreNamesToIndexes["ewec"]] = ewecWeight * (newEwecSum);
-        addScores[scoreNamesToIndexes["nc"]] = (1.0*newNcSum / trueA.back());
-#ifdef WEIGHTED
-        addScores[scoreNamesToIndexes["mec"]] += (1.0*newAligEdges / (g1WeightedEdges + g2WeightedEdges));
-        addScores[scoreNamesToIndexes["ses"]] += 1.0*newSquaredAligEdges/SquaredEdgeScore::getDenom();
-#endif
-        /*cout << "aligEdges: " << newAligEdges << endl;
-        cout << "g1Edges: " << g1Edges << endl;
-        cout << "newInducedEdges: " << newInducedEdges << endl;
-        cout << "g2Edges: " << g2Edges << endl;
-        cout << "newTCSum: " << newTCSum << endl;
-        cout << "newLocalScoreSum: " << newLocalScoreSum << endl;
-        cout << "n1: " << n1 << endl;
-        cout << "newWecSum: " << newWecSum << endl;
-        cout << "newNcSum: " << newNcSum << endl;
-        cout << "trueA_back: " << trueA.back() << endl;
-#ifdef WEIGHTED
-        cout << "g1WeightedEdges: " << g1WeightedEdges << endl;
-        cout << "g2WeightedEdges: " << g2WeightedEdges << endl;
-        cout << "newSquaredAligEdges: " << newSquaredAligEdges << endl;
-#endif*/
-        newA = new vector<ushort>(0);
-        vector<vector<ushort>*> toRemove = paretoFront.addAlignmentScores(newA, addScores, makeChange);
-        if (makeChange) {
-            for (unsigned int i = 0; i < toRemove.size(); ++i)
-                removeAlignmentData(toRemove[i]);
+    case Score::pareto:
+    { //This determines whether we should update the current alignment.
+        vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges);
+        if(dominates(addScores, currentScores))
+        {
+            currentScores = addScores;
+            makeChange = true;
+            newCurrentScore = 0;
+            newCurrentScore += ecWeight * (newAligEdges / g1Edges);
+            newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+            newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
+            newCurrentScore += TCWeight * (newTCSum);
+            newCurrentScore += localWeight * (newLocalScoreSum / n1);
+            newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
+            newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+            newCurrentScore += ncWeight * (newNcSum / trueA.back());
         }
-        //std::cout << "ParetoFront:\n";
-        //paretoFront.printAlignmentScores(cout);
-        //cin.get();
-        return makeChange;
+        else
+        {
+            /*energyInc = newCurrentScore - currentScore;
+            wasBadMove = energyInc < 0;
+            badProbability = exp(energyInc / T);
+            makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / T));
+            if(makeChange)
+                currentScores = addScores;*/
+            newCurrentScore = 0;
+            newCurrentScore += ecWeight * (newAligEdges / g1Edges);
+            newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+            newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
+            newCurrentScore += TCWeight * (newTCSum);
+            newCurrentScore += localWeight * (newLocalScoreSum / n1);
+            newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
+            newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+            newCurrentScore += ncWeight * (newNcSum / trueA.back());
+            energyInc = newCurrentScore - currentScore;
+            wasBadMove = energyInc < 0;
+            badProbability = exp(energyInc / Temperature);
+            makeChange = (addScores[currentMeasure] > currentScores[currentMeasure] || energyInc >= 0 or
+ randomReal(gen) <= exp(energyInc / Temperature));
+            if(makeChange) currentScores = addScores;
+        }
         break;
     }
     }
@@ -1231,7 +1359,7 @@ int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort targe
     // address case swapping between adjacent nodes with adjacent images:
     if(G1Matrix.get(source1, source2) and G2Matrix.get(target1, target2))
     {
-        res += 2 * SQRDIFF(target1,target2);
+        res += 2 * SQRDIFF(target1,source2);
     }
     return res;
 }
@@ -1563,8 +1691,9 @@ uint SANA::getHighestIndex() const {
     return highestIndex;
 }
 
-#define LOG10_LOW_TEMP -10
-#define LOG10_HIGH_TEMP 10
+#define LOG10_LOW_TEMP -10.0
+#define LOG10_HIGH_TEMP 10.0
+#define LOG10_NUM_STEPS 20 // looping through 0 <= i <= LOG10_NUM_STEPS
 
 void SANA::searchTemperaturesByLinearRegression() {
 
@@ -1572,25 +1701,28 @@ void SANA::searchTemperaturesByLinearRegression() {
     //	return;             //and I don't know why, but sometimes I disable using this.
     //                      //otherwise my computer is very slow.
     map<double, double> pbadMap;
-    cout << "Sampling pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
-    for(double log_temp = LOG10_LOW_TEMP; log_temp <= LOG10_HIGH_TEMP; log_temp += 1.0){
+    cout << "Sampling " << 1+LOG10_NUM_STEPS << " pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
+    int T_i;
+    double log_temp;
+    for(T_i = 0; T_i <= LOG10_NUM_STEPS; T_i++){
+	log_temp = LOG10_LOW_TEMP + T_i*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
         pbadMap[log_temp] = pForTInitial(pow(10, log_temp));
-        cout << log_temp << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << endl;
+        cout << T_i << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
     }
-    double exponent;
-    for (exponent = LOG10_LOW_TEMP; exponent <= LOG10_HIGH_TEMP; ++exponent){
-        if(pbadMap[exponent] > FinalPBad)
+    for (T_i=0; T_i <= LOG10_NUM_STEPS; T_i++){
+	log_temp = LOG10_LOW_TEMP + T_i*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
+        if(pbadMap[log_temp] > FinalPBad)
             break;
     }
-    double binarySearchLeftEnd = exponent - 1;
-    double binarySearchRightEnd = exponent;
+    double binarySearchLeftEnd = LOG10_LOW_TEMP + (T_i-1)*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
+    double binarySearchRightEnd = log_temp;
     double mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-    cout << "Beginning binary search for tFinal. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
+    cout << "Increasing sample density near tFinal. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
     for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
         double probability = pForTInitial(temperature);
         pbadMap[mid] = probability;
-        cout << "Temperature: " << temperature << " pbad: " << probability << endl;
+        cout << "Temperature: " << temperature << " pbad: " << probability << " score: " << eval(*A) << endl;
         if(probability > FinalPBad){
             binarySearchRightEnd = mid;
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
@@ -1599,23 +1731,24 @@ void SANA::searchTemperaturesByLinearRegression() {
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
         }
     }
-    for (exponent = LOG10_HIGH_TEMP; exponent >= LOG10_LOW_TEMP; exponent--){
-        if(pbadMap[exponent] < 0.985)
+    for (T_i = LOG10_NUM_STEPS; T_i >= 0; T_i--){
+	log_temp = LOG10_LOW_TEMP + T_i*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
+        if(pbadMap[log_temp] < InitialPBad)
             break;
     }
-    binarySearchLeftEnd = exponent;
-    binarySearchRightEnd = exponent + 1;
+    binarySearchLeftEnd = log_temp;
+    binarySearchRightEnd = LOG10_LOW_TEMP + (T_i+1)*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
     mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-    cout << "Beginning binary search for tInitial. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
+    cout << "Increasing sample density near tInitial. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
     for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
         double probability = pForTInitial(temperature);
         pbadMap[mid] = probability;
-        cout << "Temperature: " << temperature << " pbad: " << probability << endl;
+        cout << "Temperature: " << temperature << " pbad: " << probability << " score: " << eval(*A) << endl;
         if(probability > 0.995){
             binarySearchRightEnd = mid;
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-        } else if(probability < 0.985){
+        } else if(probability < InitialPBad){
             binarySearchLeftEnd = mid;
             mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
         }
@@ -1623,14 +1756,19 @@ void SANA::searchTemperaturesByLinearRegression() {
     LinearRegression linearRegression;
     linearRegression.setup(pbadMap);
     tuple<int, double, double, int, double, double, double, double> regressionResult = linearRegression.run();
+    // bestJ, scores[bestJ], temperatures[bestJ], bestK, scores[bestK], temperatures[bestK], line1Height, line3Height;
     double lowerEnd = get<2>(regressionResult);
     double upperEnd = get<5>(regressionResult);
+    cout << "The three lines are: "<<endl;
+    cout << "HillClimbing: y= " << get<6>(regressionResult) << " until x= " << pow(10,lowerEnd) << endl;
+    cout << "GoldilocksZone: starts above, ends at x= " << pow(10,upperEnd) << endl;;
+    cout << "RandomRegion: y= " << get<7>(regressionResult) << endl;;
     cout << "Left endpoint of linear regression " << pow(10, lowerEnd) << endl;
     cout << "Right endpoint of linear regression " << pow(10, upperEnd) << endl;
     double startingTemperature = pow(10,LOG10_HIGH_TEMP);
     for (auto const& keyValue : pbadMap)
     {
-        if(keyValue.second >= 0.985 && keyValue.first >= upperEnd){
+        if(keyValue.second >= InitialPBad && keyValue.first >= upperEnd){
             startingTemperature = pow(10, keyValue.first);
             cout << "Initial temperature is " << startingTemperature << " expected pbad is " << keyValue.second << endl;
             break;
@@ -1650,7 +1788,6 @@ void SANA::searchTemperaturesByLinearRegression() {
     cout << "Final temperature is " << endingTemperature << " expected pbad is " << endingPbad << endl;
     TInitial = startingTemperature;
     TFinal = endingTemperature;
-
 }
 
 void SANA::searchTemperaturesByStatisticalTest() {
@@ -1676,7 +1813,7 @@ void SANA::searchTemperaturesByStatisticalTest() {
     cout << LOW_THRESHOLD_P << " of random runs have a score <= " << lowThresholdScore << endl;
     cout << HIGH_THRESHOLD_P << " of random runs have a score <= " << highThresholdScore << endl;
 
-    double lowerBoundTInitial = 0;
+    double lowerBoundTInitial = exp(LOG10_LOW_TEMP);
     double upperBoundTInitial = 1;
     while (not isRandomTInitial(upperBoundTInitial, highThresholdScore, lowThresholdScore)) {
         cout << endl;
@@ -1684,7 +1821,7 @@ void SANA::searchTemperaturesByStatisticalTest() {
     }
     upperBoundTInitial *= 2;    // one more doubling just to be sure
     cout << endl;
-    if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/4;
+    //if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/4;
 
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
@@ -1693,7 +1830,7 @@ void SANA::searchTemperaturesByStatisticalTest() {
     uint count = 0;
     TImer.start();
     while (fabs(lowerBoundTInitial - upperBoundTInitial)/lowerBoundTInitial > 0.05 and
-            count <= 10) {
+            count <= 100) {
         //search in log space
         double lowerBoundTInitialLog = log2(lowerBoundTInitial+1);
         double upperBoundTInitialLog = log2(upperBoundTInitial+1);
@@ -1721,9 +1858,10 @@ void SANA::searchTemperaturesByStatisticalTest() {
 
     TInitial = upperBoundTInitial;
     TFinal = lowerBoundTInitial;
-
+#if 0
     setAcceptableTInitial();
     setAcceptableTFinal();
+#endif
 }
 
 void SANA::setAcceptableTInitial(){
@@ -1760,11 +1898,11 @@ double SANA::findAcceptableTFinalFromManualTInitial(double temperature){
     double finalProbability = pForTInitial(finalTemperature);
     cout << "Searching for an acceptable final temperature based on the initial temperature" << endl;
     do{
-        exponent -= 0.2;
+        exponent -= 1.0;
         finalTemperature = pow(10, exponent);
         finalProbability = pForTInitial(finalTemperature);
         cout << "Temperature: " << finalTemperature << " PBad: " << finalProbability << endl;
-    } while(finalProbability > 0.00001);
+    } while(finalProbability > FinalPBad);
     cout << "Resulting tFinal: " << finalTemperature << endl;
     cout << "Expected final probability: " << finalProbability << endl;
     return finalTemperature;
@@ -1776,11 +1914,11 @@ double SANA::findAcceptableTFinal(double temperature){
     double finalProbability = pForTInitial(finalTemperature);
     cout << "Searching for an acceptable final temperature" << endl;
     do{
-        exponent -= 0.1;
+        exponent -= 1;
         finalTemperature = pow(10, exponent);
         finalProbability = pForTInitial(finalTemperature);
         cout << "Temperature: " << finalTemperature << " PBad: " << finalProbability << endl;
-    } while(finalProbability > 0.00001);
+    } while(finalProbability > FinalPBad);
     cout << "Resulting tFinal: " << finalTemperature << endl;
     cout << "Expected final probability: " << finalProbability << endl;
     return finalTemperature;
@@ -1790,6 +1928,10 @@ double SANA::solveTDecay() {
     double tdecay = -log(TFinal * 1.0 * TInitialScaling/(TInitial)) / (1);
     cout << "tdecay: " << tdecay << endl;
     return tdecay;
+}
+
+void SANA::setTDecay(double t) {
+    TDecay = t;
 }
 
 void SANA::setTDecayAutomatically() {
@@ -2023,19 +2165,16 @@ double SANA::simpleSearchTInitial() {
 }
 
 double SANA::searchTDecay(double TInitial, double minutes) {
-
-    double iter_t = minutes*60*getIterPerSecond();
-
-    //commented out this method because it was bugged.
-
+#if 0
     //new TDecay method uses upper and lower tbounds
     if(lowerTBound != 0){
         double tdecay = -log(lowerTBound * 1.0 * TInitialScaling/(upperTBound)) / (1);
         cout << "\ntdecay: " << tdecay << "\n";
         return tdecay;
     }
-
+#else
     //old TDecay method
+    //double iter_t = minutes*60*getIterPerSecond();
     vector<double> EIncs = energyIncSample();
     cout << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
@@ -2049,7 +2188,7 @@ double SANA::searchTDecay(double TInitial, double minutes) {
     double EMax = vectorMax(EIncs);
     double x_left = abs(EMax)/log(N);
     double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
-    cout << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
+    cout << "Starting range for epsilon: (" << x_left << ", " << x_right << ")" << endl;
 
     const uint NUM_ITER = 100;
     for (uint i = 0; i < NUM_ITER; ++i) {
@@ -2064,10 +2203,11 @@ double SANA::searchTDecay(double TInitial, double minutes) {
     cout << "Final range: (" << x_left << ", " << x_right << ")" << endl;
     cout << "Final epsilon: " << epsilon << endl;
 
-
-    double lambda = log((TInitial)/epsilon)/(iter_t);
+    double lambda = log(TInitial/epsilon); // /(iter_t);
     cout << "Final T_decay: " << lambda << endl;
+    assert(-1e300 < lambda && lambda < 1e300); // ensure it's actually a number.
     return lambda;
+#endif
 }
 
 double SANA::searchTDecay(double TInitial, uint iterations) {
@@ -2105,6 +2245,10 @@ double SANA::searchTDecay(double TInitial, uint iterations) {
     cout << "Final T_decay: " << lambda << endl;
     return lambda;
 }
+
+double SANA::getTInitial(void) { return TInitial; }
+double SANA::getTFinal(void) { return TFinal; }
+double SANA::getTDecay(void) { return TDecay; }
 
 double SANA::getIterPerSecond() {
     if (not initializedIterPerSecond) {
