@@ -11,6 +11,12 @@
 #include "../utils/ParetoFront.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 
+#ifdef WEIGHTED
+#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges
+#else
+#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back
+#endif
+
 class SANA: public Method {
 
 public:
@@ -351,7 +357,8 @@ private:
     unordered_map<vector<ushort>*, double> storedTCSum;
     unordered_map<vector<ushort>*, double> storedCurrentScore;
     unordered_map<vector<ushort>*, map<string, double>*> storedLocalScoreSumMap;
-
+    typedef double (*calc)(PARAMS);
+    unordered_map<string, calc> measureCalculation;
 };
 
 #endif
