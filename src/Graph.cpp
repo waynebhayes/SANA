@@ -268,8 +268,8 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         if(g.matrix.isConnected(node1, node2)){
             //errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
 	    unordered_map<ushort,string> index2name = g.getIndexToNodeNameMap();
-	    errorMsg << "In graph[" << graphName << "]: duplicate edges not allowed (in either direction), node names are " 
-                     << index2name[node1] << " " << index2name[node2] << '\n';
+	    errorMsg << "In graph[" << graphName << "]: duplicate edges not allowed (in either direction), node names are " <<
+                      index2name[node1] << " " << index2name[node2] << '\n';
             throw runtime_error(errorMsg.str().c_str());
         }
         if(node1 == node2) {
