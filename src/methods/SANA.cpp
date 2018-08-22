@@ -327,7 +327,34 @@ Alignment SANA::run() {
     }
 }
 
+double ecC(PARAMS) { return double(aligEdges) / g1Edges; }
+double s3C(PARAMS) { return double(aligEdges) / (g1Edges + inducedEdges - aligEdges); }
+double icsC(PARAMS) { return double(aligEdges) / inducedEdges; }
+double secC(PARAMS) { return double(aligEdges) / (g1Edges + aligEdges) / g2Edges * 0.5; }
+double tcC(PARAMS) { return TCSum; }
+double localC(PARAMS) { return double(localScoreSum) / n1; }
+double wecC(PARAMS) { return double(wecSum) / (2 * g1Edges); }
+double ewecC(PARAMS) { return ewecSum; }
+double ncC(PARAMS) { return double(ncSum) / trueA_back; }
+#ifdef WEIGHTED
+double mecC(PARAMS) { return double(aligEdges) / (g1WeightedEdges + g2WeightedEdges); }
+double sesC(PARAMS) { return squaredAligEdges; }
+#endif
+
 unordered_set<vector<ushort>*>* SANA::paretoRun() {
+    measureCalculation["ec"] = ecC;
+    measureCalculation["s3"] = s3C;
+    measureCalculation["ics"] = icsC;
+    measureCalculation["sec"] = secC;
+    measureCalculation["tc"] = tcC;
+    measureCalculation["local"] = localC;
+    measureCalculation["wec"] = wecC;
+    measureCalculation["ewec"] = ewecC;
+    measureCalculation["nc"] = ncC;
+#ifdef WEIGHTED
+    measureCalculation["mec"] = mecC;
+    measureCalculation["ses"] = sesC;
+#endif
     long long int iter = 0;
     if (!usingIterations) {
         return simpleParetoRun(getStartingAlignment(), (long long int) (getIterPerSecond()*minutes*60), iter);
@@ -706,16 +733,17 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, l
 }
 
 unordered_map<string, int> SANA::mapScoresToIndexes() {
-    //numOfMeasures = MC->numMeasures(); Currently, SANA uses arbitrary measures and ignores others (even when defined).
-    numOfMeasures = 8;
+    numOfMeasures = MC->numMeasures();
+    /*numOfMeasures = 8;
     #ifdef WEIGHTED
     numOfMeasures = 10;
-    #endif
-    measureNames = vector<string>(numOfMeasures);
-    /*for(int i = 0; i < numOfMeasures; ++i)
-        measureNames[i] = MC->getMeasure(i)->getName();*/
+    #endif*/
+    measureNames = vector<string>(0);
+    for(int i = 0; i < numOfMeasures; ++i)
+        if(MC->getWeight(MC->getMeasure(i)->getName()) > 0)
+            measureNames.push_back(MC->getMeasure(i)->getName());
     //SANA is using these predifined measures:-----------------------------------------------------
-    measureNames[0] = "ec";
+    /*measureNames[0] = "ec";
     measureNames[1] = "ics";
     measureNames[2] = "s3";
     measureNames[3] = "sec";
@@ -726,10 +754,12 @@ unordered_map<string, int> SANA::mapScoresToIndexes() {
     #ifdef WEIGHTED
     measureNames[8] = "mec";
     measureNames[9] = "ses";
-    #endif
+    #endif*/
     //---------------------------------------------------------------------------------------------
     sort(measureNames.begin(), measureNames.end()); //Must be sorted to function correctly.
-    measureNames.resize(distance(measureNames.begin(), unique(measureNames.begin(), measureNames.end()))); //Removes any duplicate measure names. Somehow, ICS measure appears twice... a good check to perform.
+    measureNames.erase(unique(measureNames.begin(), measureNames.end()), measureNames.end());
+    //measureNames.resize(distance(measureNames.begin(), unique(measureNames.begin(), measureNames.end()))); //Removes any duplicate measure names. Somehow, ICS measure appears twice... a good check to perform.
+    numOfMeasures = measureNames.size();
     unordered_map<string, int> toReturn;
     for(int i = 0; i < numOfMeasures; ++i)
     	toReturn[measureNames[i]] = i;
@@ -738,7 +768,26 @@ unordered_map<string, int> SANA::mapScoresToIndexes() {
 
 vector<double> SANA::translateScoresToVector() {
     vector<double> addScores(numOfMeasures);
-    addScores[scoreNamesToIndexes["ec"]] = double(aligEdges) / g1Edges;
+#ifdef WEIGHTED
+    for(int i = 0; i < numOfMeasures; i++) {
+        addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
+                                                                            ( aligEdges, g1Edges, inducedEdges,
+                                                                              g2Edges, TCSum, localScoreSum, n1,
+                                                                              wecSum, ewecSum, ncSum, trueA.back(),
+                                                                              g1WeightedEdges, g2WeightedEdges,
+                                                                              squaredAligEdges
+                                                                            );
+    }
+#else
+    for(int i = 0; i < numOfMeasures; i++) {
+        addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
+                                                                            ( aligEdges, g1Edges, inducedEdges,
+                                                                              g2Edges, TCSum, localScoreSum, n1,
+                                                                              wecSum, ewecSum, ncSum, trueA.back()
+                                                                            );
+    }
+#endif
+    /*addScores[scoreNamesToIndexes["ec"]] = double(aligEdges) / g1Edges;
     addScores[scoreNamesToIndexes["s3"]] = double(aligEdges) / (g1Edges + inducedEdges - aligEdges);
     addScores[scoreNamesToIndexes["ics"]] = double(aligEdges) / inducedEdges;
     addScores[scoreNamesToIndexes["sec"]] = double(aligEdges) / (g1Edges + aligEdges) / g2Edges * 0.5;
@@ -750,13 +799,32 @@ vector<double> SANA::translateScoresToVector() {
 #ifdef WEIGHTED
     addScores[scoreNamesToIndexes["mec"]] = double(aligEdges) / (g1WeightedEdges + g2WeightedEdges);
     addScores[scoreNamesToIndexes["ses"]] = squaredAligEdges;
-#endif
+#endif*/
     return addScores;
 }
 
 vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double newEwecSum, double newSquaredAligEdges) {
     vector<double> addScores(numOfMeasures);
-    addScores[scoreNamesToIndexes["ec"]] = double(newAligEdges) / g1Edges;
+#ifdef WEIGHTED
+    for(int i = 0; i < numOfMeasures; i++) {
+        addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
+                                                                            ( newAligEdges, g1Edges, newInducedEdges,
+                                                                              g2Edges, newTCSum, newLocalScoreSum, n1,
+                                                                              newWecSum, newEwecSum, newNcSum, trueA.back(),
+                                                                              g1WeightedEdges, g2WeightedEdges,
+                                                                              newSquaredAligEdges
+                                                                            );
+    }
+#else
+    for(int i = 0; i < numOfMeasures; i++) {
+        addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
+                                                                            ( newAligEdges, g1Edges, newInducedEdges,
+                                                                              g2Edges, newTCSum, newLocalScoreSum, n1,
+                                                                              newWecSum, newEwecSum, newNcSum, trueA.back()
+                                                                            );
+    }
+#endif
+    /*addScores[scoreNamesToIndexes["ec"]] = double(newAligEdges) / g1Edges;
     addScores[scoreNamesToIndexes["s3"]] = double(newAligEdges) / (g1Edges + newInducedEdges - newAligEdges);
     addScores[scoreNamesToIndexes["ics"]] = double(newAligEdges) / newInducedEdges;
     addScores[scoreNamesToIndexes["sec"]] = (double(newAligEdges) / g1Edges + newAligEdges / g2Edges)*0.5;
@@ -768,7 +836,7 @@ vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdge
 #ifdef WEIGHTED
     addScores[scoreNamesToIndexes["mec"]] = double(newAligEdges) / (g1WeightedEdges + g2WeightedEdges);
     addScores[scoreNamesToIndexes["ses"]] = double(newSquaredAligEdges) / SquaredEdgeScore::getDenom();
-#endif	
+#endif*/	
     return addScores;
 }
 
@@ -1232,12 +1300,6 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         }
         else
         {
-            /*energyInc = newCurrentScore - currentScore;
-            wasBadMove = energyInc < 0;
-            badProbability = exp(energyInc / T);
-            makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / T));
-            if(makeChange)
-                currentScores = addScores;*/
             newCurrentScore = 0;
             newCurrentScore += ecWeight * (newAligEdges / g1Edges);
             newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
@@ -1250,8 +1312,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
             energyInc = newCurrentScore - currentScore;
             wasBadMove = energyInc < 0;
             badProbability = exp(energyInc / Temperature);
-            makeChange = (addScores[currentMeasure] > currentScores[currentMeasure] || energyInc >= 0 or
- randomReal(gen) <= exp(energyInc / Temperature));
+            makeChange = (addScores[currentMeasure] > currentScores[currentMeasure] or energyInc >= 0 or randomReal(gen) <= exp(energyInc / Temperature));
             if(makeChange) currentScores = addScores;
         }
         break;

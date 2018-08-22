@@ -15,7 +15,7 @@ void ParetoMode::run(ArgumentParser& args) {
     Graph G1, G2;
     initGraphs(G1, G2, args);
 
-    setArgsForParetoMode(args);
+    //setArgsForParetoMode(args);
     MeasureCombination M;
     initMeasures(M, G1, G2, args);
     Method* method;
