@@ -706,44 +706,44 @@ void Graph::multGwFile(const string& fileName, uint path) {
     initConnectedComponents();
 }
 
-bool comp_vectors(const vector<uint>* a,const vector<uint>* b) {
-   return a->size() > b->size();
+bool comp_vectors(const vector<uint>& a,const vector<uint>& b) {
+   return a.size() > b.size();
 }
 
 void Graph::initConnectedComponents() {
-    //this function takes most of the initialization time
     uint n = getNumNodes();
-    vector<vector<uint>* > aux(0);
-    unordered_set<uint> nodes(n);
-    for (uint i = 0; i < n; i++) nodes.insert(i);
+    vector<bool> nodesAreChecked(n);
+
+    queue<uint> nodes;
+    for (uint i = 0; i < n; ++i) nodes.push(i);
 
     while (nodes.size() > 0) {
-        uint u = *nodes.begin();
-        nodes.erase(nodes.begin());
-        unordered_set<uint> group;
-        group.insert(u);
-        queue<uint> Q;
-        Q.push(u);
-        while (not Q.empty()) {
-            uint v = Q.front();
-            Q.pop();
-            unordered_set<uint> vNeighbors(adjLists[v].begin(), adjLists[v].end());
-            for (const auto& node: group) vNeighbors.erase(node);
-            for (const auto& node: vNeighbors) nodes.erase(node);
-            group.insert(vNeighbors.begin(), vNeighbors.end());
-            for (const auto& node: vNeighbors) Q.push(node);
+        uint startOfConnected = nodes.front();
+        nodes.pop();
+
+        if (nodesAreChecked[startOfConnected]) continue;
+
+        vector<uint> connected;
+
+        queue<uint> neighbors;
+        neighbors.push(startOfConnected);
+
+        while (not neighbors.empty()) {
+            uint node = neighbors.front();
+            neighbors.pop();
+            if (nodesAreChecked[node]) continue;
+
+            connected.push_back(node);
+            nodesAreChecked[node] = true;
+            
+            for (const uint & neighbor: adjLists[node]) {
+               if (not nodesAreChecked[neighbor]) 
+                   neighbors.push(neighbor);         
+            }
         }
-        aux.push_back(new vector<uint> (group.begin(), group.end()));
+        connectedComponents.push_back(connected);
     }
-    sort(aux.begin(), aux.end(), comp_vectors);
-    connectedComponents = vector<vector<uint> > (aux.size(), vector<uint> (0));
-    for (uint i = 0; i < connectedComponents.size(); i++) {
-        connectedComponents[i] = vector<uint> (aux[i]->size());
-        for (uint j = 0; j < aux[i]->size(); j++) {
-            connectedComponents[i][j] = (*aux[i])[j];
-        }
-    }
-    for(uint i = 0; i < aux.size();++i) delete aux[i];
+    sort(connectedComponents.begin(), connectedComponents.end(), comp_vectors);
 }
 
 uint Graph::numNodeInducedSubgraphEdges(const vector<uint>& subgraphNodes) const {
