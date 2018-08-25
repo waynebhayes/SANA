@@ -620,7 +620,7 @@ void Graph::multGwFile(const string& fileName, uint path) {
     //ignore header
     for (int i = 0; i < 4; i++) getline(infile, line);
     //read number of nodes
-    int n;
+    uint n;
     getline(infile, line);
     istringstream iss(line);
     if (!(iss >> n) or n <= 0) {
@@ -629,7 +629,7 @@ void Graph::multGwFile(const string& fileName, uint path) {
     }
     //read (and ditch) nodes
     string node;
-    for (int i = 0; i < n; i++) {
+    for (uint i = 0; i < n; i++) {
         getline(infile, line);
         istringstream iss(line);
         if (!(iss >> node)) {
@@ -638,15 +638,15 @@ void Graph::multGwFile(const string& fileName, uint path) {
         }
     }
     //read number of edges
-    int m;
+    uint m;
     getline(infile, line);
     istringstream iss2(line);
     if (!(iss2 >> m)) {
         errorMsg << "Failed to read edge number: " << line;
         throw runtime_error(errorMsg.str().c_str());
     }
-    SparseMatrix<int> sparse_graph1(n);
-    SparseMatrix<int> sparse_graph2(n);
+    SparseMatrix<ushort> sparse_graph1(n);
+    SparseMatrix<ushort> sparse_graph2(n);
 
     adjLists = vector<vector<ushort> > (n, vector<ushort>(0));
     matrix = Matrix(n);
@@ -656,10 +656,10 @@ void Graph::multGwFile(const string& fileName, uint path) {
     nodeTypes = vector<int> (n, -1);
 
     //read edges
-    for (int i = 0; i < m; i++) {
+    for (uint i = 0; i < m; i++) {
         getline(infile, line);
         istringstream iss(line);
-        int node1, node2;
+        uint node1, node2;
         if (!(iss >> node1 >> node2)) {
             errorMsg << "Failed to read edge: " << line;
             throw runtime_error(errorMsg.str().c_str());
@@ -670,17 +670,17 @@ void Graph::multGwFile(const string& fileName, uint path) {
         sparse_graph2.set(1,node1,node2);
         sparse_graph2.set(1,node2,node1);
     }
-    for(uint i=1; i<path ; i++){
-        SparseMatrix<int> final = sparse_graph2.multiply(sparse_graph1);
-        for(int k=1;k<=n;k++){
-            for(int j=1;j<= n;j++){
+    for(uint i=0; i<path ; i++){
+        SparseMatrix<ushort> final = sparse_graph2.multiply(sparse_graph1);
+        for(uint k=0;k<n;k++){
+            for(uint j=0;j<n;j++){
                 sparse_graph2.set(final.get(k,j),k,j);
             }
         }
     }
-    int elements = 0;
-    for(int k=1;k<=n;k++){
-            for(int j=1;j<= n;j++){
+    uint elements = 0;
+    for(uint k=0;k<n;k++){
+            for(uint j=0;j< n;j++){
                 if(sparse_graph2.get(k,j) > 0){
                     elements++;
                 }
@@ -688,9 +688,9 @@ void Graph::multGwFile(const string& fileName, uint path) {
     }
 
     edgeList = vector<vector<ushort> > (elements, vector<ushort>(2));
-    int count = 0;
-    for(int i=1;i<=n;i++){
-        for(int j=1;j<= n;j++){
+    uint count = 0;
+    for(uint i=0;i<n;i++){
+        for(uint j=0;j<n;j++){
             if(sparse_graph2.get(i,j) > 0){
                 matrix.connect(true, i - 1, j - 1);
                 adjLists[i-1].push_back(j-1);
