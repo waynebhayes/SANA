@@ -72,11 +72,11 @@ public:
         SparseMatrix<T> result(size());
 
         T a;
-        for (uint j = 1; j <= size(); j++){
-            for (uint k = 1; k <= m.size(); k++){
+        for (uint j = 0; j < size(); j++){
+            for (uint k = 0; k < m.size(); k++){
                 a = 0;
                 if(m.get(k, j) != 0){
-                    for (uint i = 1; i <= size(); i++) {
+                    for (uint i = 0; i < size(); i++) {
                         if(get(i, k) != 0 && m.get(k, j) != 0){
                             a += get(i, k) * m.get(k, j);
                             result.set(a, i, j);
