@@ -14,28 +14,26 @@ using namespace std;
 #endif
     
 #ifdef SPARSE
-    #define MATRIX_DATA_STRUCTURE SparseMatrix<WEIGHTED_VALUE>
+    #define MATRIX_DATA_STRUCTURE SparseMatrix<T>
 #else
-    #define MATRIX_DATA_STRUCTURE vector<vector<WEIGHTED_VALUE> >
+    #define MATRIX_DATA_STRUCTURE vector<vector<T> >
 #endif
 
-
+template <typename T>
 class Matrix {
 public:
-
     Matrix();
     Matrix(const Matrix & matrix);
     Matrix(uint numberOfNodes);
 
     Matrix & operator = (const Matrix & matrix);
 
-
-    WEIGHTED_VALUE get(uint node1, uint node2) const;
-    void set(WEIGHTED_VALUE value, uint node1, uint node2);
+    T get(uint node1, uint node2) const;
+    void set(T value, uint node1, uint node2);
 
     uint size() const;
 
-    void connect(WEIGHTED_VALUE value, uint node1, uint node2);
+    void connect(T value, uint node1, uint node2);
     bool isConnected(uint node1, uint node2) const;
 
     template <class Archive>
@@ -53,7 +51,8 @@ private:
  * the header files.
  */
 
-inline WEIGHTED_VALUE Matrix::get(uint node1, uint node2) const {
+template <typename T>
+inline T Matrix<T>::get(uint node1, uint node2) const {
 #ifdef SPARSE
     return data.get(node1, node2);
 #else
@@ -61,7 +60,8 @@ inline WEIGHTED_VALUE Matrix::get(uint node1, uint node2) const {
 #endif
 }
 
-inline void Matrix::set(WEIGHTED_VALUE value, uint node1, uint node2) {
+template <typename T>
+inline void Matrix<T>::set(T value, uint node1, uint node2) {
 #ifdef SPARSE
     if (data.get(node1, node2) || data.get(node2, node1)) {
         return ;
@@ -75,7 +75,8 @@ inline void Matrix::set(WEIGHTED_VALUE value, uint node1, uint node2) {
 #endif
 }
 
-inline void Matrix::connect(WEIGHTED_VALUE value, uint node1, uint node2) {
+template <typename T>
+inline void Matrix<T>::connect(T value, uint node1, uint node2) {
 #ifdef SPARSE
     data.set(value, node1, node2);
     data.set(value, node2, node1);
@@ -85,11 +86,42 @@ inline void Matrix::connect(WEIGHTED_VALUE value, uint node1, uint node2) {
 #endif       
 }
 
-inline bool Matrix::isConnected(uint node1, uint node2) const {
+template <typename T>
+inline bool Matrix<T>::isConnected(uint node1, uint node2) const {
 #ifdef SPARSE
     return data.get(node1, node2) && data.get(node2, node1);
 #else
     return data[node1][node2] && data[node2][node1];
 #endif
+}
+
+template <typename T>
+Matrix<T>::Matrix() {
+}
+
+template <typename T>
+Matrix<T>::Matrix(const Matrix & matrix) {
+    data = matrix.data;
+}
+
+template <typename T>
+Matrix<T>::Matrix(uint numberOfNodes) {
+#ifdef SPARSE
+    data = MATRIX_DATA_STRUCTURE(numberOfNodes);
+#else
+    data = MATRIX_DATA_STRUCTURE(numberOfNodes, 
+           vector<T>(numberOfNodes, T()));
+#endif        
+}
+
+template <typename T>
+Matrix<T> & Matrix<T>::operator = (const Matrix & matrix) {
+    data = matrix.data;
+    return *this;
+}
+
+template <typename T>
+uint Matrix<T>::size() const {
+    return data.size();
 }
 #endif

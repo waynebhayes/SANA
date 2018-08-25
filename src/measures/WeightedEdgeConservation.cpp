@@ -16,7 +16,7 @@ double WeightedEdgeConservation::eval(const Alignment& A) {
     vector<vector<float> >* simMatrix = nodeSim->getSimMatrix();
     vector<vector<uint> > edgeListG1;
     G1->getEdgeList(edgeListG1);
-    Matrix matrixG2;
+    Matrix<WEIGHTED_VALUE> matrixG2;
     G2->getMatrix(matrixG2);
     double score = 0;
     for (const auto& edge: edgeListG1) {
