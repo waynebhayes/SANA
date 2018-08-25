@@ -7,8 +7,8 @@ ShortestPathConservation::ShortestPathConservation(Graph* G1, Graph* G2) : Measu
     
     G1->getDistanceMatrix(distMatrixG1);
     G2->getDistanceMatrix(distMatrixG2);
-    ushort maxDistG1 = matrixMax(distMatrixG1);
-    ushort maxDistG2 = matrixMax(distMatrixG2);
+    uint maxDistG1 = matrixMax(distMatrixG1);
+    uint maxDistG2 = matrixMax(distMatrixG2);
     maxDist = max(maxDistG1, maxDistG2);
 }
 

@@ -6,7 +6,7 @@
 
 using namespace std;
 
-NodeDensity::NodeDensity(Graph* G1, Graph* G2, ushort maxDist) : LocalMeasure(G1, G2, "noded") {
+NodeDensity::NodeDensity(Graph* G1, Graph* G2, uint maxDist) : LocalMeasure(G1, G2, "noded") {
     string fileName = autogenMatricesFolder+G1->getName()+"_"+
         G2->getName()+"_noded";
     fileName += ".bin";
@@ -15,23 +15,23 @@ NodeDensity::NodeDensity(Graph* G1, Graph* G2, ushort maxDist) : LocalMeasure(G1
     loadBinSimMatrix(fileName);
 }
 
-double NodeDensity::calcNodeDensity (vector<vector<ushort> > adjList, ushort originNode, ushort numNodes, ushort maxDist) {
-    ushort UNINTIALIZED_DISTANCE = numNodes;
-    vector<ushort> distanceFromOrigin(numNodes,UNINTIALIZED_DISTANCE);
-    queue <ushort> Q;
+double NodeDensity::calcNodeDensity (vector<vector<uint> > adjList, uint originNode, uint numNodes, uint maxDist) {
+    uint UNINTIALIZED_DISTANCE = numNodes;
+    vector<uint> distanceFromOrigin(numNodes,UNINTIALIZED_DISTANCE);
+    queue <uint> Q;
 
-    ushort numNodesWithinMaxDistance = 0;
+    uint numNodesWithinMaxDistance = 0;
     distanceFromOrigin[originNode] = 0;
     Q.push(originNode);
 
     while(not Q.empty()) {
-        ushort currentNode = Q.front();
+        uint currentNode = Q.front();
         Q.pop();
-        ushort dist = distanceFromOrigin[currentNode];
+        uint dist = distanceFromOrigin[currentNode];
         if(dist == maxDist) break;
         numNodesWithinMaxDistance++;
 
-        for(ushort neighbor : adjList[currentNode]) {
+        for(uint neighbor : adjList[currentNode]) {
             if(distanceFromOrigin[neighbor] == UNINTIALIZED_DISTANCE) {
                 distanceFromOrigin[neighbor] = dist + 1;
                 Q.push(neighbor);
@@ -42,8 +42,8 @@ double NodeDensity::calcNodeDensity (vector<vector<ushort> > adjList, ushort ori
     return numNodesWithinMaxDistance/(double)numNodes;
 }
 
-vector<double> NodeDensity::generateVector(Graph* g, ushort maxDist) {
-    vector<vector<ushort> > adjList;
+vector<double> NodeDensity::generateVector(Graph* g, uint maxDist) {
+    vector<vector<uint> > adjList;
     g->getAdjLists(adjList);
     vector<double> noded(g->getNumNodes());
     for(uint i = 0; i < g->getNumNodes(); ++i) {

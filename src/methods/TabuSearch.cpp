@@ -107,8 +107,8 @@ TabuSearch::TabuSearch(Graph* G1, Graph* G2,
     //stack. it is initialized properly before
     //running the algorithm
     assignedNodesG2 = vector<bool> (n2);
-    unassignedNodesG2 = vector<ushort> (n2-n1);
-    A = vector<ushort> (n1);
+    unassignedNodesG2 = vector<uint> (n2-n1);
+    A = vector<uint> (n1);
 
     assert((nodeTabus and n1 > maxTabus) or (not nodeTabus and n1*n2 > maxTabus));
 }
@@ -142,7 +142,7 @@ void TabuSearch::initDataStructures(const Alignment& startA) {
         assignedNodesG2[A[i]] = true;
     }
 
-    unassignedNodesG2 = vector<ushort> (n2-n1);
+    unassignedNodesG2 = vector<uint> (n2-n1);
     int j = 0;
     for (uint i = 0; i < n2; i++) {
         if (not assignedNodesG2[i]) {
@@ -216,11 +216,11 @@ Alignment TabuSearch::simpleRun(const Alignment& startA, double maxExecutionSeco
     return bestA; //dummy return to shut compiler warning
 }
 
-bool TabuSearch::isTabu(ushort node) {
+bool TabuSearch::isTabu(uint node) {
     return tabusHash.count(node) != 0;
 }
 
-void TabuSearch::addTabu(ushort node) {
+void TabuSearch::addTabu(uint node) {
   if (tabus.size() == maxTabus) {
     if (tabus.size() == 0) return;
     tabusHash.erase(tabus.back());
@@ -232,13 +232,13 @@ void TabuSearch::addTabu(ushort node) {
 
 //if tabus are mappings, the first 16 bits are the node in G1
 //and the last 16 bits are the node in G2
-bool TabuSearch::isTabu(ushort node1, ushort node2) {
+bool TabuSearch::isTabu(uint node1, uint node2) {
     uint tabuId = node1;
     tabuId = (tabuId << 16) | node2;
     return tabusHash.count(tabuId) != 0;
 }
 
-void TabuSearch::addTabu(ushort node1, ushort node2) {
+void TabuSearch::addTabu(uint node1, uint node2) {
     if (tabus.size() == maxTabus) {
         if (tabus.size() == 0) return;
         tabusHash.erase(tabus.back());
@@ -252,16 +252,16 @@ void TabuSearch::addTabu(ushort node1, ushort node2) {
 
 void TabuSearch::TabuSearchIteration() {
     nScore = -1;
-    ushort numAdmiNeighborsFound = 0;
+    uint numAdmiNeighborsFound = 0;
     while (numAdmiNeighborsFound < nNeighbors) {
         if (randomReal(gen) <= changeProbability) {
-            ushort source = G1RandomNode(gen);
+            uint source = G1RandomNode(gen);
             if (isTabu(source)) continue;
             ++numAdmiNeighborsFound;
             performChange(source);
         }
         else {
-            ushort source1 = G1RandomNode(gen), source2 = G1RandomNode(gen);
+            uint source1 = G1RandomNode(gen), source2 = G1RandomNode(gen);
             if (isTabu(source1) or isTabu(source2)) continue;
             ++numAdmiNeighborsFound;
             performSwap(source1, source2);
@@ -276,18 +276,18 @@ void TabuSearch::TabuSearchIteration() {
 
 void TabuSearch::TabuSearchIterationMappingTabus() {
     nScore = -1;
-    ushort numAdmiNeighborsFound = 0;
+    uint numAdmiNeighborsFound = 0;
     while (numAdmiNeighborsFound < nNeighbors) {
         if (randomReal(gen) <= changeProbability) {
-            ushort source = G1RandomNode(gen);
+            uint source = G1RandomNode(gen);
             uint newTargetIndex = G2RandomUnassignedNode(gen);
-            ushort newTarget = unassignedNodesG2[newTargetIndex];
+            uint newTarget = unassignedNodesG2[newTargetIndex];
             if (isTabu(source, newTarget)) continue;
             ++numAdmiNeighborsFound;
             performChange(source, newTargetIndex);
         }
         else {
-            ushort source1 = G1RandomNode(gen), source2 = G1RandomNode(gen);
+            uint source1 = G1RandomNode(gen), source2 = G1RandomNode(gen);
             if (isTabu(source1, A[source2]) or isTabu(source2, A[source1])) continue;
             ++numAdmiNeighborsFound;
             performSwap(source1, source2);
@@ -331,14 +331,14 @@ void TabuSearch::moveToBestAdmiNeighbor() {
     }
 }
 
-void TabuSearch::performChange(ushort source) {
+void TabuSearch::performChange(uint source) {
     uint newTargetIndex = G2RandomUnassignedNode(gen);
     performChange(source, newTargetIndex);
 }
 
-void TabuSearch::performChange(ushort source, uint newTargetIndex) {
-    ushort oldTarget = A[source];
-    ushort newTarget = unassignedNodesG2[newTargetIndex];
+void TabuSearch::performChange(uint source, uint newTargetIndex) {
+    uint oldTarget = A[source];
+    uint newTarget = unassignedNodesG2[newTargetIndex];
 
     int newAligEdges = -1; //dummy initialization to shut compiler warnings
     if (needAligEdges) {
@@ -380,8 +380,8 @@ void TabuSearch::performChange(ushort source, uint newTargetIndex) {
     }
 }
 
-void TabuSearch::performSwap(ushort source1, ushort source2) {
-    ushort target1 = A[source1], target2 = A[source2];
+void TabuSearch::performSwap(uint source1, uint source2) {
+    uint target1 = A[source1], target2 = A[source2];
 
     int newAligEdges = -1; //dummy initialization to shut compiler warnings
     if (needAligEdges) {
@@ -417,25 +417,25 @@ void TabuSearch::performSwap(ushort source1, ushort source2) {
     }
 }
 
-int TabuSearch::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+int TabuSearch::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int res = 0;
     for (uint i = 0; i < G1AdjLists[source].size(); i++) {
-        ushort neighbor = G1AdjLists[source][i];
+        uint neighbor = G1AdjLists[source][i];
         res -= G2Matrix.get(oldTarget, A[neighbor]);
         res += G2Matrix.get(newTarget, A[neighbor]);
     }
     return res;
 }
 
-int TabuSearch::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
+int TabuSearch::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     int res = 0;
     for (uint i = 0; i < G1AdjLists[source1].size(); i++) {
-        ushort neighbor = G1AdjLists[source1][i];
+        uint neighbor = G1AdjLists[source1][i];
         res -= G2Matrix.get(target1, A[neighbor]);
         res += G2Matrix.get(target2, A[neighbor]);
     }
     for (uint i = 0; i < G1AdjLists[source2].size(); i++) {
-        ushort neighbor = G1AdjLists[source2][i];
+        uint neighbor = G1AdjLists[source2][i];
         res -= G2Matrix.get(target2, A[neighbor]);
         res += G2Matrix.get(target1, A[neighbor]);
     }
@@ -449,14 +449,14 @@ int TabuSearch::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target
     return res;
 }
 
-int TabuSearch::inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+int TabuSearch::inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int res = 0;
     for (uint i = 0; i < G2AdjLists[oldTarget].size(); i++) {
-        ushort neighbor = G2AdjLists[oldTarget][i];
+        uint neighbor = G2AdjLists[oldTarget][i];
         res -= assignedNodesG2[neighbor];
     }
     for (uint i = 0; i < G2AdjLists[newTarget].size(); i++) {
-        ushort neighbor = G2AdjLists[newTarget][i];
+        uint neighbor = G2AdjLists[newTarget][i];
         res += assignedNodesG2[neighbor];
     }
     //address case changing between adjacent nodes:
@@ -464,21 +464,21 @@ int TabuSearch::inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort 
     return res;
 }
 
-double TabuSearch::localScoreSumIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+double TabuSearch::localScoreSumIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     return sims[source][newTarget] - sims[source][oldTarget];
 }
 
-double TabuSearch::localScoreSumIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
+double TabuSearch::localScoreSumIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     return sims[source1][target2] -
            sims[source1][target1] +
            sims[source2][target1] -
            sims[source2][target2];
 }
 
-double TabuSearch::WECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+double TabuSearch::WECIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     double res = 0;
     for (uint j = 0; j < G1AdjLists[source].size(); j++) {
-        ushort neighbor = G1AdjLists[source][j];
+        uint neighbor = G1AdjLists[source][j];
         if (G2Matrix.get(oldTarget, A[neighbor])) {
             res -= wecSims[source][oldTarget];
             res -= wecSims[neighbor][A[neighbor]];
@@ -491,10 +491,10 @@ double TabuSearch::WECIncChangeOp(ushort source, ushort oldTarget, ushort newTar
     return res;
 }
 
-double TabuSearch::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
+double TabuSearch::WECIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     double res = 0;
     for (uint j = 0; j < G1AdjLists[source1].size(); j++) {
-        ushort neighbor = G1AdjLists[source1][j];
+        uint neighbor = G1AdjLists[source1][j];
         if (G2Matrix.get(target1, A[neighbor])) {
             res -= wecSims[source1][target1];
             res -= wecSims[neighbor][A[neighbor]];
@@ -505,7 +505,7 @@ double TabuSearch::WECIncSwapOp(ushort source1, ushort source2, ushort target1, 
         }
     }
     for (uint j = 0; j < G1AdjLists[source2].size(); j++) {
-        ushort neighbor = G1AdjLists[source2][j];
+        uint neighbor = G1AdjLists[source2][j];
         if (G2Matrix.get(target2, A[neighbor])) {
             res -= wecSims[source2][target2];
             res -= wecSims[neighbor][A[neighbor]];

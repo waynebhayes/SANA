@@ -29,8 +29,8 @@ private:
     double g1Edges; //stored as double because it appears in division
     Matrix G1Matrix;
     Matrix G2Matrix;
-    vector<vector<ushort> > G1AdjLists;
-    vector<vector<ushort> > G2AdjLists;
+    vector<vector<uint> > G1AdjLists;
+    vector<vector<uint> > G2AdjLists;
 
 
     //random number generation
@@ -46,8 +46,8 @@ private:
     //data structures for the solution space search
     double changeProbability;
     vector<bool> assignedNodesG2;
-    vector<ushort> unassignedNodesG2;
-    vector<ushort> A;
+    vector<uint> unassignedNodesG2;
+    vector<uint> A;
     //initializes all the necessary datastructures for a new run
     void initDataStructures(const Alignment& startA);
 
@@ -64,30 +64,30 @@ private:
     //to evaluate EC incrementally
     bool needAligEdges;
     int aligEdges;
-    int aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
-    int aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+    int aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
+    int aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
 
     //to evaluate S3 incrementally
     bool needInducedEdges;
     int inducedEdges;
-    int inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
+    int inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
 
 
     //to evaluate wec incrementally
     bool needWec;
     double wecSum;
     vector<vector<float> > wecSims;
-    double WECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
-    double WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+    double WECIncChangeOp(uint source, uint oldTarget, uint newTarget);
+    double WECIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
 
     //to evaluate local measures incrementally
     bool needLocal;
     double localScoreSum;
     vector<vector<float> > sims;
-    double localScoreSumIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
-    double localScoreSumIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+    double localScoreSumIncChangeOp(uint source, uint oldTarget, uint newTarget);
+    double localScoreSumIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
 
     //other execution options
@@ -101,9 +101,9 @@ private:
     double energyInc;
     void TabuSearchIteration();
     void TabuSearchIterationMappingTabus();
-    void performChange(ushort source);
-    void performChange(ushort source, uint newTargetIndex);
-    void performSwap(ushort source1, ushort source2);
+    void performChange(uint source);
+    void performChange(uint source, uint newTargetIndex);
+    void performSwap(uint source1, uint source2);
 
     //others
     Timer timer;
@@ -111,7 +111,7 @@ private:
 
     //tabu search-specific data structures
     //best-known solution
-    vector<ushort> bestA;
+    vector<uint> bestA;
     double bestScore;
 
 
@@ -127,10 +127,10 @@ private:
     deque<uint> tabus;
     unordered_set<uint> tabusHash;
 
-    bool isTabu(ushort node);
-    void addTabu(ushort node);
-    bool isTabu(ushort node1, ushort node2);
-    void addTabu(ushort node1, ushort node2);
+    bool isTabu(uint node);
+    void addTabu(uint node);
+    bool isTabu(uint node1, uint node2);
+    void addTabu(uint node1, uint node2);
 
 
     double nScore;
@@ -139,17 +139,17 @@ private:
     void moveToBestAdmiNeighbor();
 
     bool isChangeNeighbor;
-    ushort nSource;
-    ushort nOldTarget;
-    ushort nNewTarget;
+    uint nSource;
+    uint nOldTarget;
+    uint nNewTarget;
     uint nNewTargetIndex;
     int nAligEdges;
     int nInducedEdges;
     double nLocalScoreSum;
     double nWecSum;
 
-    ushort nSource1, nSource2;
-    ushort nTarget1, nTarget2;
+    uint nSource1, nSource2;
+    uint nTarget1, nTarget2;
 
 
 

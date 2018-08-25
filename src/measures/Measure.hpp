@@ -16,7 +16,7 @@ public:
     virtual bool isLocal();
     virtual double balanceWeight() {return 0;};
     
-    virtual vector<ushort> getMappingforNC() const {return vector<ushort>{0};}
+    virtual vector<uint> getMappingforNC() const {return vector<uint>{0};}
 protected:
     Graph* G1;
     Graph* G2;

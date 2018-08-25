@@ -15,19 +15,19 @@ public:
     ExternalWeightedEdgeConservation(Graph* G1, Graph* G2, std::string scoresFile);
     //virtual ~ExternalWeightedEdgeConservation();
     double eval(const Alignment& A);
-    //double simScore(ushort source, ushort target, const Alignment& A);
-    //double changeOp(ushort source, ushort oldTarget, ushort newTarget, const Alignment& A);
-    //double swapOp(ushort source1, ushort source2, ushort target1, ushort target2, const Alignment& A);
-    int getColIndex(ushort n1, ushort n2); //make these private before you push 
-    int getRowIndex(ushort n1, ushort n2);
+    //double simScore(uint source, uint target, const Alignment& A);
+    //double changeOp(uint source, uint oldTarget, uint newTarget, const Alignment& A);
+    //double swapOp(uint source1, uint source2, uint target1, uint target2, const Alignment& A);
+    int getColIndex(uint n1, uint n2); //make these private before you push 
+    int getRowIndex(uint n1, uint n2);
     double getScore(int colNum, int rowNum); //returns sim score given the indices of the col and row
 
 private:
     std::vector<std::vector<double>> simScores;
     std::vector<std::vector<int>> colIndex;
     std::vector<std::vector<int>> rowIndex;
-    std::vector<std::vector<ushort> > adjListG1;
-    std::vector<std::vector<ushort> > adjListG2;
+    std::vector<std::vector<uint> > adjListG1;
+    std::vector<std::vector<uint> > adjListG2;
     Matrix matrixG1;
     Matrix matrixG2;
     std::vector<std::string> nodeNamesG1;

@@ -17,8 +17,8 @@ void Sequence::generateBitscoresFile(string bitscoresFile) {
     cout << "Generating " << bitscoresFile << " ... ";
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
-    unordered_map<ushort,string> g1IndexToNodeMap = G1->getIndexToNodeNameMap();
-    unordered_map<ushort,string> g2IndexToNodeMap = G2->getIndexToNodeNameMap();
+    unordered_map<uint,string> g1IndexToNodeMap = G1->getIndexToNodeNameMap();
+    unordered_map<uint,string> g2IndexToNodeMap = G2->getIndexToNodeNameMap();
     ofstream outfile(bitscoresFile);
     for (uint i = 0; i < n1; i++) {
         for (uint j = 0; j < n2; j++) {
@@ -67,8 +67,8 @@ void Sequence::initSimMatrix() {
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
 
-    unordered_map<string,ushort> g1NodeToIndexMap = G1->getNodeNameToIndexMap();
-    unordered_map<string,ushort> g2NodeToIndexMap = G2->getNodeNameToIndexMap();
+    unordered_map<string,uint> g1NodeToIndexMap = G1->getNodeNameToIndexMap();
+    unordered_map<string,uint> g2NodeToIndexMap = G2->getNodeNameToIndexMap();
 
     string blastFile = "sequence/scores/"+g1Name+"_"+g2Name+"_blast.out";
     if (not fileExists(blastFile)) {
@@ -84,8 +84,8 @@ void Sequence::initSimMatrix() {
         iss >> node1 >> node2;
         if (g1NeedNameMap) node1 = g1NameMap[node1];
         if (g2NeedNameMap) node2 = g2NameMap[node2];
-        ushort index1 = g1NodeToIndexMap.at(node1);
-        ushort index2 = g2NodeToIndexMap.at(node2);
+        uint index1 = g1NodeToIndexMap.at(node1);
+        uint index2 = g2NodeToIndexMap.at(node2);
         //uses bitscores, which is the last column
         //there are other possibilities, such as
         //-log of e-values (second-to-last value), also used in l-graal

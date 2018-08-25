@@ -29,7 +29,7 @@ public:
     ~SANA(){}
 
     Alignment run();
-    unordered_set<vector<ushort>*>* paretoRun();
+    unordered_set<vector<uint>*>* paretoRun();
     void describeParameters(ostream& stream);
     string fileNameSuffix(const Alignment& A);
 
@@ -99,11 +99,11 @@ private:
     double g2Edges; //stored as double because it appears in division
     Matrix G1Matrix;
     Matrix G2Matrix;
-    vector<vector<ushort> > G1AdjLists;
-    vector<vector<ushort> > G2AdjLists;
+    vector<vector<uint> > G1AdjLists;
+    vector<vector<uint> > G2AdjLists;
 
     void initTau(void);
-    vector<ushort> unLockedNodesG1;
+    vector<uint> unLockedNodesG1;
     bool nodesHaveType = false;
     //random number generation
     mt19937 gen;
@@ -117,11 +117,11 @@ private:
     uniform_int_distribution<> G2RandomUnassignedmiRNADist;
 
 
-    ushort G1RandomUnlockedNode();
-    ushort G1RandomUnlockedNode(uint source1); // used in nodes-have-type because
-    ushort G1RandomUnlockedNode_Fast();
-    ushort G2RandomUnlockedNode(uint target1);
-    ushort G2RandomUnlockedNode_Fast();
+    uint G1RandomUnlockedNode();
+    uint G1RandomUnlockedNode(uint source1); // used in nodes-have-type because
+    uint G1RandomUnlockedNode_Fast();
+    uint G2RandomUnlockedNode(uint target1);
+    uint G2RandomUnlockedNode_Fast();
 
     //temperature schedule
     double TInitial;
@@ -160,10 +160,10 @@ private:
     //data structures for the solution space search
     double changeProbability[2];
     vector<bool> *assignedNodesG2;
-    vector<ushort> *unassignedNodesG2;
-    vector<ushort> *unassignedmiRNAsG2;
-    vector<ushort> *unassignedgenesG2;
-    vector<ushort>* A;
+    vector<uint> *unassignedNodesG2;
+    vector<uint> *unassignedmiRNAsG2;
+    vector<uint> *unassignedgenesG2;
+    vector<uint>* A;
     //initializes all the necessary data structures for a new run
     void initDataStructures(const Alignment& startA);
 
@@ -213,14 +213,14 @@ private:
     //to evaluate EC incrementally
     bool needAligEdges;
     int aligEdges;
-    int aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
-    int aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+    int aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
+    int aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
     // to evaluate SES incrementally
     bool needSquaredAligEdges;
     int squaredAligEdges;
-    int squaredAligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
-    int squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+    int squaredAligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
+    int squaredAligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
     //to evaluate EC incrementally
     bool needSec;
@@ -229,34 +229,34 @@ private:
     //to evaluate S3 incrementally
     bool needInducedEdges;
     int inducedEdges;
-    int inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
+    int inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
 
     bool needTC;
     double TCSum;
-    double TCIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
-    double TCIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+    double TCIncChangeOp(uint source, uint oldTarget, uint newTarget);
+    double TCIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
     //to evaluate nc incrementally
     bool needNC;
     int ncSum;
-    vector<ushort> trueA;
-    int ncIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
-    int ncIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+    vector<uint> trueA;
+    int ncIncChangeOp(uint source, uint oldTarget, uint newTarget);
+    int ncIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
     //to evaluate wec incrementally
     bool needWec;
     double wecSum;
     vector<vector<float> > wecSims;
-    double WECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
-    double WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
+    double WECIncChangeOp(uint source, uint oldTarget, uint newTarget);
+    double WECIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
     //to evaluate ewec incrementally
     bool needEwec;
     ExternalWeightedEdgeConservation* ewec;
     double ewecSum;
-    double EWECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget);
-    double EWECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2);
-    double EWECSimCombo(ushort source, ushort target);
+    double EWECIncChangeOp(uint source, uint oldTarget, uint newTarget);
+    double EWECIncSwapOp(uint source1, uint source2, uint target1, uint target2);
+    double EWECSimCombo(uint source, uint target);
 
     //to evaluate local measures incrementally
     bool needLocal;
@@ -270,8 +270,8 @@ private:
     vector<double> totalCoreWeight; // sum of all pBads, for each node in G1.
 #endif
     map<string, vector<vector<float> > > localSimMatrixMap;
-    double localScoreSumIncChangeOp(vector<vector<float> > const & sim, ushort const & source, ushort const & oldTarget, ushort const & newTarget);
-    double localScoreSumIncSwapOp(vector<vector<float> > const & sim, ushort const & source1, ushort const & source2, ushort const & target1, ushort const & target2);
+    double localScoreSumIncChangeOp(vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
+    double localScoreSumIncSwapOp(vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
 
 
 
@@ -289,9 +289,9 @@ private:
         long long int& iter);
     Alignment simpleRun(const Alignment& startA, double maxExecutionSeconds, long long int maxExecutionIterations,
         long long int& iter);
-    unordered_set<vector<ushort>*>* simpleParetoRun(const Alignment& A, double maxExecutionSeconds,
+    unordered_set<vector<uint>*>* simpleParetoRun(const Alignment& A, double maxExecutionSeconds,
         long long int& iter);
-    unordered_set<vector<ushort>*>* simpleParetoRun(const Alignment& A, long long int maxExecutionIterations,
+    unordered_set<vector<uint>*>* simpleParetoRun(const Alignment& A, long long int maxExecutionIterations,
         long long int& iter);
 
     double currentScore;
@@ -326,7 +326,7 @@ private:
     void insertCurrentAndPrepareNewMeasureDataByAlignment(vector<double> &addScores);
     vector<double> translateScoresToVector();
     void insertCurrentAlignmentAndData();
-    void removeAlignmentData(vector<ushort>* toRemove);
+    void removeAlignmentData(vector<uint>* toRemove);
     void initializeParetoFront();
     vector<double> getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum,
                                      double newLocalScoreSum, double newWecSum, double newNcSum,
@@ -338,25 +338,25 @@ private:
     vector<double> currentScores;
     ParetoFront paretoFront;
     vector<bool>* newAN = new vector<bool>(0);
-    vector<ushort>* newUAN = new vector<ushort>(0);
-    vector<ushort>* newUmiRNA = new vector<ushort>(0);
-    vector<ushort>* newUG = new vector<ushort>(0);
+    vector<uint>* newUAN = new vector<uint>(0);
+    vector<uint>* newUmiRNA = new vector<uint>(0);
+    vector<uint>* newUG = new vector<uint>(0);
     unordered_map<string, int> scoreNamesToIndexes;
-    unordered_set<vector<ushort>*>* storedAlignments = new unordered_set<vector<ushort>*>;
-    unordered_map<vector<ushort>*, vector<bool>*> storedAssignedNodesG2;
-    unordered_map<vector<ushort>*, vector<ushort>*> storedUnassignedNodesG2;
-    unordered_map<vector<ushort>*, vector<ushort>*> storedUnassignedmiRNAsG2;
-    unordered_map<vector<ushort>*, vector<ushort>*> storedUnassignedgenesG2;
-    unordered_map<vector<ushort>*, int> storedAligEdges;
-    unordered_map<vector<ushort>*, int> storedSquaredAligEdges;
-    unordered_map<vector<ushort>*, int> storedInducedEdges;
-    unordered_map<vector<ushort>*, double> storedLocalScoreSum;
-    unordered_map<vector<ushort>*, double> storedWecSum;
-    unordered_map<vector<ushort>*, double> storedEwecSum;
-    unordered_map<vector<ushort>*, int> storedNcSum;
-    unordered_map<vector<ushort>*, double> storedTCSum;
-    unordered_map<vector<ushort>*, double> storedCurrentScore;
-    unordered_map<vector<ushort>*, map<string, double>*> storedLocalScoreSumMap;
+    unordered_set<vector<uint>*>* storedAlignments = new unordered_set<vector<uint>*>;
+    unordered_map<vector<uint>*, vector<bool>*> storedAssignedNodesG2;
+    unordered_map<vector<uint>*, vector<uint>*> storedUnassignedNodesG2;
+    unordered_map<vector<uint>*, vector<uint>*> storedUnassignedmiRNAsG2;
+    unordered_map<vector<uint>*, vector<uint>*> storedUnassignedgenesG2;
+    unordered_map<vector<uint>*, int> storedAligEdges;
+    unordered_map<vector<uint>*, int> storedSquaredAligEdges;
+    unordered_map<vector<uint>*, int> storedInducedEdges;
+    unordered_map<vector<uint>*, double> storedLocalScoreSum;
+    unordered_map<vector<uint>*, double> storedWecSum;
+    unordered_map<vector<uint>*, double> storedEwecSum;
+    unordered_map<vector<uint>*, int> storedNcSum;
+    unordered_map<vector<uint>*, double> storedTCSum;
+    unordered_map<vector<uint>*, double> storedCurrentScore;
+    unordered_map<vector<uint>*, map<string, double>*> storedLocalScoreSumMap;
     typedef double (*calc)(PARAMS);
     unordered_map<string, calc> measureCalculation;
 };

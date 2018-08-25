@@ -34,7 +34,7 @@ vector<vector<double> > Importance::initEdgeWeights(const Graph& G) {
 }
 
 struct DegreeComp {
-    DegreeComp(vector<vector<ushort> > const *adjLists) {
+    DegreeComp(vector<vector<uint> > const *adjLists) {
         this->adjLists = adjLists;
     }
 
@@ -46,7 +46,7 @@ struct DegreeComp {
     // "importance" many times based on random shuffles of the node/edge orderings.  Probably a better idea is
     // to figure out some way to delete all equally-valued importance nodes simultaneously rather than imposing
     // an arbitrary order.
-    bool operator() (ushort i, ushort j) {
+    bool operator() (uint i, uint j) {
         int size1 = (*adjLists)[i].size(), size2 = (*adjLists)[j].size();
         if (size1 == size2)
 	    return 0;
@@ -54,18 +54,18 @@ struct DegreeComp {
 	    return (size1 < size2);
     }
 
-    vector<vector<ushort> > const *adjLists;
+    vector<vector<uint> > const *adjLists;
 };
 
-vector<ushort> Importance::getNodesSortedByDegree(const vector<vector<ushort> >& adjLists) {
+vector<uint> Importance::getNodesSortedByDegree(const vector<vector<uint> >& adjLists) {
     uint n = adjLists.size();
-    vector<ushort> nodes(n);
-    for (ushort i = 0; i < n; i++) {
+    vector<uint> nodes(n);
+    for (uint i = 0; i < n; i++) {
         nodes[i] = i;
     }
     sort(nodes.begin(), nodes.end(), DegreeComp(&adjLists));
-    vector<ushort> res(0);
-    for (ushort i = 0; i < n; i++) {
+    vector<uint> res(0);
+    for (uint i = 0; i < n; i++) {
         if (adjLists[nodes[i]].size() > d) return res;
         res.push_back(nodes[i]);
     }
@@ -73,7 +73,7 @@ vector<ushort> Importance::getNodesSortedByDegree(const vector<vector<ushort> >&
     return res;//dummy return
 }
 
-void Importance::removeFromAdjList(vector<ushort>& list, ushort u) {
+void Importance::removeFromAdjList(vector<uint>& list, uint u) {
     for (uint i = 0; i < list.size(); i++) {
         if (list[i] == u) list.erase(list.begin()+i);
     }
@@ -97,31 +97,31 @@ vector<double> Importance::getImportances(const Graph& G) {
     vector<vector<double> > edgeWeights = initEdgeWeights(G);
 
     //adjLists will change as we remove nodes from G
-    vector<vector<ushort> > adjLists(n);
+    vector<vector<uint> > adjLists(n);
     G.getAdjLists(adjLists);
 
     //as opposed to adjLists, degrees remain true to the original graph
     vector<uint> degrees(n);
     for (uint i = 0; i < n; i++) degrees[i] = adjLists[i].size();
 
-    vector<ushort> nodesSortedByDegree = getNodesSortedByDegree(adjLists); //returns only the nodes with degree <= d
-    for (ushort u : nodesSortedByDegree) {
+    vector<uint> nodesSortedByDegree = getNodesSortedByDegree(adjLists); //returns only the nodes with degree <= d
+    for (uint u : nodesSortedByDegree) {
         //update neighbors' weights
         if (degrees[u] == 1) {
-            for (ushort v : adjLists[u]) {
+            for (uint v : adjLists[u]) {
                 nodeWeights[v] += nodeWeights[u] + edgeWeights[u][v];
             }
         }
         else {
             double uWeight = nodeWeights[u];
-            for (ushort v : adjLists[u]) {
+            for (uint v : adjLists[u]) {
                 uWeight += edgeWeights[u][v];
             }
 
             for (uint i = 0; i < adjLists[u].size(); i++) {
-                ushort v1 = adjLists[u][i];
+                uint v1 = adjLists[u][i];
                 for (uint j = i+1; j < adjLists[u].size(); j++) {
-                    ushort v2 = adjLists[u][j];
+                    uint v2 = adjLists[u][j];
                     double numNeighbors = adjLists[u].size();
                     edgeWeights[v1][v2] +=
                         uWeight/((numNeighbors*(numNeighbors-1))/2.0);
@@ -129,7 +129,7 @@ vector<double> Importance::getImportances(const Graph& G) {
             }
         }
 
-        for (ushort v : adjLists[u]) {
+        for (uint v : adjLists[u]) {
             removeFromAdjList(adjLists[v], u);
         }
 
@@ -157,7 +157,7 @@ vector<double> Importance::getImportances(const Graph& G) {
     vector<double> res(n);
     for (uint u = 0; u < n; u++) {
         double edgeWeightSum = 0;
-        for (ushort v : adjLists[u]) {
+        for (uint v : adjLists[u]) {
             edgeWeightSum += edgeWeights[u][v];
         }
         res[u] = nodeWeights[u] + edgeWeightSum;
@@ -172,15 +172,15 @@ void Importance::initSimMatrix() {
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
 
-    vector<vector<ushort> > adjListsG1(n1), adjListG1Shuf(n1);
-    vector<vector<ushort> > adjListsG2(n2), adjListG2Shuf(n2);
+    vector<vector<uint> > adjListsG1(n1), adjListG1Shuf(n1);
+    vector<vector<uint> > adjListsG2(n2), adjListG2Shuf(n2);
     G1->getAdjLists(adjListsG1);
     G2->getAdjLists(adjListsG2);
 #define NUM_SHUFFLES 30
     cout << "Creating average importances from " << NUM_SHUFFLES << " shuffles of the nodes of G1 and G2\n";
     for(uint shuf = 0 ; shuf < NUM_SHUFFLES; shuf++)
     {
-	vector<ushort> shuffle1(n1), shuffle2(n2);
+	vector<uint> shuffle1(n1), shuffle2(n2);
 	Graph H1 = G1->randomNodeShuffle(shuffle1);
 	Graph H2 = G2->randomNodeShuffle(shuffle2);
 	H1.getAdjLists(adjListG1Shuf);
@@ -202,10 +202,10 @@ void Importance::initSimMatrix() {
 
 bool Importance::hasNodesWithEnoughDegree(const Graph& G) {
     uint n = G.getNumNodes();
-    vector<vector<ushort> > adjLists(n);
+    vector<vector<uint> > adjLists(n);
     G.getAdjLists(adjLists);
-    vector<ushort> nodes(n);
-    for (ushort i = 0; i < n; i++) {
+    vector<uint> nodes(n);
+    for (uint i = 0; i < n; i++) {
         nodes[i] = i;
     }
     sort(nodes.begin(), nodes.end(), DegreeComp(&adjLists));

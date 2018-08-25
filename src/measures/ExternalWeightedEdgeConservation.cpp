@@ -14,13 +14,13 @@ ExternalWeightedEdgeConservation::ExternalWeightedEdgeConservation(Graph* G1, Gr
 }
 
 double ExternalWeightedEdgeConservation::eval(const Alignment& A){
-    std::vector<std::vector<ushort> > edgeListG1;
+    std::vector<std::vector<uint> > edgeListG1;
     G1->getEdgeList(edgeListG1);
     //std::vector<std::vector<bool> > adjMatrixG2;
     //G2->getAdjMatrix(adjMatrixG2);
     double score = 0;
     for (const auto& edge: edgeListG1) {
-        ushort node1 = edge[0], node2 = edge[1];
+        uint node1 = edge[0], node2 = edge[1];
         if (matrixG2.get(A[node1], A[node2])) {
             std::string n1s = nodeNamesG1[node1], n2s = nodeNamesG1[node2];
             std::string an1s = nodeNamesG2[A[node1]], an2s = nodeNamesG2[A[node2]];
@@ -127,30 +127,30 @@ int ExternalWeightedEdgeConservation::getRowIndex(std::string n1, std::string n2
     return getRowIndex(n1Index, n2Index);
 }
 
-int ExternalWeightedEdgeConservation::getColIndex(ushort n1, ushort n2){
+int ExternalWeightedEdgeConservation::getColIndex(uint n1, uint n2){
     bool orderCorrect = n1 < n2;
     if(!orderCorrect){
-        ushort n3 = n1;
+        uint n3 = n1;
         n1 = n2;
         n2 = n3;
     }
     return colIndex[n1][n2];
 }
 
-int ExternalWeightedEdgeConservation::getRowIndex(ushort n1, ushort n2){
+int ExternalWeightedEdgeConservation::getRowIndex(uint n1, uint n2){
     bool orderCorrect = n1 < n2;
     if(!orderCorrect){
-        ushort n3 = n1;
+        uint n3 = n1;
         n1 = n2;
         n2 = n3;
     }
     return rowIndex[n1][n2];
 }
 /* Deprecated, do not use.
-double ExternalWeightedEdgeConservation::simScore(ushort source, ushort target, const Alignment& A){
+double ExternalWeightedEdgeConservation::simScore(uint source, uint target, const Alignment& A){
     double score = 0;
     for (uint i = 0; i < adjListG1[source].size(); ++i) {
-        ushort neighbor = adjListG1[source][i];
+        uint neighbor = adjListG1[source][i];
         if (adjMatrixG2[target][A[neighbor]]) {
             int e1 = getRowIndex(source, neighbor);
             int e2 = getColIndex(target, A[neighbor]);
@@ -161,8 +161,8 @@ double ExternalWeightedEdgeConservation::simScore(ushort source, ushort target, 
     return score;
 }
 
-double ExternalWeightedEdgeConservation::changeOp(ushort source, ushort oldTarget, ushort newTarget, const Alignment& A){
-    ushort neighbor;
+double ExternalWeightedEdgeConservation::changeOp(uint source, uint oldTarget, uint newTarget, const Alignment& A){
+    uint neighbor;
     int e1, e2;
     double score = 0;
     int size1 = adjListG1[source].size();
@@ -187,8 +187,8 @@ double ExternalWeightedEdgeConservation::changeOp(ushort source, ushort oldTarge
     return score;
 }
 
-double ExternalWeightedEdgeConservation::swapOp(ushort source1, ushort source2, ushort target1, ushort target2, const Alignment& A){
-    ushort neighbor;
+double ExternalWeightedEdgeConservation::swapOp(uint source1, uint source2, uint target1, uint target2, const Alignment& A){
+    uint neighbor;
     int e1, e2;
     double score = 0;
     int size1 = adjListG1[source1].size();
@@ -212,7 +212,7 @@ double ExternalWeightedEdgeConservation::swapOp(ushort source1, ushort source2, 
     }
 
     for(int i = 0; i < size2; ++i){
-        ushort neighbor = adjListG1[source2][i];
+        uint neighbor = adjListG1[source2][i];
         if(adjMatrixG2[target2][A[neighbor]]){
             std::string n1s = nodeNamesG1[source2], n2s = nodeNamesG1[neighbor];
             std::string an1s = nodeNamesG2[target2], an2s = nodeNamesG2[A[neighbor]];

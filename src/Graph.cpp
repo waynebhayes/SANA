@@ -180,7 +180,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
 
     vector<string> nodes;
     nodes.reserve(nodeLen);
-    unordered_map<string,ushort> nodeName2IndexMap;
+    unordered_map<string,uint> nodeName2IndexMap;
     nodeName2IndexMap.reserve(nodeLen);
 
     vector<vector<string> > edges;
@@ -216,9 +216,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     }
 
 #ifdef WEIGHTED
-    vector<vector<ushort>> edgeList(vecLen, vector<ushort> (3));
+    vector<vector<uint>> edgeList(vecLen, vector<uint> (3));
 #else
-    vector<vector<ushort>> edgeList(vecLen, vector<ushort> (2));
+    vector<vector<uint>> edgeList(vecLen, vector<uint> (2));
 #endif
     stringstream errorMsg;
     string edgeValue;
@@ -256,7 +256,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     }
     nodes.shrink_to_fit();
     const size_t nodeSize = nodes.size();
-    g.adjLists = vector<vector<ushort> > (nodeSize, vector<ushort>(0));
+    g.adjLists = vector<vector<uint> > (nodeSize, vector<uint>(0));
     g.matrix = Matrix(nodeSize);
     uint node1;
     uint node2;
@@ -267,7 +267,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         node2 = edgeList[i][1];
         if(g.matrix.isConnected(node1, node2)){
             //errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
-	    unordered_map<ushort,string> index2name = g.getIndexToNodeNameMap();
+	    unordered_map<uint,string> index2name = g.getIndexToNodeNameMap();
 	    errorMsg << "In graph[" << graphName << "]: duplicate edges not allowed (in either direction), node names are " <<
                       index2name[node1] << " " << index2name[node2] << '\n';
             throw runtime_error(errorMsg.str().c_str());
@@ -347,9 +347,9 @@ void Graph::edgeList2gw(string fin, string fout) {
     // }
 
 #ifdef WEIGHTED
-    vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (3));
+    vector<vector<uint>> edgeList(edges.size(), vector<uint> (3));
 #else
-    vector<vector<ushort>> edgeList(edges.size(), vector<ushort> (2));
+    vector<vector<uint>> edgeList(edges.size(), vector<uint> (2));
 #endif
     stringstream errorMsg;
 
@@ -399,21 +399,21 @@ Graph::Graph() :
     unlockedmiRNACount(0),
     geneIndexList(vector<uint>(0)),
     miRNAIndexList(vector<uint>(0)),
-    edgeList(vector<vector<ushort> > (0)),
+    edgeList(vector<vector<uint> > (0)),
     matrix(0),
-    adjLists(vector<vector<ushort> > (0)),
-    connectedComponents(vector<vector<ushort>>(0)),
+    adjLists(vector<vector<uint> > (0)),
+    connectedComponents(vector<vector<uint>>(0)),
     lockedList(vector<bool> (0)),
     lockedTo(vector<string>(0)),
     lockedCount(0),
-    nodeNameToIndexMap(unordered_map<string,ushort>(0))
+    nodeNameToIndexMap(unordered_map<string,uint>(0))
     {}
 
 Graph::Graph(const Graph& G) {
-    edgeList = vector<vector<ushort> > (G.edgeList);
+    edgeList = vector<vector<uint> > (G.edgeList);
     matrix = Matrix (G.matrix);
-    adjLists = vector<vector<ushort> > (G.adjLists);
-    connectedComponents = vector<vector<ushort> > (G.connectedComponents);
+    adjLists = vector<vector<uint> > (G.adjLists);
+    connectedComponents = vector<vector<uint> > (G.connectedComponents);
     lockedList = vector<bool> (G.lockedList);
     nodeTypes = vector<int> (G.nodeTypes);
     lockedTo = vector<string> (G.lockedTo);
@@ -427,8 +427,8 @@ Graph::Graph(const Graph& G) {
     miRNAIndexList = G.miRNAIndexList;
 }
 
-Graph::Graph(uint n, const vector<vector<ushort> > edges) {
-    adjLists = vector<vector<ushort> > (n, vector<ushort> (0));
+Graph::Graph(uint n, const vector<vector<uint> > edges) {
+    adjLists = vector<vector<uint> > (n, vector<uint> (0));
     matrix = Matrix(n);
     edgeList = edges;
 
@@ -440,7 +440,7 @@ Graph::Graph(uint n, const vector<vector<ushort> > edges) {
 
     //only add edges preserved by alignment
     for (const auto& edge: edges) {
-        ushort node1 = edge[0], node2 = edge[1];
+        uint node1 = edge[0], node2 = edge[1];
         adjLists[node1].push_back(node2);
         adjLists[node2].push_back(node1);
 #ifdef WEIGHTED
@@ -485,15 +485,15 @@ void Graph::getMatrix(Matrix& matrixCopy) const {
     matrixCopy = matrix;
 }
 
-void Graph::getAdjLists(vector<vector<ushort> >& adjListsCopy) const {
-    adjListsCopy = vector<vector<ushort> > (adjLists);
+void Graph::getAdjLists(vector<vector<uint> >& adjListsCopy) const {
+    adjListsCopy = vector<vector<uint> > (adjLists);
 }
 
-void Graph::getEdgeList(vector<vector<ushort> >& edgeListCopy) const {
+void Graph::getEdgeList(vector<vector<uint> >& edgeListCopy) const {
     edgeListCopy = edgeList;
 }
 
-const vector<vector<ushort> >& Graph::getConnectedComponents() const {
+const vector<vector<uint> >& Graph::getConnectedComponents() const {
     return connectedComponents;
 }
 
@@ -501,10 +501,10 @@ void Graph::setMatrix(Matrix& matrixCopy) {
     matrix = matrixCopy;
 }
 
-void Graph::setAdjLists(vector<vector<ushort> >& adjListsCopy) {
+void Graph::setAdjLists(vector<vector<uint> >& adjListsCopy) {
     adjLists = adjListsCopy;
 }
-void Graph::setEdgeList(vector<vector<ushort> >& edgeListCopy) {
+void Graph::setEdgeList(vector<vector<uint> >& edgeListCopy) {
     edgeList = edgeListCopy;
 }
 
@@ -550,13 +550,13 @@ void Graph::loadGwFile(const string& fileName) {
         throw runtime_error(errorMsg.str().c_str());
     }
 
-    adjLists = vector<vector<ushort> > (n, vector<ushort>(0));
+    adjLists = vector<vector<uint> > (n, vector<uint>(0));
     matrix = Matrix(n);
 #ifdef WEIGHTED
     char dump;
-    ushort edgeValue;
+    uint edgeValue;
 #endif
-    edgeList = vector<vector<ushort> > (m, vector<ushort>(2));
+    edgeList = vector<vector<uint> > (m, vector<uint>(2));
     lockedList = vector<bool> (n, false);
     lockedTo = vector<string> (n, "");
     nodeTypes = vector<int> (n, -1);
@@ -564,8 +564,8 @@ void Graph::loadGwFile(const string& fileName) {
     geneCount = miRNACount = 0;
 
     //read edges
-    ushort node1;
-    ushort node2;
+    uint node1;
+    uint node2;
 
     for (int i = 0; i < m; ++i) {
         getline(infile, line);
@@ -645,12 +645,12 @@ void Graph::multGwFile(const string& fileName, uint path) {
         errorMsg << "Failed to read edge number: " << line;
         throw runtime_error(errorMsg.str().c_str());
     }
-    SparseMatrix<ushort> sparse_graph1(n);
-    SparseMatrix<ushort> sparse_graph2(n);
+    SparseMatrix<uint> sparse_graph1(n);
+    SparseMatrix<uint> sparse_graph2(n);
 
-    adjLists = vector<vector<ushort> > (n, vector<ushort>(0));
+    adjLists = vector<vector<uint> > (n, vector<uint>(0));
     matrix = Matrix(n);
-    //edgeList = vector<vector<ushort> > (m, vector<ushort>(2));
+    //edgeList = vector<vector<uint> > (m, vector<uint>(2));
     lockedList = vector<bool> (n, false);
     lockedTo = vector<string> (n, "");
     nodeTypes = vector<int> (n, -1);
@@ -671,7 +671,7 @@ void Graph::multGwFile(const string& fileName, uint path) {
         sparse_graph2.set(1,node2,node1);
     }
     for(uint i=0; i<path ; i++){
-        SparseMatrix<ushort> final = sparse_graph2.multiply(sparse_graph1);
+        SparseMatrix<uint> final = sparse_graph2.multiply(sparse_graph1);
         for(uint k=0;k<n;k++){
             for(uint j=0;j<n;j++){
                 sparse_graph2.set(final.get(k,j),k,j);
@@ -687,7 +687,7 @@ void Graph::multGwFile(const string& fileName, uint path) {
             }
     }
 
-    edgeList = vector<vector<ushort> > (elements, vector<ushort>(2));
+    edgeList = vector<vector<uint> > (elements, vector<uint>(2));
     uint count = 0;
     for(uint i=0;i<n;i++){
         for(uint j=0;j<n;j++){
@@ -706,39 +706,39 @@ void Graph::multGwFile(const string& fileName, uint path) {
     initConnectedComponents();
 }
 
-bool comp_vectors(const vector<ushort>* a,const vector<ushort>* b) {
+bool comp_vectors(const vector<uint>* a,const vector<uint>* b) {
    return a->size() > b->size();
 }
 
 void Graph::initConnectedComponents() {
     //this function takes most of the initialization time
-    ushort n = getNumNodes();
-    vector<vector<ushort>* > aux(0);
-    unordered_set<ushort> nodes(n);
-    for (ushort i = 0; i < n; i++) nodes.insert(i);
+    uint n = getNumNodes();
+    vector<vector<uint>* > aux(0);
+    unordered_set<uint> nodes(n);
+    for (uint i = 0; i < n; i++) nodes.insert(i);
 
     while (nodes.size() > 0) {
-        ushort u = *nodes.begin();
+        uint u = *nodes.begin();
         nodes.erase(nodes.begin());
-        unordered_set<ushort> group;
+        unordered_set<uint> group;
         group.insert(u);
-        queue<ushort> Q;
+        queue<uint> Q;
         Q.push(u);
         while (not Q.empty()) {
-            ushort v = Q.front();
+            uint v = Q.front();
             Q.pop();
-            unordered_set<ushort> vNeighbors(adjLists[v].begin(), adjLists[v].end());
+            unordered_set<uint> vNeighbors(adjLists[v].begin(), adjLists[v].end());
             for (const auto& node: group) vNeighbors.erase(node);
             for (const auto& node: vNeighbors) nodes.erase(node);
             group.insert(vNeighbors.begin(), vNeighbors.end());
             for (const auto& node: vNeighbors) Q.push(node);
         }
-        aux.push_back(new vector<ushort> (group.begin(), group.end()));
+        aux.push_back(new vector<uint> (group.begin(), group.end()));
     }
     sort(aux.begin(), aux.end(), comp_vectors);
-    connectedComponents = vector<vector<ushort> > (aux.size(), vector<ushort> (0));
+    connectedComponents = vector<vector<uint> > (aux.size(), vector<uint> (0));
     for (uint i = 0; i < connectedComponents.size(); i++) {
-        connectedComponents[i] = vector<ushort> (aux[i]->size());
+        connectedComponents[i] = vector<uint> (aux[i]->size());
         for (uint j = 0; j < aux[i]->size(); j++) {
             connectedComponents[i][j] = (*aux[i])[j];
         }
@@ -746,35 +746,35 @@ void Graph::initConnectedComponents() {
     for(uint i = 0; i < aux.size();++i) delete aux[i];
 }
 
-uint Graph::numNodeInducedSubgraphEdges(const vector<ushort>& subgraphNodes) const {
-    unordered_set<ushort> nodeSet(subgraphNodes.begin(), subgraphNodes.end());
+uint Graph::numNodeInducedSubgraphEdges(const vector<uint>& subgraphNodes) const {
+    unordered_set<uint> nodeSet(subgraphNodes.begin(), subgraphNodes.end());
     uint count = 0;
     for (uint i = 0; i < subgraphNodes.size(); i++) {
-        ushort node1 = subgraphNodes[i];
+        uint node1 = subgraphNodes[i];
         for (uint j = 0; j < adjLists[node1].size(); j++) {
-            ushort node2 = adjLists[node1][j];
+            uint node2 = adjLists[node1][j];
             count += nodeSet.count(node2);
         }
     }
     return count/2;
 }
 
-Graph Graph::nodeInducedSubgraph(const vector<ushort>& nodes) const {
+Graph Graph::nodeInducedSubgraph(const vector<uint>& nodes) const {
     uint n = nodes.size();
-    vector<ushort> rev = reverseMapping(nodes, getNumNodes());
-    unordered_set<ushort> nodeSet(nodes.begin(), nodes.end());
+    vector<uint> rev = reverseMapping(nodes, getNumNodes());
+    unordered_set<uint> nodeSet(nodes.begin(), nodes.end());
     Graph G;
-    G.adjLists = vector<vector<ushort> > (n, vector<ushort> (0));
+    G.adjLists = vector<vector<uint> > (n, vector<uint> (0));
     G.matrix = Matrix(n);
     //only add edges between induced nodes
     for (const auto& edge: edgeList) {
-        ushort node1 = edge[0], node2 = edge[1];
+        uint node1 = edge[0], node2 = edge[1];
         if (nodeSet.count(node1) and nodeSet.count(node2)) {
-            ushort newNode1 = rev[node1];
-            ushort newNode2 = rev[node2];
+            uint newNode1 = rev[node1];
+            uint newNode2 = rev[node2];
             G.adjLists[newNode1].push_back(newNode2);
             G.adjLists[newNode2].push_back(newNode1);
-            vector<ushort> newEdge(2);
+            vector<uint> newEdge(2);
             newEdge[0] = newNode1;
             newEdge[1] = newNode2;
             G.edgeList.push_back(newEdge);
@@ -795,7 +795,7 @@ void Graph::printStats(int numConnectedComponentsToPrint, ostream& stream) const
     stream << "#connectedComponents = " << getNumConnectedComponents() << endl;
     stream << "Largest connectedComponents (nodes, edges) = ";
     for (int i = 0; i < min(numConnectedComponentsToPrint, getNumConnectedComponents()); i++) {
-        const vector<ushort>& nodes = getConnectedComponents()[i];
+        const vector<uint>& nodes = getConnectedComponents()[i];
         Graph H = nodeInducedSubgraph(nodes);
         stream << "(" << H.getNumNodes() << ", " << H.getNumEdges() << ") ";
     }
@@ -820,19 +820,19 @@ void Graph::getDistanceMatrix(vector<vector<short> >& dist) const {
 //a -1 indicates that the distance is infinite
 //floyd-warshall algorithm
 void Graph::computeDistanceMatrix(vector<vector<short> >& dist) const {
-    ushort n = getNumNodes();
+    uint n = getNumNodes();
     dist = vector<vector<short> > (n, vector<short> (n, -1));
     assert(false); // replace this with iterated Dijkstra, which is MUCH faster on sparse graphs
-    for (ushort v = 0; v < n; v++) {
+    for (uint v = 0; v < n; v++) {
         dist[v][v] = 0;
-        for (ushort i = 0; i < adjLists[v].size(); i++) {
-            ushort u = adjLists[v][i];
+        for (uint i = 0; i < adjLists[v].size(); i++) {
+            uint u = adjLists[v][i];
             dist[u][v] = 1;
         }
     }
-    for (ushort k = 0; k < n; k++) {
-        for (ushort i = 0; i < n; i++) {
-            for (ushort j = 0; j < n; j++) {
+    for (uint k = 0; k < n; k++) {
+        for (uint i = 0; i < n; i++) {
+            for (uint j = 0; j < n; j++) {
                 if (dist[i][k] != -1 and dist[k][j] != -1) {
                     if (dist[i][j] == -1 or dist[i][j] > dist[i][k] + dist[k][j]) {
                         dist[i][j] = dist[i][k] + dist[k][j];
@@ -847,7 +847,7 @@ void Graph::computeDistanceMatrix(vector<vector<short> >& dist) const {
 //The following e lines describe undirected edges with space-separated ids of their endpoints.
 //Node ids should be between 0 and n-1
 void Graph::writeGraphEdgeListFormat(const string& fileName) {
-    ushort n = getNumNodes();
+    uint n = getNumNodes();
     uint e = getNumEdges();
     ofstream outfile;
     outfile.open(fileName.c_str());
@@ -892,46 +892,46 @@ void Graph::writeGraphEdgeListFormatPINALOG(const string& fileName){
 }
 
 
-vector<ushort> Graph::numNodesAround(ushort node, ushort maxDist) const {
+vector<uint> Graph::numNodesAround(uint node, uint maxDist) const {
     uint n = getNumNodes();
-    vector<ushort> distances(n, n);
+    vector<uint> distances(n, n);
     distances[node] = 0;
-    queue<ushort> Q;
+    queue<uint> Q;
     Q.push(node);
     while (not Q.empty()) {
-        ushort u = Q.front();
+        uint u = Q.front();
         Q.pop();
-        ushort dist = distances[u];
+        uint dist = distances[u];
         if (dist == maxDist) break;
         for (uint i = 0; i < adjLists[u].size(); i++) {
-            ushort v = adjLists[u][i];
+            uint v = adjLists[u][i];
             if (distances[v] < n) continue;
             distances[v] = dist+1;
             Q.push(v);
         }
     }
-    vector<ushort> result(maxDist, 0);
+    vector<uint> result(maxDist, 0);
     for (uint i = 0; i < n; i++) {
         if (distances[i] < n and distances[i] > 0) result[distances[i]-1]++;
     }
     return result;
 }
 
-vector<ushort> Graph::numEdgesAround(ushort node, ushort maxDist) const {
+vector<uint> Graph::numEdgesAround(uint node, uint maxDist) const {
     uint n = getNumNodes();
-    vector<ushort> distances(n, n);
+    vector<uint> distances(n, n);
     vector<bool> visited(n, false);
     distances[node] = 0;
-    queue<ushort> Q;
+    queue<uint> Q;
     Q.push(node);
-    vector<ushort> result(maxDist, 0);
+    vector<uint> result(maxDist, 0);
     while (not Q.empty()) {
-        ushort u = Q.front();
+        uint u = Q.front();
         Q.pop();
-        ushort dist = distances[u];
+        uint dist = distances[u];
         if (dist == maxDist) break;
         for (uint i = 0; i < adjLists[u].size(); i++) {
-            ushort v = adjLists[u][i];
+            uint v = adjLists[u][i];
             if (not visited[v]) result[dist]++;
             if (distances[v] < n) continue;
             distances[v] = dist+1;
@@ -942,14 +942,14 @@ vector<ushort> Graph::numEdgesAround(ushort node, ushort maxDist) const {
     return result;
 }
 
-ushort Graph::randomNode() {
+uint Graph::randomNode() {
     return randInt(0, getNumNodes()-1);
 }
 
 //note: does not update CCs
-void Graph::addEdge(ushort node1, ushort node2) {
+void Graph::addEdge(uint node1, uint node2) {
     matrix.connect(true, node1, node2);
-    vector<ushort> edge(2);
+    vector<uint> edge(2);
     edge[0] = node1;
     edge[1] = node2;
     edgeList.push_back(edge);
@@ -958,7 +958,7 @@ void Graph::addEdge(ushort node1, ushort node2) {
 }
 
 //note: does not update CCs
-void Graph::removeEdge(ushort node1, ushort node2) {
+void Graph::removeEdge(uint node1, uint node2) {
     matrix.set(false, node1, node2);
     matrix.set(false, node2, node1);
     uint m = getNumEdges();
@@ -966,7 +966,7 @@ void Graph::removeEdge(ushort node1, ushort node2) {
     for (uint i = 0; i < m; i++) {
         if ((edgeList[i][0] == node1 and edgeList[i][1] == node2) or
             (edgeList[i][0] == node2 and edgeList[i][1] == node1)) {
-            vector<ushort> lastEdge = edgeList[m-1];
+            vector<uint> lastEdge = edgeList[m-1];
             edgeList[i] = lastEdge;
             edgeList.pop_back();
             break;
@@ -975,7 +975,7 @@ void Graph::removeEdge(ushort node1, ushort node2) {
     //update adjacency lists
     for (uint i = 0; i < adjLists[node1].size(); i++) {
         if (adjLists[node1][i] == node2) {
-            ushort lastNeighbor = adjLists[node1][adjLists[node1].size()-1];
+            uint lastNeighbor = adjLists[node1][adjLists[node1].size()-1];
             adjLists[node1][i] = lastNeighbor;
             adjLists[node1].pop_back();
             break;
@@ -983,7 +983,7 @@ void Graph::removeEdge(ushort node1, ushort node2) {
     }
     for (uint i = 0; i < adjLists[node2].size(); i++) {
         if (adjLists[node2][i] == node1) {
-            ushort lastNeighbor = adjLists[node2][adjLists[node2].size()-1];
+            uint lastNeighbor = adjLists[node2][adjLists[node2].size()-1];
             adjLists[node2][i] = lastNeighbor;
             adjLists[node2].pop_back();
             break;
@@ -993,7 +993,7 @@ void Graph::removeEdge(ushort node1, ushort node2) {
 
 //note: does not update CCs
 void Graph::addRandomEdge() {
-    ushort node1 = 0, node2 = 0;
+    uint node1 = 0, node2 = 0;
     while (node1 == node2 or matrix.get(node1, node2)) {
         node1 = randomNode();
         node2 = randomNode();
@@ -1003,7 +1003,7 @@ void Graph::addRandomEdge() {
 
 //note: does not update CCs
 void Graph::removeRandomEdge() {
-    ushort node1 = 0, node2 = 0;
+    uint node1 = 0, node2 = 0;
     while (node1 == node2 or not matrix.get(node1, node2)) {
         node1 = randomNode();
         node2 = randomNode();
@@ -1085,7 +1085,7 @@ vector<vector<uint> > Graph::computeGraphletDegreeVectors() {
     return gdvs;
 }
 
-unordered_map<string,ushort> Graph::getNodeNameToIndexMap() const {
+unordered_map<string,uint> Graph::getNodeNameToIndexMap() const {
     if(nodeNameToIndexMap.size() != 0){
       return nodeNameToIndexMap;
     }
@@ -1112,9 +1112,9 @@ unordered_map<string,ushort> Graph::getNodeNameToIndexMap() const {
     }
 
     //read nodes
-    unordered_map<string, ushort> res;
+    unordered_map<string, uint> res;
     string node;
-    for (ushort i = 0; i < (ushort) n; i++) {
+    for (uint i = 0; i < (uint) n; i++) {
         getline(infile, line);
         istringstream iss(line);
         if (!(iss >> node)) {
@@ -1127,9 +1127,9 @@ unordered_map<string,ushort> Graph::getNodeNameToIndexMap() const {
     return res;
 }
 
-unordered_map<ushort,string> Graph::getIndexToNodeNameMap() const {
-    unordered_map<string,ushort> reverse = getNodeNameToIndexMap();
-    unordered_map<ushort,string> res;
+unordered_map<uint,string> Graph::getIndexToNodeNameMap() const {
+    unordered_map<string,uint> reverse = getNodeNameToIndexMap();
+    unordered_map<uint,string> res;
     for (const auto &nameIndexPair : reverse ) {
         res[nameIndexPair.second] = nameIndexPair.first;
     }
@@ -1138,8 +1138,8 @@ unordered_map<ushort,string> Graph::getIndexToNodeNameMap() const {
 
 vector<string> Graph::getNodeNames() const {
     vector<string> result(getNumNodes());
-    unordered_map<ushort,string> map = getIndexToNodeNameMap();
-    for (ushort i = 0; i < getNumNodes(); i++) {
+    unordered_map<uint,string> map = getIndexToNodeNameMap();
+    for (uint i = 0; i < getNumNodes(); i++) {
         result[i] = map[i];
     }
     return result;
@@ -1290,7 +1290,7 @@ void writeGWNodes(ofstream& outfile, const vector<string>& nodeNames) {
     }
 }
 
-void writeGWEdges(ofstream& outfile, const vector<vector<ushort>>& edgeList) {
+void writeGWEdges(ofstream& outfile, const vector<vector<uint>>& edgeList) {
     uint numEdges = edgeList.size();
     outfile << numEdges << endl;
     for (uint i = 0; i < numEdges; i++) {
@@ -1304,7 +1304,7 @@ void writeGWEdges(ofstream& outfile, const vector<vector<ushort>>& edgeList) {
 }
 
 void Graph::saveInGWFormat(string outputFile, const vector<string>& nodeNames,
-    const vector<vector<ushort>>& edgeList) {
+    const vector<vector<uint>>& edgeList) {
     ofstream outfile;
     string pid = to_string(getpid()), saveIn = "/tmp/saveInGWFormat";
     string tempFile = saveIn+pid;
@@ -1317,14 +1317,14 @@ void Graph::saveInGWFormat(string outputFile, const vector<string>& nodeNames,
 }
 
 void Graph::saveInGWFormatShuffled(string outputFile, const vector<string>& nodeNames,
-    const vector<vector<ushort>>& edgeList) {
+    const vector<vector<uint>>& edgeList) {
 
     uint n = nodeNames.size();
-    vector<ushort> origPos2NewPos(n);
+    vector<uint> origPos2NewPos(n);
     for (uint i = 0; i < n; i++) origPos2NewPos[i] = i;
     randomShuffle(origPos2NewPos);
 
-    unordered_map<ushort, ushort> newPos2OrigPos;
+    unordered_map<uint, uint> newPos2OrigPos;
     newPos2OrigPos.reserve(n);
     for (uint i = 0; i < n; i++) {
         newPos2OrigPos[origPos2NewPos[i]] = i;
@@ -1336,7 +1336,7 @@ void Graph::saveInGWFormatShuffled(string outputFile, const vector<string>& node
     }
 
     uint m = edgeList.size();
-    vector<vector<ushort>> newEdgeList(m, vector<ushort> (2));
+    vector<vector<uint>> newEdgeList(m, vector<uint> (2));
     for (uint i = 0; i < m; i++) {
         newEdgeList[i][0] = origPos2NewPos[edgeList[i][0]];
         newEdgeList[i][1] = origPos2NewPos[edgeList[i][1]];
@@ -1361,7 +1361,7 @@ void Graph::saveInGWFormatWithNames(string outputFile) {
 
 void Graph::saveInShuffledOrder(string outputFile) {
     uint numNodes = getNumNodes();
-    unordered_map<ushort,string> index2Name = getIndexToNodeNameMap();
+    unordered_map<uint,string> index2Name = getIndexToNodeNameMap();
     vector<string> nodeNames(numNodes);
     for (uint i = 0; i < numNodes; i++) {
         nodeNames[i] = index2Name[i];
@@ -1390,19 +1390,19 @@ Graph Graph::randomNodeInducedSubgraph(uint numNodes) {
     uint n = getNumNodes();
     if (numNodes > n) 
         cerr << "the subgraph cannot have more nodes" << endl;
-    vector<ushort> v(getNumNodes());
+    vector<uint> v(getNumNodes());
     for (uint i = 0; i < n; i++) v[i] = i;
     randomShuffle(v);
-    v = vector<ushort> (v.begin(), v.begin()+numNodes);
+    v = vector<uint> (v.begin(), v.begin()+numNodes);
     return nodeInducedSubgraph(v);
 }
 
-Graph Graph::randomNodeShuffle(vector<ushort> &shuffle) {
+Graph Graph::randomNodeShuffle(vector<uint> &shuffle) {
     uint n = getNumNodes();
     for (uint i = 0; i < n; i++) shuffle[i] = i;
     assert(shuffle.size() == n);
     randomShuffle(shuffle);
-    shuffle = vector<ushort> (shuffle.begin(), shuffle.end());
+    shuffle = vector<uint> (shuffle.begin(), shuffle.end());
     return nodeInducedSubgraph(shuffle);
 }
 
@@ -1548,12 +1548,12 @@ bool Graph::sameNodeNames(const Graph& other) const {
 
 
 void Graph::setLockedList(vector<string>& nodes, vector<string> & pairs){
-    unordered_map<string,ushort> nodeMap = getNodeNameToIndexMap();
+    unordered_map<string,uint> nodeMap = getNodeNameToIndexMap();
     const int size = nodeMap.size();
     vector<bool> locked (size, false);
     vector<string> lockPairs (size, "");
     for(uint i = 0; i < nodes.size(); i++){
-        ushort index = nodeMap[nodes[i]];
+        uint index = nodeMap[nodes[i]];
         locked[index] = true;
         lockPairs[index] = pairs[i];
     }
@@ -1585,8 +1585,8 @@ int Graph::getLockedCount(){
  * For example if we have nodes 1,2,3,4,5 with 3,5 being locked they get reIndexed to
  * 1,2,3,4,5 -> 1,2,5,3,4
  */
-unordered_map<ushort, ushort> Graph::getLocking_ReIndexMap() const{
-    unordered_map<ushort, ushort> result;
+unordered_map<uint, uint> Graph::getLocking_ReIndexMap() const{
+    unordered_map<uint, uint> result;
     int n = getNumNodes();
     result.reserve(n);
     int unlockedIndex = 0;
@@ -1609,8 +1609,8 @@ unordered_map<ushort, ushort> Graph::getLocking_ReIndexMap() const{
  *         gene, miRNA, Locked gene or miRNA
  *
  */
-unordered_map<ushort, ushort> Graph::getNodeTypes_ReIndexMap() const{
-    unordered_map<ushort, ushort> result;
+unordered_map<uint, uint> Graph::getNodeTypes_ReIndexMap() const{
+    unordered_map<uint, uint> result;
     int n = getNumNodes();
     result.reserve(n);
     int unlocked_gene_count = 0;
@@ -1642,24 +1642,24 @@ unordered_map<ushort, ushort> Graph::getNodeTypes_ReIndexMap() const{
     return result;
 }
 
-void Graph::reIndexGraph(unordered_map<ushort, ushort> reIndexMap){
+void Graph::reIndexGraph(unordered_map<uint, uint> reIndexMap){
     uint n = getNumNodes();
     Matrix matrixCopy(n);
     for (uint i = 0; i < n; i++) {
          for (uint j = 0; j < n; j++){
-               ushort a = reIndexMap[i];
-               ushort b = reIndexMap[j];
+               uint a = reIndexMap[i];
+               uint b = reIndexMap[j];
                matrixCopy.set(matrix.get(i, j), a, b);
          }
      }
     matrix = matrixCopy;
 
     // Adj List
-    vector<vector<ushort> > adjListsCopy(n, vector<ushort> (0));
+    vector<vector<uint> > adjListsCopy(n, vector<uint> (0));
     for (uint i = 0; i < n; i++) {
        for(uint j= 0; j < adjLists[i].size(); j++){
-           ushort a = reIndexMap[i];
-           ushort b = reIndexMap[adjLists[i][j]];
+           uint a = reIndexMap[i];
+           uint b = reIndexMap[adjLists[i][j]];
            adjListsCopy[a].push_back(b);
        }
      }

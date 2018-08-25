@@ -38,7 +38,7 @@ private:
     static void simpleToInternalFormat(const Graph& G, string GOFileSimpleFormat, string GOFileInternalFormat);
     static void ensureGOFileInternalFormatExists(const Graph& G);
 
-    static ushort numberAnnotatedProteins(const Graph& G);
+    static uint numberAnnotatedProteins(const Graph& G);
 
     static void generateGOFileSimpleFormat(string GOFile, string GOFileSimpleFormat);
     static void generateGene2GoSimpleFormat();

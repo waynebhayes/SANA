@@ -64,7 +64,7 @@ double vectorSum(const vector<double>& v) {
     return m;
 }
 
-void randomShuffle(vector<ushort>& v) {
+void randomShuffle(vector<uint>& v) {
     random_shuffle(v.begin(), v.end(), randMod);
 }
 
@@ -73,8 +73,8 @@ void randomShuffle(vector<vector<string>>& v) {
 }
 
 //result[map[i]] = i
-vector<ushort> reverseMapping(const vector<ushort>& map, int range) {
-    vector<ushort> result(range, -1); //-1 overflows for ushort
+vector<uint> reverseMapping(const vector<uint>& map, int range) {
+    vector<uint> result(range, -1); //-1 overflows for uint
     for (uint i = 0; i < map.size(); i++) {
         result[map[i]] = i;
     }

@@ -34,13 +34,13 @@ public:
 
     Alignment();
     Alignment(const Alignment& alig);
-    Alignment(const vector<ushort>& mapping);
+    Alignment(const vector<uint>& mapping);
     Alignment(Graph* G1, Graph* G2, const vector<vector<string> >& mapList);
 
-    vector<ushort> getMapping() const;
+    vector<uint> getMapping() const;
 
-    ushort& operator[](ushort node);
-    const ushort& operator[](const ushort node) const;
+    uint& operator[](uint node);
+    const uint& operator[](const uint node) const;
     Alignment &operator=(Alignment);
     uint size() const;
 
@@ -66,13 +66,13 @@ public:
     static Alignment randomAlignmentWithNodeType(Graph *G1, Graph *G2);
 
     // These two reIndex the alignment based on the reIndex Map from G1
-    void reIndexBefore_Iterations(unordered_map<ushort, ushort> reIndexMap);
-    void reIndexAfter_Iterations(unordered_map<ushort, ushort> reverseReIndexMap);
+    void reIndexBefore_Iterations(unordered_map<uint, uint> reIndexMap);
+    void reIndexAfter_Iterations(unordered_map<uint, uint> reverseReIndexMap);
 
-    ushort& getBack() { return A.back(); }
+    uint& getBack() { return A.back(); }
 private:
 
-    vector<ushort> A;
+    vector<uint> A;
 
 };
 

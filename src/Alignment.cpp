@@ -5,17 +5,17 @@ using namespace std;
 
 Alignment::Alignment() {}
 
-Alignment::Alignment(const vector<ushort>& mapping): A(mapping) {}
+Alignment::Alignment(const vector<uint>& mapping): A(mapping) {}
 
 Alignment::Alignment(const Alignment& alig): A(alig.A) {}
 
 Alignment::Alignment(Graph* G1, Graph* G2, const vector<vector<string> >& mapList) {
-    unordered_map<string,ushort> mapG1 = G1->getNodeNameToIndexMap();
-    unordered_map<string,ushort> mapG2 = G2->getNodeNameToIndexMap();
-    ushort n1 = mapList.size();
-    ushort n2 = G2->getNumNodes();
-    A = vector<ushort>(G1->getNumNodes(), n2); //n2 used to note invalid value
-    for (ushort i = 0; i < n1; i++) {
+    unordered_map<string,uint> mapG1 = G1->getNodeNameToIndexMap();
+    unordered_map<string,uint> mapG2 = G2->getNodeNameToIndexMap();
+    uint n1 = mapList.size();
+    uint n2 = G2->getNumNodes();
+    A = vector<uint>(G1->getNumNodes(), n2); //n2 used to note invalid value
+    for (uint i = 0; i < n1; i++) {
         string nodeG1 = mapList[i][0];
         string nodeG2 = mapList[i][1];
         A[mapG1[nodeG1]] = mapG2[nodeG2];
@@ -58,12 +58,12 @@ Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, 
         mapList[i][0] = edges[2*i];
         mapList[i][1] = edges[2*i+1];
     }
-    unordered_map<string,ushort> mapG1 = G1->getNodeNameToIndexMap();
-    unordered_map<string,ushort> mapG2 = G2->getNodeNameToIndexMap();
-    ushort n1 = G1->getNumNodes();
-    ushort n2 = G2->getNumNodes();
-    vector<ushort> A(n1, n2); //n2 used to note invalid value
-    for (ushort i = 0; i < mapList.size(); i++) {
+    unordered_map<string,uint> mapG1 = G1->getNodeNameToIndexMap();
+    unordered_map<string,uint> mapG2 = G2->getNodeNameToIndexMap();
+    uint n1 = G1->getNumNodes();
+    uint n2 = G2->getNumNodes();
+    vector<uint> A(n1, n2); //n2 used to note invalid value
+    for (uint i = 0; i < mapList.size(); i++) {
         string nodeG1 = mapList[i][0];
         string nodeG2 = mapList[i][1];
 
@@ -128,7 +128,7 @@ Alignment Alignment::loadMapping(string fileName) {
     string line;
     getline(infile, line); //reads only the first line, ignores the rest
     istringstream iss(line);
-    vector<ushort> A(0);
+    vector<uint> A(0);
     int n;
     while (iss >> n) A.push_back(n);
     infile.close();
@@ -137,9 +137,9 @@ Alignment Alignment::loadMapping(string fileName) {
 
 Alignment Alignment::random(uint n1, uint n2) {
     //taken from: http://stackoverflow.com/questions/311703/algorithm-for-sampling-without-replacement
-    vector<ushort> alignment(n1);
-    ushort t = 0; // total input records dealt with
-    ushort m = 0; // number of items selected so far
+    vector<uint> alignment(n1);
+    uint t = 0; // total input records dealt with
+    uint m = 0; // number of items selected so far
     double u;
     while (m < n1) {
         u = randDouble();
@@ -157,12 +157,12 @@ Alignment Alignment::random(uint n1, uint n2) {
 }
 
 Alignment Alignment::empty() {
-    vector<ushort> emptyMapping(0);
+    vector<uint> emptyMapping(0);
     return Alignment(emptyMapping);
 }
 
 Alignment Alignment::identity(uint n) {
-    vector<ushort> A(n);
+    vector<uint> A(n);
     for (uint i = 0; i < n; i++) {
         A[i] = i;
     }
@@ -174,22 +174,22 @@ Alignment Alignment::correctMapping(const Graph& G1, const Graph& G2) {
         throw runtime_error("cannot load correct mapping");
     }
 
-    unordered_map<ushort,string> G1Index2Name = G1.getIndexToNodeNameMap();
-    unordered_map<string,ushort> G2Name2Index = G2.getNodeNameToIndexMap();
+    unordered_map<uint,string> G1Index2Name = G1.getIndexToNodeNameMap();
+    unordered_map<string,uint> G2Name2Index = G2.getNodeNameToIndexMap();
 
     uint n = G1.getNumNodes();
-    vector<ushort> A(n);
+    vector<uint> A(n);
     for (uint i = 0; i < n; i++) {
         A[i] = G2Name2Index[G1Index2Name[i]];
     }
     return Alignment(A);
 }
 
-vector<ushort> Alignment::getMapping() const {
+vector<uint> Alignment::getMapping() const {
     return A;
 }
 
-ushort& Alignment::operator[] (ushort node) {
+uint& Alignment::operator[] (uint node) {
     return A[node];
 }
 
@@ -203,7 +203,7 @@ Alignment &Alignment::operator=(Alignment other) {
     return *this;
 }
 
-const ushort& Alignment::operator[](const ushort node) const {
+const uint& Alignment::operator[](const uint node) const {
     return A[node];
 }
 
@@ -218,7 +218,7 @@ void Alignment::write(ostream& stream) const {
     stream << endl;
 }
 
-typedef unordered_map<ushort,string> NodeIndexMap;
+typedef unordered_map<uint,string> NodeIndexMap;
 void Alignment::writeEdgeList(Graph const * G1, Graph const * G2, ostream& edgeListStream) const {
     NodeIndexMap mapG1 = G1->getIndexToNodeNameMap();
     NodeIndexMap mapG2 = G2->getIndexToNodeNameMap();
@@ -228,21 +228,21 @@ void Alignment::writeEdgeList(Graph const * G1, Graph const * G2, ostream& edgeL
 
 
 uint Alignment::numAlignedEdges(const Graph& G1, const Graph& G2) const {
-    vector<vector<ushort> > G1EdgeList;
+    vector<vector<uint> > G1EdgeList;
     G1.getEdgeList(G1EdgeList);
     Matrix G2Matrix;
     G2.getMatrix(G2Matrix);
 
     uint count = 0;
     for (const auto& edge: G1EdgeList) {
-        ushort node1 = edge[0], node2 = edge[1];
+        uint node1 = edge[0], node2 = edge[1];
         count += G2Matrix.get(A[node1], A[node2]);
     }
     return count;
 }
 
 int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
-    vector<vector<ushort> > G1EdgeList;
+    vector<vector<uint> > G1EdgeList;
     G1.getEdgeList(G1EdgeList);
     Matrix G2Matrix;
     G2.getMatrix(G2Matrix);
@@ -261,8 +261,8 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
     // Before computing rung sizes, we need to add the edges
     // from G1 that we pruned back to G2
     for (const auto& edge: G1EdgeList) {
-        ushort hole1 = A[edge[0]];
-        ushort hole2 = A[edge[1]];
+        uint hole1 = A[edge[0]];
+        uint hole2 = A[edge[1]];
         G2Matrix.set(G2Matrix.get(hole1, hole2) + 1, hole1, hole2);
     }
 #endif
@@ -281,16 +281,16 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
 Graph Alignment::commonSubgraph(const Graph& G1, const Graph& G2) const {
     uint n = G1.getNumNodes();
 
-    vector<vector<ushort> > G1EdgeList;
+    vector<vector<uint> > G1EdgeList;
     G1.getEdgeList(G1EdgeList);
     Matrix G2Matrix;
 
     G2.getMatrix(G2Matrix);
 
     //only add edges preserved by alignment
-    vector<vector<ushort> > edgeList(0);
+    vector<vector<uint> > edgeList(0);
     for (const auto& edge: G1EdgeList) {
-        ushort node1 = edge[0], node2 = edge[1];
+        uint node1 = edge[0], node2 = edge[1];
         if (G2Matrix.get(A[node1], A[node2])) {
             edgeList.push_back(edge);
         }
@@ -319,8 +319,8 @@ bool Alignment::isCorrectlyDefined(const Graph& G1, const Graph& G2) {
 void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) {
     uint n1 = G1.getNumNodes();
     uint n2 = G2.getNumNodes();
-    unordered_map<ushort,string> G1Names = G1.getIndexToNodeNameMap();
-    unordered_map<ushort,string> G2Names = G2.getIndexToNodeNameMap();
+    unordered_map<uint,string> G1Names = G1.getIndexToNodeNameMap();
+    unordered_map<uint,string> G2Names = G2.getIndexToNodeNameMap();
 
     vector<bool> G2AssignedNodes(n2, false);
     int count = 0;
@@ -342,13 +342,13 @@ void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) {
 Alignment Alignment::randomAlignmentWithLocking(Graph* G1, Graph* G2){
     assert(G1->getLockedCount() == G2->getLockedCount());
 
-    unordered_map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
-    unordered_map<string,ushort> g2_IndexMap = G2->getNodeNameToIndexMap();
+    unordered_map<uint,string> g1_NameMap = G1->getIndexToNodeNameMap();
+    unordered_map<string,uint> g2_IndexMap = G2->getNodeNameToIndexMap();
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
 
-    vector<ushort> A(n1, n2); //n2 used to note invalid value
-    for (ushort i = 0; i < n1; i++) {
+    vector<uint> A(n1, n2); //n2 used to note invalid value
+    for (uint i = 0; i < n1; i++) {
         if(!G1->isLocked(i))
             continue;
         string node1 = g1_NameMap[i];
@@ -378,14 +378,14 @@ Alignment Alignment::randomAlignmentWithLocking(Graph* G1, Graph* G2){
 Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
         assert(G1->getLockedCount() == G2->getLockedCount());
 
-        unordered_map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
-        unordered_map<string,ushort> g2_IndexMap = G2->getNodeNameToIndexMap();
+        unordered_map<uint,string> g1_NameMap = G1->getIndexToNodeNameMap();
+        unordered_map<string,uint> g2_IndexMap = G2->getNodeNameToIndexMap();
         uint n1 = G1->getNumNodes();
         uint n2 = G2->getNumNodes();
 
-        vector<ushort> G2_UnlockedGeneIndexes;
-        vector<ushort> G2_UnlockedRNAIndexes;
-        for(ushort i=0;i<n2;i++){
+        vector<uint> G2_UnlockedGeneIndexes;
+        vector<uint> G2_UnlockedRNAIndexes;
+        for(uint i=0;i<n2;i++){
             if(G2->isLocked(i))
                 continue;
             if(G2->nodeTypes[i] == Graph::NODE_TYPE_GENE) //  "gene")
@@ -394,8 +394,8 @@ Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
                 G2_UnlockedRNAIndexes.push_back(i);
         }
 
-        vector<ushort> A(n1, n2); //n2 used to note invalid value
-        for (ushort i = 0; i < n1; i++) {
+        vector<uint> A(n1, n2); //n2 used to note invalid value
+        for (uint i = 0; i < n1; i++) {
             // Aligns all the locked nodes together
             if(!G1->isLocked(i))
                 continue;
@@ -449,17 +449,17 @@ Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
 
 
 
-void Alignment::reIndexBefore_Iterations(unordered_map<ushort, ushort> reIndexMap){
-    vector<ushort> resA = vector<ushort> (A.size());
+void Alignment::reIndexBefore_Iterations(unordered_map<uint, uint> reIndexMap){
+    vector<uint> resA = vector<uint> (A.size());
     for(uint i=0; i< A.size();i++){
-        ushort b = reIndexMap[i];
+        uint b = reIndexMap[i];
         resA[b] = A[i];
     }
     A = resA;
 }
 
-void Alignment::reIndexAfter_Iterations(unordered_map<ushort, ushort> reIndexMap){
-    vector<ushort> resA = vector<ushort> (A.size());
+void Alignment::reIndexAfter_Iterations(unordered_map<uint, uint> reIndexMap){
+    vector<uint> resA = vector<uint> (A.size());
     for(uint i=0; i< A.size();i++){
         resA[i] = A[reIndexMap[i]];
     }

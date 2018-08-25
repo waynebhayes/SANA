@@ -31,9 +31,9 @@ string MagnaWrapper::generateAlignment() {
 
 Alignment MagnaWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     vector<string> words = fileToStrings(MAGNADIR + "/" + fileName, false);
-    vector<ushort> mapping(G1->getNumNodes(), G2->getNumNodes());
-    unordered_map<string,ushort> node1Map = G1->getNodeNameToIndexMap();
-    unordered_map<string,ushort> node2Map = G2->getNodeNameToIndexMap();
+    vector<uint> mapping(G1->getNumNodes(), G2->getNumNodes());
+    unordered_map<string,uint> node1Map = G1->getNodeNameToIndexMap();
+    unordered_map<string,uint> node2Map = G2->getNodeNameToIndexMap();
 
     for (uint i = 0; i < words.size(); i+=2) {
         string node1 = words[i];

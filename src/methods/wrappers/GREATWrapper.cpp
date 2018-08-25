@@ -45,7 +45,7 @@ string GREATWrapper::generateAlignment() {
 Alignment GREATWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     //TODO replace
     exit(-1);
-    vector<ushort> mapping(G1->getNumNodes(), G2->getNumNodes());
+    vector<uint> mapping(G1->getNumNodes(), G2->getNumNodes());
     return Alignment(mapping);
 }
 

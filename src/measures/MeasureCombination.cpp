@@ -325,7 +325,7 @@ void MeasureCombination::setWeight(const string& measureName, double weight) {
 Pairwise Alignment  LocalMeasure1       LocalMeasure2       Weighted Sum
 821    723            0.334               0.214               0.548
 */
-typedef unordered_map<ushort,string> NodeIndexMap;
+typedef unordered_map<uint,string> NodeIndexMap;
 void MeasureCombination::writeLocalScores(ostream & outFile, Graph const & G1, Graph const & G2, Alignment const & A) const {
   NodeIndexMap mapG1 = G1.getIndexToNodeNameMap();
   NodeIndexMap mapG2 = G2.getIndexToNodeNameMap();
