@@ -14,8 +14,10 @@ using namespace std;
 #endif
     
 #ifdef SPARSE
+    #define INNER_CONTAINER unordered_map<uint, T> 
     #define MATRIX_DATA_STRUCTURE SparseMatrix<T>
 #else
+    #define INNER_CONTAINER vector<T> 
     #define MATRIX_DATA_STRUCTURE vector<vector<T> >
 #endif
 
@@ -25,8 +27,9 @@ public:
     Matrix();
     Matrix(const Matrix & matrix);
     Matrix(uint numberOfNodes);
-
+    Matrix(uint row, uint col);
     Matrix & operator = (const Matrix & matrix);
+    INNER_CONTAINER & operator [] (uint node1);
 
     T get(uint node1, uint node2) const;
     void set(T value, uint node1, uint node2);
@@ -50,6 +53,23 @@ private:
  * fail the speed test. And these inline functions must be defined in 
  * the header files.
  */
+
+
+template <typename T>
+inline INNER_CONTAINER & Matrix<T>::operator [] (uint node1) {
+    return data[node1];
+}
+
+
+template <typename T>
+Matrix<T>::Matrix(uint row, uint col) {
+#ifdef SPARSE
+    data = MATRIX_DATA_STRUCTURE(row);
+#else
+    data = MATRIX_DATA_STRUCTURE(row, 
+           vector<T>(col, T()));
+#endif
+}
 
 template <typename T>
 inline T Matrix<T>::get(uint node1, uint node2) const {

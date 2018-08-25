@@ -221,9 +221,9 @@ SANA::SANA(Graph* G1, Graph* G2,
         wecSims                          = (*wecSimsP);
     }
 #ifdef CORES
-    coreFreq        = vector<vector<ulong> > (n1, vector<ulong>(n2, 0));
+    coreFreq = Matrix<ulong>(n1, n2);
     coreCount       = vector<ulong>(n1, 0);
-    weightedCoreFreq= vector<vector<double> > (n1, vector<double>(n2, 0));
+    weightedCoreFreq = Matrix<double>(n1, n2);
     totalCoreWeight = vector<double>(n1, 0);
 #endif
     //to evaluate local measures incrementally
@@ -1723,7 +1723,7 @@ Alignment SANA::runRestartPhases() {
 vector<ulong> SANA::getCoreCount() {
     return coreCount;
 }
-vector<vector<ulong>> SANA::getCoreFreq() {
+Matrix<ulong> SANA::getCoreFreq() {
     return coreFreq;
 }
 #endif

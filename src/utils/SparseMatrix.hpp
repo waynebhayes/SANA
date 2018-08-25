@@ -16,7 +16,7 @@ public:
         n = 0;
     }
 
-    SparseMatrix(unsigned long n): 
+    SparseMatrix(uint n): 
         v(n) {
         this->n = n; 
     }
@@ -30,11 +30,15 @@ public:
         return *this;
     }
 
-    unsigned long size() const {
+    unordered_map<uint, T> & operator [] (uint node1) {
+        return v[node1];
+    }
+
+    uint size() const {
         return n;
     }
 
-    T get(unsigned long node1, unsigned long node2) const {
+    T get(uint node1, uint node2) const {
         auto got = v[node1].find(node2);
         if (got == v[node1].end()) {
             return T();
@@ -43,7 +47,7 @@ public:
         }
     }
 
-    void set(T value, unsigned long node1, unsigned long node2) {
+    void set(T value, uint node1, uint node2) {
         v[node1][node2] = value;
     }
 
@@ -68,11 +72,11 @@ public:
         SparseMatrix<T> result(size());
 
         T a;
-        for (unsigned long j = 1; j <= size(); j++){
-            for (unsigned long k = 1; k <= m.size(); k++){
+        for (uint j = 1; j <= size(); j++){
+            for (uint k = 1; k <= m.size(); k++){
                 a = 0;
                 if(m.get(k, j) != 0){
-                    for (unsigned long i = 1; i <= size(); i++) {
+                    for (uint i = 1; i <= size(); i++) {
                         if(get(i, k) != 0 && m.get(k, j) != 0){
                             a += get(i, k) * m.get(k, j);
                             result.set(a, i, j);
@@ -85,8 +89,8 @@ public:
     }
 
 private:
-    unsigned long n;
-    vector<unordered_map<unsigned long, T>> v;
+    uint n;
+    vector<unordered_map<uint, T>> v;
 };
 
 #endif
