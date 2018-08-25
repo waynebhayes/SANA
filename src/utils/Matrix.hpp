@@ -8,15 +8,15 @@
 using namespace std;
 
 #ifdef WEIGHTED
-    #define VALUE_UNIT ushort
+    #define WEIGHTED_VALUE ushort
 #else
-    #define VALUE_UNIT bool
+    #define WEIGHTED_VALUE bool
 #endif
     
 #ifdef SPARSE
-    #define MATRIX_DATA_STRUCTURE SparseMatrix<VALUE_UNIT>
+    #define MATRIX_DATA_STRUCTURE SparseMatrix<WEIGHTED_VALUE>
 #else
-    #define MATRIX_DATA_STRUCTURE vector<vector<VALUE_UNIT> >
+    #define MATRIX_DATA_STRUCTURE vector<vector<WEIGHTED_VALUE> >
 #endif
 
 
@@ -30,12 +30,12 @@ public:
     Matrix & operator = (const Matrix & matrix);
 
 
-    VALUE_UNIT get(uint node1, uint node2) const;
-    void set(VALUE_UNIT value, uint node1, uint node2);
+    WEIGHTED_VALUE get(uint node1, uint node2) const;
+    void set(WEIGHTED_VALUE value, uint node1, uint node2);
 
     uint size() const;
 
-    void connect(VALUE_UNIT value, uint node1, uint node2);
+    void connect(WEIGHTED_VALUE value, uint node1, uint node2);
     bool isConnected(uint node1, uint node2) const;
 
     template <class Archive>
@@ -53,7 +53,7 @@ private:
  * the header files.
  */
 
-inline VALUE_UNIT Matrix::get(uint node1, uint node2) const {
+inline WEIGHTED_VALUE Matrix::get(uint node1, uint node2) const {
 #ifdef SPARSE
     return data.get(node1, node2);
 #else
@@ -61,7 +61,7 @@ inline VALUE_UNIT Matrix::get(uint node1, uint node2) const {
 #endif
 }
 
-inline void Matrix::set(VALUE_UNIT value, uint node1, uint node2) {
+inline void Matrix::set(WEIGHTED_VALUE value, uint node1, uint node2) {
 #ifdef SPARSE
     if (data.get(node1, node2) || data.get(node2, node1)) {
         return ;
@@ -75,7 +75,7 @@ inline void Matrix::set(VALUE_UNIT value, uint node1, uint node2) {
 #endif
 }
 
-inline void Matrix::connect(VALUE_UNIT value, uint node1, uint node2) {
+inline void Matrix::connect(WEIGHTED_VALUE value, uint node1, uint node2) {
 #ifdef SPARSE
     data.set(value, node1, node2);
     data.set(value, node2, node1);
