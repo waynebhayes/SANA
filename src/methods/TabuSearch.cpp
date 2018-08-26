@@ -421,8 +421,8 @@ int TabuSearch::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget
     int res = 0;
     for (uint i = 0; i < G1AdjLists[source].size(); i++) {
         uint neighbor = G1AdjLists[source][i];
-        res -= G2Matrix.get(oldTarget, A[neighbor]);
-        res += G2Matrix.get(newTarget, A[neighbor]);
+        res -= G2Matrix[oldTarget][A[neighbor]];
+        res += G2Matrix[newTarget][A[neighbor]];
     }
     return res;
 }
@@ -431,20 +431,20 @@ int TabuSearch::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uin
     int res = 0;
     for (uint i = 0; i < G1AdjLists[source1].size(); i++) {
         uint neighbor = G1AdjLists[source1][i];
-        res -= G2Matrix.get(target1, A[neighbor]);
-        res += G2Matrix.get(target2, A[neighbor]);
+        res -= G2Matrix[target1][A[neighbor]];
+        res += G2Matrix[target2][A[neighbor]];
     }
     for (uint i = 0; i < G1AdjLists[source2].size(); i++) {
         uint neighbor = G1AdjLists[source2][i];
-        res -= G2Matrix.get(target2, A[neighbor]);
-        res += G2Matrix.get(target1, A[neighbor]);
+        res -= G2Matrix[target2][A[neighbor]];
+        res += G2Matrix[target1][A[neighbor]];
     }
     //address case swapping between adjacent nodes with adjacent images:
 #ifdef WEIGHTED
     throw runtime_error("TabuSearch not implemented for weighted Graphs");
-    res += 2*(G1Matrix.get(source1, source2) > 0 and G2Matrix.get(target1, target2) > 0); 
+    res += 2*(G1Matrix[source1][source2] > 0 and G2Matrix[target1][target2] > 0); 
 #else
-    res += 2*(G1Matrix.get(source1, source2) & G2Matrix.get(target1, target2));
+    res += 2*(G1Matrix[source1][source2] & G2Matrix[target1][target2]);
 #endif
     return res;
 }
@@ -460,7 +460,7 @@ int TabuSearch::inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTar
         res += assignedNodesG2[neighbor];
     }
     //address case changing between adjacent nodes:
-    res -= G2Matrix.get(oldTarget, newTarget);
+    res -= G2Matrix[oldTarget][newTarget];
     return res;
 }
 
@@ -479,11 +479,11 @@ double TabuSearch::WECIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     double res = 0;
     for (uint j = 0; j < G1AdjLists[source].size(); j++) {
         uint neighbor = G1AdjLists[source][j];
-        if (G2Matrix.get(oldTarget, A[neighbor])) {
+        if (G2Matrix[oldTarget][A[neighbor]]) {
             res -= wecSims[source][oldTarget];
             res -= wecSims[neighbor][A[neighbor]];
         }
-        if (G2Matrix.get(newTarget, A[neighbor])) {
+        if (G2Matrix[newTarget][A[neighbor]]) {
             res += wecSims[source][newTarget];
             res += wecSims[neighbor][A[neighbor]];
         }
@@ -495,22 +495,22 @@ double TabuSearch::WECIncSwapOp(uint source1, uint source2, uint target1, uint t
     double res = 0;
     for (uint j = 0; j < G1AdjLists[source1].size(); j++) {
         uint neighbor = G1AdjLists[source1][j];
-        if (G2Matrix.get(target1, A[neighbor])) {
+        if (G2Matrix[target1][A[neighbor]]) {
             res -= wecSims[source1][target1];
             res -= wecSims[neighbor][A[neighbor]];
         }
-        if (G2Matrix.get(target2, A[neighbor])) {
+        if (G2Matrix[target2][A[neighbor]]) {
             res += wecSims[source1][target2];
             res += wecSims[neighbor][A[neighbor]];
         }
     }
     for (uint j = 0; j < G1AdjLists[source2].size(); j++) {
         uint neighbor = G1AdjLists[source2][j];
-        if (G2Matrix.get(target2, A[neighbor])) {
+        if (G2Matrix[target2][A[neighbor]]) {
             res -= wecSims[source2][target2];
             res -= wecSims[neighbor][A[neighbor]];
         }
-        if (G2Matrix.get(target1, A[neighbor])) {
+        if (G2Matrix[target1][A[neighbor]]) {
             res += wecSims[source2][target1];
             res += wecSims[neighbor][A[neighbor]];
         }
@@ -518,9 +518,9 @@ double TabuSearch::WECIncSwapOp(uint source1, uint source2, uint target1, uint t
     //address case swapping between adjacent nodes with adjacent images:
 #ifdef WEIGHTED
     throw runtime_error("TabuSearch not implemented for weighted Graphs");
-    if (G1Matrix.get(source1, source2) > 0 and G2Matrix.get(target1, target2) > 0) {
+    if (G1Matrix[source1][source2] > 0 and G2Matrix[target1][target2] > 0) {
 #else
-    if (G1Matrix.get(source1, source2) and G2Matrix.get(target1, target2)) {
+    if (G1Matrix[source1][source2] and G2Matrix[target1][target2]) {
 #endif
         res += 2*wecSims[source1][target1];
         res += 2*wecSims[source2][target2];

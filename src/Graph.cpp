@@ -265,7 +265,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     for(unsigned i = 0; i < edgeListLen; ++i){
         node1 = edgeList[i][0];
         node2 = edgeList[i][1];
-        if(g.matrix.isConnected(node1, node2)){
+        if(g.matrix[node1][node2] || g.matrix[node2][node1]) { 
             //errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
 	    unordered_map<uint,string> index2name = g.getIndexToNodeNameMap();
 	    errorMsg << "In graph[" << graphName << "]: duplicate edges not allowed (in either direction), node names are " <<
@@ -279,9 +279,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
 
         // Note that when WEIGHTED is on, the adjacency matrix contains full integers, not just bits.
         #ifdef WEIGHTED
-            g.matrix.connect(edgeList[i][2], node1, node2);
+            g.matrix[node1][node2] = g.matrix[node2][node1] = edgeList[i][2];
         #else
-            g.matrix.connect(true, node1, node2);
+            g.matrix[node1][node2] = g.matrix[node2][node1] = true;
         #endif
         g.adjLists[node1].push_back(node2);
         g.adjLists[node2].push_back(node1);
@@ -444,9 +444,9 @@ Graph::Graph(uint n, const vector<vector<uint> > edges) {
         adjLists[node1].push_back(node2);
         adjLists[node2].push_back(node1);
 #ifdef WEIGHTED
-        matrix.connect(1, node1, node2);
+        matrix[node1][node2] = matrix[node2][node1] = 1;
 #else
-        matrix.connect(true, node1, node2); 
+        matrix[node1][node2] = matrix[node2][node1] = true;
 #endif
     }
     updateUnlockedGeneCount();
@@ -587,7 +587,7 @@ void Graph::loadGwFile(const string& fileName) {
 #endif
         node1--; node2--; //-1 because of remapping
         
-        if(matrix.isConnected(node1, node2)){
+        if(matrix[node1][node2] || matrix[node2][node1]){
             errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1+1 << " " << node2+1 << '\n';
 	    //errorMsg << "In graph [" << graphName << "]: duplicate edges not allowed (in either direction), node names are " << nodeName2IndexMap[node1+1] << " " << nodeName2IndexMap[node2+1] << '\n';
             throw runtime_error(errorMsg.str().c_str());
@@ -600,9 +600,9 @@ void Graph::loadGwFile(const string& fileName) {
         edgeList[i][1] = node2;
 
 #ifdef WEIGHTED
-        matrix.connect(edgeValue, node1, node2);
+        matrix[node1][node2] = matrix[node2][node1] = edgeValue;
 #else
-        matrix.connect(true, node1, node2);
+        matrix[node1][node2] = matrix[node2][node1] = true;
 #endif
         adjLists[node1].push_back(node2);
         adjLists[node2].push_back(node1);
@@ -664,24 +664,21 @@ void Graph::multGwFile(const string& fileName, uint path) {
             errorMsg << "Failed to read edge: " << line;
             throw runtime_error(errorMsg.str().c_str());
         }
-        sparse_graph1.set(1,node1,node2);
-        sparse_graph1.set(1,node2,node1);
-
-        sparse_graph2.set(1,node1,node2);
-        sparse_graph2.set(1,node2,node1);
+        sparse_graph1[node1][node2] = sparse_graph1[node2][node1] = 1;
+        sparse_graph2[node1][node2] = sparse_graph2[node2][node1] = 1;
     }
     for(uint i=0; i<path ; i++){
         SparseMatrix<uint> final = sparse_graph2.multiply(sparse_graph1);
         for(uint k=0;k<n;k++){
             for(uint j=0;j<n;j++){
-                sparse_graph2.set(final.get(k,j),k,j);
+                sparse_graph2[k][j] = final[k][j];
             }
         }
     }
     uint elements = 0;
     for(uint k=0;k<n;k++){
             for(uint j=0;j< n;j++){
-                if(sparse_graph2.get(k,j) > 0){
+                if(sparse_graph2[k][j] > 0){
                     elements++;
                 }
             }
@@ -692,11 +689,11 @@ void Graph::multGwFile(const string& fileName, uint path) {
     for(uint i=0;i<n;i++){
         for(uint j=0;j<n;j++){
             if(sparse_graph2.get(i,j) > 0){
-                matrix.connect(true, i - 1, j - 1);
-                adjLists[i-1].push_back(j-1);
-                adjLists[j-1].push_back(i-1);
-                edgeList[count][0] = i-1;
-                edgeList[count][1] = j-1;
+                matrix[i][j] = matrix[j][i] = true;
+                adjLists[i].push_back(j);
+                adjLists[j].push_back(i);
+                edgeList[count][0] = i;
+                edgeList[count][1] = j;
                 count++;
             }
         }
@@ -779,9 +776,9 @@ Graph Graph::nodeInducedSubgraph(const vector<uint>& nodes) const {
             newEdge[1] = newNode2;
             G.edgeList.push_back(newEdge);
 #ifdef WEIGHTED
-            G.matrix.connect(matrix.get(node1, node2), newNode1, newNode2);
+            G.matrix[newNode1][newNode2] = G.matrix[newNode2][newNode1] = matrix.get(node1, node2);
 #else
-            G.matrix.connect(true, newNode1, newNode2);
+            G.matrix[newNode1][newNode2] = G.matrix[newNode2][newNode1] = true;
 #endif
         }
     }
@@ -948,7 +945,7 @@ uint Graph::randomNode() {
 
 //note: does not update CCs
 void Graph::addEdge(uint node1, uint node2) {
-    matrix.connect(true, node1, node2);
+    matrix[node1][node2] = matrix[node2][node1] = true;
     vector<uint> edge(2);
     edge[0] = node1;
     edge[1] = node2;
@@ -959,8 +956,7 @@ void Graph::addEdge(uint node1, uint node2) {
 
 //note: does not update CCs
 void Graph::removeEdge(uint node1, uint node2) {
-    matrix.set(false, node1, node2);
-    matrix.set(false, node2, node1);
+    matrix[node1][node2] = matrix[node2][node1] = false;
     uint m = getNumEdges();
     //update edge list
     for (uint i = 0; i < m; i++) {
@@ -1649,7 +1645,7 @@ void Graph::reIndexGraph(unordered_map<uint, uint> reIndexMap){
          for (uint j = 0; j < n; j++){
                uint a = reIndexMap[i];
                uint b = reIndexMap[j];
-               matrixCopy.set(matrix.get(i, j), a, b);
+               matrixCopy[a][b] = matrix[i][j];
          }
      }
     matrix = matrixCopy;

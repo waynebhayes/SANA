@@ -1334,8 +1334,8 @@ int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     uint neighbor;
     for (uint i = 0; i < n; ++i) {
         neighbor = G1AdjLists[source][i];
-        res -= G2Matrix.get(oldTarget, (*A)[neighbor]);
-        res += G2Matrix.get(newTarget, (*A)[neighbor]);
+        res -= G2Matrix[oldTarget][(*A)[neighbor]];
+        res += G2Matrix[newTarget][(*A)[neighbor]];
     }
     return res;
 }
@@ -1347,20 +1347,20 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
     uint i = 0;
     for (; i < n; ++i) {
         neighbor = G1AdjLists[source1][i];
-        res -= G2Matrix.get(target1, (*A)[neighbor]);
-        res += G2Matrix.get(target2, (*A)[neighbor]);
+        res -= G2Matrix[target1][(*A)[neighbor]];
+        res += G2Matrix[target2][(*A)[neighbor]];
     }
     const uint m = G1AdjLists[source2].size();
     for (i = 0; i < m; ++i) {
         neighbor = G1AdjLists[source2][i];
-        res -= G2Matrix.get(target2, (*A)[neighbor]);
-        res += G2Matrix.get(target1, (*A)[neighbor]);
+        res -= G2Matrix[target2][(*A)[neighbor]];
+        res += G2Matrix[target1][(*A)[neighbor]];
     }
     //address case swapping between adjacent nodes with adjacent images:
 #ifdef WEIGHTED
-    res += (-1 << 1) & (G1Matrix.get(source1, source2) + G2Matrix.get(target1, target2));
+    res += (-1 << 1) & (G1Matrix[source1][source2] + G2Matrix[target1][target2]);
 #else
-    res += 2*(G1Matrix.get(source1, source2) & G2Matrix.get(target1, target2));
+    res += 2*(G1Matrix[source1][source2] & G2Matrix[target1][target2]);
 #endif
     return res;
 }
@@ -1374,7 +1374,7 @@ static int _edgeVal;
 // between the value of this ladder and the ladder with one edge added or removed.  Mathematically
 // it should be edgeVal^2 - (edgeVal+1)^2 which is (2e + 1), but for some reason I had to make
 // it 2*(e+1).  That seemed to work better.  So yeah... big ugly hack.
-#define SQRDIFF(i,j) ((_edgeVal=G2Matrix.get(i, (*A)[j])), 2*((_edgeVal<1000?_edgeVal:0) + 1))
+#define SQRDIFF(i,j) ((_edgeVal=G2Matrix[i][(*A)[j]]), 2*((_edgeVal<1000?_edgeVal:0) + 1))
 int SANA::squaredAligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int res = 0, diff;
     uint neighbor;
@@ -1418,7 +1418,7 @@ int SANA::squaredAligEdgesIncSwapOp(uint source1, uint source2, uint target1, ui
     }
     // How to do for squared?
     // address case swapping between adjacent nodes with adjacent images:
-    if(G1Matrix.get(source1, source2) and G2Matrix.get(target1, target2))
+    if(G1Matrix[source1][source2] and G2Matrix[target1][target2])
     {
         res += 2 * SQRDIFF(target1,source2);
     }
@@ -1440,7 +1440,7 @@ int SANA::inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
         res += (*assignedNodesG2)[neighbor];
     }
     //address case changing between adjacent nodes:
-    res -= G2Matrix.get(oldTarget, newTarget);
+    res -= G2Matrix[oldTarget][newTarget];
     return res;
 }
 
@@ -1458,11 +1458,11 @@ double SANA::WECIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     uint neighbor;
     for (uint j = 0; j < n; ++j) {
         neighbor = G1AdjLists[source][j];
-        if (G2Matrix.get(oldTarget, (*A)[neighbor])) {
+        if (G2Matrix[oldTarget][(*A)[neighbor]]) {
             res -= wecSims[source][oldTarget];
             res -= wecSims[neighbor][(*A)[neighbor]];
         }
-        if (G2Matrix.get(newTarget, (*A)[neighbor])) {
+        if (G2Matrix[newTarget][(*A)[neighbor]]) {
             res += wecSims[source][newTarget];
             res += wecSims[neighbor][(*A)[neighbor]];
         }
@@ -1476,11 +1476,11 @@ double SANA::WECIncSwapOp(uint source1, uint source2, uint target1, uint target2
     uint neighbor;
     for (uint j = 0; j < n; ++j) {
         neighbor = G1AdjLists[source1][j];
-        if (G2Matrix.get(target1, (*A)[neighbor])) {
+        if (G2Matrix[target1][(*A)[neighbor]]) {
             res -= wecSims[source1][target1];
             res -= wecSims[neighbor][(*A)[neighbor]];
         }
-        if (G2Matrix.get(target2, (*A)[neighbor])) {
+        if (G2Matrix[target2][(*A)[neighbor]]) {
             res += wecSims[source1][target2];
             res += wecSims[neighbor][(*A)[neighbor]];
         }
@@ -1488,20 +1488,20 @@ double SANA::WECIncSwapOp(uint source1, uint source2, uint target1, uint target2
     const uint m = G1AdjLists[source2].size();
     for (uint j = 0; j < m; ++j) {
         neighbor = G1AdjLists[source2][j];
-        if (G2Matrix.get(target2, (*A)[neighbor])) {
+        if (G2Matrix[target2][(*A)[neighbor]]) {
             res -= wecSims[source2][target2];
             res -= wecSims[neighbor][(*A)[neighbor]];
         }
-        if (G2Matrix.get(target1, (*A)[neighbor])) {
+        if (G2Matrix[target1][(*A)[neighbor]]) {
             res += wecSims[source2][target1];
             res += wecSims[neighbor][(*A)[neighbor]];
         }
     }
     //address case swapping between adjacent nodes with adjacent images:
 #ifdef WEIGHTED
-    if (G1Matrix.get(source1, source2) > 0 and G2Matrix.get(target1, target2) > 0) {
+    if (G1Matrix[source1][source2] > 0 and G2Matrix[target1][target2] > 0) {
 #else
-    if (G1Matrix.get(source1, source2) and G2Matrix.get(target1, target2)) {
+    if (G1Matrix[source1][source2] and G2Matrix[target1][target2]) {
 #endif
         res += 2*wecSims[source1][target1];
         res += 2*wecSims[source2][target2];
@@ -1518,7 +1518,7 @@ double SANA::EWECIncChangeOp(uint source, uint oldTarget, uint newTarget){
 double SANA::EWECIncSwapOp(uint source1, uint source2, uint target1, uint target2){
     double score = 0;
     score = (EWECSimCombo(source1, target2)) + (EWECSimCombo(source2, target1)) - (EWECSimCombo(source1, target1)) - (EWECSimCombo(source2, target2));
-    if(G1Matrix.get(source1, source2) and G2Matrix.get(target1, target2)){
+    if(G1Matrix[source1][source2] and G2Matrix[target1][target2]){
         score += ewec->getScore(ewec->getColIndex(target1, target2), ewec->getRowIndex(source1, source2))/(g1Edges); //correcting for missed edges when swapping 2 adjacent pairs
     }
     return score;
@@ -1530,7 +1530,7 @@ double SANA::EWECSimCombo(uint source, uint target){
     uint neighbor;
     for (uint i = 0; i < n; ++i) {
         neighbor = G1AdjLists[source][i];
-        if (G2Matrix.get(target, (*A)[neighbor])) {
+        if (G2Matrix[target][(*A)[neighbor]]) {
             int e1 = ewec->getRowIndex(source, neighbor);
             int e2 = ewec->getColIndex(target, (*A)[neighbor]);
             score+=ewec->getScore(e2,e1);
@@ -1547,14 +1547,14 @@ double SANA::TCIncChangeOp(uint source, uint oldTarget, uint newTarget){
         for(uint j = i+1; j < n; ++j){
             neighbor1 = G1AdjLists[source][i];
             neighbor2 = G1AdjLists[source][j];
-            if(G1Matrix.get(neighbor1, neighbor2)){
+            if(G1Matrix[neighbor1][neighbor2]){
                 //G1 has a triangle
-                if(G2Matrix.get(oldTarget, (*A)[neighbor1]) and G2Matrix.get(oldTarget, (*A)[neighbor2]) and G2Matrix.get((*A)[neighbor1], (*A)[neighbor2])){
+                if(G2Matrix[oldTarget][(*A)[neighbor1]] and G2Matrix[oldTarget][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]]){
                     //G2 HAD a triangle
                     deltaTriangles -= 1;
                 }
 
-                if(G2Matrix.get(newTarget, (*A)[neighbor1]) and G2Matrix.get(newTarget, (*A)[neighbor2]) and G2Matrix.get((*A)[neighbor1], (*A)[neighbor2])){
+                if(G2Matrix[newTarget][(*A)[neighbor1]] and G2Matrix[newTarget][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]]){
                     //G2 GAINS a triangle
                     deltaTriangles += 1;
                 }
@@ -1572,16 +1572,16 @@ double SANA::TCIncSwapOp(uint source1, uint source2, uint target1, uint target2)
         for(uint j = i+1; j < n; ++j){
             neighbor1 = G1AdjLists[source1][i];
             neighbor2 = G1AdjLists[source1][j];
-            if(G1Matrix.get(neighbor1, neighbor2)){
+            if(G1Matrix[neighbor1][neighbor2]){
                 //G1 has a triangle
-                if(G2Matrix.get(target1, (*A)[neighbor1]) and G2Matrix.get(target1, (*A)[neighbor2]) and G2Matrix.get((*A)[neighbor1], (*A)[neighbor2])){
+                if(G2Matrix[target1][(*A)[neighbor1]] and G2Matrix[target1][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]]){
                     //G2 HAD a triangle
                     deltaTriangles -= 1;
                 }
 
-                if((G2Matrix.get(target2, (*A)[neighbor1]) and G2Matrix.get(target2, (*A)[neighbor2]) and G2Matrix.get((*A)[neighbor1], (*A)[neighbor2]))
-                || (neighbor1 == source2 and G2Matrix.get(target2, target1) and G2Matrix.get(target2, (*A)[neighbor2]) and G2Matrix.get(target1, (*A)[neighbor2]))
-                || (neighbor2 == source2 and G2Matrix.get(target2, (*A)[neighbor1]) and G2Matrix.get(target2, target1) and G2Matrix.get((*A)[neighbor1], target1))) {
+                if((G2Matrix[target2][(*A)[neighbor1]] and G2Matrix[target2][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]])
+                || (neighbor1 == source2 and G2Matrix[target2][target1] and G2Matrix[target2][(*A)[neighbor2]] and G2Matrix[target1][(*A)[neighbor2]])
+                || (neighbor2 == source2 and G2Matrix[target2][(*A)[neighbor1]] and G2Matrix[target2][target1] and G2Matrix[(*A)[neighbor1]][target1])) {
                     //G2 GAINS a triangle
                     deltaTriangles += 1;
                 }
@@ -1593,16 +1593,16 @@ double SANA::TCIncSwapOp(uint source1, uint source2, uint target1, uint target2)
         for(uint j = i+1; j < m; ++j){
             neighbor1 = G1AdjLists[source2][i];
             neighbor2 = G1AdjLists[source2][j];
-            if(G1Matrix.get(neighbor1, neighbor2)){
+            if(G1Matrix[neighbor1][neighbor2]){
                 //G1 has a triangle
-                if(G2Matrix.get(target2, (*A)[neighbor1]) and G2Matrix.get(target2, (*A)[neighbor2]) and G2Matrix.get((*A)[neighbor1], (*A)[neighbor2])){
+                if(G2Matrix[target2][(*A)[neighbor1]] and G2Matrix[target2][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]]){
                     //G2 HAD a triangle
                     deltaTriangles -= 1;
                 }
 
-                if((G2Matrix.get(target1, (*A)[neighbor1]) and G2Matrix.get(target1, (*A)[neighbor2]) and G2Matrix.get((*A)[neighbor1], (*A)[neighbor2]))
-                   || (neighbor1 == source1 and G2Matrix.get(target1, target2) and G2Matrix.get(target1, (*A)[neighbor2]) and G2Matrix.get(target2, (*A)[neighbor2]))
-                   || (neighbor2 == source1 and G2Matrix.get(target1, (*A)[neighbor1]) and G2Matrix.get(target1, target2) and G2Matrix.get((*A)[neighbor1], target2))){
+                if((G2Matrix[target1][(*A)[neighbor1]] and G2Matrix[target1][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]])
+                   || (neighbor1 == source1 and G2Matrix[target1][target2] and G2Matrix[target1][(*A)[neighbor2]] and G2Matrix[target2][(*A)[neighbor2]])
+                   || (neighbor2 == source1 and G2Matrix[target1][(*A)[neighbor1]] and G2Matrix[target1][target2] and G2Matrix[(*A)[neighbor1]][target2])){
                     //G2 GAINS a triangle
                     deltaTriangles += 1;
                 }
@@ -2399,13 +2399,13 @@ void SANA::prune(string& startAligName) {
             uint g1_node2 = reIndexedMap[G1AdjLists[i][j]];
             uint shadow_end = alignment[g1_node2];
 
-            assert(G1Matrix.get(g1_node1, g1_node2) == 0 || G2Matrix.get(shadow_node, shadow_end) > 0);
-            assert(G1Matrix.get(g1_node2, g1_node1) ==0 || G2Matrix.get(shadow_end, shadow_node) > 0);
+            assert(G1Matrix[g1_node1][g1_node2] == 0 || G2Matrix[shadow_node][shadow_end] > 0);
+            assert(G1Matrix[g1_node2][g1_node1] == 0 || G2Matrix[shadow_end][shadow_node] > 0);
 
-            G2Matrix.set(G2Matrix.get(shadow_node, shadow_end) - G1Matrix.get(g1_node1, g1_node2), shadow_node, shadow_end);
-            G2Matrix.set(G2Matrix.get(shadow_end, shadow_node) - G1Matrix.get(g1_node1, g1_node2), shadow_end, shadow_node);
-            if (G2Matrix.get(shadow_node, shadow_end) == 0) {
-                    removedEdges.insert(pair<uint,uint>(shadow_node,shadow_end));
+            G2Matrix[shadow_node][shadow_end] -= G1Matrix[g1_node1][g1_node2];
+            G2Matrix[shadow_end][shadow_node] -= G1Matrix[g1_node1][g1_node2];
+            if (G2Matrix[shadow_node][shadow_end] == 0) {
+                removedEdges.insert(pair<uint,uint>(shadow_node,shadow_end));
             }
         }
     }

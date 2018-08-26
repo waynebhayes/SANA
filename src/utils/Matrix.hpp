@@ -28,16 +28,12 @@ public:
     Matrix(const Matrix & matrix);
     Matrix(uint numberOfNodes);
     Matrix(uint row, uint col);
+
     Matrix & operator = (const Matrix & matrix);
     INNER_CONTAINER & operator [] (uint node1);
 
-    T get(uint node1, uint node2) const;
-    void set(T value, uint node1, uint node2);
-
+    const T get(uint node1, uint node2) const;
     uint size() const;
-
-    void connect(T value, uint node1, uint node2);
-    bool isConnected(uint node1, uint node2) const;
 
     template <class Archive>
     void serialize(Archive & archive) {
@@ -48,18 +44,11 @@ private:
    MATRIX_DATA_STRUCTURE data;
 };
 
-/*
- * The inline prefix is a must (mostly for get), otherwise it will 
- * fail the speed test. And these inline functions must be defined in 
- * the header files.
- */
-
 
 template <typename T>
 inline INNER_CONTAINER & Matrix<T>::operator [] (uint node1) {
     return data[node1];
 }
-
 
 template <typename T>
 Matrix<T>::Matrix(uint row, uint col) {
@@ -72,46 +61,11 @@ Matrix<T>::Matrix(uint row, uint col) {
 }
 
 template <typename T>
-inline T Matrix<T>::get(uint node1, uint node2) const {
+inline const T Matrix<T>::get(uint node1, uint node2) const {
 #ifdef SPARSE
     return data.get(node1, node2);
 #else
     return data[node1][node2];
-#endif
-}
-
-template <typename T>
-inline void Matrix<T>::set(T value, uint node1, uint node2) {
-#ifdef SPARSE
-    if (data.get(node1, node2) || data.get(node2, node1)) {
-        return ;
-    }
-    data.set(value, node1, node2);
-#else
-    if (data[node1][node2] || data[node2][node1]) {
-        return ;
-    }
-    data[node1][node2] = value;
-#endif
-}
-
-template <typename T>
-inline void Matrix<T>::connect(T value, uint node1, uint node2) {
-#ifdef SPARSE
-    data.set(value, node1, node2);
-    data.set(value, node2, node1);
-#else
-    data[node1][node2] = value;
-    data[node2][node1] = value;
-#endif       
-}
-
-template <typename T>
-inline bool Matrix<T>::isConnected(uint node1, uint node2) const {
-#ifdef SPARSE
-    return data.get(node1, node2) && data.get(node2, node1);
-#else
-    return data[node1][node2] && data[node2][node1];
 #endif
 }
 

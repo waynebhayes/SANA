@@ -236,7 +236,7 @@ uint Alignment::numAlignedEdges(const Graph& G1, const Graph& G2) const {
     uint count = 0;
     for (const auto& edge: G1EdgeList) {
         uint node1 = edge[0], node2 = edge[1];
-        count += G2Matrix.get(A[node1], A[node2]);
+        count += G2Matrix[A[node1]][A[node2]];
     }
     return count;
 }
@@ -263,7 +263,7 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
     for (const auto& edge: G1EdgeList) {
         uint hole1 = A[edge[0]];
         uint hole2 = A[edge[1]];
-        G2Matrix.set(G2Matrix.get(hole1, hole2) + 1, hole1, hole2);
+        G2Matrix[hole1][hole2] += 1;
     }
 #endif
 
@@ -271,7 +271,7 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
     uint n2 = G2.getNumNodes(); 
     for(uint i = 0; i < n2; i++){
         for(uint j = 0; j < i; j++){
-            int rungs  = G2Matrix.get(i, j);
+            int rungs  = G2Matrix[i][j];
             count += rungs * rungs;
         }
     }
@@ -291,7 +291,7 @@ Graph Alignment::commonSubgraph(const Graph& G1, const Graph& G2) const {
     vector<vector<uint> > edgeList(0);
     for (const auto& edge: G1EdgeList) {
         uint node1 = edge[0], node2 = edge[1];
-        if (G2Matrix.get(A[node1], A[node2])) {
+        if (G2Matrix[A[node1]][A[node2]]) {
             edgeList.push_back(edge);
         }
     }

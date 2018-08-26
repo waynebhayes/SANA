@@ -31,7 +31,7 @@ int TriangleCorrectness::calculateTriangles(Graph* G){
                 if(k != j){
                     uint neighbor1 = GAdjLists[i][j];
                     uint neighbor2 = GAdjLists[i][k];
-                    if(GMatrix.get(neighbor1, neighbor2)){
+                    if(GMatrix[neighbor1][neighbor2]){
                         numTriangles++;
                     }
                 }

@@ -21,7 +21,7 @@ double WeightedEdgeConservation::eval(const Alignment& A) {
     double score = 0;
     for (const auto& edge: edgeListG1) {
         uint node1 = edge[0], node2 = edge[1];
-        if (matrixG2.get(A[node1], A[node2])) {
+        if (matrixG2[A[node1]][A[node2]]) {
             score += (*simMatrix)[node1][A[node1]];
             score += (*simMatrix)[node2][A[node2]];
         }

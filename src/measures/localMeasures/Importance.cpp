@@ -27,7 +27,7 @@ vector<vector<double> > Importance::initEdgeWeights(const Graph& G) {
     G.getMatrix(matrix);
     for (uint i = 0; i < n; i++) {
         for (uint j = 0; j < n; j++) {
-            if (matrix.get(i, j)) edgeWeights[i][j] = 1;
+            if (matrix[i][j]) edgeWeights[i][j] = 1;
         }
     }
     return edgeWeights;
