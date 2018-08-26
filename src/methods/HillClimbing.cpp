@@ -67,8 +67,8 @@ Alignment HillClimbing::run() {
     uint n2 = G2->getNumNodes();
 
     vector<uint> A(startA.getMapping());
-    Matrix<WEIGHTED_VALUE> G1Matrix;
-    Matrix<WEIGHTED_VALUE> G2Matrix;
+    Matrix<MATRIX_UNIT> G1Matrix;
+    Matrix<MATRIX_UNIT> G2Matrix;
 
     G1->getMatrix(G1Matrix);
     G2->getMatrix(G2Matrix);

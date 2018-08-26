@@ -8,9 +8,9 @@
 using namespace std;
 
 #ifdef WEIGHTED
-    #define WEIGHTED_VALUE ushort
+    #define MATRIX_UNIT ushort
 #else
-    #define WEIGHTED_VALUE bool
+    #define MATRIX_UNIT bool
 #endif
     
 #ifdef SPARSE

@@ -28,8 +28,8 @@ private:
     std::vector<std::vector<int>> rowIndex;
     std::vector<std::vector<uint> > adjListG1;
     std::vector<std::vector<uint> > adjListG2;
-    Matrix<WEIGHTED_VALUE> matrixG1;
-    Matrix<WEIGHTED_VALUE> matrixG2;
+    Matrix<MATRIX_UNIT> matrixG1;
+    Matrix<MATRIX_UNIT> matrixG2;
     std::vector<std::string> nodeNamesG1;
     std::vector<std::string> nodeNamesG2;
 

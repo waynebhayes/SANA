@@ -257,7 +257,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     nodes.shrink_to_fit();
     const size_t nodeSize = nodes.size();
     g.adjLists = vector<vector<uint> > (nodeSize, vector<uint>(0));
-    g.matrix = Matrix<WEIGHTED_VALUE>(nodeSize);
+    g.matrix = Matrix<MATRIX_UNIT>(nodeSize);
     uint node1;
     uint node2;
     const size_t edgeListLen = edgeList.size();
@@ -411,7 +411,7 @@ Graph::Graph() :
 
 Graph::Graph(const Graph& G) {
     edgeList = vector<vector<uint> > (G.edgeList);
-    matrix = Matrix<WEIGHTED_VALUE> (G.matrix);
+    matrix = Matrix<MATRIX_UNIT> (G.matrix);
     adjLists = vector<vector<uint> > (G.adjLists);
     connectedComponents = vector<vector<uint> > (G.connectedComponents);
     lockedList = vector<bool> (G.lockedList);
@@ -429,7 +429,7 @@ Graph::Graph(const Graph& G) {
 
 Graph::Graph(uint n, const vector<vector<uint> > edges) {
     adjLists = vector<vector<uint> > (n, vector<uint> (0));
-    matrix = Matrix<WEIGHTED_VALUE> (n);
+    matrix = Matrix<MATRIX_UNIT> (n);
     edgeList = edges;
 
     lockedList = vector<bool> (n, false);
@@ -481,7 +481,7 @@ uint Graph::getNumConnectedComponents() const {
     return connectedComponents.size();
 }
 
-void Graph::getMatrix(Matrix<WEIGHTED_VALUE>& matrixCopy) const {
+void Graph::getMatrix(Matrix<MATRIX_UNIT>& matrixCopy) const {
     matrixCopy = matrix;
 }
 
@@ -497,7 +497,7 @@ const vector<vector<uint> >& Graph::getConnectedComponents() const {
     return connectedComponents;
 }
 
-void Graph::setMatrix(Matrix<WEIGHTED_VALUE>& matrixCopy) {
+void Graph::setMatrix(Matrix<MATRIX_UNIT>& matrixCopy) {
     matrix = matrixCopy;
 }
 
@@ -551,7 +551,7 @@ void Graph::loadGwFile(const string& fileName) {
     }
 
     adjLists = vector<vector<uint> > (n, vector<uint>(0));
-    matrix = Matrix<WEIGHTED_VALUE>(n);
+    matrix = Matrix<MATRIX_UNIT>(n);
 #ifdef WEIGHTED
     char dump;
     uint edgeValue;
@@ -649,7 +649,7 @@ void Graph::multGwFile(const string& fileName, uint path) {
     SparseMatrix<uint> sparse_graph2(n);
 
     adjLists = vector<vector<uint> > (n, vector<uint>(0));
-    matrix = Matrix<WEIGHTED_VALUE>(n);
+    matrix = Matrix<MATRIX_UNIT>(n);
     //edgeList = vector<vector<uint> > (m, vector<uint>(2));
     lockedList = vector<bool> (n, false);
     lockedTo = vector<string> (n, "");
@@ -762,7 +762,7 @@ Graph Graph::nodeInducedSubgraph(const vector<uint>& nodes) const {
     unordered_set<uint> nodeSet(nodes.begin(), nodes.end());
     Graph G;
     G.adjLists = vector<vector<uint> > (n, vector<uint> (0));
-    G.matrix = Matrix<WEIGHTED_VALUE>(n);
+    G.matrix = Matrix<MATRIX_UNIT>(n);
     //only add edges between induced nodes
     for (const auto& edge: edgeList) {
         uint node1 = edge[0], node2 = edge[1];
@@ -1640,7 +1640,7 @@ unordered_map<uint, uint> Graph::getNodeTypes_ReIndexMap() const{
 
 void Graph::reIndexGraph(unordered_map<uint, uint> reIndexMap){
     uint n = getNumNodes();
-    Matrix<WEIGHTED_VALUE> matrixCopy(n);
+    Matrix<MATRIX_UNIT> matrixCopy(n);
     for (uint i = 0; i < n; i++) {
          for (uint j = 0; j < n; j++){
                uint a = reIndexMap[i];

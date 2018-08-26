@@ -73,8 +73,8 @@ public:
     uint getNumConnectedComponents() const;
 
 #ifndef NO_ADJ_MATRIX
-    void getMatrix(Matrix<WEIGHTED_VALUE>& matrix) const;
-    void setMatrix(Matrix<WEIGHTED_VALUE>& matrix);
+    void getMatrix(Matrix<MATRIX_UNIT>& matrix) const;
+    void setMatrix(Matrix<MATRIX_UNIT>& matrix);
 #endif
 
     void getAdjLists(vector<vector<uint> >& adjListsCopy) const;
@@ -170,7 +170,7 @@ private:
     //double maxsize;
     vector<vector<uint> > edgeList; //edges in no particular order
 #ifndef NO_ADJ_MATRIX
-    Matrix<WEIGHTED_VALUE> matrix;
+    Matrix<MATRIX_UNIT> matrix;
 #endif
     vector<vector<uint> > adjLists; //neighbors in no particular order
 

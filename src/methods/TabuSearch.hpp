@@ -27,8 +27,8 @@ private:
     uint n1;
     uint n2;
     double g1Edges; //stored as double because it appears in division
-    Matrix<WEIGHTED_VALUE> G1Matrix;
-    Matrix<WEIGHTED_VALUE> G2Matrix;
+    Matrix<MATRIX_UNIT> G1Matrix;
+    Matrix<MATRIX_UNIT> G2Matrix;
     vector<vector<uint> > G1AdjLists;
     vector<vector<uint> > G2AdjLists;
 

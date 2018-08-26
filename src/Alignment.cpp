@@ -230,7 +230,7 @@ void Alignment::writeEdgeList(Graph const * G1, Graph const * G2, ostream& edgeL
 uint Alignment::numAlignedEdges(const Graph& G1, const Graph& G2) const {
     vector<vector<uint> > G1EdgeList;
     G1.getEdgeList(G1EdgeList);
-    Matrix<WEIGHTED_VALUE> G2Matrix;
+    Matrix<MATRIX_UNIT> G2Matrix;
     G2.getMatrix(G2Matrix);
 
     uint count = 0;
@@ -244,7 +244,7 @@ uint Alignment::numAlignedEdges(const Graph& G1, const Graph& G2) const {
 int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
     vector<vector<uint> > G1EdgeList;
     G1.getEdgeList(G1EdgeList);
-    Matrix<WEIGHTED_VALUE> G2Matrix;
+    Matrix<MATRIX_UNIT> G2Matrix;
     G2.getMatrix(G2Matrix);
 
 #if 0
@@ -283,7 +283,7 @@ Graph Alignment::commonSubgraph(const Graph& G1, const Graph& G2) const {
 
     vector<vector<uint> > G1EdgeList;
     G1.getEdgeList(G1EdgeList);
-    Matrix<WEIGHTED_VALUE> G2Matrix;
+    Matrix<MATRIX_UNIT> G2Matrix;
 
     G2.getMatrix(G2Matrix);
 

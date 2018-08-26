@@ -22,7 +22,7 @@ double TriangleCorrectness::eval(const Alignment& A){
 int TriangleCorrectness::calculateTriangles(Graph* G){
     int numTriangles = 0;
     vector<vector<uint> > GAdjLists;
-    Matrix<WEIGHTED_VALUE> GMatrix;
+    Matrix<MATRIX_UNIT> GMatrix;
     G->getAdjLists(GAdjLists);
     G->getMatrix(GMatrix);
     for(uint i = 0; i < G->getNumNodes(); i++){
