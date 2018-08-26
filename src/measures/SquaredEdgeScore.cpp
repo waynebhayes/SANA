@@ -21,7 +21,12 @@ double SquaredEdgeScore::getDenom(void){return SES_DENOM;}
 
 double SquaredEdgeScore::eval(const Alignment& A) {
 #ifdef WEIGHTED
-    return (double) A.numSquaredAlignedEdges(*G1, *G2) / SES_DENOM;
+    #ifdef SPARSE
+        return -1; // A.numSquaredAlignedEdges has speed complexity of o(n^2)
+                   // It will not finish for big networks.
+    #else
+        return (double) A.numSquaredAlignedEdges(*G1, *G2) / SES_DENOM;
+    #endif
 #else
     // ses not make much sense for non-weighted
     return -1;

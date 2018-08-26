@@ -20,17 +20,17 @@ void NodeCount::initSimMatrix() {
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     uint k = distWeights.size();
-    vector<vector<ushort> > densities1 (n1, vector<ushort> (k+1));
-    vector<vector<ushort> > densities2 (n2, vector<ushort> (k+1));
-    for (ushort i = 0; i < n1; i++) {
+    vector<vector<uint> > densities1 (n1, vector<uint> (k+1));
+    vector<vector<uint> > densities2 (n2, vector<uint> (k+1));
+    for (uint i = 0; i < n1; i++) {
         densities1[i] = G1->numNodesAround(i, k);
-        for (ushort j = 1; j < k; j++) {
+        for (uint j = 1; j < k; j++) {
             densities1[i][j] += densities1[i][j-1];
         } 
     }
-    for (ushort i = 0; i < n2; i++) {
+    for (uint i = 0; i < n2; i++) {
         densities2[i] = G2->numNodesAround(i, k);
-        for (ushort j = 1; j < k; j++) {
+        for (uint j = 1; j < k; j++) {
             densities2[i][j] += densities2[i][j-1];
         }
     }

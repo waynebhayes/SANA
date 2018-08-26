@@ -10,15 +10,15 @@ WeightedAlignmentVoter::WeightedAlignmentVoter(Graph* G1, Graph* G2, LocalMeasur
 
 }
 
-ushort WeightedAlignmentVoter::addBestPair(const vector<vector<double> >& simMatrix, vector<bool>& alreadyAlignedG1, vector<bool>& alreadyAlignedG2) {
-    int n1 = simMatrix.size();
-    int n2 = simMatrix[0].size();
-    ushort bestNodeG1 = -1;
-    ushort bestNodeG2 = -1;
+uint WeightedAlignmentVoter::addBestPair(const vector<vector<double> >& simMatrix, vector<bool>& alreadyAlignedG1, vector<bool>& alreadyAlignedG2) {
+    uint n1 = simMatrix.size();
+    uint n2 = simMatrix[0].size();
+    uint bestNodeG1 = -1;
+    uint bestNodeG2 = -1;
     double bestScore = -1;
-    for (ushort i = 0; i < n1; i++) {
+    for (uint i = 0; i < n1; i++) {
         if (not alreadyAlignedG1[i]) {
-            for (ushort j = 0; j < n2; j++) {
+            for (uint j = 0; j < n2; j++) {
                 if (not alreadyAlignedG2[j]) {
                     if (simMatrix[i][j] > bestScore) {
                         bestNodeG1 = i;
@@ -35,13 +35,13 @@ ushort WeightedAlignmentVoter::addBestPair(const vector<vector<double> >& simMat
     return bestNodeG1;
 }
 
-void WeightedAlignmentVoter::updateNeighbors(const vector<bool>& alreadyAlignedG1, const vector<bool>& alreadyAlignedG2, ushort node, const vector<vector<double> >& nodeSimMatrix, vector<vector<double> >& simMatrix) {
-    vector<vector<ushort> > adjListsG1, adjListsG2;
+void WeightedAlignmentVoter::updateNeighbors(const vector<bool>& alreadyAlignedG1, const vector<bool>& alreadyAlignedG2, uint node, const vector<vector<double> >& nodeSimMatrix, vector<vector<double> >& simMatrix) {
+    vector<vector<uint> > adjListsG1, adjListsG2;
     G1->getAdjLists(adjListsG1);
     G2->getAdjLists(adjListsG2);
-    for (ushort neighborG1 : adjListsG1[node]) {
+    for (uint neighborG1 : adjListsG1[node]) {
         if (not alreadyAlignedG1[neighborG1]) {
-            for (ushort neighborG2 : adjListsG2[A[node]]) {
+            for (uint neighborG2 : adjListsG2[A[node]]) {
                 if (not alreadyAlignedG2[neighborG2]) {
                     simMatrix[neighborG1][neighborG2] +=
                         nodeSimMatrix[neighborG1][neighborG2] +
@@ -63,11 +63,11 @@ Alignment WeightedAlignmentVoter::run() {
             simMatrix[i][j] = nodeSimMatrix[i][j];
         }
     }
-    A = vector<ushort> (n1);
+    A = vector<uint> (n1);
     vector<bool> alreadyAlignedG1(n1, false);
     vector<bool> alreadyAlignedG2(n2, false);
     for (int i = 0; i < n1; i++) {
-        ushort newNode = addBestPair(simMatrix, alreadyAlignedG1, alreadyAlignedG2);
+        uint newNode = addBestPair(simMatrix, alreadyAlignedG1, alreadyAlignedG2);
         updateNeighbors(alreadyAlignedG1, alreadyAlignedG2, newNode, nodeSimMatrix, simMatrix);
     }
     return A;

@@ -46,9 +46,9 @@ void  Method::checkLockingBeforeReport(Alignment A){
     if(G1->getLockedCount() == 0)
         return;
 
-    unordered_map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
-    unordered_map<string,ushort> g2_IndexMap = G2->getNodeNameToIndexMap();
-    unordered_map<ushort,string> g2_NameMap = G2->getIndexToNodeNameMap();
+    unordered_map<uint,string> g1_NameMap = G1->getIndexToNodeNameMap();
+    unordered_map<string,uint> g2_IndexMap = G2->getNodeNameToIndexMap();
+    unordered_map<uint,string> g2_NameMap = G2->getIndexToNodeNameMap();
 
     uint n1 = G1->getNumNodes();
     for(uint i=0; i< n1 ; i++){
@@ -69,8 +69,8 @@ void Method::checkNodeTypesBeforeReport(Alignment A){
     if(!G1->hasNodeTypes())
         return;
 
-    unordered_map<ushort,string> g1_NameMap = G1->getIndexToNodeNameMap();
-    unordered_map<ushort,string> g2_NameMap = G2->getIndexToNodeNameMap();
+    unordered_map<uint,string> g1_NameMap = G1->getIndexToNodeNameMap();
+    unordered_map<uint,string> g2_NameMap = G2->getIndexToNodeNameMap();
 
     uint n1 = G1->getNumNodes();
     for(uint i=0; i< n1 ; i++){
@@ -103,8 +103,8 @@ void Method::setLockFile(string fileName){
 }
 
 
-unordered_map<ushort, ushort> Method::getReverseMap(const unordered_map<ushort,ushort> reverse) const {
-    unordered_map<ushort,ushort> res;
+unordered_map<uint, uint> Method::getReverseMap(const unordered_map<uint,uint> reverse) const {
+    unordered_map<uint,uint> res;
     for (const auto &nameIndexPair : reverse ) {
         res[nameIndexPair.second] = nameIndexPair.first;
     }

@@ -21,17 +21,17 @@ double TriangleCorrectness::eval(const Alignment& A){
 
 int TriangleCorrectness::calculateTriangles(Graph* G){
     int numTriangles = 0;
-    vector<vector<ushort> > GAdjLists;
-    Matrix GMatrix;
+    vector<vector<uint> > GAdjLists;
+    Matrix<MATRIX_UNIT> GMatrix;
     G->getAdjLists(GAdjLists);
     G->getMatrix(GMatrix);
     for(uint i = 0; i < G->getNumNodes(); i++){
         for(uint j = 0; j < GAdjLists[i].size(); j++){
             for(uint k = 0; k < GAdjLists[i].size(); k++){
                 if(k != j){
-                    ushort neighbor1 = GAdjLists[i][j];
-                    ushort neighbor2 = GAdjLists[i][k];
-                    if(GMatrix.get(neighbor1, neighbor2)){
+                    uint neighbor1 = GAdjLists[i][j];
+                    uint neighbor2 = GAdjLists[i][k];
+                    if(GMatrix[neighbor1][neighbor2]){
                         numTriangles++;
                     }
                 }

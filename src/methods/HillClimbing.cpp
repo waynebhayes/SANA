@@ -66,22 +66,22 @@ Alignment HillClimbing::run() {
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
 
-    vector<ushort> A(startA.getMapping());
-    Matrix G1Matrix;
-    Matrix G2Matrix;
+    vector<uint> A(startA.getMapping());
+    Matrix<MATRIX_UNIT> G1Matrix;
+    Matrix<MATRIX_UNIT> G2Matrix;
 
     G1->getMatrix(G1Matrix);
     G2->getMatrix(G2Matrix);
-    vector<vector<ushort> > G1AdjLists;
+    vector<vector<uint> > G1AdjLists;
     G1->getAdjLists(G1AdjLists);
-    vector<vector<ushort> > G2AdjLists;
+    vector<vector<uint> > G2AdjLists;
     G2->getAdjLists(G2AdjLists);
 
     vector<bool> assignedNodesG2(n2, false);
     for (uint i = 0; i < n1; i++) {
         assignedNodesG2[A[i]] = true;
     }
-    vector<ushort> unassignedNodesG2(n2-n1);
+    vector<uint> unassignedNodesG2(n2-n1);
     int j = 0;
     for (uint i = 0; i < n2; i++) {
         if (not assignedNodesG2[i]) {
@@ -141,39 +141,39 @@ Alignment HillClimbing::run() {
 
         //dummy initializations:
         bool useChangeOperator = false;
-        ushort bestSource = 0;
+        uint bestSource = 0;
         uint bestNewTargetIndex = 0;
         int bestNewAligEdges = 0;
         int bestNewG2InducedEdges = 0;
         double bestNewLocalScoreSum = 0;
         double bestNewWecSum = 0;
-        ushort bestSource1 = 0, bestSource2 = 0;
+        uint bestSource1 = 0, bestSource2 = 0;
 
         //traverse all change neighbors
-        for (ushort source = 0; source < n1; source++) {
+        for (uint source = 0; source < n1; source++) {
             for (uint newTargetIndex = 0; newTargetIndex < n2-n1; newTargetIndex++) {
-                ushort oldTarget = A[source];
-                ushort newTarget = unassignedNodesG2[newTargetIndex];
+                uint oldTarget = A[source];
+                uint newTarget = unassignedNodesG2[newTargetIndex];
 
                 int newAligEdges = aligEdges;
                 for (uint j = 0; j < G1AdjLists[source].size(); j++) {
-                    ushort neighbor = G1AdjLists[source][j];
-                    newAligEdges -= G2Matrix.get(oldTarget, A[neighbor]);
-                    newAligEdges += G2Matrix.get(newTarget, A[neighbor]);
+                    uint neighbor = G1AdjLists[source][j];
+                    newAligEdges -= G2Matrix[oldTarget][A[neighbor]];
+                    newAligEdges += G2Matrix[newTarget][A[neighbor]];
                 }
 
                 int newG2InducedEdges = g2InducedEdges;
                 if (needG2InducedEdges) {
                     for (uint j = 0; j < G2AdjLists[oldTarget].size(); j++) {
-                        ushort neighbor = G2AdjLists[oldTarget][j];
+                        uint neighbor = G2AdjLists[oldTarget][j];
                         newG2InducedEdges -= assignedNodesG2[neighbor];
                     }
                     for (uint j = 0; j < G2AdjLists[newTarget].size(); j++) {
-                        ushort neighbor = G2AdjLists[newTarget][j];
+                        uint neighbor = G2AdjLists[newTarget][j];
                         newG2InducedEdges += assignedNodesG2[neighbor];
                     }
                     //address case changing between adjacent nodes:
-                    newG2InducedEdges -= G2Matrix.get(oldTarget, newTarget);
+                    newG2InducedEdges -= G2Matrix[oldTarget][newTarget];
                 }
 
                 double newLocalScoreSum = localScoreSum +
@@ -183,12 +183,12 @@ Alignment HillClimbing::run() {
                 double newWecSum = wecSum;
                 if (wecWeight > 0) {
                     for (uint j = 0; j < G1AdjLists[source].size(); j++) {
-                        ushort neighbor = G1AdjLists[source][j];
-                        if (G2Matrix.get(oldTarget, A[neighbor])) {
+                        uint neighbor = G1AdjLists[source][j];
+                        if (G2Matrix[oldTarget][A[neighbor]]) {
                             newWecSum -= (*wecSimMatrix)[source][oldTarget];
                             newWecSum -= (*wecSimMatrix)[neighbor][A[neighbor]];
                         }
-                        if (G2Matrix.get(newTarget, A[neighbor])) {
+                        if (G2Matrix[newTarget][A[neighbor]]) {
                             newWecSum += (*wecSimMatrix)[source][newTarget];
                             newWecSum += (*wecSimMatrix)[neighbor][A[neighbor]];
                         }
@@ -215,26 +215,26 @@ Alignment HillClimbing::run() {
         }
 
         //traverse all swap neighbors
-        for (ushort source1 = 0; source1 < n1; source1++) {
-            for (ushort source2 = source1+1; source2 < n1; source2++) {
-                ushort target1 = A[source1], target2 = A[source2];
+        for (uint source1 = 0; source1 < n1; source1++) {
+            for (uint source2 = source1+1; source2 < n1; source2++) {
+                uint target1 = A[source1], target2 = A[source2];
 
                 int newAligEdges = aligEdges;
                 for (uint j = 0; j < G1AdjLists[source1].size(); j++) {
-                    ushort neighbor = G1AdjLists[source1][j];
-                    newAligEdges -= G2Matrix.get(target1, A[neighbor]);
-                    newAligEdges += G2Matrix.get(target2, A[neighbor]);
+                    uint neighbor = G1AdjLists[source1][j];
+                    newAligEdges -= G2Matrix[target1][A[neighbor]];
+                    newAligEdges += G2Matrix[target2][A[neighbor]];
                 }
                 for (uint j = 0; j < G1AdjLists[source2].size(); j++) {
-                    ushort neighbor = G1AdjLists[source2][j];
-                    newAligEdges -= G2Matrix.get(target2, A[neighbor]);
-                    newAligEdges += G2Matrix.get(target1, A[neighbor]);
+                    uint neighbor = G1AdjLists[source2][j];
+                    newAligEdges -= G2Matrix[target2][A[neighbor]];
+                    newAligEdges += G2Matrix[target1][A[neighbor]];
                 }
                 //address case swapping between adjacent nodes with adjacent images:
 #ifdef WEIGHTED
-                newAligEdges += (-1 << 1) & (G1Matrix.get(source1, source2) + G2Matrix.get(target1, target2));
+                newAligEdges += (-1 << 1) & (G1Matrix[source1][source2] + G2Matrix[target1][target2]);
 #else
-                newAligEdges += 2*(G1Matrix.get(source1, source2) & G2Matrix.get(target1, target2));
+                newAligEdges += 2*(G1Matrix[source1][source2] & G2Matrix[target1][target2]);
 #endif
                 double newLocalScoreSum = localScoreSum +
                     localsCombined[source1][target2] -
@@ -245,32 +245,32 @@ Alignment HillClimbing::run() {
                 double newWecSum = wecSum;
                 if (wecWeight > 0) {
                     for (uint j = 0; j < G1AdjLists[source1].size(); j++) {
-                        ushort neighbor = G1AdjLists[source1][j];
-                        if (G2Matrix.get(target1, A[neighbor])) {
+                        uint neighbor = G1AdjLists[source1][j];
+                        if (G2Matrix[target1][A[neighbor]]) {
                             newWecSum -= (*wecSimMatrix)[source1][target1];
                             newWecSum -= (*wecSimMatrix)[neighbor][A[neighbor]];
                         }
-                        if (G2Matrix.get(target2, A[neighbor])) {
+                        if (G2Matrix[target2][A[neighbor]]) {
                             newWecSum += (*wecSimMatrix)[source1][target2];
                             newWecSum += (*wecSimMatrix)[neighbor][A[neighbor]];
                         }
                     }
                     for (uint j = 0; j < G1AdjLists[source2].size(); j++) {
-                        ushort neighbor = G1AdjLists[source2][j];
-                        if (G2Matrix.get(target2, A[neighbor])) {
+                        uint neighbor = G1AdjLists[source2][j];
+                        if (G2Matrix[target2][A[neighbor]]) {
                             newWecSum -= (*wecSimMatrix)[source2][target2];
                             newWecSum -= (*wecSimMatrix)[neighbor][A[neighbor]];
                         }
-                        if (G2Matrix.get(target1, A[neighbor])) {
+                        if (G2Matrix[target1][A[neighbor]]) {
                             newWecSum += (*wecSimMatrix)[source2][target1];
                             newWecSum += (*wecSimMatrix)[neighbor][A[neighbor]];
                         }
                     }
                     //address case swapping between adjacent nodes with adjacent images:
 #ifdef WEIGHTED
-                    if (G1Matrix.get(source1, source2) > 0 and G2Matrix.get(target1, target2) > 0) { 
+                    if (G1Matrix[source1][source2] > 0 and G2Matrix[target1][target2] > 0) { 
 #else
-                    if (G1Matrix.get(source1, source2) and G2Matrix.get(target1, target2)) {
+                    if (G1Matrix[source1][source2] and G2Matrix[target1][target2]) {
 #endif
                         //not sure about this -- but seems fine
                         newWecSum += 2*(*wecSimMatrix)[source1][target1];
@@ -308,8 +308,8 @@ Alignment HillClimbing::run() {
         wecSum = bestNewWecSum;
 
         if (useChangeOperator) {
-            ushort newTarget = unassignedNodesG2[bestNewTargetIndex];
-            ushort oldTarget = A[bestSource];
+            uint newTarget = unassignedNodesG2[bestNewTargetIndex];
+            uint oldTarget = A[bestSource];
             A[bestSource] = newTarget;
             unassignedNodesG2[bestNewTargetIndex] = oldTarget;
             assignedNodesG2[oldTarget] = false;
@@ -317,7 +317,7 @@ Alignment HillClimbing::run() {
             g2InducedEdges = bestNewG2InducedEdges;
         }
         else {
-            ushort target1 = A[bestSource1], target2 = A[bestSource2];
+            uint target1 = A[bestSource1], target2 = A[bestSource2];
             A[bestSource1] = target2;
             A[bestSource2] = target1;
         }

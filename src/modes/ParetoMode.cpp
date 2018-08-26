@@ -68,7 +68,7 @@ vector<Alignment> ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2
     cout << "Start execution of " << method->getName() << " in Pareto Mode." << endl;
     Timer T;
     T.start();
-    unordered_set<vector<unsigned short>*> *A = static_cast<SANA*>(method)->paretoRun();
+    unordered_set<vector<uint>*> *A = static_cast<SANA*>(method)->paretoRun();
     
     vector<Alignment> alignments;
     for(auto i = A->begin(); i != A->end(); i++)
@@ -79,7 +79,7 @@ vector<Alignment> ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2
 
     // Re Index back to normal (Method #3 of locking)
 
-    // Needs to be reimplemented with unordered_set<vector<unsigned short>>*
+    // Needs to be reimplemented with unordered_set<vector<uint>>*
     
     for(unsigned int i = 0; i < alignments.size(); i++) {
         if(G1->hasNodeTypes()){
@@ -114,7 +114,7 @@ void ParetoMode::printAlignments(vector<Alignment>& alignments, const string &fi
     output.close();
 }
 
-typedef unordered_map<ushort,string> NodeIndexMap;
+typedef unordered_map<uint,string> NodeIndexMap;
 void ParetoMode::printEdgeLists(Graph* G1, Graph* G2, vector<Alignment>& alignments, const string &fileName) {
     string outputFileName = fileName;
     if(outputFileName.find(".out") != string::npos && outputFileName.rfind(".out") + 4 == outputFileName.size())

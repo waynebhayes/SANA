@@ -24,12 +24,12 @@ class SkipNode{
 public:
   int height;
   float key;
-  std::pair<ushort,ushort> value;
+  std::pair<uint,uint> value;
 
   static constexpr int MAX_LEVEL = 16;
     
   SkipNode();
-  SkipNode(int h, float k, std::pair<ushort,ushort> v);
+  SkipNode(int h, float k, std::pair<uint,uint> v);
   ~SkipNode();
   SkipNode * forward[MAX_LEVEL];
   void debug(int limit);
@@ -38,14 +38,14 @@ public:
 class SkipList{
 public:
   SkipList(float delta, bool setMaxHeap,
-       std::unordered_set<ushort> & lex, std::unordered_set<ushort> & rex);
+       std::unordered_set<uint> & lex, std::unordered_set<uint> & rex);
   ~SkipList();
     
 
-  void insert(float similarity, std::pair<ushort,ushort> entry);
+  void insert(float similarity, std::pair<uint,uint> entry);
   bool empty();
-  std::pair<ushort,ushort> pop_reservoir();
-  std::pair<ushort,ushort> pop_distr();
+  std::pair<uint,uint> pop_reservoir();
+  std::pair<uint,uint> pop_distr();
   bool isMaxHeap();
 
   void debug();
@@ -79,8 +79,8 @@ private:
   std::chrono::milliseconds pop_time;
   uint cumulative_miss;
   uint miss_counter;
-  std::unordered_set<ushort> & left_exclude;
-  std::unordered_set<ushort> & right_exclude;
+  std::unordered_set<uint> & left_exclude;
+  std::unordered_set<uint> & right_exclude;
   std::vector<std::uniform_int_distribution<int>> uni;
 };
 
