@@ -191,7 +191,7 @@ SANA::SANA(Graph* G1, Graph* G2,
         needNC      = true;
     } catch(...) {
         ncWeight = 0;
-        trueA    = {static_cast<ushort>(G2->getNumNodes()), 1};
+        trueA    = {static_cast<uint>(G2->getNumNodes()), 1};
     }
 
     try {
@@ -221,9 +221,9 @@ SANA::SANA(Graph* G1, Graph* G2,
         wecSims                          = (*wecSimsP);
     }
 #ifdef CORES
-    coreFreq        = vector<vector<ulong> > (n1, vector<ulong>(n2, 0));
+    coreFreq = Matrix<ulong>(n1, n2);
     coreCount       = vector<ulong>(n1, 0);
-    weightedCoreFreq= vector<vector<double> > (n1, vector<double>(n2, 0));
+    weightedCoreFreq = Matrix<double>(n1, n2);
     totalCoreWeight = vector<double>(n1, 0);
 #endif
     //to evaluate local measures incrementally
@@ -252,10 +252,10 @@ SANA::SANA(Graph* G1, Graph* G2,
     running the algorithm
     */
     assignedNodesG2       = new vector<bool> (n2);
-    unassignedNodesG2     = new vector<ushort> (n2-n1);
-    unassignedgenesG2     = new vector<ushort> (G2->geneCount - G1->geneCount);
-    unassignedmiRNAsG2    = new vector<ushort> (G2->miRNACount - G1->miRNACount);
-    A                     = new vector<ushort> (n1);
+    unassignedNodesG2     = new vector<uint> (n2-n1);
+    unassignedgenesG2     = new vector<uint> (G2->geneCount - G1->geneCount);
+    unassignedmiRNAsG2    = new vector<uint> (G2->miRNACount - G1->miRNACount);
+    A                     = new vector<uint> (n1);
     avgEnergyInc          = -0.00001; //to track progress
     this->addHillClimbing = addHillClimbing;
 }
@@ -312,10 +312,10 @@ Alignment SANA::run() {
 #ifndef CORES
 #error must have CORES macro defined to print them
 #endif
-	unordered_map<ushort,string> G1Index2Name = G1->getIndexToNodeNameMap();
-	unordered_map<ushort,string> G2Index2Name = G2->getIndexToNodeNameMap();
+	unordered_map<uint,string> G1Index2Name = G1->getIndexToNodeNameMap();
+	unordered_map<uint,string> G2Index2Name = G2->getIndexToNodeNameMap();
 	printf("######## core frequencies#########\n");
-	for(ushort i=0; i<n1; i++) for(ushort j=0; j<n2; j++) if(coreFreq[i][j]>0)
+	for(uint i=0; i<n1; i++) for(uint j=0; j<n2; j++) if(coreFreq[i][j]>0)
 	    printf("%s %s  %lu / %lu = %.16f weighted %.16f / %.16f = %.16f\n", G1Index2Name[i].c_str(), G2Index2Name[j].c_str(),
 		coreFreq[i][j], coreCount[i],
 		coreFreq[i][j]/(double)coreCount[i],
@@ -341,7 +341,7 @@ double mecC(PARAMS) { return double(aligEdges) / (g1WeightedEdges + g2WeightedEd
 double sesC(PARAMS) { return squaredAligEdges; }
 #endif
 
-unordered_set<vector<ushort>*>* SANA::paretoRun() {
+unordered_set<vector<uint>*>* SANA::paretoRun() {
     measureCalculation["ec"] = ecC;
     measureCalculation["s3"] = s3C;
     measureCalculation["ics"] = icsC;
@@ -365,11 +365,11 @@ unordered_set<vector<ushort>*>* SANA::paretoRun() {
 }
 
 // Used for method #2 of locking
-inline ushort SANA::G1RandomUnlockedNode_Fast() {
+inline uint SANA::G1RandomUnlockedNode_Fast() {
     return unLockedNodesG1[G1RandomUnlockedNodeDist(gen)];
 }
 
-inline ushort SANA::G1RandomUnlockedNode(){
+inline uint SANA::G1RandomUnlockedNode(){
     #ifdef REINDEX
         return G1RandomUnlockedNodeDist(gen);
     #else
@@ -379,7 +379,7 @@ inline ushort SANA::G1RandomUnlockedNode(){
 
 // Gives a random unlocked nodes with the same type as source1
 // Only called from performswap
-inline ushort SANA::G1RandomUnlockedNode(uint source1){
+inline uint SANA::G1RandomUnlockedNode(uint source1){
     if(!nodesHaveType){
         return SANA::G1RandomUnlockedNode();
     }
@@ -406,7 +406,7 @@ inline ushort SANA::G1RandomUnlockedNode(uint source1){
 }
 
 // Return index of the unassigned node in the unassginedNodesG2 (or unassignedgenesG2, ...)
-inline ushort SANA::G2RandomUnlockedNode(uint target1){
+inline uint SANA::G2RandomUnlockedNode(uint target1){
     if(!nodesHaveType){
         return G2RandomUnlockedNode_Fast();
     } else {
@@ -419,7 +419,7 @@ inline ushort SANA::G2RandomUnlockedNode(uint target1){
             int index = G2RandomUnassignedmiRNADist(gen);
             return index;
         }
-        // ushort node;
+        // uint node;
         // do {
         //     node = G2RandomUnlockedNode_Fast(); // gives back unlocked G2 node
         // } while(G2->nodeTypes[target1] != G2->nodeTypes[(*unassignedNodesG2)[node]]);
@@ -427,7 +427,7 @@ inline ushort SANA::G2RandomUnlockedNode(uint target1){
     }
 }
 
-inline ushort SANA::G2RandomUnlockedNode_Fast(){
+inline uint SANA::G2RandomUnlockedNode_Fast(){
     return G2RandomUnassignedNode(gen);
 }
 
@@ -496,15 +496,15 @@ double SANA::trueAcceptingProbability(){
 void SANA::initDataStructures(const Alignment& startA) {
     nodesHaveType = G1->hasNodeTypes();
 
-    A = new vector<ushort>(startA.getMapping());
+    A = new vector<uint>(startA.getMapping());
 
     assignedNodesG2 = new vector<bool> (n2, false);
     for (uint i = 0; i < n1; i++) {
         (*assignedNodesG2)[(*A)[i]] = true;
     }
-    unassignedNodesG2        = new vector<ushort> (n2-n1);
-    unassignedgenesG2        = new vector<ushort> ();
-    unassignedmiRNAsG2       = new vector<ushort> ();
+    unassignedNodesG2        = new vector<uint> (n2-n1);
+    unassignedgenesG2        = new vector<uint> ();
+    unassignedmiRNAsG2       = new vector<uint> ();
     
     if(nodesHaveType){
         cerr << "Seperating unassigned genes and miRNAs in G2" << endl;
@@ -524,7 +524,7 @@ void SANA::initDataStructures(const Alignment& startA) {
     }
     //  Init unlockedNodesG1
     uint unlockedG1            = n1 - G1->getLockedCount();
-    unLockedNodesG1            = vector<ushort> (unlockedG1);
+    unLockedNodesG1            = vector<uint> (unlockedG1);
     uint index                 = 0;
     for (uint i = 0; i < n1; i++){
         if(not G1->isLocked(i)){
@@ -666,7 +666,7 @@ Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIte
         return *A; //dummy return to shut compiler warning
 }
 
-unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, double maxExecutionSeconds,
+unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, double maxExecutionSeconds,
         long long int& iter) {
 
     initDataStructures(startA);
@@ -699,7 +699,7 @@ unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, d
 
     return storedAlignments;
 }
-unordered_set<vector<ushort>*>* SANA::simpleParetoRun(const Alignment& startA, long long int maxExecutionIterations,
+unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, long long int maxExecutionIterations,
         long long int& iter) {
 
     initDataStructures(startA);
@@ -857,18 +857,18 @@ void SANA::prepareMeasureDataByAlignment() {
 
     assignedNodesG2 = new vector<bool>(*storedAssignedNodesG2[A]);
     if(!nodesHaveType)
-        unassignedNodesG2 = new vector<ushort>(*storedUnassignedNodesG2[A]);
+        unassignedNodesG2 = new vector<uint>(*storedUnassignedNodesG2[A]);
     else {
-        unassignedmiRNAsG2 = new vector<ushort>(*storedUnassignedmiRNAsG2[A]);
-        unassignedgenesG2 = new vector<ushort>(*storedUnassignedgenesG2[A]);
+        unassignedmiRNAsG2 = new vector<uint>(*storedUnassignedmiRNAsG2[A]);
+        unassignedgenesG2 = new vector<uint>(*storedUnassignedgenesG2[A]);
     }
 
-    A = new vector<ushort>(*A);
+    A = new vector<uint>(*A);
 }
 
 void SANA::insertCurrentAndPrepareNewMeasureDataByAlignment(vector<double> &addScores) {
     bool inserted = false;
-    vector<vector<ushort>*> toRemove = paretoFront.addAlignmentScores(A, addScores, inserted);
+    vector<vector<uint>*> toRemove = paretoFront.addAlignmentScores(A, addScores, inserted);
     if (inserted) {
         for (unsigned int i = 0; i < toRemove.size(); i++)
             removeAlignmentData(toRemove[i]);
@@ -905,20 +905,20 @@ void SANA::insertCurrentAlignmentAndData() {
     /*------------------------>*/storedCurrentScore[A]     = currentScore;
 }
 
-void SANA::removeAlignmentData(vector<ushort>* toRemove) {
+void SANA::removeAlignmentData(vector<uint>* toRemove) {
     storedAlignments->erase(toRemove);
 
     vector<bool>* removeAssignedNodesG2 = storedAssignedNodesG2[toRemove];
     storedAssignedNodesG2.erase(toRemove);
     delete removeAssignedNodesG2;
     if(!nodesHaveType) {
-        vector<ushort>* removeUnassignedNodesG2 = storedUnassignedNodesG2[toRemove];
+        vector<uint>* removeUnassignedNodesG2 = storedUnassignedNodesG2[toRemove];
         storedUnassignedNodesG2.erase(toRemove);
         delete removeUnassignedNodesG2;
     }
     else {
-        vector<ushort>* removeUnassignedmiRNAsG2 = storedUnassignedmiRNAsG2[toRemove];
-        vector<ushort>* removeUnassignedgenesG2 = storedUnassignedgenesG2[toRemove];
+        vector<uint>* removeUnassignedmiRNAsG2 = storedUnassignedmiRNAsG2[toRemove];
+        vector<uint>* removeUnassignedgenesG2 = storedUnassignedgenesG2[toRemove];
         storedUnassignedmiRNAsG2.erase(toRemove);
         storedUnassignedgenesG2.erase(toRemove);
         delete removeUnassignedmiRNAsG2;
@@ -974,12 +974,12 @@ void SANA::SANAIteration() {
 }
 
 void SANA::performChange(int type) {
-    ushort source       = G1RandomUnlockedNode();
-    ushort oldTarget    = (*A)[source];
+    uint source       = G1RandomUnlockedNode();
+    uint oldTarget    = (*A)[source];
     
     uint newTargetIndex = G2RandomUnlockedNode(oldTarget);
 
-    ushort newTarget = -1;
+    uint newTarget = -1;
     bool isGene = false;
     if(!nodesHaveType)
         newTarget    = (*unassignedNodesG2)[newTargetIndex];
@@ -1073,9 +1073,9 @@ void SANA::performChange(int type) {
 }
 
 void SANA::performSwap(int type) {
-    ushort source1 = G1RandomUnlockedNode();
-    ushort source2 = G1RandomUnlockedNode(source1);
-    ushort target1 = (*A)[source1], target2 = (*A)[source2];
+    uint source1 = G1RandomUnlockedNode();
+    uint source2 = G1RandomUnlockedNode(source1);
+    uint target1 = (*A)[source1], target2 = (*A)[source2];
 
     int newAligEdges           = (needAligEdges or needSec) ?  aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
     int newTCSum               = (needTC) ?  TCSum + TCIncSwapOp(source1, source2, target1, target2) : -1;
@@ -1328,39 +1328,39 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     return makeChange;
 }
 
-int SANA::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int res = 0;
     const uint n = G1AdjLists[source].size();
-    ushort neighbor;
+    uint neighbor;
     for (uint i = 0; i < n; ++i) {
         neighbor = G1AdjLists[source][i];
-        res -= G2Matrix.get(oldTarget, (*A)[neighbor]);
-        res += G2Matrix.get(newTarget, (*A)[neighbor]);
+        res -= G2Matrix[oldTarget][(*A)[neighbor]];
+        res += G2Matrix[newTarget][(*A)[neighbor]];
     }
     return res;
 }
 
-int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
+int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     int res = 0;
     const uint n = G1AdjLists[source1].size();
-    ushort neighbor;
+    uint neighbor;
     uint i = 0;
     for (; i < n; ++i) {
         neighbor = G1AdjLists[source1][i];
-        res -= G2Matrix.get(target1, (*A)[neighbor]);
-        res += G2Matrix.get(target2, (*A)[neighbor]);
+        res -= G2Matrix[target1][(*A)[neighbor]];
+        res += G2Matrix[target2][(*A)[neighbor]];
     }
     const uint m = G1AdjLists[source2].size();
     for (i = 0; i < m; ++i) {
         neighbor = G1AdjLists[source2][i];
-        res -= G2Matrix.get(target2, (*A)[neighbor]);
-        res += G2Matrix.get(target1, (*A)[neighbor]);
+        res -= G2Matrix[target2][(*A)[neighbor]];
+        res += G2Matrix[target1][(*A)[neighbor]];
     }
     //address case swapping between adjacent nodes with adjacent images:
 #ifdef WEIGHTED
-    res += (-1 << 1) & (G1Matrix.get(source1, source2) + G2Matrix.get(target1, target2));
+    res += (-1 << 1) & (G1Matrix[source1][source2] + G2Matrix[target1][target2]);
 #else
-    res += 2*(G1Matrix.get(source1, source2) & G2Matrix.get(target1, target2));
+    res += 2*(G1Matrix[source1][source2] & G2Matrix[target1][target2]);
 #endif
     return res;
 }
@@ -1374,14 +1374,14 @@ static int _edgeVal;
 // between the value of this ladder and the ladder with one edge added or removed.  Mathematically
 // it should be edgeVal^2 - (edgeVal+1)^2 which is (2e + 1), but for some reason I had to make
 // it 2*(e+1).  That seemed to work better.  So yeah... big ugly hack.
-#define SQRDIFF(i,j) ((_edgeVal=G2Matrix.get(i, (*A)[j])), 2*((_edgeVal<1000?_edgeVal:0) + 1))
-int SANA::squaredAligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+#define SQRDIFF(i,j) ((_edgeVal=G2Matrix[i][(*A)[j]]), 2*((_edgeVal<1000?_edgeVal:0) + 1))
+int SANA::squaredAligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int res = 0, diff;
-    ushort neighbor;
+    uint neighbor;
     const uint n = G1AdjLists[source].size();
     for (uint i = 0; i < n; ++i) {
         neighbor = G1AdjLists[source][i];
-        // Account for ushort edges? Or assume smaller graph is edge value 1?
+        // Account for uint edges? Or assume smaller graph is edge value 1?
         diff = SQRDIFF(oldTarget, neighbor);
         assert(fabs(diff)<1100);
         res -= diff>0?diff:0;
@@ -1392,9 +1392,9 @@ int SANA::squaredAligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort ne
     return res;
 }
 
-int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
+int SANA::squaredAligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     int res = 0, diff;
-    ushort neighbor;
+    uint neighbor;
     const uint n = G1AdjLists[source1].size();
     uint i = 0;
     for (; i < n; ++i) {
@@ -1418,17 +1418,17 @@ int SANA::squaredAligEdgesIncSwapOp(ushort source1, ushort source2, ushort targe
     }
     // How to do for squared?
     // address case swapping between adjacent nodes with adjacent images:
-    if(G1Matrix.get(source1, source2) and G2Matrix.get(target1, target2))
+    if(G1Matrix[source1][source2] and G2Matrix[target1][target2])
     {
         res += 2 * SQRDIFF(target1,source2);
     }
     return res;
 }
 
-int SANA::inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+int SANA::inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int res = 0;
     const uint n = G2AdjLists[oldTarget].size();
-    ushort neighbor;
+    uint neighbor;
     uint i = 0;
     for (; i < n; ++i) {
         neighbor = G2AdjLists[oldTarget][i];
@@ -1440,29 +1440,29 @@ int SANA::inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTar
         res += (*assignedNodesG2)[neighbor];
     }
     //address case changing between adjacent nodes:
-    res -= G2Matrix.get(oldTarget, newTarget);
+    res -= G2Matrix[oldTarget][newTarget];
     return res;
 }
 
-double SANA::localScoreSumIncChangeOp(vector<vector<float> > const & sim, ushort const & source, ushort const & oldTarget, ushort const & newTarget) {
+double SANA::localScoreSumIncChangeOp(vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget) {
     return sim[source][newTarget] - sim[source][oldTarget];
 }
 
-double SANA::localScoreSumIncSwapOp(vector<vector<float> > const & sim, ushort const & source1, ushort const & source2, ushort const & target1, ushort const & target2) {
+double SANA::localScoreSumIncSwapOp(vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2) {
     return sim[source1][target2] - sim[source1][target1] + sim[source2][target1] - sim[source2][target2];
 }
 
-double SANA::WECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+double SANA::WECIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     double res = 0;
     const uint n = G1AdjLists[source].size();
-    ushort neighbor;
+    uint neighbor;
     for (uint j = 0; j < n; ++j) {
         neighbor = G1AdjLists[source][j];
-        if (G2Matrix.get(oldTarget, (*A)[neighbor])) {
+        if (G2Matrix[oldTarget][(*A)[neighbor]]) {
             res -= wecSims[source][oldTarget];
             res -= wecSims[neighbor][(*A)[neighbor]];
         }
-        if (G2Matrix.get(newTarget, (*A)[neighbor])) {
+        if (G2Matrix[newTarget][(*A)[neighbor]]) {
             res += wecSims[source][newTarget];
             res += wecSims[neighbor][(*A)[neighbor]];
         }
@@ -1470,17 +1470,17 @@ double SANA::WECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
     return res;
 }
 
-double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
+double SANA::WECIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     double res = 0;
     const uint n = G1AdjLists[source1].size();
-    ushort neighbor;
+    uint neighbor;
     for (uint j = 0; j < n; ++j) {
         neighbor = G1AdjLists[source1][j];
-        if (G2Matrix.get(target1, (*A)[neighbor])) {
+        if (G2Matrix[target1][(*A)[neighbor]]) {
             res -= wecSims[source1][target1];
             res -= wecSims[neighbor][(*A)[neighbor]];
         }
-        if (G2Matrix.get(target2, (*A)[neighbor])) {
+        if (G2Matrix[target2][(*A)[neighbor]]) {
             res += wecSims[source1][target2];
             res += wecSims[neighbor][(*A)[neighbor]];
         }
@@ -1488,20 +1488,20 @@ double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort
     const uint m = G1AdjLists[source2].size();
     for (uint j = 0; j < m; ++j) {
         neighbor = G1AdjLists[source2][j];
-        if (G2Matrix.get(target2, (*A)[neighbor])) {
+        if (G2Matrix[target2][(*A)[neighbor]]) {
             res -= wecSims[source2][target2];
             res -= wecSims[neighbor][(*A)[neighbor]];
         }
-        if (G2Matrix.get(target1, (*A)[neighbor])) {
+        if (G2Matrix[target1][(*A)[neighbor]]) {
             res += wecSims[source2][target1];
             res += wecSims[neighbor][(*A)[neighbor]];
         }
     }
     //address case swapping between adjacent nodes with adjacent images:
 #ifdef WEIGHTED
-    if (G1Matrix.get(source1, source2) > 0 and G2Matrix.get(target1, target2) > 0) {
+    if (G1Matrix[source1][source2] > 0 and G2Matrix[target1][target2] > 0) {
 #else
-    if (G1Matrix.get(source1, source2) and G2Matrix.get(target1, target2)) {
+    if (G1Matrix[source1][source2] and G2Matrix[target1][target2]) {
 #endif
         res += 2*wecSims[source1][target1];
         res += 2*wecSims[source2][target2];
@@ -1509,28 +1509,28 @@ double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort
     return res;
 }
 
-double SANA::EWECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget){
+double SANA::EWECIncChangeOp(uint source, uint oldTarget, uint newTarget){
     double score = 0;
     score = (EWECSimCombo(source, newTarget)) - (EWECSimCombo(source, oldTarget));
     return score;
 }
 
-double SANA::EWECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2){
+double SANA::EWECIncSwapOp(uint source1, uint source2, uint target1, uint target2){
     double score = 0;
     score = (EWECSimCombo(source1, target2)) + (EWECSimCombo(source2, target1)) - (EWECSimCombo(source1, target1)) - (EWECSimCombo(source2, target2));
-    if(G1Matrix.get(source1, source2) and G2Matrix.get(target1, target2)){
+    if(G1Matrix[source1][source2] and G2Matrix[target1][target2]){
         score += ewec->getScore(ewec->getColIndex(target1, target2), ewec->getRowIndex(source1, source2))/(g1Edges); //correcting for missed edges when swapping 2 adjacent pairs
     }
     return score;
 }
 
-double SANA::EWECSimCombo(ushort source, ushort target){
+double SANA::EWECSimCombo(uint source, uint target){
     double score = 0;
     const uint n = G1AdjLists[source].size();
-    ushort neighbor;
+    uint neighbor;
     for (uint i = 0; i < n; ++i) {
         neighbor = G1AdjLists[source][i];
-        if (G2Matrix.get(target, (*A)[neighbor])) {
+        if (G2Matrix[target][(*A)[neighbor]]) {
             int e1 = ewec->getRowIndex(source, neighbor);
             int e2 = ewec->getColIndex(target, (*A)[neighbor]);
             score+=ewec->getScore(e2,e1);
@@ -1539,22 +1539,22 @@ double SANA::EWECSimCombo(ushort source, ushort target){
     return score/(2*g1Edges);
 }
 
-double SANA::TCIncChangeOp(ushort source, ushort oldTarget, ushort newTarget){
+double SANA::TCIncChangeOp(uint source, uint oldTarget, uint newTarget){
     double deltaTriangles = 0;
     const uint n = G1AdjLists[source].size();
-    ushort neighbor1, neighbor2;
+    uint neighbor1, neighbor2;
     for(uint i = 0; i < n; ++i){
         for(uint j = i+1; j < n; ++j){
             neighbor1 = G1AdjLists[source][i];
             neighbor2 = G1AdjLists[source][j];
-            if(G1Matrix.get(neighbor1, neighbor2)){
+            if(G1Matrix[neighbor1][neighbor2]){
                 //G1 has a triangle
-                if(G2Matrix.get(oldTarget, (*A)[neighbor1]) and G2Matrix.get(oldTarget, (*A)[neighbor2]) and G2Matrix.get((*A)[neighbor1], (*A)[neighbor2])){
+                if(G2Matrix[oldTarget][(*A)[neighbor1]] and G2Matrix[oldTarget][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]]){
                     //G2 HAD a triangle
                     deltaTriangles -= 1;
                 }
 
-                if(G2Matrix.get(newTarget, (*A)[neighbor1]) and G2Matrix.get(newTarget, (*A)[neighbor2]) and G2Matrix.get((*A)[neighbor1], (*A)[neighbor2])){
+                if(G2Matrix[newTarget][(*A)[neighbor1]] and G2Matrix[newTarget][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]]){
                     //G2 GAINS a triangle
                     deltaTriangles += 1;
                 }
@@ -1564,24 +1564,24 @@ double SANA::TCIncChangeOp(ushort source, ushort oldTarget, ushort newTarget){
     return ((double)deltaTriangles/maxTriangles);
 }
 
-double SANA::TCIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2){
+double SANA::TCIncSwapOp(uint source1, uint source2, uint target1, uint target2){
     double deltaTriangles = 0;
     const uint n = G1AdjLists[source1].size();
-    ushort neighbor1, neighbor2;
+    uint neighbor1, neighbor2;
     for(uint i = 0; i < n; ++i){
         for(uint j = i+1; j < n; ++j){
             neighbor1 = G1AdjLists[source1][i];
             neighbor2 = G1AdjLists[source1][j];
-            if(G1Matrix.get(neighbor1, neighbor2)){
+            if(G1Matrix[neighbor1][neighbor2]){
                 //G1 has a triangle
-                if(G2Matrix.get(target1, (*A)[neighbor1]) and G2Matrix.get(target1, (*A)[neighbor2]) and G2Matrix.get((*A)[neighbor1], (*A)[neighbor2])){
+                if(G2Matrix[target1][(*A)[neighbor1]] and G2Matrix[target1][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]]){
                     //G2 HAD a triangle
                     deltaTriangles -= 1;
                 }
 
-                if((G2Matrix.get(target2, (*A)[neighbor1]) and G2Matrix.get(target2, (*A)[neighbor2]) and G2Matrix.get((*A)[neighbor1], (*A)[neighbor2]))
-                || (neighbor1 == source2 and G2Matrix.get(target2, target1) and G2Matrix.get(target2, (*A)[neighbor2]) and G2Matrix.get(target1, (*A)[neighbor2]))
-                || (neighbor2 == source2 and G2Matrix.get(target2, (*A)[neighbor1]) and G2Matrix.get(target2, target1) and G2Matrix.get((*A)[neighbor1], target1))) {
+                if((G2Matrix[target2][(*A)[neighbor1]] and G2Matrix[target2][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]])
+                || (neighbor1 == source2 and G2Matrix[target2][target1] and G2Matrix[target2][(*A)[neighbor2]] and G2Matrix[target1][(*A)[neighbor2]])
+                || (neighbor2 == source2 and G2Matrix[target2][(*A)[neighbor1]] and G2Matrix[target2][target1] and G2Matrix[(*A)[neighbor1]][target1])) {
                     //G2 GAINS a triangle
                     deltaTriangles += 1;
                 }
@@ -1593,16 +1593,16 @@ double SANA::TCIncSwapOp(ushort source1, ushort source2, ushort target1, ushort 
         for(uint j = i+1; j < m; ++j){
             neighbor1 = G1AdjLists[source2][i];
             neighbor2 = G1AdjLists[source2][j];
-            if(G1Matrix.get(neighbor1, neighbor2)){
+            if(G1Matrix[neighbor1][neighbor2]){
                 //G1 has a triangle
-                if(G2Matrix.get(target2, (*A)[neighbor1]) and G2Matrix.get(target2, (*A)[neighbor2]) and G2Matrix.get((*A)[neighbor1], (*A)[neighbor2])){
+                if(G2Matrix[target2][(*A)[neighbor1]] and G2Matrix[target2][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]]){
                     //G2 HAD a triangle
                     deltaTriangles -= 1;
                 }
 
-                if((G2Matrix.get(target1, (*A)[neighbor1]) and G2Matrix.get(target1, (*A)[neighbor2]) and G2Matrix.get((*A)[neighbor1], (*A)[neighbor2]))
-                   || (neighbor1 == source1 and G2Matrix.get(target1, target2) and G2Matrix.get(target1, (*A)[neighbor2]) and G2Matrix.get(target2, (*A)[neighbor2]))
-                   || (neighbor2 == source1 and G2Matrix.get(target1, (*A)[neighbor1]) and G2Matrix.get(target1, target2) and G2Matrix.get((*A)[neighbor1], target2))){
+                if((G2Matrix[target1][(*A)[neighbor1]] and G2Matrix[target1][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]])
+                   || (neighbor1 == source1 and G2Matrix[target1][target2] and G2Matrix[target1][(*A)[neighbor2]] and G2Matrix[target2][(*A)[neighbor2]])
+                   || (neighbor2 == source1 and G2Matrix[target1][(*A)[neighbor1]] and G2Matrix[target1][target2] and G2Matrix[(*A)[neighbor1]][target2])){
                     //G2 GAINS a triangle
                     deltaTriangles += 1;
                 }
@@ -1613,14 +1613,14 @@ double SANA::TCIncSwapOp(ushort source1, ushort source2, ushort target1, ushort 
     return ((double)deltaTriangles/maxTriangles);
 }
 
-int SANA::ncIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+int SANA::ncIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int change = 0;
     if (trueA[source] == oldTarget) change -= 1;
     if (trueA[source] == newTarget) change += 1;
     return change;
 }
 
-int SANA::ncIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
+int SANA::ncIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     int change = 0;
     if(trueA[source1] == target1) change -= 1;
     if(trueA[source2] == target2) change -= 1;
@@ -1723,7 +1723,7 @@ Alignment SANA::runRestartPhases() {
 vector<ulong> SANA::getCoreCount() {
     return coreCount;
 }
-vector<vector<ulong>> SANA::getCoreFreq() {
+Matrix<ulong> SANA::getCoreFreq() {
     return coreFreq;
 }
 #endif
@@ -2350,8 +2350,8 @@ void SANA::setDynamicTDecay() {
 #ifdef WEIGHTED
 void SANA::prune(string& startAligName) {
     std::cerr << "Starting to prune using " <<  startAligName << std::endl;
-    int n = G1->getNumNodes();
-    vector<ushort> alignment;
+    uint n = G1->getNumNodes();
+    vector<uint> alignment;
     
     stringstream errorMsg;
     string format = startAligName.substr(startAligName.size()-6);
@@ -2369,9 +2369,9 @@ void SANA::prune(string& startAligName) {
 #endif        
 
 
-    unordered_map<ushort, ushort> reIndexedMap;    
+    unordered_map<uint, uint> reIndexedMap;    
     // This is when no reIndexing is done, just to simplify the code
-    for(int i=0;i<n;i++)
+    for(uint i=0;i<n;i++)
         reIndexedMap[i] = i;
 
 #ifdef REINDEX
@@ -2384,37 +2384,37 @@ void SANA::prune(string& startAligName) {
     alignment = align.getMapping();
             
     std::cerr << alignment.size() << " " << n << std::endl;
-    if ((int)alignment.size() != n) {
+    if ((uint)alignment.size() != n) {
         errorMsg << "Alignment size (" << alignment.size() << ") less than number of nodes (" << n <<")";
         throw runtime_error(errorMsg.str().c_str());
     }
-    set<pair<int,int>> removedEdges;
-    for (int i = 0; i < n; ++i) {
-        int g1_node1 = reIndexedMap[i];
-        int shadow_node = alignment[g1_node1];
-        int m = G1AdjLists[i].size();
-        for (int j = 0; j < m; ++j) {
+    set<pair<uint,uint>> removedEdges;
+    for (uint i = 0; i < n; ++i) {
+        uint g1_node1 = reIndexedMap[i];
+        uint shadow_node = alignment[g1_node1];
+        uint m = G1AdjLists[i].size();
+        for (uint j = 0; j < m; ++j) {
             if (G1AdjLists[i][j] < i)
                 continue;
-            int g1_node2 = reIndexedMap[G1AdjLists[i][j]];
-            int shadow_end = alignment[g1_node2];
+            uint g1_node2 = reIndexedMap[G1AdjLists[i][j]];
+            uint shadow_end = alignment[g1_node2];
 
-            assert(G1Matrix.get(g1_node1, g1_node2) == 0 || G2Matrix.get(shadow_node, shadow_end) > 0);
-            assert(G1Matrix.get(g1_node2, g1_node1) ==0 || G2Matrix.get(shadow_end, shadow_node) > 0);
+            assert(G1Matrix[g1_node1][g1_node2] == 0 || G2Matrix[shadow_node][shadow_end] > 0);
+            assert(G1Matrix[g1_node2][g1_node1] == 0 || G2Matrix[shadow_end][shadow_node] > 0);
 
-            G2Matrix.set(G2Matrix.get(shadow_node, shadow_end) - G1Matrix.get(g1_node1, g1_node2), shadow_node, shadow_end);
-            G2Matrix.set(G2Matrix.get(shadow_end, shadow_node) - G1Matrix.get(g1_node1, g1_node2), shadow_end, shadow_node);
-            if (G2Matrix.get(shadow_node, shadow_end) == 0) {
-                    removedEdges.insert(pair<int,int>(shadow_node,shadow_end));
+            G2Matrix[shadow_node][shadow_end] -= G1Matrix[g1_node1][g1_node2];
+            G2Matrix[shadow_end][shadow_node] -= G1Matrix[g1_node1][g1_node2];
+            if (G2Matrix[shadow_node][shadow_end] == 0) {
+                removedEdges.insert(pair<uint,uint>(shadow_node,shadow_end));
             }
         }
     }
-    vector<vector<ushort> > t_edgeList;
-    vector<vector<ushort> > G2EdgeList;
+    vector<vector<uint> > t_edgeList;
+    vector<vector<uint> > G2EdgeList;
     G2->getEdgeList(G2EdgeList);
     for (auto c : G2EdgeList) {
-        if (removedEdges.find(pair<int,int>(c[0],c[1])) != removedEdges.end() or
-                removedEdges.find(pair<int,int>(c[1],c[0])) != removedEdges.end()) {
+        if (removedEdges.find(pair<uint,uint>(c[0],c[1])) != removedEdges.end() or
+                removedEdges.find(pair<uint,uint>(c[1],c[0])) != removedEdges.end()) {
             continue;
         }
         t_edgeList.push_back(c);

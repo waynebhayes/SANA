@@ -46,9 +46,9 @@ public:
     void serializeShadow(Graph& G);
 
     static void saveInGWFormat(string outputFile, const vector<string>& nodeNames,
-        const vector<vector<ushort>>& edgeList);
+        const vector<vector<uint>>& edgeList);
     static void saveInGWFormatShuffled(string outputFile, const vector<string>& nodeNames,
-        const vector<vector<ushort>>& edgeList);
+        const vector<vector<uint>>& edgeList);
 
     static void edgeList2gw(string fin, string fout);
 
@@ -60,7 +60,7 @@ public:
     Graph(const Graph& G);
     //double maxsize;
 
-    Graph(uint n, const vector<vector<ushort> > edgeList);
+    Graph(uint n, const vector<vector<uint> > edgeList);
 
     string getName() const;
 
@@ -69,19 +69,19 @@ public:
     uint getWeightedNumEdges();
 #endif
     uint getNumEdges() const;
-    const vector<vector<ushort> >& getConnectedComponents() const;
+    const vector<vector<uint> >& getConnectedComponents() const;
     uint getNumConnectedComponents() const;
 
 #ifndef NO_ADJ_MATRIX
-    void getMatrix(Matrix& matrix) const;
-    void setMatrix(Matrix& matrix);
+    void getMatrix(Matrix<MATRIX_UNIT>& matrix) const;
+    void setMatrix(Matrix<MATRIX_UNIT>& matrix);
 #endif
 
-    void getAdjLists(vector<vector<ushort> >& adjListsCopy) const;
-    void getEdgeList(vector<vector<ushort> > & edgeListCopy) const;
+    void getAdjLists(vector<vector<uint> >& adjListsCopy) const;
+    void getEdgeList(vector<vector<uint> > & edgeListCopy) const;
 
-    void setAdjLists(vector<vector<ushort> >& adjListsCopy);
-    void setEdgeList(vector<vector<ushort> >& edgeListCopy);
+    void setAdjLists(vector<vector<uint> >& adjListsCopy);
+    void setEdgeList(vector<vector<uint> >& edgeListCopy);
 
     vector<string> getNodeNames() const;
 
@@ -92,12 +92,12 @@ public:
     void multGwFile(const string& fileName, uint path);
 
     //nodes are relabeled so that the new i-th node is the node nodes[i]-th in this
-    Graph nodeInducedSubgraph(const vector<ushort>& nodes) const;
+    Graph nodeInducedSubgraph(const vector<uint>& nodes) const;
 
-    uint numNodeInducedSubgraphEdges(const vector<ushort>& subgraphNodes) const;
+    uint numNodeInducedSubgraphEdges(const vector<uint>& subgraphNodes) const;
 
-    vector<ushort> numEdgesAround(ushort node, ushort maxDist) const;
-    vector<ushort> numNodesAround(ushort node, ushort maxDist) const;
+    vector<uint> numEdgesAround(uint node, uint maxDist) const;
+    vector<uint> numNodesAround(uint node, uint maxDist) const;
 
     void printStats(int numConnectedComponentsToPrint, ostream& stream) const;
 
@@ -110,12 +110,12 @@ public:
     void removeRandomEdges(double removedEdgesProportion);
     void rewireRandomEdges(double rewiredEdgesProportion);
 
-    ushort randomNode();
+    uint randomNode();
 
     vector<vector<uint> > loadGraphletDegreeVectors();
 
-    unordered_map<string,ushort> getNodeNameToIndexMap() const;
-    unordered_map<ushort,string> getIndexToNodeNameMap() const;
+    unordered_map<string,uint> getNodeNameToIndexMap() const;
+    unordered_map<uint,string> getIndexToNodeNameMap() const;
 
     void getDistanceMatrix(vector<vector<short> >& dist) const;
 
@@ -129,7 +129,7 @@ public:
     void saveGraphletsAsSigs(string outputFile);
 
     Graph randomNodeInducedSubgraph(uint numNodes);
-    Graph randomNodeShuffle(vector<ushort> &shuffle);
+    Graph randomNodeShuffle(vector<uint> &shuffle);
 
     bool isWellDefined();
 
@@ -142,10 +142,10 @@ public:
     string getLockedTo(uint index);
     int getLockedCount();
 
-    unordered_map<ushort, ushort> getLocking_ReIndexMap() const;
-    unordered_map<ushort, ushort> getNodeTypes_ReIndexMap() const;
+    unordered_map<uint, uint> getLocking_ReIndexMap() const;
+    unordered_map<uint, uint> getNodeTypes_ReIndexMap() const;
 
-    void reIndexGraph(unordered_map<ushort, ushort> reIndexMap);  // Changes the node indexes according to the map
+    void reIndexGraph(unordered_map<uint, uint> reIndexMap);  // Changes the node indexes according to the map
 
     //string getNodeType(uint i);
     int getNodeType(uint i);
@@ -161,21 +161,21 @@ public:
     int unlockedmiRNACount = -1;
     vector<uint> geneIndexList;
     vector<uint> miRNAIndexList;
-    void removeEdge(ushort node1, ushort node2);
+    void removeEdge(uint node1, uint node2);
 
 private:
     double maxGraphletSize = 4; //default is 4, 5 is too big
     string name;
     string path;
     //double maxsize;
-    vector<vector<ushort> > edgeList; //edges in no particular order
+    vector<vector<uint> > edgeList; //edges in no particular order
 #ifndef NO_ADJ_MATRIX
-    Matrix matrix;
+    Matrix<MATRIX_UNIT> matrix;
 #endif
-    vector<vector<ushort> > adjLists; //neighbors in no particular order
+    vector<vector<uint> > adjLists; //neighbors in no particular order
 
     //list of the nodes of each connected component, sorted from larger to smaller
-    vector<vector<ushort> > connectedComponents;
+    vector<vector<uint> > connectedComponents;
     //int maxsize;
 
     // NOTE: these don't change after reIndexing G1 (method #3 of locking),
@@ -186,13 +186,13 @@ private:
     int lockedCount = 0;
 
 
-    unordered_map<string,ushort> nodeNameToIndexMap;
+    unordered_map<string,uint> nodeNameToIndexMap;
 
     void updateUnlockedGeneCount();
 
     void initConnectedComponents();
 
-    void addEdge(ushort node1, ushort node2);
+    void addEdge(uint node1, uint node2);
     void addRandomEdge();
     void removeRandomEdge();
 

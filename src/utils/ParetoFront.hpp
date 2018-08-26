@@ -18,7 +18,7 @@ struct greaterThan {
         bool operator()(const double &a, const double &b) { return a > b; }
 };
 
-typedef vector<unsigned short>* alignmentPtr;
+typedef vector<uint>* alignmentPtr;
 typedef pair<multimap<double, alignmentPtr, greaterThan>::iterator, multimap<double, alignmentPtr, greaterThan>::iterator> multiValueIterator;
 typedef multimap<double, alignmentPtr, greaterThan>::iterator singleValueIterator;
 

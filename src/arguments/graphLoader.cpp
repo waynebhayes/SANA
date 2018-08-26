@@ -284,8 +284,8 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 
         vector<string> validLocksG1;
         vector<string> validLocksG2;
-        unordered_map<string,ushort> mapG1 = G1.getNodeNameToIndexMap();
-        unordered_map<string,ushort> mapG2 = G2.getNodeNameToIndexMap();
+        unordered_map<string,uint> mapG1 = G1.getNodeNameToIndexMap();
+        unordered_map<string,uint> mapG2 = G2.getNodeNameToIndexMap();
 
         for(uint i = 0; i < column1.size(); i++){
             bool validLock = true;

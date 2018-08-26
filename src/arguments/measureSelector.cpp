@@ -335,7 +335,7 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     } 
     else if (G1.sameNodeNames(G2)) {
         Alignment a(Alignment::correctMapping(G1,G2));
-        vector<ushort> mapping = a.getMapping();
+        vector<uint> mapping = a.getMapping();
         mapping.push_back(G1.getNumNodes());
         double ncWeight = 0;
         try{

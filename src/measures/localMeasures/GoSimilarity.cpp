@@ -133,12 +133,12 @@ void GoSimilarity::assertNoRepeatedEntries(const vector<vector<uint> >& goTerms)
 void GoSimilarity::simpleToInternalFormat(const Graph& G, string GOFileSimpleFormat, string GOFileInternalFormat) {
     string GName = G.getName();
 
-    unordered_map<string,ushort> aux = G.getNodeNameToIndexMap();
-    unordered_map<string,ushort> nodeToIndexMap(aux.begin(), aux.end());
+    unordered_map<string,uint> aux = G.getNodeNameToIndexMap();
+    unordered_map<string,uint> nodeToIndexMap(aux.begin(), aux.end());
 
     ifstream infile(GOFileSimpleFormat);
     string line;
-    ushort n = G.getNumNodes();
+    uint n = G.getNumNodes();
     vector<vector<uint> > goTerms(n, vector<uint> (0));
     while (getline(infile, line)) {
         istringstream iss(line);
@@ -158,8 +158,8 @@ void GoSimilarity::simpleToInternalFormat(const Graph& G, string GOFileSimpleFor
     }
     assertNoRepeatedEntries(goTerms);
     ofstream outfile(GOFileInternalFormat);
-    for (ushort i = 0; i < n; i++) {
-        for (ushort j = 0; j < goTerms[i].size(); j++) {
+    for (uint i = 0; i < n; i++) {
+        for (uint j = 0; j < goTerms[i].size(); j++) {
             outfile << goTerms[i][j] << " ";
         }
         outfile << endl;
@@ -192,7 +192,7 @@ vector<vector<uint> > GoSimilarity::loadGOTerms(
         acceptedTerms = unordered_set<uint>(v.begin(), v.end());
     }
 
-    ushort n = G.getNumNodes();
+    uint n = G.getNumNodes();
     vector<vector<uint> > goTerms(n, vector<uint> (0));
     uint i = 0;
     ifstream infile(GOFileInternalFormat);
@@ -252,9 +252,9 @@ GoSimilarity::~GoSimilarity() {
 }
 
 
-ushort GoSimilarity::numberAnnotatedProteins(const Graph& G) {
+uint GoSimilarity::numberAnnotatedProteins(const Graph& G) {
     vector<vector<uint> > terms = loadGOTerms(G);
-    ushort count = 0;
+    uint count = 0;
     for (uint i = 0; i < terms.size(); i++) {
         if (terms[i].size() > 0) count++;
     }

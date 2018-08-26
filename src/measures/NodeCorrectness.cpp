@@ -46,11 +46,11 @@ double NodeCorrectness::eval(const Alignment& A) {
     return (double) count / trueA.getBack();
 }
 
-vector<ushort> NodeCorrectness::convertAlign(const Graph& G1, const Graph& G2, const vector<string>& E){
+vector<uint> NodeCorrectness::convertAlign(const Graph& G1, const Graph& G2, const vector<string>& E){
     //necessary variables
-    unordered_map<string,ushort> mapG1 = G1.getNodeNameToIndexMap();
-    unordered_map<string,ushort> mapG2 = G2.getNodeNameToIndexMap();
-    vector<ushort> alignment(G1.getNumNodes(), G2.getNumNodes());
+    unordered_map<string,uint> mapG1 = G1.getNodeNameToIndexMap();
+    unordered_map<string,uint> mapG2 = G2.getNodeNameToIndexMap();
+    vector<uint> alignment(G1.getNumNodes(), G2.getNumNodes());
     //this is the initial size of the provided true alignment file
     alignment.push_back(E.size()/2);
 
@@ -112,7 +112,7 @@ vector<ushort> NodeCorrectness::convertAlign(const Graph& G1, const Graph& G2, c
     return alignment;
 }
 
-vector<ushort> NodeCorrectness::getMappingforNC() const{
+vector<uint> NodeCorrectness::getMappingforNC() const{
     return trueA.getMapping();
 }
 

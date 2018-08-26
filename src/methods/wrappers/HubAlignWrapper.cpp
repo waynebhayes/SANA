@@ -31,9 +31,9 @@ void HubAlignWrapper::generateEdgeListFile(int graphNum) {
     if (graphNum == 1) G = G1;
     else G = G2;
 
-    vector<vector<ushort> > edgeList;
+    vector<vector<uint> > edgeList;
     G->getEdgeList(edgeList);
-    unordered_map<ushort,string> names = G->getIndexToNodeNameMap();
+    unordered_map<uint,string> names = G->getIndexToNodeNameMap();
     uint m = G->getNumEdges();
     vector<vector<string> > edgeListNames(m, vector<string> (2));
     for (uint i = 0; i < m; i++) {

@@ -1,6 +1,6 @@
 #include "SeedMatrix.hpp"
 
-SeedMatrix::SeedMatrix(MeasureCombination * MC, double delta, bool isMaxHeap, std::unordered_set<ushort> & lex, std::unordered_set<ushort> & rex) :
+SeedMatrix::SeedMatrix(MeasureCombination * MC, double delta, bool isMaxHeap, std::unordered_set<uint> & lex, std::unordered_set<uint> & rex) :
   delta(delta), isMaxHeap(isMaxHeap),
   left_exclude(lex), right_exclude(rex)
 {
@@ -15,9 +15,9 @@ SeedMatrix::~SeedMatrix(){
 void SeedMatrix::init_column_vector(){
   std::cout << "init column vector" << std::endl;
   column_vector.reserve(sims.size());
-  for(ushort i = 0; i < sims.size(); ++i){
+  for(uint i = 0; i < sims.size(); ++i){
     float max = -1;
-    for(ushort j = 0; j < sims[i].size(); ++j){
+    for(uint j = 0; j < sims[i].size(); ++j){
       if(sims[i][j] > max){
     max = sims[i][j];
       }
@@ -44,7 +44,7 @@ void SeedMatrix::init_column_vector(){
   //this->debug();
 }
 
-std::pair<ushort,ushort> SeedMatrix::pop_uniform(){
+std::pair<uint,uint> SeedMatrix::pop_uniform(){
   if(column_vector.size() <= 0){
     return std::make_pair(0,0);
     //throw QueueEmptyException();
@@ -123,14 +123,14 @@ uint SeedMatrix::bin_search(vector<node_t> & vec, float val, uint i, uint j){
   return 0;
 }
 
-vector<node_t> * SeedMatrix::create_node(ushort node_num){
+vector<node_t> * SeedMatrix::create_node(uint node_num){
   std::cout << "create node " << node_num << std::endl;
   vector<float> & sim_row = sims[node_num];
   std::cout << "row size" << sim_row.size() << std::endl;
   vector<node_t> * out = new vector<node_t>();
   out->reserve(sim_row.size());
   std::cout << "out vector created" << std::endl;
-  for(ushort j = 0; j < sim_row.size(); ++j){
+  for(uint j = 0; j < sim_row.size(); ++j){
     node_t curr = {sim_row[j], j};
     //std::cout << "node " << j << curr.sim << std::endl;
     out->push_back(curr);

@@ -27,7 +27,7 @@ double randDouble();
 int randInt(int low, int high);
 int randMod(int n);
 
-vector<ushort> reverseMapping(const vector<ushort>& map, int range);
+vector<uint> reverseMapping(const vector<uint>& map, int range);
 
 int min(int a, int b);
 int max(int a, int b);
@@ -37,7 +37,7 @@ double vectorMax(const vector<double>& v);
 double vectorMin(const vector<double>& v);
 double vectorSum(const vector<double>& v);
 
-void randomShuffle(vector<ushort>& v);
+void randomShuffle(vector<uint>& v);
 void randomShuffle(vector<vector<string>>& v);
 
 void printTable(const vector<vector<string> >& table, int colSeparation, ostream& stream);
