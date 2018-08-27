@@ -308,6 +308,7 @@ Alignment SANA::run() {
             cout << hill.elapsedString() << endl;
         }
 #define PRINT_CORES 0
+#define MIN_CORE_SCORE 1e-4 // very few scores are above 0.01, and this is about the mean and/or median for SC-HS.
 #if PRINT_CORES
 #ifndef CORES
 #error must have CORES macro defined to print them
@@ -316,12 +317,17 @@ Alignment SANA::run() {
 	unordered_map<uint,string> G2Index2Name = G2->getIndexToNodeNameMap();
 	printf("######## core frequencies#########\n");
 	for(uint i=0; i<n1; i++) for(uint j=0; j<n2; j++) if(coreFreq[i][j]>0)
-	    printf("%s %s  %lu / %lu = %.16f weighted %.16f / %.16f = %.16f\n", G1Index2Name[i].c_str(), G2Index2Name[j].c_str(),
+	{
+	    double unweightdedScore = coreFreq[i][j]/(double)coreCount[i],
+		weightedScore = weightedCoreFreq[i][j]/totalCoreWeight[i];
+	    if(weightedScore > MIN_CORE_SCORE)printf("%s %s  %lu / %lu = %.16f weighted %.16f / %.16f = %.16f\n",
+		G1Index2Name[i].c_str(), G2Index2Name[j].c_str(),
 		coreFreq[i][j], coreCount[i],
-		coreFreq[i][j]/(double)coreCount[i],
+		unweightdedScore,
 		weightedCoreFreq[i][j], totalCoreWeight[i],
-		weightedCoreFreq[i][j]/totalCoreWeight[i]
+		weightedScore
 		);
+	}
 #endif
         return align;
     }
