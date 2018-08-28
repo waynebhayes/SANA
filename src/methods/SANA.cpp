@@ -308,7 +308,7 @@ Alignment SANA::run() {
             cout << hill.elapsedString() << endl;
         }
 #define PRINT_CORES 0
-#define MIN_CORE_SCORE 1e-4 // very few scores are above 0.01, and this is about the mean and/or median for SC-HS.
+#define MIN_CORE_SCORE 1e-3 // 1e-4 gives files 2G long, 1e-3 gives just a few MB.
 #if PRINT_CORES
 #ifndef CORES
 #error must have CORES macro defined to print them
