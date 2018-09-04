@@ -33,8 +33,8 @@ vector<vector<string> > getProteinPairs(string complementStatus, bool BioGRIDNet
 }
 
 vector<vector<string> > getAlignedPairs(const Graph& G1, const Graph& G2, const Alignment& A) {
-    unordered_map<ushort,string> G1Names = G1.getIndexToNodeNameMap();
-    unordered_map<ushort,string> G2Names = G2.getIndexToNodeNameMap();
+    unordered_map<uint,string> G1Names = G1.getIndexToNodeNameMap();
+    unordered_map<uint,string> G2Names = G2.getIndexToNodeNameMap();
     vector<vector<string> > res(A.size(), vector<string> (2));
     for (uint i = 0; i < A.size(); i++) {
         res[i][0] = G1Names[i];
@@ -85,8 +85,8 @@ void printComplementaryProteinCounts(const Alignment& A, bool BioGRIDNetworks) {
 vector<uint> countProteinPairsInNetworks(const Graph& G1, const Graph& G2, bool BioGRIDNetworks) {
     vector<vector<string> > complementProteins = getProteinPairs("1", BioGRIDNetworks);
     vector<vector<string> > nonComplementProteins = getProteinPairs("0", BioGRIDNetworks);
-    unordered_map<ushort,string> G1Names = G1.getIndexToNodeNameMap();
-    unordered_map<ushort,string> G2Names = G2.getIndexToNodeNameMap();
+    unordered_map<uint,string> G1Names = G1.getIndexToNodeNameMap();
+    unordered_map<uint,string> G2Names = G2.getIndexToNodeNameMap();
     uint n1 = G1.getNumNodes();
     uint n2 = G2.getNumNodes();
 
@@ -142,8 +142,8 @@ void printProteinPairCountInNetworks(bool BioGRIDNetworks) {
     Graph G2 = BioGRIDNetworks ? Graph::loadGraph("HSapiens") : Graph::loadGraph("human");
     vector<vector<string> > complementProteins = getProteinPairs("1", BioGRIDNetworks);
     vector<vector<string> > nonComplementProteins = getProteinPairs("0", BioGRIDNetworks);
-    unordered_map<ushort,string> G1Names = G1.getIndexToNodeNameMap();
-    unordered_map<ushort,string> G2Names = G2.getIndexToNodeNameMap();
+    unordered_map<uint,string> G1Names = G1.getIndexToNodeNameMap();
+    unordered_map<uint,string> G2Names = G2.getIndexToNodeNameMap();
     uint n1 = G1.getNumNodes();
     uint n2 = G2.getNumNodes();
 
@@ -209,8 +209,8 @@ void printProteinPairCountInNetworks(bool BioGRIDNetworks) {
 }
 
 void fillTableColumn(vector<vector<string> >& table, uint col, vector<vector<float> >* simMatrix,
-    const vector<vector<ushort> >& complementProteins, const vector<vector<ushort> >& nonComplementProteins,
-    const vector<vector<ushort> >& randomProteins) {
+    const vector<vector<uint> >& complementProteins, const vector<vector<uint> >& nonComplementProteins,
+    const vector<vector<uint> >& randomProteins) {
     uint nComp = complementProteins.size();
     uint nNoComp = nonComplementProteins.size();
     uint nRand = randomProteins.size();
@@ -236,21 +236,21 @@ void printLocalTopologicalSimilarities(Graph& G1, Graph& G2, bool BioGRIDNetwork
     vector<vector<string> > nonComplementProteinNames = getProteinPairs("0", BioGRIDNetworks);
     uint nComp = complementProteinNames.size();
     uint nNoComp = nonComplementProteinNames.size();
-    unordered_map<string,ushort> G1Indices = G1.getNodeNameToIndexMap();
-    unordered_map<string,ushort> G2Indices = G2.getNodeNameToIndexMap();
+    unordered_map<string,uint> G1Indices = G1.getNodeNameToIndexMap();
+    unordered_map<string,uint> G2Indices = G2.getNodeNameToIndexMap();
 
-    vector<vector<ushort> > complementProteins(nComp, vector<ushort> (2));
+    vector<vector<uint> > complementProteins(nComp, vector<uint> (2));
     for (uint i = 0; i < nComp; i++) {
         complementProteins[i][0] = G1Indices[complementProteinNames[i][0]];
         complementProteins[i][1] = G2Indices[complementProteinNames[i][1]];
     }
-    vector<vector<ushort> > nonComplementProteins(nNoComp, vector<ushort> (2));
+    vector<vector<uint> > nonComplementProteins(nNoComp, vector<uint> (2));
     for (uint i = 0; i < nComp; i++) {
         nonComplementProteins[i][0] = G1Indices[nonComplementProteinNames[i][0]];
         nonComplementProteins[i][1] = G2Indices[nonComplementProteinNames[i][1]];
     }
     const uint NUM_RANDOM_PAIRS = 200;
-    vector<vector<ushort> > randomProteins(NUM_RANDOM_PAIRS, vector<ushort> (2));
+    vector<vector<uint> > randomProteins(NUM_RANDOM_PAIRS, vector<uint> (2));
     uint n1 = G1.getNumNodes();
     uint n2 = G2.getNumNodes();
     for (uint i = 0; i < NUM_RANDOM_PAIRS; i++) {

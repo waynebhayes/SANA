@@ -13,9 +13,9 @@ public:
     string fileNameSuffix(const Alignment& A);
 private:
     LocalMeasure* nodeSim;
-    vector<ushort> A;
-    void updateNeighbors(const vector<bool>& alreadyAlignedG1, const vector<bool>& alreadyAlignedG2, ushort node, const vector<vector<double> >& nodeSimMatrix, vector<vector<double> >& simMatrix);
-    ushort addBestPair(const vector<vector<double> >& simMatrix, vector<bool>& alreadyAlignedG1, vector<bool>& alreadyAlignedG2);
+    vector<uint> A;
+    void updateNeighbors(const vector<bool>& alreadyAlignedG1, const vector<bool>& alreadyAlignedG2, uint node, const vector<vector<double> >& nodeSimMatrix, vector<vector<double> >& simMatrix);
+    uint addBestPair(const vector<vector<double> >& simMatrix, vector<bool>& alreadyAlignedG1, vector<bool>& alreadyAlignedG2);
 };
 
 #endif

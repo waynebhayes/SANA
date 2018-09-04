@@ -11,7 +11,7 @@ SkipNode::SkipNode(){
   }
 }
 
-SkipNode::SkipNode(int h, float k, std::pair<ushort,ushort> v)
+SkipNode::SkipNode(int h, float k, std::pair<uint,uint> v)
   :height(h), key(k), value(v){
   for(int i = 0; i < MAX_LEVEL; ++i){
     forward[i] = NULL;
@@ -49,7 +49,7 @@ void SkipNode::debug(int limit){
   }
 }
 
-SkipList::SkipList(float delta, bool setMaxHeap, std::unordered_set<ushort> & lex, std::unordered_set<ushort> & rex)
+SkipList::SkipList(float delta, bool setMaxHeap, std::unordered_set<uint> & lex, std::unordered_set<uint> & rex)
   :_isMaxHeap(setMaxHeap), length(0), level(0), delta(delta + EPSILON),
    left_exclude(lex), right_exclude(rex)
 {
@@ -84,7 +84,7 @@ int SkipList::random_height(void){
   return (level<SkipNode::MAX_LEVEL) ? level : SkipNode::MAX_LEVEL;
 }
 
-void SkipList::insert(float similarity, std::pair<ushort,ushort> entry){
+void SkipList::insert(float similarity, std::pair<uint,uint> entry){
   auto start = std::chrono::steady_clock::now();
   similarity = _isMaxHeap ? (1 - similarity) : similarity;
     
@@ -190,9 +190,9 @@ uint SkipList::random_int(uint n){
  * this function cannot be recursive due to stack overflow 
  * for seeds > 2300
  */
-std::pair<ushort,ushort> SkipList::pop_reservoir(){
+std::pair<uint,uint> SkipList::pop_reservoir(){
   auto start = std::chrono::steady_clock::now();
-  std::pair<ushort,ushort> result;
+  std::pair<uint,uint> result;
   uint miss_counter = 0;
 
   if(this->empty()){
@@ -238,7 +238,7 @@ std::pair<ushort,ushort> SkipList::pop_reservoir(){
   return result;
 
 /*
-  std::pair<ushort,ushort> result;
+  std::pair<uint,uint> result;
   uint miss_counter = 0;
   do{
     if(this->empty()){
@@ -275,9 +275,9 @@ std::pair<ushort,ushort> SkipList::pop_reservoir(){
 */
 }
 
-std::pair<ushort,ushort> SkipList::pop_distr(){
+std::pair<uint,uint> SkipList::pop_distr(){
   std::cout << "pop distr" << this->length << std::endl;
-  std::pair<ushort,ushort> result;
+  std::pair<uint,uint> result;
   SkipNode * curr;
   SkipNode * choice = this->head.forward[0];
   do{
@@ -504,7 +504,7 @@ bool SkipList::deserialize(std::string fname){
     std::cout << "no file found" << std::endl;
     return false;
   }
-  ushort height = 1, n1 = 0, n2 = 0;
+  uint height = 1, n1 = 0, n2 = 0;
   float sim = 1;
   
   file >> this->length;
@@ -512,7 +512,7 @@ bool SkipList::deserialize(std::string fname){
   while(file >> sim >> n1 >> n2 >> height){
     //std::cout << "node" << sim << "\t" << n1 << " " << n2 << " " << height << std::endl; 
     SkipNode * curr = new SkipNode(height, sim, std::make_pair(n1, n2));
-    for(int i = 0; i < height; ++i){
+    for(uint i = 0; i < height; ++i){
       update[i]->forward[i] = curr;
       update[i] = curr;
     }
@@ -535,7 +535,7 @@ void SkipList::test(){
     //std::cout << "list contents " << std::endl;
     //list.head.debug(16);
     std::cout << "testing pop_uniform()" << std::endl;
-    std::pair<ushort,ushort> result1 = list.pop_uniform();
+    std::pair<uint,uint> result1 = list.pop_uniform();
     std::cout << "result is (" << result1.first << ", " << result1.second << ")" << std::endl;
     
     std::cout << "List should be empty " << list.empty() << std::endl;
@@ -613,7 +613,7 @@ void SkipList::test(){
     std::cout << "testing pop_uniform()" << std::endl;
     while(!list.empty()){
     //list.debug();
-    std::pair<ushort,ushort> result1 = list.pop_uniform();
+    std::pair<uint,uint> result1 = list.pop_uniform();
     std::cout << "(" << result1.first << ", " << result1.second << ")" << std::endl;
     }
     std::cout << "List should be empty " << list.empty() << std::endl;

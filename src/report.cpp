@@ -70,7 +70,7 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
       table[1][6] = to_string(M.eval("ics",A)); table[1][7] = to_string(M.eval("s3",A));
 
       for (int i = 0; i < tableRows-2; i++) {
-    const vector<ushort>& nodes = CS.getConnectedComponents()[i];
+    const vector<uint>& nodes = CS.getConnectedComponents()[i];
     Graph H = CS.nodeInducedSubgraph(nodes);
     Alignment newA(nodes);
     newA.compose(A);

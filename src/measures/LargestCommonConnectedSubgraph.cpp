@@ -10,14 +10,14 @@ LargestCommonConnectedSubgraph::~LargestCommonConnectedSubgraph() {
 
 double LargestCommonConnectedSubgraph::eval(const Alignment& A) {
     Graph CS = A.commonSubgraph(*G1, *G2);
-    vector<ushort> LCCSNodes = CS.getConnectedComponents()[0]; //largest CC
+    vector<uint> LCCSNodes = CS.getConnectedComponents()[0]; //largest CC
     uint n = LCCSNodes.size();
     double N = (double) n/G1->getNumNodes();
     if (not USE_MAGNA_DEFINITION) return N;
 
     // To Get the indexes of the common subgraph in G2
-    vector<ushort> LCCSNodesG2;
-    for(ushort node: LCCSNodes)
+    vector<uint> LCCSNodesG2;
+    for(uint node: LCCSNodes)
         LCCSNodesG2.push_back(A[node]);
 
     Graph G1InducedSubgraph = G1->nodeInducedSubgraph(LCCSNodes);
@@ -30,7 +30,7 @@ double LargestCommonConnectedSubgraph::eval(const Alignment& A) {
 
 double LargestCommonConnectedSubgraph::nodeProportion(const Alignment& A) {
     Graph CS = A.commonSubgraph(*G1, *G2);
-    vector<ushort> LCCSNodes = CS.getConnectedComponents()[0]; //largest CC
+    vector<uint> LCCSNodes = CS.getConnectedComponents()[0]; //largest CC
     uint n = LCCSNodes.size();
     return (double) n/G1->getNumNodes();
 }

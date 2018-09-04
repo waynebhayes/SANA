@@ -19,7 +19,7 @@ using namespace std;
 class node_t {
 public:
   float sim;
-  ushort node;
+  uint node;
   //bool operator < (const node_t & left, const node_t & right){
   bool operator < (const node_t & right) const{
     return (this->sim < right.sim);
@@ -32,7 +32,7 @@ bool operator < (const node_t & left, const node_t & right){
 */
 class seed_t {
 public:
-  ushort left_node;
+  uint left_node;
   vector<node_t> * pairs;
   float top;
   uint start;
@@ -57,9 +57,9 @@ public:
 
 class SeedMatrix{
 public:
-  SeedMatrix(MeasureCombination * MC, double delta, bool isMaxHeap, std::unordered_set<ushort> & lex, std::unordered_set<ushort> & rex);
+  SeedMatrix(MeasureCombination * MC, double delta, bool isMaxHeap, std::unordered_set<uint> & lex, std::unordered_set<uint> & rex);
   ~SeedMatrix();
-  std::pair<ushort,ushort> pop_uniform();
+  std::pair<uint,uint> pop_uniform();
   void init_column_vector(vector<vector<float> > & sims);
   //void save();
   //void load();
@@ -75,7 +75,7 @@ private:
   bool isMaxHeap;
 
   void init_column_vector();
-  vector<node_t> * create_node(ushort node_num);
+  vector<node_t> * create_node(uint node_num);
   void delete_node(seed_t & selected);
   static uint bin_search(vector<node_t> & vec, float val, uint i, uint j);
   //void delete_row(int i);
@@ -85,8 +85,8 @@ private:
   vector<seed_t> column_vector;
 
   std::mt19937 rng;
-  std::unordered_set<ushort> & left_exclude;
-  std::unordered_set<ushort> & right_exclude;
+  std::unordered_set<uint> & left_exclude;
+  std::unordered_set<uint> & right_exclude;
 
 };
 

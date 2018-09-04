@@ -38,13 +38,13 @@ void ExternalSimMatrix::loadFormat0() {
 }
 
 void ExternalSimMatrix::loadFormat1() {
-    unordered_map<string,ushort> g1Map = G1->getNodeNameToIndexMap();
-    unordered_map<string,ushort> g2Map = G2->getNodeNameToIndexMap();
+    unordered_map<string,uint> g1Map = G1->getNodeNameToIndexMap();
+    unordered_map<string,uint> g2Map = G2->getNodeNameToIndexMap();
     vector<string> words = fileToStrings(file, false);
 
     for(uint i = 0; i < words.size(); i +=3) {
-        ushort n = g1Map[words[i]];
-        ushort m = g2Map[words[i+1]];
+        uint n = g1Map[words[i]];
+        uint m = g2Map[words[i+1]];
         sims[n][m] = stod(words[i+2]);
     }
 }

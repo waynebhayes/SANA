@@ -44,7 +44,7 @@ Alignment NETALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     string word;
     int n1= G1->getNumNodes();
     int n2= G2->getNumNodes();
-    vector<ushort> mapping(n1, n2);
+    vector<uint> mapping(n1, n2);
 
     for (uint i = 0; i < lines.size(); ++i) {
         istringstream line(lines[i]);

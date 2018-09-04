@@ -28,7 +28,7 @@ Dijkstra::Dijkstra(Graph* G1, Graph* G2, MeasureCombination* MC, double d) :
   G1->getAdjLists(G1AdjLists);
   G2->getAdjLists(G2AdjLists);
 
-  A = vector<ushort> (n1);
+  A = vector<uint> (n1);
 
   sims = MC->getAggregatedLocalSims();
 
@@ -76,7 +76,7 @@ void Dijkstra::make_seed_queue(){
  * This function uses the same exclusion set for all priority queues.
  */
 
-std::pair <ushort, ushort> Dijkstra::best_pair(SkipList & pq) throw(QueueEmptyException){
+std::pair <uint, uint> Dijkstra::best_pair(SkipList & pq) throw(QueueEmptyException){
   return pq.pop_reservoir();
 }
 
@@ -84,7 +84,7 @@ std::pair <ushort, ushort> Dijkstra::best_pair(SkipList & pq) throw(QueueEmptyEx
  * side effects: this function adds a node to the respective exclusion sets
  * of each graph and adds the pair to the output set.  
  */
-void Dijkstra::update_neighbors(std::pair <ushort, ushort> & seed_pair){
+void Dijkstra::update_neighbors(std::pair <uint, uint> & seed_pair){
   //exclude the seed nodes from future consideration
   G1_exclude.insert(seed_pair.first);
   G2_exclude.insert(seed_pair.second);
@@ -94,8 +94,8 @@ void Dijkstra::update_neighbors(std::pair <ushort, ushort> & seed_pair){
   std::cout << "nodes aligned" << nodes_aligned << "\r" << std::flush; //<< std::endl;
 
   //set difference
-  vector<ushort> G1_neighbors = exclude_nodes(G1AdjLists[seed_pair.first], G1_exclude);
-  vector<ushort> G2_neighbors = exclude_nodes(G2AdjLists[seed_pair.second], G2_exclude);
+  vector<uint> G1_neighbors = exclude_nodes(G1AdjLists[seed_pair.first], G1_exclude);
+  vector<uint> G2_neighbors = exclude_nodes(G2AdjLists[seed_pair.second], G2_exclude);
 
   //if there are no neighbors, we can skip the matrix search 
   if(G1_neighbors.empty() || G2_neighbors.empty()){
@@ -106,12 +106,12 @@ void Dijkstra::update_neighbors(std::pair <ushort, ushort> & seed_pair){
   best_neighbors(seed_pair, G1_neighbors, G2_neighbors);
 }
 
-void Dijkstra::best_neighbors(std::pair <ushort, ushort> & seed_pair, vector<ushort> & G1_neighbors, vector<ushort> & G2_neighbors){
+void Dijkstra::best_neighbors(std::pair <uint, uint> & seed_pair, vector<uint> & G1_neighbors, vector<uint> & G2_neighbors){
   vector<vector<double> > small_matrix (G1_neighbors.size(), vector<double> (G2_neighbors.size()));
     
   /*
-    for(std::vector<ushort>::iterator G1_iter = G1_neighbors.begin(); G1_iter != G1_neighbors.end(); ++G1_iter){
-    for(std::vector<ushort>::iterator G2_iter = G2_neighbors.begin(); G2_iter != G2_neighbors.end(); ++G2_iter){
+    for(std::vector<uint>::iterator G1_iter = G1_neighbors.begin(); G1_iter != G1_neighbors.end(); ++G1_iter){
+    for(std::vector<uint>::iterator G2_iter = G2_neighbors.begin(); G2_iter != G2_neighbors.end(); ++G2_iter){
     //make a similarity matrix of neighbors
     //small_matrix[*G1_iter][*G2_iter] = sims[*G1_iter][*G2_iter];
     }
@@ -147,11 +147,11 @@ void Dijkstra::best_neighbors(std::pair <ushort, ushort> & seed_pair, vector<ush
  * It returns a vector containing the adjacent nodes 
  * which are not already aligned.  
  */
-vector<ushort> Dijkstra::exclude_nodes(vector<ushort> & v_in, std::unordered_set<ushort> & exclusion_set){
-  vector<ushort> v_out;
+vector<uint> Dijkstra::exclude_nodes(vector<uint> & v_in, std::unordered_set<uint> & exclusion_set){
+  vector<uint> v_out;
   v_out.reserve(v_in.size()); //minimize reallocations by reserving space in advance
   //|v_out| <= |v_in|
-  for(std::vector<ushort>::iterator it = v_in.begin(); it != v_in.end(); ++it){
+  for(std::vector<uint>::iterator it = v_in.begin(); it != v_in.end(); ++it){
     if(exclusion_set.find(*it) == exclusion_set.end()){
       v_out.push_back(*it);
     }
@@ -176,7 +176,7 @@ Alignment Dijkstra::run() {
     try{
       //std::cout << "seed phase" << std::endl;
       //seed phase
-      std::pair <ushort, ushort> seed_pair = best_pair(seed_queue); //seed_mat.pop_uniform();
+      std::pair <uint, uint> seed_pair = best_pair(seed_queue); //seed_mat.pop_uniform();
       update_neighbors(seed_pair);
     }catch (QueueEmptyException & e){
       //can't recover from this
@@ -192,7 +192,7 @@ Alignment Dijkstra::run() {
       //std::cout << "extend phase" << std::endl;
       start = get_time::now();
       try{
-    std::pair <ushort, ushort> neighbor_pair = best_pair(neighbor_queue);
+    std::pair <uint, uint> neighbor_pair = best_pair(neighbor_queue);
     update_neighbors(neighbor_pair);
       }catch (QueueEmptyException & e){
     //no more neighbors, get another seed

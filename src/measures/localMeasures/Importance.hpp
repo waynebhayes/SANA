@@ -24,8 +24,8 @@ private:
     static vector<double> getImportances(const Graph& G);
 
     static vector<vector<double> > initEdgeWeights(const Graph& G);
-    static vector<ushort> getNodesSortedByDegree(const vector<vector<ushort> >& adjLists);
-    static void removeFromAdjList(vector<ushort>& list, ushort u);
+    static vector<uint> getNodesSortedByDegree(const vector<vector<uint> >& adjLists);
+    static void removeFromAdjList(vector<uint>& list, uint u);
     static void normalizeImportances(vector<double>& v);
 
     static bool hasNodesWithEnoughDegree(const Graph& G);
