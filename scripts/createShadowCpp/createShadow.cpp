@@ -286,6 +286,8 @@ namespace shadow_graph {
 }
 
 void output_GW_Format( std::vector<std::unordered_map<int, int>> &adjList){
+    std::cerr << "printing out .gw assuming untyped nodes" << std::endl;
+
     std::cout << "LEDA.GRAPH" << std::endl;
     std::cout << "string" << std::endl;
     std::cout << "short" << std::endl;
@@ -325,7 +327,7 @@ void output_el_Format( std::vector<std::unordered_map<int, int>> &adjList,
                             std::vector<std::string> &shadowNames, 
                             std::vector<bool> &nodeTypes,
                             bool nodesHaveTypes){
-    std::cerr << "printing out .el" << std::endl;
+    std::cerr << "printing out .el assuming bipartite graph (typed nodes)" << std::endl;
     for (unsigned int i = 0; i < adjList.size(); ++i) {
         for (auto it = adjList[i].begin(); it != adjList[i].end(); ++it) {
             if ((unsigned) it->first <= i) {
