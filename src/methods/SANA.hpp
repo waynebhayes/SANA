@@ -29,7 +29,7 @@ public:
     ~SANA(){}
 
     Alignment run();
-    unordered_set<vector<uint>*>* paretoRun();
+    unordered_set<vector<uint>*>* paretoRun(const string &fileName);
     void describeParameters(ostream& stream);
     string fileNameSuffix(const Alignment& A);
 
@@ -290,9 +290,9 @@ private:
     Alignment simpleRun(const Alignment& startA, double maxExecutionSeconds, long long int maxExecutionIterations,
         long long int& iter);
     unordered_set<vector<uint>*>* simpleParetoRun(const Alignment& A, double maxExecutionSeconds,
-        long long int& iter);
+        long long int& iter, const string &fileName);
     unordered_set<vector<uint>*>* simpleParetoRun(const Alignment& A, long long int maxExecutionIterations,
-        long long int& iter);
+        long long int& iter, const string &fileName);
 
     double currentScore;
     double previousScore;
@@ -332,6 +332,7 @@ private:
                                      double newLocalScoreSum, double newWecSum, double newNcSum,
                                      double newEwecSum, double newSquaredAligEdges);
     bool dominates(vector<double> &left, vector<double> &right);
+    void printParetoFront(const string &fileName);
     int numOfMeasures;
     vector<string> measureNames;
     int currentMeasure;
@@ -359,6 +360,9 @@ private:
     unordered_map<vector<uint>*, map<string, double>*> storedLocalScoreSumMap;
     typedef double (*calc)(PARAMS);
     unordered_map<string, calc> measureCalculation;
+    unordered_set<string> localScoreNames = { "edgec", "edged", "esim", "go", "graphlet",
+                                              "graphletcosine", "graphletlgraal", "importance",
+                                              "nodec", "noded", "sequence" };
 };
 
 #endif

@@ -15,12 +15,13 @@ void ParetoMode::run(ArgumentParser& args) {
     Graph G1, G2;
     initGraphs(G1, G2, args);
 
-    //setArgsForParetoMode(args);
+    //setArgsForParetoMode(args); //Commented to let the user set which measures to include.
     MeasureCombination M;
     initMeasures(M, G1, G2, args);
     Method* method;
     method = initMethod(G1, G2, args, M);
-    vector<Alignment> alignments = runParetoMode(method, &G1, &G2);
+    ParetoFront paretoFront;
+    vector<Alignment> alignments = runParetoMode(method, &G1, &G2, args.strings["-o"]);
     printAlignments(alignments, args.strings["-o"]);
     printEdgeLists(&G1, &G2, alignments, args.strings["-o"]);
     for(unsigned int i = 0; i < alignments.size(); i++) {
@@ -64,11 +65,11 @@ void ParetoMode::setArgsForParetoMode(ArgumentParser& args) {
     args.strings["-method"] = "sana";
 }
 
-vector<Alignment> ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2) {
+vector<Alignment> ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2, const string &fileName) {
     cout << "Start execution of " << method->getName() << " in Pareto Mode." << endl;
     Timer T;
     T.start();
-    unordered_set<vector<uint>*> *A = static_cast<SANA*>(method)->paretoRun();
+    unordered_set<vector<uint>*> *A = static_cast<SANA*>(method)->paretoRun(fileName);
     
     vector<Alignment> alignments;
     for(auto i = A->begin(); i != A->end(); i++)
