@@ -308,7 +308,7 @@ Alignment SANA::run() {
             cout << hill.elapsedString() << endl;
         }
 #define PRINT_CORES 0
-#define MIN_CORE_SCORE 1e-4 // very few scores are above 0.01, and this is about the mean and/or median for SC-HS.
+#define MIN_CORE_SCORE 1e-3 // 1e-4 gives files 2G long, 1e-3 gives just a few MB.
 #if PRINT_CORES
 #ifndef CORES
 #error must have CORES macro defined to print them
@@ -347,7 +347,7 @@ double mecC(PARAMS) { return double(aligEdges) / (g1WeightedEdges + g2WeightedEd
 double sesC(PARAMS) { return squaredAligEdges; }
 #endif
 
-unordered_set<vector<uint>*>* SANA::paretoRun() {
+unordered_set<vector<uint>*>* SANA::paretoRun(const string& fileName) {
     measureCalculation["ec"] = ecC;
     measureCalculation["s3"] = s3C;
     measureCalculation["ics"] = icsC;
@@ -363,9 +363,9 @@ unordered_set<vector<uint>*>* SANA::paretoRun() {
 #endif
     long long int iter = 0;
     if (!usingIterations) {
-        return simpleParetoRun(getStartingAlignment(), (long long int) (getIterPerSecond()*minutes*60), iter);
+        return simpleParetoRun(getStartingAlignment(), (long long int) (getIterPerSecond()*minutes*60), iter, fileName);
     } else {
-        return simpleParetoRun(getStartingAlignment(), ((long long int)(maxIterations))*100000000, iter);
+        return simpleParetoRun(getStartingAlignment(), ((long long int)(maxIterations))*100000000, iter, fileName);
     }
     return storedAlignments;
 }
@@ -673,7 +673,7 @@ Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIte
 }
 
 unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, double maxExecutionSeconds,
-        long long int& iter) {
+        long long int& iter, const string &fileName) {
 
     initDataStructures(startA);
     setInterruptSignal();
@@ -692,21 +692,17 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, dou
 	    trackProgress(iter);
 	    if( iter != 0 and timer.elapsed() > maxExecutionSeconds){
 		cout << "ending seconds " << timer.elapsed() << " " << maxExecutionSeconds << endl;
-                ofstream output("ParetoFrontScores.out");
-                paretoFront.printAlignmentScores(output);
-                output.close();
-		paretoFront.printAlignmentScores(cout); cout << endl;
+                printParetoFront(fileName);
 		return storedAlignments;
 	    }
 	}
 	SANAIteration();
     }
     trackProgress(iter);
-
     return storedAlignments;
 }
 unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, long long int maxExecutionIterations,
-        long long int& iter) {
+        long long int& iter, const string &fileName) {
 
     initDataStructures(startA);
     setInterruptSignal();
@@ -726,10 +722,7 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, lon
         }
         if (iter != 0 and iter > maxExecutionIterations) {
         	cout << "ending iterations " << iter << " " << maxExecutionIterations << endl;
-                ofstream output("ParetoFrontScores.out");
-                paretoFront.printAlignmentScores(output);
-                output.close();
-        	paretoFront.printAlignmentScores(cout); cout << endl;
+                printParetoFront(fileName);
             return storedAlignments;
         }
         SANAIteration();
@@ -748,13 +741,17 @@ unordered_map<string, int> SANA::mapScoresToIndexes() {
     for(int i = 0; i < numOfMeasures; ++i)
         if(MC->getWeight(MC->getMeasure(i)->getName()) > 0)
             measureNames.push_back(MC->getMeasure(i)->getName());
+    for(int i = 0; i < measureNames.size(); ++i) {
+        if(localScoreNames.find(measureNames[i]) != localScoreNames.end())
+            measureNames[i] = "local";
+    }
     //SANA is using these predifined measures:-----------------------------------------------------
     /*measureNames[0] = "ec";
     measureNames[1] = "ics";
     measureNames[2] = "s3";
     measureNames[3] = "sec";
     measureNames[4] = "tc";
-    measureNames[5] = "local";
+    measureNames[5] = "local"; //   <-------- Contains many sub-measures.
     measureNames[6] = "wec";
     measureNames[7] = "nc";
     #ifdef WEIGHTED
@@ -767,8 +764,10 @@ unordered_map<string, int> SANA::mapScoresToIndexes() {
     //measureNames.resize(distance(measureNames.begin(), unique(measureNames.begin(), measureNames.end()))); //Removes any duplicate measure names. Somehow, ICS measure appears twice... a good check to perform.
     numOfMeasures = measureNames.size();
     unordered_map<string, int> toReturn;
-    for(int i = 0; i < numOfMeasures; ++i)
+    for(int i = 0; i < numOfMeasures; ++i) {
     	toReturn[measureNames[i]] = i;
+        cout << measureNames[i] << ' ' << i << endl;
+    }
     return toReturn;
 }
 
@@ -963,6 +962,16 @@ bool SANA::dominates(vector<double> &left, vector<double> &right) {
         if(left[i] < right[i])
             return false;
     return true;
+}
+
+void SANA::printParetoFront(const string &fileName) {
+    string outputFileName = fileName;
+    if(outputFileName.find(".out") != string::npos && outputFileName.rfind(".out") + 4 == outputFileName.size())
+        outputFileName = outputFileName.substr(0, outputFileName.size() - 4);
+    ofstream output(fileName + "_ParetoFrontScores.out");
+    paretoFront.printAlignmentScores(output);
+    output.close();
+    paretoFront.printAlignmentScores(cout); cout << endl;
 }
 
 void SANA::SANAIteration() {
