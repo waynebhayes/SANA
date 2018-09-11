@@ -741,7 +741,7 @@ unordered_map<string, int> SANA::mapScoresToIndexes() {
     for(int i = 0; i < numOfMeasures; ++i)
         if(MC->getWeight(MC->getMeasure(i)->getName()) > 0)
             measureNames.push_back(MC->getMeasure(i)->getName());
-    for(int i = 0; i < measureNames.size(); ++i) {
+    for(uint i = 0; i < measureNames.size(); ++i) {
         if(localScoreNames.find(measureNames[i]) != localScoreNames.end())
             measureNames[i] = "local";
     }
