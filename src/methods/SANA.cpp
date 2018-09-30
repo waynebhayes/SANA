@@ -745,7 +745,7 @@ unordered_map<string, int> SANA::mapScoresToIndexes() {
     numOfMeasures = 10;
     #endif*/
     measureNames = vector<string>(0);
-    for(int i = 0; i < numOfMeasures; ++i)
+    for(uint i = 0; i < numOfMeasures; ++i)
         if(MC->getWeight(MC->getMeasure(i)->getName()) > 0)
             measureNames.push_back(MC->getMeasure(i)->getName());
     for(uint i = 0; i < measureNames.size(); ++i) {
