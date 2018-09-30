@@ -99,6 +99,7 @@ SANA::SANA(Graph* G1, Graph* G2,
 
     paretoInitial   = MC->getParetoInitial();
     paretoCapacity  = MC->getParetoCapacity();
+    paretoIterations = MC->getParetoIterations();
 
     G1->getMatrix(G1Matrix);
     G2->getMatrix(G2Matrix);
@@ -680,6 +681,7 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, dou
     vector<double> scores;
     scoreNamesToIndexes = mapScoresToIndexes();
     paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
+    assert(numOfMeasures > 1 && "Pareto mode must optimize on more than one measure");
     score = Score::pareto;
     initializeParetoFront();
 
@@ -692,7 +694,9 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, dou
 	    trackProgress(iter);
 	    if( iter != 0 and timer.elapsed() > maxExecutionSeconds){
 		cout << "ending seconds " << timer.elapsed() << " " << maxExecutionSeconds << endl;
+                assert(!paretoFront.paretoPropertyViolated() && "Pareto front is not correct");
                 printParetoFront(fileName);
+                deallocateParetoData();
 		return storedAlignments;
 	    }
 	}
@@ -709,6 +713,7 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, lon
     vector<double> scores;
     scoreNamesToIndexes = mapScoresToIndexes();
     paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
+    assert(numOfMeasures > 1 && "Pareto mode must optimize on more than one measure");
     score = Score::pareto;
     initializeParetoFront();
 
@@ -721,8 +726,10 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, lon
             trackProgress(iter);
         }
         if (iter != 0 and iter > maxExecutionIterations) {
-        	cout << "ending iterations " << iter << " " << maxExecutionIterations << endl;
-                printParetoFront(fileName);
+            cout << "ending iterations " << iter << " " << maxExecutionIterations << endl;
+            assert(!paretoFront.paretoPropertyViolated() && "Pareto front is not correct");
+            printParetoFront(fileName);
+            deallocateParetoData();
             return storedAlignments;
         }
         SANAIteration();
@@ -974,6 +981,23 @@ void SANA::printParetoFront(const string &fileName) {
     paretoFront.printAlignmentScores(cout); cout << endl;
 }
 
+void SANA::deallocateParetoData() {
+    for(auto i = storedAssignedNodesG2.begin(); i != storedAssignedNodesG2.end(); i++)
+        delete i->second;
+    if(!nodesHaveType) {
+        for(auto i = storedUnassignedNodesG2.begin(); i != storedUnassignedNodesG2.end(); i++)
+            delete i->second;
+    }
+    else {
+        for(auto i = storedUnassignedmiRNAsG2.begin(); i != storedUnassignedmiRNAsG2.end(); i++)
+            delete i->second;
+        for(auto i = storedUnassignedgenesG2.begin(); i != storedUnassignedgenesG2.end(); i++)
+            delete i->second;
+    }
+    for(auto i = storedLocalScoreSumMap.begin(); i != storedLocalScoreSumMap.end(); i++)
+        delete i->second;
+}
+
 void SANA::SANAIteration() {
     ++iterationsPerformed;
     if(G1->hasNodeTypes())
@@ -1069,7 +1093,7 @@ void SANA::performChange(int type) {
         currentScore     = newCurrentScore;
         squaredAligEdges = newSquaredAligEdges;
     }
-    if(score == Score::pareto and ((iterationsPerformed % 10000) == 0)) {
+    if(score == Score::pareto and ((iterationsPerformed % paretoIterations) == 0)) {
         /*vector<double> addScores = getMeasureScores(aligEdges, inducedEdges, TCSum, localScoreSum,
                                                     wecSum, ncSum, ewecSum, squaredAligEdges);*/
         vector<double> addScores = translateScoresToVector();
@@ -1133,7 +1157,7 @@ void SANA::performSwap(int type) {
         }
 #endif
     }
-    if(score == Score::pareto and ((iterationsPerformed % 10000) == 0)) {
+    if(score == Score::pareto and ((iterationsPerformed % paretoIterations) == 0)) {
         /*vector<double> addScores = getMeasureScores(aligEdges, inducedEdges, TCSum, localScoreSum,
                                                     wecSum, ncSum, ewecSum, squaredAligEdges);*/
         vector<double> addScores = translateScoresToVector();

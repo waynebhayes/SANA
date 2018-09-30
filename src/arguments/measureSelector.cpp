@@ -182,6 +182,7 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     if(pareto) {
         M.setParetoInitial(args.doubles["-paretoInitial"]);
         M.setParetoCapacity(args.doubles["-paretoCapacity"]);
+	M.setParetoIterations(args.doubles["-paretoIterations"]);
     }
 
     m = new EdgeCorrectness(&G1, &G2);

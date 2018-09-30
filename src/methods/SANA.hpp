@@ -191,6 +191,7 @@ private:
     //For pareto mode
     unsigned int paretoInitial;
     unsigned int paretoCapacity;
+    unsigned int paretoIterations;
 
     //restart scheme
     bool restart;
@@ -333,15 +334,16 @@ private:
                                      double newEwecSum, double newSquaredAligEdges);
     bool dominates(vector<double> &left, vector<double> &right);
     void printParetoFront(const string &fileName);
+    void deallocateParetoData();
     int numOfMeasures;
     vector<string> measureNames;
     int currentMeasure;
     vector<double> currentScores;
     ParetoFront paretoFront;
-    vector<bool>* newAN = new vector<bool>(0);
-    vector<uint>* newUAN = new vector<uint>(0);
-    vector<uint>* newUmiRNA = new vector<uint>(0);
-    vector<uint>* newUG = new vector<uint>(0);
+    //vector<bool>* newAN = new vector<bool>(0);
+    //vector<uint>* newUAN = new vector<uint>(0);
+    //vector<uint>* newUmiRNA = new vector<uint>(0);
+    //vector<uint>* newUG = new vector<uint>(0);
     unordered_map<string, int> scoreNamesToIndexes;
     unordered_set<vector<uint>*>* storedAlignments = new unordered_set<vector<uint>*>;
     unordered_map<vector<uint>*, vector<bool>*> storedAssignedNodesG2;
