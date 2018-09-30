@@ -268,6 +268,34 @@ ostream& ParetoFront::printAlignmentScores(ostream &os)
     return os;
 }
 
+bool ParetoFront::paretoPropertyViolated()
+{
+    for(auto validate = findScoresByAlignment.begin(); validate != findScoresByAlignment.end(); validate++)
+    {
+        for(auto against = findScoresByAlignment.begin(); against != findScoresByAlignment.end(); against++)
+        {
+            if(validate == against)
+                continue;
+            unsigned int j = 0;
+            for(; j < numberOfMeasures; j++) {
+                if( (validate->second)[j] > (against->second)[j] )
+                    break;
+            }
+            if(j == numberOfMeasures) {
+                cout << "Pareto front property violated:\n";
+                for(int i = 0; i < numberOfMeasures; i++)
+                    cout << validate->second[i] << "  ";
+                cout << '\n';
+                for(int i = 0; i < numberOfMeasures; i++)
+                    cout << against->second[i] << "  ";
+                cout << endl;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 unsigned int ParetoFront::size()
 {
     return currentSize;

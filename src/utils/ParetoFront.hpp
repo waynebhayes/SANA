@@ -77,5 +77,6 @@ class ParetoFront {
         ostream& printAlignmentScores(ostream &os);
         unsigned int size();
         int getRandomMeasure();
+        bool paretoPropertyViolated();
 };
 #endif

@@ -201,6 +201,7 @@ vector<array<string, 6>> supportedArguments = {
     { "", "", "banner", "", "More options for \"-mode pareto\"", "0" },
     { "-paretoInitial", "intD", "10", "Initial Pareto Size", "Used in Pareto Mode \"-mode pareto\". This argument specifies the starting number of Alignments in the Pareto Front. All of the starting alignments are the same", "0" },
     { "-paretoCapacity", "intD", "200", "Capacity of Pareto Front", "Used in Pareto Mode \"-mode pareto\". The pareto front can potentially hold N (different scores) by X (possible values/precision of the datatype used (i.e. float or double). Therefore, if a capacity is not specified, after the billions of SANA iterations, there may be too many different alignments stored in memory.", "0" },
+    {"-paretoIterations", "intD", "10000", "Iterations per Pareto Insertion", "Used in Pareto Mode \"-mode pareto\". Pareto mode operates on a copy of an alignment (which already exists in the Pareto front). The number of changes and swaps happens -paretoIterations number of times on this copy before attempting to add this new alignment to the Pareto front.", "0"},
     { "End More options for \"-mode pareto\"", "", "banner", "", "", "0" },
     //--------------------------------END PARETO-----------------------------------------
 

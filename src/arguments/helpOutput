@@ -103,6 +103,21 @@ More examples on using SANA:
  ./sana -g1 yeast -g2 human -goavg
 	Evaluate GO Average measure.
 
+ ./sana -g1 yeast -g2 human -mode pareto -s3 1 -ec 1 -ics 1 -paretoInitial 2 -paretoCapacity 100 -paretoIterations 10000
+        -mode Pareto: ---------- Start SANA in Pareto mode.
+        -s3 1 -ec 1 -ics 1: ---- Each alignment of the Pareto front is evaluated on
+                                 the measures s3, ec, and ics.
+        -paretoInitial 2: ------ Before changes and swaps are performed on
+                                 alignments, two completely random alignments are
+                                 initialized and inserted into the Pareto front
+                                 (without violating Pareto dominance).
+        -paretoCapacity 100: --- The maximum number of alignments that can be stored
+                                 inside the Pareto front is 100.
+        -paretoIterations 10000: When SANA creates a new copy of an alignment from an
+                                 existing alignment inside the Pareto front, it
+                                 undergoes 10000 changes/swaps before SANA attempts
+                                 to insert this new alignment into the Pareto front.
+
 SANA requires a number of options and arguments to execute. Options not
 explicitely specified prior to the execution of SANA will take on default values
 as arguments. Check the supported options listing above to find out what the
