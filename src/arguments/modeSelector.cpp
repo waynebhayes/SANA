@@ -46,7 +46,7 @@ Mode* selectMode(ArgumentParser& args) {
     } else if (name == "normal") {
         mode = new NormalMode();
     } else if(name == "pareto") {
-    mode = new ParetoMode();
+        mode = new ParetoMode();
     } else {
         throw runtime_error("Error: unknown mode: " + name);
     }
