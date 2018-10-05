@@ -31,5 +31,6 @@ vector<string> defaultArguments = {
 "-maxGraphletSize 5",
 "-paretoInitial 1",
 "-paretoCapacity 200",
-"-paretoIterations 10000"
+"-paretoIterations 10000",
+"-paretoThreads 1"
 };

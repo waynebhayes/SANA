@@ -103,7 +103,7 @@ More examples on using SANA:
  ./sana -g1 yeast -g2 human -goavg
 	Evaluate GO Average measure.
 
- ./sana -g1 yeast -g2 human -mode pareto -s3 1 -ec 1 -ics 1 -paretoInitial 2 -paretoCapacity 100 -paretoIterations 10000
+ ./sana -g1 yeast -g2 human -mode pareto -s3 1 -ec 1 -ics 1 -paretoInitial 2 -paretoCapacity 100 -paretoIterations 10000 -paretoThread 1
         -mode Pareto: ---------- Start SANA in Pareto mode.
         -s3 1 -ec 1 -ics 1: ---- Each alignment of the Pareto front is evaluated on
                                  the measures s3, ec, and ics.
@@ -117,6 +117,15 @@ More examples on using SANA:
                                  existing alignment inside the Pareto front, it
                                  undergoes 10000 changes/swaps before SANA attempts
                                  to insert this new alignment into the Pareto front.
+                                 This option only works if paretoThread is 1, if there
+                                 are more than 1 thread, the paretoIterations is fixed,
+                                 refer to the source code for the exact value.
+        -paretoThreads max: ---- Number of threads to run pareto concurrently.
+                                 Use "max" will automatically determines the number
+                                 of cores available on your system and use that as 
+                                 the number of threads to run pareto. However,
+                                 on some occasions it cannot determin the number of 
+                                 core avilable, it will simply use 1 thread.
 
 SANA requires a number of options and arguments to execute. Options not
 explicitely specified prior to the execution of SANA will take on default values

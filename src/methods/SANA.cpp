@@ -3,6 +3,7 @@
 #include <utility>
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 #include <cstdlib>
 #include <stdexcept>
@@ -14,6 +15,8 @@
 #include <set>
 #include <cmath>
 #include <limits>
+#include <thread>
+#include <mutex>
 #include <cassert>
 #include <signal.h>
 #include <stdio.h>
@@ -100,6 +103,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     paretoInitial   = MC->getParetoInitial();
     paretoCapacity  = MC->getParetoCapacity();
     paretoIterations = MC->getParetoIterations();
+    paretoThreads = MC->getParetoThreads();
 
     G1->getMatrix(G1Matrix);
     G2->getMatrix(G2Matrix);
@@ -294,7 +298,7 @@ Alignment SANA::run() {
         Alignment align;
         if(!usingIterations) {
           cout << "usingIterations = 0" << endl;
-          align = simpleRun(getStartingAlignment(), minutes * 60, (long long int) (getIterPerSecond()*minutes*60), iter);
+          align = simpleRun(getStartingAlignment(), minutes * 60 * 5, (long long int) (getIterPerSecond()*minutes*60), iter);
         }
         else {
           cout << "usingIterations = 1" << endl;
@@ -362,12 +366,26 @@ unordered_set<vector<uint>*>* SANA::paretoRun(const string& fileName) {
     measureCalculation["mec"] = mecC;
     measureCalculation["ses"] = sesC;
 #endif
-    long long int iter = 0;
-    if (!usingIterations) {
-        return simpleParetoRun(getStartingAlignment(), (long long int) (getIterPerSecond()*minutes*60), iter, fileName);
+    cout << "pareto mode running in " << paretoThreads << " number of threads" << endl;
+
+    if (paretoThreads > 1) {
+        if (!usingIterations) {
+            return parallelParetoRun(getStartingAlignment(), (long long int) (getIterPerSecond()*minutes*60), fileName);
+        } else {
+            return parallelParetoRun(getStartingAlignment(), ((long long int)(maxIterations))*100000000, fileName);
+        }
+    } else if (paretoThreads == 1) {
+        long long int iter = 0;
+        if (!usingIterations) {
+            return simpleParetoRun(getStartingAlignment(), (long long int) (getIterPerSecond()*minutes*60), iter, fileName);
+        } else {
+            return simpleParetoRun(getStartingAlignment(), ((long long int)(maxIterations))*100000000, iter, fileName);
+        }
     } else {
-        return simpleParetoRun(getStartingAlignment(), ((long long int)(maxIterations))*100000000, iter, fileName);
+        cerr << "ERROR: INVALID VALUE OF 'paretoThreads': " << paretoThreads << ". Expecting paretoThreads >= 1." << endl;
+        assert(paretoThreads >= 1);
     }
+
     return storedAlignments;
 }
 
@@ -557,6 +575,7 @@ void SANA::initDataStructures(const Alignment& startA) {
         for (uint i = 0; i < n1; i++) {
             localScoreSum += sims[i][(*A)[i]];
         }
+        localScoreSumMap = new map<string, double>;
     }
 
     if (needWec) {
@@ -694,7 +713,9 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, dou
 	    trackProgress(iter);
 	    if( iter != 0 and timer.elapsed() > maxExecutionSeconds){
 		cout << "ending seconds " << timer.elapsed() << " " << maxExecutionSeconds << endl;
-                assert(!paretoFront.paretoPropertyViolated() && "Pareto front is not correct");
+                if (paretoFront.paretoPropertyViolated()) {
+                    cerr << ">>>>>>>>>>>>>>>>>>>>>>> Warning: Pareto property violated, which means pareto front might not be correct! <<<<<<<<<<<<<<<< " << endl;
+                }
                 printParetoFront(fileName);
                 deallocateParetoData();
 		return storedAlignments;
@@ -705,6 +726,7 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, dou
     trackProgress(iter);
     return storedAlignments;
 }
+
 unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, long long int maxExecutionIterations,
         long long int& iter, const string &fileName) {
 
@@ -727,7 +749,9 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, lon
         }
         if (iter != 0 and iter > maxExecutionIterations) {
             cout << "ending iterations " << iter << " " << maxExecutionIterations << endl;
-            assert(!paretoFront.paretoPropertyViolated() && "Pareto front is not correct");
+            if (paretoFront.paretoPropertyViolated()) {
+                cerr << ">>>>>>>>>>>>>>>>>>>>>>> Warning: Pareto property violated, which means pareto front might not be correct! <<<<<<<<<<<<<<<< " << endl;
+            }
             printParetoFront(fileName);
             deallocateParetoData();
             return storedAlignments;
@@ -771,7 +795,7 @@ unordered_map<string, int> SANA::mapScoresToIndexes() {
     //measureNames.resize(distance(measureNames.begin(), unique(measureNames.begin(), measureNames.end()))); //Removes any duplicate measure names. Somehow, ICS measure appears twice... a good check to perform.
     numOfMeasures = measureNames.size();
     unordered_map<string, int> toReturn;
-    for(int i = 0; i < numOfMeasures; ++i) {
+    for(uint i = 0; i < numOfMeasures; ++i) {
     	toReturn[measureNames[i]] = i;
         cout << measureNames[i] << ' ' << i << endl;
     }
@@ -781,7 +805,7 @@ unordered_map<string, int> SANA::mapScoresToIndexes() {
 vector<double> SANA::translateScoresToVector() {
     vector<double> addScores(numOfMeasures);
 #ifdef WEIGHTED
-    for(int i = 0; i < numOfMeasures; i++) {
+    for(uint i = 0; i < numOfMeasures; i++) {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                             ( aligEdges, g1Edges, inducedEdges,
                                                                               g2Edges, TCSum, localScoreSum, n1,
@@ -791,7 +815,7 @@ vector<double> SANA::translateScoresToVector() {
                                                                             );
     }
 #else
-    for(int i = 0; i < numOfMeasures; i++) {
+    for(uint i = 0; i < numOfMeasures; i++) {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                             ( aligEdges, g1Edges, inducedEdges,
                                                                               g2Edges, TCSum, localScoreSum, n1,
@@ -818,7 +842,7 @@ vector<double> SANA::translateScoresToVector() {
 vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double newEwecSum, double newSquaredAligEdges) {
     vector<double> addScores(numOfMeasures);
 #ifdef WEIGHTED
-    for(int i = 0; i < numOfMeasures; i++) {
+    for(uint i = 0; i < numOfMeasures; i++) {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                             ( newAligEdges, g1Edges, newInducedEdges,
                                                                               g2Edges, newTCSum, newLocalScoreSum, n1,
@@ -828,7 +852,7 @@ vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdge
                                                                             );
     }
 #else
-    for(int i = 0; i < numOfMeasures; i++) {
+    for(uint i = 0; i < numOfMeasures; i++) {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                             ( newAligEdges, g1Edges, newInducedEdges,
                                                                               g2Edges, newTCSum, newLocalScoreSum, n1,
@@ -859,6 +883,7 @@ void SANA::prepareMeasureDataByAlignment() {
     inducedEdges     = (needInducedEdges) ?  storedInducedEdges[A] : -1;
     TCSum            = (needTC) ?  storedTCSum[A] : -1;
     localScoreSum    = (needLocal) ? storedLocalScoreSum[A] : -1;
+    localScoreSumMap = (needLocal) ? new map<string, double>(*storedLocalScoreSumMap[A]) : nullptr;
     wecSum           = (needWec) ?  storedWecSum[A] : -1;
     ewecSum          = (needEwec) ?  storedEwecSum[A] : -1;
     ncSum            = (needNC) ? storedNcSum[A] : -1;
@@ -878,6 +903,16 @@ void SANA::prepareMeasureDataByAlignment() {
     A = new vector<uint>(*A);
 }
 
+void SANA::releaseAlignment() {
+    delete A;
+    delete assignedNodesG2;
+    delete unassignedNodesG2;
+    delete unassignedmiRNAsG2;
+    delete unassignedgenesG2;
+    if (needLocal) 
+        delete localScoreSumMap;
+}
+
 void SANA::insertCurrentAndPrepareNewMeasureDataByAlignment(vector<double> &addScores) {
     bool inserted = false;
     vector<vector<uint>*> toRemove = paretoFront.addAlignmentScores(A, addScores, inserted);
@@ -887,8 +922,10 @@ void SANA::insertCurrentAndPrepareNewMeasureDataByAlignment(vector<double> &addS
 
         insertCurrentAlignmentAndData();
     }
-    else
+    else {
         delete A;
+    }
+
     assert(paretoFront.size() == storedAlignments->size() and "Number of elements in paretoFront and storedAlignments don't match.");
     A = paretoFront.procureRandomAlignment();
     assert(storedAlignments->find(A) != storedAlignments->end() && "There exists an alignment in the Pareto front which does not exist inside storedAlignments");
@@ -911,6 +948,7 @@ void SANA::insertCurrentAlignmentAndData() {
     if(needInducedEdges)         storedInducedEdges[A]     = inducedEdges;
     if(needTC)                   storedTCSum[A]            = TCSum;
     if(needLocal)                storedLocalScoreSum[A]    = localScoreSum;
+    if(needLocal)                storedLocalScoreSumMap[A] = localScoreSumMap;
     if(needWec)                  storedWecSum[A]           = wecSum;
     if(needEwec)                 storedEwecSum[A]          = ewecSum;
     if(needNC)                   storedNcSum[A]            = ncSum;
@@ -942,6 +980,7 @@ void SANA::removeAlignmentData(vector<uint>* toRemove) {
     if(needInducedEdges)         storedInducedEdges.erase(toRemove);
     if(needTC)                   storedTCSum.erase(toRemove);
     if(needLocal)                storedLocalScoreSum.erase(toRemove);
+    if(needLocal)                storedLocalScoreSumMap.erase(toRemove);
     if(needWec)                  storedWecSum.erase(toRemove);
     if(needEwec)                 storedEwecSum.erase(toRemove);
     if(needNC)                   storedNcSum.erase(toRemove);
@@ -1017,7 +1056,7 @@ void SANA::performChange(int type) {
     uint oldTarget    = (*A)[source];
     
     uint newTargetIndex = G2RandomUnlockedNode(oldTarget);
-
+ 
     uint newTarget = -1;
     bool isGene = false;
     if(!nodesHaveType)
@@ -1046,8 +1085,12 @@ void SANA::performChange(int type) {
     double newEwecSum          = (needEwec) ?  ewecSum + EWECIncChangeOp(source, oldTarget, newTarget) : -1;
     double newNcSum            = (needNC) ? ncSum + ncIncChangeOp(source, oldTarget, newTarget) : -1;
 
-    map<string, double> newLocalScoreSumMap(*localScoreSumMap);
+    
+
+
+    map<string, double> newLocalScoreSumMap;
     if (needLocal) {
+        newLocalScoreSumMap = map<string, double>(*localScoreSumMap);
         for(auto &item : newLocalScoreSumMap)
             item.second += localScoreSumIncChangeOp(localSimMatrixMap[item.first], source, oldTarget, newTarget);
     }
@@ -1124,8 +1167,9 @@ void SANA::performSwap(int type) {
     double newNcSum            = (needNC) ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
     double newLocalScoreSum    = (needLocal) ? localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2) : -1;
 
-    map<string, double> newLocalScoreSumMap(*localScoreSumMap);
+    map<string, double> newLocalScoreSumMap;
     if (needLocal) {
+        newLocalScoreSumMap = map<string, double>(*localScoreSumMap);
         for (auto &item : newLocalScoreSumMap)
             item.second += localScoreSumIncSwapOp(localSimMatrixMap[item.first], source1, source2, target1, target2);
     }
@@ -2463,3 +2507,907 @@ void SANA::prune(string& startAligName) {
     G2->setEdgeList(t_edgeList);
 }
 #endif
+
+
+// Code related with parallel pareto run, these code will be later refactored along with the 
+// rest of SANA's code.
+
+void SANA::performChange(Job &job, int type) {
+    AlignmentInfo &info = job.info;
+    vector<uint> *A = info.A;
+
+    uint source = G1RandomUnlockedNode(job);
+    uint oldTarget    = (*A)[source];
+    uint newTargetIndex = G2RandomUnlockedNode(job, oldTarget);
+    
+    uint newTarget = -1;
+    bool isGene = false;
+    if(!nodesHaveType)
+        newTarget    = (*info.unassignedNodesG2)[newTargetIndex];
+    else{
+        isGene = G2->nodeTypes[oldTarget] == Graph::NODE_TYPE_GENE;
+        if(isGene){
+            if(info.unassignedgenesG2->size() == 0)
+                return; // cannot perform change, all genes are assigned
+            newTarget = (*info.unassignedgenesG2)[newTargetIndex];
+        }
+        else{
+            if(info.unassignedmiRNAsG2->size() == 0)
+                return; // cannot perform change, all miRNA are assigned
+            newTarget = (*info.unassignedmiRNAsG2)[newTargetIndex];
+        }
+    }
+
+    int newAligEdges           = (needAligEdges or needSec) ?  info.aligEdges + aligEdgesIncChangeOp(job, source, oldTarget, newTarget) : -1;
+    double newSquaredAligEdges = (needSquaredAligEdges) ?  info.squaredAligEdges + squaredAligEdgesIncChangeOp(job, source, oldTarget, newTarget) : -1;
+    int newInducedEdges        = (needInducedEdges) ?  info.inducedEdges + inducedEdgesIncChangeOp(job, source, oldTarget, newTarget) : -1;
+    double newTCSum            = (needTC) ?  info.TCSum + TCIncChangeOp(job, source, oldTarget, newTarget) : -1;
+    double newLocalScoreSum    = (needLocal) ? info.localScoreSum + localScoreSumIncChangeOp(job, sims, source, oldTarget, newTarget) : -1;
+    double newWecSum           = (needWec) ?  info.wecSum + WECIncChangeOp(job, source, oldTarget, newTarget) : -1;
+    double newEwecSum          = (needEwec) ?  info.ewecSum + EWECIncChangeOp(job, source, oldTarget, newTarget) : -1;
+    double newNcSum            = (needNC) ? info.ncSum + ncIncChangeOp(job, source, oldTarget, newTarget) : -1;
+
+    map<string, double> newLocalScoreSumMap;
+    if (needLocal) {
+        newLocalScoreSumMap = map<string, double>(*info.localScoreSumMap);
+        for(auto &item : newLocalScoreSumMap)
+            item.second += localScoreSumIncChangeOp(localSimMatrixMap[item.first], source, oldTarget, newTarget);
+    }
+
+    double newCurrentScore = 0;
+    bool makeChange = scoreComparison(job, newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
+    if (makeChange) {
+       (*A)[source]                         = newTarget;
+
+       if(!nodesHaveType)
+           (*info.unassignedNodesG2)[newTargetIndex] = oldTarget;
+       else {
+           if(isGene){
+               (*info.unassignedgenesG2)[newTargetIndex] = oldTarget;
+           }
+           else {
+               (*info.unassignedmiRNAsG2)[newTargetIndex] = oldTarget;
+           }
+       }
+
+       (*info.assignedNodesG2)[oldTarget]        = false;
+       (*info.assignedNodesG2)[newTarget]        = true;
+       info.aligEdges                            = newAligEdges;
+       info.inducedEdges                         = newInducedEdges;
+       info.TCSum                                = newTCSum;
+       info.localScoreSum                        = newLocalScoreSum;
+       info.wecSum                               = newWecSum;
+       info.ewecSum                              = newEwecSum;
+       info.ncSum                                = newNcSum;
+       info.currentScore = newCurrentScore;
+       info.squaredAligEdges = newSquaredAligEdges;
+
+       if (needLocal) {
+           (*info.localScoreSumMap) = newLocalScoreSumMap;
+       }      
+#if 0
+       if (randomReal(job.gen) <= 1) {
+           double foo = eval(*A);
+           if (fabs(foo - newCurrentScore) > 20) {
+               cout << "\nSwap: nCS " << newCurrentScore << " eval " << foo << " nCS - eval " << newCurrentScore - foo << " adj? " << (G1Matrix[source1][source2] & G2Matrix[target1][target2]);
+               newCurrentScore = newSquaredAligEdges = foo;
+           }
+           else cout << "s";
+       }
+#endif
+    }
+
+   // CORE code is not implemented here, as the original simpleParetoRun
+   // function never access CORE code after pareto run finishes.
+}
+
+void SANA::performSwap(Job &job, int type) {
+    AlignmentInfo &info = job.info;
+    vector<uint> *A = info.A;
+
+    uint source1 = G1RandomUnlockedNode(job);
+    uint source2 = G1RandomUnlockedNode(job, source1);
+    uint target1 = (*A)[source1], target2 = (*A)[source2];
+
+    int newAligEdges           = (needAligEdges or needSec) ?  info.aligEdges + aligEdgesIncSwapOp(job, source1, source2, target1, target2) : -1;
+    int newTCSum               = (needTC) ?  info.TCSum + TCIncSwapOp(job, source1, source2, target1, target2) : -1;
+    double newSquaredAligEdges = (needSquaredAligEdges) ? info.squaredAligEdges + squaredAligEdgesIncSwapOp(job, source1, source2, target1, target2) : -1;
+    double newWecSum           = (needWec) ?  info.wecSum + WECIncSwapOp(job, source1, source2, target1, target2) : -1;
+    double newEwecSum          = (needEwec) ?  info.ewecSum + EWECIncSwapOp(job, source1, source2, target1, target2) : -1;
+    double newNcSum            = (needNC) ? info.ncSum + ncIncSwapOp(job, source1, source2, target1, target2) : -1;
+    double newLocalScoreSum    = (needLocal) ? info.localScoreSum + localScoreSumIncSwapOp(job, sims, source1, source2, target1, target2) : -1;   
+
+    map<string, double> newLocalScoreSumMap;
+    if (needLocal) {
+        newLocalScoreSumMap = map<string, double>(*info.localScoreSumMap);
+        for (auto &item : newLocalScoreSumMap)
+            item.second += localScoreSumIncSwapOp(localSimMatrixMap[item.first], source1, source2, target1, target2);
+    }
+
+    double newCurrentScore = 0;
+    bool makeChange = scoreComparison(job, newAligEdges, info.inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
+    if (makeChange) {
+        (*A)[source1]       = target2;
+        (*A)[source2]       = target1;
+        info.aligEdges           = newAligEdges;
+        info.localScoreSum       = newLocalScoreSum;
+        info.TCSum               = newTCSum;
+        info.wecSum              = newWecSum;
+        info.ewecSum             = newEwecSum;
+        info.ncSum               = newNcSum;
+        info.currentScore        = newCurrentScore;
+        info.squaredAligEdges    = newSquaredAligEdges;
+        if (needLocal)
+            (*info.localScoreSumMap) = newLocalScoreSumMap;
+#if 0
+        if (randomReal(job.gen) <= 1) {
+            double foo = eval(*A);
+            if (fabs(foo - newCurrentScore) > 20) {
+                cout << "\nSwap: nCS " << newCurrentScore << " eval " << foo << " nCS - eval " << newCurrentScore - foo << " adj? " << (G1Matrix[source1][source2] & G2Matrix[target1][target2]);
+                newCurrentScore = newSquaredAligEdges = foo;
+            }
+            else cout << "s";
+        }
+#endif
+   }
+
+   // CORE code is not implemented here, as the original simpleParetoRun
+   // function never access CORE code after pareto run finishes.
+}
+
+void SANA::parallelParetoSANAIteration(Job &job) {
+    ++job.iterationsPerformed;
+    if(G1->hasNodeTypes())
+    {
+	// Choose the type here based on counts (and locking...)
+	// For example if no locking, then prob (gene) >> prob (miRNA)
+	// And if locking, then arrange prob(gene) and prob(miRNA) appropriately
+        int type = /* something clever */ 0;
+        (randomReal(job.gen) < changeProbability[type]) ? performChange(job, type) : performSwap(job, type);
+    }
+        (randomReal(job.gen) < changeProbability[0]) ? performChange(job, 0) : performSwap(job, 0); 
+}
+
+
+void SANA::startParallelParetoRunByIteration(Job &job, long long int maxExecutionIterations) {
+    const uint iterationsPerStepForEachThread = iterationsPerStep / paretoThreads;
+    while (true) {
+        getJobMutex.lock();
+
+        if (sharedIter > maxExecutionIterations) {
+            getJobMutex.unlock();
+            return ;
+        }
+
+        if (job.iterationsPerformed != 0) {
+            attemptInsertAlignment(job);
+        }
+
+        assignRandomAlignment(job);
+
+        if (sharedIter - iterOfLastTrackProgress > iterationsPerStep) {
+            trackProgress(job);
+            iterOfLastTrackProgress = sharedIter;
+        }
+        
+        //uint startIter = sharedIter;
+        
+        sharedIter += iterationsPerStepForEachThread;
+
+        getJobMutex.unlock();
+
+        for (uint i = 0; i < iterationsPerStepForEachThread; ++i) {
+            // Temperature is based on how much total iterations all threads have cumulatively performed.
+            //job.Temperature = temperatureFunction(startIter + i, TInitial, TDecay);
+
+            // Temperature is based on how much iterations each thread has yet performed.
+            job.Temperature = temperatureFunction(job.iterationsPerformed, TInitial, TDecay); 
+
+            parallelParetoSANAIteration(job);
+        }
+    }
+}
+
+unordered_set<vector<uint>*>* SANA::parallelParetoRun(const Alignment& startA, long long int maxExecutionIterations,
+                                                      const string &fileName) {
+    initDataStructures(startA);
+    setInterruptSignal();
+    vector<double> scores;
+    scoreNamesToIndexes = mapScoresToIndexes();
+    paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
+    assert(numOfMeasures > 1 && "Pareto mode must optimize on more than one measure");
+    score = Score::pareto;
+    initializeParetoFront();
+    initializeJobs();
+    
+ 
+    startTime = chrono::steady_clock::now();
+    vector<thread> threads;
+    for (uint i = 0; i < paretoThreads; ++i) {
+        threads.push_back(thread(&SANA::startParallelParetoRunByIteration, this, ref(jobs[i]), maxExecutionIterations)); 
+    } 
+
+    for (thread &t: threads) {
+        t.join();
+    }
+
+    cout << "ending iterations " << sharedIter << " " << maxExecutionIterations << endl;
+    if (paretoFront.paretoPropertyViolated()) {
+        cerr << ">>>>>>>>>>>>>>>>>>>>>>> Warning: Pareto property violated, which means pareto front might not be correct! <<<<<<<<<<<<<<<< " << endl;
+    }
+    printParetoFront(fileName);
+    deallocateParetoData();
+    return storedAlignments;
+}
+
+void SANA::startParallelParetoRunByTime(Job &job, double maxExecutionSeconds) {
+    const uint iterationsPerStepForEachThread = iterationsPerStep / paretoThreads;
+
+    while (true) {
+        getJobMutex.lock();
+        
+        if (getElapsedTime() / paretoThreads > maxExecutionSeconds) {
+            getJobMutex.unlock();
+            return ;
+        }
+
+        if (job.iterationsPerformed != 0) {
+            attemptInsertAlignment(job);
+        }
+
+        assignRandomAlignment(job);
+
+        if (sharedIter - iterOfLastTrackProgress > iterationsPerStep) {
+            trackProgress(job);
+            iterOfLastTrackProgress = sharedIter;
+        }
+        
+        //uint startIter = sharedIter;
+
+        sharedIter += iterationsPerStepForEachThread;
+
+        getJobMutex.unlock();
+
+        for (uint i = 0; i < iterationsPerStepForEachThread; ++i) {
+            // Temperature is based on how much total iterations all threads have cumulatively performed.
+            //job.Temperature = temperatureFunction(startIter + i, TInitial, TDecay);
+
+            // Temperature is based on how much iterations each thread has yet performed.
+            job.Temperature = temperatureFunction(job.iterationsPerformed, TInitial, TDecay); 
+
+            parallelParetoSANAIteration(job);
+        }
+    }
+}
+
+unordered_set<vector<uint>*>* SANA::parallelParetoRun(const Alignment& startA, double maxExecutionSeconds,
+                                                    const string &fileName) {
+    initDataStructures(startA);
+    setInterruptSignal();
+    vector<double> scores;
+    scoreNamesToIndexes = mapScoresToIndexes();
+    paretoFront = ParetoFront(paretoCapacity, numOfMeasures, measureNames);
+    assert(numOfMeasures > 1 && "Pareto mode must optimize on more than one measure");
+    score = Score::pareto;
+    initializeParetoFront();
+    initializeJobs();
+    
+    startTime = chrono::steady_clock::now();
+    vector<thread> threads;
+    for (uint i = 0; i < paretoThreads; ++i) {
+        threads.push_back(thread(&SANA::startParallelParetoRunByTime, this, ref(jobs[i]), maxExecutionSeconds)); 
+    } 
+
+    for (thread &t: threads) {
+        t.join();
+    }
+
+    cout << "ending seconds " << getElapsedTime() << " " << maxExecutionSeconds << endl;
+    if (paretoFront.paretoPropertyViolated()) {
+        cerr << ">>>>>>>>>>>>>>>>>>>>>>> Warning: Pareto property violated, which means pareto front might not be correct! <<<<<<<<<<<<<<<< " << endl;
+    }
+    printParetoFront(fileName);
+    deallocateParetoData();
+    return storedAlignments;
+}
+
+void SANA::initializeJobs() {
+    jobs = vector<Job>(paretoThreads);
+    for (uint i = 0; i < paretoThreads; ++i) {
+        jobs[i].id = i;
+        jobs[i].gen = mt19937(getRandomSeed());
+        jobs[i].iterationsPerformed = 0;
+    }
+}
+
+void SANA::releaseAlignment(Job &job) {
+    AlignmentInfo &info = job.info;
+    delete info.A;
+    delete info.assignedNodesG2;
+    delete info.unassignedNodesG2;
+    delete info.unassignedmiRNAsG2;
+    delete info.unassignedgenesG2;
+    if (needLocal) 
+        delete info.localScoreSumMap;
+}
+
+double SANA::trueAcceptingProbability(Job &job) {
+    return vectorMean(job.sampledProbability);
+}
+
+void SANA::attemptInsertAlignment(Job &job) {
+    vector<uint> *A = job.info.A;
+    vector<double> addScores = translateScoresToVector(job);
+    bool inserted = false;
+    vector<vector<uint>*> toRemove = paretoFront.addAlignmentScores(A, addScores, inserted);
+    if (inserted) {
+        for (unsigned int i = 0; i < toRemove.size(); i++)
+            removeAlignmentData(toRemove[i]);
+        storeAlignment(job);
+    } else {
+        releaseAlignment(job);
+    }
+
+    assert(paretoFront.size() == storedAlignments->size() and "Number of elements in paretoFront and storedAlignments don't match.");  
+}
+
+void SANA::storeAlignment(Job &job) {
+    AlignmentInfo &info = job.info;
+    vector<uint> *A = info.A;
+
+    storedAlignments->insert(A);
+
+    storedAssignedNodesG2[A]        = info.assignedNodesG2;
+    if(!nodesHaveType)
+        storedUnassignedNodesG2[A]  = info.unassignedNodesG2;
+    else {
+        storedUnassignedmiRNAsG2[A] = info.unassignedmiRNAsG2;
+        storedUnassignedgenesG2[A]  = info.unassignedgenesG2;
+    }
+
+    if(needAligEdges or needSec) storedAligEdges[A]        = info.aligEdges;
+    if(needSquaredAligEdges)     storedSquaredAligEdges[A] = info.squaredAligEdges;
+    if(needInducedEdges)         storedInducedEdges[A]     = info.inducedEdges;
+    if(needTC)                   storedTCSum[A]            = info.TCSum;
+    if(needLocal)                storedLocalScoreSum[A]    = info.localScoreSum;
+    if(needLocal)                storedLocalScoreSumMap[A] = info.localScoreSumMap;
+    if(needWec)                  storedWecSum[A]           = info.wecSum;
+    if(needEwec)                 storedEwecSum[A]          = info.ewecSum;
+    if(needNC)                   storedNcSum[A]            = info.ncSum;
+    /*------------------------>*/storedCurrentScore[A]     = info.currentScore;
+}
+
+void SANA::copyAlignmentFromStorage(Job &job, vector<uint> *A) {
+    AlignmentInfo &info = job.info;
+    assert(storedAlignments->find(A) != storedAlignments->end() and "Alignment does not exist in the Pareto front.");
+    info.aligEdges        = (needAligEdges or needSec) ?  storedAligEdges[A] : -1;
+    info.squaredAligEdges = (needSquaredAligEdges) ?  storedSquaredAligEdges[A] : -1;
+    info.inducedEdges     = (needInducedEdges) ?  storedInducedEdges[A] : -1;
+    info.TCSum            = (needTC) ?  storedTCSum[A] : -1;
+    info.localScoreSum    = (needLocal) ? storedLocalScoreSum[A] : -1;
+    info.localScoreSumMap = (needLocal) ? new map<string, double>(*storedLocalScoreSumMap[A]) : nullptr;
+    info.wecSum           = (needWec) ?  storedWecSum[A] : -1;
+    info.ewecSum          = (needEwec) ?  storedEwecSum[A] : -1;
+    info.ncSum            = (needNC) ? storedNcSum[A] : -1;
+    info.currentScore     = storedCurrentScore[A];
+    info.currentScores    = paretoFront.procureScoresByAlignment(A);
+    info.currentMeasure   = paretoFront.getRandomMeasure();
+
+    info.assignedNodesG2 = new vector<bool>(*storedAssignedNodesG2[A]);
+    if(!nodesHaveType)
+        info.unassignedNodesG2 = new vector<uint>(*storedUnassignedNodesG2[A]);
+    else {
+        info.unassignedmiRNAsG2 = new vector<uint>(*storedUnassignedmiRNAsG2[A]);
+        info.unassignedgenesG2 = new vector<uint>(*storedUnassignedgenesG2[A]);
+    }
+
+    info.A = new vector<uint>(*A);
+}
+
+void SANA::assignRandomAlignment(Job &job) {
+    assert(paretoFront.size() == storedAlignments->size() and "Number of elements in paretoFront and storedAlignments don't match.");
+    vector<uint> *A = paretoFront.procureRandomAlignment();
+    copyAlignmentFromStorage(job, A);
+}
+
+vector<double> SANA::translateScoresToVector(Job &job) {
+     vector<double> addScores(numOfMeasures);
+     const AlignmentInfo &info = job.info;
+#ifdef WEIGHTED
+    for(uint i = 0; i < numOfMeasures; i++) {
+        addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
+                                                                   ( info.aligEdges, g1Edges, info.inducedEdges,
+                                                                    g2Edges, info.TCSum, info.localScoreSum, n1,
+                                                                    info.wecSum, info.ewecSum, info.ncSum, trueA.back(),
+                                                                    g1WeightedEdges, g2WeightedEdges,
+                                                                    info.squaredAligEdges
+                                                                   );
+    }
+#else
+    for(uint i = 0; i < numOfMeasures; i++) {
+        addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
+                                                                  ( info.aligEdges, g1Edges, info.inducedEdges,
+                                                                    g2Edges, info.TCSum, info.localScoreSum, n1,
+                                                                    info.wecSum, info.ewecSum, info.ncSum, trueA.back()
+                                                                  );
+    }
+#endif
+    return addScores;
+}
+
+double SANA::getElapsedTime() {
+    chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
+    double seconds = chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count()
+                     * 1.0 / 1000;
+    return seconds;
+}
+
+void SANA::trackProgress(Job &job) {
+    if (!enableTrackProgress) return;
+    bool printDetails = false;
+    bool printScores = false;
+    bool checkScores = true;
+    AlignmentInfo &info = job.info;
+    cout << sharedIter/iterationsPerStep << " (" << getElapsedTime() << "s): score = " << info.currentScore;
+    cout <<  " P(" << avgEnergyInc << ", " << job.Temperature << ") = " << acceptingProbability(avgEnergyInc, job.Temperature) << ", pBad = " << trueAcceptingProbability(job) << endl;
+
+    if (not (printDetails or printScores or checkScores)) return;
+    Alignment Al(*info.A);
+    //original one is commented out for testing sec
+    //if (printDetails) cout << " (" << Al.numAlignedEdges(*G1, *G2) << ", " << G2->numNodeInducedSubgraphEdges(*A) << ")";
+    if (printDetails) 
+        cout << "Al.numAlignedEdges = " << Al.numAlignedEdges(*G1, *G2) << ", g1Edges = " <<g1Edges<< " ,g2Edges = "<<g2Edges<< endl;
+    if (printScores) {
+        SymmetricSubstructureScore S3(G1, G2);
+        EdgeCorrectness EC(G1, G2);
+        InducedConservedStructure ICS(G1, G2);
+        SymmetricEdgeCoverage SEC(G1,G2);
+        cout << "S3: " << S3.eval(Al) << "  EC: " << EC.eval(Al) << "  ICS: " << ICS.eval(Al) << "  SEC: " << SEC.eval(Al) <<endl;
+    }
+    if (checkScores) {
+        double realScore = eval(Al);
+        if (fabs(realScore-info.currentScore) > 0.000001) {
+            cerr << "internal error: incrementally computed score (" << info.currentScore;
+            cerr << ") is not correct (" << realScore << ")" << endl;
+            info.currentScore = realScore;
+        }
+    }
+    if (dynamic_tdecay) { // Code for estimating dynamic TDecay
+        //The dynamic method uses linear interpolation to obtain an
+        //an "ideal" P(bad) as a basis for SANA runs. If the current P(bad)
+        //is significantly different from out "ideal" P(bad), then decay is either
+        //"sped up" or "slowed down"
+        int NSteps = 100;
+        double fractional_time = (getElapsedTime()/(minutes*60));
+        double lowIndex = floor(NSteps*fractional_time);
+        double highIndex = ceil(NSteps*fractional_time);
+        double betweenFraction = NSteps*fractional_time - lowIndex;
+        double PLow = tau[lowIndex];
+        double PHigh = tau[highIndex];
+
+        double PBetween = PLow + betweenFraction * (PHigh - PLow);
+
+        // if the ratio if off by more than a few percent, adjust.
+        double ratio = acceptingProbability(avgEnergyInc, job.Temperature) / PBetween;
+        if (abs(1-ratio) >= .01 &&
+            (ratio < 1 || SANAtime > .2)) // don't speed it up too soon
+        {
+            double shouldBe;
+            shouldBe = -log(avgEnergyInc/(TInitial*log(PBetween)))/(SANAtime);
+            if(SANAtime==0 || shouldBe != shouldBe || shouldBe <= 0)
+            shouldBe = TDecay * (ratio >= 0 ? ratio*ratio : 0.5);
+            cout << "TDecay " << TDecay << " too ";
+            cout << (ratio < 1 ? "fast" : "slow") << " shouldBe " << shouldBe;
+            TDecay = sqrt(TDecay * shouldBe); // geometric mean
+            cout << "; try " << TDecay << endl;
+        }
+    }
+}
+
+int SANA::aligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
+    vector<uint> *A = job.info.A;
+    int res = 0;
+    const uint n = G1AdjLists[source].size();
+    uint neighbor;
+    for (uint i = 0; i < n; ++i) {
+        neighbor = G1AdjLists[source][i];
+        res -= G2Matrix[oldTarget][(*A)[neighbor]];
+        res += G2Matrix[newTarget][(*A)[neighbor]];
+    }
+    return res;
+}
+
+#define SQRDIFF2(A,i,j) ((_edgeVal=G2Matrix[i][(*A)[j]]), 2*((_edgeVal<1000?_edgeVal:0) + 1))
+int SANA::squaredAligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
+    int res = 0, diff;
+    uint neighbor;
+    vector<uint> *A = job.info.A;
+    const uint n = G1AdjLists[source].size();
+    for (uint i = 0; i < n; ++i) {
+        neighbor = G1AdjLists[source][i];
+        // Account for uint edges? Or assume smaller graph is edge value 1?
+        diff = SQRDIFF2(A, oldTarget, neighbor);
+        assert(fabs(diff)<1100);
+        res -= diff>0?diff:0;
+        diff = SQRDIFF2(A, newTarget, neighbor);
+        assert(fabs(diff)<1100);
+        res += diff>0?diff:0;
+    }
+    return res;
+}
+
+int SANA::inducedEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
+    vector<bool> *assignedNodesG2 = job.info.assignedNodesG2;
+    int res = 0;
+    const uint n = G2AdjLists[oldTarget].size();
+    uint neighbor;
+    uint i = 0;
+    for (; i < n; ++i) {
+        neighbor = G2AdjLists[oldTarget][i];
+        res -= (*assignedNodesG2)[neighbor];
+    }
+    const uint m = G2AdjLists[newTarget].size();
+    for (i = 0; i < m; ++i) {
+        neighbor = G2AdjLists[newTarget][i];
+        res += (*assignedNodesG2)[neighbor];
+    }
+    // address case changing between adjacent nodes:
+    res -= G2Matrix[oldTarget][newTarget];
+    return res;
+}
+    
+double SANA::TCIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
+    vector<uint> *A = job.info.A;
+    double deltaTriangles = 0;
+    const uint n = G1AdjLists[source].size();
+    uint neighbor1, neighbor2;
+    for(uint i = 0; i < n; ++i){
+        for(uint j = i+1; j < n; ++j){
+            neighbor1 = G1AdjLists[source][i];
+            neighbor2 = G1AdjLists[source][j];
+            if(G1Matrix[neighbor1][neighbor2]){
+                //G1 has a triangle
+                if(G2Matrix[oldTarget][(*A)[neighbor1]] and G2Matrix[oldTarget][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]]){
+                    //G2 HAD a triangle
+                    deltaTriangles -= 1;
+                }
+                if(G2Matrix[newTarget][(*A)[neighbor1]] and G2Matrix[newTarget][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]]){
+                    //G2 GAINS a triangle
+                    deltaTriangles += 1;
+                }
+            }
+        }
+    }
+    return ((double)deltaTriangles/maxTriangles);
+}
+
+double SANA::localScoreSumIncChangeOp(Job &job, vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget) {
+    return sim[source][newTarget] - sim[source][oldTarget];
+}
+
+double SANA::WECIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
+    vector<uint> *A = job.info.A;
+    double res = 0;
+    const uint n = G1AdjLists[source].size();
+    uint neighbor;
+    for (uint j = 0; j < n; ++j) {
+        neighbor = G1AdjLists[source][j];
+        if (G2Matrix[oldTarget][(*A)[neighbor]]) {
+            res -= wecSims[source][oldTarget];
+            res -= wecSims[neighbor][(*A)[neighbor]];
+        }
+        if (G2Matrix[newTarget][(*A)[neighbor]]) {
+            res += wecSims[source][newTarget];
+            res += wecSims[neighbor][(*A)[neighbor]];
+        }
+    }
+    return res;
+}
+
+double SANA::EWECIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
+    double score = 0;
+    score = (EWECSimCombo(job, source, newTarget)) - (EWECSimCombo(job, source, oldTarget));
+    return score;
+}
+
+double SANA::EWECSimCombo(Job &job, uint source, uint target) {
+    vector<uint> *A = job.info.A;
+    double score = 0;
+    const uint n = G1AdjLists[source].size();
+    uint neighbor;
+    for (uint i = 0; i < n; ++i) {
+        neighbor = G1AdjLists[source][i];
+        if (G2Matrix[target][(*A)[neighbor]]) {
+            int e1 = ewec->getRowIndex(source, neighbor);
+            int e2 = ewec->getColIndex(target, (*A)[neighbor]);
+            score+=ewec->getScore(e2,e1);
+        }
+    }
+    return score/(2*g1Edges);
+}
+
+int SANA::ncIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
+    int change = 0;
+    if (trueA[source] == oldTarget) change -= 1;
+    if (trueA[source] == newTarget) change += 1;
+    return change;
+}
+mutex quick_lock;
+bool SANA::scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum, 
+                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, 
+                         double newEwecSum, double newSquaredAligEdges) {
+    bool makeChange = false;
+    bool wasBadMove = false;
+    double badProbability = 0;
+
+    AlignmentInfo &info = job.info;
+    
+    vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges);
+    if(dominates(addScores, info.currentScores)) {
+        info.currentScores = addScores;
+        makeChange = true;
+        newCurrentScore = 0;
+        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
+        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
+        newCurrentScore += TCWeight * (newTCSum);
+        newCurrentScore += localWeight * (newLocalScoreSum / n1);
+        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
+        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore += ncWeight * (newNcSum / trueA.back());
+    } else {
+        newCurrentScore = 0;
+        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
+        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
+        newCurrentScore += TCWeight * (newTCSum);
+        newCurrentScore += localWeight * (newLocalScoreSum / n1);
+        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
+        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore += ncWeight * (newNcSum / trueA.back());
+        job.energyInc = newCurrentScore - info.currentScore;
+        wasBadMove = job.energyInc < 0;
+        badProbability = exp(job.energyInc / job.Temperature);
+        makeChange = (addScores[info.currentMeasure] > info.currentScores[info.currentMeasure] or job.energyInc >= 0 or randomReal(job.gen) <= exp(job.energyInc / job.Temperature));
+        if(makeChange) info.currentScores = addScores;
+    }
+
+    if (wasBadMove && (job.iterationsPerformed % 512 == 0 || (TCWeight > 0 && job.iterationsPerformed % 32 == 0))) { //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
+       if (job.sampledProbability.size() == 1000) {
+           job.sampledProbability.erase(job.sampledProbability.begin());
+       }
+       job.sampledProbability.push_back(badProbability);
+    }
+
+    return makeChange;
+}
+
+inline uint SANA::G1RandomUnlockedNode_Fast(Job &job) {
+    return unLockedNodesG1[G1RandomUnlockedNodeDist(job.gen)];
+}
+
+inline uint SANA::G1RandomUnlockedNode(Job &job) {
+#ifdef REINDEX
+    return G1RandomUnlockedNodeDist(job.gen);
+#else
+    return G1RandomUnlockedNode_Fast(job);
+#endif
+}
+
+inline uint SANA::G2RandomUnlockedNode_Fast(Job &job) {
+    return G2RandomUnassignedNode(job.gen);
+}
+
+inline uint SANA::G2RandomUnlockedNode(Job &job, uint target1) {
+    if(!nodesHaveType){
+        return G2RandomUnlockedNode_Fast(job);
+    } else {
+        bool isGene = G2->nodeTypes[target1] == Graph::NODE_TYPE_GENE;
+        if(isGene){
+            uint index = G2RandomUnassignedGeneDist(job.gen);
+            return index;
+        }
+        else {
+            int index = G2RandomUnassignedmiRNADist(job.gen);
+            return index;
+        }
+    }
+}
+
+int SANA::aligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2) {
+    vector<uint> *A = job.info.A;
+
+    int res = 0;
+    const uint n = G1AdjLists[source1].size();
+    uint neighbor;
+    uint i = 0;
+    for (; i < n; ++i) {
+        neighbor = G1AdjLists[source1][i];
+        res -= G2Matrix[target1][(*A)[neighbor]];
+        res += G2Matrix[target2][(*A)[neighbor]];
+    }
+    const uint m = G1AdjLists[source2].size();
+    for (i = 0; i < m; ++i) {
+        neighbor = G1AdjLists[source2][i];
+        res -= G2Matrix[target2][(*A)[neighbor]];
+        res += G2Matrix[target1][(*A)[neighbor]];
+    }
+    //address case swapping between adjacent nodes with adjacent images:
+#ifdef WEIGHTED
+    res += (-1 << 1) & (G1Matrix[source1][source2] + G2Matrix[target1][target2]);
+#else
+    res += 2*(G1Matrix[source1][source2] & G2Matrix[target1][target2]);
+#endif
+    return res;
+}
+double SANA::TCIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2) {
+    vector<uint> *A = job.info.A;
+
+    double deltaTriangles = 0;
+    const uint n = G1AdjLists[source1].size();
+    uint neighbor1, neighbor2;
+    for(uint i = 0; i < n; ++i){
+        for(uint j = i+1; j < n; ++j){
+            neighbor1 = G1AdjLists[source1][i];
+            neighbor2 = G1AdjLists[source1][j];
+            if(G1Matrix[neighbor1][neighbor2]){
+                //G1 has a triangle
+                if(G2Matrix[target1][(*A)[neighbor1]] and G2Matrix[target1][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]]){
+                    //G2 HAD a triangle
+                    deltaTriangles -= 1;
+                }
+
+                if((G2Matrix[target2][(*A)[neighbor1]] and G2Matrix[target2][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]])
+                || (neighbor1 == source2 and G2Matrix[target2][target1] and G2Matrix[target2][(*A)[neighbor2]] and G2Matrix[target1][(*A)[neighbor2]])
+                || (neighbor2 == source2 and G2Matrix[target2][(*A)[neighbor1]] and G2Matrix[target2][target1] and G2Matrix[(*A)[neighbor1]][target1])) {
+                    //G2 GAINS a triangle
+                    deltaTriangles += 1;
+                }
+            }
+         }
+    }
+    const uint m = G1AdjLists[source2].size();
+    for(uint i = 0; i < m; ++i){
+        for(uint j = i+1; j < m; ++j){
+            neighbor1 = G1AdjLists[source2][i];
+            neighbor2 = G1AdjLists[source2][j];
+            if(G1Matrix[neighbor1][neighbor2]){
+                //G1 has a triangle
+                if(G2Matrix[target2][(*A)[neighbor1]] and G2Matrix[target2][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]]){
+                    //G2 HAD a triangle
+                    deltaTriangles -= 1;
+                }
+                
+                if((G2Matrix[target1][(*A)[neighbor1]] and G2Matrix[target1][(*A)[neighbor2]] and G2Matrix[(*A)[neighbor1]][(*A)[neighbor2]])
+                   || (neighbor1 == source1 and G2Matrix[target1][target2] and G2Matrix[target1][(*A)[neighbor2]] and G2Matrix[target2][(*A)[neighbor2]])
+                   || (neighbor2 == source1 and G2Matrix[target1][(*A)[neighbor1]] and G2Matrix[target1][target2] and G2Matrix[(*A)[neighbor1]][target2])){
+                    //G2 GAINS a triangle
+                    deltaTriangles += 1;
+                }
+            }
+        }    
+    }
+    return ((double)deltaTriangles/maxTriangles);
+}
+
+int SANA::squaredAligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2) {
+    vector<uint> *A = job.info.A;
+
+    int res = 0, diff;
+    uint neighbor;
+    const uint n = G1AdjLists[source1].size();
+    uint i = 0;
+    for (; i < n; ++i) {
+        neighbor = G1AdjLists[source1][i];
+        diff = SQRDIFF2(A, target1, neighbor);
+        assert(fabs(diff)<1100);
+        res -= diff>0?diff:0;
+        diff = SQRDIFF2(A, target2, neighbor);
+        assert(fabs(diff)<1100);
+        res += diff>0?diff:0;
+    }
+    const uint m = G1AdjLists[source2].size();
+    for (i = 0; i < m; ++i) {
+        neighbor = G1AdjLists[source2][i];
+        diff = SQRDIFF2(A, target2, neighbor);
+        assert(fabs(diff)<1100);
+        res -= diff>0?diff:0;
+        diff = SQRDIFF2(A, target1, neighbor);
+        assert(fabs(diff)<1100);
+        res += diff>0?diff:0;
+    }
+    //  How to do for squared?
+    // address case swapping between adjacent nodes with adjacent images:
+    if(G1Matrix[source1][source2] and G2Matrix[target1][target2])
+    {
+        res += 2 * SQRDIFF2(A, target1,source2);
+    }
+    return res;
+}
+double SANA::WECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2) {
+    vector<uint> *A = job.info.A;
+
+    double res = 0;
+    const uint n = G1AdjLists[source1].size();
+    uint neighbor;
+    for (uint j = 0; j < n; ++j) {
+        neighbor = G1AdjLists[source1][j];
+        if (G2Matrix[target1][(*A)[neighbor]]) {
+            res -= wecSims[source1][target1];
+            res -= wecSims[neighbor][(*A)[neighbor]];
+        }
+        if (G2Matrix[target2][(*A)[neighbor]]) {
+            res += wecSims[source1][target2];
+            res += wecSims[neighbor][(*A)[neighbor]];
+        }
+    }
+    const uint m = G1AdjLists[source2].size();
+    for (uint j = 0; j < m; ++j) {
+        neighbor = G1AdjLists[source2][j];
+        if (G2Matrix[target2][(*A)[neighbor]]) {
+            res -= wecSims[source2][target2];
+            res -= wecSims[neighbor][(*A)[neighbor]];
+        }
+        if (G2Matrix[target1][(*A)[neighbor]]) {
+            res += wecSims[source2][target1];
+            res += wecSims[neighbor][(*A)[neighbor]];
+        }
+    }
+    //address case swapping between adjacent nodes with adjacent images:
+#ifdef WEIGHTED
+    if (G1Matrix[source1][source2] > 0 and G2Matrix[target1][target2] > 0) {
+#else
+    if (G1Matrix[source1][source2] and G2Matrix[target1][target2]) {
+#endif
+        res += 2*wecSims[source1][target1];
+        res += 2*wecSims[source2][target2];
+    }
+    return res;
+}
+
+double SANA::EWECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2) {
+    double score = 0;
+    score = (EWECSimCombo(job, source1, target2)) + (EWECSimCombo(job, source2, target1)) - (EWECSimCombo(job, source1, target1)) - (EWECSimCombo(job, source2, target2));
+    if(G1Matrix[source1][source2] and G2Matrix[target1][target2]){
+        score += ewec->getScore(ewec->getColIndex(target1, target2), ewec->getRowIndex(source1, source2))/(g1Edges); //correcting for missed edges when swapping 2 adjacent pairs
+    }
+    return score;
+}
+
+int SANA::ncIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2) {
+    int change = 0;
+    if(trueA[source1] == target1) change -= 1;
+    if(trueA[source2] == target2) change -= 1;
+    if(trueA[source1] == target2) change += 1;
+    if(trueA[source2] == target1) change += 1;
+    return change;
+}
+
+double SANA::localScoreSumIncSwapOp(Job &job, vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2) {
+    return sim[source1][target2] - sim[source1][target1] + sim[source2][target1] - sim[source2][target2];
+}
+
+inline uint SANA::G1RandomUnlockedNode(Job &job, uint source1) {
+    if(!nodesHaveType){
+        return G1RandomUnlockedNode(job);
+    } else {
+        // Checking node type and returning one with same type
+        #ifdef REINDEX
+            bool isGene = source1 < (uint) G1->unlockedGeneCount;
+            if(isGene)
+                return G1RandomUnlockedGeneDist(job.gen);
+            else
+                return G1->unlockedGeneCount + G1RandomUnlockedmiRNADist(job.gen);    
+        #else       
+            bool isGene = G1->nodeTypes[source1] == Graph::NODE_TYPE_GENE;
+            if(isGene){
+                int index = G1RandomUnlockedGeneDist(job.gen);
+                return G1->geneIndexList[index]; 
+            }
+            else{
+                int index =  G1RandomUnlockedmiRNADist(job.gen);
+                return G1->miRNAIndexList[index]; 
+            }
+        #endif
+    }
+}
