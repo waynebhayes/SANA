@@ -3,6 +3,9 @@
 #include "Method.hpp"
 #include <map>
 #include <tuple>
+#include <mutex>
+#include <chrono>
+#include <ctime>
 #include <random>
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/Measure.hpp"
@@ -192,6 +195,7 @@ private:
     unsigned int paretoInitial;
     unsigned int paretoCapacity;
     unsigned int paretoIterations;
+    unsigned int paretoThreads;
 
     //restart scheme
     bool restart;
@@ -262,7 +266,7 @@ private:
     //to evaluate local measures incrementally
     bool needLocal;
     double localScoreSum;
-    map<string, double>* localScoreSumMap = new map<string, double>;
+    map<string, double>* localScoreSumMap;
     vector<vector<float> > sims;
 #ifdef CORES
     Matrix<ulong> coreFreq;
@@ -335,7 +339,7 @@ private:
     bool dominates(vector<double> &left, vector<double> &right);
     void printParetoFront(const string &fileName);
     void deallocateParetoData();
-    int numOfMeasures;
+    uint numOfMeasures;
     vector<string> measureNames;
     int currentMeasure;
     vector<double> currentScores;
@@ -365,6 +369,110 @@ private:
     unordered_set<string> localScoreNames = { "edgec", "edged", "esim", "go", "graphlet",
                                               "graphletcosine", "graphletlgraal", "importance",
                                               "nodec", "noded", "sequence" };
+
+
+    // Code related with parallel pareto run, these code will be later refactored along with the 
+    // rest of SANA's code.
+
+    // This construct only contain properties that can't be shared between alignments
+    struct AlignmentInfo {
+        vector<uint> *A;
+        vector<bool> *assignedNodesG2;
+        vector<uint> *unassignedNodesG2;
+        vector<uint> *unassignedmiRNAsG2;
+        vector<uint> *unassignedgenesG2;
+        map<string, double> *localScoreSumMap;
+        int aligEdges;
+        int squaredAligEdges;
+        int inducedEdges;
+        double wecSum;
+        double ewecSum;
+        double ncSum;
+        double TCSum;
+        int localScoreSum;
+        double currentScore;
+        vector<double> currentScores;
+        int currentMeasure;
+    };
+
+    struct Job {
+        uint id;     // A job's ID equals to its index in the jobs vector.  
+                     // Given an id, you can access a job by jobs[id].
+        AlignmentInfo info;
+
+        long long int iterationsPerformed;
+        double energyInc;
+        double Temperature;
+        vector<double> sampledProbability;
+
+        // mt19937 is a random generator that is implemented with mutex.
+        // Which means each thread should have an unique random generator.
+        mt19937 gen;
+    };
+    vector<Job> jobs;
+    void initializeJobs();
+
+    const uint insertionsPerStepOfEachThread = 5;
+    
+    // There is no need to pass a iter to this function. And perhaps to other functions like simpleRun, simpleParetoRun.
+    unordered_set<vector<uint>*>* parallelParetoRun(const Alignment& A, long long int maxExecutionIterations,
+                                                    const string &fileName);   
+    unordered_set<vector<uint>*>* parallelParetoRun(const Alignment& A, double maxExecutionSeconds,
+                                                    const string &fileName);
+    void startParallelParetoRunByIteration(Job &job, long long int maxExecutionIterations);
+    void startParallelParetoRunByTime(Job &job, double maxExecutionSeconds);
+    void trackProgress(Job &job);
+    void parallelParetoSANAIteration(Job &job);
+    void attemptInsertAlignment(Job &job);
+    void assignRandomAlignment(Job &job);
+    void copyAlignmentFromStorage(Job &job, vector<uint> *A);
+    void storeAlignment(Job &job);
+    void releaseAlignment(Job &job);
+    void releaseAlignment();
+
+    void performSwap(Job &job, int type);
+    void performChange(Job &job, int type);
+
+    uint G1RandomUnlockedNode(Job &job);
+    uint G1RandomUnlockedNode(Job &job, uint source1);
+    uint G1RandomUnlockedNode_Fast(Job &job);    
+    uint G2RandomUnlockedNode(Job &job, uint target1);
+    uint G2RandomUnlockedNode_Fast(Job &job);
+
+    int aligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
+    int squaredAligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
+    int inducedEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
+    double TCIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
+    double localScoreSumIncChangeOp(Job &job, vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
+    double WECIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
+    double EWECSimCombo(Job &job, uint source, uint target);
+    double EWECIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
+    int ncIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
+  
+    int aligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
+    double TCIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
+    int squaredAligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
+    double WECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
+    double EWECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
+    int ncIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
+    double localScoreSumIncSwapOp(Job &job, vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
+
+
+    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum, 
+                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, 
+                         double newEwecSum, double newSquaredAligEdges);
+
+
+    vector<double> translateScoresToVector(Job &job);
+    double trueAcceptingProbability(Job &job);
+
+    long long int sharedIter = 0;
+    long long int iterOfLastTrackProgress = 0;
+    mutex getJobMutex;
+
+
+    chrono::steady_clock::time_point startTime;
+    double getElapsedTime();
 };
 
 #endif
