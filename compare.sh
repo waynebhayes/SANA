@@ -156,11 +156,11 @@ else
     fi
 fi
 T="MAX($Tmin,MIN($Tcmp,$Tmax))"
-T=`grep -i 'execution time' $DIR/$M/$G1-$G2.out | wawk '{m=$NF/60; print '"$T"'}'`
+T=`grep -i 'execution time' $DIR/$M/$G1-$G2.out | hawk '{m=$NF/60; print '"$T"'}'`
 if $FORCE || [ ! -f $DIR/$M/sana.$G1-$G2.out ]; then
     if $SEQ; then
-	eval ./sana.$M -t $T -tinitial auto -tdecay auto $Sseq  -g1 $G1 -g2 $G2 -o $DIR/$M/sana.$G1-$G2 >$DIR/$M/sana.$G1-$G2.stdout 2>$DIR/$M/sana.$G1-$G2.stderr
+	: #eval ./sana.$M -t $T -tinitial auto -tdecay auto $Sseq  -g1 $G1 -g2 $G2 -o $DIR/$M/sana.$G1-$G2 >$DIR/$M/sana.$G1-$G2.stdout 2>$DIR/$M/sana.$G1-$G2.stderr
     else
-	./sana.$M -t $T -tinitial auto -tdecay auto $Sargs -g1 $G1 -g2 $G2 -o $DIR/$M/sana.$G1-$G2 >$DIR/$M/sana.$G1-$G2.stdout 2>$DIR/$M/sana.$G1-$G2.stderr
+	: #./sana.$M -t $T -tinitial auto -tdecay auto $Sargs -g1 $G1 -g2 $G2 -o $DIR/$M/sana.$G1-$G2 >$DIR/$M/sana.$G1-$G2.stdout 2>$DIR/$M/sana.$G1-$G2.stderr
     fi
 fi
