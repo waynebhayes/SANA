@@ -1855,7 +1855,6 @@ double SANA::temperatureBracket(double LIMIT, bool is_high){
 		}
 	}
 	return is_high ? i+1 : i;
-
 } 
 
 double LOG10_LOW_TEMP = 0, LOG10_HIGH_TEMP = 0, LOG10_NUM_STEPS = 0;
