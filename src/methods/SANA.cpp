@@ -1835,20 +1835,52 @@ uint SANA::getHighestIndex() const {
     return highestIndex;
 }
 
-#define LOG10_LOW_TEMP -10.0
-#define LOG10_HIGH_TEMP 10.0
-#define LOG10_NUM_STEPS 20 // looping through 0 <= i <= LOG10_NUM_STEPS
+#define PBAD_HIGH_TEMP_LIMIT 0.99999
+#define PBAD_LOW_TEMP_LIMIT 1e-10
+
+
+double SANA::temperatureBracket(double LIMIT, bool is_high){
+	int i = 0;
+	while (true){
+		double pBadi = pForTInitial(pow(10,i));
+		double pBadi1 = pForTInitial(pow(10,i+1));
+		cout << "Testing 10 ^ " << i << " pBad = " << pBadi << endl;
+		if (pBadi < LIMIT && pBadi1 >= LIMIT){
+			break;
+		}else if (pBadi > LIMIT){
+			i--;
+		}
+		else if(pBadi < LIMIT){
+			i++;
+		}
+	}
+	return is_high ? i+1 : i;
+} 
+
+double LOG10_LOW_TEMP = 0, LOG10_HIGH_TEMP = 0, LOG10_NUM_STEPS = 0;
 
 void SANA::searchTemperaturesByLinearRegression() {
 
     //if(score == "pareto") //Running in pareto mode makes this function really slow
     //	return;             //and I don't know why, but sometimes I disable using this.
     //                      //otherwise my computer is very slow.
+	
+	cout << "Testing HIGH TEMP" << endl;
+	LOG10_HIGH_TEMP = temperatureBracket(PBAD_HIGH_TEMP_LIMIT, true);
+	cout << "Testing LOW TEMP" << endl;
+	LOG10_LOW_TEMP = temperatureBracket(PBAD_LOW_TEMP_LIMIT, false);
+
+	LOG10_NUM_STEPS = abs(LOG10_LOW_TEMP) + LOG10_HIGH_TEMP;
+
+	cout << "HIGH TEMP = " << LOG10_HIGH_TEMP << " LOW TEMP = " << LOG10_LOW_TEMP <<endl;
+	cout << "NUM OF STEPS = " << LOG10_NUM_STEPS << endl;
+
     map<double, double> pbadMap;
     cout << "Sampling " << 1+LOG10_NUM_STEPS << " pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
     int T_i;
     double log_temp;
-    for(T_i = 0; T_i <= LOG10_NUM_STEPS; T_i++){
+    
+	for(T_i = 0; T_i <= LOG10_NUM_STEPS; T_i++){
 	log_temp = LOG10_LOW_TEMP + T_i*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
         pbadMap[log_temp] = pForTInitial(pow(10, log_temp));
         cout << T_i << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
