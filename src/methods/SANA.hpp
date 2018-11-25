@@ -40,7 +40,7 @@ public:
         uint numCandidates, double minutesPerCandidate, double minutesFinalist);
 
     //set temperature schedule automatically
-    double temperatureBracket(double l); //This returns the lower / upper bound for temperature
+    double temperatureBracket(double l, bool b); //This returns the lower / upper bound for temperature
     void searchTemperaturesByLinearRegression();
     void searchTemperaturesByStatisticalTest();
     void setTDecay(double t);

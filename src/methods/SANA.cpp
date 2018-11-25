@@ -1839,7 +1839,7 @@ uint SANA::getHighestIndex() const {
 #define PBAD_LOW_TEMP_LIMIT 1e-10
 
 
-double SANA::temperatureBracket(double LIMIT){
+double SANA::temperatureBracket(double LIMIT, bool is_high){
 	int i = 0;
 	while (true){
 		double pBadi = pForTInitial(pow(10,i));
@@ -1854,7 +1854,7 @@ double SANA::temperatureBracket(double LIMIT){
 			i++;
 		}
 	}
-	return LIMIT == PBAD_HIGH_TEMP_LIMIT ? i+1 : i;
+	return is_high ? i+1 : i;
 } 
 
 double LOG10_LOW_TEMP = 0, LOG10_HIGH_TEMP = 0, LOG10_NUM_STEPS = 0;
@@ -1866,9 +1866,9 @@ void SANA::searchTemperaturesByLinearRegression() {
     //                      //otherwise my computer is very slow.
 	
 	cout << "Testing HIGH TEMP" << endl;
-	LOG10_HIGH_TEMP = temperatureBracket(PBAD_HIGH_TEMP_LIMIT);
+	LOG10_HIGH_TEMP = temperatureBracket(PBAD_HIGH_TEMP_LIMIT, true);
 	cout << "Testing LOW TEMP" << endl;
-	LOG10_LOW_TEMP = temperatureBracket(PBAD_LOW_TEMP_LIMIT);
+	LOG10_LOW_TEMP = temperatureBracket(PBAD_LOW_TEMP_LIMIT, false);
 
 	LOG10_NUM_STEPS = abs(LOG10_LOW_TEMP) + LOG10_HIGH_TEMP;
 
