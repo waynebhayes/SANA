@@ -231,7 +231,7 @@ Alignment HillClimbing::run() {
                     newAligEdges += G2Matrix[target1][A[neighbor]];
                 }
                 //address case swapping between adjacent nodes with adjacent images:
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
                 newAligEdges += (-1 << 1) & (G1Matrix[source1][source2] + G2Matrix[target1][target2]);
 #else
                 newAligEdges += 2*(G1Matrix[source1][source2] & G2Matrix[target1][target2]);
@@ -267,7 +267,7 @@ Alignment HillClimbing::run() {
                         }
                     }
                     //address case swapping between adjacent nodes with adjacent images:
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
                     if (G1Matrix[source1][source2] > 0 and G2Matrix[target1][target2] > 0) { 
 #else
                     if (G1Matrix[source1][source2] and G2Matrix[target1][target2]) {

@@ -440,7 +440,7 @@ int TabuSearch::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uin
         res += G2Matrix[target1][A[neighbor]];
     }
     //address case swapping between adjacent nodes with adjacent images:
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
     throw runtime_error("TabuSearch not implemented for weighted Graphs");
     res += 2*(G1Matrix[source1][source2] > 0 and G2Matrix[target1][target2] > 0); 
 #else
@@ -516,7 +516,7 @@ double TabuSearch::WECIncSwapOp(uint source1, uint source2, uint target1, uint t
         }
     }
     //address case swapping between adjacent nodes with adjacent images:
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
     throw runtime_error("TabuSearch not implemented for weighted Graphs");
     if (G1Matrix[source1][source2] > 0 and G2Matrix[target1][target2] > 0) {
 #else

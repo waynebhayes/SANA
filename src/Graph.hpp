@@ -65,7 +65,7 @@ public:
     string getName() const;
 
     uint getNumNodes() const;
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
     uint getWeightedNumEdges();
 #endif
     uint getNumEdges() const;
