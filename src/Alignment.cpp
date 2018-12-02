@@ -257,7 +257,7 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
 #endif
 
 
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
     // Before computing rung sizes, we need to add the edges
     // from G1 that we pruned back to G2
     for (const auto& edge: G1EdgeList) {

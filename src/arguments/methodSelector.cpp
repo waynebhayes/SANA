@@ -87,7 +87,7 @@ Method* initTabuSearch(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombin
     return new TabuSearch(&G1, &G2, minutes, &M, ntabus, nneighbors, nodeTabus);
 }
 
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M, string startAligName) {
 #else
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
@@ -106,7 +106,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     Method* sana;
 
     double time = args.doubles["-t"];
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
     sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"], args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"], startAligName);
 #else
     sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"], args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"]);
@@ -207,7 +207,7 @@ Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombinatio
     if (name == "wave")
         return new WAVEWrapper(&G1, &G2, wrappedArgs);
     if (name == "sana")
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
         return initSANA(G1, G2, args, M, startAligName);
 #else
         return initSANA(G1, G2, args, M);

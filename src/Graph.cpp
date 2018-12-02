@@ -56,7 +56,7 @@ void Graph::setMaxGraphletSize(double number){
 void Graph::serializeGraph(Graph& G, string outputName, bool typedNodes, bool locked)
 {
     bool weighted = false;
-#if WEIGHTED
+#if MULTI_PAIRWISE
     weighted = true;
 #endif
 
@@ -139,7 +139,7 @@ void Graph::serializeShadow(Graph& G)
 void Graph::loadGraphFromBinary(Graph& g, string graphName, string lockFile, bool nodesHaveTypes, bool lockedSameName)
 {
     bool weighted = false;
-#if WEIGHTED
+#if MULTI_PAIRWISE
     weighted = true;
 #endif
     g.nodesHaveTypesEnabled = nodesHaveTypes;
@@ -215,7 +215,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         }
     }
 
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
     vector<vector<uint>> edgeList(vecLen, vector<uint> (3));
 #else
     vector<vector<uint>> edgeList(vecLen, vector<uint> (2));
@@ -227,7 +227,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     unordered_map<string, unordered_map<string, uint>* > adjMatrix;
 
     for (uint i = 0; i < vecLen; ++i) {
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
         if (edges[i].size() == 2) {
             edgeValue = '1';
         }
@@ -277,7 +277,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         index2 = nodeName2IndexMap[node2s];
         edgeList[i][0] = index1;
         edgeList[i][1] = index2;
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
         edgeList[i][2] = stoi(edgeValue);
 #endif
     }
@@ -308,8 +308,8 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
           throw runtime_error(errorMsg.str().c_str());
         }
 
-        // Note that when WEIGHTED is on, the adjacency matrix contains full integers, not just bits.
-        #ifdef WEIGHTED
+        // Note that when MULTI_PAIRWISE is on, the adjacency matrix contains full integers, not just bits.
+        #ifdef MULTI_PAIRWISE
             g.matrix[node1][node2] = g.matrix[node2][node1] = edgeList[i][2];
         #else
             g.matrix[node1][node2] = g.matrix[node2][node1] = true;
@@ -358,7 +358,7 @@ void Graph::edgeList2gw(string fin, string fout) {
 
   }
 
-// #ifdef WEIGHTED
+// #ifdef MULTI_PAIRWISE
 //     vector<string> t_nodes = fileToStrings(fin);
 //     for (int i = 0; i < t_nodes.size(); i++) {
 //         if (i%3 == 2) {
@@ -377,7 +377,7 @@ void Graph::edgeList2gw(string fin, string fout) {
     //     nodeName2IndexMap[nodes[i]] = i;
     // }
 
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
     vector<vector<uint>> edgeList(edges.size(), vector<uint> (3));
 #else
     vector<vector<uint>> edgeList(edges.size(), vector<uint> (2));
@@ -385,7 +385,7 @@ void Graph::edgeList2gw(string fin, string fout) {
     stringstream errorMsg;
 
     for (uint i = 0; i < edges.size(); i++) {
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
         string edgeValue;
         if (edges[i].size() == 2) {
             edgeValue = '1';
@@ -411,7 +411,7 @@ void Graph::edgeList2gw(string fin, string fout) {
         uint index2 = nodeName2IndexMap[node2];
         edgeList[i][0] = index1;
         edgeList[i][1] = index2;
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
         edgeList[i][2] = stoi(edgeValue);
 #endif
     }
@@ -474,7 +474,7 @@ Graph::Graph(uint n, const vector<vector<uint> > edges) {
         uint node1 = edge[0], node2 = edge[1];
         adjLists[node1].push_back(node2);
         adjLists[node2].push_back(node1);
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
         matrix[node1][node2] = matrix[node2][node1] = 1;
 #else
         matrix[node1][node2] = matrix[node2][node1] = true;
@@ -583,7 +583,7 @@ void Graph::loadGwFile(const string& fileName) {
 
     adjLists = vector<vector<uint> > (n, vector<uint>(0));
     matrix = Matrix<MATRIX_UNIT>(n);
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
     char dump;
     uint edgeValue;
 #endif
@@ -601,7 +601,7 @@ void Graph::loadGwFile(const string& fileName) {
     for (int i = 0; i < m; ++i) {
         getline(infile, line);
         istringstream iss(line);
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
         if (!(iss >> node1 >> node2 >> dump >> dump >> dump)) {
 #else
         if (!(iss >> node1 >> node2)) {
@@ -610,7 +610,7 @@ void Graph::loadGwFile(const string& fileName) {
             throw runtime_error(errorMsg.str().c_str());
         }
 
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
         if (!(iss >> edgeValue)) {
             errorMsg << "No edge value: " << line;
             edgeValue = 1;
@@ -630,7 +630,7 @@ void Graph::loadGwFile(const string& fileName) {
         edgeList[i][0] = node1;
         edgeList[i][1] = node2;
 
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
         matrix[node1][node2] = matrix[node2][node1] = edgeValue;
 #else
         matrix[node1][node2] = matrix[node2][node1] = true;
@@ -806,7 +806,7 @@ Graph Graph::nodeInducedSubgraph(const vector<uint>& nodes) const {
             newEdge[0] = newNode1;
             newEdge[1] = newNode2;
             G.edgeList.push_back(newEdge);
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
             G.matrix[newNode1][newNode2] = G.matrix[newNode2][newNode1] = matrix.get(node1, node2);
 #else
             G.matrix[newNode1][newNode2] = G.matrix[newNode2][newNode1] = true;
@@ -1321,7 +1321,7 @@ void writeGWEdges(ofstream& outfile, const vector<vector<uint>>& edgeList) {
     uint numEdges = edgeList.size();
     outfile << numEdges << endl;
     for (uint i = 0; i < numEdges; i++) {
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
         outfile << edgeList[i][0]+1 << " " << edgeList[i][1]+1 << " 0 |{";
         outfile << edgeList[i][2] << "}|" << endl;
 #else
@@ -1729,7 +1729,7 @@ void Graph::updateUnlockedGeneCount(){
        }
    }
 }
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
 uint Graph::getWeightedNumEdges() {
     if (weightedNumEdges != 0) return weightedNumEdges;
     weightedNumEdges = 0;

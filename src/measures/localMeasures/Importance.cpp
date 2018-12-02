@@ -20,7 +20,7 @@ Importance::~Importance() {
 vector<vector<double> > Importance::initEdgeWeights(const Graph& G) {
     uint n = G.getNumNodes();
     vector<vector<double> > edgeWeights(n, vector<double> (n, 0));
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
     throw runtime_error("Importance not implemented for weighted Graphs");
 #endif
     Matrix<MATRIX_UNIT> matrix(n);

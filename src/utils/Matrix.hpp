@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#ifdef WEIGHTED
+#ifdef MULTI_PAIRWISE
     #define MATRIX_UNIT ushort
 #else
     #define MATRIX_UNIT bool
