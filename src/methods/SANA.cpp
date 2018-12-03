@@ -71,7 +71,7 @@ void SANA::initTau(void) {
 
 SANA::SANA(Graph* G1, Graph* G2,
         double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
         ,string& startAligName
 #endif
         ): Method(G1, G2, "SANA_"+MC->toString())
@@ -80,7 +80,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     n1              = G1->getNumNodes();
     n2              = G2->getNumNodes();
     g1Edges         = G1->getNumEdges();
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     g1WeightedEdges = G1->getWeightedNumEdges();
     g2WeightedEdges = G2->getWeightedNumEdges();
 #endif
@@ -108,7 +108,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     G1->getMatrix(G1Matrix);
     G2->getMatrix(G2Matrix);
     G1->getAdjLists(G1AdjLists);
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     if (startAligName != "") {
         prune(startAligName);
         this->startAligName = startAligName;
@@ -347,7 +347,7 @@ double localC(PARAMS) { return double(localScoreSum) / n1; }
 double wecC(PARAMS) { return double(wecSum) / (2 * g1Edges); }
 double ewecC(PARAMS) { return ewecSum; }
 double ncC(PARAMS) { return double(ncSum) / trueA_back; }
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
 double mecC(PARAMS) { return double(aligEdges) / (g1WeightedEdges + g2WeightedEdges); }
 double sesC(PARAMS) { return squaredAligEdges; }
 #endif
@@ -362,7 +362,7 @@ unordered_set<vector<uint>*>* SANA::paretoRun(const string& fileName) {
     measureCalculation["wec"] = wecC;
     measureCalculation["ewec"] = ewecC;
     measureCalculation["nc"] = ncC;
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     measureCalculation["mec"] = mecC;
     measureCalculation["ses"] = sesC;
 #endif
@@ -765,7 +765,7 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, lon
 unordered_map<string, int> SANA::mapScoresToIndexes() {
     numOfMeasures = MC->numMeasures();
     /*numOfMeasures = 8;
-    #ifdef MULTI_PAIRWISE
+    #ifdef WEIGHTED
     numOfMeasures = 10;
     #endif*/
     measureNames = vector<string>(0);
@@ -785,7 +785,7 @@ unordered_map<string, int> SANA::mapScoresToIndexes() {
     measureNames[5] = "local"; //   <-------- Contains many sub-measures.
     measureNames[6] = "wec";
     measureNames[7] = "nc";
-    #ifdef MULTI_PAIRWISE
+    #ifdef WEIGHTED
     measureNames[8] = "mec";
     measureNames[9] = "ses";
     #endif*/
@@ -804,7 +804,7 @@ unordered_map<string, int> SANA::mapScoresToIndexes() {
 
 vector<double> SANA::translateScoresToVector() {
     vector<double> addScores(numOfMeasures);
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     for(uint i = 0; i < numOfMeasures; i++) {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                             ( aligEdges, g1Edges, inducedEdges,
@@ -832,7 +832,7 @@ vector<double> SANA::translateScoresToVector() {
     addScores[scoreNamesToIndexes["wec"]] = double(wecSum) / (2 * g1Edges);
     //addScores[scoreNamesToIndexes["ewec"]] = ewecSum;
     addScores[scoreNamesToIndexes["nc"]] = double(ncSum) / trueA.back();
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     addScores[scoreNamesToIndexes["mec"]] = double(aligEdges) / (g1WeightedEdges + g2WeightedEdges);
     addScores[scoreNamesToIndexes["ses"]] = squaredAligEdges;
 #endif*/
@@ -841,7 +841,7 @@ vector<double> SANA::translateScoresToVector() {
 
 vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double newEwecSum, double newSquaredAligEdges) {
     vector<double> addScores(numOfMeasures);
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     for(uint i = 0; i < numOfMeasures; i++) {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                             ( newAligEdges, g1Edges, newInducedEdges,
@@ -869,7 +869,7 @@ vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdge
     addScores[scoreNamesToIndexes["wec"]] = double(newWecSum) / (2 * g1Edges);
     //addScores[scoreNamesToIndexes["ewec"]] = ewecWeight * (newEwecSum);
     addScores[scoreNamesToIndexes["nc"]] = double(newNcSum) / trueA.back();
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     addScores[scoreNamesToIndexes["mec"]] = double(newAligEdges) / (g1WeightedEdges + g2WeightedEdges);
     addScores[scoreNamesToIndexes["ses"]] = double(newSquaredAligEdges) / SquaredEdgeScore::getDenom();
 #endif*/	
@@ -1243,7 +1243,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
         newCurrentScore += ewecWeight * (newEwecSum);
         newCurrentScore += ncWeight * (newNcSum / trueA.back());
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
         newCurrentScore += mecWeight * (newAligEdges / (g1WeightedEdges + g2WeightedEdges));
         newCurrentScore += sesWeight * newSquaredAligEdges / SquaredEdgeScore::getDenom();
 #endif
@@ -1440,7 +1440,7 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
         res += G2Matrix[target1][(*A)[neighbor]];
     }
     //address case swapping between adjacent nodes with adjacent images:
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     res += (-1 << 1) & (G1Matrix[source1][source2] + G2Matrix[target1][target2]);
 #else
     res += 2*(G1Matrix[source1][source2] & G2Matrix[target1][target2]);
@@ -1450,7 +1450,7 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
 
 static int _edgeVal;
 // UGLY GORY HACK BELOW!! Sometimes the edgeVal is crazily wrong, like way above 1,000, when it
-// cannot possibly be greater than the number of networks we're aligning when MULTI_PAIRWISE is on.
+// cannot possibly be greater than the number of networks we're aligning when WEIGHTED is on.
 // It happens only rarely, so here I ask if the edgeVal is less than 1,000; if it's less than 1,000
 // then we assume it's OK, otherwise we just ignore this edge entirely and say the diff is 0.
 // Second problem: even if the edgeVal is correct, I couldn't seem to figure out the difference
@@ -1581,7 +1581,7 @@ double SANA::WECIncSwapOp(uint source1, uint source2, uint target1, uint target2
         }
     }
     //address case swapping between adjacent nodes with adjacent images:
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     if (G1Matrix[source1][source2] > 0 and G2Matrix[target1][target2] > 0) {
 #else
     if (G1Matrix[source1][source2] and G2Matrix[target1][target2]) {
@@ -1844,7 +1844,7 @@ double SANA::temperatureBracket(double LIMIT, bool is_high){
 	while (true){
 		double pBadi = pForTInitial(pow(10,i));
 		double pBadi1 = pForTInitial(pow(10,i+1));
-		cout << "Testing 10 ^ " << i << " pBad = " << pBadi << endl;
+		cout << "Testing temperature 10^" << i << " pBad = " << pBadi << endl;
 		if (pBadi < LIMIT && pBadi1 >= LIMIT){
 			break;
 		}else if (pBadi > LIMIT){
@@ -1864,11 +1864,81 @@ void SANA::searchTemperaturesByLinearRegression() {
     //if(score == "pareto") //Running in pareto mode makes this function really slow
     //	return;             //and I don't know why, but sometimes I disable using this.
     //                      //otherwise my computer is very slow.
-	
+/*			while(true){
+				pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));
+				pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
+				cout << "Testing Low Temperature 10^" << LOG10_LOW_TEMP << " pBad = " << pBadLow << endl;
+				cout << "Testing High Temperature 10^" << LOG10_HIGH_TEMP << " pBad = " << pBadHigh << endl;
+				if (pBadLow < PBAD_LOW_TEMP_LIMIT){
+					LOG10_LOW_TEMP++;
+				}
+				else if (pBadHigh < PBAD_HIGH_TEMP_LIMIT){
+					LOG10_HIGH_TEMP++;
+				}
+				else{
+					break;
+				}
+			}
+ 
 	cout << "Testing HIGH TEMP" << endl;
 	LOG10_HIGH_TEMP = temperatureBracket(PBAD_HIGH_TEMP_LIMIT, true);
 	cout << "Testing LOW TEMP" << endl;
 	LOG10_LOW_TEMP = temperatureBracket(PBAD_LOW_TEMP_LIMIT, false);
+
+	LOG10_NUM_STEPS = abs(LOG10_LOW_TEMP) + LOG10_HIGH_TEMP;
+
+	cout << "HIGH TEMP = " << LOG10_HIGH_TEMP << " LOW TEMP = " << LOG10_LOW_TEMP <<endl;
+	cout << "NUM OF STEPS = " << LOG10_NUM_STEPS << endl;
+*/
+
+	double pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));
+	double pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
+
+	cout << "Finding the Upper and Lower Bounds of the Temperature ... " << endl;
+
+	if (pBadLow > PBAD_LOW_TEMP_LIMIT && pBadHigh > PBAD_HIGH_TEMP_LIMIT){
+		//both need to go down
+		while(true){
+			pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
+			cout << "Testing High Temperature 10^" << LOG10_HIGH_TEMP << " pBad = " << pBadHigh << endl;				
+			if (pBadHigh < PBAD_HIGH_TEMP_LIMIT)
+				break;
+			LOG10_HIGH_TEMP--;
+		}
+
+		LOG10_LOW_TEMP = LOG10_HIGH_TEMP; //We know that LOW TEMP HAS TO BE ATLEAST AS KNOW AS THE HIGH TEMP..Saves us extra computation!
+
+		while(true){
+			pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));	
+			cout << "Testing Low Temperature 10^" << LOG10_LOW_TEMP << " pBad = " << pBadLow << endl;
+			LOG10_LOW_TEMP--;
+			if(pBadLow < PBAD_LOW_TEMP_LIMIT)
+				break;
+		}	
+		
+	}
+	else if (pBadLow < PBAD_LOW_TEMP_LIMIT && pBadHigh < PBAD_HIGH_TEMP_LIMIT){
+		//both need to go up
+		while(true){
+			pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));	
+			cout << "Testing Low Temperature 10^" << LOG10_LOW_TEMP << " pBad = " << pBadLow << endl;
+			if(pBadLow > PBAD_LOW_TEMP_LIMIT)
+				break;
+			LOG10_LOW_TEMP++;
+		}	
+		LOG10_HIGH_TEMP = LOG10_LOW_TEMP; //We know that LOW TEMP HAS TO BE ATLEAST AS KNOW AS THE HIGH TEMP..Saves us extra computation!
+		while(true){
+			pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
+			cout << "Testing High Temperature 10^" << LOG10_HIGH_TEMP << " pBad = " << pBadHigh << endl;				
+			LOG10_HIGH_TEMP++;
+			if (pBadHigh > PBAD_HIGH_TEMP_LIMIT)
+				break;
+		}
+	}
+	else{
+		LOG10_HIGH_TEMP = temperatureBracket(PBAD_HIGH_TEMP_LIMIT, true);
+		LOG10_LOW_TEMP = temperatureBracket(PBAD_LOW_TEMP_LIMIT, false);
+	}
 
 	LOG10_NUM_STEPS = abs(LOG10_LOW_TEMP) + LOG10_HIGH_TEMP;
 
@@ -2462,7 +2532,7 @@ void SANA::setDynamicTDecay() {
     dynamic_tdecay = true;
 }
 
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
 void SANA::prune(string& startAligName) {
     std::cerr << "Starting to prune using " <<  startAligName << std::endl;
     uint n = G1->getNumNodes();
@@ -2945,7 +3015,7 @@ void SANA::assignRandomAlignment(Job &job) {
 vector<double> SANA::translateScoresToVector(Job &job) {
      vector<double> addScores(numOfMeasures);
      const AlignmentInfo &info = job.info;
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     for(uint i = 0; i < numOfMeasures; i++) {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                    ( info.aligEdges, g1Edges, info.inducedEdges,
@@ -3265,7 +3335,7 @@ int SANA::aligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1,
         res += G2Matrix[target1][(*A)[neighbor]];
     }
     //address case swapping between adjacent nodes with adjacent images:
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     res += (-1 << 1) & (G1Matrix[source1][source2] + G2Matrix[target1][target2]);
 #else
     res += 2*(G1Matrix[source1][source2] & G2Matrix[target1][target2]);
@@ -3386,7 +3456,7 @@ double SANA::WECIncSwapOp(Job &job, uint source1, uint source2, uint target1, ui
         }
     }
     //address case swapping between adjacent nodes with adjacent images:
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     if (G1Matrix[source1][source2] > 0 and G2Matrix[target1][target2] > 0) {
 #else
     if (G1Matrix[source1][source2] and G2Matrix[target1][target2]) {
