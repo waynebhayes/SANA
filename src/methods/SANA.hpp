@@ -14,7 +14,7 @@
 #include "../utils/ParetoFront.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges
 #else
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back
@@ -25,7 +25,7 @@ class SANA: public Method {
 public:
     SANA(Graph* G1, Graph* G2,
       double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
 	, string& startAligName
 #endif
     );
@@ -96,7 +96,7 @@ private:
     uint n1;
     uint n2;
     double g1Edges; //stored as double because it appears in division
-#ifdef MULTI_PAIRWISE
+#ifdef WEIGHTED
     double g1WeightedEdges;
     double g2WeightedEdges;
 #endif
