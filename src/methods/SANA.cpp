@@ -1837,6 +1837,7 @@ uint SANA::getHighestIndex() const {
 
 #define PBAD_HIGH_TEMP_LIMIT 0.99999
 #define PBAD_LOW_TEMP_LIMIT 1e-10
+double LOG10_LOW_TEMP = 0, LOG10_HIGH_TEMP = 0, LOG10_NUM_STEPS = 0;
 
 
 double SANA::temperatureBracket(double LIMIT, bool is_high){
@@ -1857,7 +1858,58 @@ double SANA::temperatureBracket(double LIMIT, bool is_high){
 	return is_high ? i+1 : i;
 } 
 
-double LOG10_LOW_TEMP = 0, LOG10_HIGH_TEMP = 0, LOG10_NUM_STEPS = 0;
+void SANA::findingUpperLowerTemperatureBound(double & LOG10_LOW_TEMP, double & LOG10_HIGH_TEMP){
+
+	double pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));
+	double pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
+
+	cout << "Finding the Upper and Lower Bounds of the Temperature ... " << endl;
+
+	if (pBadLow > PBAD_LOW_TEMP_LIMIT && pBadHigh > PBAD_HIGH_TEMP_LIMIT){
+		//both need to go down
+		while(true){
+			pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
+			cout << "Testing High Temperature 10^" << LOG10_HIGH_TEMP << " pBad = " << pBadHigh << endl;				
+			if (pBadHigh < PBAD_HIGH_TEMP_LIMIT)
+				break;
+			LOG10_HIGH_TEMP--;
+		}
+
+		LOG10_LOW_TEMP = LOG10_HIGH_TEMP; //We know that LOW TEMP HAS TO BE ATLEAST AS KNOW AS THE HIGH TEMP..Saves us extra computation!
+
+		while(true){
+			pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));	
+			cout << "Testing Low Temperature 10^" << LOG10_LOW_TEMP << " pBad = " << pBadLow << endl;
+			LOG10_LOW_TEMP--;
+			if(pBadLow < PBAD_LOW_TEMP_LIMIT)
+				break;
+		}	
+		
+	}
+	else if (pBadLow < PBAD_LOW_TEMP_LIMIT && pBadHigh < PBAD_HIGH_TEMP_LIMIT){
+		//both need to go up
+		while(true){
+			pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));	
+			cout << "Testing Low Temperature 10^" << LOG10_LOW_TEMP << " pBad = " << pBadLow << endl;
+			if(pBadLow > PBAD_LOW_TEMP_LIMIT)
+				break;
+			LOG10_LOW_TEMP++;
+		}	
+		LOG10_HIGH_TEMP = LOG10_LOW_TEMP; //We know that LOW TEMP HAS TO BE ATLEAST AS KNOW AS THE HIGH TEMP..Saves us extra computation!
+		while(true){
+			pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
+			cout << "Testing High Temperature 10^" << LOG10_HIGH_TEMP << " pBad = " << pBadHigh << endl;				
+			LOG10_HIGH_TEMP++;
+			if (pBadHigh > PBAD_HIGH_TEMP_LIMIT)
+				break;
+		}
+	}
+	else{ //We have to go both ways to see how much high the HIGH_TEMP needs to go, and how much low the LOW_TEMP needs to go
+		LOG10_HIGH_TEMP = temperatureBracket(PBAD_HIGH_TEMP_LIMIT, true);
+		LOG10_LOW_TEMP = temperatureBracket(PBAD_LOW_TEMP_LIMIT, false);
+	}
+}
+
 
 void SANA::searchTemperaturesByLinearRegression() {
 
@@ -1865,12 +1917,9 @@ void SANA::searchTemperaturesByLinearRegression() {
     //	return;             //and I don't know why, but sometimes I disable using this.
     //                      //otherwise my computer is very slow.
 	
-	cout << "Testing HIGH TEMP" << endl;
-	LOG10_HIGH_TEMP = temperatureBracket(PBAD_HIGH_TEMP_LIMIT, true);
-	cout << "Testing LOW TEMP" << endl;
-	LOG10_LOW_TEMP = temperatureBracket(PBAD_LOW_TEMP_LIMIT, false);
+	findingUpperLowerTemperatureBound(LOG10_LOW_TEMP, LOG10_HIGH_TEMP); //abstraction: Finds the initial lower and upper bound 
 
-	LOG10_NUM_STEPS = abs(LOG10_LOW_TEMP) + LOG10_HIGH_TEMP;
+	LOG10_NUM_STEPS = abs(LOG10_LOW_TEMP) + abs(LOG10_HIGH_TEMP);
 
 	cout << "HIGH TEMP = " << LOG10_HIGH_TEMP << " LOW TEMP = " << LOG10_LOW_TEMP <<endl;
 	cout << "NUM OF STEPS = " << LOG10_NUM_STEPS << endl;
