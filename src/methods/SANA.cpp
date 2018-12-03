@@ -325,7 +325,7 @@ Alignment SANA::run() {
 	{
 	    double unweightdedScore = coreFreq[i][j]/(double)coreCount[i],
 		weightedScore = weightedCoreFreq[i][j]/totalCoreWeight[i];
-	    if(weightedScore > MIN_CORE_SCORE)printf("%s %s  %lu / %lu = %.6f weighted %.6f / %.6f = %.6f\n",
+	    if(weightedScore > MIN_CORE_SCORE)printf("%s %s  %lu / %lu = %.16f weighted %.16f / %.16f = %.16f\n",
 		G1Index2Name[i].c_str(), G2Index2Name[j].c_str(),
 		coreFreq[i][j], coreCount[i],
 		unweightdedScore,
@@ -1855,6 +1855,7 @@ double SANA::temperatureBracket(double LIMIT, bool is_high){
 		}
 	}
 	return is_high ? i+1 : i;
+
 } 
 
 double LOG10_LOW_TEMP = 0, LOG10_HIGH_TEMP = 0, LOG10_NUM_STEPS = 0;
