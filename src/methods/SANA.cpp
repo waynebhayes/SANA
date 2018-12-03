@@ -1864,32 +1864,6 @@ void SANA::searchTemperaturesByLinearRegression() {
     //if(score == "pareto") //Running in pareto mode makes this function really slow
     //	return;             //and I don't know why, but sometimes I disable using this.
     //                      //otherwise my computer is very slow.
-/*			while(true){
-				pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));
-				pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
-				cout << "Testing Low Temperature 10^" << LOG10_LOW_TEMP << " pBad = " << pBadLow << endl;
-				cout << "Testing High Temperature 10^" << LOG10_HIGH_TEMP << " pBad = " << pBadHigh << endl;
-				if (pBadLow < PBAD_LOW_TEMP_LIMIT){
-					LOG10_LOW_TEMP++;
-				}
-				else if (pBadHigh < PBAD_HIGH_TEMP_LIMIT){
-					LOG10_HIGH_TEMP++;
-				}
-				else{
-					break;
-				}
-			}
- 
-	cout << "Testing HIGH TEMP" << endl;
-	LOG10_HIGH_TEMP = temperatureBracket(PBAD_HIGH_TEMP_LIMIT, true);
-	cout << "Testing LOW TEMP" << endl;
-	LOG10_LOW_TEMP = temperatureBracket(PBAD_LOW_TEMP_LIMIT, false);
-
-	LOG10_NUM_STEPS = abs(LOG10_LOW_TEMP) + LOG10_HIGH_TEMP;
-
-	cout << "HIGH TEMP = " << LOG10_HIGH_TEMP << " LOW TEMP = " << LOG10_LOW_TEMP <<endl;
-	cout << "NUM OF STEPS = " << LOG10_NUM_STEPS << endl;
-*/
 
 	double pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));
 	double pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
