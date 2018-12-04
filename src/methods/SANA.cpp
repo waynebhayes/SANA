@@ -1875,7 +1875,7 @@ void SANA::findingUpperLowerTemperatureBound(double & LOG10_LOW_TEMP, double & L
 			LOG10_HIGH_TEMP--;
 		}
 
-		LOG10_LOW_TEMP = LOG10_HIGH_TEMP; //We know that LOW TEMP HAS TO BE ATLEAST AS KNOW AS THE HIGH TEMP..Saves us extra computation!
+		LOG10_LOW_TEMP = LOG10_HIGH_TEMP-1; //We know that LOW TEMP HAS TO BE ATLEAST AS KNOW AS THE HIGH TEMP..Saves us extra computation!
 
 		while(true){
 			pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));	
@@ -1895,7 +1895,7 @@ void SANA::findingUpperLowerTemperatureBound(double & LOG10_LOW_TEMP, double & L
 				break;
 			LOG10_LOW_TEMP++;
 		}	
-		LOG10_HIGH_TEMP = LOG10_LOW_TEMP; //We know that LOW TEMP HAS TO BE ATLEAST AS KNOW AS THE HIGH TEMP..Saves us extra computation!
+		LOG10_HIGH_TEMP = LOG10_LOW_TEMP+1; //We know that LOW TEMP HAS TO BE ATLEAST AS KNOW AS THE HIGH TEMP..Saves us extra computation!
 		while(true){
 			pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
 			cout << "Testing High Temperature 10^" << LOG10_HIGH_TEMP << " pBad = " << pBadHigh << endl;				
