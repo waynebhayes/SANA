@@ -65,8 +65,11 @@ void LGraalWrapper::generateGDVFile(int graphNum) {
 
 string LGraalWrapper::generateDummySimilarityFile() {
     string fileName = "tmp/"+G1->getName()+"_"+G2->getName()+"_dummy.logval";
+#if USE_CACHED_FILES
+// By default, USE_CACHED_FILES is 0 and SANA does not cache files. Change USE_CACHED_FILES at your own risk.
     vector<vector<string> > v(0);
     writeDataToFile(v, fileName);
+#endif
     return fileName;
 }
 
@@ -77,7 +80,10 @@ void LGraalWrapper::generateAlignment() {
     // L-GRAAL expects the network with the fewer EDGES to be first, not fewer nodes.  Sometimes it's backwards.
     int swap = (G1->getNumEdges() > G2->getNumEdges());
     string cmd = lgraalProgram + " -Q " + (swap?g2NetworkFile:g1NetworkFile) + " -T " + (swap?g1NetworkFile:g2NetworkFile);
+#if USE_CACHED_FILES
+// By default, USE_CACHED_FILES is 0 and SANA does not cache files. Change USE_CACHED_FILES at your own risk.
     cmd += " -q " + (swap?g2GDVFile:g1GDVFile) + " -t " + (swap?g1GDVFile:g2GDVFile);
+#endif
     cmd += " -B " + similarityFile + " -o " + lgraalOutputFile;
     cmd += " -I " + intToString(iterlimit) + " -L " + to_string(timelimit);
     cmd += " -a " + to_string(alpha);
@@ -99,7 +105,10 @@ Alignment LGraalWrapper::run() {
             sequence.generateBitscoresFile(similarityFile);
         }
         else {
+#if USE_CACHED_FILES
+// By default, USE_CACHED_FILES is 0 and SANA does not cache files. Change USE_CACHED_FILES at your own risk.
             similarityFile = generateDummySimilarityFile();
+#endif
         }
     }
     if (not fileExists(g1GDVFile)) {
