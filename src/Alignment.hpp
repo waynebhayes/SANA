@@ -7,11 +7,13 @@
 #include <iostream>
 #include <cassert>
 #include <algorithm>
-
+#include "arguments/graphLoader.hpp"
 #include "Graph.hpp"
 #include "utils/utils.hpp"
 class MeasureCombination;
 using namespace std;
+
+extern bool graphsSwitched;
 
 class Alignment {
 public:

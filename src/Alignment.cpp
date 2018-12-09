@@ -1,7 +1,9 @@
 #include "Alignment.hpp"
 #include "Graph.hpp"
 #include "utils/utils.hpp"
+
 using namespace std;
+extern bool graphsSwitched;
 
 Alignment::Alignment() {}
 
@@ -222,8 +224,12 @@ typedef unordered_map<uint,string> NodeIndexMap;
 void Alignment::writeEdgeList(Graph const * G1, Graph const * G2, ostream& edgeListStream) const {
     NodeIndexMap mapG1 = G1->getIndexToNodeNameMap();
     NodeIndexMap mapG2 = G2->getIndexToNodeNameMap();
-    for (uint i = 0; i < size(); ++i)
-        edgeListStream << mapG1[i] << "\t" << mapG2[A[i]] << endl;
+    for (uint i = 0; i < size(); ++i){
+        if (graphsSwitched)
+            edgeListStream << mapG2[A[i]] << "\t" << mapG1[i] << endl;
+        else
+            edgeListStream << mapG1[i] << "\t" << mapG2[A[i]] << endl;
+        }
 }
 
 

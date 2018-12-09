@@ -11,7 +11,7 @@
 #include "../utils/Timer.hpp"
 
 using namespace std;
-
+bool graphsSwitched = false;
 /*
 The program requires that there exist the network files in GW format
 in networks/g1name/g1name.gw and networks/g1name/g2name.gw.
@@ -253,6 +253,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         G1 = G2;
         G2 = G3;
         cout << "Switching G1 and G2 because G1 has more nodes than G2. (" << tSwap.elapsedString() << "s)" << endl;
+        graphsSwitched = true;
     }
 
     Timer T2;
