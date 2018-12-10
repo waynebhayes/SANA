@@ -3,7 +3,7 @@
 #include "utils/utils.hpp"
 
 using namespace std;
-extern bool graphsSwitched;
+extern bool _graphsSwitched;
 
 Alignment::Alignment() {}
 
@@ -225,7 +225,7 @@ void Alignment::writeEdgeList(Graph const * G1, Graph const * G2, ostream& edgeL
     NodeIndexMap mapG1 = G1->getIndexToNodeNameMap();
     NodeIndexMap mapG2 = G2->getIndexToNodeNameMap();
     for (uint i = 0; i < size(); ++i){
-        if (graphsSwitched)
+        if (_graphsSwitched)
             edgeListStream << mapG2[A[i]] << "\t" << mapG1[i] << endl;
         else
             edgeListStream << mapG1[i] << "\t" << mapG2[A[i]] << endl;

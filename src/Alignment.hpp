@@ -13,7 +13,7 @@
 class MeasureCombination;
 using namespace std;
 
-extern bool graphsSwitched;
+extern bool _graphsSwitched;
 
 class Alignment {
 public:
