@@ -30,20 +30,25 @@ vector<vector<float> >* LocalMeasure::getSimMatrix() {
 }
 
 void LocalMeasure::loadBinSimMatrix(string simMatrixFileName) {
+#if USE_CACHED_FILES
+// By default, USE_CACHED_FILES is 0 and SANA does not cache files. Change USE_CACHED_FILES at your own risk.
     if (fileExists(simMatrixFileName)) {
         uint n1 = G1->getNumNodes();
         uint n2 = G2->getNumNodes();
         sims = vector<vector<float> > (n1, vector<float> (n2));
         readMatrixFromBinaryFile(sims, simMatrixFileName);
+        return;
     }
-    else {
-        cout << "Computing " << simMatrixFileName << " ... ";
-        Timer T;
-        T.start();
-        initSimMatrix();
-        cout << "Loading binary sim matrix done (" << T.elapsedString() << ")" << endl;
-        writeMatrixToBinaryFile(sims, simMatrixFileName);
-    }
+#endif
+    cout << "Computing " << simMatrixFileName << " ... ";
+    Timer T;
+    T.start();
+    initSimMatrix();
+    cout << "Loading binary sim matrix done (" << T.elapsedString() << ")" << endl;
+#if USE_CACHED_FILES
+// By default, USE_CACHED_FILES is 0 and SANA does not cache files. Change USE_CACHED_FILES at your own risk.
+    writeMatrixToBinaryFile(sims, simMatrixFileName);
+#endif
 }
 
 void LocalMeasure::writeSimsWithNames(string outfile) {
