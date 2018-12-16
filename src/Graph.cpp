@@ -1100,9 +1100,12 @@ vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
     T.start();
     vector<vector<uint> > gdvs = computeGraphletDegreeVectors();
     cout << "Graph::loadGraphletDegreeVectors done (" << T.elapsedString() << ")" << endl;
+#if USE_CACHED_FILES
+// By default, USE_CACHED_FILES is 0 and SANA does not cache files. Change USE_CACHED_FILES at your own risk.
     writeMatrixToBinaryFile(gdvs, gdvsFileName);
     string readeableVersionFile = autogenFilesFolder() + name + "_gdv"+ oss.str() + ".txt";
     writeMatrixToFile(gdvs, readeableVersionFile);
+#endif
     return gdvs;
 }
 
