@@ -65,8 +65,11 @@ void LGraalWrapper::generateGDVFile(int graphNum) {
 
 string LGraalWrapper::generateDummySimilarityFile() {
     string fileName = "tmp/"+G1->getName()+"_"+G2->getName()+"_dummy.logval";
+#if USE_CACHED_FILES
+// By default, USE_CACHED_FILES is 0 and SANA does not cache files. Change USE_CACHED_FILES at your own risk.
     vector<vector<string> > v(0);
     writeDataToFile(v, fileName);
+#endif
     return fileName;
 }
 

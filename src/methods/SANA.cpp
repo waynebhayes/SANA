@@ -2193,9 +2193,12 @@ double SANA::scoreForTInitial(double TInitial) {
 
 string SANA::getFolder(){
     //create (if neccessary) and return the path of the measure combinations respcetive cache folder
+#if USE_CACHED_FILES
+// By default, USE_CACHED_FILES is 0 and SANA does not cache files. Change USE_CACHED_FILES at your own risk.
     stringstream ss;
     ss << "mkdir -p " << "cache-pbad" << "/" << MC->toString() << "/";
     (void)system(ss.str().c_str());
+#endif
     stringstream sf;
     sf << "cache-pbad" << "/" << MC->toString() << "/";
     return sf.str();
@@ -2203,9 +2206,12 @@ string SANA::getFolder(){
 
 string SANA::mkdir(const std::string& file){
     //create (if neccessary) and return the path of a path folder in the cache
+#if USE_CACHED_FILES
+// By default, USE_CACHED_FILES is 0 and SANA does not cache files. Change USE_CACHED_FILES at your own risk.
     stringstream ss;
     ss << "mkdir -p " << getFolder() << file << "/";
     (void)system(ss.str().c_str());
+#endif
     stringstream sf;
     sf << getFolder() << file << "/";
     return sf.str();
