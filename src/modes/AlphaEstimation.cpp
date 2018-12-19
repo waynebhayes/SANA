@@ -61,10 +61,10 @@ void AlphaEstimation::init(string alphaFile) {
         string g1Name = pair[0];
         string g2Name = pair[1];
         if (graphs.count(g1Name) == 0) {
-            graphs[g1Name] = Graph::loadGraph(g1Name);
+            Graph::loadGraph(g1Name, graphs[g1Name]);
         }
         if (graphs.count(g2Name) == 0) {
-            graphs[g2Name] = Graph::loadGraph(g2Name);
+            Graph::loadGraph(g2Name, graphs[g2Name]);
         }
     }
     cout << "graph loading done ("+T.elapsedString()+")" << endl;

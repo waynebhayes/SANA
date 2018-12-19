@@ -192,7 +192,7 @@ void Experiment::loadGraphs(map<string, Graph>& graphs) {
     for (auto pair : networkPairs) {
         for (string graphName : pair) {
             if (graphs.count(graphName) == 0) {
-                graphs[graphName] = Graph::loadGraph(graphName);
+                Graph::loadGraph(graphName, graphs[graphName]);
             }
         }
     }
