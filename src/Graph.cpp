@@ -15,14 +15,14 @@ const int Graph::NODE_TYPE_GENE  = 1;
 const int Graph::NODE_TYPE_MIRNA = 2;
 
 
-Graph Graph::loadGraph(string name, Graph& g) {
+Graph& Graph::loadGraph(string name, Graph& g) {
     //g.maxsize = max;
     g.loadGwFile("networks/"+name+"/"+name+".gw");
     g.name = name;
     return g;
 }
 
-Graph Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHaveTypes){
+Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHaveTypes){
     g.path = path;
     string format = path.substr(path.size()-3);
     if(format == ".gw"){
@@ -38,7 +38,7 @@ Graph Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHav
     return g;
 }
 
-Graph Graph::multGraph(string name, uint path, Graph& g) {
+Graph& Graph::multGraph(string name, uint path, Graph& g) {
     g.multGwFile("networks/"+name+"/"+name+".gw", path);
     cout << "graph made" << endl;
     g.name = name;
