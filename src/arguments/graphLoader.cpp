@@ -383,7 +383,6 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 #if USE_CACHED_FILES
         cout << "Serializing graphs..." << endl;
         thread t1(Graph::serializeGraph, ref(G1), G1.getName(), G1.nodesHaveTypesEnabled, usingLocks);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
         thread t2(Graph::serializeGraph, ref(G2), G2.getName(), G2.nodesHaveTypesEnabled, usingLocks);
         t1.detach();
         t2.detach();
