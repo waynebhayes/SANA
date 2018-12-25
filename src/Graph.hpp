@@ -35,9 +35,9 @@ public:
     static const int NODE_TYPE_MIRNA; // = 2;
 
     void setMaxGraphletSize(double number);
-    static Graph loadGraph(string name);
-    static Graph loadGraphFromPath(string path, string name, bool nodesHaveTypes = false);
-    static Graph multGraph(string name, uint path);
+    static Graph& loadGraph(string name, Graph& g);
+    static Graph& loadGraphFromPath(string path, string name, Graph& g, bool nodesHaveTypes = false);
+    static Graph& multGraph(string name, uint path, Graph& g);
 
     static void loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
 	

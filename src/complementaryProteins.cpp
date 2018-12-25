@@ -77,8 +77,10 @@ void printComplementaryProteinCounts(const Graph& G1, const Graph& G2, const Ali
 }
 
 void printComplementaryProteinCounts(const Alignment& A, bool BioGRIDNetworks) {
-    Graph G1 = BioGRIDNetworks ? Graph::loadGraph("SCerevisiae") : Graph::loadGraph("yeast");
-    Graph G2 = BioGRIDNetworks ? Graph::loadGraph("HSapiens") : Graph::loadGraph("human");
+    Graph G1;
+    Graph G2;
+    BioGRIDNetworks ? Graph::loadGraph("SCerevisiae", G1) : Graph::loadGraph("yeast", G1);
+    BioGRIDNetworks ? Graph::loadGraph("HSapiens", G2) : Graph::loadGraph("human", G2);
     printComplementaryProteinCounts(G1, G2, A, BioGRIDNetworks);
 }
 
@@ -138,8 +140,10 @@ vector<uint> countProteinPairsInNetworks(const Graph& G1, const Graph& G2, bool 
 }
 
 void printProteinPairCountInNetworks(bool BioGRIDNetworks) {
-    Graph G1 = BioGRIDNetworks ? Graph::loadGraph("SCerevisiae") : Graph::loadGraph("yeast");
-    Graph G2 = BioGRIDNetworks ? Graph::loadGraph("HSapiens") : Graph::loadGraph("human");
+    Graph G1;
+    Graph G2;
+    BioGRIDNetworks ? Graph::loadGraph("SCerevisiae", G1) : Graph::loadGraph("yeast", G1);
+    BioGRIDNetworks ? Graph::loadGraph("HSapiens", G2) : Graph::loadGraph("human", G2);
     vector<vector<string> > complementProteins = getProteinPairs("1", BioGRIDNetworks);
     vector<vector<string> > nonComplementProteins = getProteinPairs("0", BioGRIDNetworks);
     unordered_map<uint,string> G1Names = G1.getIndexToNodeNameMap();

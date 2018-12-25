@@ -44,8 +44,8 @@ ParameterEstimation::ParameterEstimation(string parameterEstimationFile) {
 
 void ParameterEstimation::init(string parameterEstimationFile) {
     vector<vector<string> > content = fileToStringsByLines(parameterEstimationFile);
-    G1 = Graph::loadGraph(content[0][0]);
-    G2 = Graph::loadGraph(content[0][1]);
+    Graph::loadGraph(content[0][0], G1);
+    Graph::loadGraph(content[0][1], G2);
     measureName = content[1][0];
     measure = Experiment::loadMeasure(&G1, &G2, measureName);
 
