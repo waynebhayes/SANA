@@ -380,7 +380,6 @@ string extractFileName(string s) {
     int pos = s.size()-1;
     while (pos >= 0 and s[pos] != '/') pos--;
     s = s.substr(pos+1);
-    //remove suffix starting with '.'
     return s;
 }
 
@@ -388,8 +387,10 @@ string extractFileName(string s) {
 string extractFileNameNoExtension(string s) {
     s = extractFileName(s);
     //remove suffix starting with '.'
-    uint pos = 0;
-    while (pos < s.size() and s[pos] != '.') pos++;
+    int pos = s.size() - 1;
+    while (pos >= 0 and s[pos] != '.') pos--; //gives position of last "."
+    string suffix = s.substr(pos + 1);
+    if (suffix != "el" and suffix != "gw") throw runtime_error("files must be of type el or gw"); //terminate SANA if invalid file types used
     s = s.substr(0, pos);
     return s;
 }
