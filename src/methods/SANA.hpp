@@ -95,6 +95,9 @@ private:
     double lowerTBound = 0;
     double upperTBound = 0;
 
+    //store whether or not most recent move was bad
+    bool wasBadMove = false;
+
     //data structures for the networks
     uint n1;
     uint n2;
