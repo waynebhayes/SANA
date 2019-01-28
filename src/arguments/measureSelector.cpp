@@ -17,6 +17,7 @@
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 #include "../measures/SquaredEdgeScore.hpp"
 #include "../measures/TriangleCorrectness.hpp"
+#include "../measures/EdgeExposure.hpp"
 
 #include "../measures/localMeasures/NodeCount.hpp"
 #include "../measures/localMeasures/NodeDensity.hpp"
@@ -98,7 +99,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableDoubleMeasures = {
         "ec","s3","ics","tc","sec","wec","nodec","noded","edgec","edged", "go","importance",
-        "sequence","graphlet","graphletlgraal", "graphletcosine", "spc", "nc","mec", "ewec", "ses"
+        "sequence","graphlet","graphletlgraal", "graphletcosine", "spc", "nc","mec", "ewec", "ses", "ee"
     };
     double total = 0;
     for (uint i = 0; i < optimizableDoubleMeasures.size(); i++) 
@@ -197,6 +198,9 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 
     m = new SquaredEdgeScore(&G1, &G2);
     M.addMeasure(m, getWeight("ses", G1, G2, args));
+	
+	m = new EdgeExposure(&G1, &G2);
+    M.addMeasure(m, getWeight("ee", G1, G2, args));
 
     m = new InducedConservedStructure(&G1, &G2);
     M.addMeasure(m);
