@@ -17,7 +17,7 @@ EdgeExposure::EdgeExposure(Graph* G1, Graph* G2) : Measure(G1, G2, "ee") {
     }
 	
 	char *m = getenv((char*)"MAX_EDGE");
-    if(s)
+    if(m)
         assert(1==sscanf(m, "%u",&MAX_EDGE));
     else
     {
