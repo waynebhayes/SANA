@@ -1263,7 +1263,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 #ifdef MULTI_PAIRWISE
         newCurrentScore += mecWeight * (newAligEdges / (g1WeightedEdges + g2WeightedEdges));
         newCurrentScore += sesWeight * newSquaredAligEdges / SquaredEdgeScore::getDenom();
-		newCurrentScore += eeWeight * (1 - (newExposedEdges / EdgeExposure::getDenom()));
+		newCurrentScore += eeWeight * (1 - ((newExposedEdges - EdgeExposure::getMaxEdge()) / EdgeExposure::getDenom()));
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
