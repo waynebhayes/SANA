@@ -15,7 +15,7 @@
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 
 #ifdef MULTI_PAIRWISE
-#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges
+#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdges
 #else
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back
 #endif
@@ -177,7 +177,7 @@ private:
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A);
-    bool scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges);
+    bool scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdges);
     double ecWeight;
     double s3Weight;
     double icsWeight;
@@ -187,6 +187,7 @@ private:
     double localWeight;
     double mecWeight;
     double sesWeight;
+	double eeWeight;
     double ewecWeight;
     double TCWeight;
 
@@ -228,6 +229,12 @@ private:
     int squaredAligEdges;
     int squaredAligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
     int squaredAligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
+	
+	// to evaluate EE incrementally
+    bool needExposedEdges;
+    int exposedEdges;
+    int exposedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
+    int exposedEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
     //to evaluate EC incrementally
     bool needSec;
@@ -337,7 +344,7 @@ private:
     void initializeParetoFront();
     vector<double> getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum,
                                      double newLocalScoreSum, double newWecSum, double newNcSum,
-                                     double newEwecSum, double newSquaredAligEdges);
+                                     double newEwecSum, double newSquaredAligEdges, double newExposedEdges);
     bool dominates(vector<double> &left, vector<double> &right);
     void printParetoFront(const string &fileName);
     void deallocateParetoData();
@@ -358,6 +365,7 @@ private:
     unordered_map<vector<uint>*, vector<uint>*> storedUnassignedgenesG2;
     unordered_map<vector<uint>*, int> storedAligEdges;
     unordered_map<vector<uint>*, int> storedSquaredAligEdges;
+	unordered_map<vector<uint>*, int> storedExposedEdges;
     unordered_map<vector<uint>*, int> storedInducedEdges;
     unordered_map<vector<uint>*, double> storedLocalScoreSum;
     unordered_map<vector<uint>*, double> storedWecSum;
@@ -386,6 +394,7 @@ private:
         map<string, double> *localScoreSumMap;
         int aligEdges;
         int squaredAligEdges;
+		int exposedEdges;
         int inducedEdges;
         double wecSum;
         double ewecSum;
@@ -443,6 +452,7 @@ private:
 
     int aligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     int squaredAligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
+	int exposedEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     int inducedEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     double TCIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     double localScoreSumIncChangeOp(Job &job, vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
@@ -454,6 +464,7 @@ private:
     int aligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double TCIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     int squaredAligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
+	int exposedEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double WECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double EWECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     int ncIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
@@ -462,7 +473,7 @@ private:
 
     bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum, 
                          double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, 
-                         double newEwecSum, double newSquaredAligEdges);
+                         double newEwecSum, double newSquaredAligEdges, double newExposedEdges);
 
 
     vector<double> translateScoresToVector(Job &job);

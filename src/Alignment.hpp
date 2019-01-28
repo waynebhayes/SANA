@@ -52,6 +52,7 @@ public:
 
     uint numAlignedEdges(const Graph& G1, const Graph& G2) const;
     int numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const;
+    int numExposedEdges(const Graph& G1, const Graph& G2) const;
 
     //common subgraph: graph with same nodes as G1, but with only the edges preserved by A
     Graph commonSubgraph(const Graph& G1, const Graph& G2) const;

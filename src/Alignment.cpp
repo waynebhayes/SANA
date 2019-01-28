@@ -284,6 +284,56 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
     return count;
 }
 
+int Alignment::numExposedEdges(const Graph& G1, const Graph& G2) const {
+    int ret = 0;
+    const uint n2 = G2.getNumNodes();
+	unordered_set<uint> holes(n2);
+	unordered_set<uint>::iterator iter;
+	bool hole1 = false;
+	bool hole2 = false;
+
+    Matrix<MATRIX_UNIT> G2Matrix;
+    G2.getMatrix(G2Matrix);
+    
+    for (uint i = 0; i < n2; ++i)
+    {
+		iter = find(holes.begin(), holes.end(), i);
+		if (iter != holes.end())
+		{
+			hole1 = true; // hole1 exposure already counted
+		}
+		
+		for(uint j = 0; j < i; ++j)
+		{
+			iter = find(holes.begin(), holes.end(), j);
+			if (iter != holes.end())
+			{
+				hole2 = true; // hole2 exposure already counted
+			}
+			
+			if (G2Matrix[i][j] && (hole1 && !hole2)) // hole1 counted, but hole2 not yet counted
+			{
+				++ret;
+				holes.insert(j);
+			}
+			else if (G2Matrix[i][j] && (!hole1 && hole2)) // hole2 counted, but hole1 not yet counted
+			{
+				++ret;
+				holes.insert(i);
+				hole1 = true;
+			}
+			else if (G2Matrix[i][j] && (!hole1 && !hole2)) // neither hole counted
+			{
+				ret += 2;
+				holes.insert(i);
+				holes.insert(j);
+				hole1 = true;
+			}
+		}
+    }
+    return ret;
+}
+
 Graph Alignment::commonSubgraph(const Graph& G1, const Graph& G2) const {
     uint n = G1.getNumNodes();
 

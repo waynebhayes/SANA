@@ -46,6 +46,7 @@ MEASURES_SRCS = 							\
 	src/measures/SymmetricSubstructureScore.cpp 			\
         src/measures/SymmetricEdgeCoverage.cpp 				\
         src/measures/SquaredEdgeScore.cpp 				\
+        src/measures/EdgeExposure.cpp 				\
 	src/measures/WeightedEdgeConservation.cpp 			\
 	src/measures/localMeasures/EdgeCount.cpp 			\
 	src/measures/localMeasures/EdgeDensity.cpp 			\
