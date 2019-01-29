@@ -287,22 +287,37 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
 #if MULTI_PAIRWISE
 int Alignment::numExposedEdges(const Graph& G1, const Graph& G2) const {
     int ret = 0;
+    const uint n1 = G1.getNumNodes();
     const uint n2 = G2.getNumNodes();
 
+    Matrix<MATRIX_UNIT> G1Matrix;
     Matrix<MATRIX_UNIT> G2Matrix;
+    G1.getMatrix(G1Matrix);
     G2.getMatrix(G2Matrix);
 	
-	for (uint i = 0; i < n2; ++i)
+	vector<uint> whichPeg(n2, n1); // value of n1 represents not used
+	for (uint i = 0; i < n1; ++i)
 	{
-		for (uint j = 0; j < i; ++j)
-		{
-			if (G2Matrix[i][j])
-			{
-				++ret;
-			}
-		}
+		//assert(0 <= A[i] && A[i] < n2);
+		whichPeg[A[i]] = i; // inverse of the alignment
 	}
-    /*
+
+	for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j)
+	{
+		bool exposed = (G2Matrix[i][j] > 0);
+		if(!exposed && whichPeg[i] < n1 && whichPeg[j] < n1)
+		{
+			if(G1Matrix[whichPeg[i]][whichPeg[j]])
+			{
+				//assert(G1Matrix[whichPeg[j]][whichPeg[i]]);
+				exposed = true;
+			} else
+				; // assert(!G1Matrix[whichPeg[j]][whichPeg[i]]);
+		}
+		if(exposed) ret++;
+	}
+		
+#if 0
 	unordered_set<uint> holes(n2);
 	unordered_set<uint>::iterator iter;
 	bool hole1 = false;
@@ -343,7 +358,8 @@ int Alignment::numExposedEdges(const Graph& G1, const Graph& G2) const {
 				hole1 = true;
 			}
 		}
-    }*/
+    }
+#endif
     return ret;
 }
 #endif

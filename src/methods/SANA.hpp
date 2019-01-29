@@ -15,7 +15,7 @@
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 
 #ifdef MULTI_PAIRWISE
-#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdges
+#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdgesNumer
 #else
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back
 #endif
@@ -177,7 +177,7 @@ private:
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A);
-    bool scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdges);
+    bool scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer);
     double ecWeight;
     double s3Weight;
     double icsWeight;
@@ -232,7 +232,7 @@ private:
 	
 	// to evaluate EE incrementally
     bool needExposedEdges;
-    int exposedEdges;
+    int exposedEdgesNumer;
     int exposedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
     int exposedEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
@@ -344,7 +344,7 @@ private:
     void initializeParetoFront();
     vector<double> getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum,
                                      double newLocalScoreSum, double newWecSum, double newNcSum,
-                                     double newEwecSum, double newSquaredAligEdges, double newExposedEdges);
+                                     double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer);
     bool dominates(vector<double> &left, vector<double> &right);
     void printParetoFront(const string &fileName);
     void deallocateParetoData();
@@ -365,7 +365,7 @@ private:
     unordered_map<vector<uint>*, vector<uint>*> storedUnassignedgenesG2;
     unordered_map<vector<uint>*, int> storedAligEdges;
     unordered_map<vector<uint>*, int> storedSquaredAligEdges;
-	unordered_map<vector<uint>*, int> storedExposedEdges;
+	unordered_map<vector<uint>*, int> storedExposedEdgesNumer;
     unordered_map<vector<uint>*, int> storedInducedEdges;
     unordered_map<vector<uint>*, double> storedLocalScoreSum;
     unordered_map<vector<uint>*, double> storedWecSum;
@@ -394,7 +394,7 @@ private:
         map<string, double> *localScoreSumMap;
         int aligEdges;
         int squaredAligEdges;
-		int exposedEdges;
+		int exposedEdgesNumer;
         int inducedEdges;
         double wecSum;
         double ewecSum;
@@ -473,7 +473,7 @@ private:
 
     bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum, 
                          double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, 
-                         double newEwecSum, double newSquaredAligEdges, double newExposedEdges);
+                         double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer);
 
 
     vector<double> translateScoresToVector(Job &job);

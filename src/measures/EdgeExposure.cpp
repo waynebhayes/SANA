@@ -26,6 +26,8 @@ EdgeExposure::EdgeExposure(Graph* G1, Graph* G2) : Measure(G1, G2, "ee") {
     }
 	assert(EDGE_SUM >= MAX_EDGE);
 	EdgeExposure::denom = EDGE_SUM - MAX_EDGE;
+	cout << "EdgeExposure: MAX_EDGE is " << MAX_EDGE << " ; EDGE_SUM is " << EDGE_SUM <<
+		 " DENOM is " << EdgeExposure::denom << endl;
 }
 
 EdgeExposure::~EdgeExposure() {
@@ -42,7 +44,8 @@ unsigned EdgeExposure::getMaxEdge()
 }
 
 double EdgeExposure::eval(const Alignment& A) {
-	int ne = A.numExposedEdges(*G1, *G2);
-	assert(ne >= MAX_EDGE && ne <= EDGE_SUM);
-    return (double) 1 - ((ne - MAX_EDGE) / EdgeExposure::getDenom());
+	uint ne = A.numExposedEdges(*G1, *G2);
+	assert(ne >= MAX_EDGE);
+	assert(ne <= EDGE_SUM); // cerr << "WTF, ne = " << ne << " and EDGE_SUM is " << EDGE_SUM << endl;
+    return 1 - ((ne - MAX_EDGE) / (double)EdgeExposure::getDenom());
 }
