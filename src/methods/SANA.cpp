@@ -1529,7 +1529,7 @@ int SANA::exposedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     const uint n = G1AdjLists[source].size();
     for (uint i = 0; i < n; ++i) {
         neighbor = G1AdjLists[source][i];
-		if (G2Matrix[oldTarget][(*A)[neighbor]] == 1)
+		if (G2Matrix[oldTarget][(*A)[neighbor]] == 0)
 		{
 			--ret;
 		}
@@ -1548,7 +1548,7 @@ int SANA::exposedEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint ne
     const uint n = G1AdjLists[source].size();
     for (uint i = 0; i < n; ++i) {
         neighbor = G1AdjLists[source][i];
-		if (G2Matrix[oldTarget][(*A)[neighbor]] == 1)
+		if (G2Matrix[oldTarget][(*A)[neighbor]] == 0)
 		{
 			--ret;
 		}
@@ -1567,7 +1567,7 @@ int SANA::exposedEdgesIncSwapOp(uint source1, uint source2, uint target1, uint t
     uint i = 0;
     for (; i < n; ++i) {
         neighbor = G1AdjLists[source1][i];
-        if (G2Matrix[target1][(*A)[neighbor]] == 1)
+        if (G2Matrix[target1][(*A)[neighbor]] == 0)
 		{
 			--ret;
 		}
@@ -1579,7 +1579,7 @@ int SANA::exposedEdgesIncSwapOp(uint source1, uint source2, uint target1, uint t
     const uint m = G1AdjLists[source2].size();
     for (i = 0; i < m; ++i) {
         neighbor = G1AdjLists[source2][i];
-        if (G2Matrix[target2][(*A)[neighbor]] == 1)
+        if (G2Matrix[target2][(*A)[neighbor]] == 0)
 		{
 			--ret;
 		}
