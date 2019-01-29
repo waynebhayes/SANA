@@ -573,7 +573,7 @@ void SANA::initDataStructures(const Alignment& startA) {
 	
 	if (needExposedEdges)
 	{
-		exposedEdges = startA.numExposedEdges(*G1, *G2);
+		exposedEdges = startA.numExposedEdges(*G1, *G2) - EdgeExposure::getMaxEdge();
 	}
 
     if (needInducedEdges) {
@@ -1260,7 +1260,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 #ifdef MULTI_PAIRWISE
         newCurrentScore += mecWeight * (newAligEdges / (g1WeightedEdges + g2WeightedEdges));
         newCurrentScore += sesWeight * newSquaredAligEdges / SquaredEdgeScore::getDenom();
-		newCurrentScore += eeWeight * (1 - ((newExposedEdges - EdgeExposure::getMaxEdge()) / EdgeExposure::getDenom()));
+		newCurrentScore += eeWeight * (1 - ((newExposedEdges) / EdgeExposure::getDenom()));
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
