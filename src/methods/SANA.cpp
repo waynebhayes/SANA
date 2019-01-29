@@ -1099,9 +1099,6 @@ void SANA::performChange(int type) {
     double newEwecSum          = (needEwec) ?  ewecSum + EWECIncChangeOp(source, oldTarget, newTarget) : -1;
     double newNcSum            = (needNC) ? ncSum + ncIncChangeOp(source, oldTarget, newTarget) : -1;
 
-    
-
-
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
         newLocalScoreSumMap = map<string, double>(*localScoreSumMap);
@@ -2646,7 +2643,6 @@ void SANA::prune(string& startAligName) {
     assert(format == ".align"); // currently only edgelist format is supported
 
 
-    
     Alignment align =  Alignment::loadEdgeList(G1, G2, startAligName);
 #ifdef REINDEX
     if(G1->hasNodeTypes())

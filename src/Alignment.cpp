@@ -284,6 +284,7 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
     return count;
 }
 
+#if MULTI_PAIRWISE
 int Alignment::numExposedEdges(const Graph& G1, const Graph& G2) const {
     int ret = 0;
     const uint n2 = G2.getNumNodes();
@@ -333,6 +334,7 @@ int Alignment::numExposedEdges(const Graph& G1, const Graph& G2) const {
     }
     return ret;
 }
+#endif
 
 Graph Alignment::commonSubgraph(const Graph& G1, const Graph& G2) const {
     uint n = G1.getNumNodes();

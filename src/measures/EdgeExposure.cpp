@@ -24,6 +24,7 @@ EdgeExposure::EdgeExposure(Graph* G1, Graph* G2) : Measure(G1, G2, "ee") {
         cout << "Warning: MAX_EDGE should be an environment variables; setting to 1 for now\n";
         MAX_EDGE = 1;
     }
+	assert(EDGE_SUM >= MAX_EDGE);
 	EdgeExposure::denom = EDGE_SUM - MAX_EDGE;
 }
 
@@ -41,5 +42,7 @@ unsigned EdgeExposure::getMaxEdge()
 }
 
 double EdgeExposure::eval(const Alignment& A) {
-    return (double) 1 - ((A.numExposedEdges(*G1, *G2) - MAX_EDGE) / EdgeExposure::getDenom());
+	int ne = A.numExposedEdges(*G1, *G2);
+	assert(ne >= MAX_EDGE && ne <= EDGE_SUM);
+    return (double) 1 - ((ne - MAX_EDGE) / EdgeExposure::getDenom());
 }

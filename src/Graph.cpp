@@ -276,6 +276,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         edgeList[i][1] = index2;
 #ifdef MULTI_PAIRWISE
         edgeList[i][2] = stoi(edgeValue);
+        assert(edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
 #endif
     }
     for(auto itr : adjMatrix) { delete itr.second; }
