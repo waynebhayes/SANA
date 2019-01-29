@@ -288,14 +288,26 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
 int Alignment::numExposedEdges(const Graph& G1, const Graph& G2) const {
     int ret = 0;
     const uint n2 = G2.getNumNodes();
+
+    Matrix<MATRIX_UNIT> G2Matrix;
+    G2.getMatrix(G2Matrix);
+	
+	for (uint i = 0; i < n2; ++i)
+	{
+		for (uint j = 0; j < i; ++j)
+		{
+			if (G2Matrix[i][j])
+			{
+				++ret;
+			}
+		}
+	}
+    /*
 	unordered_set<uint> holes(n2);
 	unordered_set<uint>::iterator iter;
 	bool hole1 = false;
 	bool hole2 = false;
-
-    Matrix<MATRIX_UNIT> G2Matrix;
-    G2.getMatrix(G2Matrix);
-    
+	
     for (uint i = 0; i < n2; ++i)
     {
 		iter = find(holes.begin(), holes.end(), i);
@@ -331,7 +343,7 @@ int Alignment::numExposedEdges(const Graph& G1, const Graph& G2) const {
 				hole1 = true;
 			}
 		}
-    }
+    }*/
     return ret;
 }
 #endif
