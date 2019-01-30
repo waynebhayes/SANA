@@ -570,12 +570,12 @@ void SANA::initDataStructures(const Alignment& startA) {
     if (needSquaredAligEdges) {
         squaredAligEdges = startA.numSquaredAlignedEdges(*G1, *G2);
     }
-	
+#if MULTI_PAIRWISE
 	if (needExposedEdges)
 	{
 		exposedEdgesNumer = startA.numExposedEdges(*G1, *G2) - EdgeExposure::getMaxEdge();
 	}
-
+#endif
     if (needInducedEdges) {
         inducedEdges = G2->numNodeInducedSubgraphEdges(*A);
     }

@@ -44,8 +44,12 @@ unsigned EdgeExposure::getMaxEdge()
 }
 
 double EdgeExposure::eval(const Alignment& A) {
+#if MULTI_PAIRWISE
 	uint ne = A.numExposedEdges(*G1, *G2);
 	assert(ne >= MAX_EDGE);
 	assert(ne <= EDGE_SUM); // cerr << "WTF, ne = " << ne << " and EDGE_SUM is " << EDGE_SUM << endl;
     return 1 - ((ne - MAX_EDGE) / (double)EdgeExposure::getDenom());
+#else
+	return 0.0;
+#endif
 }
