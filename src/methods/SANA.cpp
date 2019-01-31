@@ -1098,7 +1098,7 @@ void SANA::performChange(int type) {
 
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
+    bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer);
 
     if(wasBadMove && !makeChange)
     {
@@ -2678,7 +2678,7 @@ void SANA::performChange(Job &job, int type) {
     }
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(job, newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
+    bool makeChange = scoreComparison(job, newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer);
 
 
     if(wasBadMove && !makeChange)
@@ -2774,7 +2774,7 @@ void SANA::performSwap(Job &job, int type) {
     }
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(job, newAligEdges, info.inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges);
+    bool makeChange = scoreComparison(job, newAligEdges, info.inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer);
     if(wasBadMove && !makeChange)
     {
         #ifdef CORES
