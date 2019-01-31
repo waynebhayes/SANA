@@ -24,6 +24,7 @@ Sample Run (assuming shadow is the compiled binary)
 #include "../../src/utils/cereal/types/utility.hpp"
 #include "../../src/utils/cereal/archives/binary.hpp"
 #include "../../src/utils/cereal/access.hpp"
+#include "../../src/utils/Matrix.hpp"
 
 
 typedef std::pair<std::string, std::string> StringPair;
@@ -316,6 +317,10 @@ void output_GW_Format( std::vector<std::unordered_map<int, int>> &adjList){
                 throw std::runtime_error("Lost an edge");
                 continue;
             }
+            if ( it->second > (1L << 8*sizeof(MATRIX_UNIT))-10 ) {
+                throw std::runtime_error("edge value too close to MATRIX_UNIT capacity, is it uchar or ushort?");
+                continue;
+            }
 	    // Stupid LEDA numbers nodes from 1, so +1 to the iterators.
             std::cout << i+1 << ' ' << it->first+1 << " 0 |{" << it->second << "}|" << std::endl;
         }
@@ -335,6 +340,10 @@ void output_el_Format( std::vector<std::unordered_map<int, int>> &adjList,
                 // We only assigned edge value from lower index to higher index nodes
                 std::cerr << it->first << " " << i << std::endl;
                 throw std::runtime_error("Lost an edge");
+                continue;
+            }
+            if ( it->second > (1L << 8*sizeof(MATRIX_UNIT))-10 ) {
+                throw std::runtime_error("edge value too close to MATRIX_UNIT capacity, is it uchar or ushort?");
                 continue;
             }
             

@@ -6,9 +6,10 @@
 #include <vector>
 
 using namespace std;
+typedef unsigned char uchar;
 
 #ifdef MULTI_PAIRWISE
-    #define MATRIX_UNIT ushort
+    #define MATRIX_UNIT uchar // uchar allows 255 networks, ushort allows up to 65535 of them
 #else
     #define MATRIX_UNIT bool
 #endif
