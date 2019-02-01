@@ -1534,10 +1534,14 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 
 int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int res = 0;
-    const uint n = G1AdjLists[source].size();
-    uint neighbor;
-    for (uint i = 0; i < n; ++i) {
-        neighbor = G1AdjLists[source][i];
+
+    vector<uint> v = G1AdjLists[source];
+    if(G1->hasSelfLoop(source)) {
+        if (G2->hasSelfLoop(oldTarget)) res--;
+        if (G2->hasSelfLoop(newTarget)) res++;
+        v.erase(std::remove(v.begin(), v.end(), source), v.end());
+    }
+    for (uint neighbor : v) {
         res -= G2Matrix[oldTarget][(*A)[neighbor]];
         res += G2Matrix[newTarget][(*A)[neighbor]];
     }
@@ -1546,25 +1550,32 @@ int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
 
 int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     int res = 0;
-    const uint n = G1AdjLists[source1].size();
-    uint neighbor;
-    uint i = 0;
-    for (; i < n; ++i) {
-        neighbor = G1AdjLists[source1][i];
+
+    vector<uint> v1 = G1AdjLists[source1];
+    if(G1->hasSelfLoop(source1)) {
+        if (G2->hasSelfLoop(target1)) res--;
+        if (G2->hasSelfLoop(target2)) res++;
+        v1.erase(std::remove(v1.begin(), v1.end(), source1), v1.end());
+    }
+    for(uint neighbor : v1) {
         res -= G2Matrix[target1][(*A)[neighbor]];
         res += G2Matrix[target2][(*A)[neighbor]];
     }
-    const uint m = G1AdjLists[source2].size();
-    for (i = 0; i < m; ++i) {
-        neighbor = G1AdjLists[source2][i];
+
+    vector<uint> v2 = G1AdjLists[source2];
+    if(G1->hasSelfLoop(source2)) {
+        if (G2->hasSelfLoop(target2)) res--;
+        if (G2->hasSelfLoop(target1)) res++;
+        v2.erase(std::remove(v2.begin(), v2.end(), source2), v2.end());
+    }
+    for(uint neighbor : v2) {
         res -= G2Matrix[target2][(*A)[neighbor]];
         res += G2Matrix[target1][(*A)[neighbor]];
     }
-    //address case swapping between adjacent nodes with adjacent images:
 #ifdef MULTI_PAIRWISE
     res += (-1 << 1) & (G1Matrix[source1][source2] + G2Matrix[target1][target2]);
 #else
-    res += 2*(G1Matrix[source1][source2] & G2Matrix[target1][target2]);
+    res += 2 * (G1Matrix[source1][source2] & G2Matrix[target1][target2]);
 #endif
     return res;
 }
