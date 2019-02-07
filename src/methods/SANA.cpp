@@ -315,7 +315,7 @@ Alignment SANA::run() {
             align = hillClimbingAlignment(align, (long long int)(10000000)); //arbitrarily chosen, probably too big.
             cout << hill.elapsedString() << endl;
         }
-#define PRINT_CORES 1
+#define PRINT_CORES 0
 #define MIN_CORE_SCORE 1e-3 // 1e-4 gives files 2G long, 1e-3 gives just a few MB.
 #if PRINT_CORES
 #ifndef CORES
