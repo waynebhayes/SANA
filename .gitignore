@@ -2,6 +2,7 @@
 *~
 sana
 sana_dbg
+sana.exe
 
 _objs/
 matrices/
@@ -54,6 +55,7 @@ wrappedAlgorithms/*/*.alig*
 #debug files
 callgrind.out.*
 core*
+coreFrequencies.txt
 
 #Vi/vim swp files
 **.swp
