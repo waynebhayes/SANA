@@ -1210,16 +1210,11 @@ void SANA::performSwap(int type) {
         weightedCoreFreq[source2][(*A)[source2]] += pBad;
         totalCoreWeight[source2] += pBad;
 
-        if(wasBadMove)
-        {
-            coreFreq[source2][(*A)[source2]]++;
-            coreFreq[source1][(*A)[source1]]++;
-        }
-        else
-        {
-            coreFreq[source2][(*A)[source1]]++;
-            coreFreq[source1][(*A)[source2]]++;
-        }
+        uint betterDest1 = wasBadMove ? source2 : source1;
+        uint betterDest2 = wasBadMove ? source1 : source2;
+
+        coreFreq[source2][(*A)[betterDest2]]++;
+        coreFreq[source1][(*A)[betterDest1]]++;
 
     #endif
 
@@ -2876,16 +2871,11 @@ void SANA::performSwap(Job &job, int type) {
         weightedCoreFreq[source2][(*A)[source2]] += pBad;
         totalCoreWeight[source2] += pBad;
 
-        if(wasBadMove)
-        {
-            coreFreq[source2][(*A)[source2]]++;
-            coreFreq[source1][(*A)[source1]]++;
-        }
-        else
-        {
-            coreFreq[source2][(*A)[source1]]++;
-            coreFreq[source1][(*A)[source2]]++;
-        }
+        uint betterDest1 = wasBadMove ? source2 : source1;
+        uint betterDest2 = wasBadMove ? source1 : source2;
+
+        coreFreq[source2][(*A)[betterDest2]]++;
+        coreFreq[source1][(*A)[betterDest1]]++;
 
     #endif
     if (makeChange) {
