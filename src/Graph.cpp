@@ -24,12 +24,16 @@ Graph& Graph::loadGraph(string name, Graph& g) {
 
 Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHaveTypes){
     g.path = path;
-    string format = path.substr(path.size()-3);
+    string format = path.substr(path.find_last_of('.'));
     if(format == ".gw"){
         g.loadGwFile(path);
         g.name = name;
     }
     else if(format == ".el"){
+        Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
+    }
+    else if(format == ".elw"){
+        g.hasFloatWeight = true;
         Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
     }
     else
@@ -216,6 +220,10 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     vector<vector<uint>> edgeList(vecLen, vector<uint> (3));
 #else
     vector<vector<uint>> edgeList(vecLen, vector<uint> (2));
+    vector<float> floatWeightList;
+    if (g.hasFloatWeight) {
+        floatWeightList = vector<float>(vecLen);
+    }
 #endif
     stringstream errorMsg;
     string edgeValue;
@@ -235,7 +243,11 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             throw runtime_error("File not in edge-list format: "+fin);
         }
 #else
-        if (edges[i].size() != 2) {
+        if (edges[i].size() == 3 && g.hasFloatWeight) {
+            // Get float weight
+            edgeValue = edges[i][2];
+        }
+        else if (edges[i].size() != 2) {
             throw runtime_error("File not in edge-list format: "+fin);
         }
 #endif
@@ -274,6 +286,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         index2 = nodeName2IndexMap[node2s];
         edgeList[i][0] = index1;
         edgeList[i][1] = index2;
+        if (g.hasFloatWeight) {
+            floatWeightList[i] = stof(edgeValue);
+        }
 #ifdef MULTI_PAIRWISE
         edgeList[i][2] = stoi(edgeValue);
         assert(edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
@@ -285,6 +300,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     const size_t nodeSize = nodes.size();
     g.adjLists = vector<vector<uint> > (nodeSize, vector<uint>(0));
     g.matrix = Matrix<MATRIX_UNIT>(nodeSize);
+    if (g.hasFloatWeight) {
+        g.floatWeights = Matrix<float>(nodeSize);
+    }
     uint node1;
     uint node2;
     const size_t edgeListLen = edgeList.size();
@@ -311,6 +329,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             g.matrix[node1][node2] = g.matrix[node2][node1] = edgeList[i][2];
         #else
             g.matrix[node1][node2] = g.matrix[node2][node1] = true;
+            if (g.hasFloatWeight) {
+                g.floatWeights[node1][node2] = g.floatWeights[node2][node1] = floatWeightList[i];
+            }
         #endif
         g.adjLists[node1].push_back(node2);
         g.adjLists[node2].push_back(node1);
@@ -512,6 +533,21 @@ uint Graph::getNumConnectedComponents() const {
 
 void Graph::getMatrix(Matrix<MATRIX_UNIT>& matrixCopy) const {
     matrixCopy = matrix;
+}
+
+Matrix<MATRIX_UNIT>& Graph::getMatrix() {
+    return matrix;
+}
+
+const vector<vector<uint>>& Graph::getAdjLists() const {
+    return adjLists;
+}
+const vector<vector<uint>>& Graph::getEdgeList() const {
+    return edgeList;
+}
+
+Matrix<float>& Graph::getFloatWeights() {
+    return floatWeights;
 }
 
 void Graph::getAdjLists(vector<vector<uint> >& adjListsCopy) const {

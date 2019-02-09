@@ -97,6 +97,8 @@ private:
     uint n1;
     uint n2;
     double g1Edges; //stored as double because it appears in division
+    uint pairsCount; // number of combinations of (g1_node_x, g1_node_y) including
+                     // a pair that includes the same node (g1_node_x, g1_node_x)
 #ifdef MULTI_PAIRWISE
     double g1WeightedEdges;
     double g2WeightedEdges;
@@ -106,6 +108,9 @@ private:
     Matrix<MATRIX_UNIT> G2Matrix;
     vector<vector<uint> > G1AdjLists;
     vector<vector<uint> > G2AdjLists;
+
+    Matrix<float>& G1FloatWeights;
+    Matrix<float>& G2FloatWeights;
 
     void initTau(void);
     vector<uint> unLockedNodesG1;
@@ -177,8 +182,9 @@ private:
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A);
-    bool scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer);
+    bool scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum);
     double ecWeight;
+    double edWeight;
     double s3Weight;
     double icsWeight;
     double wecWeight;
@@ -223,6 +229,11 @@ private:
     int aligEdges;
     int aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
     int aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
+
+    // to evaluate ED (edge difference score) incrementally
+    bool needED;
+    double edSum;
+    double edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarget);
 
     // to evaluate SES incrementally
     bool needSquaredAligEdges;

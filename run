@@ -1,0 +1,8 @@
+make clean
+make -j10
+#./sana -fg1 ~/sanaspace/Syn.elw -fg2 ~/sanaspace/Syn2.elw
+#./sana -fg1 ~/sanaspace/Syn.elw -fg2 ~/sanaspace/Syn.elw
+./sana -fg1 ~/sanaspace/HSapiens.elw -fg2 ~/sanaspace/HSapiens.elw -ed 1 -s3 0
+#./sana -fg1 ~/sanaspace/SPombe.elw -fg2 ~/sanaspace/SPombe.elw 
+#./sana -fg1 ~/sanaspace/SPombe.elw -fg2 ~/sanaspace/SPombe.elw -ed 1 -s3 0
+
