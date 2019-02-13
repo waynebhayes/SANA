@@ -231,7 +231,7 @@ private:
     int aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
     // to evaluate ED (edge difference score) incrementally
-    bool needED;
+    bool needEd;
     double edSum;
     double edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarget);
 

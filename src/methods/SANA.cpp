@@ -80,9 +80,29 @@ SANA::SANA(Graph* G1, Graph* G2,
            G1FloatWeights(G1->getFloatWeights()),
            G2FloatWeights(G2->getFloatWeights())
 {
+
+
+
     //data structures for the networks
     n1              = G1->getNumNodes();
     n2              = G2->getNumNodes();
+
+    double sum1 = 0;
+    for (uint i = 0; i < n1; ++i) 
+        for (uint j = 0; j < n1; ++j)
+            sum1 += G1->getFloatWeights()[i][j];
+
+    cout << "!!!!!! " << n1 << endl;
+    cout << "!!!!!! " << n2 << endl;
+    double sum2 = 0;
+    for (uint i = 0; i < n2; ++i) 
+        for (uint j = 0; j < n2; ++j) 
+            sum2 += G2->getFloatWeights()[i][j];
+
+
+    cout << "<<<<<<<< " << sum1 << endl;
+    cout << "<<<<<<<< " << sum2 << endl;
+
     g1Edges         = G1->getNumEdges();
     pairsCount      = n1 * (n1 + 1) / 2;
 #ifdef MULTI_PAIRWISE
@@ -218,7 +238,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     restart              = false; //restart scheme
     dynamic_tdecay       = false; //temperature decay dynamically
     needAligEdges        = icsWeight > 0 || ecWeight > 0 || s3Weight > 0 || wecWeight > 0 || secWeight > 0 || mecWeight > 0; //to evaluate EC incrementally
-    needED               = edWeight > 0; // to evaluate edge difference score incrementally
+    needEd               = edWeight > 0; // to evaluate edge difference score incrementally
     needSquaredAligEdges = sesWeight > 0; // to evaluate SES incrementally
 	needExposedEdges	 = eeWeight > 0; // to eval EE incrementally
     needInducedEdges     = s3Weight > 0 || icsWeight > 0; //to evaluate S3 & ICS incrementally
@@ -272,6 +292,9 @@ SANA::SANA(Graph* G1, Graph* G2,
     A                     = new vector<uint> (n1);
     avgEnergyInc          = -0.00001; //to track progress
     this->addHillClimbing = addHillClimbing;
+
+    
+
 }
 
 Alignment SANA::getStartingAlignment(){
@@ -348,7 +371,7 @@ Alignment SANA::run() {
 }
 
 double ecC(PARAMS) { return double(aligEdges) / g1Edges; }
-double edC(PARAMS) { return 0; } // TODO
+double edC(PARAMS) { assert(false); return 0; } // TODO
 double s3C(PARAMS) { return double(aligEdges) / (g1Edges + inducedEdges - aligEdges); }
 double icsC(PARAMS) { return double(aligEdges) / inducedEdges; }
 double secC(PARAMS) { return double(aligEdges) / (g1Edges + aligEdges) / g2Edges * 0.5; }
@@ -532,6 +555,7 @@ double SANA::trueAcceptingProbability(){
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
+    cout << "init data structures" << endl;
     nodesHaveType = G1->hasNodeTypes();
 
     A = new vector<uint>(startA.getMapping());
@@ -573,6 +597,10 @@ void SANA::initDataStructures(const Alignment& startA) {
 
     if (needAligEdges or needSec) {
         aligEdges = startA.numAlignedEdges(*G1, *G2);
+    }
+
+    if (needEd) {
+        edSum = EdgeDifference::getEdgeDifferenceSum(G1, G2, startA);
     }
 
     if (needSquaredAligEdges) {
@@ -623,6 +651,7 @@ void SANA::initDataStructures(const Alignment& startA) {
 
     currentScore = eval(startA);
     timer.start();
+    cout << "end of init data structures " << endl;
 }
 
 double SANA::eval(const Alignment& Al) {
@@ -782,6 +811,7 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, lon
 
 unordered_map<string, int> SANA::mapScoresToIndexes() {
     numOfMeasures = MC->numMeasures();
+    assert(numOfMeasures == 1);
     /*numOfMeasures = 8;
     #ifdef MULTI_PAIRWISE
     numOfMeasures = 10;
@@ -1061,24 +1091,24 @@ void SANA::deallocateParetoData() {
 void SANA::SANAIteration() {
     ++iterationsPerformed;
     performChange(0); return ;
-    if(G1->hasNodeTypes())
-    {
+
+//    if(G1->hasNodeTypes())
+//    {
 	// Choose the type here based on counts (and locking...)
 	// For example if no locking, then prob (gene) >> prob (miRNA)
 	// And if locking, then arrange prob(gene) and prob(miRNA) appropriately
-	int type = /* something clever */ 0;
-	(randomReal(gen) < changeProbability[type]) ? performChange(type) : performSwap(type);
-    }
-    else
-	(randomReal(gen) < changeProbability[0]) ? performChange(0) : performSwap(0);
+//	int type = /* something clever */ 0;
+//	(randomReal(gen) < changeProbability[type]) ? performChange(type) : performSwap(type);
+//    }
+//    else
+//	(randomReal(gen) < changeProbability[0]) ? performChange(0) : performSwap(0);
 }
 
 void SANA::performChange(int type) {
     uint source       = G1RandomUnlockedNode();
     uint oldTarget    = (*A)[source];
-    
     uint newTargetIndex = G2RandomUnlockedNode(oldTarget);
- 
+
     uint newTarget = -1;
     bool isGene = false;
     if(!nodesHaveType)
@@ -1099,7 +1129,7 @@ void SANA::performChange(int type) {
     
 
     int newAligEdges           = (needAligEdges or needSec) ?  aligEdges + aligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    int newEdSum               = (needED) ?  edSum + edgeDifferenceIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newEdSum            = (needEd) ?  edSum + edgeDifferenceIncChangeOp(source, oldTarget, newTarget) : -1;
     double newSquaredAligEdges = (needSquaredAligEdges) ?  squaredAligEdges + squaredAligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
 	double newExposedEdgesNumer= (needExposedEdges) ? exposedEdgesNumer + exposedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
     int newInducedEdges        = (needInducedEdges) ?  inducedEdges + inducedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
@@ -1116,6 +1146,8 @@ void SANA::performChange(int type) {
             item.second += localScoreSumIncChangeOp(localSimMatrixMap[item.first], source, oldTarget, newTarget);
     }
 
+
+
     double newCurrentScore = 0;
     bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum);
     if (makeChange) {
@@ -1131,12 +1163,27 @@ void SANA::performChange(int type) {
                 (*unassignedmiRNAsG2)[newTargetIndex] = oldTarget;
             }
         }
+  
+        double correct = EdgeDifference::getEdgeDifferenceSum(G1, G2, *A);
+        if (newEdSum != correct) {
+            cout << newEdSum << " != " << correct << endl;
+            assert(false);
+        }
 
 
         (*assignedNodesG2)[oldTarget]        = false;
         (*assignedNodesG2)[newTarget]        = true;
         aligEdges                            = newAligEdges;
         edSum                                = newEdSum;
+/*
+        double correct = EdgeDifference::getEdgeDifferenceSum(G1, G2, *A);
+        if (correct != newEdSum) {
+            cout << "it: " << iterationsPerformed << endl;
+            cout << "correct: " << correct << " edSum: " << edSum << " newEdSum " << newEdSum << endl;
+            assert(false);
+        }
+*/
+       
         inducedEdges                         = newInducedEdges;
         TCSum                                = newTCSum;
         localScoreSum                        = newLocalScoreSum;
@@ -1476,16 +1523,42 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
 }
 
 double SANA::edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarget) {
+/*
     double edgeDifferenceIncDiff = 0;
+    edgeDifferenceIncDiff -= abs(G1FloatWeights[source][0] - G2FloatWeights[oldTarget][(*A)[0]]);
+    double compensation = 0;
+    for (uint node2 = 1; node2 < n1; ++node2) {
+        double y = -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]]) - compensation;
+        double t = edgeDifferenceIncDiff + y; 
+        compensation = (t - edgeDifferenceIncDiff) - y;
+        edgeDifferenceIncDiff = t;
+    }
+
 
     for (uint node2 = 0; node2 < n1; ++node2) {
-        edgeDifferenceIncDiff -= abs(G1FloatWeights[source][node2]
-                               - G2FloatWeights[oldTarget][(*A)[node2]]);
-        edgeDifferenceIncDiff += abs(G1FloatWeights[source][node2]
-                               - G2FloatWeights[newTarget][(*A)[node2]]);
-   }
+        double y = abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]]) - compensation;
+        double t = edgeDifferenceIncDiff + y;
+        compensation = (t - edgeDifferenceIncDiff) - y; 
+        edgeDifferenceIncDiff = t;
+        //edgeDifferenceIncDiff -= abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]]);
+        //edgeDifferenceIncDiff += abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]]);
+   }*/
+/*
+    for (uint node1 = 0; node1 < G1NodesCount; ++node1) {
+       for (uint node2 = node1; node2 < G1NodesCount; ++node2) { 
+           edgeDifferenceSum += abs(G1FloatWeights[node1][node2] - G2FloatWeights[A[node1]][A[node2]]);
+       }
+    }*/
 
-    return edgeDifferenceIncDiff;
+   double edgeDifferenceIncDiff = 0;
+   for (uint node2 = 0; node2 < n1; ++node2) {
+       edgeDifferenceIncDiff -= abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]]);
+       edgeDifferenceIncDiff += abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]]);
+    }
+
+
+
+   return edgeDifferenceIncDiff;
 }
 
 

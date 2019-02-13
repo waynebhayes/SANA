@@ -8,6 +8,7 @@ public:
     virtual ~EdgeDifference();
     double eval(const Alignment& A);
     static double adjustSumToTargetScore(double edgeDifferenceSum, uint pairsCount);
+    static double getEdgeDifferenceSum(Graph *G1, Graph *G2, const Alignment &A);
 private:
     Graph * G1;
     Graph * G2;

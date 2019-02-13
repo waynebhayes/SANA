@@ -170,10 +170,27 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     string tmp;
     stringstream parseSS(toParse);
     parseSS >> tmp;
-    const size_t nodeLen = atoi(tmp.c_str());
     parseSS >> tmp;
-    const size_t vecLen = atoi(tmp.c_str());
+
+    ifstream infile(fin);
+    string line;
+    unordered_set<uint> record;
+    size_t lineCount = 0;
+    if (g.hasFloatWeight) {
+       while (getline(infile, line)) {
+           uint node1 = 0, node2 = 0;
+           istringstream iss(line); 
+           iss >> node1 >> node2;
+           record.insert(node1);
+           record.insert(node2);
+           ++lineCount;
+       }
+    }
+
+    const size_t nodeLen = record.size();
+    const size_t vecLen = lineCount;
     cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
+
 #endif
     g.name = graphName;
     g.geneCount = 0;
@@ -243,7 +260,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             throw runtime_error("File not in edge-list format: "+fin);
         }
 #else
-        if (edges[i].size() == 3 && g.hasFloatWeight) {
+        if (g.hasFloatWeight) {
+            if (edges[i].size() != 3)
+                throw runtime_error("File not in edge-list-weight format: "+fin);
             // Get float weight
             edgeValue = edges[i][2];
         }
