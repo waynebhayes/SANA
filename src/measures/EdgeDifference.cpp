@@ -41,25 +41,16 @@ double EdgeDifference::getEdgeDifferenceSum(Graph *G1, Graph *G2, const Alignmen
 */  
     uint G1NodesCount = G1->getNumNodes();
     double edgeDifferenceSum = 0;
-    double sum1 = 0;
-    double sum2 = 0;
     for (uint node1 = 0; node1 < G1NodesCount; ++node1) {
        for (uint node2 = node1; node2 < G1NodesCount; ++node2) { 
- //          if (G1FloatWeights[node1][node2] == 0) { cout << node1 << " xx " << node2 << endl; assert(false);}
- //          if (G2FloatWeights[A[node1]][A[node2]] == 0) { cout << A[node1] << " ..  " << A[node2] << endl; assert(false); }
            edgeDifferenceSum += abs(G1FloatWeights[node1][node2] - G2FloatWeights[A[node1]][A[node2]]);
-           sum1 += G1FloatWeights[node1][node2];
-          sum2 += G2FloatWeights[A[node1]][A[node2]];
        }
     }
 
-    cout << A[10] << endl;
-    cout << "@@@@@@@@@@@@" << sum2 << endl;
     return edgeDifferenceSum;
 }
 
 double EdgeDifference::adjustSumToTargetScore(double edgeDifferenceSum, uint pairsCount) {
     double mean = edgeDifferenceSum / pairsCount;
-    edgeDifferenceSum = 1 - mean / 2;
-    return edgeDifferenceSum;
+    return 1 - mean / 2;
 }

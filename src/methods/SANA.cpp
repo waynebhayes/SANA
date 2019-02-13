@@ -1164,15 +1164,15 @@ void SANA::performChange(int type) {
             }
         }
   
+        (*assignedNodesG2)[oldTarget]        = false;
+        (*assignedNodesG2)[newTarget]        = true;
+
         double correct = EdgeDifference::getEdgeDifferenceSum(G1, G2, *A);
         if (newEdSum != correct) {
             cout << newEdSum << " != " << correct << endl;
             assert(false);
         }
 
-
-        (*assignedNodesG2)[oldTarget]        = false;
-        (*assignedNodesG2)[newTarget]        = true;
         aligEdges                            = newAligEdges;
         edSum                                = newEdSum;
 /*
