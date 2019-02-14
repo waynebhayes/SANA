@@ -80,29 +80,9 @@ SANA::SANA(Graph* G1, Graph* G2,
            G1FloatWeights(G1->getFloatWeights()),
            G2FloatWeights(G2->getFloatWeights())
 {
-
-
-
     //data structures for the networks
     n1              = G1->getNumNodes();
     n2              = G2->getNumNodes();
-
-    double sum1 = 0;
-    for (uint i = 0; i < n1; ++i) 
-        for (uint j = 0; j < n1; ++j)
-            sum1 += G1->getFloatWeights()[i][j];
-
-    cout << "!!!!!! " << n1 << endl;
-    cout << "!!!!!! " << n2 << endl;
-    double sum2 = 0;
-    for (uint i = 0; i < n2; ++i) 
-        for (uint j = 0; j < n2; ++j) 
-            sum2 += G2->getFloatWeights()[i][j];
-
-
-    cout << "<<<<<<<< " << sum1 << endl;
-    cout << "<<<<<<<< " << sum2 << endl;
-
     g1Edges         = G1->getNumEdges();
     pairsCount      = n1 * (n1 + 1) / 2;
 #ifdef MULTI_PAIRWISE
@@ -292,9 +272,6 @@ SANA::SANA(Graph* G1, Graph* G2,
     A                     = new vector<uint> (n1);
     avgEnergyInc          = -0.00001; //to track progress
     this->addHillClimbing = addHillClimbing;
-
-    
-
 }
 
 Alignment SANA::getStartingAlignment(){
@@ -371,7 +348,7 @@ Alignment SANA::run() {
 }
 
 double ecC(PARAMS) { return double(aligEdges) / g1Edges; }
-double edC(PARAMS) { assert(false); return 0; } // TODO
+double edC(PARAMS) { return EdgeDifference::adjustSumToTargetScore(edSum, pairsCount); } 
 double s3C(PARAMS) { return double(aligEdges) / (g1Edges + inducedEdges - aligEdges); }
 double icsC(PARAMS) { return double(aligEdges) / inducedEdges; }
 double secC(PARAMS) { return double(aligEdges) / (g1Edges + aligEdges) / g2Edges * 0.5; }
@@ -857,7 +834,8 @@ vector<double> SANA::translateScoresToVector() {
                                                                               g2Edges, TCSum, localScoreSum, n1,
                                                                               wecSum, ewecSum, ncSum, trueA.back(),
                                                                               g1WeightedEdges, g2WeightedEdges,
-                                                                              squaredAligEdges, exposedEdgesNumer
+                                                                              squaredAligEdges, exposedEdgesNumer, 
+                                                                              edSum, pairsCount
                                                                             );
     }
 #else
@@ -865,7 +843,8 @@ vector<double> SANA::translateScoresToVector() {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                             ( aligEdges, g1Edges, inducedEdges,
                                                                               g2Edges, TCSum, localScoreSum, n1,
-                                                                              wecSum, ewecSum, ncSum, trueA.back()
+                                                                              wecSum, ewecSum, ncSum, trueA.back(), 
+                                                                              edSum, pairsCount
                                                                             );
     }
 #endif
@@ -894,7 +873,8 @@ vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdge
                                                                               g2Edges, newTCSum, newLocalScoreSum, n1,
                                                                               newWecSum, newEwecSum, newNcSum, trueA.back(),
                                                                               g1WeightedEdges, g2WeightedEdges,
-                                                                              newSquaredAligEdges, newExposedEdgesNumer
+                                                                              newSquaredAligEdges, newExposedEdgesNumer,
+                                                                              edSum, pairsCount
                                                                             );
     }
 #else
@@ -902,7 +882,8 @@ vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdge
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                             ( newAligEdges, g1Edges, newInducedEdges,
                                                                               g2Edges, newTCSum, newLocalScoreSum, n1,
-                                                                              newWecSum, newEwecSum, newNcSum, trueA.back()
+                                                                              newWecSum, newEwecSum, newNcSum, trueA.back(),
+                                                                              edSum, pairsCount
                                                                             );
     }
 #endif
@@ -1144,17 +1125,6 @@ void SANA::performChange(int type) {
             item.second += localScoreSumIncChangeOp(localSimMatrixMap[item.first], source, oldTarget, newTarget);
     }
 
-
-   //(*A)[source] = newTarget;
-   //cout << "source: " << source << " new target will be " << newTarget << endl;
-
-   //double correct = EdgeDifference::getEdgeDifferenceSum(G1, G2, *A);
-   //if (newEdSum != correct) {
-   //    cout << iterationsPerformed << " startEdSum: " << edSum << ": newEdSum " << newEdSum << " != correct: " << correct << endl;
-   //    assert(false);
-   //}
-
-
     double newCurrentScore = 0;
     bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum);
     if (makeChange) {
@@ -1178,8 +1148,6 @@ void SANA::performChange(int type) {
 
         aligEdges                            = newAligEdges;
         edSum                                = newEdSum;
-
-       
         inducedEdges                         = newInducedEdges;
         TCSum                                = newTCSum;
         localScoreSum                        = newLocalScoreSum;
@@ -1233,6 +1201,7 @@ void SANA::performSwap(int type) {
     double newEwecSum          = (needEwec) ?  ewecSum + EWECIncSwapOp(source1, source2, target1, target2) : -1;
     double newNcSum            = (needNC) ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
     double newLocalScoreSum    = (needLocal) ? localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2) : -1;
+    double newEdSum            = (needEd) ?  edSum + edgeDifferenceIncSwapOp(source1, source2, target1, target2) : -1;
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
@@ -1242,12 +1211,13 @@ void SANA::performSwap(int type) {
     }
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, 0);
+    bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum);
 
     if (makeChange) {
         (*A)[source1]       = target2;
         (*A)[source2]       = target1;
         aligEdges           = newAligEdges;
+        edSum               = newEdSum;
         localScoreSum       = newLocalScoreSum;
         TCSum               = newTCSum;
         wecSum              = newWecSum;
@@ -1518,54 +1488,38 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
     return res;
 }
 
+double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, uint target) {
+  
+
+
+
+  return 0;
+}
+
+
 double SANA::edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarget) {
    double edgeDifferenceIncDiff = 0;
    double c = 0;
-   for (uint node2 = 0; node2 < source; ++node2) {
+   for (uint node2 = 0; node2 < n1; ++node2) {
        double y = -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
                   - c;
        double t = edgeDifferenceIncDiff + y;
        c = (t - edgeDifferenceIncDiff) - y;
        edgeDifferenceIncDiff = t;
 
-       y = +abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]])
-           - c;
-       t = edgeDifferenceIncDiff + y;
-       c = (t - edgeDifferenceIncDiff) - y;
-       edgeDifferenceIncDiff = t; 
-   }
-
-   {
-     double y = -abs(G1FloatWeights[source][source] - G2FloatWeights[oldTarget][oldTarget])
-                - c;
-     double t = edgeDifferenceIncDiff + y;
-     c = (t - edgeDifferenceIncDiff) - y;
-     edgeDifferenceIncDiff = t;
-
-     y = abs(G1FloatWeights[source][source] - G2FloatWeights[newTarget][newTarget])
-         - c;
-     t = edgeDifferenceIncDiff + y;
-     c = (t - edgeDifferenceIncDiff) - y;
-     edgeDifferenceIncDiff = t;
-   }
-
-
-   for (uint node2 = source + 1; node2 < n1; ++node2) {
-       double y = -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
-                  - c;
-       double t = edgeDifferenceIncDiff + y;
-       c = (t - edgeDifferenceIncDiff) - y;
-       edgeDifferenceIncDiff = t;
-
-       y = +abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]])
+       uint node2Target = node2 == source ? newTarget : (*A)[node2];
+       y = +abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][node2Target])
                   - c;
        t = edgeDifferenceIncDiff + y;
        c = (t - edgeDifferenceIncDiff) - y;
        edgeDifferenceIncDiff = t; 
    }
+
 
    return edgeDifferenceIncDiff;
 }
+
+
 
 
 static int _edgeVal;
@@ -3232,7 +3186,8 @@ vector<double> SANA::translateScoresToVector(Job &job) {
                                                                     g2Edges, info.TCSum, info.localScoreSum, n1,
                                                                     info.wecSum, info.ewecSum, info.ncSum, trueA.back(),
                                                                     g1WeightedEdges, g2WeightedEdges,
-                                                                    info.squaredAligEdges, info.exposedEdgesNumer
+                                                                    info.squaredAligEdges, info.exposedEdgesNumer,
+                                                                    info.edSum, pairsCount
                                                                    );
     }
 #else
@@ -3240,7 +3195,8 @@ vector<double> SANA::translateScoresToVector(Job &job) {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                   ( info.aligEdges, g1Edges, info.inducedEdges,
                                                                     g2Edges, info.TCSum, info.localScoreSum, n1,
-                                                                    info.wecSum, info.ewecSum, info.ncSum, trueA.back()
+                                                                    info.wecSum, info.ewecSum, info.ncSum, trueA.back(),
+                                                                    info.edSum, pairsCount
                                                                   );
     }
 #endif
