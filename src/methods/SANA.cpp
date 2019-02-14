@@ -1520,19 +1520,49 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
 
 double SANA::edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarget) {
    double edgeDifferenceIncDiff = 0;
+   double c = 0;
+   for (uint node2 = 0; node2 < source; ++node2) {
+       double y = -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
+                  - c;
+       double t = edgeDifferenceIncDiff + y;
+       c = (t - edgeDifferenceIncDiff) - y;
+       edgeDifferenceIncDiff = t;
 
-   for (uint node2 = 0; node2 < source; ++node2) 
-       edgeDifferenceIncDiff += -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
-                                +abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]]);
-   
+       y = +abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]])
+           - c;
+       t = edgeDifferenceIncDiff + y;
+       c = (t - edgeDifferenceIncDiff) - y;
+       edgeDifferenceIncDiff = t; 
+   }
 
-   edgeDifferenceIncDiff += -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][oldTarget])
-                            +abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][newTarget]);
+   {
+     double y = -abs(G1FloatWeights[source][source] - G2FloatWeights[oldTarget][oldTarget])
+                - c;
+     double t = edgeDifferenceIncDiff + y;
+     c = (t - edgeDifferenceIncDiff) - y;
+     edgeDifferenceIncDiff = t;
 
-   for (uint node2 = source + 1; node2 < n1; ++node2) 
-       edgeDifferenceIncDiff += -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
-                                +abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]]);
-   
+     y = abs(G1FloatWeights[source][source] - G2FloatWeights[newTarget][newTarget])
+         - c;
+     t = edgeDifferenceIncDiff + y;
+     c = (t - edgeDifferenceIncDiff) - y;
+     edgeDifferenceIncDiff = t;
+   }
+
+
+   for (uint node2 = source + 1; node2 < n1; ++node2) {
+       double y = -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
+                  - c;
+       double t = edgeDifferenceIncDiff + y;
+       c = (t - edgeDifferenceIncDiff) - y;
+       edgeDifferenceIncDiff = t;
+
+       y = +abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]])
+                  - c;
+       t = edgeDifferenceIncDiff + y;
+       c = (t - edgeDifferenceIncDiff) - y;
+       edgeDifferenceIncDiff = t; 
+   }
 
    return edgeDifferenceIncDiff;
 }
