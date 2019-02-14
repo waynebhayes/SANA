@@ -315,7 +315,7 @@ Alignment SANA::run() {
             align = hillClimbingAlignment(align, (long long int)(10000000)); //arbitrarily chosen, probably too big.
             cout << hill.elapsedString() << endl;
         }
-#define PRINT_CORES 1
+#define PRINT_CORES 0
 #define MIN_CORE_SCORE 1e-3 // 1e-4 gives files 2G long, 1e-3 gives just a few MB.
 #if PRINT_CORES
 #ifndef CORES
@@ -1111,16 +1111,22 @@ void SANA::performChange(int type) {
     double newCurrentScore = 0;
     bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer);
 
+
     #ifdef CORES
 		// Statistics on the emerging core alignment.
 		// only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
         uint betterHole = wasBadMove ? source : newTargetIndex;
+
 		static double pBad;
-		if(trueAcceptingProbability()>0) pBad = trueAcceptingProbability();
-		coreCount[betterHole]++;
-		coreFreq[betterHole][(*A)[betterHole]]++;
-		weightedCoreFreq[betterHole][(*A)[betterHole]] += pBad;
-		totalCoreWeight[betterHole] += pBad;
+		double p = trueAcceptingProbability();
+		if(p>0) pBad = p;
+
+		coreCount[source]++;
+		coreFreq[source][betterHole]++;
+		weightedCoreFreq[source][betterHole] += 1-pBad;
+		totalCoreWeight[source] += 1-pBad;
+
+
 	#endif
 
     if (makeChange) {
@@ -1200,21 +1206,22 @@ void SANA::performSwap(int type) {
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
         static double pBad;
-        if(trueAcceptingProbability()>0) pBad = trueAcceptingProbability();
+        double p = trueAcceptingProbability();
+		if(p>0) pBad = p;
 
         coreCount[source1]++;
-        weightedCoreFreq[source1][(*A)[source1]] += pBad;
-        totalCoreWeight[source1] += pBad;
+        weightedCoreFreq[source1][target1] += 1-pBad;
+        totalCoreWeight[source1] += 1-pBad;
 
         coreCount[source2]++;
-        weightedCoreFreq[source2][(*A)[source2]] += pBad;
-        totalCoreWeight[source2] += pBad;
+        weightedCoreFreq[source2][target2] += 1-pBad;
+        totalCoreWeight[source2] += 1-pBad;
 
-        uint betterDest1 = wasBadMove ? source2 : source1;
-        uint betterDest2 = wasBadMove ? source1 : source2;
+        uint betterDest1 = wasBadMove ? target2 : target1;
+        uint betterDest2 = wasBadMove ? target1 : target2;
 
-        coreFreq[source2][(*A)[betterDest2]]++;
-        coreFreq[source1][(*A)[betterDest1]]++;
+        coreFreq[source2][betterDest2]++;
+        coreFreq[source1][betterDest1]++;
 
     #endif
 
@@ -2777,11 +2784,13 @@ void SANA::performChange(Job &job, int type) {
 		// only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
         uint betterHole = wasBadMove ? source : newTargetIndex;
 		static double pBad;
-		if(trueAcceptingProbability()>0) pBad = trueAcceptingProbability();
-		coreCount[betterHole]++;
-		coreFreq[betterHole][(*A)[betterHole]]++;
-		weightedCoreFreq[betterHole][(*A)[betterHole]] += pBad;
-		totalCoreWeight[betterHole] += pBad;
+		double p = trueAcceptingProbability();
+		if(p>0) pBad = p;
+
+		coreCount[source]++;
+		coreFreq[source][betterHole]++;
+		weightedCoreFreq[source][betterHole] += 1-pBad;
+		totalCoreWeight[source] += 1-pBad;
 	#endif
 
     if (makeChange) {
@@ -2861,21 +2870,22 @@ void SANA::performSwap(Job &job, int type) {
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
         static double pBad;
-        if(trueAcceptingProbability()>0) pBad = trueAcceptingProbability();
+        double p = trueAcceptingProbability();
+		if(p>0) pBad = p;
 
         coreCount[source1]++;
-        weightedCoreFreq[source1][(*A)[source1]] += pBad;
-        totalCoreWeight[source1] += pBad;
+        weightedCoreFreq[source1][target1] += 1-pBad;
+        totalCoreWeight[source1] += 1-pBad;
 
         coreCount[source2]++;
-        weightedCoreFreq[source2][(*A)[source2]] += pBad;
-        totalCoreWeight[source2] += pBad;
+        weightedCoreFreq[source2][target2] += 1-pBad;
+        totalCoreWeight[source2] += 1-pBad;
 
-        uint betterDest1 = wasBadMove ? source2 : source1;
-        uint betterDest2 = wasBadMove ? source1 : source2;
+        uint betterDest1 = wasBadMove ? target2 : target1;
+        uint betterDest2 = wasBadMove ? target1 : target2;
 
-        coreFreq[source2][(*A)[betterDest2]]++;
-        coreFreq[source1][(*A)[betterDest1]]++;
+        coreFreq[source2][betterDest2]++;
+        coreFreq[source1][betterDest1]++;
 
     #endif
     if (makeChange) {
