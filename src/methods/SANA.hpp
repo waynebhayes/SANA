@@ -20,8 +20,6 @@
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back
 #endif
 
-#define CORES
-
 class SANA: public Method {
 
 public:
