@@ -21,24 +21,7 @@ double EdgeDifference::eval(const Alignment& A) {
 double EdgeDifference::getEdgeDifferenceSum(Graph *G1, Graph *G2, const Alignment &A) {
     Matrix<float>& G1FloatWeights = G1->getFloatWeights();
     Matrix<float>& G2FloatWeights = G2->getFloatWeights();
-/*
-    double edgeDifferenceSum = 0;
-    edgeDifferenceSum = abs(G1FloatWeights[0][0] - G2FloatWeights[A[0]][A[0]]);
-    uint G1NodesCount = G1->getNumNodes();
-    double compensation = 0;
-    for (uint node1 = 0; node1 < G1NodesCount; ++node1) {
-        for (uint node2 = node1; node2 < G1NodesCount; ++node2) {
-            if (node2 == 0) {continue;}
-            double y = abs(G1FloatWeights[node1][node2] - G2FloatWeights[A[node1]][A[node2]]) - compensation;
-            double t = edgeDifferenceSum + y;
-            compensation = (t - edgeDifferenceSum) - y;
-            edgeDifferenceSum = t;
-            //edgeDifferenceSum += abs(G1FloatWeights[node1][node2] - G2FloatWeights[A[node1]][A[node2]]);
-        }
-    }
 
-    return edgeDifferenceSum;
-*/  
     uint G1NodesCount = G1->getNumNodes();
     double edgeDifferenceSum = 0;
     for (uint node1 = 0; node1 < G1NodesCount; ++node1) {

@@ -239,7 +239,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     vector<vector<uint>> edgeList(vecLen, vector<uint> (2));
     vector<float> floatWeightList;
     if (g.hasFloatWeight) {
-        floatWeightList = vector<float>(vecLen);
+        floatWeightList = vector<float>(vecLen, 0);
     }
 #endif
     stringstream errorMsg;

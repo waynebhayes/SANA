@@ -555,7 +555,6 @@ double SANA::trueAcceptingProbability(){
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
-    cout << "init data structures" << endl;
     nodesHaveType = G1->hasNodeTypes();
 
     A = new vector<uint>(startA.getMapping());
@@ -651,7 +650,6 @@ void SANA::initDataStructures(const Alignment& startA) {
 
     currentScore = eval(startA);
     timer.start();
-    cout << "end of init data structures " << endl;
 }
 
 double SANA::eval(const Alignment& Al) {
@@ -1147,6 +1145,15 @@ void SANA::performChange(int type) {
     }
 
 
+   //(*A)[source] = newTarget;
+   //cout << "source: " << source << " new target will be " << newTarget << endl;
+
+   //double correct = EdgeDifference::getEdgeDifferenceSum(G1, G2, *A);
+   //if (newEdSum != correct) {
+   //    cout << iterationsPerformed << " startEdSum: " << edSum << ": newEdSum " << newEdSum << " != correct: " << correct << endl;
+   //    assert(false);
+   //}
+
 
     double newCurrentScore = 0;
     bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum);
@@ -1167,22 +1174,11 @@ void SANA::performChange(int type) {
         (*assignedNodesG2)[oldTarget]        = false;
         (*assignedNodesG2)[newTarget]        = true;
 
-        double correct = EdgeDifference::getEdgeDifferenceSum(G1, G2, *A);
-        if (newEdSum != correct) {
-            cout << newEdSum << " != " << correct << endl;
-            assert(false);
-        }
+
 
         aligEdges                            = newAligEdges;
         edSum                                = newEdSum;
-/*
-        double correct = EdgeDifference::getEdgeDifferenceSum(G1, G2, *A);
-        if (correct != newEdSum) {
-            cout << "it: " << iterationsPerformed << endl;
-            cout << "correct: " << correct << " edSum: " << edSum << " newEdSum " << newEdSum << endl;
-            assert(false);
-        }
-*/
+
        
         inducedEdges                         = newInducedEdges;
         TCSum                                = newTCSum;
@@ -1523,40 +1519,20 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
 }
 
 double SANA::edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-/*
-    double edgeDifferenceIncDiff = 0;
-    edgeDifferenceIncDiff -= abs(G1FloatWeights[source][0] - G2FloatWeights[oldTarget][(*A)[0]]);
-    double compensation = 0;
-    for (uint node2 = 1; node2 < n1; ++node2) {
-        double y = -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]]) - compensation;
-        double t = edgeDifferenceIncDiff + y; 
-        compensation = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
-    }
-
-
-    for (uint node2 = 0; node2 < n1; ++node2) {
-        double y = abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]]) - compensation;
-        double t = edgeDifferenceIncDiff + y;
-        compensation = (t - edgeDifferenceIncDiff) - y; 
-        edgeDifferenceIncDiff = t;
-        //edgeDifferenceIncDiff -= abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]]);
-        //edgeDifferenceIncDiff += abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]]);
-   }*/
-/*
-    for (uint node1 = 0; node1 < G1NodesCount; ++node1) {
-       for (uint node2 = node1; node2 < G1NodesCount; ++node2) { 
-           edgeDifferenceSum += abs(G1FloatWeights[node1][node2] - G2FloatWeights[A[node1]][A[node2]]);
-       }
-    }*/
-
    double edgeDifferenceIncDiff = 0;
-   for (uint node2 = 0; node2 < n1; ++node2) {
-       edgeDifferenceIncDiff -= abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]]);
-       edgeDifferenceIncDiff += abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]]);
-    }
 
+   for (uint node2 = 0; node2 < source; ++node2) 
+       edgeDifferenceIncDiff += -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
+                                +abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]]);
+   
 
+   edgeDifferenceIncDiff += -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][oldTarget])
+                            +abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][newTarget]);
+
+   for (uint node2 = source + 1; node2 < n1; ++node2) 
+       edgeDifferenceIncDiff += -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
+                                +abs(G1FloatWeights[source][node2] - G2FloatWeights[newTarget][(*A)[node2]]);
+   
 
    return edgeDifferenceIncDiff;
 }
