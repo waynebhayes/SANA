@@ -315,7 +315,7 @@ Alignment SANA::run() {
             align = hillClimbingAlignment(align, (long long int)(10000000)); //arbitrarily chosen, probably too big.
             cout << hill.elapsedString() << endl;
         }
-#define PRINT_CORES 0
+#define PRINT_CORES 1
 #define MIN_CORE_SCORE 1e-3 // 1e-4 gives files 2G long, 1e-3 gives just a few MB.
 #if PRINT_CORES
 #ifndef CORES
@@ -1115,7 +1115,7 @@ void SANA::performChange(int type) {
     #ifdef CORES
 		// Statistics on the emerging core alignment.
 		// only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
-        uint betterHole = wasBadMove ? source : newTargetIndex;
+        	uint betterHole = wasBadMove ? oldTarget : newTarget;
 
 		static double pBad;
 		double p = trueAcceptingProbability();
@@ -1207,7 +1207,7 @@ void SANA::performSwap(int type) {
         // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
         static double pBad;
         double p = trueAcceptingProbability();
-		if(p>0) pBad = p;
+	if(p>0) pBad = p;
 
         coreCount[source1]++;
         weightedCoreFreq[source1][target1] += 1-pBad;
@@ -2782,7 +2782,7 @@ void SANA::performChange(Job &job, int type) {
     #ifdef CORES
 		// Statistics on the emerging core alignment.
 		// only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
-        uint betterHole = wasBadMove ? source : newTargetIndex;
+        	uint betterHole = wasBadMove ? oldTarget : newTarget;
 		static double pBad;
 		double p = trueAcceptingProbability();
 		if(p>0) pBad = p;
