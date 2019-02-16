@@ -20,8 +20,6 @@
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back
 #endif
 
-#define CORES
-
 class SANA: public Method {
 
 public:
@@ -234,7 +232,7 @@ private:
     int squaredAligEdges;
     int squaredAligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
     int squaredAligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
-	
+
 	// to evaluate EE incrementally
     bool needExposedEdges;
     int exposedEdgesNumer;
@@ -477,8 +475,8 @@ private:
 
 
 
-    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum, 
-                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, 
+    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum,
+                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore,
                          double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer);
 
 
