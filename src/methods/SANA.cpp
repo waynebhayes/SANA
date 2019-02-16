@@ -1111,11 +1111,10 @@ void SANA::performChange(int type) {
     double newCurrentScore = 0;
     bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer);
 
-
     #ifdef CORES
 		// Statistics on the emerging core alignment.
 		// only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
-        	uint betterHole = wasBadMove ? oldTarget : newTarget;
+    uint betterHole = wasBadMove ? oldTarget : newTarget;
 
 		static double pBad;
 		double p = trueAcceptingProbability();
@@ -1125,7 +1124,6 @@ void SANA::performChange(int type) {
 		coreFreq[source][betterHole]++;
 		weightedCoreFreq[source][betterHole] += 1-pBad;
 		totalCoreWeight[source] += 1-pBad;
-
 
 	#endif
 
@@ -1207,7 +1205,7 @@ void SANA::performSwap(int type) {
         // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
         static double pBad;
         double p = trueAcceptingProbability();
-	if(p>0) pBad = p;
+	      if(p>0) pBad = p;
 
         coreCount[source1]++;
         weightedCoreFreq[source1][target1] += 1-pBad;
@@ -1222,6 +1220,7 @@ void SANA::performSwap(int type) {
 
         coreFreq[source2][betterDest2]++;
         coreFreq[source1][betterDest1]++;
+
 
     #endif
 
@@ -2782,7 +2781,7 @@ void SANA::performChange(Job &job, int type) {
     #ifdef CORES
 		// Statistics on the emerging core alignment.
 		// only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
-        	uint betterHole = wasBadMove ? oldTarget : newTarget;
+    uint betterHole = wasBadMove ? oldTarget : newTarget;
 		static double pBad;
 		double p = trueAcceptingProbability();
 		if(p>0) pBad = p;
@@ -2791,6 +2790,7 @@ void SANA::performChange(Job &job, int type) {
 		coreFreq[source][betterHole]++;
 		weightedCoreFreq[source][betterHole] += 1-pBad;
 		totalCoreWeight[source] += 1-pBad;
+
 	#endif
 
     if (makeChange) {
@@ -2871,7 +2871,7 @@ void SANA::performSwap(Job &job, int type) {
         // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
         static double pBad;
         double p = trueAcceptingProbability();
-		if(p>0) pBad = p;
+		    if(p>0) pBad = p;
 
         coreCount[source1]++;
         weightedCoreFreq[source1][target1] += 1-pBad;
@@ -2886,6 +2886,7 @@ void SANA::performSwap(Job &job, int type) {
 
         coreFreq[source2][betterDest2]++;
         coreFreq[source1][betterDest1]++;
+
 
     #endif
     if (makeChange) {

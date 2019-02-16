@@ -273,12 +273,13 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
     }
 #endif
 
-    uint count = 0;
+    int count = 0;
     uint n2 = G2.getNumNodes(); 
     for(uint i = 0; i < n2; i++){
         for(uint j = 0; j < i; j++){
             int rungs  = G2Matrix[i][j];
             count += rungs * rungs;
+			assert(count > 0); // guard against overflow
         }
     }
     return count;
