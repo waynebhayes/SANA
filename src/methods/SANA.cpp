@@ -1086,10 +1086,7 @@ void SANA::SANAIteration() {
 void SANA::performChange(int type) {
     uint source       = G1RandomUnlockedNode();
     uint oldTarget    = (*A)[source];
-<<<<<<< HEAD
-=======
 
->>>>>>> 36d3a95c806887c3f708916722c18788ec9715d3
     uint newTargetIndex = G2RandomUnlockedNode(oldTarget);
 
     uint newTarget = -1;
@@ -1132,10 +1129,7 @@ void SANA::performChange(int type) {
 
 
     double newCurrentScore = 0;
-<<<<<<< HEAD
     bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum);
-=======
-    bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer);
 
     #ifdef CORES
 		// Statistics on the emerging core alignment.
@@ -1149,7 +1143,6 @@ void SANA::performChange(int type) {
 		totalCoreWeight[betterHole] += pBad;
 	#endif
 
->>>>>>> 36d3a95c806887c3f708916722c18788ec9715d3
     if (makeChange) {
 
         (*A)[source]                         = newTarget;
@@ -2899,11 +2892,7 @@ void SANA::performChange(Job &job, int type) {
     }
 
     double newCurrentScore = 0;
-<<<<<<< HEAD
     bool makeChange = scoreComparison(job, newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum);
-=======
-    bool makeChange = scoreComparison(job, newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer);
-
 
     #ifdef CORES
 		// Statistics on the emerging core alignment.
@@ -2917,7 +2906,6 @@ void SANA::performChange(Job &job, int type) {
 		totalCoreWeight[betterHole] += pBad;
 	#endif
 
->>>>>>> 36d3a95c806887c3f708916722c18788ec9715d3
     if (makeChange) {
 
        (*A)[source]                         = newTarget;
@@ -2981,12 +2969,8 @@ void SANA::performSwap(Job &job, int type) {
     double newWecSum           = (needWec) ?  info.wecSum + WECIncSwapOp(job, source1, source2, target1, target2) : -1;
     double newEwecSum          = (needEwec) ?  info.ewecSum + EWECIncSwapOp(job, source1, source2, target1, target2) : -1;
     double newNcSum            = (needNC) ? info.ncSum + ncIncSwapOp(job, source1, source2, target1, target2) : -1;
-<<<<<<< HEAD
     double newLocalScoreSum    = (needLocal) ? info.localScoreSum + localScoreSumIncSwapOp(job, sims, source1, source2, target1, target2) : -1;   
     double newEdSum            = (needEd) ? info.edSum + edgeDifferenceIncSwapOp(job, source1, source2, target1, target2) : -1;
-=======
-    double newLocalScoreSum    = (needLocal) ? info.localScoreSum + localScoreSumIncSwapOp(job, sims, source1, source2, target1, target2) : -1;
->>>>>>> 36d3a95c806887c3f708916722c18788ec9715d3
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
@@ -2996,10 +2980,7 @@ void SANA::performSwap(Job &job, int type) {
     }
 
     double newCurrentScore = 0;
-<<<<<<< HEAD
     bool makeChange = scoreComparison(job, newAligEdges, info.inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum);
-=======
-    bool makeChange = scoreComparison(job, newAligEdges, info.inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer);
     #ifdef CORES
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
@@ -3019,11 +3000,8 @@ void SANA::performSwap(Job &job, int type) {
 
         coreFreq[source2][(*A)[betterDest2]]++;
         coreFreq[source1][(*A)[betterDest1]]++;
-
     #endif
->>>>>>> 36d3a95c806887c3f708916722c18788ec9715d3
     if (makeChange) {
-
         (*A)[source1]       = target2;
         (*A)[source2]       = target1;
         info.aligEdges           = newAligEdges;
@@ -3537,32 +3515,16 @@ int SANA::ncIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
     if (trueA[source] == newTarget) change += 1;
     return change;
 }
-<<<<<<< HEAD
-
 bool SANA::scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum, 
                          double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, 
                          double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum) {
-=======
-mutex quick_lock;
-
-bool SANA::scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum,
-                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore,
-                         double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer) {
->>>>>>> 36d3a95c806887c3f708916722c18788ec9715d3
     bool makeChange = false;
     wasBadMove = false;
     double badProbability = 0;
 
     AlignmentInfo &info = job.info;
-<<<<<<< HEAD
-    
+
     vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdgeDifferenceSum);
-=======
-
-
-    vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer);
-
->>>>>>> 36d3a95c806887c3f708916722c18788ec9715d3
     if(dominates(addScores, info.currentScores)) {
         info.currentScores = addScores;
         makeChange = true;

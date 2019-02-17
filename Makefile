@@ -17,8 +17,8 @@ UTILS_SRC = 								\
 	src/utils/SkipList.cpp						\
 	src/utils/SeedMatrix.cpp					\
 	src/utils/LinearRegression.cpp					\
-	src/utils/ParetoFront.cpp                                       \
-        src/utils/Matrix.cpp                                            
+    src/utils/ParetoFront.cpp                                       \
+    src/utils/Matrix.cpp                                            
 
 ARGUMENTS_SRC = 							\
 	src/arguments/ArgumentParser.cpp				\
@@ -31,10 +31,10 @@ ARGUMENTS_SRC = 							\
 
 MEASURES_SRCS = 							\
 	src/measures/EdgeCorrectness.cpp 				\
-  src/measures/EdgeDifference.cpp         \
+    src/measures/EdgeDifference.cpp         \
 	src/measures/TriangleCorrectness.cpp			\
 	src/measures/MultiEdgeCorrectness.cpp 				\
-        src/measures/ExternalWeightedEdgeConservation.cpp               \
+    src/measures/ExternalWeightedEdgeConservation.cpp               \
 	src/measures/GoAverage.cpp      				\
 	src/measures/NetGO.cpp      				\
 	src/measures/InducedConservedStructure.cpp			\
@@ -44,12 +44,12 @@ MEASURES_SRCS = 							\
 	src/measures/MeasureCombination.cpp				\
 	src/measures/NodeCorrectness.cpp 				\
 	src/measures/ShortestPathConservation.cpp 			\
-	src/measures/SymmetricSubstructureScore.cpp 			\
-        src/measures/SymmetricEdgeCoverage.cpp 				\
-        src/measures/SquaredEdgeScore.cpp 				\
-        src/measures/EdgeExposure.cpp 				\
-	src/measures/WeightedEdgeConservation.cpp 			\
-	src/measures/localMeasures/EdgeCount.cpp 			\
+    src/measures/SymmetricSubstructureScore.cpp 			\
+    src/measures/SymmetricEdgeCoverage.cpp 				\
+    src/measures/SquaredEdgeScore.cpp 				\
+    src/measures/EdgeExposure.cpp 				\
+    src/measures/WeightedEdgeConservation.cpp 			\
+    src/measures/localMeasures/EdgeCount.cpp 			\
 	src/measures/localMeasures/EdgeDensity.cpp 			\
 	src/measures/localMeasures/ExternalSimMatrix.cpp 		\
 	src/measures/localMeasures/GenericLocalMeasure.cpp 		\
