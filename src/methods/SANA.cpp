@@ -1069,7 +1069,7 @@ void SANA::deallocateParetoData() {
 
 void SANA::SANAIteration() {
     ++iterationsPerformed;
-    performChange(0); return ;
+    performSwap(0); return ;
 
 //    if(G1->hasNodeTypes())
 //    {
@@ -1488,12 +1488,76 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
     return res;
 }
 
-double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, uint target) {
-  
+// 1 2 3 4 5
+// 11 12 13 14 15
+// 22 23 24 25
+// 33 34 35 
+// 44 45
+// 55
 
+// Now change 23
+// - 21 22 23 24 25        // 23 pair should be handled by the first?
+// + 21 22 23 24 25        // 3 matches to a new target
 
+// - 31 33 34 35             
+// + 31 33 34 35             
+double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
+    if (source1 == source2) return 0;
 
-  return 0;
+    // Subtract source1-target1
+    // Add source1-target2
+    double edgeDifferenceIncDiff = 0;
+    double c = 0;
+    for (uint node2 = 0; node2 < n1; ++node2) {
+        double y = -abs(G1FloatWeights[source1][node2] - G2FloatWeights[target1][(*A)[node2]])
+                  - c;
+        double t = edgeDifferenceIncDiff + y;
+        c = (t - edgeDifferenceIncDiff) - y;
+        edgeDifferenceIncDiff = t;
+ 
+        //uint node2Target = node2 == source1 ? target2 : (*A)[node2];
+        uint node2Target = 0;
+        if (node2 == source1) {
+            node2Target = target2;
+        } else if (node2 == source2) {
+            node2Target = target1;
+        } else {
+            node2Target = (*A)[node2];
+        }
+        y = +abs(G1FloatWeights[source1][node2] - G2FloatWeights[target2][node2Target])
+           - c;
+        t = edgeDifferenceIncDiff + y;
+        c = (t - edgeDifferenceIncDiff) - y;
+        edgeDifferenceIncDiff = t; 
+   }
+
+    // Subtract source2-target2
+    // Add source2-target1
+    for (uint node2 = 0; node2 < n1; ++node2) {
+        if (node2 == source1) continue;
+        double y = -abs(G1FloatWeights[source2][node2] - G2FloatWeights[target2][(*A)[node2]])
+                  - c;
+        double t = edgeDifferenceIncDiff + y;
+        c = (t - edgeDifferenceIncDiff) - y;
+        edgeDifferenceIncDiff = t;
+ 
+        //uint node2Target = node2 == source2 ? target1 : (*A)[node2];
+        uint node2Target = 0;
+        if (node2 == source2) {
+            node2Target = target1;
+        } else if (node2 == source1) {
+            node2Target = target2;
+        } else {
+            node2Target = (*A)[node2];
+        }
+        y = +abs(G1FloatWeights[source2][node2] - G2FloatWeights[target1][node2Target])
+           - c;
+        t = edgeDifferenceIncDiff + y;
+        c = (t - edgeDifferenceIncDiff) - y;
+        edgeDifferenceIncDiff = t; 
+   }
+
+    return edgeDifferenceIncDiff;
 }
 
 
