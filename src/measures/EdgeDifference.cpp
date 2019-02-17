@@ -2,9 +2,7 @@
 #include <vector>
 
 EdgeDifference::EdgeDifference(Graph* g1, Graph* g2): 
-    Measure(G1, G2, "ed"),
-    G1(g1),
-    G2(g2),
+    Measure(g1, g2, "ed"),
     G1NodesCount(g1->getNumNodes()) {
 }
 
@@ -12,6 +10,10 @@ EdgeDifference::~EdgeDifference() {
 }
 
 double EdgeDifference::eval(const Alignment& A) {
+    if (!G1->hasFloatWeight() || !G2->hasFloatWeight()) {
+        return kErrorScore;
+    }
+
     double edgeDifferenceSum = EdgeDifference::getEdgeDifferenceSum(G1, G2, A);
     uint pairsCount = (G1NodesCount * (G1NodesCount + 1)) / 2;
     return EdgeDifference::adjustSumToTargetScore(edgeDifferenceSum, pairsCount);

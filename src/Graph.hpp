@@ -170,8 +170,9 @@ public:
 
     // TODO: make const
     Matrix<float>& getFloatWeights() ;
+    bool hasFloatWeight() const;
 private:
-    bool hasFloatWeight = false;
+    bool parseFloatWeight = false;
     Matrix<float> floatWeights;
     double maxGraphletSize = 4; //default is 4, 5 is too big
     string name;

@@ -33,7 +33,7 @@ Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHa
         Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
     }
     else if(format == ".elw"){
-        g.hasFloatWeight = true;
+        g.parseFloatWeight = true;
         Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
     }
     else
@@ -220,7 +220,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
 #else
     vector<vector<uint>> edgeList(vecLen, vector<uint> (2));
     vector<float> floatWeightList;
-    if (g.hasFloatWeight) {
+    if (g.parseFloatWeight) {
         floatWeightList = vector<float>(vecLen, 0);
     }
 #endif
@@ -242,7 +242,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             throw runtime_error("File not in edge-list format: "+fin);
         }
 #else
-        if (g.hasFloatWeight) {
+        if (g.parseFloatWeight) {
             if (edges[i].size() != 3)
                 throw runtime_error("File not in edge-list-weight format: "+fin);
             // Get float weight
@@ -256,7 +256,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         node2s = edges[i][1];
 
         // Detects self-looping edges.
-        if(node1s == node2s && !g.hasFloatWeight) {
+        if(node1s == node2s && !g.parseFloatWeight) {
             errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1s << '\n';
             throw runtime_error(errorMsg.str().c_str());
         }
@@ -287,7 +287,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         index2 = nodeName2IndexMap[node2s];
         edgeList[i][0] = index1;
         edgeList[i][1] = index2;
-        if (g.hasFloatWeight) {
+        if (g.parseFloatWeight) {
             floatWeightList[i] = stof(edgeValue);
         }
 #ifdef MULTI_PAIRWISE
@@ -301,7 +301,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     const size_t nodeSize = nodes.size();
     g.adjLists = vector<vector<uint> > (nodeSize, vector<uint>(0));
     g.matrix = Matrix<MATRIX_UNIT>(nodeSize);
-    if (g.hasFloatWeight) {
+    if (g.parseFloatWeight) {
         g.floatWeights = Matrix<float>(nodeSize);
     }
     uint node1;
@@ -320,7 +320,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             throw runtime_error(errorMsg.str().c_str());
         }
 
-        if(node1 == node2 && !g.hasFloatWeight) {
+        if(node1 == node2 && !g.parseFloatWeight) {
           errorMsg << "self-loops not allowed, node number " << node1 << '\n';
           throw runtime_error(errorMsg.str().c_str());
         }
@@ -330,7 +330,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             g.matrix[node1][node2] = g.matrix[node2][node1] = edgeList[i][2];
         #else
             g.matrix[node1][node2] = g.matrix[node2][node1] = true;
-            if (g.hasFloatWeight) {
+            if (g.parseFloatWeight) {
                 g.floatWeights[node1][node2] = g.floatWeights[node2][node1] = floatWeightList[i];
             }
         #endif
@@ -1778,3 +1778,7 @@ uint Graph::getWeightedNumEdges() {
     return weightedNumEdges;
 }
 #endif
+
+bool Graph::hasFloatWeight() const {
+    return parseFloatWeight;
+}
