@@ -1116,9 +1116,9 @@ void SANA::performChange(int type) {
 		// only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
     uint betterHole = wasBadMove ? oldTarget : newTarget;
 
-		static double pBad;
-		double p = trueAcceptingProbability();
-		if(p>0) pBad = p;
+        static double pBad;
+		if(trueAcceptingProbability()>0)
+            pBad = trueAcceptingProbability();
 
 		coreCount[source]++;
 		coreFreq[source][betterHole]++;
@@ -1204,8 +1204,8 @@ void SANA::performSwap(int type) {
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
         static double pBad;
-        double p = trueAcceptingProbability();
-	      if(p>0) pBad = p;
+        if(trueAcceptingProbability()>0)
+            pBad = trueAcceptingProbability();
 
         coreCount[source1]++;
         weightedCoreFreq[source1][target1] += 1-pBad;
@@ -2783,8 +2783,8 @@ void SANA::performChange(Job &job, int type) {
 		// only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
     uint betterHole = wasBadMove ? oldTarget : newTarget;
 		static double pBad;
-		double p = trueAcceptingProbability();
-		if(p>0) pBad = p;
+        if(trueAcceptingProbability()>0)
+            pBad = trueAcceptingProbability();
 
 		coreCount[source]++;
 		coreFreq[source][betterHole]++;
@@ -2870,8 +2870,8 @@ void SANA::performSwap(Job &job, int type) {
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
         static double pBad;
-        double p = trueAcceptingProbability();
-		    if(p>0) pBad = p;
+        if(trueAcceptingProbability()>0)
+            pBad = trueAcceptingProbability();
 
         coreCount[source1]++;
         weightedCoreFreq[source1][target1] += 1-pBad;
