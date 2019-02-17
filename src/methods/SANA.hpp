@@ -93,6 +93,9 @@ private:
     double lowerTBound = 0;
     double upperTBound = 0;
 
+    //store whether or not most recent move was bad
+    bool wasBadMove = false;
+
     //data structures for the networks
     uint n1;
     uint n2;
@@ -395,7 +398,7 @@ private:
                                               "nodec", "noded", "sequence" };
 
 
-    // Code related with parallel pareto run, these code will be later refactored along with the 
+    // Code related with parallel pareto run, these code will be later refactored along with the
     // rest of SANA's code.
 
     // This construct only contain properties that can't be shared between alignments
@@ -422,7 +425,7 @@ private:
     };
 
     struct Job {
-        uint id;     // A job's ID equals to its index in the jobs vector.  
+        uint id;     // A job's ID equals to its index in the jobs vector.
                      // Given an id, you can access a job by jobs[id].
         AlignmentInfo info;
 
@@ -439,10 +442,10 @@ private:
     void initializeJobs();
 
     const uint insertionsPerStepOfEachThread = 5;
-    
+
     // There is no need to pass a iter to this function. And perhaps to other functions like simpleRun, simpleParetoRun.
     unordered_set<vector<uint>*>* parallelParetoRun(const Alignment& A, long long int maxExecutionIterations,
-                                                    const string &fileName);   
+                                                    const string &fileName);
     unordered_set<vector<uint>*>* parallelParetoRun(const Alignment& A, double maxExecutionSeconds,
                                                     const string &fileName);
     void startParallelParetoRunByIteration(Job &job, long long int maxExecutionIterations);
@@ -461,7 +464,7 @@ private:
 
     uint G1RandomUnlockedNode(Job &job);
     uint G1RandomUnlockedNode(Job &job, uint source1);
-    uint G1RandomUnlockedNode_Fast(Job &job);    
+    uint G1RandomUnlockedNode_Fast(Job &job);
     uint G2RandomUnlockedNode(Job &job, uint target1);
     uint G2RandomUnlockedNode_Fast(Job &job);
 
@@ -486,6 +489,8 @@ private:
     double EWECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     int ncIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double localScoreSumIncSwapOp(Job &job, vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
+
+
 
     bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum, 
                          double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, 
