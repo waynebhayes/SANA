@@ -24,12 +24,16 @@ Graph& Graph::loadGraph(string name, Graph& g) {
 
 Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHaveTypes){
     g.path = path;
-    string format = path.substr(path.size()-3);
+    string format = path.substr(path.find_last_of('.'));
     if(format == ".gw"){
         g.loadGwFile(path);
         g.name = name;
     }
     else if(format == ".el"){
+        Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
+    }
+    else if(format == ".elw"){
+        g.parseFloatWeight = true;
         Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
     }
     else
@@ -154,23 +158,22 @@ void Graph::loadGraphFromBinary(Graph& g, string graphName, string lockFile, boo
 }
 
 void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes) {
-#if 0 // cool C++ count nodes
-    pair<unsigned, unsigned> vecLens = countVecLens(fin);
-    const size_t nodeLen = vecLens.first;
-    const size_t vecLen = vecLens.second;
-    //cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
-#else // yucky awk code to count nodes
-    string cmd = "awk '{ for (i=1; i<=NF; ++i) a[tolower($i)]++ } END { print length(a) \" \" NR }' ";
-    cmd += fin;
-    string toParse = exec(cmd);
-    string tmp;
-    stringstream parseSS(toParse);
-    parseSS >> tmp;
-    const size_t nodeLen = atoi(tmp.c_str());
-    parseSS >> tmp;
-    const size_t vecLen = atoi(tmp.c_str());
+    ifstream infile(fin.c_str());
+    string line;
+    unordered_set<string> record;
+    size_t lineCount = 0;
+    while (getline(infile, line)) {
+        string node1, node2;
+        istringstream iss(line); 
+        iss >> node1 >> node2;
+        record.insert(node1);
+        record.insert(node2);
+        ++lineCount;
+    }
+    const size_t nodeLen = record.size();
+    const size_t vecLen = lineCount;
     cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
-#endif
+
     g.name = graphName;
     g.geneCount = 0;
     g.miRNACount = 0;
@@ -216,6 +219,10 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     vector<vector<uint>> edgeList(vecLen, vector<uint> (3));
 #else
     vector<vector<uint>> edgeList(vecLen, vector<uint> (2));
+    vector<float> floatWeightList;
+    if (g.parseFloatWeight) {
+        floatWeightList = vector<float>(vecLen, 0);
+    }
 #endif
     stringstream errorMsg;
     string edgeValue;
@@ -235,7 +242,13 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             throw runtime_error("File not in edge-list format: "+fin);
         }
 #else
-        if (edges[i].size() != 2) {
+        if (g.parseFloatWeight) {
+            if (edges[i].size() != 3)
+                throw runtime_error("File not in edge-list-weight format: "+fin);
+            // Get float weight
+            edgeValue = edges[i][2];
+        }
+        else if (edges[i].size() != 2) {
             throw runtime_error("File not in edge-list format: "+fin);
         }
 #endif
@@ -243,7 +256,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         node2s = edges[i][1];
 
         // Detects self-looping edges.
-        if(node1s == node2s) {
+        if(node1s == node2s && !g.parseFloatWeight) {
             errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1s << '\n';
             throw runtime_error(errorMsg.str().c_str());
         }
@@ -274,6 +287,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         index2 = nodeName2IndexMap[node2s];
         edgeList[i][0] = index1;
         edgeList[i][1] = index2;
+        if (g.parseFloatWeight) {
+            floatWeightList[i] = stof(edgeValue);
+        }
 #ifdef MULTI_PAIRWISE
         edgeList[i][2] = stoi(edgeValue);
         assert(edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
@@ -285,6 +301,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     const size_t nodeSize = nodes.size();
     g.adjLists = vector<vector<uint> > (nodeSize, vector<uint>(0));
     g.matrix = Matrix<MATRIX_UNIT>(nodeSize);
+    if (g.parseFloatWeight) {
+        g.floatWeights = Matrix<float>(nodeSize);
+    }
     uint node1;
     uint node2;
     const size_t edgeListLen = edgeList.size();
@@ -301,7 +320,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             throw runtime_error(errorMsg.str().c_str());
         }
 
-        if(node1 == node2) {
+        if(node1 == node2 && !g.parseFloatWeight) {
           errorMsg << "self-loops not allowed, node number " << node1 << '\n';
           throw runtime_error(errorMsg.str().c_str());
         }
@@ -311,6 +330,9 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             g.matrix[node1][node2] = g.matrix[node2][node1] = edgeList[i][2];
         #else
             g.matrix[node1][node2] = g.matrix[node2][node1] = true;
+            if (g.parseFloatWeight) {
+                g.floatWeights[node1][node2] = g.floatWeights[node2][node1] = floatWeightList[i];
+            }
         #endif
         g.adjLists[node1].push_back(node2);
         g.adjLists[node2].push_back(node1);
@@ -512,6 +534,21 @@ uint Graph::getNumConnectedComponents() const {
 
 void Graph::getMatrix(Matrix<MATRIX_UNIT>& matrixCopy) const {
     matrixCopy = matrix;
+}
+
+Matrix<MATRIX_UNIT>& Graph::getMatrix() {
+    return matrix;
+}
+
+const vector<vector<uint>>& Graph::getAdjLists() const {
+    return adjLists;
+}
+const vector<vector<uint>>& Graph::getEdgeList() const {
+    return edgeList;
+}
+
+Matrix<float>& Graph::getFloatWeights() {
+    return floatWeights;
 }
 
 void Graph::getAdjLists(vector<vector<uint> >& adjListsCopy) const {
@@ -1741,3 +1778,7 @@ uint Graph::getWeightedNumEdges() {
     return weightedNumEdges;
 }
 #endif
+
+bool Graph::hasFloatWeight() const {
+    return parseFloatWeight;
+}
