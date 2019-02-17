@@ -164,6 +164,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     const size_t vecLen = vecLens.second;
     //cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
 #else // yucky awk code to count nodes
+/*
     string cmd = "awk '{ for (i=1; i<=NF; ++i) a[tolower($i)]++ } END { print length(a) \" \" NR }' ";
     cmd += fin;
     string toParse = exec(cmd);
@@ -171,20 +172,19 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     stringstream parseSS(toParse);
     parseSS >> tmp;
     parseSS >> tmp;
+*/
 
     ifstream infile(fin);
     string line;
-    unordered_set<uint> record;
+    unordered_set<string> record;
     size_t lineCount = 0;
-    if (g.hasFloatWeight) {
-       while (getline(infile, line)) {
-           uint node1 = 0, node2 = 0;
-           istringstream iss(line); 
-           iss >> node1 >> node2;
-           record.insert(node1);
-           record.insert(node2);
-           ++lineCount;
-       }
+    while (getline(infile, line)) {
+        string node1, node2;
+        istringstream iss(line); 
+        iss >> node1 >> node2;
+        record.insert(node1);
+        record.insert(node2);
+        ++lineCount;
     }
 
     const size_t nodeLen = record.size();
@@ -274,7 +274,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         node2s = edges[i][1];
 
         // Detects self-looping edges.
-        if(node1s == node2s) {
+        if(node1s == node2s && !g.hasFloatWeight) {
             errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1s << '\n';
             throw runtime_error(errorMsg.str().c_str());
         }
@@ -338,7 +338,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             throw runtime_error(errorMsg.str().c_str());
         }
 
-        if(node1 == node2) {
+        if(node1 == node2 && !g.hasFloatWeight) {
           errorMsg << "self-loops not allowed, node number " << node1 << '\n';
           throw runtime_error(errorMsg.str().c_str());
         }

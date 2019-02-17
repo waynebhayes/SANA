@@ -356,7 +356,8 @@ private:
     void initializeParetoFront();
     vector<double> getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum,
                                      double newLocalScoreSum, double newWecSum, double newNcSum,
-                                     double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer);
+                                     double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer,
+                                     double newEdSum);
     bool dominates(vector<double> &left, vector<double> &right);
     void printParetoFront(const string &fileName);
     void deallocateParetoData();
@@ -384,6 +385,7 @@ private:
     unordered_map<vector<uint>*, double> storedEwecSum;
     unordered_map<vector<uint>*, int> storedNcSum;
     unordered_map<vector<uint>*, double> storedTCSum;
+    unordered_map<vector<uint>*, double> storedEdSum;
     unordered_map<vector<uint>*, double> storedCurrentScore;
     unordered_map<vector<uint>*, map<string, double>*> storedLocalScoreSumMap;
     typedef double (*calc)(PARAMS);
@@ -473,7 +475,9 @@ private:
     double EWECSimCombo(Job &job, uint source, uint target);
     double EWECIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     int ncIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-  
+    double edgeDifferenceIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
+
+    double edgeDifferenceIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     int aligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double TCIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     int squaredAligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
@@ -483,10 +487,9 @@ private:
     int ncIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double localScoreSumIncSwapOp(Job &job, vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
 
-
     bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum, 
                          double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, 
-                         double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer);
+                         double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum);
 
 
     vector<double> translateScoresToVector(Job &job);
