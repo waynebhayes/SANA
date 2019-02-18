@@ -75,7 +75,12 @@ public:
 #ifndef NO_ADJ_MATRIX
     void getMatrix(Matrix<MATRIX_UNIT>& matrix) const;
     void setMatrix(Matrix<MATRIX_UNIT>& matrix);
+    // TODO: make const
+    Matrix<MATRIX_UNIT>& getMatrix();
 #endif
+
+    const vector<vector<uint>>& getAdjLists() const;
+    const vector<vector<uint>>& getEdgeList() const;
 
     void getAdjLists(vector<vector<uint> >& adjListsCopy) const;
     void getEdgeList(vector<vector<uint> > & edgeListCopy) const;
@@ -163,7 +168,12 @@ public:
     vector<uint> miRNAIndexList;
     void removeEdge(uint node1, uint node2);
 
+    // TODO: make const
+    Matrix<float>& getFloatWeights() ;
+    bool hasFloatWeight() const;
 private:
+    bool parseFloatWeight = false;
+    Matrix<float> floatWeights;
     double maxGraphletSize = 4; //default is 4, 5 is too big
     string name;
     string path;
