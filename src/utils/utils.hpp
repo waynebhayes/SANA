@@ -46,6 +46,8 @@ const string currentDateTime();
 
 void normalizeWeights(vector<double>& weights);
 
+FILE* decompressFile(const string& decompProg, const string& fileName);
+
 vector<string> fileToStrings(const string& fileName, bool asLines = false);
 vector<vector<string> > fileToStringsByLines(const string& fileName);
 void memExactFileParseByLine(vector<vector<string> >& result, const string& fileName);
