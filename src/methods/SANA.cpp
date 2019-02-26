@@ -43,6 +43,14 @@
 
 using namespace std;
 
+#define PBAD_HIGH_TEMP_LIMIT 0.99999
+#define PBAD_LOW_TEMP_LIMIT 1e-10
+double LOG10_LOW_TEMP = 0, LOG10_HIGH_TEMP = 0, LOG10_NUM_STEPS = 0;
+
+// All comparisons with nan variables are false, including self-equality. Thus if it's not equal to itself, it's NAN.
+// Note you can't just do (x!=x), because that's always false, NAN or not.
+static bool myNan(double x) { return !(x==x); }
+
 void SANA::initTau(void) {
     /*
     tau = vector<double> {
@@ -235,10 +243,14 @@ SANA::SANA(Graph* G1, Graph* G2,
         wecSims                          = (*wecSimsP);
     }
 #ifdef CORES
-    coreFreq = Matrix<ulong>(n1, n2);
-    coreCount       = vector<ulong>(n1, 0);
-    weightedCoreFreq = Matrix<double>(n1, n2);
-    totalCoreWeight = vector<double>(n1, 0);
+    numPegSamples       = vector<ulong>(n1, 0);
+    pegHoleFreq = Matrix<ulong>(n1, n2);
+    weightedPegHoleFreq_orig = Matrix<double>(n1, n2);
+    totalWeightedPegWeight_orig = vector<double>(n1, 0);
+    weightedPegHoleFreq_pBad = Matrix<double>(n1, n2);
+    totalWeightedPegWeight_pBad = vector<double>(n1, 0);
+    weightedPegHoleFreq_1mpBad = Matrix<double>(n1, n2);
+    totalWeightedPegWeight_1mpBad = vector<double>(n1, 0);
 #endif
     //to evaluate local measures incrementally
     if (needLocal) {
@@ -330,17 +342,19 @@ Alignment SANA::run() {
 	unordered_map<uint,string> G1Index2Name = G1->getIndexToNodeNameMap();
 	unordered_map<uint,string> G2Index2Name = G2->getIndexToNodeNameMap();
 	printf("######## core frequencies#########\n");
-	for(uint i=0; i<n1; i++) for(uint j=0; j<n2; j++) if(coreFreq[i][j]>0)
+	for(uint i=0; i<n1; i++) for(uint j=0; j<n2; j++) if(pegHoleFreq[i][j]>0)
 	{
-	    double unweightdedScore = coreFreq[i][j]/(double)coreCount[i],
-		weightedScore = weightedCoreFreq[i][j]/totalCoreWeight[i];
-	    if(weightedScore > MIN_CORE_SCORE)printf("%s %s  %lu / %lu = %.6f weighted %.6f / %.6f = %.6f\n",
-		G1Index2Name[i].c_str(), G2Index2Name[j].c_str(),
-		coreFreq[i][j], coreCount[i],
-		unweightdedScore,
-		weightedCoreFreq[i][j], totalCoreWeight[i],
-		weightedScore
-		);
+	    double unweightdedScore = pegHoleFreq[i][j]/(double)numPegSamples[i],
+			weightedScore_orig = weightedPegHoleFreq_orig[i][j]/totalWeightedPegWeight_orig[i],
+			weightedScore_pBad = weightedPegHoleFreq_pBad[i][j]/totalWeightedPegWeight_pBad[i],
+			weightedScore_1mpBad = weightedPegHoleFreq_1mpBad[i][j]/totalWeightedPegWeight_1mpBad[i];
+	    if(min(unweightdedScore,weightedScore_orig) > MIN_CORE_SCORE || 
+			min(weightedScore_pBad,weightedScore_1mpBad) > MIN_CORE_SCORE)
+				printf("%s %s %.6f %.6f %.6f %.6f\n",
+					G1Index2Name[i].c_str(), G2Index2Name[j].c_str(),
+					unweightdedScore, weightedScore_orig,
+					weightedScore_pBad, weightedScore_1mpBad
+				);
 	}
 #endif
         return align;
@@ -1134,17 +1148,19 @@ void SANA::performChange(int type) {
     #ifdef CORES
 		// Statistics on the emerging core alignment.
 		// only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
-    uint betterHole = wasBadMove ? oldTarget : newTarget;
+		uint betterHole = wasBadMove ? oldTarget : newTarget;
 
-        static double pBad;
-		if(trueAcceptingProbability()>0)
-            pBad = trueAcceptingProbability();
+        double pBad = trueAcceptingProbability();
+        if(pBad <= 0 || myNan(pBad)) pBad = PBAD_LOW_TEMP_LIMIT;
 
-		coreCount[source]++;
-		coreFreq[source][betterHole]++;
-		weightedCoreFreq[source][betterHole] += 1-pBad;
-		totalCoreWeight[source] += 1-pBad;
+		numPegSamples[source]++;
+		pegHoleFreq[source][betterHole]++;
 
+		totalWeightedPegWeight_pBad[source] += pBad;
+		weightedPegHoleFreq_pBad[source][betterHole] += pBad;
+
+		totalWeightedPegWeight_1mpBad[source] += 1-pBad;
+		weightedPegHoleFreq_1mpBad[source][betterHole] += 1-pBad;
 	#endif
 
     if (makeChange) {
@@ -1197,6 +1213,10 @@ void SANA::performChange(int type) {
         vector<double> addScores = translateScoresToVector();
         insertCurrentAndPrepareNewMeasureDataByAlignment(addScores);
     }
+#if CORES
+		totalWeightedPegWeight_orig[source] += pBad;
+		weightedPegHoleFreq_orig[source][(*A)[source]] += pBad;
+#endif
 }
 
 void SANA::performSwap(int type) {
@@ -1227,25 +1247,24 @@ void SANA::performSwap(int type) {
     #ifdef CORES
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
-        static double pBad;
-        if(trueAcceptingProbability()>0)
-            pBad = trueAcceptingProbability();
+        double pBad = trueAcceptingProbability();
+        if(pBad <= 0 || myNan(pBad)) pBad = PBAD_LOW_TEMP_LIMIT;
 
-        coreCount[source1]++;
-        weightedCoreFreq[source1][target1] += 1-pBad;
-        totalCoreWeight[source1] += 1-pBad;
+        uint betterDest1 = wasBadMove ? target1 : target2;
+        uint betterDest2 = wasBadMove ? target2 : target1;
 
-        coreCount[source2]++;
-        weightedCoreFreq[source2][target2] += 1-pBad;
-        totalCoreWeight[source2] += 1-pBad;
+        numPegSamples[source1]++; numPegSamples[source2]++;
+        pegHoleFreq[source1][betterDest1]++; pegHoleFreq[source2][betterDest2]++;
 
-        uint betterDest1 = wasBadMove ? target2 : target1;
-        uint betterDest2 = wasBadMove ? target1 : target2;
+        totalWeightedPegWeight_pBad[source1] += pBad;
+        weightedPegHoleFreq_pBad[source1][betterDest1] += pBad;
+        totalWeightedPegWeight_pBad[source2] += pBad;
+        weightedPegHoleFreq_pBad[source2][betterDest2] += pBad;
 
-        coreFreq[source2][betterDest2]++;
-        coreFreq[source1][betterDest1]++;
-
-
+        totalWeightedPegWeight_1mpBad[source1] += 1-pBad;
+        weightedPegHoleFreq_1mpBad[source1][betterDest1] += 1-pBad;
+        totalWeightedPegWeight_1mpBad[source2] += 1-pBad;
+        weightedPegHoleFreq_1mpBad[source2][betterDest2] += 1-pBad;
     #endif
 
     if (makeChange) {
@@ -1280,6 +1299,12 @@ void SANA::performSwap(int type) {
         vector<double> addScores = translateScoresToVector();
         insertCurrentAndPrepareNewMeasureDataByAlignment(addScores);
     }
+#if CORES
+        totalWeightedPegWeight_orig[source1] += pBad;
+        weightedPegHoleFreq_orig[source1][(*A)[source1]] += pBad;
+        totalWeightedPegWeight_orig[source2] += pBad;
+        weightedPegHoleFreq_orig[source2][(*A)[source2]] += pBad;
+#endif
 }
 
 bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum) {
@@ -2057,15 +2082,6 @@ Alignment SANA::runRestartPhases() {
     return simpleRun(candidates[i], minutesFinalist*60, iters[i]);
 }
 
-#ifdef CORES
-vector<ulong> SANA::getCoreCount() {
-    return coreCount;
-}
-Matrix<ulong> SANA::getCoreFreq() {
-    return coreFreq;
-}
-#endif
-
 uint SANA::getLowestIndex() const {
     double lowestScore = candidatesScores[0];
     uint lowestIndex = 0;
@@ -2089,10 +2105,6 @@ uint SANA::getHighestIndex() const {
     }
     return highestIndex;
 }
-
-#define PBAD_HIGH_TEMP_LIMIT 0.99999
-#define PBAD_LOW_TEMP_LIMIT 1e-10
-double LOG10_LOW_TEMP = 0, LOG10_HIGH_TEMP = 0, LOG10_NUM_STEPS = 0;
 
 
 double SANA::temperatureBracket(double LIMIT, bool is_high){
@@ -2903,16 +2915,18 @@ void SANA::performChange(Job &job, int type) {
     #ifdef CORES
 		// Statistics on the emerging core alignment.
 		// only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
-    uint betterHole = wasBadMove ? oldTarget : newTarget;
-		static double pBad;
-        if(trueAcceptingProbability()>0)
-            pBad = trueAcceptingProbability();
+		uint betterHole = wasBadMove ? oldTarget : newTarget;
+		double pBad = trueAcceptingProbability();
+        if(pBad <= 0 || myNan(pBad)) pBad = PBAD_LOW_TEMP_LIMIT;
 
-		coreCount[source]++;
-		coreFreq[source][betterHole]++;
-		weightedCoreFreq[source][betterHole] += 1-pBad;
-		totalCoreWeight[source] += 1-pBad;
+		numPegSamples[source]++;
+		pegHoleFreq[source][betterHole]++;
 
+		totalWeightedPegWeight_pBad[source] += pBad;
+		weightedPegHoleFreq_pBad[source][betterHole] += pBad;
+
+		totalWeightedPegWeight_1mpBad[source] += 1-pBad;
+		weightedPegHoleFreq_1mpBad[source][betterHole] += 1-pBad;
 	#endif
 
     if (makeChange) {
@@ -2959,8 +2973,10 @@ void SANA::performChange(Job &job, int type) {
 #endif
     }
 
-   // CORE code is not implemented here, as the original simpleParetoRun
-   // function never access CORE code after pareto run finishes.
+#if CORES
+	totalWeightedPegWeight_orig[source] += pBad;
+	weightedPegHoleFreq_orig[source][(*A)[source]] += pBad;
+#endif
 }
 
 void SANA::performSwap(Job &job, int type) {
@@ -2993,26 +3009,24 @@ void SANA::performSwap(Job &job, int type) {
     #ifdef CORES
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
-        static double pBad;
-        if(trueAcceptingProbability()>0)
-            pBad = trueAcceptingProbability();
+        double pBad = trueAcceptingProbability();
+        if(pBad <= 0 || myNan(pBad)) pBad = PBAD_LOW_TEMP_LIMIT;
 
-        coreCount[source1]++;
-        weightedCoreFreq[source1][target1] += 1-pBad;
-        totalCoreWeight[source1] += 1-pBad;
+        uint betterDest1 = wasBadMove ? target1 : target2;
+        uint betterDest2 = wasBadMove ? target2 : target1;
 
-        coreCount[source2]++;
-        weightedCoreFreq[source2][target2] += 1-pBad;
-        totalCoreWeight[source2] += 1-pBad;
+        numPegSamples[source1]++; numPegSamples[source2]++;
+        pegHoleFreq[source1][betterDest1]++; pegHoleFreq[source2][betterDest2]++;
 
-        uint betterDest1 = wasBadMove ? target2 : target1;
-        uint betterDest2 = wasBadMove ? target1 : target2;
+        totalWeightedPegWeight_pBad[source1] += pBad;
+        weightedPegHoleFreq_pBad[source1][betterDest1] += pBad;
+        totalWeightedPegWeight_pBad[source2] += pBad;
+        weightedPegHoleFreq_pBad[source2][betterDest2] += pBad;
 
-        coreFreq[source2][betterDest2]++;
-        coreFreq[source1][betterDest1]++;
-
-        coreFreq[source2][(*A)[betterDest2]]++;
-        coreFreq[source1][(*A)[betterDest1]]++;
+        totalWeightedPegWeight_1mpBad[source1] += 1-pBad;
+        weightedPegHoleFreq_1mpBad[source1][betterDest1] += 1-pBad;
+        totalWeightedPegWeight_1mpBad[source2] += 1-pBad;
+        weightedPegHoleFreq_1mpBad[source2][betterDest2] += 1-pBad;
     #endif
     if (makeChange) {
         (*A)[source1]       = target2;
@@ -3040,9 +3054,12 @@ void SANA::performSwap(Job &job, int type) {
         }
 #endif
    }
-
-   // CORE code is not implemented here, as the original simpleParetoRun
-   // function never access CORE code after pareto run finishes.
+#if CORES
+        totalWeightedPegWeight_orig[source1] += pBad;
+        weightedPegHoleFreq_orig[source1][(*A)[source1]] += pBad;
+        totalWeightedPegWeight_orig[source2] += pBad;
+        weightedPegHoleFreq_orig[source2][(*A)[source2]] += pBad;
+#endif
 }
 
 void SANA::parallelParetoSANAIteration(Job &job) {
