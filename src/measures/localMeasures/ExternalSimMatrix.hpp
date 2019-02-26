@@ -1,5 +1,6 @@
 #ifndef EXTERNALSIMMATRIX_HPP
 #define EXTERNALSIMMATRIX_HPP
+#include <cstdio>
 #include "LocalMeasure.hpp"
 
 class ExternalSimMatrix: public LocalMeasure {
@@ -8,9 +9,10 @@ public:
     virtual ~ExternalSimMatrix();
 private:
     void initSimMatrix();
-    void loadFormat0();
-    void loadFormat1();
-    void loadFormat2();
+    void loadFormat0(FILE* infile);
+    void loadFormat1(FILE* infile);
+    void loadFormat2(FILE* infile);
+    uint getNumEntries() const { return  sims.size() * sims[0].size(); }
     string file;
     int format;
 };
