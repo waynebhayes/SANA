@@ -96,6 +96,10 @@ private:
     //store whether or not most recent move was bad
     bool wasBadMove = false;
 
+    //store index and sum of circular buffer
+    int index = 0;
+    double sum = 0;
+
     //data structures for the networks
     uint n1;
     uint n2;
@@ -497,8 +501,8 @@ private:
     int ncIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double localScoreSumIncSwapOp(Job &job, vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
 
-    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum, 
-                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, 
+    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum,
+                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore,
                          double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum);
 
     vector<double> translateScoresToVector(Job &job);
