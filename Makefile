@@ -2,7 +2,7 @@ CC = g++
 
 #CXXFLAGS = -I "src/utils" -Wall -fno-inline -O2 -std=c++11 -g3
 #CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DMULTI_PAIRWISE #-pg -ggdb -Bstatic #-static
-CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread #-DUSE_CACHED_FILES #-DSPARSE #-DMULTI_PAIRWISE -DCORES -ggdb #-pg
+CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread #-DUSE_CACHED_FILES #-DSPARSE #-DCORES #-DMULTI_PAIRWISE -ggdb #-pg
 
 INCLUDES =
 LFLAGS =

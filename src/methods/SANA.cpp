@@ -333,7 +333,7 @@ Alignment SANA::run() {
             align = hillClimbingAlignment(align, (long long int)(10000000)); //arbitrarily chosen, probably too big.
             cout << hill.elapsedString() << endl;
         }
-#define PRINT_CORES 0
+#define PRINT_CORES 1
 #define MIN_CORE_SCORE 1e-3 // 1e-4 gives files 2G long, 1e-3 gives just a few MB.
 #if PRINT_CORES
 #ifndef CORES
@@ -638,7 +638,7 @@ void SANA::initDataStructures(const Alignment& startA) {
 
     iterationsPerformed = 0;
     sampledProbability.clear();
-
+    sum = 0;
     currentScore = eval(startA);
     timer.start();
 }
@@ -1489,16 +1489,18 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     }
 
     if (wasBadMove && (iterationsPerformed % 512 == 0 || (TCWeight > 0 && iterationsPerformed % 32 == 0))) { //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
-        if (sampledProbability.size() == 1000){
-            if (index == 1000){
+        /*if (sampledProbability.size() == 1000){
+            sampledProbability.erase(sampledProbability.begin());
+        sampledProbability.push_back(badProbability);*/
+        if (sampledProbability.size() == 1000) {
+            if (index == 1000)
                 index = 0;
-            }
             sum -= sampledProbability[index];
             sum += badProbability;
             sampledProbability[index] = badProbability;
             index++;
         }
-        else{
+        else {
             sampledProbability.push_back(badProbability);
             sum += badProbability;
         }
