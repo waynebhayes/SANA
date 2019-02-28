@@ -88,6 +88,7 @@ SANA::SANA(Graph* G1, Graph* G2,
            G1FloatWeights(G1->getFloatWeights()),
            G2FloatWeights(G2->getFloatWeights())
 {
+
     //data structures for the networks
     n1              = G1->getNumNodes();
     n2              = G2->getNumNodes();
@@ -339,6 +340,8 @@ Alignment SANA::run() {
 #ifndef CORES
 #error must have CORES macro defined to print them
 #endif
+    std::cout << MC->toString() << std::endl;
+    exit(1);
 	unordered_map<uint,string> G1Index2Name = G1->getIndexToNodeNameMap();
 	unordered_map<uint,string> G2Index2Name = G2->getIndexToNodeNameMap();
 	printf("######## core frequencies#########\n");
@@ -542,7 +545,7 @@ double SANA::acceptingProbability(double energyInc, double Temperature) {
 }
 
 double SANA::trueAcceptingProbability(){
-    return sum/sampledProbability.size();
+    return sum/sampledProbabilitySize;
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
@@ -637,7 +640,7 @@ void SANA::initDataStructures(const Alignment& startA) {
     }
 
     iterationsPerformed = 0;
-    sampledProbability.clear();
+    sampledProbabilitySize = 0;
     sum = 0;
     currentScore = eval(startA);
     timer.start();
@@ -1492,7 +1495,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         /*if (sampledProbability.size() == 1000){
             sampledProbability.erase(sampledProbability.begin());
         sampledProbability.push_back(badProbability);*/
-        if (sampledProbability.size() == 1000) {
+        if (sampledProbabilitySize == 1000) {
             if (index == 1000)
                 index = 0;
             sum -= sampledProbability[index];
@@ -1501,8 +1504,9 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
             index++;
         }
         else {
-            sampledProbability.push_back(badProbability);
+            sampledProbability[sampledProbabilitySize] = badProbability;
             sum += badProbability;
+            sampledProbabilitySize++;
         }
     }
     return makeChange;
@@ -2548,8 +2552,8 @@ double SANA::getPforTInitial(const Alignment& startA, double maxExecutionSeconds
         }
         if (iter%iterationsPerStep == 0) {
             result = trueAcceptingProbability();
-            if ((iter != 0 and timer.elapsed() > maxExecutionSeconds and sampledProbability.size() > 0) or iter > 5E7) {
-                if(sampledProbability.size() == 0){
+            if ((iter != 0 and timer.elapsed() > maxExecutionSeconds and sampledProbabilitySize > 0) or iter > 5E7) {
+                if(sampledProbabilitySize == 0){
                     return 1;
                 }else{
                     return result;
@@ -3250,7 +3254,7 @@ void SANA::releaseAlignment(Job &job) {
 }
 
 double SANA::trueAcceptingProbability(Job &job) {
-    return sum/job.sampledProbability.size();
+    return sum/sampledProbabilitySize;
 }
 
 void SANA::attemptInsertAlignment(Job &job) {

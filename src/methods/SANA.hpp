@@ -337,7 +337,8 @@ private:
     double currentScore;
     double previousScore;
     double energyInc;
-    vector<double> sampledProbability;
+    double sampledProbability[1000];
+    int sampledProbabilitySize = 0;
     void SANAIteration();
     void performChange(int type);
     void performSwap(int type);
