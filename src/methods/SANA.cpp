@@ -334,14 +334,12 @@ Alignment SANA::run() {
             align = hillClimbingAlignment(align, (long long int)(10000000)); //arbitrarily chosen, probably too big.
             cout << hill.elapsedString() << endl;
         }
-#define PRINT_CORES 1
+#define PRINT_CORES 0
 #define MIN_CORE_SCORE 1e-3 // 1e-4 gives files 2G long, 1e-3 gives just a few MB.
 #if PRINT_CORES
 #ifndef CORES
 #error must have CORES macro defined to print them
 #endif
-    std::cout << MC->toString() << std::endl;
-    exit(1);
 	unordered_map<uint,string> G1Index2Name = G1->getIndexToNodeNameMap();
 	unordered_map<uint,string> G2Index2Name = G2->getIndexToNodeNameMap();
 	printf("######## core frequencies#########\n");
@@ -3239,6 +3237,10 @@ void SANA::initializeJobs() {
         jobs[i].id = i;
         jobs[i].gen = mt19937(getRandomSeed());
         jobs[i].iterationsPerformed = 0;
+		
+		jobs[i].sum = 0;
+		jobs[i].sampledProbabilitySize = 0;
+		jobs[i].index = 0;
     }
 }
 
@@ -3254,7 +3256,7 @@ void SANA::releaseAlignment(Job &job) {
 }
 
 double SANA::trueAcceptingProbability(Job &job) {
-    return sum/sampledProbabilitySize;
+    return sum/job.sampledProbabilitySize;
 }
 
 void SANA::attemptInsertAlignment(Job &job) {
@@ -3601,10 +3603,23 @@ bool SANA::scoreComparison(Job &job, double newAligEdges, double newInducedEdges
         if(makeChange) info.currentScores = addScores;
     }
     if (((TCWeight > 0 && job.iterationsPerformed % 32 == 0) || job.iterationsPerformed % 512 == 0) && wasBadMove) { //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
-       if (job.sampledProbability.size() == 1000) {
+       /*if (job.sampledProbability.size() == 1000) {
            job.sampledProbability.erase(job.sampledProbability.begin());
        }
-       job.sampledProbability.push_back(badProbability);
+       job.sampledProbability.push_back(badProbability);*/
+	   if (job.sampledProbabilitySize == 1000) {
+            if (job.index == 1000)
+                job.index = 0;
+            job.sum -= sampledProbability[job.index];
+            job.sum += badProbability;
+            job.sampledProbability[job.index] = badProbability;
+            job.index++;
+        }
+        else {
+            job.sampledProbability[job.sampledProbabilitySize] = badProbability;
+            job.sum += badProbability;
+            job.sampledProbabilitySize++;
+        }
     }
 
     return makeChange;

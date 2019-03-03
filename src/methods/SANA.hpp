@@ -444,7 +444,10 @@ private:
         long long int iterationsPerformed;
         double energyInc;
         double Temperature;
-        vector<double> sampledProbability;
+		double sampledProbability[1000];
+		int sampledProbabilitySize = 0;
+		int sum = 0;
+		int index = 0;
 
         // mt19937 is a random generator that is implemented with mutex.
         // Which means each thread should have an unique random generator.
