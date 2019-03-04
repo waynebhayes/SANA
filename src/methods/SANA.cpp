@@ -88,7 +88,6 @@ SANA::SANA(Graph* G1, Graph* G2,
            G1FloatWeights(G1->getFloatWeights()),
            G2FloatWeights(G2->getFloatWeights())
 {
-
     //data structures for the networks
     n1              = G1->getNumNodes();
     n2              = G2->getNumNodes();
@@ -3229,10 +3228,6 @@ void SANA::initializeJobs() {
         jobs[i].id = i;
         jobs[i].gen = mt19937(getRandomSeed());
         jobs[i].iterationsPerformed = 0;
-
-		jobs[i].buffer_sum = 0;
-		jobs[i].sampledProbabilitySize = 0;
-		jobs[i].buffer_index = 0;
     }
 }
 
@@ -3248,7 +3243,7 @@ void SANA::releaseAlignment(Job &job) {
 }
 
 double SANA::trueAcceptingProbability(Job &job) {
-    return job.buffer_sum/job.sampledProbabilitySize;
+    return vectorMean(job.sampledProbability);
 }
 
 void SANA::attemptInsertAlignment(Job &job) {
@@ -3595,14 +3590,10 @@ bool SANA::scoreComparison(Job &job, double newAligEdges, double newInducedEdges
         if(makeChange) info.currentScores = addScores;
     }
     if (((TCWeight > 0 && job.iterationsPerformed % 32 == 0) || job.iterationsPerformed % 512 == 0) && wasBadMove) { //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
-
-        job.sampledProbability[job.buffer_index] = badProbability;
-        job.buffer_sum += badProbability;
-        job.buffer_index = job.buffer_index+1 == CIRCULAR_BUFFER_SIZE ? 0 : job.buffer_index+1;
-        if (job.sampledProbabilitySize == CIRCULAR_BUFFER_SIZE)
-             job.buffer_sum -= job.sampledProbability[job.buffer_index];
-        else
-            sampledProbabilitySize++;
+        if (job.sampledProbability.size() == 1000) {
+            job.sampledProbability.erase(job.sampledProbability.begin());
+        }
+        job.sampledProbability.push_back(badProbability);
     }
 
     return makeChange;
