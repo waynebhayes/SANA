@@ -20,6 +20,8 @@
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, uint pairsCount
 #endif
 
+#define CIRCULAR_BUFFER_SIZE 1000000
+
 class SANA: public Method {
 
 public:
@@ -97,8 +99,8 @@ private:
     bool wasBadMove = false;
 
     //store index and sum of circular buffer
-    int index = 0;
-    double sum = 0;
+    int buffer_index = 0;
+    double buffer_sum = 0;
 
     //data structures for the networks
     uint n1;
@@ -337,7 +339,7 @@ private:
     double currentScore;
     double previousScore;
     double energyInc;
-    double sampledProbability[1000];
+    double sampledProbability[CIRCULAR_BUFFER_SIZE];
     int sampledProbabilitySize = 0;
     void SANAIteration();
     void performChange(int type);
@@ -444,10 +446,10 @@ private:
         long long int iterationsPerformed;
         double energyInc;
         double Temperature;
-		double sampledProbability[1000];
+		double sampledProbability[CIRCULAR_BUFFER_SIZE];
 		int sampledProbabilitySize = 0;
-		int sum = 0;
-		int index = 0;
+		double buffer_sum = 0;
+		int buffer_index = 0;
 
         // mt19937 is a random generator that is implemented with mutex.
         // Which means each thread should have an unique random generator.

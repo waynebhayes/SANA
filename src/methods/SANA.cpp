@@ -543,7 +543,7 @@ double SANA::acceptingProbability(double energyInc, double Temperature) {
 }
 
 double SANA::trueAcceptingProbability(){
-    return sum/sampledProbabilitySize;
+    return buffer_sum/sampledProbabilitySize;
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
@@ -639,7 +639,8 @@ void SANA::initDataStructures(const Alignment& startA) {
 
     iterationsPerformed = 0;
     sampledProbabilitySize = 0;
-    sum = 0;
+    buffer_sum = 0;
+    buffer_index = 0;
     currentScore = eval(startA);
     timer.start();
 }
@@ -1490,22 +1491,13 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     }
 
     if (wasBadMove && (iterationsPerformed % 512 == 0 || (TCWeight > 0 && iterationsPerformed % 32 == 0))) { //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
-        /*if (sampledProbability.size() == 1000){
-            sampledProbability.erase(sampledProbability.begin());
-        sampledProbability.push_back(badProbability);*/
-        if (sampledProbabilitySize == 1000) {
-            if (index == 1000)
-                index = 0;
-            sum -= sampledProbability[index];
-            sum += badProbability;
-            sampledProbability[index] = badProbability;
-            index++;
-        }
-        else {
-            sampledProbability[sampledProbabilitySize] = badProbability;
-            sum += badProbability;
+        sampledProbability[buffer_index] = badProbability;
+        buffer_sum += badProbability;
+        buffer_index = buffer_index+1 == CIRCULAR_BUFFER_SIZE ? 0 : buffer_index+1;
+        if (sampledProbabilitySize == CIRCULAR_BUFFER_SIZE)
+             buffer_sum -= sampledProbability[buffer_index];
+        else
             sampledProbabilitySize++;
-        }
     }
     return makeChange;
 }
@@ -3237,10 +3229,10 @@ void SANA::initializeJobs() {
         jobs[i].id = i;
         jobs[i].gen = mt19937(getRandomSeed());
         jobs[i].iterationsPerformed = 0;
-		
-		jobs[i].sum = 0;
+
+		jobs[i].buffer_sum = 0;
 		jobs[i].sampledProbabilitySize = 0;
-		jobs[i].index = 0;
+		jobs[i].buffer_index = 0;
     }
 }
 
@@ -3256,7 +3248,7 @@ void SANA::releaseAlignment(Job &job) {
 }
 
 double SANA::trueAcceptingProbability(Job &job) {
-    return sum/job.sampledProbabilitySize;
+    return job.buffer_sum/job.sampledProbabilitySize;
 }
 
 void SANA::attemptInsertAlignment(Job &job) {
@@ -3603,23 +3595,14 @@ bool SANA::scoreComparison(Job &job, double newAligEdges, double newInducedEdges
         if(makeChange) info.currentScores = addScores;
     }
     if (((TCWeight > 0 && job.iterationsPerformed % 32 == 0) || job.iterationsPerformed % 512 == 0) && wasBadMove) { //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
-       /*if (job.sampledProbability.size() == 1000) {
-           job.sampledProbability.erase(job.sampledProbability.begin());
-       }
-       job.sampledProbability.push_back(badProbability);*/
-	   if (job.sampledProbabilitySize == 1000) {
-            if (job.index == 1000)
-                job.index = 0;
-            job.sum -= sampledProbability[job.index];
-            job.sum += badProbability;
-            job.sampledProbability[job.index] = badProbability;
-            job.index++;
-        }
-        else {
-            job.sampledProbability[job.sampledProbabilitySize] = badProbability;
-            job.sum += badProbability;
-            job.sampledProbabilitySize++;
-        }
+
+        job.sampledProbability[job.buffer_index] = badProbability;
+        job.buffer_sum += badProbability;
+        job.buffer_index = job.buffer_index+1 == CIRCULAR_BUFFER_SIZE ? 0 : job.buffer_index+1;
+        if (job.sampledProbabilitySize == CIRCULAR_BUFFER_SIZE)
+             job.buffer_sum -= job.sampledProbability[job.buffer_index];
+        else
+            sampledProbabilitySize++;
     }
 
     return makeChange;
