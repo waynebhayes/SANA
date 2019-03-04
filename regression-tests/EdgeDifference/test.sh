@@ -16,7 +16,7 @@ for network in 150 WMean_con WMean_ocd; do
     nodes_count=`awk '{ print $1"\n"$2 }' $file.elw | sort | uniq | wc -l`
     if (( $match_nodes != $nodes_count )); then
         echo "Failed to align $network to itself" 
-        echo "  EXPECTED matching nodes: $nodes_count GOT: $nodes_count"
+        echo "  EXPECTED matching nodes: $nodes_count GOT: $match_nodes"
         exit 1
     fi
     
