@@ -1490,13 +1490,19 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     }
 
     if (wasBadMove && (iterationsPerformed % 512 == 0 || (TCWeight > 0 && iterationsPerformed % 32 == 0))) { //this will never run in the case of iterationsPerformed never being changed so that it doesn't greatly slow down the program if for some reason iterationsPerformed doesn't need to be changed.
-        sampledProbability[buffer_index] = badProbability;
-        buffer_sum += badProbability;
-        buffer_index = buffer_index+1 == CIRCULAR_BUFFER_SIZE ? 0 : buffer_index+1;
-        if (sampledProbabilitySize == CIRCULAR_BUFFER_SIZE)
-             buffer_sum -= sampledProbability[buffer_index];
+        if (sampledProbabilitySize == CIRCULAR_BUFFER_SIZE) {
+            buffer_index = buffer_index == CIRCULAR_BUFFER_SIZE ? 0 : buffer_index;
+            buffer_sum -= sampledProbability[buffer_index];
+            sampledProbability[buffer_index] = badProbability;
+        }
         else
+        {
+            sampledProbability[buffer_index] = badProbability;
             sampledProbabilitySize++;
+        }
+        buffer_sum += badProbability;
+        buffer_index++;
+
     }
     return makeChange;
 }

@@ -20,7 +20,7 @@
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, uint pairsCount
 #endif
 
-#define CIRCULAR_BUFFER_SIZE 1000000
+#define CIRCULAR_BUFFER_SIZE 1000
 
 class SANA: public Method {
 
