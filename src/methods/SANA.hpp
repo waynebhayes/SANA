@@ -257,7 +257,9 @@ private:
 
     //to evaluate S3 incrementally
     bool needInducedEdges;
-    int inducedEdges;
+    int inducedEdges = -1;    // This variable must be initialized as non-zero since it's passed
+                              // to scoreComparison in performSwap as "newInducedEdges" which could
+                              // make computation go wrong.
     int inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
 
     bool needTC;
