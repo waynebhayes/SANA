@@ -304,6 +304,12 @@ private:
 
     Matrix<double> weightedPegHoleFreq_1mpBad; // weighted by 1-pBad
     vector<double> totalWeightedPegWeight_1mpBad;
+
+    Matrix<double> weightedPegHoleFreq_sqr; // weighted by pBad*(1-pBad)
+    vector<double> totalWeightedPegWeight_sqr;
+
+    Matrix<double> weightedPegHoleFreq_sqrt; // weighted by sqrt(pBad*(1-pBad))
+    vector<double> totalWeightedPegWeight_sqrt;
 #endif
     map<string, vector<vector<float> > > localSimMatrixMap;
     double localScoreSumIncChangeOp(vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
