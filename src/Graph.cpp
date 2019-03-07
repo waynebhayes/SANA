@@ -1095,7 +1095,7 @@ void Graph::removeRandomEdges(double removedEdgesProportion) {
 }
 
 void Graph::rewireRandomEdges(double rewiredEdgesProportion) {
-    uint n = (double) getNumNodes() * rewiredEdgesProportion;
+    uint n = (double) getNumEdges() * rewiredEdgesProportion;
     for (uint i = 0; i <= n; i++) {
         addRandomEdge();
         removeRandomEdge();
