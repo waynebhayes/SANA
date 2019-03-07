@@ -255,12 +255,6 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         node1s = edges[i][0];
         node2s = edges[i][1];
 
-        // Detects self-looping edges.
-        if(node1s == node2s && !g.parseFloatWeight) {
-            errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1s << '\n';
-            throw runtime_error(errorMsg.str().c_str());
-        }
-
         // Detects duplicate edges.
         unordered_map<string, uint> *adjTo1;
         if(adjMatrix.count(node1s) == 0)
@@ -312,19 +306,6 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         node1 = edgeList[i][0];
         node2 = edgeList[i][1];
 
-        if(g.matrix[node1][node2] || g.matrix[node2][node1]) {
-            errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
-	          //unordered_map<uint,string> index2name = g.getIndexToNodeNameMap();
-	          //errorMsg << "In graph[" << graphName << "]: duplicate edges not allowed (in either direction), node names are " <<
-            //          index2name[node1] << " " << index2name[node2] << '\n';
-            throw runtime_error(errorMsg.str().c_str());
-        }
-
-        if(node1 == node2 && !g.parseFloatWeight) {
-          errorMsg << "self-loops not allowed, node number " << node1 << '\n';
-          throw runtime_error(errorMsg.str().c_str());
-        }
-
         // Note that when MULTI_PAIRWISE is on, the adjacency matrix contains full integers, not just bits.
         #ifdef MULTI_PAIRWISE
             g.matrix[node1][node2] = g.matrix[node2][node1] = edgeList[i][2];
@@ -334,8 +315,14 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
                 g.floatWeights[node1][node2] = g.floatWeights[node2][node1] = floatWeightList[i];
             }
         #endif
-        g.adjLists[node1].push_back(node2);
-        g.adjLists[node2].push_back(node1);
+
+        // Self-loop
+        if(node1 == node2) {
+            g.adjLists[node1].push_back(node1);
+        }else{
+            g.adjLists[node1].push_back(node2);
+            g.adjLists[node2].push_back(node1);
+        }
     }
     // init rest of graph
     g.lockedList = vector<bool> (nodeSize, false);
@@ -1201,6 +1188,14 @@ unordered_map<uint,string> Graph::getIndexToNodeNameMap() const {
         res[nameIndexPair.second] = nameIndexPair.first;
     }
     return res;
+}
+
+bool Graph::hasSelfLoop(uint source) const {
+    vector<uint> neighbors = adjLists[source];
+    if(std::find(neighbors.begin(), neighbors.end(), source) != neighbors.end()) {
+        return true;
+    }
+    return false;
 }
 
 vector<string> Graph::getNodeNames() const {

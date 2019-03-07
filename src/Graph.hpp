@@ -122,6 +122,8 @@ public:
     unordered_map<string,uint> getNodeNameToIndexMap() const;
     unordered_map<uint,string> getIndexToNodeNameMap() const;
 
+    bool hasSelfLoop(uint source) const;
+
     void getDistanceMatrix(vector<vector<short> >& dist) const;
 
     vector<uint> degreeDistribution() const;
