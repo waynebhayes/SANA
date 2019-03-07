@@ -251,6 +251,10 @@ SANA::SANA(Graph* G1, Graph* G2,
     totalWeightedPegWeight_pBad = vector<double>(n1, 0);
     weightedPegHoleFreq_1mpBad = Matrix<double>(n1, n2);
     totalWeightedPegWeight_1mpBad = vector<double>(n1, 0);
+    weightedPegHoleFreq_sqr = Matrix<double>(n1, n2);
+    totalWeightedPegWeight_sqr = vector<double>(n1, 0);
+    weightedPegHoleFreq_sqrt = Matrix<double>(n1, n2);
+    totalWeightedPegWeight_sqrt = vector<double>(n1, 0);
 #endif
     //to evaluate local measures incrementally
     if (needLocal) {
@@ -334,7 +338,7 @@ Alignment SANA::run() {
             cout << hill.elapsedString() << endl;
         }
 #define PRINT_CORES 0
-#define MIN_CORE_SCORE 1e-3 // 1e-4 gives files 2G long, 1e-3 gives just a few MB.
+#define MIN_CORE_SCORE 1e-4 // 1e-4 gives files 2G long, 1e-3 gives just a few MB.
 #if PRINT_CORES
 #ifndef CORES
 #error must have CORES macro defined to print them
@@ -342,18 +346,23 @@ Alignment SANA::run() {
 	unordered_map<uint,string> G1Index2Name = G1->getIndexToNodeNameMap();
 	unordered_map<uint,string> G2Index2Name = G2->getIndexToNodeNameMap();
 	printf("######## core frequencies#########\n");
+	printf("p1 p2 unwgtd orig wpBad w1_pB w_sqr w_sqrt\n");
 	for(uint i=0; i<n1; i++) for(uint j=0; j<n2; j++) if(pegHoleFreq[i][j]>0)
 	{
 	    double unweightdedScore = pegHoleFreq[i][j]/(double)numPegSamples[i],
 			weightedScore_orig = weightedPegHoleFreq_orig[i][j]/totalWeightedPegWeight_orig[i],
 			weightedScore_pBad = weightedPegHoleFreq_pBad[i][j]/totalWeightedPegWeight_pBad[i],
-			weightedScore_1mpBad = weightedPegHoleFreq_1mpBad[i][j]/totalWeightedPegWeight_1mpBad[i];
-	    if(min(unweightdedScore,weightedScore_orig) > MIN_CORE_SCORE ||
-			min(weightedScore_pBad,weightedScore_1mpBad) > MIN_CORE_SCORE)
-				printf("%s %s %.6f %.6f %.6f %.6f\n",
+
+			weightedScore_1mpBad = weightedPegHoleFreq_1mpBad[i][j]/totalWeightedPegWeight_1mpBad[i],
+			weightedScore_sqr = weightedPegHoleFreq_sqr[i][j]/totalWeightedPegWeight_sqr[i],
+			weightedScore_sqrt = weightedPegHoleFreq_sqrt[i][j]/totalWeightedPegWeight_sqrt[i];
+	    if(min(unweightdedScore,weightedScore_orig) > MIN_CORE_SCORE || 
+			min(weightedScore_pBad,weightedScore_1mpBad) > MIN_CORE_SCORE || 
+			min(weightedScore_sqr, weightedScore_sqrt)  > MIN_CORE_SCORE)
+				printf("%s %s %.6f %.6f %.6f %.6f %.6f %.6f\n",
 					G1Index2Name[i].c_str(), G2Index2Name[j].c_str(),
 					unweightdedScore, weightedScore_orig,
-					weightedScore_pBad, weightedScore_1mpBad
+					weightedScore_pBad, weightedScore_1mpBad, weightedScore_sqr, weightedScore_sqrt
 				);
 	}
 #endif
@@ -1162,6 +1171,12 @@ void SANA::performChange(int type) {
 
 		totalWeightedPegWeight_1mpBad[source] += 1-pBad;
 		weightedPegHoleFreq_1mpBad[source][betterHole] += 1-pBad;
+
+		totalWeightedPegWeight_sqr[source] += pBad*(1-pBad);
+		weightedPegHoleFreq_sqr[source][betterHole] += pBad*(1-pBad);
+
+		totalWeightedPegWeight_sqrt[source] += sqrt(sqrt(sqrt(pBad*(1-pBad))));
+		weightedPegHoleFreq_sqrt[source][betterHole] += sqrt(sqrt(sqrt(pBad*(1-pBad))));
 	#endif
 
     if (makeChange) {
@@ -1266,6 +1281,16 @@ void SANA::performSwap(int type) {
         weightedPegHoleFreq_1mpBad[source1][betterDest1] += 1-pBad;
         totalWeightedPegWeight_1mpBad[source2] += 1-pBad;
         weightedPegHoleFreq_1mpBad[source2][betterDest2] += 1-pBad;
+
+        totalWeightedPegWeight_sqr[source1] += pBad*(1-pBad);
+        weightedPegHoleFreq_sqr[source1][betterDest1] += pBad*(1-pBad);
+        totalWeightedPegWeight_sqr[source2] += pBad*(1-pBad);
+        weightedPegHoleFreq_sqr[source2][betterDest2] += pBad*(1-pBad);
+
+        totalWeightedPegWeight_sqrt[source1] += sqrt(sqrt(sqrt(pBad*(1-pBad))));
+        weightedPegHoleFreq_sqrt[source1][betterDest1] += sqrt(sqrt(sqrt(pBad*(1-pBad))));
+        totalWeightedPegWeight_sqrt[source2] += sqrt(sqrt(sqrt(pBad*(1-pBad))));
+        weightedPegHoleFreq_sqrt[source2][betterDest2] += sqrt(sqrt(sqrt(pBad*(1-pBad))));
     #endif
 
     if (makeChange) {
@@ -2937,6 +2962,12 @@ void SANA::performChange(Job &job, int type) {
 
 		totalWeightedPegWeight_1mpBad[source] += 1-pBad;
 		weightedPegHoleFreq_1mpBad[source][betterHole] += 1-pBad;
+
+		totalWeightedPegWeight_sqr[source] += pBad*(1-pBad);
+		weightedPegHoleFreq_sqr[source][betterHole] += pBad*(1-pBad);
+
+		totalWeightedPegWeight_sqrt[source] += sqrt(sqrt(sqrt(pBad*(1-pBad))));
+		weightedPegHoleFreq_sqrt[source][betterHole] += sqrt(sqrt(sqrt(pBad*(1-pBad))));
 	#endif
 
     if (makeChange) {
@@ -3037,6 +3068,16 @@ void SANA::performSwap(Job &job, int type) {
         weightedPegHoleFreq_1mpBad[source1][betterDest1] += 1-pBad;
         totalWeightedPegWeight_1mpBad[source2] += 1-pBad;
         weightedPegHoleFreq_1mpBad[source2][betterDest2] += 1-pBad;
+
+        totalWeightedPegWeight_sqr[source1] += pBad*(1-pBad);
+        weightedPegHoleFreq_sqr[source1][betterDest1] += pBad*(1-pBad);
+        totalWeightedPegWeight_sqr[source2] += pBad*(1-pBad);
+        weightedPegHoleFreq_sqr[source2][betterDest2] += pBad*(1-pBad);
+
+        totalWeightedPegWeight_sqrt[source1] += sqrt(sqrt(sqrt(pBad*(1-pBad))));
+        weightedPegHoleFreq_sqrt[source1][betterDest1] += sqrt(sqrt(sqrt(pBad*(1-pBad))));
+        totalWeightedPegWeight_sqrt[source2] += sqrt(sqrt(sqrt(pBad*(1-pBad))));
+        weightedPegHoleFreq_sqrt[source2][betterDest2] += sqrt(sqrt(sqrt(pBad*(1-pBad))));
     #endif
     if (makeChange) {
         (*A)[source1]       = target2;
