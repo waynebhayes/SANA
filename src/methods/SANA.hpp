@@ -20,6 +20,8 @@
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, uint pairsCount
 #endif
 
+#define CIRCULAR_BUFFER_SIZE 1000
+
 class SANA: public Method {
 
 public:
@@ -95,6 +97,10 @@ private:
 
     //store whether or not most recent move was bad
     bool wasBadMove = false;
+
+    //store index and sum of circular buffer
+    int buffer_index = 0;
+    double buffer_sum = 0;
 
     //data structures for the networks
     uint n1;
@@ -341,7 +347,8 @@ private:
     double currentScore;
     double previousScore;
     double energyInc;
-    vector<double> sampledProbability;
+    double sampledProbability[CIRCULAR_BUFFER_SIZE];
+    int sampledProbabilitySize = 0;
     void SANAIteration();
     void performChange(int type);
     void performSwap(int type);
@@ -447,7 +454,7 @@ private:
         long long int iterationsPerformed;
         double energyInc;
         double Temperature;
-        vector<double> sampledProbability;
+		vector<double> sampledProbability;
 
         // mt19937 is a random generator that is implemented with mutex.
         // Which means each thread should have an unique random generator.
@@ -505,8 +512,8 @@ private:
     int ncIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double localScoreSumIncSwapOp(Job &job, vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
 
-    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum, 
-                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, 
+    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum,
+                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore,
                          double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum);
 
     vector<double> translateScoresToVector(Job &job);
