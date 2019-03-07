@@ -1535,10 +1535,21 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int res = 0;
 
+    bool selfLoopAtSource, selfLoopAtOldTarget, selfLoopAtNewTarget;
+#ifndef SPARSE
+    selfLoopAtSource = G1Matrix[source][source];
+    selfLoopAtOldTarget = G2Matrix[oldTarget][oldTarget];
+    selfLoopAtNewTarget = G2Matrix[newTarget][newTarget];
+#else
+    selfLoopAtSource = G1->hasSelfLoop(source);
+    selfLoopAtOldTarget = G2->hasSelfLoop(oldTarget);
+    selfLoopAtNewTarget = G2->hasSelfLoop(newTarget);
+#endif
+
     vector<uint> v = G1AdjLists[source];
-    if(G1->hasSelfLoop(source)) {
-        if (G2->hasSelfLoop(oldTarget)) res--;
-        if (G2->hasSelfLoop(newTarget)) res++;
+    if(selfLoopAtSource) {
+        if (selfLoopAtOldTarget) res--;
+        if (selfLoopAtNewTarget) res++;
         v.erase(std::remove(v.begin(), v.end(), source), v.end());
     }
     for (uint neighbor : v) {
@@ -1551,10 +1562,23 @@ int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
 int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     int res = 0;
 
+    bool selfLoopAtSource1, selfLoopAtSource2, selfLoopAtTarget1, selfLoopAtTarget2;
+#ifndef SPARSE
+    selfLoopAtSource1 = G1Matrix[source1][source1];
+    selfLoopAtSource2 = G1Matrix[source2][source2];
+    selfLoopAtTarget1 = G2Matrix[target1][target1];
+    selfLoopAtTarget2 = G2Matrix[target2][target2];
+#else
+    selfLoopAtSource1 = G1->hasSelfLoop(source1);
+    selfLoopAtSource2 = G1->hasSelfLoop(source2);
+    selfLoopAtTarget1 = G2->hasSelfLoop(target1);
+    selfLoopAtTarget2 = G2->hasSelfLoop(target2);
+#endif
+
     vector<uint> v1 = G1AdjLists[source1];
-    if(G1->hasSelfLoop(source1)) {
-        if (G2->hasSelfLoop(target1)) res--;
-        if (G2->hasSelfLoop(target2)) res++;
+    if(selfLoopAtSource1) {
+        if (selfLoopAtTarget1) res--;
+        if (selfLoopAtTarget2) res++;
         v1.erase(std::remove(v1.begin(), v1.end(), source1), v1.end());
     }
     for(uint neighbor : v1) {
@@ -1563,9 +1587,9 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
     }
 
     vector<uint> v2 = G1AdjLists[source2];
-    if(G1->hasSelfLoop(source2)) {
-        if (G2->hasSelfLoop(target2)) res--;
-        if (G2->hasSelfLoop(target1)) res++;
+    if(selfLoopAtSource2) {
+        if (selfLoopAtTarget2) res--;
+        if (selfLoopAtTarget1) res++;
         v2.erase(std::remove(v2.begin(), v2.end(), source2), v2.end());
     }
     for(uint neighbor : v2) {
