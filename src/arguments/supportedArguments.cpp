@@ -33,7 +33,8 @@ vector<array<string, 6>> supportedArguments = {
     { "-eval", "string", "", "Evaluate Existing Alignment", "Takes an existing alignment, evaluates it, and records the results to sana.out or the specified output file.", "1" },
     { "-startalignment", "string", "", "Starting Alignment", "File containing the starting alignment (in the format outputted by SANA). Some methods allow this option, while the rest start with random alignments.", "1" },
     { "-truealignment", "string", "", "True Alignment", "Alignment file containing the \"true\" alignment. This is used to evaluate the NC measure. In its absence, NC assumes that the true alignment is the identity (the node with index i in G1 is mapped to the node with index i in G2). In any case, NC is expressed as the fraction of nodes in the smaller network aligned correctly.", "0" },
-    { "-rewire", "double", "0", "Add rewiring noise to G2", "If set greater than 0, the corresponding fraction of edges in G2 is randomly rewired.", "0" },
+    { "-rewire1", "double", "0", "Add rewiring noise to G1", "If set greater than 0, the corresponding fraction of edges in G1 is randomly rewired.", "0" },
+    { "-rewire2", "double", "0", "Add rewiring noise to G2", "If set greater than 0, the corresponding fraction of edges in G2 is randomly rewired.", "0" },
     { "End General Options", "", "banner", "", "", "0" },
     //---------------------------------END GENERAL---------------------------------------
 
