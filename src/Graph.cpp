@@ -37,9 +37,6 @@ Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHa
         g.parseFloatWeight = true;
         Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
     }
-    else if(format == ".leda"){
-        Graph::loadFromLedaFile(path, name, g, nodesHaveTypes);
-    }
     else if(format == ".lgf"){
         Graph::loadFromLgfFile(path, name, g, nodesHaveTypes);
     }
@@ -49,7 +46,10 @@ Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHa
     else if(format == ".csv"){
         Graph::loadFromCsvFile(path, name, g, nodesHaveTypes);
     }
-    
+    else if(format == ".gml"){
+        Graph::loadFromGmlFile(path, name, g, nodesHaveTypes);
+    }
+
 
 
     else
@@ -174,260 +174,43 @@ void Graph::loadGraphFromBinary(Graph& g, string graphName, string lockFile, boo
 }
 
 
-void Graph::loadFromLedaFile(string fin, string graphName, Graph& g, bool nodesHaveTypes) {
-    ifstream infile(fin.c_str());
-    string line;
-    unordered_set<string> record;
-    size_t lineCount = 0;
-
-    regex pattern("(.*)(\\s)(.*)(\\s)(.*)(\\s)\\|\\{(.*)\\}\\|(.*)");
-    while(!infile.eof()){
-	getline(infile,line);
-	if( regex_match(line,pattern))
-	{
-		int check = 0;
-		int target_start =0;
-		string start,target;
-		for(unsigned int i = 0; i < line.size(); i++)
-		{
-			if(isspace(line[i]) && check == 0){
-				check = 1;
-				start = line.substr(0,i);
-				}
-			if(!isspace(line[i]) && check == 1){
-				check = 2;
-				target_start = i;
-				}
-			if(isspace(line[i]) && check == 2){
-				target = line.substr(target_start,i-target_start);
-				record.insert(start);
-				record.insert(target);
-				++lineCount;
-				break;
-				}
-
-		}
-	}
-	}
-	infile.close();
-    while (getline(infile, line)) {
-        string node1, node2;
-        istringstream iss(line); 
-        iss >> node1 >> node2;
-        record.insert(node1);
-        record.insert(node2);
-        ++lineCount;
-    }
-    const size_t nodeLen = record.size();
-    const size_t vecLen = lineCount;
-    cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
-
-    g.name = graphName;
-    g.geneCount = 0;
-    g.miRNACount = 0;
-
-    vector<string> nodes;
-    nodes.reserve(nodeLen);
-    unordered_map<string,uint> nodeName2IndexMap;
-    nodeName2IndexMap.reserve(nodeLen);
-
-    vector<vector<string> > edges;
-    edges.reserve(vecLen);
-    memExactFileParseByLine(edges, fin);
-
-    string node1s;
-    string node2s;
-
-    for(unsigned i = 0; i < vecLen; ++i){
-        node1s = edges[i][0];
-        node2s = edges[i][1];
-
-        if(nodeName2IndexMap.find(node1s) == nodeName2IndexMap.end()){
-            nodeName2IndexMap[node1s] = nodes.size();
-            nodes.push_back(node1s);
-            if(nodesHaveTypes){
-                g.nodeTypes.push_back(Graph::NODE_TYPE_GENE);//"gene");
-                g.geneIndexList.push_back(nodeName2IndexMap[node1s]);
-                ++g.geneCount;
-            }
-        }
-
-       if(nodeName2IndexMap.find(node2s) == nodeName2IndexMap.end()){
-            nodeName2IndexMap[node2s] = nodes.size();
-            nodes.push_back(node2s);
-            if(nodesHaveTypes){
-                g.nodeTypes.push_back(Graph::NODE_TYPE_MIRNA);//"miRNA");
-                g.miRNAIndexList.push_back(nodeName2IndexMap[node2s]);
-                ++g.miRNACount;
-            }
-        }
-    }
-
-#ifdef MULTI_PAIRWISE
-    vector<vector<uint>> edgeList(vecLen, vector<uint> (3));
-#else
-    vector<vector<uint>> edgeList(vecLen, vector<uint> (2));
-    vector<float> floatWeightList;
-    if (g.parseFloatWeight) {
-        floatWeightList = vector<float>(vecLen, 0);
-    }
-#endif
-    stringstream errorMsg;
-    string edgeValue;
-    uint index1;
-    uint index2;
-    unordered_map<string, unordered_map<string, uint>* > adjMatrix;
-
-    for (uint i = 0; i < vecLen; ++i) {
-#ifdef MULTI_PAIRWISE
-        if (edges[i].size() == 2) {
-            edgeValue = '1';
-        }
-        else if (edges[i].size() == 3) {
-            edgeValue = edges[i][2];
-        }
-        else {
-            throw runtime_error("File not in edge-list format: "+fin);
-        }
-#else
-        if (g.parseFloatWeight) {
-            if (edges[i].size() != 3)
-                throw runtime_error("File not in edge-list-weight format: "+fin);
-            // Get float weight
-            edgeValue = edges[i][2];
-        }
-        else if (edges[i].size() != 2) {
-            throw runtime_error("File not in edge-list format: "+fin);
-        }
-#endif
-        node1s = edges[i][0];
-        node2s = edges[i][1];
-
-        // Detects self-looping edges.
-        if(node1s == node2s && !g.parseFloatWeight) {
-            errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1s << '\n';
-            throw runtime_error(errorMsg.str().c_str());
-        }
-
-        // Detects duplicate edges.
-        unordered_map<string, uint> *adjTo1;
-        if(adjMatrix.count(node1s) == 0)
-            adjMatrix[node1s] = new unordered_map<string, uint>();
-        adjTo1 = adjMatrix.at(node1s);
-
-        unordered_map<string, uint> *adjTo2;
-        if(adjMatrix.count(node2s) == 0)
-            adjMatrix[node2s] = new unordered_map<string, uint>();
-        adjTo2 = adjMatrix.at(node2s);
-
-        if( (adjTo1->count(node2s) != 0) || (adjTo2->count(node1s) != 0) ) {
-            uint dupEdgeLineNum = adjTo1->at(node2s);
-            errorMsg << "duplicate edges not allowed in file\n" <<
-                "\t'" << fin << ":" << dupEdgeLineNum+1 << "' " << node1s << " - " << node2s << '\n' <<
-                "\t'" << fin << ":" << i+1              << "' " << node1s << " - " << node2s << '\n';
-            throw runtime_error(errorMsg.str().c_str());
-        }else{
-            (*adjTo1)[node2s] = i;
-            (*adjTo2)[node1s] = i;
-        }
-
-        index1 = nodeName2IndexMap[node1s];
-        index2 = nodeName2IndexMap[node2s];
-        edgeList[i][0] = index1;
-        edgeList[i][1] = index2;
-        if (g.parseFloatWeight) {
-            floatWeightList[i] = stof(edgeValue);
-        }
-#ifdef MULTI_PAIRWISE
-        edgeList[i][2] = stoi(edgeValue);
-        assert(edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
-#endif
-    }
-    for(auto itr : adjMatrix) { delete itr.second; }
-
-    nodes.shrink_to_fit();
-    const size_t nodeSize = nodes.size();
-    g.adjLists = vector<vector<uint> > (nodeSize, vector<uint>(0));
-    g.matrix = Matrix<MATRIX_UNIT>(nodeSize);
-    if (g.parseFloatWeight) {
-        g.floatWeights = Matrix<float>(nodeSize);
-    }
-    uint node1;
-    uint node2;
-    const size_t edgeListLen = edgeList.size();
-    edgeList.shrink_to_fit();
-    for(unsigned i = 0; i < edgeListLen; ++i){
-        node1 = edgeList[i][0];
-        node2 = edgeList[i][1];
-
-        if(g.matrix[node1][node2] || g.matrix[node2][node1]) {
-            errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
-	          //unordered_map<uint,string> index2name = g.getIndexToNodeNameMap();
-	          //errorMsg << "In graph[" << graphName << "]: duplicate edges not allowed (in either direction), node names are " <<
-            //          index2name[node1] << " " << index2name[node2] << '\n';
-            throw runtime_error(errorMsg.str().c_str());
-        }
-
-        if(node1 == node2 && !g.parseFloatWeight) {
-          errorMsg << "self-loops not allowed, node number " << node1 << '\n';
-          throw runtime_error(errorMsg.str().c_str());
-        }
-
-        // Note that when MULTI_PAIRWISE is on, the adjacency matrix contains full integers, not just bits.
-        #ifdef MULTI_PAIRWISE
-            g.matrix[node1][node2] = g.matrix[node2][node1] = edgeList[i][2];
-        #else
-            g.matrix[node1][node2] = g.matrix[node2][node1] = true;
-            if (g.parseFloatWeight) {
-                g.floatWeights[node1][node2] = g.floatWeights[node2][node1] = floatWeightList[i];
-            }
-        #endif
-        g.adjLists[node1].push_back(node2);
-        g.adjLists[node2].push_back(node1);
-    }
-    // init rest of graph
-    g.lockedList = vector<bool> (nodeSize, false);
-    g.lockedTo = vector<string> (nodeSize, "");
-    g.nodeNameToIndexMap = nodeName2IndexMap;
-    g.edgeList = edgeList;
-    if(nodesHaveTypes)
-        g.updateUnlockedGeneCount();
-    g.initConnectedComponents();
-}
 
 
 void Graph::loadFromLgfFile(string fin, string graphName, Graph& g, bool nodesHaveTypes) {
-    ifstream infile(fin.c_str());
+    ifstream infile;
+    infile.open(fin,ifstream::in);
     string line;
     unordered_set<string> record;
     size_t lineCount = 0;
-
-    regex pattern("(.*)(\\s)(.*)(\\s)(.*)(\\s)\\|\\{(.*)\\}\\|(.*)");
+    regex pattern("^(.+)(\\s+)(.+)(\\s+)(\\d+)(\\s+)(\\d+)(\\s*)$");
     while(!infile.eof()){
     getline(infile,line);
+    
     if(regex_match(line,pattern))
     {
 		int check = 0;
 		int target_start =0;
+		unsigned int i = 0;
 		string start,target;
-		for(unsigned int i = 0; i < line.size(); i++)
-		{
-			if(isspace(line[i]) && check == 0){
-				check = 1;
-				start = line.substr(0,i);
-			}
-			if(!isspace(line[i]) && check == 1){
-				check = 2;
-				target_start = i;
-			}
-			if(isspace(line[i]) && check == 2){
-				target = line.substr(target_start,i-target_start);
+		while(i < line.length())
+			{
+				if(isspace(line[i]) && check == 0){
+					check = 1;
+					start =  line.substr(0,i);
+				}
+				if(!isspace(line[i]) && check == 1){
+					check = 2;
+					target_start = i;
+				}
+				if(isspace(line[i]) && check == 2){
+					check = 0;
+					target = line.substr(target_start,i-target_start);
 		record.insert(start);
 		record.insert(target);
 		lineCount ++;
 			break;
 			}
-
+			i++;
 		}
 		}
 	}
@@ -448,7 +231,45 @@ void Graph::loadFromLgfFile(string fin, string graphName, Graph& g, bool nodesHa
 
     vector<vector<string> > edges;
     edges.reserve(vecLen);
-    memExactFileParseByLine(edges, fin);
+
+
+
+    ifstream ifs;
+    ifs.open(fin,ifstream::in);
+    while(!ifs.eof()){
+    getline(ifs,line);
+    
+    if(regex_match(line,pattern))
+    {
+		vector<string> words;
+		words.reserve(2);
+		int check = 0;
+		int target_start =0;
+		unsigned int i = 0;
+		string start,target;
+		while(i < line.length())
+			{
+				if(isspace(line[i]) && check == 0){
+					check = 1;
+					start =  line.substr(0,i);
+				}
+				if(!isspace(line[i]) && check == 1){
+					check = 2;
+					target_start = i;
+				}
+				if(isspace(line[i]) && check == 2){
+					check = 0;
+					target = line.substr(target_start,i-target_start);
+		words.push_back(start);
+		words.push_back(target);
+		edges.push_back(words);
+			break;
+			}
+			i++;
+		}
+		}
+	}
+	ifs.close();	
 
     string node1s;
     string node2s;
@@ -666,7 +487,6 @@ void Graph::loadFromGraphmlFile(string fin, string graphName, Graph& g, bool nod
     const size_t nodeLen = record.size();
     const size_t vecLen = lineCount;
     cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
-
     g.name = graphName;
     g.geneCount = 0;
     g.miRNACount = 0;
@@ -678,7 +498,54 @@ void Graph::loadFromGraphmlFile(string fin, string graphName, Graph& g, bool nod
 
     vector<vector<string> > edges;
     edges.reserve(vecLen);
-    memExactFileParseByLine(edges, fin);
+  
+    ifstream ifs(fin);
+    while (ifs.good()) {
+
+	getline (ifs,line);
+	if(regex_match(line,source))
+	{
+		vector<string> words;
+                words.reserve(2);
+
+		size_t  s_place = line.find("source=");
+		string re = line.substr(s_place);
+		int n = 7;
+		if(re[7] == '"')
+			n++;
+		string sub = re.substr(n);
+		char f = ' ';
+                if(n == 8)
+			f = '"';
+		string final_source;
+		for(string::iterator it=sub.begin(); it!=sub.end(); ++it)
+		{
+			if(*it == f)
+				break;
+			final_source.push_back(*it);
+			
+		}
+		size_t  t_place = re.find("target=");
+		string t_re = re.substr(t_place);
+		int x = 7;
+		if(t_re[7] == '"')
+			x++;
+		string t_sub = t_re.substr(n);
+		string final_target;
+		for(string::iterator tit=t_sub.begin(); tit!=t_sub.end(); ++tit)
+		{
+			if(*tit == f || *tit == '>'||*tit == '/' )
+				break;
+			final_target.push_back(*tit);
+			
+		}
+		words.push_back(final_source);
+		words.push_back(final_target);
+		edges.push_back(words);
+  	  }}
+	
+    ifs.close();
+
 
     string node1s;
     string node2s;
@@ -880,7 +747,24 @@ void Graph::loadFromCsvFile(string fin, string graphName, Graph& g, bool nodesHa
 
     vector<vector<string> > edges;
     edges.reserve(vecLen);
-    memExactFileParseByLine(edges, fin);
+
+    ifstream ifs(fin.c_str());
+	while(!ifs.eof()){
+	        getline(ifs,line);
+		string start,target;
+		if(regex_match(line,pattern)){
+			vector<string> words;
+        		words.reserve(2);
+			size_t semi = line.find(";");
+			target = line.substr(semi);
+			start = line.substr(0,line.length()-target.length());
+			target = target.substr(1,target.length()-1);
+			words.push_back(start);
+			words.push_back(target);
+			edges.push_back(words);
+		}
+	}
+	ifs.close();
 
     string node1s;
     string node2s;
@@ -1045,24 +929,21 @@ void Graph::loadFromCsvFile(string fin, string graphName, Graph& g, bool nodesHa
 
 
 void Graph::loadFromGmlFile(string fin, string graphName, Graph& g, bool nodesHaveTypes) {
-    ifstream infile(fin.c_str());
+    ifstream infile;
+    infile.open(fin);
     string line;
     unordered_set<string> record;
     size_t lineCount = 0;
-
     regex source("(.*)(source)(.*)");
-    if (!infile) {
-        cout << "Unable to open file";
-        exit(1); // terminate with error
-    }
     string s,t;
     while (infile.good()) {
 	getline (infile,line);
+	
 	if(regex_match(line,source))
 		{
-		s = line.substr(9);
+		s = line.substr(15);
 		getline (infile,line);
-		t = line.substr(9);
+		t = line.substr(15);
 		record.insert(s);
 		record.insert(t);
 		lineCount++;
@@ -1085,7 +966,26 @@ void Graph::loadFromGmlFile(string fin, string graphName, Graph& g, bool nodesHa
 
     vector<vector<string> > edges;
     edges.reserve(vecLen);
-    memExactFileParseByLine(edges, fin);
+
+    ifstream ifs;
+    ifs.open(fin);
+
+    while (ifs.good()) {
+	getline (ifs,line);
+	if(regex_match(line,source))
+		{
+		vector<string> words;
+        	words.reserve(2);
+		s = line.substr(15);
+		getline (ifs,line);
+		t = line.substr(15);
+		words.push_back(s);
+		words.push_back(t);
+		//cout << s <<  " " << t << endl;
+		edges.push_back(words);
+		}
+   }
+    ifs.close();
 
     string node1s;
     string node2s;

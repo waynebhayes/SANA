@@ -395,7 +395,7 @@ string extractFileNameNoExtension(string s) {
     int pos = s.size() - 1;
     while (pos >= 0 and s[pos] != '.') pos--; //gives position of last "."
     string suffix = s.substr(pos + 1);
-    if (suffix != "el" and suffix != "elw" and suffix != "gw") throw runtime_error("files must be of type el, elw or gw"); //terminate SANA if invalid file types used
+    if (suffix != "el" and suffix != "elw" and suffix != "gw" and suffix != "gml" and suffix != "lgf" and suffix != "xml" and suffix != "csv") throw runtime_error("files must be of type el,gml,lgf,graphml,csv, elw or gw"); //terminate SANA if invalid file types used
     s = s.substr(0, pos);
     return s;
 }
