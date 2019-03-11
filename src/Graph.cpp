@@ -40,7 +40,7 @@ Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHa
     else if(format == ".leda"){
         Graph::loadFromLedaFile(path, name, g, nodesHaveTypes);
     }
-    else if(format == ".gml.lgf"){
+    else if(format == ".lgf"){
         Graph::loadFromLgfFile(path, name, g, nodesHaveTypes);
     }
     else if(format == ".xml"){
