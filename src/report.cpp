@@ -91,12 +91,34 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
       stream << endl;
 #define PRINT_CCS_0 0
 #if PRINT_CCS_0
+#define EDGE_COUNT_DIST 1
+	stream << "CCS_0 Alignment, local (distance " << EDGE_COUNT_DIST << ") edge counts and s3 score\n";
 	const vector<uint>& nodes = CS.getConnectedComponents()[0];
-	Graph H = CS.nodeInducedSubgraph(nodes);
 	unordered_map<uint,string> mapG1 = G1.getIndexToNodeNameMap();
 	unordered_map<uint,string> mapG2 = G2.getIndexToNodeNameMap();
-	stream << "CCS_0 Alignment\n";
-	for(uint i=0; i<nodes.size(); i++) stream << mapG1[i] << '\t' << mapG2[A[i]] << endl;
+	for(uint i=0; i<nodes.size(); i++)
+	{
+	    stream << mapG1[i] << '\t' << mapG2[A[i]];
+
+	    uint fullCount=0;
+	    vector<uint> V1 = G1.numEdgesAround(i, EDGE_COUNT_DIST);
+	    for(uint j=0;j<EDGE_COUNT_DIST;j++) fullCount+= V1[j];
+	    stream << '\t' << fullCount;
+	    fullCount=0;
+	    vector<uint> V2 = G2.numEdgesAround(A[i], EDGE_COUNT_DIST);
+	    for(uint j=0;j<EDGE_COUNT_DIST;j++) fullCount+= V2[j];
+	    stream << '\t' << fullCount;
+	    vector<uint> localNodes(G1.getAdjLists()[i]);
+
+	    localNodes.push_back(i); // nodes is now node i + all its neighbors
+	    Graph H = CS.nodeInducedSubgraph(localNodes);
+	    Alignment localA(localNodes);
+	    localA.compose(A);
+	    SymmetricSubstructureScore s3(&H, &G2);
+	    stream << '\t' << to_string(s3.eval(localA));
+
+	    stream << endl;
+	}
 #endif
       cout << "  printing tables done (" << T2.elapsedString() << ")" << endl;
   }
