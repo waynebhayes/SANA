@@ -113,7 +113,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-noded", "double", "0", "Weight of Node Density", "The weight of the Local Node Density objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-edgec", "double", "0", "Weight of Edge Count", "The weight of the Local Edge Count objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-edged", "double", "0", "Weight of Edge Density", "The weight of the Local Edge Density objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
-    { "-esim", "dbl_vec", "0", "External Similarity Weight", "The weight of the external similarity file. Used when \"-objfuntype\" is \"generic\". (Pending changes to SANA, these values may be normalized to be in [0,1] after they're read but before they're used.)", "1" },
+    { "-esim", "dbl_vec", "0", "External Similarity Weights", "An integer followed by that many weights, specifying objective function weights for external similarity files (must be the same integer as given to -simFile and -simFormat).", "1" },
     { "-ewec", "double", "0", "External Weighted Edge Similarity", "The weighted of the external edge similarity file.", "1" },
         { "-graphlet", "double", "0", "Weight of Graphlet Similarity.", "The weight of the Graphlet Objective Function as defined in the original GRAAL paper (2010). Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-graphletlgraal", "double", "0", "Weight of Graphlet Similarity (LGRAAL)", "The weight of LGRAAL's objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
@@ -135,7 +135,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-wecnodesim", "string", "graphletlgraal", "Weighted Edge Coverage Node Pair Similarity", "Node pair similarity used to weight the edges in the WEC measure. The edges are weighted by taking the average of the scores of an edge's two ending nodes using some node similarity measure which can be different from the default node sim measure.", "1" },
     { "-wavenodesim", "string", "nodec", "Weighted Average Node Pair Similarity", "Node pair similarity to use when emulating WAVE.", "1" },
     { "-maxGraphletSize", "double", "", "Maximum Graphlet Size", "Chooses the maximum size of graphlets to use. Saves human_gdv and yeast_gdv files ending with the given maximum graphlet size in order to distinguish between different-sized graphlets (e.g. human_gdv4.txt and yeast_gdv4.txt, for maximum graphlet size of 4).", "0" },
-    { "-simFile", "str_vec", "0", "Similarity File", "Specify an external three columnn (node from G1, node from  G2, similarity) file. These will be given weight according to the -esim argument.", "1" },
+    { "-simFile", "str_vec", "0", "External Similarity Filenames", "An integer (same integer as given to -esim and -simFormat) followed by that many filenames, specifying external three-columnn (node from G1, node from  G2, similarity) similarities. The similarities in the 3rd column will be normalized to be in [0,1]. These simFiles will be given weight according to the -esim argument.", "1" },
         { "-ewecFile", "string", "", "egdvs file", "egdvs output file produced by GREAT", "1"},
         { "-detailedreport", "bool", "false", "Detailed Report", "If false, initialize only basic measures and any measure necessary to run SANA.", "1" },
     { "End Further Weight Specification. Combine with \"-method x -objfuntype y\"", "", "banner", "", "", "0" },
@@ -196,7 +196,7 @@ vector<array<string, 6>> supportedArguments = {
 
     //---------------------------------SIMILARITY----------------------------------------
     { "", "", "banner", "", "More options for \"-mode similarity\"", "0" },
-    { "-simFormat", "dbl_vec", "0", "Similarity File Format", "Used in Similarity Mode \"-mode similarity\" and with \"-objfuntype -esim\". Allowed values are 2=G1 doubles down by G2 doubles across matrix where node order corresponds to .gw files; 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
+    { "-simFormat", "int_vec", "0", "Similarity File Formats", "An integer (must be the same one used by -esim and -simFiles) followed by that many integer simFormats. Allowed values are 2=G1 doubles down by G2 doubles across matrix where node order corresponds to .gw files; 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
     { "End More options for \"-mode similarity\"", "", "banner", "", "", "0" },
     //-------------------------------END SIMILARITY--------------------------------------
 
@@ -259,7 +259,7 @@ void validateAndAddArguments(){
 
             else if(supportedArguments[i][1] == "bool")
                 boolArgs.push_back(supportedArguments[i][0]);
-            else if(supportedArguments[i][1] == "dbl_vec")
+            else if(supportedArguments[i][1] == "dbl_vec" || supportedArguments[i][1] == "int_vec")
                 doubleVectorArgs.push_back(supportedArguments[i][0]);
             else if(supportedArguments[i][1] == "str_vec")
                 stringVectorArgs.push_back(supportedArguments[i][0]);
@@ -272,8 +272,7 @@ void validateAndAddArguments(){
     }
 }
 
-void printAllArgumentDescriptions()
-{
+void printAllArgumentDescriptions() {
     ifstream helpOutput;
     helpOutput.open("./src/arguments/helpOutput");
     string line;

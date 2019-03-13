@@ -59,7 +59,7 @@ void ExternalSimMatrix::loadFormat0(FILE* infile) {
     }
 
     if (lineCount != getNumEntries()) 
-        throw runtime_error("ExternalSimMatrix: Did not find the expected number of entries in the sim file.");
+        cerr << "WARNING: ExternalSimMatrix:loadFormat0: Did not find the expected number of entries in the sim file.\n";
 }
 
 void ExternalSimMatrix::loadFormat1(FILE* infile) {
@@ -79,7 +79,7 @@ void ExternalSimMatrix::loadFormat1(FILE* infile) {
     }
 
     if (lineCount != getNumEntries()) 
-        throw runtime_error("ExternalSimMatrix: Did not find the expected number of entries in the sim file.");
+        cerr << "WARNING: ExternalSimMatrix:loadFormat1: Did not find the expected number of entries in the sim file.\n";
 }
 
 void ExternalSimMatrix::loadFormat2(FILE* infile) {
@@ -93,7 +93,7 @@ void ExternalSimMatrix::loadFormat2(FILE* infile) {
     }
 
     if ((fscanf(infile, "%f", &value) != EOF) || entryCount != getNumEntries())
-        throw runtime_error("ExternalSimMatrix: Did not find the expected number of entries in the sim file.");
+        throw runtime_error("ExternalSimMatrix:loadFormat2: Format2 simFile is a matrix that must have exactly n1 x n2 entries.");
 }
 
 ExternalSimMatrix::~ExternalSimMatrix() {
