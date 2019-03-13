@@ -43,6 +43,21 @@ void ExternalSimMatrix::initSimMatrix() {
     default:                    break;
     }
 
+    cout << "Rescaling sims to be in [0,1]\n";
+
+    double simMin=1e30, simMax=-1e30;
+    for(uint i = 0; i < G1->getNumNodes(); i++){
+        for(uint j = 0; j < G2->getNumNodes(); j++){
+            if(sims[i][j] < simMin) simMin = sims[i][j];
+            if(sims[i][j] > simMax) simMax = sims[i][j];
+        }
+    }
+    for(uint i = 0; i < G1->getNumNodes(); i++){
+        for(uint j = 0; j < G2->getNumNodes(); j++){
+	    sims[i][j] = (sims[i][j] - simMin) / (simMax - simMin);
+        }
+    }
+
     if (isPipe) pclose(fp);
     else fclose(fp);
 }
