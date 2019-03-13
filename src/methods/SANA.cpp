@@ -51,6 +51,8 @@ double LOG10_LOW_TEMP = 0, LOG10_HIGH_TEMP = 0, LOG10_NUM_STEPS = 0;
 // Note you can't just do (x!=x), because that's always false, NAN or not.
 static bool myNan(double x) { return !(x==x); }
 
+static long long _maxExecutionIterations;
+
 void SANA::initTau(void) {
     /*
     tau = vector<double> {
@@ -323,7 +325,8 @@ Alignment SANA::run() {
         Alignment align;
         if(!usingIterations) {
           cout << "usingIterations = 0" << endl;
-          align = simpleRun(getStartingAlignment(), minutes * 60 * 5, (long long int) (getIterPerSecond()*minutes*60), iter);
+	  double leeway = 2;
+          align = simpleRun(getStartingAlignment(), minutes * 60 * leeway, (long long int) (getIterPerSecond()*minutes*60), iter);
         }
         else {
           cout << "usingIterations = 1" << endl;
@@ -338,7 +341,7 @@ Alignment SANA::run() {
             cout << hill.elapsedString() << endl;
         }
 #define PRINT_CORES 0
-#define MIN_CORE_SCORE 1e-4 // 1e-4 gives files 2G long, 1e-3 gives just a few MB.
+#define MIN_CORE_SCORE 2e-4 // 1e-4 gives files 2G long, 1e-3 gives just a few MB.
 #if PRINT_CORES
 #ifndef CORES
 #error must have CORES macro defined to print them
@@ -666,8 +669,7 @@ void SANA::setInterruptSignal() {
     sigaction(SIGINT, &sigInt, NULL);
 }
 
-Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
-        long long int& iter) {
+Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds, long long int& iter) {
     initDataStructures(startA);
     setInterruptSignal();
 
@@ -690,6 +692,7 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
 
 Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds, long long int maxExecutionIterations,
 		long long int& iter) {
+    _maxExecutionIterations = maxExecutionIterations;
     initDataStructures(startA);
     setInterruptSignal();
 	for (; ; ++iter) {
@@ -713,10 +716,10 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds, l
 	return *A; //dummy return to shut compiler warning
 }
 
-Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIterations,
-                long long int& iter) {
+Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIterations, long long int& iter) {
 
         initDataStructures(startA);
+	_maxExecutionIterations = maxExecutionIterations;
 
         setInterruptSignal();
 
@@ -2067,8 +2070,9 @@ void SANA::trackProgress(long long int i, bool end) {
     bool printDetails = false;
     bool printScores = false;
     bool checkScores = true;
+    double fractional_time = i/(double)_maxExecutionIterations;
 
-    cout << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
+    cout << i/iterationsPerStep << " (" << 100*fractional_time << "%," << timer.elapsed() << "s): score = " << currentScore;
     cout <<  " P(" << avgEnergyInc << ", " << Temperature << ") = " << acceptingProbability(avgEnergyInc, Temperature) << ", pBad = " << trueAcceptingProbability() << endl;
 
     if (not (printDetails or printScores or checkScores)) return;
