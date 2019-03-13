@@ -102,6 +102,7 @@ public:
     uint numNodeInducedSubgraphEdges(const vector<uint>& subgraphNodes) const;
 
     vector<uint> numEdgesAround(uint node, uint maxDist) const;
+    vector<uint> getAllNodesAround(uint node, uint maxDist) const;
     vector<uint> numNodesAround(uint node, uint maxDist) const;
 
     void printStats(int numConnectedComponentsToPrint, ostream& stream) const;

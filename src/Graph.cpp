@@ -947,6 +947,31 @@ void Graph::writeGraphEdgeListFormatPINALOG(const string& fileName){
 }
 
 
+vector<uint> Graph::getAllNodesAround(uint node, uint maxDist) const {
+    uint n = getNumNodes();
+    vector<uint> distances(n, n);
+    distances[node] = 0;
+    queue<uint> Q;
+    Q.push(node);
+    while (not Q.empty()) {
+        uint u = Q.front();
+        Q.pop();
+        uint dist = distances[u];
+        if (dist == maxDist) break;
+        for (uint i = 0; i < adjLists[u].size(); i++) {
+            uint v = adjLists[u][i];
+            if (distances[v] < n) continue;
+            distances[v] = dist+1;
+            Q.push(v);
+        }
+    }
+    vector<uint> result;
+    for (uint i = 0; i < n; i++) {
+        if (distances[i] < n and distances[i] >= 0) result.push_back(i);
+    }
+    return result;
+}
+
 vector<uint> Graph::numNodesAround(uint node, uint maxDist) const {
     uint n = getNumNodes();
     vector<uint> distances(n, n);
@@ -966,9 +991,13 @@ vector<uint> Graph::numNodesAround(uint node, uint maxDist) const {
         }
     }
     vector<uint> result(maxDist, 0);
-    for (uint i = 0; i < n; i++) {
-        if (distances[i] < n and distances[i] > 0) result[distances[i]-1]++;
-    }
+    uint total = 0;
+    for (uint i = 0; i < n; i++)
+        if (distances[i] < n and distances[i] > 0) {
+	    result[distances[i]-1]++; 
+	    total++;
+	}
+    assert(total == getAllNodesAround(node, maxDist).size());
     return result;
 }
 
