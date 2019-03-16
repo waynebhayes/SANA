@@ -2184,6 +2184,15 @@ void SANA::searchTemperaturesByLinearRegression() {
     //	return;             //and I don't know why, but sometimes I disable using this.
     //                      //otherwise my computer is very slow.
 
+
+	//check if graph is fully connected
+	int n1Result = n1 * (n1 - 1) / 2;
+	int n2Result = n2 * (n2 - 1) / 2;
+
+	if ((g1Edges == n1Result || g2Edges == n2Result) && !needLocal && !needEd){
+		throw runtime_error("FATAL ERROR: At least one graph is fully connected. Every alignment is a perfect alignment, thus SANA cannot pick the best alignment.");
+	}
+
 	findingUpperLowerTemperatureBound(LOG10_LOW_TEMP, LOG10_HIGH_TEMP); //abstraction: Finds the initial lower and upper bound
 
 	LOG10_NUM_STEPS = abs(LOG10_LOW_TEMP) + abs(LOG10_HIGH_TEMP);
