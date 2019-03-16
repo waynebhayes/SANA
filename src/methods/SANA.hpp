@@ -20,6 +20,8 @@
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, uint pairsCount
 #endif
 
+#define CIRCULAR_BUFFER_SIZE 1000
+
 class SANA: public Method {
 
 public:
@@ -95,6 +97,10 @@ private:
 
     //store whether or not most recent move was bad
     bool wasBadMove = false;
+
+    //store index and sum of circular buffer
+    int buffer_index = 0;
+    double buffer_sum = 0;
 
     //data structures for the networks
     uint n1;
@@ -257,7 +263,9 @@ private:
 
     //to evaluate S3 incrementally
     bool needInducedEdges;
-    int inducedEdges;
+    int inducedEdges = -1;    // This variable must be initialized as non-zero since it's passed
+                              // to scoreComparison in performSwap as "newInducedEdges" which could
+                              // make computation go wrong.
     int inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
 
     bool needTC;
@@ -304,6 +312,12 @@ private:
 
     Matrix<double> weightedPegHoleFreq_1mpBad; // weighted by 1-pBad
     vector<double> totalWeightedPegWeight_1mpBad;
+
+    Matrix<double> weightedPegHoleFreq_sqr; // weighted by pBad*(1-pBad)
+    vector<double> totalWeightedPegWeight_sqr;
+
+    Matrix<double> weightedPegHoleFreq_sqrt; // weighted by sqrt(pBad*(1-pBad))
+    vector<double> totalWeightedPegWeight_sqrt;
 #endif
     map<string, vector<vector<float> > > localSimMatrixMap;
     double localScoreSumIncChangeOp(vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
@@ -333,7 +347,8 @@ private:
     double currentScore;
     double previousScore;
     double energyInc;
-    vector<double> sampledProbability;
+    double sampledProbability[CIRCULAR_BUFFER_SIZE];
+    int sampledProbabilitySize = 0;
     void SANAIteration();
     void performChange(int type);
     void performSwap(int type);
@@ -439,7 +454,7 @@ private:
         long long int iterationsPerformed;
         double energyInc;
         double Temperature;
-        vector<double> sampledProbability;
+		vector<double> sampledProbability;
 
         // mt19937 is a random generator that is implemented with mutex.
         // Which means each thread should have an unique random generator.
@@ -497,8 +512,8 @@ private:
     int ncIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double localScoreSumIncSwapOp(Job &job, vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
 
-    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum, 
-                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, 
+    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum,
+                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore,
                          double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum);
 
     vector<double> translateScoresToVector(Job &job);

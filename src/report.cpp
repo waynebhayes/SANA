@@ -89,14 +89,34 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
       stream << "Common connected subgraphs:" << endl;
       printTable(table, 2, stream);
       stream << endl;
-#define PRINT_CCS_0 0
-#if PRINT_CCS_0
-	const vector<uint>& nodes = CS.getConnectedComponents()[0];
-	Graph H = CS.nodeInducedSubgraph(nodes);
-	unordered_map<uint,string> mapG1 = G1.getIndexToNodeNameMap();
-	unordered_map<uint,string> mapG2 = G2.getIndexToNodeNameMap();
-	stream << "CCS_0 Alignment\n";
-	for(uint i=0; i<nodes.size(); i++) stream << mapG1[i] << '\t' << mapG2[A[i]] << endl;
+#define PRINT_CCS 0
+#if PRINT_CCS
+#define EDGE_COUNT_DIST 1
+      unordered_map<uint,string> mapG1 = G1.getIndexToNodeNameMap();
+      unordered_map<uint,string> mapG2 = G2.getIndexToNodeNameMap();
+      for(uint cc=0; cc < CS.getConnectedComponents().size(); cc++)
+      {
+	stream << "CCS_" << cc << " Alignment, local (distance 1 to " << EDGE_COUNT_DIST << ") edge counts and s3 score\n";
+	const vector<uint>& nodes = CS.getConnectedComponents()[cc];
+	if(nodes.size() < 2) break;
+	for(uint i=0; i<nodes.size(); i++)
+	{
+	    stream << mapG1[nodes[i]] << '\t' << mapG2[A[nodes[i]]];
+	    for(uint d=1; d<=EDGE_COUNT_DIST; d++){
+		uint fullCount=0; vector<uint> V1 = G1.numEdgesAround(nodes[i], d); for(uint j=0;j<d;j++) fullCount+= V1[j];
+		stream << '\t' << fullCount;
+		fullCount=0; vector<uint> V2 = G2.numEdgesAround(A[nodes[i]], d); for(uint j=0;j<d;j++) fullCount+= V2[j];
+		stream << '\t' << fullCount;
+		vector<uint> localNodes(G1.getAllNodesAround(nodes[i], d));
+		Graph H = CS.nodeInducedSubgraph(localNodes);
+		Alignment localA(localNodes);
+		localA.compose(A);
+		SymmetricSubstructureScore s3(&H, &G2);
+		stream << '\t' << to_string(s3.eval(localA));
+	    }
+	    stream << endl;
+	}
+      }
 #endif
       cout << "  printing tables done (" << T2.elapsedString() << ")" << endl;
   }
