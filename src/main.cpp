@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
     ArgumentParser args(stringArgs, doubleArgs, boolArgs, doubleVectorArgs, stringVectorArgs);
     args.parseArgs(argc, argv, defaultArguments, true);
 
-    system("hostname -f; date");
+    int dummy = system("hostname -f; date");
 
     args.writeArguments();
 

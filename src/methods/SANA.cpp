@@ -47,9 +47,11 @@ using namespace std;
 #define PBAD_LOW_TEMP_LIMIT 1e-10
 double LOG10_LOW_TEMP = 0, LOG10_HIGH_TEMP = 0, LOG10_NUM_STEPS = 0;
 
+#ifdef CORES
 // All comparisons with nan variables are false, including self-equality. Thus if it's not equal to itself, it's NAN.
 // Note you can't just do (x!=x), because that's always false, NAN or not.
 static bool myNan(double x) { return !(x==x); }
+#endif
 
 static long long _maxExecutionIterations;
 
