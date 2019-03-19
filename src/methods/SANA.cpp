@@ -1549,13 +1549,12 @@ int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     selfLoopAtNewTarget = G2Matrix[newTarget][newTarget];
 #endif
 
-    vector<uint> v = G1AdjLists[source];
+    const vector<uint>& v = G1AdjLists[source];
     if(selfLoopAtSource) {
         if (selfLoopAtOldTarget) res--;
         if (selfLoopAtNewTarget) res++;
-        v.erase(std::remove(v.begin(), v.end(), source), v.end());
     }
-    for (uint neighbor : v) {
+    for (uint neighbor : v) if(neighbor != source) {
         res -= G2Matrix[oldTarget][(*A)[neighbor]];
         res += G2Matrix[newTarget][(*A)[neighbor]];
     }
@@ -1578,24 +1577,22 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
     selfLoopAtTarget2 = G2Matrix[target2][target2];
 #endif
 
-    vector<uint> v1 = G1AdjLists[source1];
+    const vector<uint>& v1 = G1AdjLists[source1];
     if(selfLoopAtSource1) {
         if (selfLoopAtTarget1) res--;
         if (selfLoopAtTarget2) res++;
-        v1.erase(std::remove(v1.begin(), v1.end(), source1), v1.end());
     }
-    for(uint neighbor : v1) {
+    for(uint neighbor : v1) if(neighbor != source1) {
         res -= G2Matrix[target1][(*A)[neighbor]];
         res += G2Matrix[target2][(*A)[neighbor]];
     }
 
-    vector<uint> v2 = G1AdjLists[source2];
+    const vector<uint>& v2 = G1AdjLists[source2];
     if(selfLoopAtSource2) {
         if (selfLoopAtTarget2) res--;
         if (selfLoopAtTarget1) res++;
-        v2.erase(std::remove(v2.begin(), v2.end(), source2), v2.end());
     }
-    for(uint neighbor : v2) {
+    for(uint neighbor : v2) if(neighbor != source2) {
         res -= G2Matrix[target2][(*A)[neighbor]];
         res += G2Matrix[target1][(*A)[neighbor]];
     }
