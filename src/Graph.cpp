@@ -1220,10 +1220,12 @@ unordered_map<uint,string> Graph::getIndexToNodeNameMap() const {
 }
 
 bool Graph::hasSelfLoop(uint source) const {
+#ifdef SPARSE
     vector<uint> neighbors = adjLists[source];
-    return (matrix.get(source, source)) || (std::find(neighbors.begin(), neighbors.end(), source) != neighbors.end());
-    // Why doesn't the above work? Checking the diagonal of hte matrix is much faster than a search through neighbors
-    //return (std::find(neighbors.begin(), neighbors.end(), source) != neighbors.end());
+    return std::find(neighbors.begin(), neighbors.end(), source) != neighbors.end();
+#else
+    return (matrix.get(source, source)); // || (std::find(neighbors.begin(), neighbors.end(), source) != neighbors.end());
+#endif
 }
 
 vector<string> Graph::getNodeNames() const {

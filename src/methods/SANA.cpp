@@ -1539,14 +1539,14 @@ int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int res = 0;
 
     bool selfLoopAtSource, selfLoopAtOldTarget, selfLoopAtNewTarget;
-#ifndef SPARSE
-    selfLoopAtSource = G1Matrix[source][source];
-    selfLoopAtOldTarget = G2Matrix[oldTarget][oldTarget];
-    selfLoopAtNewTarget = G2Matrix[newTarget][newTarget];
-#else
+#ifdef SPARSE
     selfLoopAtSource = G1->hasSelfLoop(source);
     selfLoopAtOldTarget = G2->hasSelfLoop(oldTarget);
     selfLoopAtNewTarget = G2->hasSelfLoop(newTarget);
+#else
+    selfLoopAtSource = G1Matrix[source][source];
+    selfLoopAtOldTarget = G2Matrix[oldTarget][oldTarget];
+    selfLoopAtNewTarget = G2Matrix[newTarget][newTarget];
 #endif
 
     vector<uint> v = G1AdjLists[source];
@@ -1566,16 +1566,16 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
     int res = 0;
 
     bool selfLoopAtSource1, selfLoopAtSource2, selfLoopAtTarget1, selfLoopAtTarget2;
-#ifndef SPARSE
-    selfLoopAtSource1 = G1Matrix[source1][source1];
-    selfLoopAtSource2 = G1Matrix[source2][source2];
-    selfLoopAtTarget1 = G2Matrix[target1][target1];
-    selfLoopAtTarget2 = G2Matrix[target2][target2];
-#else
+#ifdef SPARSE
     selfLoopAtSource1 = G1->hasSelfLoop(source1);
     selfLoopAtSource2 = G1->hasSelfLoop(source2);
     selfLoopAtTarget1 = G2->hasSelfLoop(target1);
     selfLoopAtTarget2 = G2->hasSelfLoop(target2);
+#else
+    selfLoopAtSource1 = G1Matrix[source1][source1];
+    selfLoopAtSource2 = G1Matrix[source2][source2];
+    selfLoopAtTarget1 = G2Matrix[target1][target1];
+    selfLoopAtTarget2 = G2Matrix[target2][target2];
 #endif
 
     vector<uint> v1 = G1AdjLists[source1];

@@ -226,5 +226,4 @@ private:
                 CEREAL_NVP(lockedCount), CEREAL_NVP(geneIndexList), CEREAL_NVP(miRNAIndexList), CEREAL_NVP(nodeNameToIndexMap));
     }
 };
-
 #endif
