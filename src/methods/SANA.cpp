@@ -389,7 +389,7 @@ Alignment SANA::run() {
             align = hillClimbingAlignment(align, (long long int)(10000000)); //arbitrarily chosen, probably too big.
             cout << hill.elapsedString() << endl;
         }
-#define PRINT_CORES 1
+#define PRINT_CORES 0
 #define MIN_CORE_SCORE 1e-4
 #if PRINT_CORES
 #ifndef CORES
