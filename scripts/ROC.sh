@@ -1,15 +1,19 @@
 #!/bin/sh
 TMP=/tmp/ROC.$$
 trap "/bin/rm -f $TMP; exit" 0 1 2 3 15
-USAGE="$0 [-R Resnik threshold] [-S seq thresh] {2 score columns to evaluate} {2-column truth file, eg pairs of orthologs} {G1 edgeList} {G2 edgeList} {p1 p2 2-or-more-scores file} [resnik file] [seqSim File] [complexes file]"
+USAGE="$0 [-AllOrtho 0|1 {default 0}] [-R Resnik threshold] [-S seq thresh] {2 score columns to evaluate} {2-column truth file, eg pairs of orthologs} {G1 edgeList} {G2 edgeList} {p1 p2 2-or-more-scores file} [resnik file] [seqSim File] [complexes file]
+The -AllOrtho flag means compute the AUPR with respect to *all* given orthologs, rather than only those in the scores file"
 die() { echo "$@" >&2; exit 1
 }
 R=1e30
 S=1e30
-while [ $1 = -S -o $1 = -R ]; do
+AllOrtho=0
+while [ $# -gt 0 ]; do
 	case $1 in
 	-R) R=$2; shift 2 ;;
 	-S) S=$2; shift 2 ;;
+	-A*) AllOrtho=$2; shift 2;;
+	*) break ;;
 	esac
 done
 
@@ -38,12 +42,18 @@ hawk '
     }
 
     BEGIN{c1='$c1';c2='$c2'
-	cols[c1]=c1;cols[c2]=c2;
-	title[c1]="column_1st";title[c2]="column_2nd";title[c2+1]="Resnik";title[c2+2]="SeqSim"
-	scale[c1]=1;scale[c2]=1;scale[c2+1]=14;scale[c2+2]=100
+	col[1]=c1; col[2]=c2
+	title[1]="column_"c1;title[2]="column_"c2;title[3]="Resnik";title[4]="SeqSim"
+	scale[1]=1;scale[2]=1;scale[3]=14;scale[4]=100
     }
 
-    ARGIND==1{O[$1][$2]=1;totOrtho++} # Ortholog file, for now, has 2 columns
+    ARGIND==1{
+	totOrtho++
+	O[$1][$2]=1 # Ortholog file, for now, has 2 columns
+
+	# initialize all orthologs in case they are not in scores file?
+	if('$AllOrtho') for(c=1;c<=2;c++) score[$1][$2][c] = 0
+    }
 
     # Edge Lists
     ARGIND==2{D1[$1]++;D1[$2]++}
@@ -52,10 +62,15 @@ hawk '
     # scores file: p1 p2 [list of 1 or more scores]
     ARGIND==4{
 	degreeScore=1;
-	if(($1 in D1) && ($2 in D2)&&D1[$1]&&D2[$2]) degreeScore = (1-1/MIN(D1[$1],D2[$2]));
-	for(c in cols){
-	    score[$1][$2][c]=$c * degreeScore
-	    if(($1 in O)&&($2 in O[$1]))StatAddSample(c,score[$1][$2][c]) #if p1,p2 are orthologs, then record their column-c score
+	if(($1 in D1) && ($2 in D2)&&D1[$1]&&D2[$2]) {
+	    #degreeScore = (1-1/MIN(D1[$1],D2[$2]));
+	    #degreeScore = (1-1/MAX(D1[$1],D2[$2]));
+	    #degreeScore = (1-1/D1[$1])*(1-1/D2[$2]);
+	}
+	for(c=1;c<=2;c++){
+	    score[$1][$2][c]=$col[c] * degreeScore
+	    #if p1,p2 are orthologs, then record their column-c score:
+	    if(($1 in O)&&($2 in O[$1]))StatAddSample(c,score[$1][$2][c])
 	}
     }
 
@@ -64,29 +79,29 @@ hawk '
     ARGIND==7{for(i=1;i<=NF;i++)complex[$i]=complex[$i]" "$0} # Complexes file
     END{
 	delete D1; delete D2; # do not need degrees any more
-	printf "%d total orthologs, found %d\n", totOrtho,StatN(c1)
-	for(c in cols){
-	    printf "%10s mean %8.4f min %8.4f max %8.4f stdDev %8.4f\n",
-		title[c],StatMean(c),Statmin(c),StatMax(c),StatStdDev(c)
+	printf "%d total orthologs, found %d ortholog pairs in our scores file\n", totOrtho,StatN(1)
+	for(c=1;c<=2;c++){
+	    printf "col[%d]=%d %10s mean %8.4f min %8.4f max %8.4f stdDev %8.4f\n",
+		c, col[c], title[c],StatMean(c),StatMin(c),StatMax(c),StatStdDev(c)
 	}
 	printf "\nEvaluating the scores based on thresholds on core score:\n\
-thresh  c_1:TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR  c_2:TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR\n"
-	printf "Means  ";EvalScores(c1,StatMean(c1));EvalScores(c2,StatMean(c2));print""
-	for(c in cols){AUPR[c]=0;prevRec[c]=1;prevPrec[c]=0}
-	done=0;
-	for(thresh=1e-6;thresh<1.01;thresh+=MIN(thresh/2,.05)){
+thresh  c_"c1":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR  c_"c2":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR\n"
+	printf "Means  ";EvalScores(1,StatMean(1));EvalScores(2,StatMean(2));print""
+	for(c=1;c<=2;c++){AUPR[c]=0;prevRec[c]=1;prevPrec[c]=0}
+	for(thresh=1e-4;thresh<1.01;thresh+=MIN(thresh/2,.05)){
 	    printf "%.5f",thresh
 	    printf "%.5f",thresh > "'$TMP'"
-	    for(c in cols){
+	    done=0;
+	    for(c=1;c<=2;c++){
 		scaledThresh=scale[c]*thresh;EvalScores(c,scaledThresh) # this sets Prec and Rec
 		h=Prec-prevPrec[c]
 		AUPR[c]+=h * ((Rec+prevRec[c])/2)
 		prevRec[c]=Rec; prevPrec[c]=Prec
+		if(Prec==1&&Rec==0)done++;
 	    }
 	    print""
 	    print "" > "'$TMP'"
-	    for(c in cols)if(Prec==1&&Rec==0)done++;
-	    if(done == length(cols)) break;
+	    if(done == length(col)) break;
 	}
     }' "$@"
 

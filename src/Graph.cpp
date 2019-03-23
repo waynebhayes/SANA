@@ -89,7 +89,9 @@ void Graph::serializeGraph(Graph& G, string outputName, bool typedNodes, bool lo
             if (stat(outName.c_str(), &st) != 0)
             {
                 string movecmd = string("mv") + string(" ") + tmpName + string(" ") + outName;
-                int dummy = system(movecmd.c_str());
+                int dummy = fd;
+		fd = system(movecmd.c_str()); // shut the fucking compiler up
+		fd = dummy;
             }
             else
             {
