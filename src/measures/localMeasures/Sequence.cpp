@@ -54,8 +54,6 @@ unordered_map<string,string> Sequence::initNameMap(string curatedFastaFile) {
 
 void Sequence::initSimMatrix() {
 
-	cout << "\n\n\nIN THE MATRIX" <<endl;
-
     string g1Name = G1->getName();
     string g2Name = G2->getName();
     string g1CuratedFastaFile = "sequence/"+g1Name+".fasta";
