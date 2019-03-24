@@ -195,7 +195,7 @@ vector<array<string, 6>> supportedArguments = {
     //-------------------------------END ANALYSIS----------------------------------------
 
     //---------------------------------SIMILARITY----------------------------------------
-    { "", "", "banner", "", "More options for \"-mode similarity\"", "0" },
+    { "", "", "banner", "", "More options for \"-mode similarity (which exports and saves the internal similarity matrix)\"", "0" },
     { "-simFormat", "int_vec", "0", "Similarity File Formats", "An integer (must be the same one used by -esim and -simFiles) followed by that many integer simFormats. Allowed values are 2=G1 doubles down by G2 doubles across matrix where node order corresponds to .gw files; 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
     { "End More options for \"-mode similarity\"", "", "banner", "", "", "0" },
     //-------------------------------END SIMILARITY--------------------------------------

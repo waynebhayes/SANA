@@ -188,7 +188,7 @@ FILE* decompressFile(const string& decompProg, const string& fileName) {
     string command;
     cerr << "decompressFile: decompressing using " << decompProg << ": " << fileName << endl;
     stream << decompProg << " < " << fileName;
-    command = stream.str();
+    command = stream.str(); // eg "gunzip < filename.gz"
     return popen(command.c_str(), "r");
 }
 

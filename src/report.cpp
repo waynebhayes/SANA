@@ -89,9 +89,9 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
       stream << "Common connected subgraphs:" << endl;
       printTable(table, 2, stream);
       stream << endl;
-#define PRINT_CCS 0
+#define PRINT_CCS 1
 #if PRINT_CCS
-#define EDGE_COUNT_DIST 1
+#define EDGE_COUNT_DIST 0
       unordered_map<uint,string> mapG1 = G1.getIndexToNodeNameMap();
       unordered_map<uint,string> mapG2 = G2.getIndexToNodeNameMap();
       for(uint cc=0; cc < CS.getConnectedComponents().size(); cc++)
