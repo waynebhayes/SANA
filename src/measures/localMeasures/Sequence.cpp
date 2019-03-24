@@ -6,6 +6,8 @@
 #include <cassert>
 #include "Sequence.hpp"
 
+extern bool _graphsSwitched;
+
 using namespace std;
 
 Sequence::Sequence(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "sequence") {
@@ -51,6 +53,9 @@ unordered_map<string,string> Sequence::initNameMap(string curatedFastaFile) {
 }
 
 void Sequence::initSimMatrix() {
+
+	cout << "\n\n\nIN THE MATRIX" <<endl;
+
     string g1Name = G1->getName();
     string g2Name = G2->getName();
     string g1CuratedFastaFile = "sequence/"+g1Name+".fasta";
@@ -71,6 +76,11 @@ void Sequence::initSimMatrix() {
     unordered_map<string,uint> g2NodeToIndexMap = G2->getNodeNameToIndexMap();
 
     string blastFile = "sequence/scores/"+g1Name+"_"+g2Name+"_blast.out";
+
+	if (_graphsSwitched)
+    	blastFile = "sequence/scores/"+g2Name+"_"+g1Name+"_blast.out";
+		
+
     if (not fileExists(blastFile)) {
         throw runtime_error("Cannot find sequence scores for "+g1Name+"-"+g2Name);
     }
@@ -110,7 +120,7 @@ Sequence::~Sequence() {
 }
 
 string Sequence::blastScoreFile(const string& G1Name, const string& G2Name) {
-    return "sequence/scores/"+G1Name+"_"+G2Name+"_blast.out";
+    return _graphsSwitched ? "sequence/scores/"+G2Name+"_"+G1Name+"_blast.out" : "sequence/scores/"+G1Name+"_"+G2Name+"_blast.out"; 
 }
 
 bool Sequence::fulfillsPrereqs(Graph* G1, Graph* G2) {
