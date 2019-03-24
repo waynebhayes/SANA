@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <ostream>
+#include "stdiobuf.hpp"
 using namespace std;
 
 /*
@@ -60,7 +61,8 @@ bool fileExists(const string& filename);
 void checkFileExists(const string& filename);
 void addUniquePostfixToFilename(string& name, const string& extension);
 
-FILE* openFileForReading(const string& fileName, bool& piped);
+stdiobuf readFileAsStream(const string& fileName);
+FILE* readFileAsFilePointer(const string& fileName, bool& piped);
 void closeFile(FILE* fp, const bool& isPiped);
 string getDecompressionProgram(const string& fileName);
 

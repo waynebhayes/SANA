@@ -14,7 +14,7 @@ ExternalSimMatrix::ExternalSimMatrix(Graph* G1, Graph* G2, string file, int form
 
 void ExternalSimMatrix::initSimMatrix() {
     bool isPipe = false;
-    FILE* fp = openFileForReading(file, isPipe);
+    FILE* fp = readFileAsFilePointer(file, isPipe);
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
@@ -31,8 +31,7 @@ void ExternalSimMatrix::initSimMatrix() {
     }
 
     closeFile(fp, isPipe);
-    }
-
+    
     cout << "Rescaling sims to be in [0,1]\n";
 
     double simMin=1e30, simMax=-1e30;

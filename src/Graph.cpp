@@ -158,7 +158,8 @@ void Graph::loadGraphFromBinary(Graph& g, string graphName, string lockFile, boo
 }
 
 void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes) {
-    ifstream infile(fin.c_str());
+    stdiobuf sbuf = readFileAsStream(fin);
+    istream infile(&sbuf);
     string line;
     unordered_set<string> record;
     size_t lineCount = 0;

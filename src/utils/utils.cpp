@@ -163,7 +163,7 @@ vector<string> fileToStrings(const string& fileName, bool asLines) {
     checkFileExists(fileName);
     char buf[10240];
     bool isPiped;
-    FILE *fp = openFileForReading(fileName, isPiped);
+    FILE *fp = readFileAsFilePointer(fileName, isPiped);
     vector<string> result;
     if(asLines) {
         while (fgets(buf, sizeof(buf), fp)){string line(buf); result.push_back(line);}
@@ -181,8 +181,12 @@ void closeFile(FILE* fp, const bool& isPiped)
         pclose(fp);
     else fclose(fp);
 }
-
-FILE* openFileForReading(const string& fileName, bool& piped) {
+stdiobuf readFileAsStream(const string& fileName) {
+    bool piped = false;
+    FILE* f = readFileAsFilePointer(fileName, piped);
+    return stdiobuf(f, piped);
+}
+FILE* readFileAsFilePointer(const string& fileName, bool& piped) {
     FILE* fp;
     string decompressionProg = getDecompressionProgram(fileName);
     piped = false;
