@@ -356,8 +356,8 @@ Alignment SANA::run() {
 			weightedScore_1mpBad = weightedPegHoleFreq_1mpBad[i][j]/totalWeightedPegWeight_1mpBad[i],
 			weightedScore_sqr = weightedPegHoleFreq_sqr[i][j]/totalWeightedPegWeight_sqr[i],
 			weightedScore_sqrt = weightedPegHoleFreq_sqrt[i][j]/totalWeightedPegWeight_sqrt[i];
-	    if(min(unweightdedScore,weightedScore_orig) > MIN_CORE_SCORE || 
-			min(weightedScore_pBad,weightedScore_1mpBad) > MIN_CORE_SCORE || 
+	    if(min(unweightdedScore,weightedScore_orig) > MIN_CORE_SCORE ||
+			min(weightedScore_pBad,weightedScore_1mpBad) > MIN_CORE_SCORE ||
 			min(weightedScore_sqr, weightedScore_sqrt)  > MIN_CORE_SCORE)
 				printf("%s %s %.6f %.6f %.6f %.6f %.6f %.6f\n",
 					G1Index2Name[i].c_str(), G2Index2Name[j].c_str(),

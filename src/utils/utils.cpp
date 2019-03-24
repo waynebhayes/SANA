@@ -161,16 +161,9 @@ void normalizeWeights(vector<double>& weights) {
 
 vector<string> fileToStrings(const string& fileName, bool asLines) {
     checkFileExists(fileName);
-    uint fileNameLen = fileName.size();
-    FILE *fp;
-    char buf[10240], pipe = 0;
-    if (fileNameLen>=3 && fileName.substr(fileNameLen-3,3) == ".gz"){
-        fp = decompressFile("gunzip", fileName);
-        pipe=1;
-    } else if (fileNameLen>=3 && fileName.substr(fileNameLen-3,3) == ".xz"){
-        fp = decompressFile("xzcat", fileName);
-        pipe=1;
-    } else fp=fopen(fileName.c_str(),"r");
+    char buf[10240];
+    bool isPiped;
+    FILE *fp = openFileForReading(fileName, isPiped);
     vector<string> result;
     if(asLines) {
         while (fgets(buf, sizeof(buf), fp)){string line(buf); result.push_back(line);}
@@ -178,10 +171,43 @@ vector<string> fileToStrings(const string& fileName, bool asLines) {
     else {
         while (fscanf(fp, "%s", buf)>0){string word(buf); result.push_back(word);}
     }
-    if(pipe) pclose(fp);
-    else fclose(fp);
+    closeFile(fp, isPiped);
     return result;
 }
+
+void closeFile(FILE* fp, const bool& isPiped)
+{
+    if(isPiped)
+        pclose(fp);
+    else fclose(fp);
+}
+
+FILE* openFileForReading(const string& fileName, bool& piped) {
+    FILE* fp;
+    string decompressionProg = getDecompressionProgram(fileName);
+    piped = false;
+    if(decompressionProg != "")
+    {
+        fp = decompressFile(decompressionProg, fileName);
+        piped = true;
+    }
+    else fp = fopen(fileName.c_str(), "r");
+    return fp;
+}
+
+string getDecompressionProgram(const string& fileName) {
+    string ext = fileName.substr(fileName.find_last_of(".") + 1);
+    if(ext == "gz")
+        return "gunzip";
+    else if(ext == "xz")
+        return "xzcat";
+    else if(ext == "zip")
+        return "unzip";
+    else if(ext == "bz2")
+        return "bzip2 -dk";
+    return "";
+}
+
 
 FILE* decompressFile(const string& decompProg, const string& fileName) {
     stringstream stream;

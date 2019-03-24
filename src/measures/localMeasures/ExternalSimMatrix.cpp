@@ -7,30 +7,16 @@ using namespace std;
 ExternalSimMatrix::ExternalSimMatrix(Graph* G1, Graph* G2, string file, int format): LocalMeasure(G1, G2, "esim") {
     this->file = file;
     this->format =format;
-    string fileName = autogenMatricesFolder+G1->getName()+"_"+
-        G2->getName()+"_esim_"+file;
+    string fileName = autogenMatricesFolder+G1->getName()+"_"+G2->getName()+"_esim_"+file;
     loadBinSimMatrix(fileName);
 }
 
 void ExternalSimMatrix::initSimMatrix() {
-    FILE* fp;
     bool isPipe = false;
-    uint fileNameLength = file.size();
+    FILE* fp = openFileForReading(file, isPipe);
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
-
-    checkFileExists(file);
-
-    if (fileNameLength > 3 && file.substr(fileNameLength-3,3) == ".gz") {
-        fp = decompressFile("gunzip", file);
-        isPipe = true;
-    } else if (fileNameLength > 3 && file.substr(fileNameLength-3,3) == ".xz") {
-        fp = decompressFile("xzcat", file);
-        isPipe = true;
-    } else {
-        fp = fopen(file.c_str(), "r");
-    }
 
     if (fp == NULL) {
         throw runtime_error("ExternalSimMatrix: Error opening file");
@@ -43,8 +29,7 @@ void ExternalSimMatrix::initSimMatrix() {
     default:                    break;
     }
 
-    if (isPipe) pclose(fp);
-    else fclose(fp);
+    closeFile(fp, isPipe);
 }
 
 void ExternalSimMatrix::loadFormat0(FILE* infile) {
@@ -58,7 +43,7 @@ void ExternalSimMatrix::loadFormat0(FILE* infile) {
         ++lineCount;
     }
 
-    if (lineCount != getNumEntries()) 
+    if (lineCount != getNumEntries())
         throw runtime_error("ExternalSimMatrix: Did not find the expected number of entries in the sim file.");
 }
 
@@ -78,7 +63,7 @@ void ExternalSimMatrix::loadFormat1(FILE* infile) {
         ++lineCount;
     }
 
-    if (lineCount != getNumEntries()) 
+    if (lineCount != getNumEntries())
         throw runtime_error("ExternalSimMatrix: Did not find the expected number of entries in the sim file.");
 }
 
@@ -88,7 +73,7 @@ void ExternalSimMatrix::loadFormat2(FILE* infile) {
     for(uint i = 0; i < G1->getNumNodes(); i++){
         for(uint j = 0; j < G2->getNumNodes(); j++){
             entryCount += fscanf(infile, "%f", &value);
-            sims[i][j] = value;  
+            sims[i][j] = value;
         }
     }
 
