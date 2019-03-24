@@ -7,7 +7,8 @@ using namespace std;
 ExternalSimMatrix::ExternalSimMatrix(Graph* G1, Graph* G2, string file, int format): LocalMeasure(G1, G2, "esim") {
     this->file = file;
     this->format =format;
-    string fileName = autogenMatricesFolder+G1->getName()+"_"+G2->getName()+"_esim_"+file;
+    string fileName = autogenMatricesFolder+G1->getName()+"_"+
+        G2->getName()+"_esim_"+file;
     loadBinSimMatrix(fileName);
 }
 
@@ -30,6 +31,25 @@ void ExternalSimMatrix::initSimMatrix() {
     }
 
     closeFile(fp, isPipe);
+    }
+
+    cout << "Rescaling sims to be in [0,1]\n";
+
+    double simMin=1e30, simMax=-1e30;
+    for(uint i = 0; i < G1->getNumNodes(); i++){
+        for(uint j = 0; j < G2->getNumNodes(); j++){
+            if(sims[i][j] < simMin) simMin = sims[i][j];
+            if(sims[i][j] > simMax) simMax = sims[i][j];
+        }
+    }
+    for(uint i = 0; i < G1->getNumNodes(); i++){
+        for(uint j = 0; j < G2->getNumNodes(); j++){
+	    sims[i][j] = (sims[i][j] - simMin) / (simMax - simMin);
+        }
+    }
+
+    if (isPipe) pclose(fp);
+    else fclose(fp);
 }
 
 void ExternalSimMatrix::loadFormat0(FILE* infile) {
@@ -43,8 +63,8 @@ void ExternalSimMatrix::loadFormat0(FILE* infile) {
         ++lineCount;
     }
 
-    if (lineCount != getNumEntries())
-        throw runtime_error("ExternalSimMatrix: Did not find the expected number of entries in the sim file.");
+    if (lineCount != getNumEntries()) 
+        cerr << "WARNING: ExternalSimMatrix:loadFormat0: Did not find the expected number of entries in the sim file.\n";
 }
 
 void ExternalSimMatrix::loadFormat1(FILE* infile) {
@@ -63,8 +83,8 @@ void ExternalSimMatrix::loadFormat1(FILE* infile) {
         ++lineCount;
     }
 
-    if (lineCount != getNumEntries())
-        throw runtime_error("ExternalSimMatrix: Did not find the expected number of entries in the sim file.");
+    if (lineCount != getNumEntries()) 
+        cerr << "WARNING: ExternalSimMatrix:loadFormat1: Did not find the expected number of entries in the sim file.\n";
 }
 
 void ExternalSimMatrix::loadFormat2(FILE* infile) {
@@ -73,12 +93,12 @@ void ExternalSimMatrix::loadFormat2(FILE* infile) {
     for(uint i = 0; i < G1->getNumNodes(); i++){
         for(uint j = 0; j < G2->getNumNodes(); j++){
             entryCount += fscanf(infile, "%f", &value);
-            sims[i][j] = value;
+            sims[i][j] = value;  
         }
     }
 
     if ((fscanf(infile, "%f", &value) != EOF) || entryCount != getNumEntries())
-        throw runtime_error("ExternalSimMatrix: Did not find the expected number of entries in the sim file.");
+        throw runtime_error("ExternalSimMatrix:loadFormat2: Format2 simFile is a matrix that must have exactly n1 x n2 entries.");
 }
 
 ExternalSimMatrix::~ExternalSimMatrix() {
