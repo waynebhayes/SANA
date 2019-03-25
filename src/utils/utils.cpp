@@ -181,7 +181,7 @@ void closeFile(FILE* fp, const bool& isPiped)
         pclose(fp);
     else fclose(fp);
 }
-stdiobuf readFileAsStream(const string& fileName) {
+stdiobuf readFileAsStreamBuffer(const string& fileName) {
     bool piped = false;
     FILE* f = readFileAsFilePointer(fileName, piped);
     return stdiobuf(f, piped);

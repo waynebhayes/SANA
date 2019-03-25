@@ -61,7 +61,7 @@ bool fileExists(const string& filename);
 void checkFileExists(const string& filename);
 void addUniquePostfixToFilename(string& name, const string& extension);
 
-stdiobuf readFileAsStream(const string& fileName);
+stdiobuf readFileAsStreamBuffer(const string& fileName);
 FILE* readFileAsFilePointer(const string& fileName, bool& piped);
 void closeFile(FILE* fp, const bool& isPiped);
 string getDecompressionProgram(const string& fileName);
