@@ -21,6 +21,17 @@ public:
                 fclose(this->d_file); 
         } 
     }
+    stdiobuf(const stdiobuf& other)
+    {
+        if(&other != this)
+        {
+            this->d_file = other.d_file;
+            this->isPiped = other.isPiped;
+            for(int i = 0; i < 10240; i++)
+                this->d_buffer[i] = other.d_buffer[i];
+        }
+    }
+
     int underflow() {
         if (this->gptr() == this->egptr() && this->d_file) {
             size_t size = fread(this->d_buffer, 10240, 1, this->d_file);
