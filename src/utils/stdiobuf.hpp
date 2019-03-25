@@ -5,37 +5,36 @@
 #ifndef STDIOBUF_HPP
 #define STDIOBUF_HPP
 
+#define BUFFER_SIZE 10240
+
 class stdiobuf : public std::streambuf
 {
 private:
-    FILE* d_file;
-    char  d_buffer[10240];
+    FILE* file;
+    char buffer[BUFFER_SIZE];
     bool isPiped = false;
 public:
-    stdiobuf(FILE* file, bool piped): d_file(file), isPiped(piped) {}
+    stdiobuf(FILE* file, bool piped): file(file), isPiped(piped) {}
     ~stdiobuf() {
-        if (this->d_file) {
-            if(isPiped)
-                pclose(d_file);
-            else
-                fclose(this->d_file); 
-        } 
+        if (this->file) {
+            if(isPiped) pclose(file);
+            else fclose(this->file); 
+        }
     }
-    stdiobuf(const stdiobuf& other)
-    {
-        if(&other != this)
-        {
-            this->d_file = other.d_file;
+    stdiobuf(const stdiobuf& other) {
+        if(&other != this) {
+            this->file = other.file;
             this->isPiped = other.isPiped;
-            for(int i = 0; i < 10240; i++)
-                this->d_buffer[i] = other.d_buffer[i];
+            for(int i = 0; i < BUFFER_SIZE; i++)
+                this->buffer[i] = other.buffer[i];
         }
     }
 
     int underflow() {
-        if (this->gptr() == this->egptr() && this->d_file) {
-            size_t size = fread(this->d_buffer, 1, 10240, this->d_file);
-            this->setg(this->d_buffer, this->d_buffer, this->d_buffer + size);
+        if (this->gptr() == this->egptr() && this->file) {
+            size_t size = fread(this->buffer, 1, BUFFER_SIZE, this->file);
+            if(0 < size)
+                this->setg(this->buffer, this->buffer, this->buffer + size);
         }
         return this->gptr() == this->egptr()
             ? traits_type::eof()

@@ -205,13 +205,19 @@ string getDecompressionProgram(const string& fileName) {
         return "gunzip";
     else if(ext == "xz")
         return "xzcat";
-    else if(ext == "zip")
-        return "unzip";
     else if(ext == "bz2")
         return "bzip2 -dk";
     return "";
 }
-
+string getUncompressedFileExtension(const string& fileName)
+{
+    if(getDecompressionProgram(fileName) != "")
+    {
+        string noCompressionExt = extractFileNameNoExtension(fileName);
+        return noCompressionExt.substr(noCompressionExt.find_last_of(".") + 1);
+    }
+    return "";
+}
 
 FILE* decompressFile(const string& decompProg, const string& fileName) {
     stringstream stream;
@@ -240,7 +246,8 @@ vector<vector<string> > fileToStringsByLines(const string& fileName) {
 
 void memExactFileParseByLine(vector<vector<string> >& result, const string& fileName) {
     checkFileExists(fileName);
-    ifstream ifs(fileName.c_str());
+    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    istream ifs(&sbuf);
     string line;
     while (getline(ifs, line)) {
         istringstream iss(line);
@@ -249,7 +256,6 @@ void memExactFileParseByLine(vector<vector<string> >& result, const string& file
         copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter(words));
         result.push_back(words);
     }
-    ifs.close();
 }
 
 string extractDecimals(double value, int count) {
@@ -425,7 +431,8 @@ string extractFileNameNoExtension(string s) {
     int pos = s.size() - 1;
     while (pos >= 0 and s[pos] != '.') pos--; //gives position of last "."
     string suffix = s.substr(pos + 1);
-    if (suffix != "el" and suffix != "elw" and suffix != "gw") throw runtime_error("files must be of type el, elw or gw"); //terminate SANA if invalid file types used
+    //i've temporarily disabled this to make graph loading compatible with compressed files
+    //if (suffix != "el" and suffix != "elw" and suffix != "gw") throw runtime_error("files must be of type el, elw or gw"); //terminate SANA if invalid file types used
     s = s.substr(0, pos);
     return s;
 }

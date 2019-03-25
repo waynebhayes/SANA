@@ -24,15 +24,15 @@ Graph& Graph::loadGraph(string name, Graph& g) {
 
 Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHaveTypes){
     g.path = path;
-    string format = path.substr(path.find_last_of('.'));
-    if(format == ".gw"){
+    string format = path.substr(path.find_last_of('.')+1);
+    if(format == "gw"){
         g.loadGwFile(path);
         g.name = name;
     }
-    else if(format == ".el"){
+    else if(format == "el" || getUncompressedFileExtension(path) == "el"){
         Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
     }
-    else if(format == ".elw"){
+    else if(format == "elw" || getUncompressedFileExtension(path) == "elw"){
         g.parseFloatWeight = true;
         Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
     }

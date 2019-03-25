@@ -65,6 +65,7 @@ stdiobuf readFileAsStreamBuffer(const string& fileName);
 FILE* readFileAsFilePointer(const string& fileName, bool& piped);
 void closeFile(FILE* fp, const bool& isPiped);
 string getDecompressionProgram(const string& fileName);
+string getUncompressedFileExtension(const string& fileName);
 
 bool folderExists(string folderName);
 void createFolder(string folderName);
