@@ -7,6 +7,9 @@ echo 'Testing measurement CompressedFiles'
 TEST_DIR=`pwd`/regression-tests/CompressedFiles
 [ -d "$TEST_DIR" ] || die "should be run from top-level directory of the SANA repo"
 
+echo "" > test1.align
+echo "" > test2.align
+
 exitCode=0
 
 echo "Test 1: Testing compressed edgelists AThaliana.el.bz2 and MMusculus.el.gz"
