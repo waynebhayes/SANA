@@ -24,15 +24,16 @@ Graph& Graph::loadGraph(string name, Graph& g) {
 
 Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHaveTypes){
     g.path = path;
-    string format = path.substr(path.find_last_of('.'));
-    if(format == ".gw"){
+    string format = path.substr(path.find_last_of('.')+1);
+    string uncompressedFileExt = getUncompressedFileExtension(path);
+    if(format == "gw" || uncompressedFileExt == "gw"){
         g.loadGwFile(path);
         g.name = name;
     }
-    else if(format == ".el"){
+    else if(format == "el" || uncompressedFileExt == "el"){
         Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
     }
-    else if(format == ".elw"){
+    else if(format == "elw" || uncompressedFileExt == "elw"){
         g.parseFloatWeight = true;
         Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
     }
@@ -160,7 +161,8 @@ void Graph::loadGraphFromBinary(Graph& g, string graphName, string lockFile, boo
 }
 
 void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes) {
-    ifstream infile(fin.c_str());
+    stdiobuf sbuf = readFileAsStreamBuffer(fin);
+    istream infile(&sbuf);
     string line;
     unordered_set<string> record;
     size_t lineCount = 0;
@@ -568,8 +570,10 @@ void Graph::loadGwFile(const string& fileName) {
     //this function could be improved to deal with blank lines and comments
     stringstream errorMsg;
 
-    ifstream infile(fileName.c_str());
+    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    istream infile(&sbuf);
     string line;
+    
     //ignore header
     for (int i = 0; i < 4; ++i)
         getline(infile, line);
@@ -662,7 +666,6 @@ void Graph::loadGwFile(const string& fileName) {
         adjLists[node1].push_back(node2);
         adjLists[node2].push_back(node1);
     }
-    infile.close();
     initConnectedComponents();
 }
 
@@ -670,7 +673,8 @@ void Graph::multGwFile(const string& fileName, uint path) {
     //this function could be improved to deal with blank lines and comments
     stringstream errorMsg;
 
-    ifstream infile(fileName.c_str());
+    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    istream infile(&sbuf);
     string line;
     //ignore header
     for (int i = 0; i < 4; i++) getline(infile, line);
@@ -754,7 +758,6 @@ void Graph::multGwFile(const string& fileName, uint path) {
         }
     }
 
-    infile.close();
     initConnectedComponents();
 }
 
@@ -1179,7 +1182,8 @@ unordered_map<string,uint> Graph::getNodeNameToIndexMap() const {
     if(this -> path != "")
         networkFile = this -> path;
 
-    ifstream infile(networkFile.c_str());
+    stdiobuf sbuf = readFileAsStreamBuffer(networkFile);
+    istream infile(&sbuf);
     string line;
     //ignore header
     for (int i = 0; i < 4; i++) getline(infile, line);
@@ -1208,7 +1212,6 @@ unordered_map<string,uint> Graph::getNodeNameToIndexMap() const {
         node = node.substr(2,node.size()-4); //strip |{ and }|
         res[node] = i;
     }
-    infile.close();
     return res;
 }
 
