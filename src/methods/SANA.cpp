@@ -409,24 +409,6 @@ Alignment SANA::run() {
 	printf("p1 p2 unwgtd w1_pB\n");
 	for(uint i=0; i<n1; i++) for(uint j=0; j<n2; j++)
 	{
-<<<<<<< HEAD
-	    double unweightdedScore = pegHoleFreq[i][j]/(double)numPegSamples[i],
-			weightedScore_orig = weightedPegHoleFreq_orig[i][j]/totalWeightedPegWeight_orig[i],
-			weightedScore_pBad = weightedPegHoleFreq_pBad[i][j]/totalWeightedPegWeight_pBad[i],
-
-			weightedScore_1mpBad = weightedPegHoleFreq_1mpBad[i][j]/totalWeightedPegWeight_1mpBad[i],
-			weightedScore_sqr = weightedPegHoleFreq_sqr[i][j]/totalWeightedPegWeight_sqr[i],
-			weightedScore_sqrt = weightedPegHoleFreq_sqrt[i][j]/totalWeightedPegWeight_sqrt[i];
-	    if(min(unweightdedScore,weightedScore_orig) > MIN_CORE_SCORE ||
-			min(weightedScore_pBad,weightedScore_1mpBad) > MIN_CORE_SCORE ||
-			min(weightedScore_sqr, weightedScore_sqrt)  > MIN_CORE_SCORE)
-				printf("%s %s %.6f %.6f %.6f %.6f %.6f %.6f\n",
-					G1Index2Name[i].c_str(), G2Index2Name[j].c_str(),
-					unweightdedScore, weightedScore_orig,
-					weightedScore_pBad, weightedScore_1mpBad, weightedScore_sqr, weightedScore_sqrt
-				);
-	}
-=======
 #if UNWEIGHTED_CORES
 	    double unweightdedScore = pegHoleFreq[i][j]/(double)numPegSamples[i];
 #endif
@@ -435,7 +417,6 @@ Alignment SANA::run() {
 	    if(
 #if UNWEIGHTED_CORES
 		unweightdedScore  >= max(MIN_CORE_SCORE,SminUnW) ||
->>>>>>> upstream/SANA1.1
 #endif
 		weightedScore_pBad >= max(MIN_CORE_SCORE,Smin_pBad) ||
 		weightedScore_1mpBad >= max(MIN_CORE_SCORE,Smin_1mpBad))
