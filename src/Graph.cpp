@@ -89,7 +89,9 @@ void Graph::serializeGraph(Graph& G, string outputName, bool typedNodes, bool lo
             if (stat(outName.c_str(), &st) != 0)
             {
                 string movecmd = string("mv") + string(" ") + tmpName + string(" ") + outName;
-                (void)system(movecmd.c_str());
+                int dummy = fd;
+		fd = system(movecmd.c_str()); // shut the fucking compiler up
+		fd = dummy;
             }
             else
             {
@@ -948,6 +950,31 @@ void Graph::writeGraphEdgeListFormatPINALOG(const string& fileName){
 }
 
 
+vector<uint> Graph::getAllNodesAround(uint node, uint maxDist) const {
+    uint n = getNumNodes();
+    vector<uint> distances(n, n);
+    distances[node] = 0;
+    queue<uint> Q;
+    Q.push(node);
+    while (not Q.empty()) {
+        uint u = Q.front();
+        Q.pop();
+        uint dist = distances[u];
+        if (dist == maxDist) break;
+        for (uint i = 0; i < adjLists[u].size(); i++) {
+            uint v = adjLists[u][i];
+            if (distances[v] < n) continue;
+            distances[v] = dist+1;
+            Q.push(v);
+        }
+    }
+    vector<uint> result;
+    for (uint i = 0; i < n; i++) {
+        if (distances[i] < n and distances[i] >= 0) result.push_back(i);
+    }
+    return result;
+}
+
 vector<uint> Graph::numNodesAround(uint node, uint maxDist) const {
     uint n = getNumNodes();
     vector<uint> distances(n, n);
@@ -967,9 +994,13 @@ vector<uint> Graph::numNodesAround(uint node, uint maxDist) const {
         }
     }
     vector<uint> result(maxDist, 0);
-    for (uint i = 0; i < n; i++) {
-        if (distances[i] < n and distances[i] > 0) result[distances[i]-1]++;
-    }
+    uint total = 0;
+    for (uint i = 0; i < n; i++)
+        if (distances[i] < n and distances[i] > 0) {
+	    result[distances[i]-1]++; 
+	    total++;
+	}
+    assert(total == getAllNodesAround(node, maxDist).size());
     return result;
 }
 
@@ -1192,10 +1223,19 @@ unordered_map<uint,string> Graph::getIndexToNodeNameMap() const {
 }
 
 bool Graph::hasSelfLoop(uint source) const {
+<<<<<<< HEAD
     vector<uint> neighbors = adjLists[source];
     return (matrix.get(source, source)) || (std::find(neighbors.begin(), neighbors.end(), source) != neighbors.end());
     // Why doesn't the above work? Checking the diagonal of hte matrix is much faster than a search through neighbors
     //return (std::find(neighbors.begin(), neighbors.end(), source) != neighbors.end());
+=======
+#ifdef SPARSE
+    vector<uint> neighbors = adjLists[source];
+    return std::find(neighbors.begin(), neighbors.end(), source) != neighbors.end();
+#else
+    return (matrix.get(source, source)); // || (std::find(neighbors.begin(), neighbors.end(), source) != neighbors.end());
+#endif
+>>>>>>> upstream/SANA1.1
 }
 
 vector<string> Graph::getNodeNames() const {

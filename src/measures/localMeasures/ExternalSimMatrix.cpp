@@ -30,7 +30,10 @@ void ExternalSimMatrix::initSimMatrix() {
     default:                    break;
     }
 
+<<<<<<< HEAD
     
+=======
+>>>>>>> upstream/SANA1.1
     cout << "Rescaling sims to be in [0,1]\n";
 
     double simMin=1e30, simMax=-1e30;
@@ -42,11 +45,20 @@ void ExternalSimMatrix::initSimMatrix() {
     }
     for(uint i = 0; i < G1->getNumNodes(); i++){
         for(uint j = 0; j < G2->getNumNodes(); j++){
+<<<<<<< HEAD
 	        sims[i][j] = (sims[i][j] - simMin) / (simMax - simMin);
         }
     }
     
     closeFile(fp, isPipe);
+=======
+	    sims[i][j] = (sims[i][j] - simMin) / (simMax - simMin);
+        }
+    }
+
+    if (isPipe) pclose(fp);
+    else fclose(fp);
+>>>>>>> upstream/SANA1.1
 }
 
 void ExternalSimMatrix::loadFormat0(FILE* infile) {

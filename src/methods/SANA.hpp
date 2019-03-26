@@ -20,7 +20,7 @@
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, uint pairsCount
 #endif
 
-#define CIRCULAR_BUFFER_SIZE 1000
+#define CIRCULAR_BUFFER_SIZE 10000
 
 class SANA: public Method {
 
@@ -77,10 +77,7 @@ public:
     double searchSpaceSizeLog();
     string startAligName = "";
     void prune(string& startAligName);
-#if 0 //#ifdef CORES
-	vector<ulong> getNumPegSamples() { return numPegSamples; }
-	Matrix<ulong> getPegHoleFreq() { return pegHoleFreq; }
-#endif
+
     //to compute TDecay automatically
     //returns a value of lambda such that with this TInitial, temperature reaches
     //0 after a certain number of minutes
@@ -167,6 +164,9 @@ private:
     double scoreForTInitial(double TInitial);
     bool isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore);
     double scoreRandom();
+
+    double TrimCoreScores(Matrix<ulong>& Freq, vector<ulong>& numPegSamples);
+    double TrimCoreScores(Matrix<double>& Freq, vector<double>& totalPegWeight);
 
     bool initializedIterPerSecond;
     double iterPerSecond;
@@ -301,23 +301,14 @@ private:
     map<string, double>* localScoreSumMap;
     vector<vector<float> > sims;
 #ifdef CORES
+#if UNWEIGHTED_CORES
     Matrix<ulong> pegHoleFreq;
     vector<ulong> numPegSamples; // number of times this node in g1 was sampled.
-
-    Matrix<double> weightedPegHoleFreq_orig; // Wayne's original: pBad-weighted, and wherever the peg landed (not nec. better)
-    vector<double> totalWeightedPegWeight_orig;
-
-    Matrix<double> weightedPegHoleFreq_pBad; // weighted by pBad
+#endif
+    Matrix<double> weightedPegHoleFreq_pBad; // weighted by 1-pBad
     vector<double> totalWeightedPegWeight_pBad;
-
     Matrix<double> weightedPegHoleFreq_1mpBad; // weighted by 1-pBad
     vector<double> totalWeightedPegWeight_1mpBad;
-
-    Matrix<double> weightedPegHoleFreq_sqr; // weighted by pBad*(1-pBad)
-    vector<double> totalWeightedPegWeight_sqr;
-
-    Matrix<double> weightedPegHoleFreq_sqrt; // weighted by sqrt(pBad*(1-pBad))
-    vector<double> totalWeightedPegWeight_sqrt;
 #endif
     map<string, vector<vector<float> > > localSimMatrixMap;
     double localScoreSumIncChangeOp(vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
