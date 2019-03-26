@@ -3347,6 +3347,7 @@ void SANA::releaseAlignment(Job &job) {
 }
 
 double SANA::trueAcceptingProbability(Job &job) {
+    throw runtime_error("internal error: vectorMean too expensive; implement circular buffer for Pareto mode trueAcceptingProbability");
     return vectorMean(job.sampledProbability);
 }
 
