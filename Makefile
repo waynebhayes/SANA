@@ -2,7 +2,7 @@ CC = g++
 
 #CXXFLAGS = -I "src/utils" -Wall -fno-inline -O2 -std=c++11 -g3
 #CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DMULTI_PAIRWISE #-pg -ggdb -Bstatic #-static
-CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread -DCORES #-DUSE_CACHED_FILES #-DSPARSE #-DMULTI_PAIRWISE -ggdb #-pg
+CXXFLAGS = -DMULTI_PAIRWISE -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread -DCORES #-DUSE_CACHED_FILES #-DSPARSE #-DMULTI_PAIRWISE -ggdb #-pg
 
 INCLUDES =
 LFLAGS =
@@ -49,6 +49,7 @@ MEASURES_SRCS = 							\
 	src/measures/SquaredEdgeScore.cpp 				\
 	src/measures/EdgeExposure.cpp 				\
 	src/measures/WeightedEdgeConservation.cpp 			\
+	src/measures/MultiS3.cpp							\
 	src/measures/localMeasures/EdgeCount.cpp 			\
 	src/measures/localMeasures/EdgeDensity.cpp 			\
 	src/measures/localMeasures/ExternalSimMatrix.cpp 		\

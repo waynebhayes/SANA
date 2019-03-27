@@ -286,7 +286,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
         edgeList[i][0] = index1;
         edgeList[i][1] = index2;
         if (g.parseFloatWeight) {
-            floatWeightList[i] = stof(edgeValue);
+            // floatWeightList[i] = stof(edgeValue);
         }
 #ifdef MULTI_PAIRWISE
         edgeList[i][2] = stoi(edgeValue);

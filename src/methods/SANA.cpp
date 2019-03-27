@@ -34,6 +34,7 @@
 #include "../measures/SymmetricEdgeCoverage.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
 #include "../measures/EdgeExposure.hpp"
+#include "../measures/MultiS3.hpp"
 #include "../utils/NormalDistribution.hpp"
 #include "../utils/LinearRegression.hpp"
 #include "../utils/utils.hpp"
@@ -194,6 +195,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     mecWeight = MC->getWeight("mec");
     sesWeight = MC->getWeight("ses");
 	eeWeight = MC->getWeight("ee");
+    ms3Weight = MC->getWeight("ms3");
 
     try {
         wecWeight = MC->getWeight("wec");
@@ -233,6 +235,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     needEd               = edWeight > 0; // to evaluate edge difference score incrementally
     needSquaredAligEdges = sesWeight > 0; // to evaluate SES incrementally
 	needExposedEdges	 = eeWeight > 0; // to eval EE incrementally
+    needMS3              = ms3Weight > 0; // to eval MS3 incrementally
     needInducedEdges     = s3Weight > 0 || icsWeight > 0; //to evaluate S3 & ICS incrementally
     needWec              = wecWeight > 0; //to evaluate WEC incrementally
     needEwec             = ewecWeight>0; //to evaluate EWEC incrementally
@@ -452,6 +455,7 @@ double ncC(PARAMS) { return double(ncSum) / trueA_back; }
 double mecC(PARAMS) { return double(aligEdges) / (g1WeightedEdges + g2WeightedEdges); }
 double sesC(PARAMS) { return squaredAligEdges; }
 double eeC(PARAMS)  { return 1-exposedEdgesNumer/(double)EdgeExposure::getDenom(); }
+double ms3C(PARAMS)  { return double (MS3Numer / MultiS3::denom); }
 #endif
 
 unordered_set<vector<uint>*>* SANA::paretoRun(const string& fileName) {
@@ -469,6 +473,7 @@ unordered_set<vector<uint>*>* SANA::paretoRun(const string& fileName) {
     measureCalculation["mec"] = mecC;
     measureCalculation["ses"] = sesC;
 	measureCalculation["ee"] = eeC;
+    measureCalculation["ms3"] = ms3C;
 #endif
     cout << "pareto mode running in " << paretoThreads << " number of threads" << endl;
 
@@ -677,6 +682,10 @@ void SANA::initDataStructures(const Alignment& startA) {
 	if (needExposedEdges)
 	{
 		exposedEdgesNumer = startA.numExposedEdges(*G1, *G2) - EdgeExposure::getMaxEdge();
+	}
+    if (needMS3)
+	{
+		MS3Numer = startA.multiS3Numerator(*G1, *G2);
 	}
 #endif
     if (needInducedEdges) {
@@ -927,7 +936,7 @@ vector<double> SANA::translateScoresToVector() {
                                                                               wecSum, ewecSum, ncSum, trueA.back(),
                                                                               g1WeightedEdges, g2WeightedEdges,
                                                                               squaredAligEdges, exposedEdgesNumer,
-                                                                              edSum, pairsCount
+                                                                              edSum, pairsCount, MS3Numer
                                                                             );
     }
 #else
@@ -956,7 +965,7 @@ vector<double> SANA::translateScoresToVector() {
     return addScores;
 }
 
-vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdSum) {
+vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdSum, double newMS3Numer) {
     vector<double> addScores(numOfMeasures);
 #ifdef MULTI_PAIRWISE
     for(uint i = 0; i < numOfMeasures; i++) {
@@ -966,7 +975,7 @@ vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdge
                                                                               newWecSum, newEwecSum, newNcSum, trueA.back(),
                                                                               g1WeightedEdges, g2WeightedEdges,
                                                                               newSquaredAligEdges, newExposedEdgesNumer,
-                                                                              newEdSum, pairsCount
+                                                                              newEdSum, pairsCount, newMS3Numer
                                                                             );
     }
 #else
@@ -1000,6 +1009,7 @@ void SANA::prepareMeasureDataByAlignment() {
     aligEdges        = (needAligEdges or needSec) ?  storedAligEdges[A] : -1;
     squaredAligEdges = (needSquaredAligEdges) ?  storedSquaredAligEdges[A] : -1;
 	exposedEdgesNumer= (needExposedEdges) ?  storedExposedEdgesNumer[A] : -1;
+    MS3Numer         = (needMS3) ?  storedMS3Numer[A] : -1;
     inducedEdges     = (needInducedEdges) ?  storedInducedEdges[A] : -1;
     TCSum            = (needTC) ?  storedTCSum[A] : -1;
     edSum            = (needEd) ?  storedEdSum[A] : -1;
@@ -1067,6 +1077,7 @@ void SANA::insertCurrentAlignmentAndData() {
     if(needAligEdges or needSec) storedAligEdges[A]        = aligEdges;
     if(needSquaredAligEdges)     storedSquaredAligEdges[A] = squaredAligEdges;
 	if(needExposedEdges)		 storedExposedEdgesNumer[A]= exposedEdgesNumer;
+    if(needMS3)         		 storedMS3Numer[A]         = MS3Numer;
     if(needInducedEdges)         storedInducedEdges[A]     = inducedEdges;
     if(needEd)                   storedEdSum[A]            = edSum;
     if(needTC)                   storedTCSum[A]            = TCSum;
@@ -1101,6 +1112,7 @@ void SANA::removeAlignmentData(vector<uint>* toRemove) {
     if(needAligEdges or needSec) storedAligEdges.erase(toRemove);
     if(needSquaredAligEdges)     storedSquaredAligEdges.erase(toRemove);
 	if(needExposedEdges)		 storedExposedEdgesNumer.erase(toRemove);
+    if(needMS3)		             storedMS3Numer.erase(toRemove);
     if(needInducedEdges)         storedInducedEdges.erase(toRemove);
     if(needTC)                   storedTCSum.erase(toRemove);
     if(needEd)                   storedEdSum.erase(toRemove);
@@ -1199,11 +1211,11 @@ void SANA::performChange(int type) {
         }
     }
 
-
     int newAligEdges           = (needAligEdges or needSec) ?  aligEdges + aligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
     double newEdSum            = (needEd) ?  edSum + edgeDifferenceIncChangeOp(source, oldTarget, newTarget) : -1;
     double newSquaredAligEdges = (needSquaredAligEdges) ?  squaredAligEdges + squaredAligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
 	double newExposedEdgesNumer= (needExposedEdges) ? exposedEdgesNumer + exposedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newMS3Numer         = (needMS3) ? MS3Numer + MS3IncChangeOp(source, oldTarget, newTarget) : -1;
     int newInducedEdges        = (needInducedEdges) ?  inducedEdges + inducedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
     double newTCSum            = (needTC) ?  TCSum + TCIncChangeOp(source, oldTarget, newTarget) : -1;
     double newLocalScoreSum    = (needLocal) ? localScoreSum + localScoreSumIncChangeOp(sims, source, oldTarget, newTarget) : -1;
@@ -1218,10 +1230,8 @@ void SANA::performChange(int type) {
             item.second += localScoreSumIncChangeOp(localSimMatrixMap[item.first], source, oldTarget, newTarget);
     }
 
-
-
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum);
+    bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum, newMS3Numer);
 
 #ifdef CORES
 	// Statistics on the emerging core alignment.
@@ -1283,7 +1293,27 @@ void SANA::performChange(int type) {
         currentScore     = newCurrentScore;
 		exposedEdgesNumer= newExposedEdgesNumer;
         squaredAligEdges = newSquaredAligEdges;
+        MS3Numer         = newMS3Numer;
+        if (needMS3)
+        {
+            // score is calculated with denom 1 step behind if we do this here I guess
+            unsigned oldTarDeg, newTarDeg;
+            oldTarDeg = MultiS3::shadowDegrees[oldTarget];
+            newTarDeg = MultiS3::shadowDegrees[newTarget];
+
+            MultiS3::shadowDegrees[oldTarget] -= G1AdjLists[source].size();
+            if (oldTarDeg > 0 && !MultiS3::shadowDegrees[oldTarget])
+            {
+                MultiS3::denom -= 1;
+            }
+            MultiS3::shadowDegrees[newTarget] += G1AdjLists[source].size();
+            if (!newTarDeg && MultiS3::shadowDegrees[newTarget] > 0)
+            {
+                MultiS3::denom += 1;
+            }
+        }
     }
+
     if(score == Score::pareto and ((iterationsPerformed % paretoIterations) == 0)) {
         /*vector<double> addScores = getMeasureScores(aligEdges, inducedEdges, TCSum, localScoreSum,
                                                     wecSum, ncSum, ewecSum, squaredAligEdges);*/
@@ -1301,6 +1331,7 @@ void SANA::performSwap(int type) {
     int newTCSum               = (needTC) ?  TCSum + TCIncSwapOp(source1, source2, target1, target2) : -1;
     double newSquaredAligEdges = (needSquaredAligEdges) ? squaredAligEdges + squaredAligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
 	double newExposedEdgesNumer= (needExposedEdges) ?  exposedEdgesNumer + exposedEdgesIncSwapOp(source1, source2, target1, target2) : -1;
+    double newMS3Numer         = (needMS3) ?  MS3Numer + MS3IncSwapOp(source1, source2, target1, target2) : -1;
     double newWecSum           = (needWec) ?  wecSum + WECIncSwapOp(source1, source2, target1, target2) : -1;
     double newEwecSum          = (needEwec) ?  ewecSum + EWECIncSwapOp(source1, source2, target1, target2) : -1;
     double newNcSum            = (needNC) ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
@@ -1315,7 +1346,7 @@ void SANA::performSwap(int type) {
     }
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum);
+    bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum, MS3Numer);
 
 #ifdef CORES
         // Statistics on the emerging core alignment.
@@ -1353,6 +1384,7 @@ void SANA::performSwap(int type) {
         currentScore        = newCurrentScore;
         squaredAligEdges    = newSquaredAligEdges;
 		exposedEdgesNumer   = newExposedEdgesNumer;
+        MS3Numer            = newMS3Numer;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
 #if 0
@@ -1374,7 +1406,7 @@ void SANA::performSwap(int type) {
     }
 }
 
-bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum) {
+bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum, double newMS3Numer) {
     bool makeChange = false;
     wasBadMove = false;
     double badProbability = 0;
@@ -1397,6 +1429,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += mecWeight * (newAligEdges / (g1WeightedEdges + g2WeightedEdges));
         newCurrentScore += sesWeight * newSquaredAligEdges / SquaredEdgeScore::getDenom();
 		newCurrentScore += eeWeight * (1 - (newExposedEdgesNumer / (double)EdgeExposure::getDenom()));
+        newCurrentScore += ms3Weight * (newMS3Numer / MultiS3::denom);
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -1517,7 +1550,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     }
     case Score::pareto:
     { //This determines whether we should update the current alignment.
-        vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdgeDifferenceSum);
+        vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdgeDifferenceSum, newMS3Numer);
         if(dominates(addScores, currentScores))
         {
             currentScores = addScores;
@@ -1895,6 +1928,40 @@ int SANA::exposedEdgesIncSwapOp(Job &job, uint source1, uint source2, uint targe
 			++ret;
 		}
     }
+    return ret;
+}
+
+int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
+    int ret = 0;
+    uint neighbor;
+
+    const uint n = G1AdjLists[source].size();
+    for (uint i = 0; i < n; ++i) {
+        neighbor = G1AdjLists[source][i];
+        ret -= G2Matrix[oldTarget][(*A)[neighbor]];
+        ret += G2Matrix[newTarget][(*A)[neighbor]];
+    }
+    return ret;
+}
+
+int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
+    int ret = 0;
+    uint neighbor;
+    
+    const uint n = G1AdjLists[source1].size();
+    for (uint i = 0; i < n; ++i) {
+        neighbor = G1AdjLists[source1][i];
+        ret -= G2Matrix[target1][(*A)[neighbor]];
+        ret += G2Matrix[target2][(*A)[neighbor]];
+    }
+    
+    const uint m = G1AdjLists[source2].size();
+    for (uint i = 0; i < m; ++i) {
+        neighbor = G1AdjLists[source2][i];
+        ret -= G2Matrix[target2][(*A)[neighbor]];
+        ret += G2Matrix[target1][(*A)[neighbor]];
+    }
+    
     return ret;
 }
 
@@ -3384,6 +3451,7 @@ void SANA::storeAlignment(Job &job) {
     if(needAligEdges or needSec) storedAligEdges[A]        = info.aligEdges;
     if(needSquaredAligEdges)     storedSquaredAligEdges[A] = info.squaredAligEdges;
 	if(needExposedEdges)		 storedExposedEdgesNumer[A]= info.exposedEdgesNumer;
+    if(needMS3)		             storedMS3Numer[A]         = info.MS3Numer;
     if(needInducedEdges)         storedInducedEdges[A]     = info.inducedEdges;
     if(needTC)                   storedTCSum[A]            = info.TCSum;
     if(needEd)                   storedEdSum[A]            = info.edSum;
@@ -3401,6 +3469,7 @@ void SANA::copyAlignmentFromStorage(Job &job, vector<uint> *A) {
     info.aligEdges        = (needAligEdges or needSec) ?  storedAligEdges[A] : -1;
     info.squaredAligEdges = (needSquaredAligEdges) ?  storedSquaredAligEdges[A] : -1;
 	info.exposedEdgesNumer= (needExposedEdges) ? storedExposedEdgesNumer[A] : -1;
+    info.MS3Numer          = (needMS3) ? storedMS3Numer[A] : -1;
     info.inducedEdges     = (needInducedEdges) ?  storedInducedEdges[A] : -1;
     info.TCSum            = (needTC) ?  storedTCSum[A] : -1;
     info.edSum            = (needEd) ?  storedEdSum[A] : -1;
@@ -3441,7 +3510,7 @@ vector<double> SANA::translateScoresToVector(Job &job) {
                                                                     info.wecSum, info.ewecSum, info.ncSum, trueA.back(),
                                                                     g1WeightedEdges, g2WeightedEdges,
                                                                     info.squaredAligEdges, info.exposedEdgesNumer,
-                                                                    info.edSum, pairsCount
+                                                                    info.edSum, pairsCount, info.MS3Numer
                                                                    );
     }
 #else
@@ -3663,7 +3732,7 @@ bool SANA::scoreComparison(Job &job, double newAligEdges, double newInducedEdges
 
     AlignmentInfo &info = job.info;
 
-    vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdgeDifferenceSum);
+    vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdgeDifferenceSum, MS3Numer);
     if(dominates(addScores, info.currentScores)) {
         info.currentScores = addScores;
         makeChange = true;
