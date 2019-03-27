@@ -15,7 +15,7 @@ GraphletCosine::~GraphletCosine() {
 double magnitude(vector<uint> vector) {
     double res = 0;
     for(uint i = 0; i < vector.size(); ++i) {
-        res += vector[i] * vector[i];
+        res += vector[i] * static_cast<double>(vector[i]);
     }
 
     return sqrt(res);
@@ -24,7 +24,7 @@ double magnitude(vector<uint> vector) {
 double dot(vector<uint> v1, vector<uint> v2) {
     double res = 0;
     for(uint i = 0; i < v1.size(); ++i) {
-        res += v1[i] * v2[i];
+        res += v1[i] * static_cast<double>(v2[i]);
     }
 
     return res;
