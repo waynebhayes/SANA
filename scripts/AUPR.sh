@@ -113,9 +113,9 @@ hawk '
     }' "$@"
 
 # Now compute the AUPR
-cols=1
-if [ $c1 -ne 0 -a $c2 -ne 0 ]; then cols="$cols 2"; fi
+cols=6
+if [ $c1 -ne 0 -a $c2 -ne 0 ]; then cols="$cols 15"; fi
 for c in $cols; do
-    sort -k ${c}g $TMP | hawk 'BEGIN{evalCol[1]=6;evalCol[2]=15;colName[1]='$c1';colName[2]='$c2';prevRec=1}/^0/{prec=$evalCol['$c'];rec=$(1+evalCol['$c']);h=prec-prevPrec;prevPrec=prec;AUPR+=h*((rec+prevRec)/2);prevRec=rec}END{printf "AUPR[%d] = %g\t", colName['$c'],AUPR}'
+    sort -k ${c}g $TMP | hawk 'BEGIN{colName[6]='$c1';colName[15]='$c2';prevRec=1}/^0/{prec=$'$c';rec=$(1+'$c');h=prec-prevPrec;prevPrec=prec;AUPR+=h*((rec+prevRec)/2);prevRec=rec}END{printf "AUPR[%d] = %g\t", colName['$c'],AUPR}'
 done
 echo "" # Final newline after both AUPRs are printed
