@@ -39,10 +39,6 @@ void MultiS3::initDegrees(const Graph& G2)
 
 void MultiS3::getDenom(const Alignment& A, const Graph& G1, const Graph& G2)
 {
-#if 0
-    denom = A.numExposedEdges(G1, G2);
-    LaddersUnderG1 = denom;
-#else
     vector<vector<uint>> G1EdgeList;
     G1.getEdgeList(G1EdgeList);
     uint node1, node2;
@@ -64,7 +60,6 @@ void MultiS3::getDenom(const Alignment& A, const Graph& G1, const Graph& G2)
         }
     }
     denom = LaddersUnderG1;
-#endif
 }
 
 double MultiS3::eval(const Alignment& A) {
