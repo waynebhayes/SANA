@@ -1,9 +1,9 @@
 #!/bin/sh
 TMP=/tmp/ROC.$$
 trap "/bin/rm -f $TMP; exit" 0 1 2 3 15
-USAGE="$0 [-AllOrtho 0|1 {default 0}] [-R Resnik threshold] [-S seq thresh] {2 score columns to evaluate (2nd should be 0 to exclude it)} {2-column truth file, eg pairs of orthologs} {G1 edgeList} {G2 edgeList} {p1 p2 2-or-more-scores file} [resnik file] [seqSim File] [complexes file]
+USAGE="USAGE: $0 [-AllOrtho 0|1 {default 0}] [-R Resnik threshold] [-S seq thresh] {2 score columns to evaluate (2nd should be 0 to exclude it)} {2-column truth file, eg pairs of orthologs} {G1 edgeList or /dev/null} {G2 edgeList or /dev/null} {p1 p2 2-or-more-scores file} [resnik file] [seqSim File] [complexes file]
 The -AllOrtho flag means compute the AUPR with respect to *all* given orthologs, rather than only those in the scores file"
-die() { echo "$@" >&2; exit 1
+die() { echo "$USAGE" >&2; echo "FATAL ERROR: $@" >&2; exit 1;
 }
 R=1e30
 S=1e30
@@ -20,6 +20,10 @@ done
 c1=$1
 c2=$2
 shift 2
+if [ $c1 -le 0 ]; then c1=$c2; c2=0; fi # swap them if c1 is not needed
+[ $c1 -le 0 ] && die "at least one column must be > 0"
+if [ $c1 -gt 0 -a $c1 -lt 3 ]; then die "cannot evaluate column $c1, that contains protein names"; fi
+if [ $c2 -gt 0 -a $c2 -lt 3 ]; then die "cannot evaluate column $c2, that contains protein names"; fi
 
 [ $# -ge 4 ] || die "$USAGE"
 
@@ -42,7 +46,6 @@ hawk '
     }
 
     BEGIN{c1='$c1';c2='$c2'
-	if(c1==0){c1=c2;c2=0} # swap them if c1 is not needed
 	if(c1){cols[1]=c1;title[1]="column_"c1;scale[1]=1}
 	if(c2){cols[2]=c2;title[2]="column_"c2;scale[2]=1}
 	title[3]="Resnik"; scale[3]=14
@@ -52,7 +55,6 @@ hawk '
     ARGIND==1{
 	totOrtho++
 	O[$1][$2]=1 # Ortholog file, for now, has 2 columns
-
 	# initialize all orthologs in case they are not in scores file?
 	if('$AllOrtho') for(c=1;c<=2;c++) score[$1][$2][c] = 0
     }
@@ -110,7 +112,10 @@ hawk '
 	}
     }' "$@"
 
-for c in 6 15; do
-    sort -k ${c}g $TMP | hawk 'BEGIN{pr=1}/^0/{prec=$'$c';rec=$(1+'$c');h=prec-pp;pp=prec;AUPR+=h*((rec+pr)/2);pr=rec}END{printf "AUPR[%d] = %g\t", '$c',AUPR}'
+# Now compute the AUPR
+cols=1
+if [ $c1 -ne 0 -a $c2 -ne 0 ]; then cols="$cols 2"; fi
+for c in $cols; do
+    sort -k ${c}g $TMP | hawk 'BEGIN{evalCol[1]=6;evalCol[2]=15;colName[1]='$c1';colName[2]='$c2';prevRec=1}/^0/{prec=$evalCol['$c'];rec=$(1+evalCol['$c']);h=prec-prevPrec;prevPrec=prec;AUPR+=h*((rec+prevRec)/2);prevRec=rec}END{printf "AUPR[%d] = %g\t", colName['$c'],AUPR}'
 done
 echo "" # Final newline after both AUPRs are printed
