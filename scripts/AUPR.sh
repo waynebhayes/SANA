@@ -89,15 +89,15 @@ hawk '
 		c, cols[c], title[c],StatMean(c),StatMin(c),StatMax(c),StatStdDev(c)
 	}
 	printf "\nEvaluating the scores based on thresholds on core score:\nthresh"
-	if(c1)printf "  c_"c1":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR"
-	if(c2)printf "  c_"c2":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR"
-	printf "\nMeans  "
+	if(c1)printf "   c_"c1":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR"
+	if(c2)printf  "  c_"c2":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR"
+	printf "\nMeans   "
 	for(c=1;c<=length(cols);c++)EvalScores(c,StatMean(c));
 	print""
 	for(c=1;c<=length(cols);c++){AUPR[c]=0;prevRec[c]=1;prevPrec[c]=0}
-	for(thresh=1e-4;thresh<1.01;thresh+=MIN(thresh/2,.05)){
-	    printf "%.5f",thresh
-	    printf "%.5f",thresh > "'$TMP'"
+	for(thresh=1e-6;thresh<1.01;thresh+=MIN(thresh/2,.05)){
+	    printf "%.6f",thresh
+	    printf "%.6f",thresh > "'$TMP'"
 	    done=0;
 	    for(c=1;c<=length(cols);c++){
 		scaledThresh=scale[c]*thresh;EvalScores(c,scaledThresh) # this sets Prec and Rec
