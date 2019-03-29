@@ -19,6 +19,7 @@
 #include <fstream>
 #include <time.h>
 #include <cassert>
+#include <iterator>
 #include "utils/utils.hpp"
 #include "utils/Timer.hpp"
 #include "computeGraphlets.hpp"

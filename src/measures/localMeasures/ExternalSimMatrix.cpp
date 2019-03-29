@@ -13,24 +13,11 @@ ExternalSimMatrix::ExternalSimMatrix(Graph* G1, Graph* G2, string file, int form
 }
 
 void ExternalSimMatrix::initSimMatrix() {
-    FILE* fp;
     bool isPipe = false;
-    uint fileNameLength = file.size();
+    FILE* fp = readFileAsFilePointer(file, isPipe);
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
-
-    checkFileExists(file);
-
-    if (fileNameLength > 3 && file.substr(fileNameLength-3,3) == ".gz") {
-        fp = decompressFile("gunzip", file);
-        isPipe = true;
-    } else if (fileNameLength > 3 && file.substr(fileNameLength-3,3) == ".xz") {
-        fp = decompressFile("xzcat", file);
-        isPipe = true;
-    } else {
-        fp = fopen(file.c_str(), "r");
-    }
 
     if (fp == NULL) {
         throw runtime_error("ExternalSimMatrix: Error opening file");
@@ -54,12 +41,11 @@ void ExternalSimMatrix::initSimMatrix() {
     }
     for(uint i = 0; i < G1->getNumNodes(); i++){
         for(uint j = 0; j < G2->getNumNodes(); j++){
-	    sims[i][j] = (sims[i][j] - simMin) / (simMax - simMin);
+	        sims[i][j] = (sims[i][j] - simMin) / (simMax - simMin);
         }
     }
-
-    if (isPipe) pclose(fp);
-    else fclose(fp);
+    
+    closeFile(fp, isPipe);
 }
 
 void ExternalSimMatrix::loadFormat0(FILE* infile) {

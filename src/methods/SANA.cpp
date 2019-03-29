@@ -389,6 +389,7 @@ Alignment SANA::run() {
             align = hillClimbingAlignment(align, (long long int)(10000000)); //arbitrarily chosen, probably too big.
             cout << hill.elapsedString() << endl;
         }
+	cout << "Performed " << iter << " total iterations\n";
 #define PRINT_CORES 0
 #define MIN_CORE_SCORE 1e-4
 #if PRINT_CORES
@@ -2126,7 +2127,7 @@ void SANA::trackProgress(long long int i, bool end) {
     }
     if (checkScores) {
         double realScore = eval(Al);
-        if (fabs(realScore-currentScore) > 0.000001) {
+        if (fabs(realScore-currentScore) > 0.00001) {
             cerr << "internal error: incrementally computed score (" << currentScore;
             cerr << ") is not correct (" << realScore << ")" << endl;
             currentScore = realScore;
@@ -3346,6 +3347,7 @@ void SANA::releaseAlignment(Job &job) {
 }
 
 double SANA::trueAcceptingProbability(Job &job) {
+    throw runtime_error("internal error: vectorMean too expensive; implement circular buffer for Pareto mode trueAcceptingProbability");
     return vectorMean(job.sampledProbability);
 }
 
@@ -3486,7 +3488,7 @@ void SANA::trackProgress(Job &job) {
     }
     if (checkScores) {
         double realScore = eval(Al);
-        if (fabs(realScore-info.currentScore) > 0.000001) {
+        if (fabs(realScore-info.currentScore) > 0.00001) {
             cerr << "internal error: incrementally computed score (" << info.currentScore;
             cerr << ") is not correct (" << realScore << ")" << endl;
             info.currentScore = realScore;

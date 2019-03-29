@@ -1,9 +1,9 @@
 #!/bin/sh
 TMP=/tmp/ROC.$$
 trap "/bin/rm -f $TMP; exit" 0 1 2 3 15
-USAGE="$0 [-AllOrtho 0|1 {default 0}] [-R Resnik threshold] [-S seq thresh] {2 score columns to evaluate} {2-column truth file, eg pairs of orthologs} {G1 edgeList} {G2 edgeList} {p1 p2 2-or-more-scores file} [resnik file] [seqSim File] [complexes file]
+USAGE="USAGE: $0 [-AllOrtho 0|1 {default 0}] [-R Resnik threshold] [-S seq thresh] {2 score columns to evaluate (2nd should be 0 to exclude it)} {2-column truth file, eg pairs of orthologs} {G1 edgeList or /dev/null} {G2 edgeList or /dev/null} {p1 p2 2-or-more-scores file} [resnik file] [seqSim File] [complexes file]
 The -AllOrtho flag means compute the AUPR with respect to *all* given orthologs, rather than only those in the scores file"
-die() { echo "$@" >&2; exit 1
+die() { echo "$USAGE" >&2; echo "FATAL ERROR: $@" >&2; exit 1;
 }
 R=1e30
 S=1e30
@@ -20,6 +20,10 @@ done
 c1=$1
 c2=$2
 shift 2
+if [ $c1 -le 0 ]; then c1=$c2; c2=0; fi # swap them if c1 is not needed
+[ $c1 -le 0 ] && die "at least one column must be > 0"
+if [ $c1 -gt 0 -a $c1 -lt 3 ]; then die "cannot evaluate column $c1, that contains protein names"; fi
+if [ $c2 -gt 0 -a $c2 -lt 3 ]; then die "cannot evaluate column $c2, that contains protein names"; fi
 
 [ $# -ge 4 ] || die "$USAGE"
 
@@ -42,15 +46,15 @@ hawk '
     }
 
     BEGIN{c1='$c1';c2='$c2'
-	col[1]=c1; col[2]=c2
-	title[1]="column_"c1;title[2]="column_"c2;title[3]="Resnik";title[4]="SeqSim"
-	scale[1]=1;scale[2]=1;scale[3]=14;scale[4]=100
+	if(c1){cols[1]=c1;title[1]="column_"c1;scale[1]=1}
+	if(c2){cols[2]=c2;title[2]="column_"c2;scale[2]=1}
+	title[3]="Resnik"; scale[3]=14
+	title[4]="SeqSim"; scale[4]=100
     }
 
     ARGIND==1{
 	totOrtho++
 	O[$1][$2]=1 # Ortholog file, for now, has 2 columns
-
 	# initialize all orthologs in case they are not in scores file?
 	if('$AllOrtho') for(c=1;c<=2;c++) score[$1][$2][c] = 0
     }
@@ -67,8 +71,8 @@ hawk '
 	    #degreeScore = (1-1/MAX(D1[$1],D2[$2]));
 	    #degreeScore = (1-1/D1[$1])*(1-1/D2[$2]);
 	}
-	for(c=1;c<=2;c++){
-	    score[$1][$2][c]=$col[c] * degreeScore
+	for(c=1;c<=length(cols);c++){
+	    score[$1][$2][c]=$cols[c] * degreeScore
 	    #if p1,p2 are orthologs, then record their column-c score:
 	    if(($1 in O)&&($2 in O[$1]))StatAddSample(c,score[$1][$2][c])
 	}
@@ -80,19 +84,22 @@ hawk '
     END{
 	delete D1; delete D2; # do not need degrees any more
 	printf "%d total orthologs, found %d ortholog pairs in our scores file\n", totOrtho,StatN(1)
-	for(c=1;c<=2;c++){
-	    printf "col[%d]=%d %10s mean %8.4f min %8.4f max %8.4f stdDev %8.4f\n",
-		c, col[c], title[c],StatMean(c),StatMin(c),StatMax(c),StatStdDev(c)
+	for(c=1;c<=length(cols);c++){
+	    printf "cols[%d]=%d %10s mean %8.4f min %8.4f max %8.4f stdDev %8.4f\n",
+		c, cols[c], title[c],StatMean(c),StatMin(c),StatMax(c),StatStdDev(c)
 	}
-	printf "\nEvaluating the scores based on thresholds on core score:\n\
-thresh  c_"c1":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR  c_"c2":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR\n"
-	printf "Means  ";EvalScores(1,StatMean(1));EvalScores(2,StatMean(2));print""
-	for(c=1;c<=2;c++){AUPR[c]=0;prevRec[c]=1;prevPrec[c]=0}
-	for(thresh=1e-4;thresh<1.01;thresh+=MIN(thresh/2,.05)){
-	    printf "%.5f",thresh
-	    printf "%.5f",thresh > "'$TMP'"
+	printf "\nEvaluating the scores based on thresholds on core score:\nthresh"
+	if(c1)printf "   c_"c1":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR"
+	if(c2)printf  "  c_"c2":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR"
+	printf "\nMeans   "
+	for(c=1;c<=length(cols);c++)EvalScores(c,StatMean(c));
+	print""
+	for(c=1;c<=length(cols);c++){AUPR[c]=0;prevRec[c]=1;prevPrec[c]=0}
+	for(thresh=1e-6;thresh<1.01;thresh+=MIN(thresh/2,.05)){
+	    printf "%.6f",thresh
+	    printf "%.6f",thresh > "'$TMP'"
 	    done=0;
-	    for(c=1;c<=2;c++){
+	    for(c=1;c<=length(cols);c++){
 		scaledThresh=scale[c]*thresh;EvalScores(c,scaledThresh) # this sets Prec and Rec
 		h=Prec-prevPrec[c]
 		AUPR[c]+=h * ((Rec+prevRec[c])/2)
@@ -101,11 +108,14 @@ thresh  c_"c1":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR  c_"c2":TP
 	    }
 	    print""
 	    print "" > "'$TMP'"
-	    if(done == length(col)) break;
+	    if(done == length(cols)) break;
 	}
     }' "$@"
 
-for c in 6 15; do
-    sort -k ${c}g $TMP | hawk 'BEGIN{pr=1}/^0/{prec=$'$c';rec=$(1+'$c');h=prec-pp;pp=prec;AUPR+=h*((rec+pr)/2);pr=rec}END{printf "AUPR[%d] = %g\t", '$c',AUPR}'
+# Now compute the AUPR
+cols=6
+if [ $c1 -ne 0 -a $c2 -ne 0 ]; then cols="$cols 15"; fi
+for c in $cols; do
+    sort -k ${c}g $TMP | hawk 'BEGIN{colName[6]='$c1';colName[15]='$c2';prevRec=1}/^0/{prec=$'$c';rec=$(1+'$c');h=prec-prevPrec;prevPrec=prec;AUPR+=h*((rec+prevRec)/2);prevRec=rec}END{printf "AUPR[%d] = %g\t", colName['$c'],AUPR}'
 done
 echo "" # Final newline after both AUPRs are printed

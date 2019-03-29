@@ -24,15 +24,16 @@ Graph& Graph::loadGraph(string name, Graph& g) {
 
 Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHaveTypes){
     g.path = path;
-    string format = path.substr(path.find_last_of('.'));
-    if(format == ".gw"){
+    string format = path.substr(path.find_last_of('.')+1);
+    string uncompressedFileExt = getUncompressedFileExtension(path);
+    if(format == "gw" || uncompressedFileExt == "gw"){
         g.loadGwFile(path);
         g.name = name;
     }
-    else if(format == ".el"){
+    else if(format == "el" || uncompressedFileExt == "el"){
         Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
     }
-    else if(format == ".elw"){
+    else if(format == "elw" || uncompressedFileExt == "elw"){
         g.parseFloatWeight = true;
         Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
     }
@@ -160,11 +161,11 @@ void Graph::loadGraphFromBinary(Graph& g, string graphName, string lockFile, boo
 }
 
 void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes) {
-    ifstream infile(fin.c_str());
-    string line;
     unordered_set<string> record;
     size_t lineCount = 0;
-    while (getline(infile, line)) {
+    stdiobuf sbuf = readFileAsStreamBuffer(fin);
+    istream infile(&sbuf);
+    for (string line; getline(infile, line); ) {
         string node1, node2;
         istringstream iss(line);
         iss >> node1 >> node2;
@@ -180,50 +181,13 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     g.geneCount = 0;
     g.miRNACount = 0;
 
-    vector<string> nodes;
-    nodes.reserve(nodeLen);
-    unordered_map<string,uint> nodeName2IndexMap;
-    nodeName2IndexMap.reserve(nodeLen);
-
-    vector<vector<string> > edges;
-    edges.reserve(vecLen);
-    memExactFileParseByLine(edges, fin);
-
-    string node1s;
-    string node2s;
-
-    for(unsigned i = 0; i < vecLen; ++i){
-        node1s = edges[i][0];
-        node2s = edges[i][1];
-
-        if(nodeName2IndexMap.find(node1s) == nodeName2IndexMap.end()){
-            nodeName2IndexMap[node1s] = nodes.size();
-            nodes.push_back(node1s);
-            if(nodesHaveTypes){
-                g.nodeTypes.push_back(Graph::NODE_TYPE_GENE);//"gene");
-                g.geneIndexList.push_back(nodeName2IndexMap[node1s]);
-                ++g.geneCount;
-            }
-        }
-
-       if(nodeName2IndexMap.find(node2s) == nodeName2IndexMap.end()){
-            nodeName2IndexMap[node2s] = nodes.size();
-            nodes.push_back(node2s);
-            if(nodesHaveTypes){
-                g.nodeTypes.push_back(Graph::NODE_TYPE_MIRNA);//"miRNA");
-                g.miRNAIndexList.push_back(nodeName2IndexMap[node2s]);
-                ++g.miRNACount;
-            }
-        }
-    }
 
 #ifdef MULTI_PAIRWISE
-    vector<vector<uint>> edgeList(vecLen, vector<uint> (3));
+    g.edgeList = vector<vector<uint>>(vecLen, vector<uint>(3));
 #else
-    vector<vector<uint>> edgeList(vecLen, vector<uint> (2));
-    vector<float> floatWeightList;
+    g.edgeList = vector<vector<uint>>(vecLen, vector<uint>(2));
     if (g.parseFloatWeight) {
-        floatWeightList = vector<float>(vecLen, 0);
+        g.floatWeights = Matrix<float>(nodeLen);
     }
 #endif
     stringstream errorMsg;
@@ -231,33 +195,65 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
     uint index1;
     uint index2;
     unordered_map<string, unordered_map<string, uint>* > adjMatrix;
+    g.nodeNameToIndexMap.reserve(nodeLen);
 
-    for (uint i = 0; i < vecLen; ++i) {
+    checkFileExists(fin);
+    stdiobuf sbuf2 = readFileAsStreamBuffer(fin);
+    istream ifs(&sbuf2);
+    size_t nodesCount = 0;
+    string line;
+    for (uint i = 0; getline(ifs, line); ++i) {
+        /*-------------------------- Parse -------------------------*/
+        istringstream iss(line);
+        vector<string> words;
+        words.reserve(3);
+        copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter(words));
+        string node1s = words[0];
+        string node2s = words[1];
+
+        /*---------------------- Fill into nodeNameToIndexMap -------*/
+        if(g.nodeNameToIndexMap.find(node1s) == g.nodeNameToIndexMap.end()){
+            g.nodeNameToIndexMap[node1s] = nodesCount;
+            ++nodesCount;
+            if(nodesHaveTypes){
+                g.nodeTypes.push_back(Graph::NODE_TYPE_GENE);//"gene");
+                g.geneIndexList.push_back(g.nodeNameToIndexMap[node1s]);
+                ++g.geneCount;
+            }
+        }
+
+       if(g.nodeNameToIndexMap.find(node2s) == g.nodeNameToIndexMap.end()){
+            g.nodeNameToIndexMap[node2s] = nodesCount;
+            ++nodesCount;
+            if(nodesHaveTypes){
+                g.nodeTypes.push_back(Graph::NODE_TYPE_MIRNA);//"miRNA");
+                g.miRNAIndexList.push_back(g.nodeNameToIndexMap[node2s]);
+                ++g.miRNACount;
+            }
+        }
+
 #ifdef MULTI_PAIRWISE
-        if (edges[i].size() == 2) {
+        if (words.size() == 2) {
             edgeValue = '1';
         }
-        else if (edges[i].size() == 3) {
-            edgeValue = edges[i][2];
+        else if (words.size() == 3) {
+            edgeValue = words[2];
         }
         else {
             throw runtime_error("File not in edge-list format: "+fin);
         }
 #else
         if (g.parseFloatWeight) {
-            if (edges[i].size() != 3)
+            if (words.size() != 3)
                 throw runtime_error("File not in edge-list-weight format: "+fin);
             // Get float weight
-            edgeValue = edges[i][2];
+            edgeValue = words[2];
         }
-        else if (edges[i].size() != 2) {
+        else if (words.size() != 2) {
             throw runtime_error("File not in edge-list format: "+fin);
         }
 #endif
-        node1s = edges[i][0];
-        node2s = edges[i][1];
-
-        // Detects duplicate edges.
+        /*------------------ Detects duplicate edges ------------------ */
         unordered_map<string, uint> *adjTo1;
         if(adjMatrix.count(node1s) == 0)
             adjMatrix[node1s] = new unordered_map<string, uint>();
@@ -279,43 +275,38 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             (*adjTo2)[node1s] = i;
         }
 
-        index1 = nodeName2IndexMap[node1s];
-        index2 = nodeName2IndexMap[node2s];
-        edgeList[i][0] = index1;
-        edgeList[i][1] = index2;
-        if (g.parseFloatWeight) {
-            floatWeightList[i] = stof(edgeValue);
-        }
+        /*------------------------ Fill edge list ------------------*/
+        index1 = g.nodeNameToIndexMap[node1s];
+        index2 = g.nodeNameToIndexMap[node2s];
+        g.edgeList[i][0] = index1;
+        g.edgeList[i][1] = index2;
+        
 #ifdef MULTI_PAIRWISE
-        edgeList[i][2] = stoi(edgeValue);
-        assert(edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
+        g.edgeList[i][2] = stoi(edgeValue);
+        assert(g.edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
 #endif
+      /*----------------------------- Fill float weight ----------------------- */
+      if (g.parseFloatWeight) {
+            g.floatWeights[index1][index2] = g.floatWeights[index2][index1] = stof(edgeValue);
+      }
     }
+    g.edgeList.shrink_to_fit();
     for(auto itr : adjMatrix) { delete itr.second; }
 
-    nodes.shrink_to_fit();
-    const size_t nodeSize = nodes.size();
-    g.adjLists = vector<vector<uint> > (nodeSize, vector<uint>(0));
-    g.matrix = Matrix<MATRIX_UNIT>(nodeSize);
-    if (g.parseFloatWeight) {
-        g.floatWeights = Matrix<float>(nodeSize);
-    }
+    /*----------------------------- Fill adjLists and matrix ------------------------- */
+    g.adjLists = vector<vector<uint> > (nodeLen, vector<uint>(0));
+    g.matrix = Matrix<MATRIX_UNIT>(nodeLen);
     uint node1;
     uint node2;
-    const size_t edgeListLen = edgeList.size();
-    edgeList.shrink_to_fit();
-    for(unsigned i = 0; i < edgeListLen; ++i){
-        node1 = edgeList[i][0];
-        node2 = edgeList[i][1];
+    for(unsigned i = 0; i < g.edgeList.size(); ++i){
+        node1 = g.edgeList[i][0];
+        node2 = g.edgeList[i][1];
 
         // Note that when MULTI_PAIRWISE is on, the adjacency matrix contains full integers, not just bits.
         #ifdef MULTI_PAIRWISE
-            g.matrix[node1][node2] = g.matrix[node2][node1] = edgeList[i][2];
+            g.matrix[node1][node2] = g.matrix[node2][node1] = g.edgeList[i][2];
         #else
             g.matrix[node1][node2] = g.matrix[node2][node1] = true;
-            if (g.parseFloatWeight) {
-                g.floatWeights[node1][node2] = g.floatWeights[node2][node1] = floatWeightList[i];
-            }
         #endif
 
         // Self-loop
@@ -326,11 +317,10 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool no
             g.adjLists[node2].push_back(node1);
         }
     }
-    // init rest of graph
-    g.lockedList = vector<bool> (nodeSize, false);
-    g.lockedTo = vector<string> (nodeSize, "");
-    g.nodeNameToIndexMap = nodeName2IndexMap;
-    g.edgeList = edgeList;
+
+    /*------------------------------- Init rest of graph --------------------------------- */
+    g.lockedList = vector<bool> (nodeLen, false);
+    g.lockedTo = vector<string> (nodeLen, "");
     if(nodesHaveTypes)
         g.updateUnlockedGeneCount();
     g.initConnectedComponents();
@@ -568,8 +558,10 @@ void Graph::loadGwFile(const string& fileName) {
     //this function could be improved to deal with blank lines and comments
     stringstream errorMsg;
 
-    ifstream infile(fileName.c_str());
+    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    istream infile(&sbuf);
     string line;
+    
     //ignore header
     for (int i = 0; i < 4; ++i)
         getline(infile, line);
@@ -662,7 +654,6 @@ void Graph::loadGwFile(const string& fileName) {
         adjLists[node1].push_back(node2);
         adjLists[node2].push_back(node1);
     }
-    infile.close();
     initConnectedComponents();
 }
 
@@ -670,7 +661,8 @@ void Graph::multGwFile(const string& fileName, uint path) {
     //this function could be improved to deal with blank lines and comments
     stringstream errorMsg;
 
-    ifstream infile(fileName.c_str());
+    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    istream infile(&sbuf);
     string line;
     //ignore header
     for (int i = 0; i < 4; i++) getline(infile, line);
@@ -754,7 +746,6 @@ void Graph::multGwFile(const string& fileName, uint path) {
         }
     }
 
-    infile.close();
     initConnectedComponents();
 }
 
@@ -1179,7 +1170,8 @@ unordered_map<string,uint> Graph::getNodeNameToIndexMap() const {
     if(this -> path != "")
         networkFile = this -> path;
 
-    ifstream infile(networkFile.c_str());
+    stdiobuf sbuf = readFileAsStreamBuffer(networkFile);
+    istream infile(&sbuf);
     string line;
     //ignore header
     for (int i = 0; i < 4; i++) getline(infile, line);
@@ -1208,7 +1200,6 @@ unordered_map<string,uint> Graph::getNodeNameToIndexMap() const {
         node = node.substr(2,node.size()-4); //strip |{ and }|
         res[node] = i;
     }
-    infile.close();
     return res;
 }
 
