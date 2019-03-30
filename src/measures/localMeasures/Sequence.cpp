@@ -6,6 +6,8 @@
 #include <cassert>
 #include "Sequence.hpp"
 
+extern bool _graphsSwitched;
+
 using namespace std;
 
 Sequence::Sequence(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "sequence") {
@@ -51,6 +53,7 @@ unordered_map<string,string> Sequence::initNameMap(string curatedFastaFile) {
 }
 
 void Sequence::initSimMatrix() {
+
     string g1Name = G1->getName();
     string g2Name = G2->getName();
     string g1CuratedFastaFile = "sequence/"+g1Name+".fasta";
@@ -71,6 +74,11 @@ void Sequence::initSimMatrix() {
     unordered_map<string,uint> g2NodeToIndexMap = G2->getNodeNameToIndexMap();
 
     string blastFile = "sequence/scores/"+g1Name+"_"+g2Name+"_blast.out";
+
+	if (_graphsSwitched){
+    	blastFile = "sequence/scores/"+g2Name+"_"+g1Name+"_blast.out";
+	}
+
     if (not fileExists(blastFile)) {
         throw runtime_error("Cannot find sequence scores for "+g1Name+"-"+g2Name);
     }
@@ -84,18 +92,28 @@ void Sequence::initSimMatrix() {
         iss >> node1 >> node2;
         if (g1NeedNameMap) node1 = g1NameMap[node1];
         if (g2NeedNameMap) node2 = g2NameMap[node2];
-        uint index1 = g1NodeToIndexMap.at(node1);
-        uint index2 = g2NodeToIndexMap.at(node2);
-        //uses bitscores, which is the last column
-        //there are other possibilities, such as
-        //-log of e-values (second-to-last value), also used in l-graal
-        string bitscore;
-        while (iss >> bitscore);
-        //assert(sims[index1][index2] == 0); //there ARE many repeated entries, not sure why
-        //keep the maximum among all repeated entries
-        //this is a rather arbitrary decision...
-        sims[index1][index2] = max(sims[index1][index2], stof(bitscore));
-        if (sims[index1][index2] > maxim) maxim = sims[index1][index2];
+
+		//check to see if the nodes are in the graphs first, if not then just read the rest of the line and continue...
+		if (g1NodeToIndexMap.find(node1) != g1NodeToIndexMap.end() && g2NodeToIndexMap.find(node2) != g2NodeToIndexMap.end()){
+			uint index1 = g1NodeToIndexMap.at(node1);
+       		uint index2 = g2NodeToIndexMap.at(node2);
+       		//uses bitscores, which is the last column
+        	//there are other possibilities, such as
+        	//-log of e-values (second-to-last value), also used in l-graal
+        	string bitscore;
+        	while (iss >> bitscore);
+			//cout << "Node1 : " << node1 << " Node2: " << node2;
+			//cout << "BITSCORE : " << bitscore << endl;
+        	//assert(sims[index1][index2] == 0); //there ARE many repeated entries, not sure why
+        	//keep the maximum among all repeated entries
+        	//this is a rather arbitrary decision...
+        	sims[index1][index2] = max(sims[index1][index2], stof(bitscore));
+        	if (sims[index1][index2] > maxim) maxim = sims[index1][index2];
+		}
+		else {
+        	string bitscore;
+        	while (iss >> bitscore);
+		}
     }
 
     //normalize
@@ -110,7 +128,7 @@ Sequence::~Sequence() {
 }
 
 string Sequence::blastScoreFile(const string& G1Name, const string& G2Name) {
-    return "sequence/scores/"+G1Name+"_"+G2Name+"_blast.out";
+    return _graphsSwitched ? "sequence/scores/"+G2Name+"_"+G1Name+"_blast.out" : "sequence/scores/"+G1Name+"_"+G2Name+"_blast.out"; 
 }
 
 bool Sequence::fulfillsPrereqs(Graph* G1, Graph* G2) {
