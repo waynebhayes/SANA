@@ -3,7 +3,7 @@ TMP=/tmp/AUPR.$$
 trap "/bin/rm -f $TMP.*; exit" 0 1 2 3 15
 USAGE="USAGE:
 
-$0 [-A 0|1] [-R RT] [-S ST] c1 c2 TruthFile G1.el G2.el ScoreFile [resnikFile] [seqSimFile] [complexesFile]
+$0 [-predictOnly] [-A 0|1] [-R RT] [-S ST] c1 c2 TruthFile G1.el G2.el ScoreFile [resnikFile] [seqSimFile] [complexesFile]
 
 where:
 
@@ -24,11 +24,13 @@ die() { echo "$USAGE" >&2; echo "FATAL ERROR: $@" >&2; exit 1;
 R=1e30
 S=1e30
 AllOrtho=0
+PREDICT=0
 while [ $# -gt 0 ]; do
 	case $1 in
 	-R) R=$2; shift 2 ;;
 	-S) S=$2; shift 2 ;;
 	-A) AllOrtho=$2; shift 2;;
+	-predictOnly) PREDICT=1; shift ;;
 	*) break ;;
 	esac
 done
@@ -43,23 +45,37 @@ if [ $c1 -le 0 ]; then c1=$c2; c2=0; fi # swap them if c1 is not needed
 if [ $c1 -gt 0 -a $c1 -lt 3 ]; then die "cannot evaluate column $c1, that contains protein names"; fi
 if [ $c2 -gt 0 -a $c2 -lt 3 ]; then die "cannot evaluate column $c2, that contains protein names"; fi
 
-
 hawk '
     function EvalScores(c,thresh){TP=TN=FP=FN=0;
-	for(p1 in score)for(p2 in score[p1])
-	    if(score[p1][p2][c]>thresh){
-		if((p1 in O && p2 in O[p1]) || (p1 in R && p2 in R[p1] && R[p1][p2] > 1*'$R') || (p1 in S && p2 in S[p1] && S[p1][p2] > 1*'$S') || 
-		    (p2 in complex && index(complex[p2],p1)) || (p1 in complex && index(complex[p1],p2))) ++TP;else ++FP
-	    }else{
+	for(p1 in score)for(p2 in score[p1])if(score[p1][p2][c]>thresh){
+		if('$PREDICT') {
+		    printf "%d %s %s %g", cols[c],p1,p2,score[p1][p2][c]
+		    if(p1 in O && p2 in O[p1]) printf " ORTHO"
+		    if(p1 in R && p2 in R[p1] && R[p1][p2] > 1*'$R') printf " RESNIK"
+		    if(p1 in S && p2 in S[p1] && S[p1][p2] > 1*'$S') printf " SEQ"
+		    if(p2 in complex && index(complex[p2],p1)) printf " CORUM1"
+		    if(p1 in complex && index(complex[p1],p2)) printf " CORUM2"
+		    print ""
+		} else {
+		    if( (p1 in O && p2 in O[p1]) || # an ortholog
+			(p1 in R && p2 in R[p1] && R[p1][p2] > 1*'$R') || # above Resnik threshold
+			(p1 in S && p2 in S[p1] && S[p1][p2] > 1*'$S') || # above Sequence threshold
+			(p2 in complex && index(complex[p2],p1)) || # in the same complex
+			(p1 in complex && index(complex[p1],p2))) ++TP # in the same complex
+		    else ++FP
+		}
+	    } else {
 		if(p1 in O && p2 in O[p1])++FN;else ++TN
 	    }
-	if(TP+FP==0){Prec=1}else{Prec=TP/(TP+FP)}
-	if(TP+FN==0){Rec=1}else{Rec=TP/(TP+FN)}
-	if(Prec+Rec==0)F1=0;else F1=2*Prec*Rec/(Prec+Rec)
-	TPR=TP/(TP+FN)
-	FPR=FP/(FP+TN)
-	printf " %6d %7d %6d %7d %.3f %.3f %.3f %.3f %.3f",TP,FP,FN,TN,Prec,Rec,F1,TPR,FPR
-	printf " %6d %7d %6d %7d %.3f %.3f %.3f %.3f %.3f",TP,FP,FN,TN,Prec,Rec,F1,TPR,FPR > "'$TMP.AUPR'"
+	if(!'$PREDICT') {
+	    if(TP+FP==0){Prec=1}else{Prec=TP/(TP+FP)}
+	    if(TP+FN==0){Rec=1}else{Rec=TP/(TP+FN)}
+	    if(Prec+Rec==0)F1=0;else F1=2*Prec*Rec/(Prec+Rec)
+	    TPR=TP/(TP+FN)
+	    FPR=FP/(FP+TN)
+	    printf " %6d %7d %6d %7d %.3f %.3f %.3f %.3f %.3f",TP,FP,FN,TN,Prec,Rec,F1,TPR,FPR
+	    printf " %6d %7d %6d %7d %.3f %.3f %.3f %.3f %.3f",TP,FP,FN,TN,Prec,Rec,F1,TPR,FPR > "'$TMP.AUPR'"
+	}
     }
 
     BEGIN{c1='$c1';c2='$c2'
@@ -70,6 +86,7 @@ hawk '
     }
 
     ARGIND==1{
+	if($1=="NA"||$2=="NA")next;
 	totOrtho++
 	O[$1][$2]=1 # Ortholog file, for now, has 2 columns
 	# initialize all orthologs in case they are not in scores file?
@@ -105,34 +122,43 @@ hawk '
 	    printf "cols[%d]=%d %10s mean %8.4f min %8.4f max %8.4f stdDev %8.4f\n",
 		c, cols[c], title[c],StatMean(c),StatMin(c),StatMax(c),StatStdDev(c)
 	}
-	printf "\nEvaluating the scores based on thresholds on core score:\nthresh"
-	if(c1)printf "   c_"c1":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR"
-	if(c2)printf  "  c_"c2":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR"
-	printf "\nMeans   "
-	for(c=1;c<=length(cols);c++)EvalScores(c,StatMean(c));
-	print""
-	for(c=1;c<=length(cols);c++){AUPR[c]=0;prevRec[c]=1;prevPrec[c]=0}
-	for(thresh=1e-5;thresh<1.01;thresh+=MIN(thresh/2,.05)){
-	    printf "%.6f",thresh
-	    printf "%.6f",thresh > "'$TMP.AUPR'"
-	    done=0;
-	    for(c=1;c<=length(cols);c++){
-		scaledThresh=scale[c]*thresh;EvalScores(c,scaledThresh) # this sets Prec and Rec
-		h=Prec-prevPrec[c]
-		AUPR[c]+=h * ((Rec+prevRec[c])/2)
-		prevRec[c]=Rec; prevPrec[c]=Prec
-		if(Prec==1&&Rec==0)done++;
-	    }
+	if(!'$PREDICT'){
+	    printf "\nEvaluating the scores based on thresholds on core score:\nthresh"
+	    if(c1)printf "   c_"c1":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR"
+	    if(c2)printf  "  c_"c2":TP      FP     FN      TN  Prec   Rec   F1   TPR   FPR"
+	    printf "\nMeans   "
+	}
+	for(c=1;c<=length(cols);c++){
+	    if('$PREDICT') printf "Predictions for column %d requiring score > %g\n", cols[c],StatMean(c)
+	    EvalScores(c,StatMean(c));
+	}
+	if(!'$PREDICT') {
 	    print""
-	    print "" > "'$TMP.AUPR'"
-	    if(done == length(cols)) break;
+	    for(c=1;c<=length(cols);c++){AUPR[c]=0;prevRec[c]=1;prevPrec[c]=0}
+	    for(thresh=1e-5;thresh<1.01;thresh+=MIN(thresh/2,.05)){
+		printf "%.6f",thresh
+		printf "%.6f",thresh > "'$TMP.AUPR'"
+		done=0;
+		for(c=1;c<=length(cols);c++){
+		    scaledThresh=scale[c]*thresh;EvalScores(c,scaledThresh) # this sets Prec and Rec
+		    h=Prec-prevPrec[c]
+		    AUPR[c]+=h * ((Rec+prevRec[c])/2)
+		    prevRec[c]=Rec; prevPrec[c]=Prec
+		    if(Prec==1&&Rec==0)done++;
+		}
+		print""
+		print "" > "'$TMP.AUPR'"
+		if(done == length(cols)) break;
+	    }
 	}
     }' "$@"
 
-# Now compute the AUPR
-cols=6
-if [ $c1 -ne 0 -a $c2 -ne 0 ]; then cols="$cols 15"; fi
-for c in $cols; do
-    sort -k ${c}g $TMP.AUPR | hawk 'BEGIN{colName[6]='$c1';colName[15]='$c2';prevRec=1}/^0/{prec=$'$c';rec=$(1+'$c');h=prec-prevPrec;prevPrec=prec;AUPR+=h*((rec+prevRec)/2);prevRec=rec}END{printf "AUPR[%d] = %g\t", colName['$c'],AUPR}'
-done
-echo "" # Final newline after both AUPRs are printed
+if [ $PREDICT == 0 ]; then
+    # Now compute the AUPR
+    cols=6
+    if [ $c1 -ne 0 -a $c2 -ne 0 ]; then cols="$cols 15"; fi
+    for c in $cols; do
+	sort -k ${c}g $TMP.AUPR | hawk 'BEGIN{colName[6]='$c1';colName[15]='$c2';prevRec=1}/^0/{prec=$'$c';rec=$(1+'$c');h=prec-prevPrec;prevPrec=prec;AUPR+=h*((rec+prevRec)/2);prevRec=rec}END{printf "AUPR[%d] = %g\t", colName['$c'],AUPR}'
+    done
+    echo "" # Final newline after both AUPRs are printed
+fi
