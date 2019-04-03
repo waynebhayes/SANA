@@ -336,7 +336,7 @@ double SANA::TrimCoreScores(Matrix<ulong>& Freq, vector<ulong>& numPegSamples)
 	{
 	    double score = Freq[i][j] * denom;
 	    if(score > high1[i]) high1[i] = score;
-	    if(score > high2[i]) high2[i] = score;
+	    if(score > high2[j]) high2[j] = score;
 	}
     }
     double Smin = high1[0];
@@ -357,7 +357,7 @@ double SANA::TrimCoreScores(Matrix<double>& Freq, vector<double>& totalPegWeight
 	{
 	    double score = Freq[i][j] * denom;
 	    if(score > high1[i]) high1[i] = score;
-	    if(score > high2[i]) high2[i] = score;
+	    if(score > high2[j]) high2[j] = score;
 	}
     }
     double Smin = high1[0];
