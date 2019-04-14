@@ -363,6 +363,23 @@ int Alignment::numExposedEdges(const Graph& G1, const Graph& G2) const {
 #endif
     return ret;
 }
+
+unsigned Alignment::multiS3Numerator(const Graph& G1, const Graph& G2) const {
+    uint ret = 0;
+    vector<vector<uint> > G1EdgeList;
+    G1.getEdgeList(G1EdgeList);
+    Matrix<MATRIX_UNIT> G2Matrix;
+
+    G2.getMatrix(G2Matrix);
+    uint node1, node2;
+
+    for (const auto& edge: G1EdgeList)
+    {
+        node1 = edge[0], node2 = edge[1];
+        ret += G2Matrix[A[node1]][A[node2]] + 1; // +1 because G1 was pruned out of G2?
+    }
+    return ret;
+}
 #endif
 
 Graph Alignment::commonSubgraph(const Graph& G1, const Graph& G2) const {

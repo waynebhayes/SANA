@@ -1,3 +1,10 @@
+BEGIN{PI=M_PI=3.14159265358979324}
+function Fatal(msg){print msg > "/dev/fd/2"; exit 1}
+function NormDotProd(u,v){_dot=_dot1=_dot2=0;
+    for(i in u){_dot+=u[i]*v[i];_dot1+=u[i]*u[i];_dot2+=v[i]*v[i]};
+    return _dot/sqrt(_dot1*_dot2);
+}
+function IsPrime(N){for(i=2;i<=sqrt(N); i++)if(N/i==int(N/i))return 0; return 1}
 function NSORT(a,ai){delete sortTb;delete sortTc; for(i in a)sortTb[a[i]*(1+1e-7*rand())]=i;NsortTc=asorti(sortTb,sortTc);for(i=1;i<=NsortTc;i++)ai[i]=sortTb[sortTc[i]];return NsortTc}
 #Bubble Sort: assumes 1-indexed arrays!
 function bsort(array,outindices){
@@ -24,6 +31,12 @@ function tand(x) { return tan(x/180*PI) }
 function asind(x) { return asin(x)/PI*180 }
 function acosd(x) { return acos(x)/PI*180 }
 function atand(x) { return atan(x)/PI*180 }
+function fact(k) {if(k<=0)return 1; else return k*fact(k-1);}
+function choose(n,k) {r=1;for(i=1;i<=k;i++)r*=(n-(k-i))/i; return r}
+function NumBits(n) {b=0;while(n>0){if(n%2==1)b++;n=int(n/2)}; return b}
+
+function dtob(n) {n=1*n;if(!n)return "0";s=sgn="";if(n<0){sgn="-";n=-n};while(n){s=sprintf("%d%s",(n%2),s); n=int(n/2)}; return sgn s}
+function btod(n) {}
 
 function ASSERT(cond,str){if(!cond){s=sprintf("assertion failure <%s>\n", str); print s; print s >"/dev/stderr"; exit 1}}
 function ABS(x){return x<0?-x:x}
@@ -50,6 +63,7 @@ function LSPredict(n, x, y, xIn) {
 function StatReset(name) {
     _statN[name] = _statSum[name] = _statSum2[name] = 0;
     _statMin[name]=1e30;_statMax[name]=-1e30;
+    _statmin[name]=1e30
 }
 function StatAddSample(name, x) {
     if(1*_statN[name]==0)StatReset(name);
@@ -57,23 +71,42 @@ function StatAddSample(name, x) {
     _statSum[name]+=x;
     _statSum2[name]+=x*x;
     _statMin[name]=MIN(_statMin[name],x);
+    if(x)_statmin[name]=MIN(_statmin[name],x);
     _statMax[name]=MAX(_statMax[name],x);
 }
 function StatMean(name) {
     return _statSum[name]/_statN[name];
 }
+function StatMin(name) {
+    return _statMin[name];
+}
+function Statmin(name) {
+    return _statmin[name];
+}
+function StatMax(name) {
+    return _statMax[name];
+}
 function StatVar(name) {
     return (_statSum2[name] - _statSum[name]*_statSum[name]/_statN[name]) / (_statN[name]-1);
 }
 function StatStdDev(name) {
+	x=StatVar(name);if(x<0)return 0;
     return sqrt(StatVar(name));
 }
 function StatN(name) {
     return _statN[name];
 }
-function NormalTail2X(quantile)
+function Norm2(n,vec)
 {
+    sum2 = 0;
+    for(i=0;i<n;i++)sum2+=vec[i]*vec[i];
+    return sqrt(sum2);
+}
+function NormalPtoZ(quantile)
+{
+    #printf "NormalPtoZ input is %g\n", quantile
     q = quantile > 0.5 ? (1 - quantile) : quantile;
+    #printf "NormalPtoZ q is %g\n", q
     z1 = sqrt (-2.0 * log (q));
     n = (0.010328 * z1 + 0.802853) * z1 + 2.515517;
     d = ((0.001308 * z1 + 0.189269) * z1 + 1.43278) * z1 + 1.0;
@@ -86,17 +119,19 @@ function NormalPhi(x)
     if(arg<-700) return 0;
     return 0.39894228040143267794*exp(arg)
 }
-function NormalX2Tail(x)
+function NormalDist(mu,sigma,x){E=(mu-x)^2/(2*sigma*sigma);return exp(-E)/(sigma*2.506628274631000502415765284811)}
+function NormalZ2P(x)
 {
-    if(x<0) return 1-NormalX2Tail(-x);
+    if(x<0) return 1-NormalZ2P(-x);
     b0 = 0.2316419; b1 = 0.319381530; b2 = -0.356563782; b3 = 1.781477937; b4 = -1.821255978; b5 = 1.330274429;
     t=1/(1+b0*x);
     paren = t*(b1+t*(b2+t*(b3+t*(b4+t*b5))));
     return NormalPhi(x)*paren;
 }
-function TDistTail2X (quantile, freedom)
+function StatTDistPtoZ(quantile, freedom)
 {
-    z1 = ABS(NormalTail2X(quantile));
+    #printf "StatTDistPtoZ input is (%g,%d)\n",quantile,freedom;
+    z1 = ABS(NormalPtoZ(quantile));
     z2 = z1 * z1;
     h[0] = 0.25 * z1 * (z2 + 1.0);
     h[1] = 0.010416667 * z1 * ((5.0 * z2 + 16.0) * z2 + 3.0);
@@ -105,14 +140,14 @@ function TDistTail2X (quantile, freedom)
     h[3] *= 0.000010851;
 
     x = 0.0;
-    for (i = 3; i >= 0; i--)
+    for(i = 3; i >= 0; i--)
     x = (x + h[i]) / freedom;
     z1 += x;
     return (quantile > 0.5 ? -z1 : z1);
 }
-function TDistX2Tail(t,n)
+function StatTDistZtoP(t,n)
 {
-    if(t<0) return 1-TDistX2Tail(-t,n);
+    if(t<0) return 1-StatTDistZtoP(-t,n);
     z=1; t=t*t;y=t/n;b=1+y;
     if(n>=20&&t<n||n>200){
 	if(y>1e-6)y=log(b);
@@ -130,4 +165,11 @@ function TDistX2Tail(t,n)
 	return ABS(z-a)/2;
     }
 }
-BEGIN{PI=M_PI=3.14159265358979324}
+function StatConfidenceInterval(name,conf)
+{
+    return StatTDistPtoZ((1-conf)/2, _statN[name] - 1) * sqrt(StatVar(name) / _statN[name]);
+}
+function Pearson2T(n,r){return r*sqrt((n-2)/(1-r^2))}
+function PoissonDistribution(l,k){if(l>700)return NormalDist(l,sqrt(l),k);r=exp(-l);for(i=k;i>0;i--)r*=l/i;return r} 
+function PoissonCDF(k, lambda, sum, term, i){sum=term=1;for(i=1;i<=k;i++){term*=lambda/i;sum+=term}; return sum*exp(-lambda)}
+function StatRV_Normal(){if(!_StatRV_which) { do { _StatRV_v1 = 2*rand()-1; _StatRV_v2 = 2*rand()-1; _StatRV_rsq = _StatRV_v1^2+_StatRV_v2^2; } while(_StatRV_rsq >= 1 || _StatRV_rsq == 0); _StatRV_fac=sqrt(-2*log(_StatRV_rsq)/_StatRV_rsq); _StatRV_next = _StatRV_v1*_StatRV_fac; _StatRV_which = 1; return _StatRV_v2*_StatRV_fac; } else { _StatRV_which = 0; return _StatRV_next; } } 

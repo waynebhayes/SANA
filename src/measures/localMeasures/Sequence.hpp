@@ -2,6 +2,9 @@
 #define SEQUENCE_HPP
 #include "LocalMeasure.hpp"
 #include <unordered_map>
+#include "../../arguments/graphLoader.hpp"
+
+extern bool _graphsSwitched;
 
 class Sequence: public LocalMeasure {
 public:
