@@ -14,7 +14,8 @@ public:
     virtual ~MultiS3();
     double eval(const Alignment& A);
     static vector<uint> shadowDegrees; // sum of neighboring edge weights
-    void getDenom(const Alignment& A, const Graph& G1, const Graph& G2);
+    unsigned getDenom(const Alignment& A, const Graph& G1, const Graph& G2);
+    
     static unsigned denom;
     unsigned LaddersUnderG1;
     unsigned EdgesUnderG1;

@@ -1294,24 +1294,6 @@ void SANA::performChange(int type) {
 		exposedEdgesNumer= newExposedEdgesNumer;
         squaredAligEdges = newSquaredAligEdges;
         MS3Numer         = newMS3Numer;
-        if (needMS3)
-        {
-            // score is calculated with denom 1 step behind if we do this here I guess
-            unsigned oldTarDeg, newTarDeg;
-            oldTarDeg = MultiS3::shadowDegrees[oldTarget];
-            newTarDeg = MultiS3::shadowDegrees[newTarget];
-
-            MultiS3::shadowDegrees[oldTarget] -= G1AdjLists[source].size();
-            if (oldTarDeg > 0 && !MultiS3::shadowDegrees[oldTarget])
-            {
-                MultiS3::denom -= 1;
-            }
-            MultiS3::shadowDegrees[newTarget] += G1AdjLists[source].size();
-            if (!newTarDeg && MultiS3::shadowDegrees[newTarget] > 0)
-            {
-                MultiS3::denom += 1;
-            }
-        }
     }
 
     if(score == Score::pareto and ((iterationsPerformed % paretoIterations) == 0)) {
@@ -1933,35 +1915,119 @@ int SANA::exposedEdgesIncSwapOp(Job &job, uint source1, uint source2, uint targe
 
 int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int ret = 0;
-    uint neighbor;
+    unsigned oldOldTargetDeg = MultiS3::shadowDegrees[oldTarget];
+    unsigned oldNewTargetDeg = MultiS3::shadowDegrees[newTarget];
 
-    const uint n = G1AdjLists[source].size();
-    for (uint i = 0; i < n; ++i) {
-        neighbor = G1AdjLists[source][i];
-        ret -= G2Matrix[oldTarget][(*A)[neighbor]];
-        ret += G2Matrix[newTarget][(*A)[neighbor]];
+    bool selfLoopAtSource, selfLoopAtOldTarget, selfLoopAtNewTarget;
+#ifdef SPARSE
+    selfLoopAtSource = G1->hasSelfLoop(source);
+    selfLoopAtOldTarget = G2->hasSelfLoop(oldTarget);
+    selfLoopAtNewTarget = G2->hasSelfLoop(newTarget);
+#else
+    selfLoopAtSource = G1Matrix[source][source];
+    selfLoopAtOldTarget = G2Matrix[oldTarget][oldTarget];
+    selfLoopAtNewTarget = G2Matrix[newTarget][newTarget];
+#endif
+
+    const vector<uint>& neighbors = G1AdjLists[source];
+    
+    if (selfLoopAtSource)
+    {
+        if (selfLoopAtOldTarget)
+        {
+            --ret;
+        }
+        if (selfLoopAtNewTarget) 
+        {
+            ++ret;
+        }
     }
+    
+    for (auto neighbor : neighbors)
+    {
+        if (neighbor != source)
+        {
+            --MultiS3::shadowDegrees[oldTarget];
+            ++MultiS3::shadowDegrees[newTarget];
+            ret -= G2Matrix[oldTarget][(*A)[neighbor]];
+            ret += G2Matrix[newTarget][(*A)[neighbor]];
+        }
+    }
+    
+    if (oldOldTargetDeg > 0 && !MultiS3::shadowDegrees[oldTarget])
+    {
+        MultiS3::denom -= 1;
+    }
+    
+    if (oldNewTargetDeg > 0 && !MultiS3::shadowDegrees[newTarget])
+    {
+        MultiS3::denom += 1;
+    }
+    
     return ret;
 }
 
 int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     int ret = 0;
-    uint neighbor;
     
-    const uint n = G1AdjLists[source1].size();
-    for (uint i = 0; i < n; ++i) {
-        neighbor = G1AdjLists[source1][i];
-        ret -= G2Matrix[target1][(*A)[neighbor]];
-        ret += G2Matrix[target2][(*A)[neighbor]];
+    bool selfLoopAtSource1, selfLoopAtSource2, selfLoopAtTarget1, selfLoopAtTarget2;
+#ifdef SPARSE
+    selfLoopAtSource1 = G1->hasSelfLoop(source1);
+    selfLoopAtSource2 = G1->hasSelfLoop(source2);
+    selfLoopAtTarget1 = G2->hasSelfLoop(target1);
+    selfLoopAtTarget2 = G2->hasSelfLoop(target2);
+#else
+    selfLoopAtSource1 = G1Matrix[source1][source1];
+    selfLoopAtSource2 = G1Matrix[source2][source2];
+    selfLoopAtTarget1 = G2Matrix[target1][target1];
+    selfLoopAtTarget2 = G2Matrix[target2][target2];
+#endif
+
+    const vector<uint>& neighbors1 = G1AdjLists[source1];
+    const vector<uint>& neighbors2 = G1AdjLists[source2];
+    
+    if (selfLoopAtSource1)
+    {
+        if (selfLoopAtTarget1)
+        {
+            --ret;
+        }
+        if (selfLoopAtTarget2) 
+        {
+            ++ret;
+        }
     }
     
-    const uint m = G1AdjLists[source2].size();
-    for (uint i = 0; i < m; ++i) {
-        neighbor = G1AdjLists[source2][i];
-        ret -= G2Matrix[target2][(*A)[neighbor]];
-        ret += G2Matrix[target1][(*A)[neighbor]];
+    if (selfLoopAtSource2)
+    {
+        if (selfLoopAtTarget1)
+        {
+            --ret;
+        }
+        if (selfLoopAtTarget2) 
+        {
+            ++ret;
+        }
     }
     
+    for (auto neighbor : neighbors1)
+    {
+        if (neighbor != source1)
+        {
+            ret -= G2Matrix[target1][(*A)[neighbor]];
+            ret += G2Matrix[target2][(*A)[neighbor]];
+        }
+    }
+    
+    for (auto neighbor : neighbors2)
+    {
+        if (neighbor != source1)
+        {
+            ret -= G2Matrix[target2][(*A)[neighbor]];
+            ret += G2Matrix[target1][(*A)[neighbor]];
+        }
+    }
+
     return ret;
 }
 

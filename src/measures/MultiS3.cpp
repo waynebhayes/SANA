@@ -6,8 +6,8 @@ vector<uint> MultiS3::shadowDegrees;
 
 MultiS3::MultiS3(Graph* G1, Graph* G2) : Measure(G1, G2, "ms3")
 {
-    G1->printStats(0, cout);
-    G2->printStats(0, cout);
+    //G1->printStats(0, cout);
+    //G2->printStats(0, cout);
     initDegrees(*G2);
 }
 
@@ -37,29 +37,30 @@ void MultiS3::initDegrees(const Graph& G2)
     }
 }
 
-void MultiS3::getDenom(const Alignment& A, const Graph& G1, const Graph& G2)
+unsigned MultiS3::getDenom(const Alignment& A, const Graph& G1, const Graph& G2) // not used for inc. eval so it's ok to keep ladder computation in here as it's O(n) 
 {
     vector<vector<uint>> G1EdgeList;
     G1.getEdgeList(G1EdgeList);
     uint node1, node2;
     LaddersUnderG1 = 0;
-    unordered_set<uint> pegs;
+    unordered_set<uint> holes; // no duplicates allowed in cpp sets
     
     for (const auto& edge : G1EdgeList)
     {
         node1 = edge[0], node2 = edge[1];
-        pegs.insert(A[node1]);
-        pegs.insert(A[node2]);
+        holes.insert(A[node1]);
+        holes.insert(A[node2]);
     }
     
-    for (const auto& peg : pegs)
+    for (const auto& hole : holes)
     {
-        if (shadowDegrees[peg] > 0)
+        if (shadowDegrees[hole] > 0)
         {
             ++LaddersUnderG1;
         }
     }
-    denom = LaddersUnderG1;
+    denom = LaddersUnderG1; // i don't think dividing by 2 is correct
+    return denom;
 }
 
 double MultiS3::eval(const Alignment& A) {
