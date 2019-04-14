@@ -32,7 +32,7 @@ void MultiS3::initDegrees(const Graph& G2)
         for (uint j = 0; j < G2AdjLists[i].size(); ++j)
         {
             neighbor = G2AdjLists[i][j];
-            shadowDegrees[i] += G2Matrix[i][neighbor];
+            shadowDegrees[i] += G2Matrix[i][neighbor]; // +1 if G1 has edge here, since it was pruned?
         }
     }
 }
@@ -45,6 +45,7 @@ unsigned MultiS3::getDenom(const Alignment& A, const Graph& G1, const Graph& G2)
     LaddersUnderG1 = 0;
     unordered_set<uint> holes; // no duplicates allowed in cpp sets
     
+    // Looping through edges is O(n1^2). Why can't this just be for(i=0;i<n1;i++) holes.insert(A[i]); ?
     for (const auto& edge : G1EdgeList)
     {
         node1 = edge[0], node2 = edge[1];
@@ -52,6 +53,7 @@ unsigned MultiS3::getDenom(const Alignment& A, const Graph& G1, const Graph& G2)
         holes.insert(A[node2]);
     }
     
+    // I don't think this correctly handles the fact that G1 was pruned.
     for (const auto& hole : holes)
     {
         if (shadowDegrees[hole] > 0)
@@ -59,8 +61,9 @@ unsigned MultiS3::getDenom(const Alignment& A, const Graph& G1, const Graph& G2)
             ++LaddersUnderG1;
         }
     }
-    LaddersUnderG1 /= 2;
-    denom = LaddersUnderG1; // i don't think dividing by 2 is correct but that's ok
+    LaddersUnderG1 /= 2; // William sez: I don't think dividing by 2 is correct but that's ok
+    // WH says: I think it does need division by 2...
+    denom = LaddersUnderG1;
     return denom;
 }
 

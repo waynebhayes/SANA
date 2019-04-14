@@ -8,8 +8,7 @@ case "$1" in
 -V) VERBOSE=1; shift ;;
 esac
 
-hawk 'function Fatal(s){printf "FATAL ERROR: %s\n",s >"/dev/fd/2"; exit(1);}
-    ARGIND>0{
+hawk 'ARGIND>0{
 	if(ARGIND!=net){net=ARGIND;netName[net-1]=FILENAME;if('$VERBOSE')printf "reading file %s\n",FILENAME >"/dev/fd/2"}
 	if(index($1,"shadow")>0)
 	    {shadowNode=$1;mappedNode=$2}

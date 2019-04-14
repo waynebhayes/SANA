@@ -1,5 +1,5 @@
 #ifndef MULTIS3_HPP
-#define MultiS3_HPP
+#define MULTIS3_HPP
 #include <vector>
 #include <iostream>
 #include "utils.hpp"

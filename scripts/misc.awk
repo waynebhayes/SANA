@@ -1,5 +1,5 @@
 BEGIN{PI=M_PI=3.14159265358979324}
-function Fatal(msg){print msg > "/dev/fd/2"; exit 1}
+function Fatal(msg){printf "FATAL ERROR: %s\n",msg >"/dev/fd/2"; exit(1);}
 function NormDotProd(u,v){_dot=_dot1=_dot2=0;
     for(i in u){_dot+=u[i]*v[i];_dot1+=u[i]*u[i];_dot2+=v[i]*v[i]};
     return _dot/sqrt(_dot1*_dot2);
