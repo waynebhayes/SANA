@@ -103,6 +103,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-mec", "double", "0", "Weight of MEC", "The weight of the Multiple Edge Coverage in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ses", "double", "0", "Weight of SES", "The weight of the Squared Edge Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
 	{ "-ee", "double", "0", "Weight of EE", "The weight of the Edge Exposure Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-ms3", "double", "0", "Weight of MS3", "The weight of the Multi Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-s3", "double", "1", "Weight of S3", "The weight of the Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-nc", "double", "0", "Weight of NC", "This weight of Node Correctness in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-tc", "double", "0", "Weight of TC", "The weight of Triangle Correctness in the objetive function. To be used when \"-objfuntype\" is \"generic\".", "1" },
