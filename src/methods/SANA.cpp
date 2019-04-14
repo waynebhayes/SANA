@@ -1210,6 +1210,13 @@ void SANA::performChange(int type) {
             newTarget = (*unassignedmiRNAsG2)[newTargetIndex];
         }
     }
+    unsigned oldOldTargetDeg, oldNewTargetDeg, oldMs3Denom;
+    if (needMS3)
+    {
+        oldOldTargetDeg = MultiS3::shadowDegrees[oldTarget];
+        oldNewTargetDeg = MultiS3::shadowDegrees[newTarget];
+        oldMs3Denom = MultiS3::denom;
+    }
 
     int newAligEdges           = (needAligEdges or needSec) ?  aligEdges + aligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
     double newEdSum            = (needEd) ?  edSum + edgeDifferenceIncChangeOp(source, oldTarget, newTarget) : -1;
@@ -1250,10 +1257,10 @@ void SANA::performChange(int type) {
 	weightedPegHoleFreq_1mpBad[source][betterHole] += 1-pBad;
 #endif
 
-    if (makeChange) {
-
+    if (makeChange)
+    {
         (*A)[source]                         = newTarget;
-
+        
         if(!nodesHaveType)
             (*unassignedNodesG2)[newTargetIndex] = oldTarget;
         else {
@@ -1267,8 +1274,6 @@ void SANA::performChange(int type) {
 
         (*assignedNodesG2)[oldTarget]        = false;
         (*assignedNodesG2)[newTarget]        = true;
-
-
 
         aligEdges                            = newAligEdges;
         edSum                                = newEdSum;
@@ -1294,6 +1299,15 @@ void SANA::performChange(int type) {
 		exposedEdgesNumer= newExposedEdgesNumer;
         squaredAligEdges = newSquaredAligEdges;
         MS3Numer         = newMS3Numer;
+    }
+    else
+    {
+        if (needMS3)
+        {
+            MultiS3::shadowDegrees[oldTarget] = oldOldTargetDeg;
+            MultiS3::shadowDegrees[newTarget] = oldNewTargetDeg;
+            MultiS3::denom = oldMs3Denom;
+        }
     }
 
     if(score == Score::pareto and ((iterationsPerformed % paretoIterations) == 0)) {
