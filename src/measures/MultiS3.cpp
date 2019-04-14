@@ -59,7 +59,8 @@ unsigned MultiS3::getDenom(const Alignment& A, const Graph& G1, const Graph& G2)
             ++LaddersUnderG1;
         }
     }
-    denom = LaddersUnderG1; // i don't think dividing by 2 is correct
+    LaddersUnderG1 /= 2;
+    denom = LaddersUnderG1; // i don't think dividing by 2 is correct but that's ok
     return denom;
 }
 
