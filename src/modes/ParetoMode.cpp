@@ -73,18 +73,18 @@ vector<Alignment> ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2
     Timer T;
     T.start();
     unordered_set<vector<uint>*> *A = static_cast<SANA*>(method)->paretoRun(fileName);
-    
+
     vector<Alignment> alignments;
     for(auto i = A->begin(); i != A->end(); i++)
         alignments.push_back( Alignment(**i) );
-    
+
     T.elapsed();
     cout << "Executed " << method->getName() << " in " << T.elapsedString() << endl;
 
     // Re Index back to normal (Method #3 of locking)
 
     // Needs to be reimplemented with unordered_set<vector<uint>>*
-    
+
     for(unsigned int i = 0; i < alignments.size(); i++) {
         if(G1->hasNodeTypes()){
             G1->reIndexGraph(method->getReverseMap(G1->getNodeTypes_ReIndexMap()));

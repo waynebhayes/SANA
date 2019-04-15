@@ -1,8 +1,8 @@
 CC = g++ -std=c++11
 
 #CXXFLAGS = -I "src/utils" -Wall -fno-inline -O2 -std=c++11 -g3
-#CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DMULTI_PAIRWISE #-pg -ggdb -Bstatic #-static 
-CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread #-DUSE_CACHED_FILES #-DSPARSE #-DMULTI_PAIRWISE -DCORES -ggdb #-pg
+#CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DMULTI_PAIRWISE #-pg -ggdb -Bstatic #-static
+ CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread #-DMULTI_PAIRWISE #-DCORES #-DUSE_CACHED_FILES #-DSPARSE -ggdb #-pg
 
 INCLUDES =
 LFLAGS =
@@ -18,7 +18,7 @@ UTILS_SRC = 								\
 	src/utils/SeedMatrix.cpp					\
 	src/utils/LinearRegression.cpp					\
 	src/utils/ParetoFront.cpp                                       \
-	src/utils/Matrix.cpp                                            
+	src/utils/Matrix.cpp
 
 ARGUMENTS_SRC = 							\
 	src/arguments/ArgumentParser.cpp				\
@@ -49,6 +49,7 @@ MEASURES_SRCS = 							\
 	src/measures/SquaredEdgeScore.cpp 				\
 	src/measures/EdgeExposure.cpp 				\
 	src/measures/WeightedEdgeConservation.cpp 			\
+	src/measures/MultiS3.cpp							\
 	src/measures/localMeasures/EdgeCount.cpp 			\
 	src/measures/localMeasures/EdgeDensity.cpp 			\
 	src/measures/localMeasures/ExternalSimMatrix.cpp 		\
@@ -72,7 +73,7 @@ METHODS_SRC =   							\
 	src/methods/SANA.cpp    					\
 	src/methods/TabuSearch.cpp 					\
 	src/methods/WeightedAlignmentVoter.cpp  			\
-	src/methods/Dijkstra.cpp 
+	src/methods/Dijkstra.cpp
 
 METHOD_WRAPPERS_SRC =    						\
 	src/methods/wrappers/WrappedMethod.cpp				\
@@ -182,5 +183,3 @@ depend: $(SRCS)
 # Here is the targets for making the wrappedAlgorithms
 optnetalign:
 	cd wrappedAlgorithms/OptNetAlign/src; make optnetalignubuntu; chmod +x optnetalign; cp optnetalign ../
-
-

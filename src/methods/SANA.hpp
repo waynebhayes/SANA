@@ -15,10 +15,12 @@
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 
 #ifdef MULTI_PAIRWISE
-#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdgesNumer, double edSum, uint pairsCount
+#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdgesNumer, double edSum, uint pairsCount, uint MS3Numer
 #else
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, uint pairsCount
 #endif
+
+#define CIRCULAR_BUFFER_SIZE 10000
 
 class SANA: public Method {
 
@@ -75,10 +77,7 @@ public:
     double searchSpaceSizeLog();
     string startAligName = "";
     void prune(string& startAligName);
-#if 0 //#ifdef CORES
-	vector<ulong> getNumPegSamples() { return numPegSamples; }
-	Matrix<ulong> getPegHoleFreq() { return pegHoleFreq; }
-#endif
+
     //to compute TDecay automatically
     //returns a value of lambda such that with this TInitial, temperature reaches
     //0 after a certain number of minutes
@@ -95,6 +94,10 @@ private:
 
     //store whether or not most recent move was bad
     bool wasBadMove = false;
+
+    //store index and sum of circular buffer
+    int buffer_index = 0;
+    double buffer_sum = 0;
 
     //data structures for the networks
     uint n1;
@@ -162,6 +165,9 @@ private:
     bool isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore);
     double scoreRandom();
 
+    double TrimCoreScores(Matrix<ulong>& Freq, vector<ulong>& numPegSamples);
+    double TrimCoreScores(Matrix<double>& Freq, vector<double>& totalPegWeight);
+
     bool initializedIterPerSecond;
     double iterPerSecond;
     double getIterPerSecond();
@@ -185,7 +191,7 @@ private:
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A);
-    bool scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum);
+    bool scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum, double newMS3Numer);
     double ecWeight;
     double edWeight;
     double s3Weight;
@@ -197,6 +203,7 @@ private:
     double mecWeight;
     double sesWeight;
 	double eeWeight;
+    double ms3Weight;
     double ewecWeight;
     double TCWeight;
 
@@ -250,6 +257,12 @@ private:
     int exposedEdgesNumer;
     int exposedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
     int exposedEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
+    
+    // to evaluate MS3 incrementally
+    bool needMS3;
+    int MS3Numer;
+    int MS3IncChangeOp(uint source, uint oldTarget, uint newTarget);
+    int MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
     //to evaluate EC incrementally
     bool needSec;
@@ -295,23 +308,14 @@ private:
     map<string, double>* localScoreSumMap;
     vector<vector<float> > sims;
 #ifdef CORES
+#if UNWEIGHTED_CORES
     Matrix<ulong> pegHoleFreq;
     vector<ulong> numPegSamples; // number of times this node in g1 was sampled.
-
-    Matrix<double> weightedPegHoleFreq_orig; // Wayne's original: pBad-weighted, and wherever the peg landed (not nec. better)
-    vector<double> totalWeightedPegWeight_orig;
-
-    Matrix<double> weightedPegHoleFreq_pBad; // weighted by pBad
+#endif
+    Matrix<double> weightedPegHoleFreq_pBad; // weighted by 1-pBad
     vector<double> totalWeightedPegWeight_pBad;
-
     Matrix<double> weightedPegHoleFreq_1mpBad; // weighted by 1-pBad
     vector<double> totalWeightedPegWeight_1mpBad;
-
-    Matrix<double> weightedPegHoleFreq_sqr; // weighted by pBad*(1-pBad)
-    vector<double> totalWeightedPegWeight_sqr;
-
-    Matrix<double> weightedPegHoleFreq_sqrt; // weighted by sqrt(pBad*(1-pBad))
-    vector<double> totalWeightedPegWeight_sqrt;
 #endif
     map<string, vector<vector<float> > > localSimMatrixMap;
     double localScoreSumIncChangeOp(vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
@@ -341,7 +345,8 @@ private:
     double currentScore;
     double previousScore;
     double energyInc;
-    vector<double> sampledProbability;
+    double sampledProbability[CIRCULAR_BUFFER_SIZE];
+    int sampledProbabilitySize = 0;
     void SANAIteration();
     void performChange(int type);
     void performSwap(int type);
@@ -375,7 +380,7 @@ private:
     vector<double> getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum,
                                      double newLocalScoreSum, double newWecSum, double newNcSum,
                                      double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer,
-                                     double newEdSum);
+                                     double newEdSum, double newMS3Numer);
     bool dominates(vector<double> &left, vector<double> &right);
     void printParetoFront(const string &fileName);
     void deallocateParetoData();
@@ -397,6 +402,7 @@ private:
     unordered_map<vector<uint>*, int> storedAligEdges;
     unordered_map<vector<uint>*, int> storedSquaredAligEdges;
 	unordered_map<vector<uint>*, int> storedExposedEdgesNumer;
+    unordered_map<vector<uint>*, int> storedMS3Numer;
     unordered_map<vector<uint>*, int> storedInducedEdges;
     unordered_map<vector<uint>*, double> storedLocalScoreSum;
     unordered_map<vector<uint>*, double> storedWecSum;
@@ -427,6 +433,7 @@ private:
         int aligEdges;
         int squaredAligEdges;
 		int exposedEdgesNumer;
+        int MS3Numer;
         int inducedEdges;
         double wecSum;
         double ewecSum;
@@ -447,7 +454,7 @@ private:
         long long int iterationsPerformed;
         double energyInc;
         double Temperature;
-        vector<double> sampledProbability;
+		vector<double> sampledProbability;
 
         // mt19937 is a random generator that is implemented with mutex.
         // Which means each thread should have an unique random generator.
@@ -505,8 +512,8 @@ private:
     int ncIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double localScoreSumIncSwapOp(Job &job, vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
 
-    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum, 
-                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, 
+    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum,
+                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore,
                          double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum);
 
     vector<double> translateScoresToVector(Job &job);

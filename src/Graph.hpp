@@ -19,6 +19,7 @@
 #include <fstream>
 #include <time.h>
 #include <cassert>
+#include <iterator>
 #include "utils/utils.hpp"
 #include "utils/Timer.hpp"
 #include "computeGraphlets.hpp"
@@ -45,7 +46,6 @@ public:
     static void loadFromGmlFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
     static void loadFromGraphmlFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
     static void loadFromCsvFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
-
 
 
     static void loadGraphFromBinary(Graph& g, string graphName, string lockFile, bool nodesHaveTypes, bool lockedSameName);
@@ -109,6 +109,7 @@ public:
     uint numNodeInducedSubgraphEdges(const vector<uint>& subgraphNodes) const;
 
     vector<uint> numEdgesAround(uint node, uint maxDist) const;
+    vector<uint> getAllNodesAround(uint node, uint maxDist) const;
     vector<uint> numNodesAround(uint node, uint maxDist) const;
 
     void printStats(int numConnectedComponentsToPrint, ostream& stream) const;
@@ -128,6 +129,8 @@ public:
 
     unordered_map<string,uint> getNodeNameToIndexMap() const;
     unordered_map<uint,string> getIndexToNodeNameMap() const;
+
+    bool hasSelfLoop(uint source) const;
 
     void getDistanceMatrix(vector<vector<short> >& dist) const;
 
@@ -225,10 +228,9 @@ private:
     void serialize(Archive& archive)
     {
         archive(CEREAL_NVP(adjLists), CEREAL_NVP(matrix), CEREAL_NVP(edgeList), CEREAL_NVP(lockedList),
-                CEREAL_NVP(lockedTo), CEREAL_NVP(nodeTypes), CEREAL_NVP(miRNACount), CEREAL_NVP(geneCount), 
-                CEREAL_NVP(connectedComponents), CEREAL_NVP(unlockedGeneCount), CEREAL_NVP(unlockedmiRNACount), 
+                CEREAL_NVP(lockedTo), CEREAL_NVP(nodeTypes), CEREAL_NVP(miRNACount), CEREAL_NVP(geneCount),
+                CEREAL_NVP(connectedComponents), CEREAL_NVP(unlockedGeneCount), CEREAL_NVP(unlockedmiRNACount),
                 CEREAL_NVP(lockedCount), CEREAL_NVP(geneIndexList), CEREAL_NVP(miRNAIndexList), CEREAL_NVP(nodeNameToIndexMap));
     }
 };
-
 #endif

@@ -388,17 +388,22 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
 #endif
     }
 
-    double rewiredFraction = args.doubles["-rewire"];
-    if (rewiredFraction > 0) {
-        if (rewiredFraction > 1) {
-            throw runtime_error("Cannot rewire more than 100% of the edges");
+    double rewiredFraction1 = args.doubles["-rewire1"];
+    if (rewiredFraction1 > 0) {
+        if (rewiredFraction1 > 1) {
+            throw runtime_error("Cannot rewire more than 100% of G1 edges");
         }
-        G2.rewireRandomEdges(rewiredFraction);
+        G1.rewireRandomEdges(rewiredFraction1);
     }
 
-    /*if (G1.getNumNodes() > G2.getNumNodes()) {
-        throw runtime_error("G2 has less nodes than G1");
-    }*/
+    double rewiredFraction2 = args.doubles["-rewire2"];
+    if (rewiredFraction2 > 0) {
+        if (rewiredFraction2 > 1) {
+            throw runtime_error("Cannot rewire more than 100% of G2 edges");
+        }
+        G2.rewireRandomEdges(rewiredFraction2);
+    }
+
     if (G1.getNumEdges() == 0 or G2.getNumEdges() == 0) {
         throw runtime_error("One of the networks has 0 edges");
     }

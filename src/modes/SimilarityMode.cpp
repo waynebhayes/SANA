@@ -22,7 +22,8 @@ void SimilarityMode::run(ArgumentParser& args) {
 
     vector<vector <float> > sim = M.getAggregatedLocalSims();
 
-    saveSimilarityMatrix(sim, G1, G2, args.strings["-o"] + ".sim", args.doubles["-simFormat"]);
+    assert(args.doubleVectors["-simFormat"].size() == 1);
+    saveSimilarityMatrix(sim, G1, G2, args.strings["-o"] + ".sim", args.doubleVectors["-simFormat"][0]);
 
     cout << "Finished. Saved similarity file as " << (args.strings["-o"] + ".sim") << endl;
 }
@@ -39,7 +40,7 @@ void SimilarityMode::saveSimilarityMatrix(vector<vector <float> > sim, Graph &G1
     switch(format) {
         case 0:
             for(uint i = 0; i < sim.size(); ++i) {
-                for(uint j = 0; j < sim[i].size(); ++j) {
+                for(uint j = 0; j < sim[i].size(); ++j) if(sim[i][j]) {
                     outfile << i << " " << j << " " << sim[i][j] << endl;
                 }
             }
@@ -48,7 +49,7 @@ void SimilarityMode::saveSimilarityMatrix(vector<vector <float> > sim, Graph &G1
             unordered_map<uint,string> g1Map = G1.getIndexToNodeNameMap();
             unordered_map<uint,string>  g2Map = G2.getIndexToNodeNameMap();
             for(uint i = 0; i < sim.size(); ++i) {
-                for(uint j = 0; j < sim[i].size(); ++j) {
+                for(uint j = 0; j < sim[i].size(); ++j) if(sim[i][j]) {
                     outfile << g1Map[i] << " " << g2Map[j] << " " << sim[i][j] << endl;
                 }
             }
