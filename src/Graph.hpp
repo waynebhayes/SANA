@@ -41,6 +41,12 @@ public:
     static Graph& multGraph(string name, uint path, Graph& g);
 
     static void loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
+    static void loadFromLedaFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
+    static void loadFromLgfFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
+    static void loadFromGmlFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
+    static void loadFromGraphmlFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
+    static void loadFromCsvFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
+
 
     static void loadGraphFromBinary(Graph& g, string graphName, string lockFile, bool nodesHaveTypes, bool lockedSameName);
     static void serializeGraph(Graph& G, string outputName, bool typedNodes, bool locked);

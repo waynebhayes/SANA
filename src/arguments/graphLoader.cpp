@@ -220,7 +220,6 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
         if (p1 == 1 && p2 == 1)
         {
             cout << "Loading graphs using Graph::loadGraph()" << endl;
-
             if(fg1 == "")
             {
                 t1 = thread(Graph::loadGraph, g1Name, ref(G1));
