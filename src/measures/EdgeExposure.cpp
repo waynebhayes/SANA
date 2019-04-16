@@ -12,7 +12,7 @@ EdgeExposure::EdgeExposure(Graph* G1, Graph* G2) : Measure(G1, G2, "ee") {
         assert(1==sscanf(s, "%u",&EDGE_SUM));
     else
     {
-        cout << "Warning: EDGE_SUM should be an environment variables; setting to 2 for now\n";
+        cout << "Warning: EDGE_SUM should be an environment variable; setting to 2 for now\n";
         EDGE_SUM = 2;
     }
 	
@@ -21,13 +21,13 @@ EdgeExposure::EdgeExposure(Graph* G1, Graph* G2) : Measure(G1, G2, "ee") {
         assert(1==sscanf(m, "%u",&MAX_EDGE));
     else
     {
-        cout << "Warning: MAX_EDGE should be an environment variables; setting to 1 for now\n";
+        cout << "Warning: MAX_EDGE should be an environment variable; setting to 1 for now\n";
         MAX_EDGE = 1;
     }
 	assert(EDGE_SUM >= MAX_EDGE);
 	EdgeExposure::denom = EDGE_SUM - MAX_EDGE;
-	cout << "EdgeExposure: MAX_EDGE is " << MAX_EDGE << " ; EDGE_SUM is " << EDGE_SUM <<
-		 " DENOM is " << EdgeExposure::denom << endl;
+	cout << "EdgeExposure: MAX_EDGE is " << MAX_EDGE << ", EDGE_SUM is " << EDGE_SUM <<
+		 ", EE DENOM is " << EdgeExposure::denom << endl;
 }
 
 EdgeExposure::~EdgeExposure() {
@@ -47,7 +47,7 @@ double EdgeExposure::eval(const Alignment& A) {
 #if MULTI_PAIRWISE
 	uint ne = A.numExposedEdges(*G1, *G2);
 	assert(ne >= MAX_EDGE);
-	assert(ne <= EDGE_SUM); // cerr << "WTF, ne = " << ne << " and EDGE_SUM is " << EDGE_SUM << endl;
+	assert(ne <= EDGE_SUM);
     return 1 - ((ne - MAX_EDGE) / (double)EdgeExposure::getDenom());
 #else
 	return 0.0;

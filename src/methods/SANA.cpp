@@ -455,7 +455,7 @@ double ncC(PARAMS) { return double(ncSum) / trueA_back; }
 double mecC(PARAMS) { return double(aligEdges) / (g1WeightedEdges + g2WeightedEdges); }
 double sesC(PARAMS) { return squaredAligEdges; }
 double eeC(PARAMS)  { return 1-exposedEdgesNumer/(double)EdgeExposure::getDenom(); }
-double ms3C(PARAMS)  { return double (MS3Numer / MultiS3::denom); }
+double ms3C(PARAMS)  { return double (MS3Numer / MultiS3::denom) / NUM_GRAPHS; }
 #endif
 
 unordered_set<vector<uint>*>* SANA::paretoRun(const string& fileName) {
@@ -1444,7 +1444,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += mecWeight * (newAligEdges / (g1WeightedEdges + g2WeightedEdges));
         newCurrentScore += sesWeight * newSquaredAligEdges / SquaredEdgeScore::getDenom();
 		newCurrentScore += eeWeight * (1 - (newExposedEdgesNumer / (double)EdgeExposure::getDenom()));
-        newCurrentScore += ms3Weight * (newMS3Numer / MultiS3::denom);
+        newCurrentScore += ms3Weight * ((newMS3Numer / MultiS3::denom) / NUM_GRAPHS);
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;

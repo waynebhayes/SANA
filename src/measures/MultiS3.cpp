@@ -15,7 +15,7 @@ MultiS3::MultiS3(Graph* G1, Graph* G2) : Measure(G1, G2, "ms3")
     }
     else
     {
-        cout << "Warning: NUM_GRAPHS should be an environment variables; setting to 2 for now\n";
+        cout << "Warning: NUM_GRAPHS should be an environment variable; setting to 2 for now\n";
         NUM_GRAPHS = 2;
     }
     cout << "Multi S3: NUM_GRAPHS = " << NUM_GRAPHS << endl;
@@ -30,15 +30,12 @@ MultiS3::~MultiS3() {
 void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2)
 {
     totalDegrees = vector<uint>(G2.getNumNodes(), 0);
-    
+#if 0
     vector<vector<uint> > G1EdgeList;
     G1.getEdgeList(G1EdgeList);
     
     vector<vector<uint>> G2AdjLists;
     G2.getAdjLists(G2AdjLists);
-    
-    Matrix<MATRIX_UNIT> G2Matrix;
-    G2.getMatrix(G2Matrix);
     
     uint node1, node2;
 
@@ -47,16 +44,25 @@ void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2)
         node1 = edge[0], node2 = edge[1];
         G2Matrix[A[node1]][A[node2]] += 1; // +1 because G1 was pruned out of G2
     }
+#endif
+    Matrix<MATRIX_UNIT> G1Matrix;
+    G1.getMatrix(G1Matrix);
     
-    const uint n = G2AdjLists.size();
-    uint neighbor;
+    Matrix<MATRIX_UNIT> G2Matrix;
+    G2.getMatrix(G2Matrix);
     
-    for (uint i = 0; i < n; ++i)
+    const uint n1 = G1.getNumNodes();
+    for (uint i = 0; i < n1; ++i)
     {
-        for (uint j = 0; j < G2AdjLists[i].size(); ++j)
+        totalDegrees[A[i]] += 1;
+    }
+    
+    const uint n2 = G2.getNumNodes();
+    for (uint i = 0; i < n2; ++i)
+    {
+        for (uint j = 0; j < n2; ++j)
         {
-            neighbor = G2AdjLists[i][j];
-            totalDegrees[i] += G2Matrix[i][neighbor];
+            totalDegrees[i] += G2Matrix[i][j];
         }
     }
     degreesInit = true;
@@ -100,7 +106,7 @@ unsigned MultiS3::computeDenom(const Alignment& A, const Graph& G1, const Graph&
         }
     }
 #endif
-    LaddersUnderG1 /= 2; // ok ok
+    LaddersUnderG1 /= 2;
     denom = LaddersUnderG1;
     assert(LaddersUnderG1 % 2 == 0);
     return denom;
@@ -114,7 +120,7 @@ double MultiS3::eval(const Alignment& A)
         initDegrees(A, *G1, *G2);
     }
     computeDenom(A, *G1, *G2);
-    return double (A.multiS3Numerator(*G1, *G2)) / LaddersUnderG1;
+    return double ((A.multiS3Numerator(*G1, *G2)) / LaddersUnderG1) / NUM_GRAPHS;
 #else
     return 0.0;
 #endif
