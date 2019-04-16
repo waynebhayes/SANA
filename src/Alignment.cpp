@@ -376,7 +376,7 @@ unsigned Alignment::multiS3Numerator(const Graph& G1, const Graph& G2) const {
     for (const auto& edge: G1EdgeList)
     {
         node1 = edge[0], node2 = edge[1];
-        ret += G2Matrix[A[node1]][A[node2]] + 1; // +1 because G1 was pruned out of G2?
+        ret += G2Matrix[A[node1]][A[node2]] + 1; // +1 because G1 was pruned out of G2
     }
     return ret;
 }

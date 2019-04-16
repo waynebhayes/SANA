@@ -374,10 +374,11 @@ void Graph::loadFromLgfFile(string fin, string graphName, Graph& g, bool nodesHa
         index2 = nodeName2IndexMap[node2s];
         edgeList[i][0] = index1;
         edgeList[i][1] = index2;
+#ifndef MULTI_PAIRWISE
         if (g.parseFloatWeight) {
             floatWeightList[i] = stof(edgeValue);
         }
-#ifdef MULTI_PAIRWISE
+#else
         edgeList[i][2] = stoi(edgeValue);
         assert(edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
 #endif
@@ -650,10 +651,11 @@ void Graph::loadFromGraphmlFile(string fin, string graphName, Graph& g, bool nod
         index2 = nodeName2IndexMap[node2s];
         edgeList[i][0] = index1;
         edgeList[i][1] = index2;
+#ifndef MULTI_PAIRWISE
         if (g.parseFloatWeight) {
             floatWeightList[i] = stof(edgeValue);
         }
-#ifdef MULTI_PAIRWISE
+#else
         edgeList[i][2] = stoi(edgeValue);
         assert(edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
 #endif
@@ -869,10 +871,11 @@ void Graph::loadFromCsvFile(string fin, string graphName, Graph& g, bool nodesHa
         index2 = nodeName2IndexMap[node2s];
         edgeList[i][0] = index1;
         edgeList[i][1] = index2;
+#ifndef MULTI_PAIRWISE
         if (g.parseFloatWeight) {
             floatWeightList[i] = stof(edgeValue);
         }
-#ifdef MULTI_PAIRWISE
+#else
         edgeList[i][2] = stoi(edgeValue);
         assert(edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
 #endif
@@ -1090,10 +1093,11 @@ void Graph::loadFromGmlFile(string fin, string graphName, Graph& g, bool nodesHa
         index2 = nodeName2IndexMap[node2s];
         edgeList[i][0] = index1;
         edgeList[i][1] = index2;
+#ifndef MULTI_PAIRWISE
         if (g.parseFloatWeight) {
             floatWeightList[i] = stof(edgeValue);
         }
-#ifdef MULTI_PAIRWISE
+#else
         edgeList[i][2] = stoi(edgeValue);
         assert(edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
 #endif

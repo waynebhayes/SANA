@@ -7,20 +7,21 @@
 #include "localMeasures/LocalMeasure.hpp"
 #include "../Graph.hpp"
 
+extern unsigned NUM_GRAPHS;
 
 class MultiS3 : public Measure {
 public:
     MultiS3(Graph* G1, Graph* G2);
     virtual ~MultiS3();
     double eval(const Alignment& A);
-    static vector<uint> shadowDegrees; // sum of neighboring edge weights
-    unsigned getDenom(const Alignment& A, const Graph& G1, const Graph& G2);
+    static vector<uint> totalDegrees; // sum of neighboring edge weights including G1
+    unsigned computeDenom(const Alignment& A, const Graph& G1, const Graph& G2);
     
-    static unsigned denom;
+    static unsigned denom; // used for inc eval 
     unsigned LaddersUnderG1;
-    unsigned EdgesUnderG1;
 private:
-    void initDegrees(const Graph& G2);
+    void initDegrees(const Alignment& A, const Graph& G1, const Graph& G2);
+    bool degreesInit;
 };
 #endif
 
