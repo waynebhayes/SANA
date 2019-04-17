@@ -2496,7 +2496,7 @@ void SANA::searchTemperaturesByLinearRegression() {
     map<double, double> pbadMap;
     cout << "Sampling " << 1+LOG10_NUM_STEPS << " pbads from 1E" << LOG10_LOW_TEMP<< " to 1E" << LOG10_HIGH_TEMP <<" for linear regression" << endl;
     int T_i;
-    double log_temp;
+    double log_temp = -1;
 
 	for(T_i = 0; T_i <= LOG10_NUM_STEPS; T_i++){
 	log_temp = LOG10_LOW_TEMP + T_i*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
