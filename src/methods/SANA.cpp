@@ -1210,7 +1210,7 @@ void SANA::performChange(int type) {
             newTarget = (*unassignedmiRNAsG2)[newTargetIndex];
         }
     }
-    unsigned oldOldTargetDeg, oldNewTargetDeg, oldMs3Denom;
+    unsigned oldOldTargetDeg = -1, oldNewTargetDeg = -1, oldMs3Denom = -1;
     if (needMS3)
     {
         oldOldTargetDeg = MultiS3::totalDegrees[oldTarget];
@@ -1323,7 +1323,7 @@ void SANA::performSwap(int type) {
     uint source2 = G1RandomUnlockedNode(source1);
     uint target1 = (*A)[source1], target2 = (*A)[source2];
     
-    unsigned oldTarget1Deg, oldTarget2Deg, oldMs3Denom;
+    unsigned oldTarget1Deg = -1, oldTarget2Deg = -1, oldMs3Denom = -1;
     if (needMS3)
     {
         oldTarget1Deg = MultiS3::totalDegrees[target1];
