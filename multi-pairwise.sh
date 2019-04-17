@@ -122,6 +122,7 @@ mkdir -p $OUTDIR/dir000 $OUTDIR/networks || die "Cannot make outdir '$OUTDIR'"
 # NOTE: REMAINDER OF THE COMMAND LINE IS ALL THE INPUT NETWORKS
 # We want them to be in alphabetical order
 set `/bin/ls "$@"`
+export NUM_GRAPHS=$#
 
 # Create initial random alignment, which also tells us the number of nodes.
 [ -f "$OUTDIR"/dir000/group.multiAlign ] || ./random-multi-alignment.sh $TYPES "$OUTDIR"/dir000 "$@"
