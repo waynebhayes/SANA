@@ -44,10 +44,7 @@ void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2)
         node1 = edge[0], node2 = edge[1];
         G2Matrix[A[node1]][A[node2]] += 1; // +1 because G1 was pruned out of G2
     }
-#endif
-    Matrix<MATRIX_UNIT> G1Matrix;
-    G1.getMatrix(G1Matrix);
-    
+#endif    
     Matrix<MATRIX_UNIT> G2Matrix;
     G2.getMatrix(G2Matrix);
     
