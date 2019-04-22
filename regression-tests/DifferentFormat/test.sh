@@ -15,23 +15,21 @@ for network in yeast; do
     # Run SANA to align the graph to itself
     echo "Aligning network $network in different formats:"
     echo "Aligning EdgeList file with GML file:"
-    if ./sana  -fg1 "$file.el" -fg2 "$file.gml" -o "$file" &> "$file_gml.progress"; then
+    if ./sana  -fg1 "$file.el" -fg2 "$file.gml" -o "$file" &> "${file}_gml.progress"; then
 	:
     else
 	echo Edgelist to GML alignment failed
 	exitCode=1
     fi
     echo "Aligning EdgeList file with CSV file:"
-    ./sana  -fg1 "$file.el" -fg2 "$file.csv" -o "$file" &> "$file_csv.progress"
+    ./sana  -fg1 "$file.el" -fg2 "$file.csv" -o "$file" &> "${file}_csv.progress"
     echo "Aligning success."
     echo "Aligning EdgeList file with LGF file:"
-    ./sana  -fg1 "$file.el" -fg2 "$file.lgf" -o "$file" &> "$file_lgf.progress"
+    ./sana  -fg1 "$file.el" -fg2 "$file.lgf" -o "$file" &> "${file}_lgf.progress"
     echo "Aligning success."
     echo "Aligning EdgeList file with GraphML file:"
-    ./sana  -fg1 "$file.el" -fg2 "$file.xml" -o "$file" &> "$file_xml.progress"
+    ./sana  -fg1 "$file.el" -fg2 "$file.xml" -o "$file" &> "${file}_xml.progress"
     echo "Aligning success."
-
-
 
 done
 
