@@ -38,21 +38,18 @@ Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool nodesHa
         g.parseFloatWeight = true;
         Graph::loadFromEdgeListFile(path, name, g, nodesHaveTypes);
     }
-    else if(format == ".lgf"){
+    else if(format == "lgf"){
         Graph::loadFromLgfFile(path, name, g, nodesHaveTypes);
     }
-    else if(format == ".xml"){
+    else if(format == "xml"){
         Graph::loadFromGraphmlFile(path, name, g, nodesHaveTypes);
     }
-    else if(format == ".csv"){
+    else if(format == "csv"){
         Graph::loadFromCsvFile(path, name, g, nodesHaveTypes);
     }
-    else if(format == ".gml"){
+    else if(format == "gml"){
         Graph::loadFromGmlFile(path, name, g, nodesHaveTypes);
     }
-
-
-
     else
         throw runtime_error("Unsupported graph format: " + format);
 
