@@ -2,7 +2,7 @@
 die() { echo "$@" >&2; exit 1
 }
 
-echo 'Testing measurement Edge Difference'
+echo 'Testing SANA use different format as it input.'
 
 TEST_DIR=`pwd`/regression-tests/DifferentFormat
 [ -d "$TEST_DIR" ] || die "should be run from top-level directory of the SANA repo"
@@ -21,15 +21,30 @@ for network in yeast; do
 	echo Edgelist to GML alignment failed
 	exitCode=1
     fi
+
     echo "Aligning EdgeList file with CSV file:"
-    ./sana  -fg1 "$file.el" -fg2 "$file.csv" -o "$file" &> "${file}_csv.progress"
-    echo "Aligning success."
+    if  ./sana  -fg1 "$file.el" -fg2 "$file.csv" -o "$file" &> "${file}_csv.progress"; then
+	:
+    else
+	echo Edgelist to CSV alignment failed
+	exitCode=1
+    fi
+
     echo "Aligning EdgeList file with LGF file:"
-    ./sana  -fg1 "$file.el" -fg2 "$file.lgf" -o "$file" &> "${file}_lgf.progress"
-    echo "Aligning success."
+    if ./sana  -fg1 "$file.el" -fg2 "$file.lgf" -o "$file" &> "${file}_lgf.progress"; then
+	:
+    else
+	echo Edgelist to LGF alignment failed
+	exitCode=1
+    fi
+
     echo "Aligning EdgeList file with GraphML file:"
-    ./sana  -fg1 "$file.el" -fg2 "$file.xml" -o "$file" &> "${file}_xml.progress"
-    echo "Aligning success."
+    if ./sana  -fg1 "$file.el" -fg2 "$file.xml" -o "$file" &> "${file}_xml.progress"; then
+	:
+    else
+	echo Edgelist to GraphML alignment failed
+	exitCode=1
+    fi
 
 done
 
