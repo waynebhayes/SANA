@@ -437,6 +437,12 @@ Alignment SANA::run() {
 			weightedScore_pBad, weightedScore_1mpBad);
 	}
 #endif // PRINT_CORES
+
+
+        cout << "Best Alignment Score: " << bestAlignmentScore << endl;
+        cout << "Current Alignment Score: " << currentAlignmentScore << endl;
+
+
         return align;
     }
 }
@@ -631,7 +637,7 @@ void SANA::initDataStructures(const Alignment& startA) {
     nodesHaveType = G1->hasNodeTypes();
 
     A = new vector<uint>(startA.getMapping());
-
+    bestAlignment = new vector<uint>(*A);
     assignedNodesG2 = new vector<bool> (n2, false);
     for (uint i = 0; i < n1; i++) {
         (*assignedNodesG2)[(*A)[i]] = true;
@@ -1184,6 +1190,12 @@ void SANA::SANAIteration() {
         (randomReal(gen) < changeProbability[type]) ? performChange(type) : performSwap(type);
     } else {
         (randomReal(gen) < changeProbability[0]) ? performChange(0) : performSwap(0);
+    }
+    double currentAlignmentScore = MC->eval(*A);
+    if(bestAlignmentScore < currentAlignmentScore) {
+        bestAlignmentScore = currentAlignmentScore;
+        delete bestAlignment;
+        bestAlignment = new vector<uint>(*A);
     }
 }
 
