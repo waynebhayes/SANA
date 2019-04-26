@@ -147,6 +147,7 @@ private:
     bool usingIterations;
     uint maxIterations = 0;
     uint iterationsPerformed = 0;
+    double oldTimeElapsed = 0;
     const double TInitialScaling = 1;
     const double TDecayScaling = 1;
     //to compute TDecay dynamically
@@ -183,7 +184,6 @@ private:
     vector<uint> *unassignedmiRNAsG2;
     vector<uint> *unassignedgenesG2;
     vector<uint>* A;
-    vector<uint>* bestAlignment;
     //initializes all the necessary data structures for a new run
     void initDataStructures(const Alignment& startA);
 
@@ -207,9 +207,6 @@ private:
     double ms3Weight;
     double ewecWeight;
     double TCWeight;
-    
-    double bestAlignmentScore = 0;
-    double currentAlignmentScore = 0;
 
     enum class Score{sum, product, inverse, max, min, maxFactor, pareto};
     Score score;

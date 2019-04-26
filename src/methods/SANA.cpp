@@ -437,12 +437,6 @@ Alignment SANA::run() {
 			weightedScore_pBad, weightedScore_1mpBad);
 	}
 #endif // PRINT_CORES
-
-
-        cout << "Best Alignment Score: " << bestAlignmentScore << endl;
-        cout << "Current Alignment Score: " << currentAlignmentScore << endl;
-
-
         return align;
     }
 }
@@ -637,7 +631,6 @@ void SANA::initDataStructures(const Alignment& startA) {
     nodesHaveType = G1->hasNodeTypes();
 
     A = new vector<uint>(startA.getMapping());
-    bestAlignment = new vector<uint>(*A);
     assignedNodesG2 = new vector<bool> (n2, false);
     for (uint i = 0; i < n1; i++) {
         (*assignedNodesG2)[(*A)[i]] = true;
@@ -1190,12 +1183,6 @@ void SANA::SANAIteration() {
         (randomReal(gen) < changeProbability[type]) ? performChange(type) : performSwap(type);
     } else {
         (randomReal(gen) < changeProbability[0]) ? performChange(0) : performSwap(0);
-    }
-    double currentAlignmentScore = MC->eval(*A);
-    if(bestAlignmentScore < currentAlignmentScore) {
-        bestAlignmentScore = currentAlignmentScore;
-        delete bestAlignment;
-        bestAlignment = new vector<uint>(*A);
     }
 }
 
@@ -2302,9 +2289,14 @@ void SANA::trackProgress(long long int i, bool end) {
     bool printScores = false;
     bool checkScores = true;
     double fractional_time = i/(double)_maxExecutionIterations;
-
+    
     cout << i/iterationsPerStep << " (" << 100*fractional_time << "%," << timer.elapsed() << "s): score = " << currentScore;
     cout <<  " P(" << avgEnergyInc << ", " << Temperature << ") = " << acceptingProbability(avgEnergyInc, Temperature) << ", pBad = " << trueAcceptingProbability() << endl;
+    
+    double elapsedTime = timer.elapsed();
+    if(elapsedTime != 0)
+        cout << "SANA is currently doing " << to_string(1E6/(elapsedTime-oldTimeElapsed)) << " iterations per second" << endl;
+    oldTimeElapsed = timer.elapsed();
 
     if (not (printDetails or printScores or checkScores)) return;
     Alignment Al(*A);
