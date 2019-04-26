@@ -631,7 +631,6 @@ void SANA::initDataStructures(const Alignment& startA) {
     nodesHaveType = G1->hasNodeTypes();
 
     A = new vector<uint>(startA.getMapping());
-
     assignedNodesG2 = new vector<bool> (n2, false);
     for (uint i = 0; i < n1; i++) {
         (*assignedNodesG2)[(*A)[i]] = true;
@@ -2290,9 +2289,16 @@ void SANA::trackProgress(long long int i, bool end) {
     bool printScores = false;
     bool checkScores = true;
     double fractional_time = i/(double)_maxExecutionIterations;
-
-    cout << i/iterationsPerStep << " (" << 100*fractional_time << "%," << timer.elapsed() << "s): score = " << currentScore;
+    double elapsedTime = timer.elapsed();
+    
+    cout << i/iterationsPerStep << " (" << 100*fractional_time << "%," << elapsedTime << "s): score = " << currentScore;
     cout <<  " P(" << avgEnergyInc << ", " << Temperature << ") = " << acceptingProbability(avgEnergyInc, Temperature) << ", pBad = " << trueAcceptingProbability() << endl;
+    
+    uint iterationsElapsed = iterationsPerformed-oldIterationsPerformed;
+    if(elapsedTime != 0)
+        cout << "SANA is currently doing " << to_string(iterationsElapsed/(elapsedTime-oldTimeElapsed)) << " iterations per second" << endl;
+    oldTimeElapsed = elapsedTime;
+    oldIterationsPerformed = iterationsPerformed;
 
     if (not (printDetails or printScores or checkScores)) return;
     Alignment Al(*A);

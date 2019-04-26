@@ -147,6 +147,8 @@ private:
     bool usingIterations;
     uint maxIterations = 0;
     uint iterationsPerformed = 0;
+    uint oldIterationsPerformed = 0;
+    double oldTimeElapsed = 0;
     const double TInitialScaling = 1;
     const double TDecayScaling = 1;
     //to compute TDecay dynamically
