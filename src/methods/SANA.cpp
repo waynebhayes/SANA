@@ -2289,14 +2289,16 @@ void SANA::trackProgress(long long int i, bool end) {
     bool printScores = false;
     bool checkScores = true;
     double fractional_time = i/(double)_maxExecutionIterations;
+    double elapsedTime = timer.elapsed();
     
-    cout << i/iterationsPerStep << " (" << 100*fractional_time << "%," << timer.elapsed() << "s): score = " << currentScore;
+    cout << i/iterationsPerStep << " (" << 100*fractional_time << "%," << elapsedTime << "s): score = " << currentScore;
     cout <<  " P(" << avgEnergyInc << ", " << Temperature << ") = " << acceptingProbability(avgEnergyInc, Temperature) << ", pBad = " << trueAcceptingProbability() << endl;
     
-    double elapsedTime = timer.elapsed();
+    uint iterationsElapsed = iterationsPerformed-oldIterationsPerformed;
     if(elapsedTime != 0)
-        cout << "SANA is currently doing " << to_string(1E6/(elapsedTime-oldTimeElapsed)) << " iterations per second" << endl;
-    oldTimeElapsed = timer.elapsed();
+        cout << "SANA is currently doing " << to_string(iterationsElapsed/(elapsedTime-oldTimeElapsed)) << " iterations per second" << endl;
+    oldTimeElapsed = elapsedTime;
+    oldIterationsPerformed = iterationsPerformed;
 
     if (not (printDetails or printScores or checkScores)) return;
     Alignment Al(*A);
