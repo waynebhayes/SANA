@@ -35,6 +35,7 @@ function fact(k) {if(k<=0)return 1; else return k*fact(k-1);}
 function choose(n,k) {r=1;for(i=1;i<=k;i++)r*=(n-(k-i))/i; return r}
 function NumBits(n) {b=0;while(n>0){if(n%2==1)b++;n=int(n/2)}; return b}
 
+function logb(b,x){return log(x)/log(b)}
 function dtob(n) {n=1*n;if(!n)return "0";s=sgn="";if(n<0){sgn="-";n=-n};while(n){s=sprintf("%d%s",(n%2),s); n=int(n/2)}; return sgn s}
 function btod(n) {}
 

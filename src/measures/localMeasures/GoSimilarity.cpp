@@ -342,9 +342,9 @@ unordered_map<uint,uint> GoSimilarity::getGoCounts(const Graph& G) {
 
 bool GoSimilarity::isBioGRIDNetwork(const Graph& G) {
     string name = G.getName();
-    return name == "RNorvegicus" or name == "SPombe" or name == "CElegans" or
-        name == "MMusculus" or name == "AThaliana" or name == "DMelanogaster" or
-        name == "SCerevisiae" or name == "HSapiens";
+    return true; //name == "RNorvegicus" or name == "SPombe" or name == "CElegans" or
+        //name == "MMusculus" or name == "AThaliana" or name == "DMelanogaster" or
+        //name == "SCerevisiae" or name == "HSapiens";
 }
 
 bool GoSimilarity::hasGOData(const Graph& G) {
