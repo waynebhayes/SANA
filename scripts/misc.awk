@@ -1,4 +1,5 @@
 BEGIN{PI=M_PI=3.14159265358979324}
+function int2binary(i){if(i<=0)return "0";_s="";while(i){_s=(i%2)""_s;i=int(i/2)}return _s}
 function Fatal(msg){printf "FATAL ERROR: %s\n",msg >"/dev/fd/2"; exit(1);}
 function NormDotProd(u,v){_dot=_dot1=_dot2=0;
     for(i in u){_dot+=u[i]*v[i];_dot1+=u[i]*u[i];_dot2+=v[i]*v[i]};
