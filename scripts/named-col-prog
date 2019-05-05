@@ -1,8 +1,8 @@
 #!/bin/sh
-# Input: a file with a constant number of columns.  The first line contains the names of the columns.
+# Input: a file or files with a constant number of columns.  The first line contains the names of the columns.
 # First arg is an awk program that is run on each line, and you can use the names defined in the top line of the input file.
 # File is allowed to contain comments as hashes, they will be ignored
-# Any filename after the first will be parsed later using the setup of the first.
+# All user-assigned variables are remembered between files on the same command-line.
 
 die() { echo "$@" >&2; exit 1
 }
@@ -50,9 +50,10 @@ awk -F "$FIELD_SEP" "`cat $HOME/bin/misc.awk`${FUNC}"'
     BEGINFILE{'"`cat $TMPDIR/VARCOLS`"'}
     /^#/&&!_namedColProgStarted[ARGIND]{print "FATAL ERROR: No comments allowed in data file before the header" > "/dev/stderr"; exit(1)}
     /^[^#]/{_namedColProgStarted[ARGIND]=1}
-    # never mind, do not remove comments: {gsub("#.*","")} # remove comments
+    # never mind, do not remove comments because sometimes a hash is on the line and it is too hard to figure out
+    # {gsub("#.*","")} # do not remove comments (see above)
     /^$/{next}
-    _namedColProgStarted[ARGIND]&&!seenHeader[ARGIND]{NumCols[ARGIND]=NF;seenHeader[ARGIND]=1;if('"$HEADER"')print;next}
+    _namedColProgStarted[ARGIND]&&!seenHeader[ARGIND]{header=$0;NumCols[ARGIND]=NF;seenHeader[ARGIND]=1;if('"$HEADER"')print;next}
     NF!=NumCols[ARGIND]&&'$QUIET'==0{printf "named-col-prog: warning: expected %d columns at %s:%d but found %d\n", NumCols[ARGIND], FILENAME, FNR, NF > "/dev/stderr";if('$VERBOSE')print > "/dev/stderr"}
     !_namedColProgStarted[ARGIND]{next}
     {'"`cat $TMPDIR/ASSIGN`"'}
