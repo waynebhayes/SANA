@@ -76,10 +76,7 @@ T matrixMin(vector<vector<T> >& matrix) {
     return minim;
 }
 
-template<class T>
-bool contains(const vector<T>& v, T x) {
-    for (uint i = 0; i < v.size(); i++) {
-        if (v[i] == x) return true;
-    }
-    return false;
+template<typename T>
+bool contains(const vector<T>& v, const T& elem) {
+    return find(v.begin(), v.end(), elem) != v.end();
 }

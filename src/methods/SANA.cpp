@@ -3842,6 +3842,7 @@ int SANA::ncIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
     if (trueA[source] == newTarget) change += 1;
     return change;
 }
+
 bool SANA::scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum,
                          double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore,
                          double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum) {
@@ -3951,6 +3952,7 @@ int SANA::aligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1,
 #endif
     return res;
 }
+
 double SANA::TCIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2) {
     vector<uint> *A = job.info.A;
 
@@ -4179,7 +4181,6 @@ double SANA::edgeDifferenceIncSwapOp(Job &job, uint source1, uint source2, uint 
 
     return edgeDifferenceIncDiff;
 }
-
 
 inline uint SANA::G1RandomUnlockedNode(Job &job, uint source1) {
     if(!nodesHaveType){
