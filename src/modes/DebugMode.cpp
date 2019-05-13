@@ -96,7 +96,7 @@ void DebugMode::run(ArgumentParser& args) {
   MeasureCombination M;
   initMeasures(M, G1, G2, args);
   Method* method = initMethod(G1, G2, args, M);
-  ((SANA*) method)->searchTemperaturesByLinearRegression();
+  ((SANA*) method)->setTInitialAndTFinalByLinearRegression();
     ((SANA*) method)->setTDecayAutomatically();
 }
 

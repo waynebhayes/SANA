@@ -2475,7 +2475,7 @@ void SANA::findingUpperLowerTemperatureBound(double & LOG10_LOW_TEMP, double & L
 }
 
 
-void SANA::searchTemperaturesByLinearRegression() {
+void SANA::setTInitialAndTFinalByLinearRegression() {
 
     //if(score == "pareto") //Running in pareto mode makes this function really slow
     //	return;             //and I don't know why, but sometimes I disable using this.
@@ -2588,7 +2588,7 @@ void SANA::searchTemperaturesByLinearRegression() {
     TFinal = endingTemperature;
 }
 
-void SANA::searchTemperaturesByStatisticalTest() {
+void SANA::setTInitialAndTFinalByStatisticalTest() {
     const double NUM_SAMPLES_RANDOM = 100;
     const double HIGH_THRESHOLD_P = 0.999999;
     const double LOW_THRESHOLD_P = 0.99;
@@ -2661,6 +2661,23 @@ void SANA::searchTemperaturesByStatisticalTest() {
     setAcceptableTFinal();
 #endif
 }
+
+void SANA::setTInitialByAmeurMethod() {
+    throw runtime_error("not available yet");
+}
+
+void SANA::setTFinalByAmeurMethod() {
+    throw runtime_error("not available yet");
+}
+
+void SANA::setTInitialByBayesOptimization() {
+    throw runtime_error("not available yet");
+}
+
+void SANA::setTFinalByBayesOptimization() {
+    throw runtime_error("not available yet");
+}
+
 
 void SANA::setAcceptableTInitial(){
     TInitial = findAcceptableTInitial(TInitial);

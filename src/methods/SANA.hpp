@@ -44,8 +44,14 @@ public:
     //set temperature schedule automatically
     double temperatureBracket(double l, bool b); //Helper function in finding lower / upper bound for initial temperature
 	void findingUpperLowerTemperatureBound(double& low, double& high); //Finds the initial lower / upper bound for temperature
-    void searchTemperaturesByLinearRegression();
-    void searchTemperaturesByStatisticalTest();
+    
+    void setTInitialAndTFinalByLinearRegression();
+    void setTInitialAndTFinalByStatisticalTest();
+    void setTInitialByAmeurMethod();
+    void setTFinalByAmeurMethod();
+    void setTInitialByBayesOptimization();
+    void setTFinalByBayesOptimization();
+
     void setTDecay(double t);
     void setTDecayAutomatically();
     //to compute TDecay automatically
