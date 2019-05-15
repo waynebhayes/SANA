@@ -152,7 +152,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
             ((SANA*) sana)->setTInitialAndTFinalByLinearRegression();
         } else if (TIniArg == statMethod) {
             //statistical test also sets both simultaneously
-            ((SANA*) sana)->setTInitialAndTFinalByStatisticalTest();
+            ((SANA*) sana)->setTInitialByStatisticalTest();
         } else if (TIniArg == ameurMethod) {
             ((SANA*) sana)->setTInitialByAmeurMethod();
         } else if (TIniArg == bayesMethod) {
@@ -166,34 +166,27 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     if (useMethodForTDecay) {
         Timer T;
         T.start();
+
+        //first 'TFinal' is set using the specified method
+        //then 'TDecay' is set based on TFinal
+
         if(TDecayArg == linRegMethod) {
             if (TIniArg == linRegMethod) {
-                ((SANA*) sana)->setTDecayAutomatically();            
-            } else if (TIniArg == statMethod){
-                /* this is not using linear regression as the user indicated. */
-        	    ((SANA*) sana)->setTDecayAutomatically();
-        	} else if (TIniArg == ameurMethod) {
-                throw invalid_argument("linear regression for TDecay not compatible with Ameur method for TInitial");
-            } else if (TIniArg == bayesMethod) {
-                throw invalid_argument("linear regression for TDecay not compatible with Bayesian Optimization for TInitial");
+                //nothing to do, TFinal is already set
             } else {
                 /* this is not using linear regression as the user indicated. */
-        	    ((SANA*) sana)->setAcceptableTFinalFromManualTInitial();
-                ((SANA*) sana)->setTDecayAutomatically();
+        	    ((SANA*) sana)->setAcceptableTFinal();
             }
         } else if(TDecayArg == statMethod) {
-        	TDecay = ((SANA*) sana)->searchTDecay(((SANA*)sana)->getTInitial(), args.doubles["-t"]);
-        	((SANA*) sana)->setTDecay(TDecay);
+            ((SANA*) sana)->setTFinalByBisection();
         } else if (TDecayArg == ameurMethod) {
             ((SANA*) sana)->setTFinalByAmeurMethod();
-            ((SANA*) sana)->setTDecayAutomatically();
-
         } else if (TDecayArg == bayesMethod) {
             ((SANA*) sana)->setTFinalByBayesOptimization();
-            ((SANA*) sana)->setTDecayAutomatically();
         } else {
             throw runtime_error("every method should have been handled as an 'if', so we should not reach here");
         }
+        ((SANA*) sana)->setTDecayFromTempRange();
         cout << endl << "TFinal took " << T.elapsed() << " seconds to complete." << endl << endl;
     }
 

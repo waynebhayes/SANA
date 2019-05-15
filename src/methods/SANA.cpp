@@ -294,28 +294,28 @@ SANA::SANA(Graph* G1, Graph* G2,
 }
 
 Alignment SANA::getStartingAlignment(){
-    Alignment randomAlig;
+    Alignment startAlig;
 
     if(this->startAligName != "")
-        randomAlig = Alignment::loadEdgeList(G1, G2, startAligName);
+        startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
     else if (G1->hasNodeTypes())
-        randomAlig = Alignment::randomAlignmentWithNodeType(G1,G2);
+        startAlig = Alignment::randomAlignmentWithNodeType(G1,G2);
     else if (lockFileName != "")
-        randomAlig = Alignment::randomAlignmentWithLocking(G1,G2);
+        startAlig = Alignment::randomAlignmentWithLocking(G1,G2);
     else
-        randomAlig = Alignment::random(n1, n2);
+        startAlig = Alignment::random(n1, n2);
 
     // Doing a Rexindexing if required
 #ifdef REINDEX
     if (G1->hasNodeTypes()) {
-    	randomAlig.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
+    	startAlig.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
     }
     else if (lockFileName != "") {
-	    randomAlig.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
+	    startAlig.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
     }
 #endif
 
-    return randomAlig;
+    return startAlig;
 }
 
 /*
@@ -2407,8 +2407,8 @@ uint SANA::getHighestIndex() const {
 double SANA::temperatureBracket(double LIMIT, bool is_high){
 	int i = 0;
 	while (true){
-		double pBadi = pForTInitial(pow(10,i));
-		double pBadi1 = pForTInitial(pow(10,i+1));
+		double pBadi = getPBad(pow(10,i));
+		double pBadi1 = getPBad(pow(10,i+1));
 		cout << "Testing 10 ^ " << i << " pBad = " << pBadi << endl;
 		if (pBadi < LIMIT && pBadi1 >= LIMIT){
 			break;
@@ -2424,15 +2424,15 @@ double SANA::temperatureBracket(double LIMIT, bool is_high){
 
 void SANA::findingUpperLowerTemperatureBound(double & LOG10_LOW_TEMP, double & LOG10_HIGH_TEMP){
 
-	double pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));
-	double pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
+	double pBadLow = getPBad(pow(10,LOG10_LOW_TEMP));
+	double pBadHigh = getPBad(pow(10,LOG10_HIGH_TEMP));
 
 	cout << "Finding the Upper and Lower Bounds of the Temperature ... " << endl;
 
 	if (pBadLow > PBAD_LOW_TEMP_LIMIT && pBadHigh > PBAD_HIGH_TEMP_LIMIT){
 		//both need to go down
 		while(true){
-			pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
+			pBadHigh = getPBad(pow(10,LOG10_HIGH_TEMP));
 			cout << "Testing High Temperature 10^" << LOG10_HIGH_TEMP << " pBad = " << pBadHigh << endl;
 			if (pBadHigh < PBAD_HIGH_TEMP_LIMIT)
 				break;
@@ -2442,7 +2442,7 @@ void SANA::findingUpperLowerTemperatureBound(double & LOG10_LOW_TEMP, double & L
 		LOG10_LOW_TEMP = LOG10_HIGH_TEMP-1; //We know that LOW TEMP HAS TO BE ATLEAST AS KNOW AS THE HIGH TEMP..Saves us extra computation!
 
 		while(true){
-			pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));
+			pBadLow = getPBad(pow(10,LOG10_LOW_TEMP));
 			cout << "Testing Low Temperature 10^" << LOG10_LOW_TEMP << " pBad = " << pBadLow << endl;
 			LOG10_LOW_TEMP--;
 			if(pBadLow < PBAD_LOW_TEMP_LIMIT)
@@ -2453,7 +2453,7 @@ void SANA::findingUpperLowerTemperatureBound(double & LOG10_LOW_TEMP, double & L
 	else if (pBadLow < PBAD_LOW_TEMP_LIMIT && pBadHigh < PBAD_HIGH_TEMP_LIMIT){
 		//both need to go up
 		while(true){
-			pBadLow = pForTInitial(pow(10,LOG10_LOW_TEMP));
+			pBadLow = getPBad(pow(10,LOG10_LOW_TEMP));
 			cout << "Testing Low Temperature 10^" << LOG10_LOW_TEMP << " pBad = " << pBadLow << endl;
 			if(pBadLow > PBAD_LOW_TEMP_LIMIT)
 				break;
@@ -2461,7 +2461,7 @@ void SANA::findingUpperLowerTemperatureBound(double & LOG10_LOW_TEMP, double & L
 		}
 		LOG10_HIGH_TEMP = LOG10_LOW_TEMP+1; //We know that LOW TEMP HAS TO BE ATLEAST AS KNOW AS THE HIGH TEMP..Saves us extra computation!
 		while(true){
-			pBadHigh = pForTInitial(pow(10,LOG10_HIGH_TEMP));
+			pBadHigh = getPBad(pow(10,LOG10_HIGH_TEMP));
 			cout << "Testing High Temperature 10^" << LOG10_HIGH_TEMP << " pBad = " << pBadHigh << endl;
 			LOG10_HIGH_TEMP++;
 			if (pBadHigh > PBAD_HIGH_TEMP_LIMIT)
@@ -2504,7 +2504,7 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
 
 	for(T_i = 0; T_i <= LOG10_NUM_STEPS; T_i++){
 	log_temp = LOG10_LOW_TEMP + T_i*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
-        pbadMap[log_temp] = pForTInitial(pow(10, log_temp));
+        pbadMap[log_temp] = getPBad(pow(10, log_temp));
         cout << T_i << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
     }
     for (T_i=0; T_i <= LOG10_NUM_STEPS; T_i++){
@@ -2518,7 +2518,7 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
     cout << "Increasing sample density near tFinal. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
     for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
-        double probability = pForTInitial(temperature);
+        double probability = getPBad(temperature);
         pbadMap[mid] = probability;
         cout << "Temperature: " << temperature << " pbad: " << probability << " score: " << eval(*A) << endl;
         if(probability > FinalPBad){
@@ -2540,7 +2540,7 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
     cout << "Increasing sample density near tInitial. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
     for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
-        double probability = pForTInitial(temperature);
+        double probability = getPBad(temperature);
         pbadMap[mid] = probability;
         cout << "Temperature: " << temperature << " pbad: " << probability << " score: " << eval(*A) << endl;
         if(probability > 0.995){
@@ -2588,7 +2588,7 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
     TFinal = endingTemperature;
 }
 
-void SANA::setTInitialAndTFinalByStatisticalTest() {
+void SANA::setTInitialByStatisticalTest() {
     const double NUM_SAMPLES_RANDOM = 100;
     const double HIGH_THRESHOLD_P = 0.999999;
     const double LOW_THRESHOLD_P = 0.99;
@@ -2613,7 +2613,7 @@ void SANA::setTInitialAndTFinalByStatisticalTest() {
 
     double lowerBoundTInitial = exp(LOG10_LOW_TEMP);
     double upperBoundTInitial = 1;
-    while (not isRandomTInitial(upperBoundTInitial, highThresholdScore, lowThresholdScore)) {
+    while (not isRandomTemp(upperBoundTInitial, highThresholdScore, lowThresholdScore)) {
         cout << endl;
         upperBoundTInitial *= 2;
     }
@@ -2639,7 +2639,7 @@ void SANA::setTInitialAndTFinalByStatisticalTest() {
         //than false positives (non-random scores classified as random)
         cout << "Test " << count << " (" << TImer.elapsedString() << "): ";
         count++;
-        if (isRandomTInitial(midTInitial, highThresholdScore, lowThresholdScore)) {
+        if (isRandomTemp(midTInitial, highThresholdScore, lowThresholdScore)) {
             upperBoundTInitial = midTInitial;
             cout << " (random behavior)";
         }
@@ -2652,130 +2652,82 @@ void SANA::setTInitialAndTFinalByStatisticalTest() {
     //return the top of the range
     cout << "Final range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
     cout << "Final TInitial: " << upperBoundTInitial << endl;
-    cout << "Final P(Bad): " << pForTInitial(upperBoundTInitial) << endl;
+    cout << "Final P(Bad): " << getPBad(upperBoundTInitial) << endl;
 
     TInitial = upperBoundTInitial;
-    TFinal = lowerBoundTInitial;
-#if 0
-    setAcceptableTInitial();
-    setAcceptableTFinal();
-#endif
+
 }
 
 void SANA::setTInitialByAmeurMethod() {
-    throw runtime_error("not available yet");
+    TInitial = ameurMethod(InitialPBad);
 }
 
 void SANA::setTFinalByAmeurMethod() {
-    throw runtime_error("not available yet");
+    TFinal = ameurMethod(FinalPBad); 
 }
 
 void SANA::setTInitialByBayesOptimization() {
-    throw runtime_error("not available yet");
+    TInitial = bayesOptimization(InitialPBad);
 }
 
 void SANA::setTFinalByBayesOptimization() {
+    TFinal = bayesOptimization(FinalPBad);
+}
+
+double SANA::ameurMethod(double pBad) {
+    // double temp = 
+    // vector<double> samples = energyIncSample(temp);
     throw runtime_error("not available yet");
 }
 
-
-void SANA::setAcceptableTInitial(){
-    TInitial = findAcceptableTInitial(TInitial);
+double SANA::bayesOptimization(double pBad) {
+    throw runtime_error("not available yet");
 }
 
 void SANA::setAcceptableTFinal(){
-    TFinal = findAcceptableTFinal(TFinal);
-}
-
-void SANA::setAcceptableTFinalFromManualTInitial(){
-    TFinal = findAcceptableTFinalFromManualTInitial(TInitial);
-}
-
-double SANA::findAcceptableTInitial(double temperature){
-    double exponent = log10 (temperature);
-    double initialTemperature = pow(10, exponent);
-    double initialProbability = pForTInitial(initialTemperature);
-    cout << "Searching for an acceptable initial temperature" << endl;
-    do{
-        exponent += 0.1;
-        initialTemperature = pow(10, exponent);
-        initialProbability = pForTInitial(initialTemperature);
-        cout << "Temperature: " << initialTemperature << " PBad: " << initialProbability << endl;
-    } while(initialProbability < 0.99);
-    cout << "Resulting tInitial: " << initialTemperature << endl;
-    cout << "Expected initial probability: " << initialProbability << endl;
-    return initialTemperature;
-}
-
-double SANA::findAcceptableTFinalFromManualTInitial(double temperature){
-    double exponent = log10 (temperature);
-    double finalTemperature = pow(10, exponent);
-    double finalProbability = pForTInitial(finalTemperature);
-    cout << "Searching for an acceptable final temperature based on the initial temperature" << endl;
-    do{
-        exponent -= 1.0;
-        finalTemperature = pow(10, exponent);
-        finalProbability = pForTInitial(finalTemperature);
-        cout << "Temperature: " << finalTemperature << " PBad: " << finalProbability << endl;
-    } while(finalProbability > FinalPBad);
-    cout << "Resulting tFinal: " << finalTemperature << endl;
-    cout << "Expected final probability: " << finalProbability << endl;
-    return finalTemperature;
-}
-
-double SANA::findAcceptableTFinal(double temperature){
-    double exponent = log10 (temperature);
-    double finalTemperature = pow(10, exponent);
-    double finalProbability = pForTInitial(finalTemperature);
+    double exponent = log10 (TInitial);
+    double TFinal = pow(10, exponent);
+    double finalProbability = getPBad(TFinal);
     cout << "Searching for an acceptable final temperature" << endl;
     do{
         exponent -= 1;
-        finalTemperature = pow(10, exponent);
-        finalProbability = pForTInitial(finalTemperature);
-        cout << "Temperature: " << finalTemperature << " PBad: " << finalProbability << endl;
+        TFinal = pow(10, exponent);
+        finalProbability = getPBad(TFinal);
+        cout << "Temperature: " << TFinal << " PBad: " << finalProbability << endl;
     } while(finalProbability > FinalPBad);
-    cout << "Resulting tFinal: " << finalTemperature << endl;
+    cout << "Resulting TFinal: " << TFinal << endl;
     cout << "Expected final probability: " << finalProbability << endl;
-    return finalTemperature;
-}
-
-double SANA::solveTDecay() {
-    double tdecay = -log(TFinal * 1.0 * TInitialScaling/(TInitial)) / (1);
-    cout << "tdecay: " << tdecay << endl;
-    return tdecay;
-}
-
-void SANA::setTDecay(double t) {
-    TDecay = t;
-}
-
-void SANA::setTDecayAutomatically() {
-    TDecay = solveTDecay();
 }
 
 //takes a random alignment, lets it run for a certain number
-//of iterations (ITERATIONS) with fixed temperature TInitial
+//of iterations (ITERATIONS) with fixed temperature temp
 //and returns its score
-double SANA::scoreForTInitial(double TInitial) {
-    uint ITERATIONS = 10000.+100.*n1+10.*n2+n1*n2*0.1; //heuristic value
-    ITERATIONS = getIterPerSecond();
-    double oldIterationsPerStep = this->iterationsPerStep;
-    double oldTInitial = this->TInitial;
+double SANA::scoreForTemp(double temp) {
+    double ITERATIONS = getIterPerSecond();
+
+    //stash current SANA state
+    double oldIterationsPerStep = iterationsPerStep;
+    double oldTInitial = TInitial;
     bool oldRestart = restart;
 
-    this->iterationsPerStep = ITERATIONS;
-    this->TInitial = TInitial;
-    constantTemp = true;
-    enableTrackProgress = false;
+    //set state for fixed temp run
+    //nil says: very strange double to uint conversion
+    iterationsPerStep = ITERATIONS;
+    TInitial = temp;
     restart = false;
 
+    constantTemp = true;
+    enableTrackProgress = false;
+
     long long int iter = 0;
-    // simpleRun(Alignment::random(n1, n2), 0.0, iter);
     simpleRun(getStartingAlignment(), 1.0, iter);
-    this->iterationsPerStep = oldIterationsPerStep;
-    this->TInitial = oldTInitial;
+
     constantTemp = false;
     enableTrackProgress = true;
+
+    //undo stash state
+    iterationsPerStep = oldIterationsPerStep;
+    TInitial = oldTInitial;
     restart = oldRestart;
 
     return currentScore;
@@ -2807,53 +2759,46 @@ string SANA::mkdir(const std::string& file){
     return sf.str();
 }
 
-double SANA::pForTInitial(double TInitial) {
+double SANA::getPBad(double temp) {
 
-    // Temperature = TInitial;
-    // double pBad;
-    // vector<double> EIncs = energyIncSample(Temperature);
- //    cout << "Trying TInitial " << Temperature;
- //    //uint nBad = 0;
- //    //for(uint i=0; i<EIncs.size();i++)
-    // //nBad += (randomReal(gen) <= exp(EIncs[i]/Temperature));
- //    pBad = exp(avgEnergyInc/Temperature); // (double)nBad/(EIncs.size());
- //    cout << " p(Bad) = " << pBad << endl;
-    // return pBad;
+    //Nil says: I don't know why 'getIterPerSecond' is called here,
+    //'iterationsPerStep' is overridden right after....
 
-    //Establish the amount of iterations per second before getPforTInitial otherwise it will be calculated with iterationsPerStep = 100000
+    //Establish the amount of iterations per second before getPBadAtTInitial otherwise it will be calculated with iterationsPerStep = 100000
     getIterPerSecond();
 
-    uint ITERATIONS = 10000.+100.*n1+10.*n2+n1*n2*0.1; //heuristic value
-    ITERATIONS = 100000;
-    double oldIterationsPerStep = this->iterationsPerStep;
-    double oldTInitial = this->TInitial;
+    //stash SANA state temporarily 
+    double oldIterationsPerStep = iterationsPerStep;
+    double oldTInitial = TInitial;
     bool oldRestart = restart;
 
-    this->iterationsPerStep = ITERATIONS;
-    this->TInitial = TInitial;
+    //new state for the run at fixed temperature
+    uint ITERATIONS = 100000;
+    iterationsPerStep = ITERATIONS;
+    TInitial = temp;
+    restart = false;
     constantTemp = true;
     enableTrackProgress = true;
-    restart = false;
 
-    long long int iter = 0;
-    // simpleRun(Alignment::random(n1, n2), 0.0, iter);
-    double result = getPforTInitial(getStartingAlignment(), 1.0, iter);
-    this->iterationsPerStep = oldIterationsPerStep;
-    this->TInitial = oldTInitial;
+    double result = getPBadAtTInitial(getStartingAlignment(), 1.0);
+
     constantTemp = false;
-    enableTrackProgress = true;
+    //Nil asks: is it intended that 'enableTrackProgress' remains true?
+
+    //undo stash state
+    iterationsPerStep = oldIterationsPerStep;
+    TInitial = oldTInitial;
     restart = oldRestart;
 
     return result;
 }
 
-double SANA::getPforTInitial(const Alignment& startA, double maxExecutionSeconds,
-        long long int& iter) {
+double SANA::getPBadAtTInitial(const Alignment& startA, double maxExecutionSeconds) {
     double result = 0.0;
     initDataStructures(startA);
 
     setInterruptSignal();
-    for (; ; ++iter) {
+    for (long long int iter = 0; ; ++iter) {
         Temperature = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
             return result;
@@ -2873,18 +2818,18 @@ double SANA::getPforTInitial(const Alignment& startA, double maxExecutionSeconds
     return result; //dummy return to shut compiler warning
 }
 
-bool SANA::isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore) {
+bool SANA::isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore) {
     const double NUM_SAMPLES = 5;
 
-    double score = scoreForTInitial(TInitial);
-    cout << "T_initial = " << TInitial << ", score = " << score;
+    double score = scoreForTemp(temp);
+    cout << "Temp = " << temp << ", score = " << score;
     //quick filter all the scores that are obviously not random
     if (score > highThresholdScore) return false;
     if (score < lowThresholdScore) return true;
     //make sure that alignments that passed the first test are truly random
     //(among NUM_SAMPLES runs, at least one of them has a p-value smaller than LOW_THRESHOLD_P)
     for (uint i = 0; i < NUM_SAMPLES; ++i) {
-        if (scoreForTInitial(TInitial) <= lowThresholdScore) return true;
+        if (scoreForTemp(temp) <= lowThresholdScore) return true;
     }
     return false;
 }
@@ -2972,35 +2917,13 @@ vector<double> SANA::energyIncSample(double temp) {
     return EIncs;
 }
 
-double SANA::simpleSearchTInitial() {
-    Temperature = .5e-6;
-    double pBad;
-    do {
-        Temperature *= 2;
-        vector<double> EIncs = energyIncSample(Temperature);
-        cout << "Trying TInitial " << Temperature;
-        pBad = exp(avgEnergyInc/Temperature); // (double)nBad/(EIncs.size());
-        cout << " p(Bad) = " << pBad << endl;
-    } while(pBad < 0.9999999); // How close to 1? I pulled this out of my ass.
-    return Temperature;
-}
-
-double SANA::searchTDecay(double TInitial, double minutes) {
-#if 0
-    //new TDecay method uses upper and lower tbounds
-    if(lowerTBound != 0){
-        double tdecay = -log(lowerTBound * 1.0 * TInitialScaling/(upperTBound)) / (1);
-        cout << "\ntdecay: " << tdecay << "\n";
-        return tdecay;
-    }
-#else
+void SANA::setTFinalByBisection() {
     //old TDecay method
-    //double iter_t = minutes*60*getIterPerSecond();
     vector<double> EIncs = energyIncSample();
     cout << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
-    //find the temperature epsilon such that the expected number of these energy samples accepted is 1
-    //by bisection, since the expected number is monotically increasing in epsilon
+    //find the temperature TFinal such that the expected number of these energy samples accepted is 1
+    //by bisection, since the expected number is monotically increasing in TFinal
 
     //upper bound and lower bound of x
     uint N = EIncs.size();
@@ -3009,7 +2932,7 @@ double SANA::searchTDecay(double TInitial, double minutes) {
     double EMax = vectorMax(EIncs);
     double x_left = abs(EMax)/log(N);
     double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
-    cout << "Starting range for epsilon: (" << x_left << ", " << x_right << ")" << endl;
+    cout << "Starting range for TFinal: (" << x_left << ", " << x_right << ")" << endl;
 
     const uint NUM_ITER = 100;
     for (uint i = 0; i < NUM_ITER; ++i) {
@@ -3020,56 +2943,16 @@ double SANA::searchTDecay(double TInitial, double minutes) {
         else break;
     }
 
-    double epsilon = (x_left + x_right)/2;
+    TFinal = (x_left + x_right)/2;
     cout << "Final range: (" << x_left << ", " << x_right << ")" << endl;
-    cout << "Final epsilon: " << epsilon << endl;
-
-    double lambda = log(TInitial/epsilon); // /(iter_t);
-    cout << "Final T_decay: " << lambda << endl;
-    assert(-1e300 < lambda && lambda < 1e300); // ensure it's actually a number.
-    return lambda;
-#endif
+    cout << "TFinal: " << TFinal << endl;
 }
 
-double SANA::searchTDecay(double TInitial, uint iterations) {
-
-    vector<double> EIncs = energyIncSample();
-    cout << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
-
-    //find the temperature epsilon such that the expected number of thes e energy samples accepted is 1
-    //by bisection, since the expected number is monotically increasing in epsilon
-
-    //upper bound and lower bound of x
-    uint N = EIncs.size();
-    double ESum = vectorSum(EIncs);
-    double EMin = vectorMin(EIncs);
-    double EMax = vectorMax(EIncs);
-    double x_left = abs(EMax)/log(N);
-    double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
-    cout << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
-
-    const uint NUM_ITER = 100;
-    for (uint i = 0; i < NUM_ITER; ++i) {
-        double x_mid = (x_left + x_right)/2;
-        double y = expectedNumAccEInc(x_mid, EIncs);
-        if (y < 1) x_left = x_mid;
-        else if (y > 1) x_right = x_mid;
-        else break;
-    }
-
-    double epsilon = (x_left + x_right)/2;
-    cout << "Final range: (" << x_left << ", " << x_right << ")" << endl;
-    cout << "Final epsilon: " << epsilon << endl;
-    long long int iter_t = (long long int)(iterations)*100000000;
-
-    double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t);
-    cout << "Final T_decay: " << lambda << endl;
-    return lambda;
+void SANA::setTDecayFromTempRange() {
+    TDecay = -log(TFinal/TInitial);
+    cout << "TDecay: " << TDecay << endl;
 }
 
-double SANA::getTInitial(void) { return TInitial; }
-double SANA::getTFinal(void) { return TFinal; }
-double SANA::getTDecay(void) { return TDecay; }
 
 double SANA::getIterPerSecond() {
     if (not initializedIterPerSecond) {

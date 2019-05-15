@@ -97,7 +97,7 @@ void DebugMode::run(ArgumentParser& args) {
   initMeasures(M, G1, G2, args);
   Method* method = initMethod(G1, G2, args, M);
   ((SANA*) method)->setTInitialAndTFinalByLinearRegression();
-    ((SANA*) method)->setTDecayAutomatically();
+    ((SANA*) method)->setTDecayFromTempRange();
 }
 
 std::string DebugMode::getName(void) {

@@ -40,36 +40,49 @@ public:
 
     void enableRestartScheme(double minutesNewAlignments, uint iterationsPerStep,
         uint numCandidates, double minutesPerCandidate, double minutesFinalist);
-
-    //set temperature schedule automatically
-    double temperatureBracket(double l, bool b); //Helper function in finding lower / upper bound for initial temperature
-	void findingUpperLowerTemperatureBound(double& low, double& high); //Finds the initial lower / upper bound for temperature
     
+
+    //Temperature Schedule Methods
+
+    // Linear Regression
     void setTInitialAndTFinalByLinearRegression();
-    void setTInitialAndTFinalByStatisticalTest();
+    double temperatureBracket(double l, bool b); //Helper function in finding lower / upper bound for initial temperature
+    void findingUpperLowerTemperatureBound(double& low, double& high); //Finds the initial lower / upper bound for temperature
+
+    // Statistical Test    
+    void setTInitialByStatisticalTest();
+    double scoreForTemp(double temp);
+    bool isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore);
+    void setTFinalByBisection();
+
+    // Ameur Method    
     void setTInitialByAmeurMethod();
     void setTFinalByAmeurMethod();
+    //finds temperature corresponding to a specific pBad
+    //using the method from the paper by Walid Ben-Ameur
+    //"Computing the Initial Temperature of Simulated Annealing"
+    double ameurMethod(double pBad);
+    
+    // Bayesian Optimization
     void setTInitialByBayesOptimization();
-    void setTFinalByBayesOptimization();
+    void setTFinalByBayesOptimization();    
+    //finds temperature corresponding to a specific pBad
+    //using bayesian optimization
+    double bayesOptimization(double pBad);
 
-    void setTDecay(double t);
-    void setTDecayAutomatically();
-    //to compute TDecay automatically
-    //returns a value of lambda such that with this TInitial, temperature reaches
-    //0 after a certain number of minutes
-    double solveTDecay();
 
-    void setAcceptableTInitial();
+    //requires TInitial and TFinal to be already initialized
+    void setTDecayFromTempRange();
+
+    //requires that TInitial has been initialized
     void setAcceptableTFinal();
-    void setAcceptableTFinalFromManualTInitial();
-    double findAcceptableTInitial(double temperature);
-    double findAcceptableTFinal(double temperature);
-    double findAcceptableTFinalFromManualTInitial(double temperature);
+
+
+
+
 
     //set temperature decay dynamically
     void setDynamicTDecay();
-
-    double simpleSearchTInitial();
 
     double elapsedEstimate = 0;
     int order = 0;
@@ -84,12 +97,6 @@ public:
     string startAligName = "";
     void prune(string& startAligName);
 
-    //to compute TDecay automatically
-    //returns a value of lambda such that with this TInitial, temperature reaches
-    //0 after a certain number of minutes
-    double searchTDecay(double TInitial, double minutes);
-    double searchTDecay(double TInitial, uint iterations);
-    double getTInitial(void), getTFinal(void), getTDecay(void);
 
 private:
     int maxTriangles = 0;
@@ -155,8 +162,7 @@ private:
     uint iterationsPerformed = 0;
     uint oldIterationsPerformed = 0;
     double oldTimeElapsed = 0;
-    const double TInitialScaling = 1;
-    const double TDecayScaling = 1;
+
     //to compute TDecay dynamically
     //vector holds "ideal" temperature values at certain execution times
     bool dynamic_tdecay;
@@ -167,10 +173,7 @@ private:
     double temperatureFunction(long long int iter, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double Temperature);
     double trueAcceptingProbability();
-    //to compute TInitial automatically
-    //returns a value of TInitial such that the temperature is random
-    double scoreForTInitial(double TInitial);
-    bool isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore);
+
     double scoreRandom();
 
     double TrimCoreScores(Matrix<ulong>& Freq, vector<ulong>& numPegSamples);
@@ -368,9 +371,9 @@ private:
     Alignment getStartingAlignment();
     bool implementsLocking(){ return true; }
 
-    double pForTInitial(double TInitial);
-    double getPforTInitial(const Alignment& startA, double maxExecutionSeconds,
-        long long int& iter);
+    double getPBad(double temp);
+    double getPBadAtTInitial(const Alignment& startA, double maxExecutionSeconds);
+
     string getFolder();
     string haveFolder();
     string mkdir(const std::string& file);
