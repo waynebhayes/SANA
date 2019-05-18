@@ -372,7 +372,7 @@ private:
     bool implementsLocking(){ return true; }
 
     double getPBad(double temp);
-    double getPBadAtTInitial(const Alignment& startA, double maxExecutionSeconds);
+    double getPBadAtEquilibrium(double temp);
 
     string getFolder();
     string haveFolder();

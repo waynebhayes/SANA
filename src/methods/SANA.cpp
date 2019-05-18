@@ -611,12 +611,16 @@ void SANA::enableRestartScheme(double minutesNewAlignments, uint iterationsPerSt
 }
 
 double SANA::temperatureFunction(long long int iter, double TInitial, double TDecay) {
+    if (constantTemp) {
+        return TInitial;
+    }
     double fraction;
-    if(usingIterations)
-        fraction = iter / ((double)(maxIterations)*100000000);
-    else
-        fraction = iter / (minutes * 60 * getIterPerSecond());
-    return TInitial * (constantTemp ? 1 : exp(-TDecay* fraction ));
+    if(usingIterations) {
+        fraction = iter / (100000000.0 * maxIterations);
+    } else {
+        fraction = iter / (minutes * 60.0 * getIterPerSecond());
+    }
+    return TInitial * exp(-TDecay * fraction);
 }
 
 double SANA::acceptingProbability(double energyInc, double Temperature) {
@@ -2515,7 +2519,7 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
     double binarySearchLeftEnd = LOG10_LOW_TEMP + (T_i-1)*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
     double binarySearchRightEnd = log_temp;
     double mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-    cout << "Increasing sample density near tFinal. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
+    cout << "Increasing sample density near TFinal. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
     for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
         double probability = getPBad(temperature);
@@ -2759,12 +2763,15 @@ string SANA::mkdir(const std::string& file){
     return sf.str();
 }
 
+double SANA::getPBadAtEquilibrium(double temp) {
+
+    return 0; //todo
+}
+
 double SANA::getPBad(double temp) {
 
-    //Nil says: I don't know why 'getIterPerSecond' is called here,
-    //'iterationsPerStep' is overridden right after....
-
-    //Establish the amount of iterations per second before getPBadAtTInitial otherwise it will be calculated with iterationsPerStep = 100000
+    //Establish the amount of iterations per second
+    //before getPBadAtTInitial otherwise it will be calculated with iterationsPerStep = 100000
     getIterPerSecond();
 
     //stash SANA state temporarily 
@@ -2775,47 +2782,41 @@ double SANA::getPBad(double temp) {
     //new state for the run at fixed temperature
     uint ITERATIONS = 100000;
     iterationsPerStep = ITERATIONS;
-    TInitial = temp;
-    restart = false;
+
     constantTemp = true;
-    enableTrackProgress = true;
-
-    double result = getPBadAtTInitial(getStartingAlignment(), 1.0);
-
-    constantTemp = false;
-    //Nil asks: is it intended that 'enableTrackProgress' remains true?
-
-    //undo stash state
-    iterationsPerStep = oldIterationsPerStep;
-    TInitial = oldTInitial;
-    restart = oldRestart;
-
-    return result;
-}
-
-double SANA::getPBadAtTInitial(const Alignment& startA, double maxExecutionSeconds) {
-    double result = 0.0;
-    initDataStructures(startA);
-
+    Temperature = temp;
+    enableTrackProgress = false;
+    restart = false;
+    
+    initDataStructures(getStartingAlignment());
     setInterruptSignal();
+
+    double result = 0.0;
     for (long long int iter = 0; ; ++iter) {
-        Temperature = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
-            return result;
+            break;
         }
         if (iter%iterationsPerStep == 0) {
             result = trueAcceptingProbability();
-            if ((iter != 0 and timer.elapsed() > maxExecutionSeconds and sampledProbabilitySize > 0) or iter > 5E7) {
-                if(sampledProbabilitySize == 0){
-                    return 1;
-                }else{
-                    return result;
-                }
+            if ((iter > 0 and timer.elapsed() > 1.0 and sampledProbabilitySize > 0) or iter > 5E7) {
+                break;
             }
         } //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
         SANAIteration();
     }
-    return result; //dummy return to shut compiler warning
+    if(sampledProbabilitySize == 0) {
+        result = 1;
+    }
+
+    constantTemp = false;
+    enableTrackProgress = true;
+
+    //undo stash state
+    iterationsPerStep = oldIterationsPerStep;
+    Temperature = TInitial = oldTInitial;
+    restart = oldRestart;
+
+    return result;
 }
 
 bool SANA::isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore) {
