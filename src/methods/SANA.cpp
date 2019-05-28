@@ -159,6 +159,7 @@ SANA::SANA(Graph* G1, Graph* G2,
         minutes = t;
     }
     initializedIterPerSecond = false;
+    PBadBuffer = vector<double> (PBAD_CIRCULAR_BUFFER_SIZE, 0);
 
     //data structures for the solution space search
     assert(G1->hasNodeTypes() == G2->hasNodeTypes());
@@ -628,7 +629,7 @@ double SANA::acceptingProbability(double energyInc, double Temperature) {
 }
 
 double SANA::trueAcceptingProbability(){
-    return buffer_sum/sampledProbabilitySize;
+    return PBadBufferSum/numPBadsInBuffer;
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
@@ -726,9 +727,9 @@ void SANA::initDataStructures(const Alignment& startA) {
     }
 
     iterationsPerformed = 0;
-    sampledProbabilitySize = 0;
-    buffer_sum = 0;
-    buffer_index = 0;
+    numPBadsInBuffer = 0;
+    PBadBufferSum = 0;
+    PBadBufferIndex = 0;
     currentScore = eval(startA);
     timer.start();
 }
@@ -1610,19 +1611,20 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 	//the above will never be true in the case of iterationsPerformed never being changed so that it doesn't greatly
 	// slow down the program if for some reason iterationsPerformed doesn't need to be changed.
     if (wasBadMove) { // I think Dillon was wrong above, just do it always - WH
-        if (sampledProbabilitySize == CIRCULAR_BUFFER_SIZE) {
-            buffer_index = (buffer_index == CIRCULAR_BUFFER_SIZE ? 0 : buffer_index);
-            buffer_sum -= sampledProbability[buffer_index];
-            sampledProbability[buffer_index] = badProbability;
+        if (numPBadsInBuffer == PBAD_CIRCULAR_BUFFER_SIZE) {
+            PBadBufferIndex = (PBadBufferIndex == PBAD_CIRCULAR_BUFFER_SIZE ? 0 : PBadBufferIndex);
+            PBadBufferSum -= PBadBuffer[PBadBufferIndex];
+            PBadBuffer[PBadBufferIndex] = badProbability;
         }
         else
         {
-            sampledProbability[buffer_index] = badProbability;
-            sampledProbabilitySize++;
+            PBadBuffer[PBadBufferIndex] = badProbability;
+            numPBadsInBuffer++;
         }
-        buffer_sum += badProbability;
-        buffer_index++;
+        PBadBufferSum += badProbability;
+        PBadBufferIndex++;
     }
+
     return makeChange;
 }
 
@@ -2508,7 +2510,7 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
 
 	for(T_i = 0; T_i <= LOG10_NUM_STEPS; T_i++){
 	log_temp = LOG10_LOW_TEMP + T_i*(LOG10_HIGH_TEMP-LOG10_LOW_TEMP)/LOG10_NUM_STEPS;
-        pbadMap[log_temp] = getPBad(pow(10, log_temp));
+        pbadMap[log_temp] = getPBad(pow(10, log_temp), 5.0);
         cout << T_i << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
     }
     for (T_i=0; T_i <= LOG10_NUM_STEPS; T_i++){
@@ -2522,7 +2524,7 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
     cout << "Increasing sample density near TFinal. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
     for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
-        double probability = getPBad(temperature);
+        double probability = getPBad(temperature, 5.0);
         pbadMap[mid] = probability;
         cout << "Temperature: " << temperature << " pbad: " << probability << " score: " << eval(*A) << endl;
         if(probability > FinalPBad){
@@ -2544,7 +2546,7 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
     cout << "Increasing sample density near tInitial. " << "left bound: " << pow(10, binarySearchLeftEnd) << ", right bound: " << pow(10, binarySearchRightEnd) << endl;
     for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
-        double probability = getPBad(temperature);
+        double probability = getPBad(temperature, 5.0);
         pbadMap[mid] = probability;
         cout << "Temperature: " << temperature << " pbad: " << probability << " score: " << eval(*A) << endl;
         if(probability > 0.995){
@@ -2656,7 +2658,7 @@ void SANA::setTInitialByStatisticalTest() {
     //return the top of the range
     cout << "Final range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
     cout << "Final TInitial: " << upperBoundTInitial << endl;
-    cout << "Final P(Bad): " << getPBad(upperBoundTInitial) << endl;
+    cout << "Final P(Bad): " << getPBad(upperBoundTInitial, 5.0) << endl;
 
     TInitial = upperBoundTInitial;
 
@@ -2763,60 +2765,114 @@ string SANA::mkdir(const std::string& file){
     return sf.str();
 }
 
-double SANA::getPBadAtEquilibrium(double temp) {
-
-    return 0; //todo
-}
-
-double SANA::getPBad(double temp) {
-
-    //Establish the amount of iterations per second
-    //before getPBadAtTInitial otherwise it will be calculated with iterationsPerStep = 100000
-    getIterPerSecond();
-
-    //stash SANA state temporarily 
-    double oldIterationsPerStep = iterationsPerStep;
-    double oldTInitial = TInitial;
-    bool oldRestart = restart;
+/* when we run sana at a fixed temp, PBads generally go down
+(especially if the temp is low) until a point of "thermal equilibrium".
+This function should return the avg pBad at equilibrium.
+We use the buffer of pBads. we keep track of the few averages of this buffer.
+if the avg went up at least half the time,
+this suggests that the downward trend is over and we are at equilirbium
+once we know we are at equilibrium, we start sampling for the final average pBad */
+double SANA::getPBad(double temp, double maxTime) {
 
     //new state for the run at fixed temperature
-    uint ITERATIONS = 100000;
-    iterationsPerStep = ITERATIONS;
-
     constantTemp = true;
     Temperature = temp;
     enableTrackProgress = false;
-    restart = false;
     
-    initDataStructures(getStartingAlignment());
-    setInterruptSignal();
+    //note: this is a circular buffer that maintains the averages of
+    //*another* circular buffer, the 'PBadBuffer'.  
+    vector<double> PBadAvgBuffer;
+    //the larger 'numPBadAvgs' is, the stronger evidence of reachign equilibrium. keep this value odd
+    const uint numPBadAvgs = 21;
 
-    double result = 0.0;
-    for (long long int iter = 0; ; ++iter) {
-        if (interrupt) {
-            break;
-        }
-        if (iter%iterationsPerStep == 0) {
-            result = trueAcceptingProbability();
-            if ((iter > 0 and timer.elapsed() > 1.0 and sampledProbabilitySize > 0) or iter > 5E7) {
+    //our stopping condition is that we reached equilibrium AND
+    //the buffer of pbad avgs has been fully renewed after reaching it
+    bool reachedEquilibrium = false;
+    uint numAvgsAtEquilibrium = 0;
+
+    initDataStructures(getStartingAlignment()); //this initializes the timer
+
+    bool verbose = true; //print everything going on, for debugging purposes
+    uint verbose_i = 0;
+    if (verbose) {
+        cerr << endl << "****************************************" << endl;
+        cerr << "starting search for pBad for temp = " << temp << endl;
+    }
+
+    while (not reachedEquilibrium or numAvgsAtEquilibrium < numPBadAvgs) {
+        SANAIteration();
+
+        if (PBadBufferIndex == PBAD_CIRCULAR_BUFFER_SIZE) {
+            //PBadBuffer has fully renewed
+            //so we add its avg to the PBadAvgBuffer
+            double PBadAvg = trueAcceptingProbability();
+
+            if (verbose) {
+                double energyInc = temp * log(PBadAvg);
+                cerr << "avg  PBad #" << verbose_i << ": " << PBadAvg << " (avg energyInc: " << energyInc << ")" << endl;
+                verbose_i++;
+            }
+
+            //we skip the latest pbad avg if it is the same as the prior one,
+            //as that does not help in identifying the trend
+            if (not reachedEquilibrium and (PBadAvgBuffer.size() == 0 or PBadAvg != PBadAvgBuffer[PBadAvgBuffer.size()-1])) {
+                //circular buffer behavior
+                //(since the buffer is tiny, the cost of shifting everything is negligible)
+                PBadAvgBuffer.push_back(PBadAvg);            
+                if (PBadAvgBuffer.size() > numPBadAvgs) {
+                    PBadAvgBuffer.erase(PBadAvgBuffer.begin());
+                }                
+            }
+
+            if (reachedEquilibrium) {
+                numAvgsAtEquilibrium++;
+            } else if (PBadAvgBuffer.size() == numPBadAvgs) {
+                //check if we are at eq:
+                //if more of the last numPBadAvgs-1 pbad avgs went up (or stayed the same)
+                //we take it as evidence that we are at equilibrium
+                uint wentUpCount = 0;
+                for (uint i = 0; i < numPBadAvgs-1; i++) {
+                    if (PBadAvgBuffer[i+1] > PBadAvgBuffer[i]) wentUpCount++;
+                }
+                reachedEquilibrium = (wentUpCount >= (numPBadAvgs-1)/2);
+
+                if (verbose) {
+                    cerr << "wentUpCount = " << wentUpCount << endl;
+                    if (reachedEquilibrium) {
+                        cerr << endl << "Reached equilibrium" << endl;
+                        cerr << "PBadAvgs:" << endl;
+                        for (uint i = 0; i < PBadAvgBuffer.size(); i++) {
+                            cerr << PBadAvgBuffer[i] << " ";
+                        }
+                        cerr << endl << endl;
+                    }
+                }
+            }
+
+            if (timer.elapsed() > maxTime) {
+                cerr << "getPBad did not reach thermal equilibrium for t = " << temp << endl;
+                for (uint i = 0; i < PBadAvgBuffer.size(); i++) {
+                    cerr<<PBadAvgBuffer[i]<<endl;
+                }
+                cerr<<endl;
                 break;
             }
-        } //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
-        SANAIteration();
-    }
-    if(sampledProbabilitySize == 0) {
-        result = 1;
+        }
+
     }
 
+    double PBadAvgAtEq = vectorSum(PBadAvgBuffer)/PBadAvgBuffer.size();
+
+    if (verbose) {
+        cerr << "final result: " << PBadAvgAtEq << endl;
+        cerr << "****************************************" << endl << endl;
+    }
+    //restore normal execution state
     constantTemp = false;
     enableTrackProgress = true;
+    Temperature = TInitial;
 
-    //undo stash state
-    iterationsPerStep = oldIterationsPerStep;
-    Temperature = TInitial = oldTInitial;
-    restart = oldRestart;
-
-    return result;
+    return PBadAvgAtEq;
 }
 
 bool SANA::isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore) {

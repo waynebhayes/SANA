@@ -20,8 +20,6 @@
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, uint pairsCount
 #endif
 
-#define CIRCULAR_BUFFER_SIZE 10000
-
 class SANA: public Method {
 
 public:
@@ -108,9 +106,13 @@ private:
     //store whether or not most recent move was bad
     bool wasBadMove = false;
 
-    //store index and sum of circular buffer
-    int buffer_index = 0;
-    double buffer_sum = 0;
+    //circular PBad buffer
+    const int PBAD_CIRCULAR_BUFFER_SIZE = 10000;
+    vector<double> PBadBuffer;
+    int numPBadsInBuffer = 0;
+    int PBadBufferIndex = 0;
+    double PBadBufferSum = 0;
+
 
     //data structures for the networks
     uint n1;
@@ -356,8 +358,6 @@ private:
     double currentScore;
     double previousScore;
     double energyInc;
-    double sampledProbability[CIRCULAR_BUFFER_SIZE];
-    int sampledProbabilitySize = 0;
     void SANAIteration();
     void performChange(int type);
     void performSwap(int type);
@@ -371,8 +371,7 @@ private:
     Alignment getStartingAlignment();
     bool implementsLocking(){ return true; }
 
-    double getPBad(double temp);
-    double getPBadAtEquilibrium(double temp);
+    double getPBad(double temp, double maxTime = 2.0);
 
     string getFolder();
     string haveFolder();
