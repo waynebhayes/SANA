@@ -371,7 +371,7 @@ private:
     Alignment getStartingAlignment();
     bool implementsLocking(){ return true; }
 
-    double getPBad(double temp, double maxTime = 2.0);
+    double getPBad(double temp, double maxTime = 1.0);
 
     string getFolder();
     string haveFolder();

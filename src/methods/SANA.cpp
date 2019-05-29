@@ -2765,13 +2765,13 @@ string SANA::mkdir(const std::string& file){
     return sf.str();
 }
 
-/* when we run sana at a fixed temp, PBads generally go down
+/* when we run sana at a fixed temp, scores generally go up
 (especially if the temp is low) until a point of "thermal equilibrium".
 This function should return the avg pBad at equilibrium.
-We use the buffer of pBads. we keep track of the few averages of this buffer.
-if the avg went up at least half the time,
-this suggests that the downward trend is over and we are at equilirbium
-once we know we are at equilibrium, we start sampling for the final average pBad */
+we keep track of the score every certain number of iterations
+if the score went down at least half the time,
+this suggests that the upward trend is over and we are at equilirbium
+once we know we are at equilibrium, we use the buffer of pbads to get an average pBad */
 double SANA::getPBad(double temp, double maxTime) {
 
     //new state for the run at fixed temperature
@@ -2779,89 +2779,78 @@ double SANA::getPBad(double temp, double maxTime) {
     Temperature = temp;
     enableTrackProgress = false;
     
-    //note: this is a circular buffer that maintains the averages of
-    //*another* circular buffer, the 'PBadBuffer'.  
-    vector<double> PBadAvgBuffer;
-    //the larger 'numPBadAvgs' is, the stronger evidence of reachign equilibrium. keep this value odd
-    const uint numPBadAvgs = 21;
+    //note: this is a circular buffer that maintains scores sampled at intervals
+    vector<double> scoreBuffer;
+    //the larger 'numScores' is, the stronger evidence of reachign equilibrium. keep this value odd
+    const uint numScores = 11;
+    uint iter = 0;
+    uint sampleInterval = 10000;
 
-    //our stopping condition is that we reached equilibrium AND
-    //the buffer of pbad avgs has been fully renewed after reaching it
     bool reachedEquilibrium = false;
-    uint numAvgsAtEquilibrium = 0;
 
     initDataStructures(getStartingAlignment()); //this initializes the timer
 
-    bool verbose = true; //print everything going on, for debugging purposes
+    bool verbose = false; //print everything going on, for debugging purposes
     uint verbose_i = 0;
     if (verbose) {
         cerr << endl << "****************************************" << endl;
         cerr << "starting search for pBad for temp = " << temp << endl;
     }
 
-    while (not reachedEquilibrium or numAvgsAtEquilibrium < numPBadAvgs) {
+    while (not reachedEquilibrium) {
         SANAIteration();
+        iter++;
 
-        if (PBadBufferIndex == PBAD_CIRCULAR_BUFFER_SIZE) {
-            //PBadBuffer has fully renewed
-            //so we add its avg to the PBadAvgBuffer
-            double PBadAvg = trueAcceptingProbability();
-
+        if (iter%sampleInterval == 0) {
             if (verbose) {
-                double energyInc = temp * log(PBadAvg);
-                cerr << "avg  PBad #" << verbose_i << ": " << PBadAvg << " (avg energyInc: " << energyInc << ")" << endl;
+                cerr << verbose_i << " score: " << currentScore << " (avg pbad: " << trueAcceptingProbability() << ")" << endl;
                 verbose_i++;
             }
-
-            //we skip the latest pbad avg if it is the same as the prior one,
-            //as that does not help in identifying the trend
-            if (not reachedEquilibrium and (PBadAvgBuffer.size() == 0 or PBadAvg != PBadAvgBuffer[PBadAvgBuffer.size()-1])) {
-                //circular buffer behavior
-                //(since the buffer is tiny, the cost of shifting everything is negligible)
-                PBadAvgBuffer.push_back(PBadAvg);            
-                if (PBadAvgBuffer.size() > numPBadAvgs) {
-                    PBadAvgBuffer.erase(PBadAvgBuffer.begin());
-                }                
+            //circular buffer behavior
+            //(since the buffer is tiny, the cost of shifting everything is negligible)
+            scoreBuffer.push_back(currentScore);            
+            if (scoreBuffer.size() > numScores) {
+                scoreBuffer.erase(scoreBuffer.begin());
             }
 
-            if (reachedEquilibrium) {
-                numAvgsAtEquilibrium++;
-            } else if (PBadAvgBuffer.size() == numPBadAvgs) {
+            if (scoreBuffer.size() == numScores) {
                 //check if we are at eq:
-                //if more of the last numPBadAvgs-1 pbad avgs went up (or stayed the same)
-                //we take it as evidence that we are at equilibrium
-                uint wentUpCount = 0;
-                for (uint i = 0; i < numPBadAvgs-1; i++) {
-                    if (PBadAvgBuffer[i+1] > PBadAvgBuffer[i]) wentUpCount++;
+                //if the score went down more than up, it suggests we are at eq
+                uint scoreTrend = 0;
+                for (uint i = 0; i < numScores-1; i++) {
+                    if (scoreBuffer[i+1] < scoreBuffer[i]) scoreTrend--;
+                    if (scoreBuffer[i+1] > scoreBuffer[i]) scoreTrend++;
                 }
-                reachedEquilibrium = (wentUpCount >= (numPBadAvgs-1)/2);
+                reachedEquilibrium = (scoreTrend <= 0);
 
                 if (verbose) {
-                    cerr << "wentUpCount = " << wentUpCount << endl;
+                    cerr << "scoreTrend = " << scoreTrend << endl;
                     if (reachedEquilibrium) {
                         cerr << endl << "Reached equilibrium" << endl;
-                        cerr << "PBadAvgs:" << endl;
-                        for (uint i = 0; i < PBadAvgBuffer.size(); i++) {
-                            cerr << PBadAvgBuffer[i] << " ";
+                        cerr << "scoreBuffer:" << endl;
+                        for (uint i = 0; i < scoreBuffer.size(); i++) {
+                            cerr << scoreBuffer[i] << " ";
                         }
-                        cerr << endl << endl;
+                        cerr << endl;
                     }
                 }
             }
 
             if (timer.elapsed() > maxTime) {
                 cerr << "getPBad did not reach thermal equilibrium for t = " << temp << endl;
-                for (uint i = 0; i < PBadAvgBuffer.size(); i++) {
-                    cerr<<PBadAvgBuffer[i]<<endl;
+                if (verbose) {
+                    cerr << "scoreBuffer:" << endl;
+                    for (uint i = 0; i < scoreBuffer.size(); i++) {
+                        cerr<<scoreBuffer[i]<<endl;
+                    }
+                    cerr<<endl;
                 }
-                cerr<<endl;
                 break;
             }
         }
-
     }
 
-    double PBadAvgAtEq = vectorSum(PBadAvgBuffer)/PBadAvgBuffer.size();
+    double PBadAvgAtEq = trueAcceptingProbability();
 
     if (verbose) {
         cerr << "final result: " << PBadAvgAtEq << endl;
