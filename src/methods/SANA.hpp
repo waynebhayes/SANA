@@ -84,6 +84,9 @@ public:
     double searchTDecay(double TInitial, double minutes);
     double searchTDecay(double TInitial, uint iterations);
     double getTInitial(void), getTFinal(void), getTDecay(void);
+    
+    //set the file names passed in args in case we want to store the alignment on the fly
+    void setOutputFilenames(string outputFileName, string localMeasuresFileName);
 
 private:
     int maxTriangles = 0;
@@ -357,6 +360,9 @@ private:
     //others
     Timer timer;
     void setInterruptSignal(); //allows the execution to be paused with Control+C
+    void printReport(); //print out reports from inside SANA
+    string outputFileName = "sana";
+    string localScoresFileName = "sana";
 
     // Used to support locking
     Alignment getStartingAlignment();
