@@ -373,10 +373,7 @@ void sigIntHandler(int s) {
             interrupt = true;
         else if(c == 3)
             saveAlignment = true;
-    } while(c < 0 || c > 3);
-    
-    //sana.exe -fg1 networks/MMusculus.el -fg2 networks/AThaliana.el
-    
+    } while(c < 0 || c > 3);    
 }
 
 uint factorial(uint n) {
