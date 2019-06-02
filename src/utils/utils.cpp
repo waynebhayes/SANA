@@ -354,6 +354,8 @@ void sigIntHandler(int s) {
     do {
         cerr << "Select an option (1 - 3):\n  (1) Exit\n  (2) Save Alignment and Exit\n  (3) Save Alignment and Continue\n>> ";
         cin >> c;
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         if(c == 1)
             exit(0);
         else if(c == 2)
