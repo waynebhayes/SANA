@@ -31,6 +31,7 @@
 #include "../measures/localMeasures/Graphlet.hpp"
 #include "../measures/localMeasures/GraphletLGraal.hpp"
 #include "../measures/localMeasures/GraphletCosine.hpp"
+#include "../measures/localMeasures/GraphletNorm.hpp"
 
 using namespace std;
 
@@ -100,7 +101,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableDoubleMeasures = {
         "ec","ed", "s3","ics","tc","sec","wec","nodec","noded","edgec","edged", "go","importance",
-        "sequence","graphlet","graphletlgraal", "graphletcosine", "spc", "nc","mec", "ewec", "ses", "ee", "ms3"
+        "sequence","graphlet","graphletlgraal", "graphletcosine", "graphletnorm", "spc", "nc","mec", "ewec", "ses", "ee", "ms3"
     };
     double total = 0;
     for (uint i = 0; i < optimizableDoubleMeasures.size(); i++)
@@ -325,6 +326,11 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     if (shouldInit("graphletcosine", G1, G2, args)) {
         m = new GraphletCosine(&G1, &G2);
         double graphletWeight = getWeight("graphletcosine", G1, G2, args);
+        M.addMeasure(m, graphletWeight);
+    }
+    if (shouldInit("graphletnorm", G1, G2, args)) {
+        m = new GraphletNorm(&G1, &G2);
+        double graphletWeight = getWeight("graphletnorm", G1, G2, args);
         M.addMeasure(m, graphletWeight);
     }
 
