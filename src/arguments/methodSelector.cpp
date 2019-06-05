@@ -96,11 +96,12 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     string TIniArg = args.strings["-tinitial"];
     string TDecayArg = args.strings["-tdecay"];
 
-    string linRegMethod = "by-linear-regression";
-    string statMethod = "by-statistical-test";
-    string ameurMethod = "by-ameur-method";
-    string bayesMethod = "by-bayesian-opt";
-    vector<string> autoTempMethods = { linRegMethod, statMethod, ameurMethod, bayesMethod };
+    string linRegMethod = "linear-regression";
+    string statMethod = "statistical-test";
+    string ameurMethod = "ameur-method";
+    string bayesMethod = "bayesian-opt";
+    string pBadBinMethod = "pbad-binary-search";
+    vector<string> autoTempMethods = { linRegMethod, statMethod, ameurMethod, bayesMethod, pBadBinMethod };
     string defaultMethod = linRegMethod; 
 
     //if user uses 'auto', use our default method of choice (should be the one regarded as best)
@@ -157,10 +158,12 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
             ((SANA*) sana)->setTInitialByAmeurMethod();
         } else if (TIniArg == bayesMethod) {
             ((SANA*) sana)->setTInitialByBayesOptimization();
+        } else if (TIniArg == pBadBinMethod) {
+            ((SANA*) sana)->setTInitialByPBadBinarySearch();
         } else {
             throw runtime_error("every method should have been handled as an 'if', so we should not reach here");
         }
-        cout << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
+        cout << endl << "TInitial took " << T.elapsed() << "s to compute" << endl << endl;
     }    
 
     if (useMethodForTDecay) {
@@ -183,11 +186,16 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
             ((SANA*) sana)->setTFinalByAmeurMethod();
         } else if (TDecayArg == bayesMethod) {
             ((SANA*) sana)->setTFinalByBayesOptimization();
+        } else if (TDecayArg == pBadBinMethod) {
+            ((SANA*) sana)->setTFinalByPBadBinarySearch();
         } else {
             throw runtime_error("every method should have been handled as an 'if', so we should not reach here");
         }
         ((SANA*) sana)->setTDecayFromTempRange();
-        cout << endl << "TFinal took " << T.elapsed() << " seconds to complete." << endl << endl;
+        cout << endl << "TFinal took " << T.elapsed() << "s to compute" << endl << endl;
+    }
+    if (useMethodForTIni or useMethodForTDecay) {
+        ((SANA*) sana)->printScheduleStatistics();
     }
 
 

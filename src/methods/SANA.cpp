@@ -2545,7 +2545,7 @@ a pBad that bounds 'targetPBad' above or below. More precisely,
 - if 'nextAbove' is false, it retuns the largest such temp that gives rise to a pBad below 'targetPBad'
 higher 'base' -> quicker search, but more coarse bound; defaults to 10.
 */
-double SANA::doublingMethod(double targetPBad, bool nextAbove, double base) {
+double SANA::doublingMethod(double targetPBad, bool nextAbove, double base, double getPBadTime) {
     
     //use as starting value the temp in the tempToPBad map that has a closest pBad to the target pBad
     //if the map is empty, just start with 1
@@ -2572,12 +2572,12 @@ double SANA::doublingMethod(double targetPBad, bool nextAbove, double base) {
 
     double temp = startTemp;
     double priorTemp = temp;
-    double pBad = getPBad(temp);
+    double pBad = getPBad(temp, getPBadTime);
     if (pBad < targetPBad) {
         while (pBad < targetPBad) {
             priorTemp = temp;
             temp *= base;
-            pBad = getPBad(temp);
+            pBad = getPBad(temp, getPBadTime);
         }
         if (nextAbove) return temp;
         return priorTemp;      
@@ -2585,11 +2585,19 @@ double SANA::doublingMethod(double targetPBad, bool nextAbove, double base) {
         while (pBad > targetPBad) {
             priorTemp = temp;
             temp /= base;
-            pBad = getPBad(temp);
+            pBad = getPBad(temp, getPBadTime);
         }
         if (nextAbove) return priorTemp;
         return temp;
     }
+}
+
+void SANA::printScheduleStatistics() {
+    cout << "TInitial found for target pBad " << TARGET_INITIAL_PBAD << ": " << endl;
+    getPBad(TInitial, 2);
+    cout << "TFinal found for target pBad " << TARGET_FINAL_PBAD << ": " << endl;
+    getPBad(TFinal, 2);
+    cout << endl;
 }
 
 void SANA::setTInitialAndTFinalByLinearRegression() {
@@ -2599,10 +2607,10 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
     //                      //otherwise my computer is very slow.
 
 	//check if graph is fully connected
-	int n1Result = n1 * (n1 - 1) / 2;
-	int n2Result = n2 * (n2 - 1) / 2;
+	int g1MaxEdges = n1 * (n1 - 1) / 2;
+	int g2MaxEdges = n2 * (n2 - 1) / 2;
 
-	if ((g1Edges == n1Result || g2Edges == n2Result) && !needLocal && !needEd){
+	if ((g1Edges == g1MaxEdges || g2Edges == g2MaxEdges) && !needLocal && !needEd) {
 		throw runtime_error("FATAL ERROR: At least one graph is fully connected. Every alignment is a perfect alignment, thus SANA cannot pick the best alignment.");
 	}
 
@@ -2615,8 +2623,9 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
 
 	cout << "HIGH TEMP = " << pow(10, log10HighTemp) << " LOW TEMP = " << pow(10, log10LowTemp) << endl;
 	cout << "NUM OF STEPS = " << pow(10, log10NumSteps) << endl;
+    cout << "Sampling " << (int) (1+log10NumSteps) << " pbads from " << pow(10, log10LowTemp);
+    cout << " to " << pow(10, log10HighTemp) <<" for linear regression" << endl;
 
-    cout << "Sampling " << 1+log10NumSteps << " pbads from " << pow(10, log10LowTemp) << " to " << pow(10, log10HighTemp) <<" for linear regression" << endl;
     int T_i;
     double log_temp;
     map<double, double> pbadMap;
@@ -2653,7 +2662,7 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
     binarySearchLeftEnd = log_temp;
     binarySearchRightEnd = log10LowTemp + (T_i+1)*(log10HighTemp-log10LowTemp)/log10NumSteps;
     mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-    cout << "Increasing sample density near tInitial. " << "range: (" << pow(10, binarySearchLeftEnd) << ", " << pow(10, binarySearchRightEnd) << ")" << endl;
+    cout << "Increasing sample density near TInitial. " << "range: (" << pow(10, binarySearchLeftEnd) << ", " << pow(10, binarySearchRightEnd) << ")" << endl;
     for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
         double probability = getPBad(temperature, 2.0);
@@ -2679,30 +2688,26 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
     {
         if(keyValue.second >= TARGET_INITIAL_PBAD && keyValue.first >= upperEnd){
             startingTemperature = pow(10, keyValue.first);
-            cout << "Initial temperature is " << startingTemperature << " expected pbad is " << keyValue.second << endl;
             break;
         }
     }
     double endingTemperature = pow(10,log10LowTemp);
     double distanceFromTarget = std::numeric_limits<double>::max();
-    double endingPbad = 0.0;
     for (auto const& keyValue : pbadMap)
     {
-    	if (distanceFromTarget > abs(TARGET_FINAL_PBAD - keyValue.second) && pow(10, keyValue.first) <= startingTemperature){
+    	if (distanceFromTarget > abs(TARGET_FINAL_PBAD - keyValue.second) and
+                pow(10, keyValue.first) <= startingTemperature) {
     		distanceFromTarget = abs(TARGET_FINAL_PBAD - keyValue.second);
     		endingTemperature = pow(10, keyValue.first);
-		endingPbad = keyValue.second;
     	}
     }
-    cout << "Final temperature is " << endingTemperature << " expected pbad is " << endingPbad << endl;
     TInitial = startingTemperature;
     TFinal = endingTemperature;
 }
 
-void SANA::setTFinalByDoublingMethod(){
+void SANA::setTFinalByDoublingMethod() {
     cout << "Searching for an acceptable final temperature" << endl;
     TFinal = doublingMethod(TARGET_FINAL_PBAD, false);
-    cout << "Resulting TFinal: " << TFinal << endl;
 }
 
 
@@ -2821,8 +2826,6 @@ void SANA::setTInitialByStatisticalTest() {
     }
     //return the top of the range
     cout << "Final range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
-    cout << "Final TInitial: " << upperBoundTInitial << endl;
-    cout << "Final P(Bad): " << getPBad(upperBoundTInitial, 5.0) << endl;
 
     TInitial = upperBoundTInitial;
 }
@@ -2886,15 +2889,14 @@ void SANA::setTFinalByCeasedProgress() {
 
     TFinal = (x_left + x_right)/2;
     cout << "Final range: (" << x_left << ", " << x_right << ")" << endl;
-    cout << "TFinal: " << TFinal << endl;
 }
 
 void SANA::setTInitialByAmeurMethod() {       TInitial = ameurMethod(TARGET_INITIAL_PBAD); }
 void SANA::setTInitialByBayesOptimization() { TInitial = bayesOptimization(TARGET_INITIAL_PBAD); }
-void SANA::setTInitialByBinarySearch() {      TInitial = temperatureBinarySearch(TARGET_INITIAL_PBAD); }
+void SANA::setTInitialByPBadBinarySearch() {  TInitial = pBadBinarySearch(TARGET_INITIAL_PBAD); }
 void SANA::setTFinalByAmeurMethod() {         TFinal   = ameurMethod(TARGET_FINAL_PBAD); }
 void SANA::setTFinalByBayesOptimization() {   TFinal   = bayesOptimization(TARGET_FINAL_PBAD); }
-void SANA::setTFinalByBinarySearch() {        TFinal   = temperatureBinarySearch(TARGET_FINAL_PBAD); }    
+void SANA::setTFinalByPBadBinarySearch() {    TFinal   = pBadBinarySearch(TARGET_FINAL_PBAD); }    
 
 double SANA::ameurMethod(double pBad) {
     // double temp = 
@@ -2906,11 +2908,26 @@ double SANA::bayesOptimization(double pBad) {
     throw runtime_error("not available yet");
 }
 
-double SANA::temperatureBinarySearch(double pBad) {
-    // double maxT = 5;
-    // double tolerance = 0.00001;
-    return 1;
+double SANA::pBadBinarySearch(double targetPBad) {
+    double getPBadTime = 2;
+    double highTemp = doublingMethod(targetPBad, true, 100, getPBadTime);
+    double lowTemp = doublingMethod(targetPBad, false, 100, getPBadTime);
+    double rangeSize = highTemp-lowTemp;
+    double tolerance = 0.01*rangeSize;
+    double midTemp = (highTemp+lowTemp)/2.0;
+    double pBad = getPBad(midTemp, getPBadTime);
+    while (rangeSize > tolerance) {
+        if (pBad < targetPBad) lowTemp = midTemp;
+        else highTemp = midTemp;
+        rangeSize = highTemp-lowTemp;
+        midTemp = (highTemp+lowTemp)/2.0;
+        pBad = getPBad(midTemp, getPBadTime);
+    }
+    return midTemp;
 }
+
+
+
 
 
 

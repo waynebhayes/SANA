@@ -66,12 +66,14 @@ public:
     void setTFinalByAmeurMethod();
     void setTInitialByBayesOptimization();
     void setTFinalByBayesOptimization();    
-    void setTInitialByBinarySearch();
-    void setTFinalByBinarySearch();
+    void setTInitialByPBadBinarySearch();
+    void setTFinalByPBadBinarySearch();
 
     //requires TInitial and TFinal to be already initialized
     void setTDecayFromTempRange();
 
+    void printScheduleStatistics();
+    
 private:
     const double TARGET_FINAL_PBAD = 1e-10; //target final pbad
     const double TARGET_INITIAL_PBAD = 0.985; //target initial pbad
@@ -87,7 +89,7 @@ private:
     double getPBad(double temp, double maxTime = 1.0);
     map<double, vector<double>> tempToPBad; //every call to getPBad adds an entry to this map
 
-    double doublingMethod(double targetPBad, bool nextAbove, double base = 10);
+    double doublingMethod(double targetPBad, bool nextAbove, double base = 10, double getPBadTime = 1);
     
     // Statistical Test    
     double scoreForTemp(double temp);
@@ -96,7 +98,7 @@ private:
     double expectedNumAccEInc(double temp, const vector<double>& energyIncSample);
 
     // Binary search based on pbads
-    double temperatureBinarySearch(double pBad);
+    double pBadBinarySearch(double pBad);
 
     // Ameur Method    
     //finds temperature corresponding to a specific pBad
@@ -120,12 +122,13 @@ private:
 
 
 
+
+
+
     int maxTriangles = 0;
 
     //store whether or not most recent move was bad
     bool wasBadMove = false;
-
- 
 
     //data structures for the networks
     uint n1;
