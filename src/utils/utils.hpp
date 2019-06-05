@@ -79,6 +79,7 @@ void deleteFile(string name);
 void writeDataToFile(const vector<vector<string> >& data, string fileName, bool useTabs = false);
 
 extern bool interrupt;
+extern bool saveAlignment;
 void sigIntHandler(int s);
 
 uint factorial(uint n);

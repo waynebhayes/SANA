@@ -4,6 +4,11 @@ CC = g++ -std=c++11
 #CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DMULTI_PAIRWISE #-pg -ggdb -Bstatic #-static
  CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread #-DMULTI_PAIRWISE #-DCORES #-DUSE_CACHED_FILES #-DSPARSE -ggdb #-pg
 
+ifeq ($(SPARSE), 1)
+CXXFLAGS := $(CXXFLAGS)-DSPARSE
+endif
+
+
 INCLUDES =
 LFLAGS =
 LIBS =
