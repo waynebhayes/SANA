@@ -5,6 +5,7 @@ function NormDotProd(u,v,    _dot,_dot1,_dot2,i){_dot=_dot1=_dot2=0;
     for(i in u){_dot+=u[i]*v[i];_dot1+=u[i]*u[i];_dot2+=v[i]*v[i]};
     return _dot/sqrt(_dot1*_dot2);
 }
+function inarray(element,array,      i){for(i=1;i<=length(array);i++)if(element==array[i])return 1; return 0}
 function IsPrime(N,   i){for(i=2;i<=sqrt(N); i++)if(N/i==int(N/i))return 0; return 1}
 function NSORT(a,ai,   i,NsortTc){delete sortTb;delete sortTc; for(i in a)sortTb[a[i]*(1+1e-7*rand())]=i;NsortTc=asorti(sortTb,sortTc);for(i=1;i<=NsortTc;i++)ai[i]=sortTb[sortTc[i]];return NsortTc}
 #Bubble Sort: assumes 1-indexed arrays!
