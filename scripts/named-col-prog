@@ -38,7 +38,7 @@ for i
 do
     argi=`expr $argi + 1`
     # Automatically create awk code to assign the appropriate variables from the header
-    (echo "if(ARGIND==$argi){"; head -1 "$i" | sed "s/$FIELD_SEP/ /g" | newlines | tr '$%' 'DP' | sed -e 's/[^_A-Za-z0-9]/_/g' | tee $TMPDIR/varNames.$argi | awk '{printf "%s=$%d\n", $1,NR}' | sed 's/^\([0-9]\)/_\1/'; echo '}') >> $TMPDIR/ASSIGN
+    (echo "if(ARGIND==$argi){"; grep -v '^#' "$i" | head -1 | sed "s/$FIELD_SEP/ /g" | newlines | tr '$%' 'DP' | sed -e 's/[^_A-Za-z0-9]/_/g' | tee $TMPDIR/varNames.$argi | awk '{printf "%s=$%d\n", $1,NR}' | sed 's/^\([0-9]\)/_\1/'; echo '}') >> $TMPDIR/ASSIGN
     (echo "if(ARGIND==$argi){"; cat $TMPDIR/varNames.$argi | awk '{printf "colName[%d]=\"%s\";varCol[\"%s\"]=%d\n",NR,$1,$1,NR}'; echo '}') >> $TMPDIR/VARCOLS
 done
 if [ "$VERBOSE" -eq 1 ]; then
@@ -48,7 +48,9 @@ fi
 
 awk -F "$FIELD_SEP" "`cat $HOME/bin/misc.awk`${FUNC}"'
     BEGINFILE{'"`cat $TMPDIR/VARCOLS`"'}
-    /^#/&&!_namedColProgStarted[ARGIND]{print "FATAL ERROR: No comments allowed in data file before the header" > "/dev/stderr"; exit(1)}
+    # I am not sure why the next line was signaled as an error; comments before header are easy to ignore.
+    #/^#/&&!_namedColProgStarted[ARGIND]{print "FATAL ERROR: No comments allowed in data file before the header" > "/dev/stderr"; exit(1)}
+    /^#/{next}
     /^[^#]/{_namedColProgStarted[ARGIND]=1}
     # never mind, do not remove comments because sometimes a hash is on the line and it is too hard to figure out
     # {gsub("#.*","")} # do not remove comments (see above)
