@@ -175,10 +175,10 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
                 //nothing to do, TFinal is already set
             } else {
                 /* this is not using linear regression as the user indicated. */
-        	    ((SANA*) sana)->setAcceptableTFinal();
+        	    ((SANA*) sana)->setTFinalByDoublingMethod();
             }
         } else if(TDecayArg == statMethod) {
-            ((SANA*) sana)->setTFinalByBisection();
+            ((SANA*) sana)->setTFinalByCeasedProgress();
         } else if (TDecayArg == ameurMethod) {
             ((SANA*) sana)->setTFinalByAmeurMethod();
         } else if (TDecayArg == bayesMethod) {

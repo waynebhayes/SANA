@@ -39,46 +39,6 @@ public:
     void enableRestartScheme(double minutesNewAlignments, uint iterationsPerStep,
         uint numCandidates, double minutesPerCandidate, double minutesFinalist);
     
-
-    //Temperature Schedule Methods
-
-    // Linear Regression
-    void setTInitialAndTFinalByLinearRegression();
-    double temperatureBracket(double l, bool b); //Helper function in finding lower / upper bound for initial temperature
-    void findingUpperLowerTemperatureBound(double& low, double& high); //Finds the initial lower / upper bound for temperature
-
-    // Statistical Test    
-    void setTInitialByStatisticalTest();
-    double scoreForTemp(double temp);
-    bool isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore);
-    void setTFinalByBisection();
-
-    // Ameur Method    
-    void setTInitialByAmeurMethod();
-    void setTFinalByAmeurMethod();
-    //finds temperature corresponding to a specific pBad
-    //using the method from the paper by Walid Ben-Ameur
-    //"Computing the Initial Temperature of Simulated Annealing"
-    double ameurMethod(double pBad);
-    
-    // Bayesian Optimization
-    void setTInitialByBayesOptimization();
-    void setTFinalByBayesOptimization();    
-    //finds temperature corresponding to a specific pBad
-    //using bayesian optimization
-    double bayesOptimization(double pBad);
-
-
-    //requires TInitial and TFinal to be already initialized
-    void setTDecayFromTempRange();
-
-    //requires that TInitial has been initialized
-    void setAcceptableTFinal();
-
-
-
-
-
     //set temperature decay dynamically
     void setDynamicTDecay();
 
@@ -91,28 +51,81 @@ public:
     Alignment hillClimbingAlignment(long long int idleCountTarget);
 
     //returns an approximation of the the logarithm in base e of the size of the search space
-    double searchSpaceSizeLog();
+    double logOfSearchSpaceSize();
+    
     string startAligName = "";
     void prune(string& startAligName);
 
 
-private:
-    int maxTriangles = 0;
 
-    //Temperature Boundaries. Use these after the tinitial has been determined
-    double lowerTBound = 0;
-    double upperTBound = 0;
+    void setTInitialAndTFinalByLinearRegression();
+    void setTFinalByDoublingMethod();
+    void setTInitialByStatisticalTest();
+    void setTFinalByCeasedProgress(); //considered part of the "statistical test" input option
+    void setTInitialByAmeurMethod();
+    void setTFinalByAmeurMethod();
+    void setTInitialByBayesOptimization();
+    void setTFinalByBayesOptimization();    
+    void setTInitialByBinarySearch();
+    void setTFinalByBinarySearch();
+
+    //requires TInitial and TFinal to be already initialized
+    void setTDecayFromTempRange();
+
+private:
+    const double TARGET_FINAL_PBAD = 1e-10; //target final pbad
+    const double TARGET_INITIAL_PBAD = 0.985; //target initial pbad
+    const double HIGH_PBAD_LIMIT = 0.99999;
+    const double LOW_PBAD_LIMIT = 1e-10;
+
+    //temperature schedule
+    double TInitial;
+    double TFinal;
+    double TDecay;
+
+
+    double getPBad(double temp, double maxTime = 1.0);
+    map<double, vector<double>> tempToPBad; //every call to getPBad adds an entry to this map
+
+    double doublingMethod(double targetPBad, bool nextAbove, double base = 10);
+    
+    // Statistical Test    
+    double scoreForTemp(double temp);
+    bool isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore);
+    vector<double> energyIncSample(double temp = 0.0);
+    double expectedNumAccEInc(double temp, const vector<double>& energyIncSample);
+
+    // Binary search based on pbads
+    double temperatureBinarySearch(double pBad);
+
+    // Ameur Method    
+    //finds temperature corresponding to a specific pBad
+    //using the method from the paper by Walid Ben-Ameur
+    //"Computing the Initial Temperature of Simulated Annealing"
+    double ameurMethod(double pBad);
+
+    // Bayesian Optimization
+    //finds temperature corresponding to a specific pBad
+    //using bayesian optimization
+    double bayesOptimization(double pBad);
+
+    //circular pBad buffer
+    const int PBAD_CIRCULAR_BUFFER_SIZE = 10000;
+    vector<double> pBadBuffer;
+    int numPBadsInBuffer;
+    int pBadBufferIndex;
+    double pBadBufferSum;
+    double trueAcceptingProbability();
+    double slowTrueAcceptingProbability();
+
+
+
+    int maxTriangles = 0;
 
     //store whether or not most recent move was bad
     bool wasBadMove = false;
 
-    //circular PBad buffer
-    const int PBAD_CIRCULAR_BUFFER_SIZE = 10000;
-    vector<double> PBadBuffer;
-    int numPBadsInBuffer = 0;
-    int PBadBufferIndex = 0;
-    double PBadBufferSum = 0;
-
+ 
 
     //data structures for the networks
     uint n1;
@@ -154,10 +167,6 @@ private:
     uint G2RandomUnlockedNode(uint target1);
     uint G2RandomUnlockedNode_Fast();
 
-    //temperature schedule
-    double TInitial;
-    double TFinal;
-    double TDecay;
     double minutes = 0;
     bool usingIterations;
     uint maxIterations = 0;
@@ -174,8 +183,6 @@ private:
     double Temperature;
     double temperatureFunction(long long int iter, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double Temperature);
-    double trueAcceptingProbability();
-
     double scoreRandom();
 
     double TrimCoreScores(Matrix<ulong>& Freq, vector<ulong>& numPegSamples);
@@ -185,9 +192,6 @@ private:
     double iterPerSecond;
     double getIterPerSecond();
     void initIterPerSecond();
-
-    vector<double> energyIncSample(double temp = 0.0);
-    double expectedNumAccEInc(double temp, const vector<double>& energyIncSample);
 
     //data structures for the solution space search
     double changeProbability[2];
@@ -370,8 +374,6 @@ private:
     // Used to support locking
     Alignment getStartingAlignment();
     bool implementsLocking(){ return true; }
-
-    double getPBad(double temp, double maxTime = 1.0);
 
     string getFolder();
     string haveFolder();

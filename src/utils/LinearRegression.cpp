@@ -20,13 +20,11 @@ tuple<int, double, double, int, double, double, double, double> LinearRegression
     SIZE = chart.size();
     vector<double> scores;
     vector<double> temperatures;
-    int indexx = 0;
 
     for (std::map<double, double>::iterator i = chart.begin(); i != chart.end(); i++)
     {
         temperatures.push_back(i->first);
         scores.push_back(i->second);
-        indexx ++;
     }
 
     double line1Sum;
