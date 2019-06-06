@@ -2891,15 +2891,15 @@ void SANA::setTFinalByCeasedProgress() {
     cout << "Final range: (" << x_left << ", " << x_right << ")" << endl;
 }
 
-void SANA::setTInitialByAmeurMethod() {       TInitial = ameurMethod(TARGET_INITIAL_PBAD); }
+void SANA::setTInitialByAmeurMethod() {       TInitial = ameurMethod(TARGET_INITIAL_PBAD, 0.001); }
 void SANA::setTInitialByBayesOptimization() { TInitial = bayesOptimization(TARGET_INITIAL_PBAD); }
 void SANA::setTInitialByPBadBinarySearch() {  TInitial = pBadBinarySearch(TARGET_INITIAL_PBAD); }
-void SANA::setTFinalByAmeurMethod() {         TFinal   = ameurMethod(TARGET_FINAL_PBAD); }
+void SANA::setTFinalByAmeurMethod() {         TFinal   = ameurMethod(TARGET_FINAL_PBAD, 0.1); }
 void SANA::setTFinalByBayesOptimization() {   TFinal   = bayesOptimization(TARGET_FINAL_PBAD); }
 void SANA::setTFinalByPBadBinarySearch() {    TFinal   = pBadBinarySearch(TARGET_FINAL_PBAD); }    
 
-double SANA::ameurMethod(double targetPBad) {
-    return iteratedAmeurMethod(targetPBad, 1);
+double SANA::ameurMethod(double targetPBad, double errorTolerance) {
+    return iteratedAmeurMethod(targetPBad, 1, errorTolerance);
 }
 
 //the method from the ameur paper computes a temperature that "fits" a target pbad for a given sample of EIncs
@@ -2907,23 +2907,27 @@ double SANA::ameurMethod(double targetPBad) {
 //generate a new sample of EIncs by running at that temperature, 
 //and use the ameur method again to find a temperature that "fits" the target pbad with the new EIncs
 //this converges to the temperature that gives rise to that pbad at equilibrium
-double SANA::iteratedAmeurMethod(double targetPBad, double startTempGuess) {
+double SANA::iteratedAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess) {
     int maxIters = 30;
-    double errorTolerance = 0.00001;
     double tempGuess = startTempGuess;
     bool converged = false;
     int iteration = 0;
 
     //with bigger step sizes, there may be a "bounce back and forth" effect
-    double stepSize = 1; //keep <= 1
+    double stepSize = 0.9; //keep <= 1
     cout << "Using iterated Ameur method" << endl;
 
-    while ((not converged) and (iteration < maxIters)) {
+    while (not converged and iteration < maxIters) {
         cout << "Iteration " << iteration << ":" << endl;
         vector<double> EIncs = getEIncSample(tempGuess, 10000);
-        double nextGuess = tempGuess + stepSize*(ameurMethod(targetPBad, EIncs, tempGuess) - tempGuess);
-        converged = abs(nextGuess - tempGuess) < errorTolerance;
-        tempGuess = nextGuess;
+        double tempGuessPBad = tempToPBad[tempGuess][tempToPBad[tempGuess].size()-1];
+
+        converged = tempGuessPBad > targetPBad*(1-errorTolerance) and tempGuessPBad < targetPBad*(1+errorTolerance);
+        if (converged) break;
+
+        double nextTempGuess = tempGuess + stepSize*(individualAmeurMethod(targetPBad, tempGuess, errorTolerance, EIncs) - tempGuess);
+
+        tempGuess = nextTempGuess;
         iteration++;
     }
     if (converged) {
@@ -2935,9 +2939,8 @@ double SANA::iteratedAmeurMethod(double targetPBad, double startTempGuess) {
     return tempGuess;
 }
 
-double SANA::ameurMethod(double targetPBad, vector<double> EIncs, double startTempGuess) {
+double SANA::individualAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess, vector<double> EIncs) {
     int maxIters = 100;
-    double errorTolerance = 0.00001;
     double tempGuess = startTempGuess;
     bool converged = false;
     int iteration = 0;
@@ -2945,22 +2948,26 @@ double SANA::ameurMethod(double targetPBad, vector<double> EIncs, double startTe
     double paramP = 1.0; //parameter 'p' in the paper, must be >= 1. higher value is slower but is more likely to converge
     int n = EIncs.size();
 
-    while ((not converged) and (iteration < maxIters)) {
+    while (not converged and iteration < maxIters) {
         vector<double> pBads(n);
         for (int i = 0; i < n; i++) {
-            pBads[i] = exp(-EIncs[i]/tempGuess);
+            pBads[i] = max(0.0, min(1.0, exp(-EIncs[i]/tempGuess)));
         }
-        double mean = vectorMean(pBads);
-        cerr<<"iteration " << iteration << ": mean pbad:" << mean << endl;
-        double nextGuess = tempGuess * pow((log(mean)/log(targetPBad)), 1.0/paramP);
-        converged = abs(nextGuess - tempGuess) < errorTolerance;
+        double pBadMean = vectorMean(pBads);
+        // cout<<"  iteration " << iteration << ": temp: " << tempGuess << " pbad:" << pBadMean << endl;
+
+        converged = pBadMean > targetPBad*(1-errorTolerance) and pBadMean < targetPBad*(1+errorTolerance);
+        if (converged) break;
+
+        double nextGuess = tempGuess * pow((log(pBadMean)/log(targetPBad)), 1.0/paramP);
+
         tempGuess = nextGuess;
         iteration++;
     }
     if (converged) {
         cout << "temp converged to " << tempGuess << " in " << iteration << " iterations" << endl;
     } else {
-        cout << "temp reached " << tempGuess << "but did NOT converge after " << iteration << " iterations" << endl;
+        cout << "temp reached " << tempGuess << " but did NOT converge after " << iteration << " iterations" << endl;
     }
     return tempGuess;
 }

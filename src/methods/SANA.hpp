@@ -58,12 +58,6 @@ public:
 
     //set the file names passed in args in case we want to store the alignment on the fly
     void setOutputFilenames(string outputFileName, string localMeasuresFileName);
-    double getTInitial(void), getTFinal(void), getTDecay(void);
-    double searchTDecay(double TInitial, uint iterations);
-    double searchTDecay(double TInitial, double minutes);
-    //0 after a certain number of minutes
-    //returns a value of lambda such that with this TInitial, temperature reaches
-    //to compute TDecay automatically
 
 
     void setTInitialAndTFinalByLinearRegression();
@@ -112,6 +106,11 @@ private:
     //finds temperature corresponding to a specific pBad
     //using the method from the paper by Walid Ben-Ameur
     //"Computing the Initial Temperature of Simulated Annealing"
+    double ameurMethod(double targetPBad, double errorTolerance);
+    double iteratedAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess);
+    double individualAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess, vector<double> EIncs);
+
+
     double ameurMethod(double pBad);
     double ameurMethod(double targetPBad, vector<double> EIncs, double startTempGuess);
     double iteratedAmeurMethod(double targetPBad, double startTempGuess);
