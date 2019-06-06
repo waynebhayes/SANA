@@ -73,7 +73,7 @@ public:
     void setTDecayFromTempRange();
 
     void printScheduleStatistics();
-    
+
 private:
     const double TARGET_FINAL_PBAD = 1e-10; //target final pbad
     const double TARGET_INITIAL_PBAD = 0.985; //target initial pbad
@@ -85,17 +85,17 @@ private:
     double TFinal;
     double TDecay;
 
-
     double getPBad(double temp, double maxTime = 1.0);
     map<double, vector<double>> tempToPBad; //every call to getPBad adds an entry to this map
+
+    double scoreForTemp(double temp);
+    vector<double> getEIncSample(double temp, int sampleSize);
 
     double doublingMethod(double targetPBad, bool nextAbove, double base = 10, double getPBadTime = 1);
     
     // Statistical Test    
-    double scoreForTemp(double temp);
     bool isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore);
-    vector<double> energyIncSample(double temp = 0.0);
-    double expectedNumAccEInc(double temp, const vector<double>& energyIncSample);
+    double expectedNumAccEInc(double temp, const vector<double>& EIncSample);
 
     // Binary search based on pbads
     double pBadBinarySearch(double pBad);
@@ -105,6 +105,8 @@ private:
     //using the method from the paper by Walid Ben-Ameur
     //"Computing the Initial Temperature of Simulated Annealing"
     double ameurMethod(double pBad);
+    double ameurMethod(double targetPBad, vector<double> EIncs, double startTempGuess);
+    double iteratedAmeurMethod(double targetPBad, double startTempGuess);
 
     // Bayesian Optimization
     //finds temperature corresponding to a specific pBad
@@ -186,7 +188,6 @@ private:
     double Temperature;
     double temperatureFunction(long long int iter, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double Temperature);
-    double scoreRandom();
 
     double TrimCoreScores(Matrix<ulong>& Freq, vector<ulong>& numPegSamples);
     double TrimCoreScores(Matrix<double>& Freq, vector<double>& totalPegWeight);

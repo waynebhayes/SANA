@@ -626,7 +626,7 @@ double SANA::trueAcceptingProbability(){
     return pBadBufferSum/(double) numPBadsInBuffer;
 }
 
-//the other method can give negative probabilities sometimes if the pbads in the buffer are small enough
+//the other method can give incorrect probabilities (even negative) if the pbads in the buffer are small enough
 //due to accumulated precision errors of adding and subtracting tiny values
 double SANA::slowTrueAcceptingProbability() {
     double sum = 0;
@@ -1458,11 +1458,9 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
+        //using max and min here because with extremely low temps I was seeing weird results
         badProbability = max(0.0, min(1.0, exp(energyInc / Temperature)));
         makeChange = (energyInc >= 0 or randomReal(gen) <= badProbability);
-        if (badProbability < 0 or badProbability > 1) {
-            cout << ">> eInc " << energyInc << " pBad " << badProbability << " temp " << Temperature << endl; 
-        }
         break;
     }
     case Score::product:
@@ -2592,14 +2590,6 @@ double SANA::doublingMethod(double targetPBad, bool nextAbove, double base, doub
     }
 }
 
-void SANA::printScheduleStatistics() {
-    cout << "TInitial found for target pBad " << TARGET_INITIAL_PBAD << ": " << endl;
-    getPBad(TInitial, 2);
-    cout << "TFinal found for target pBad " << TARGET_FINAL_PBAD << ": " << endl;
-    getPBad(TFinal, 2);
-    cout << endl;
-}
-
 void SANA::setTInitialAndTFinalByLinearRegression() {
 
     //if(score == "pareto") //Running in pareto mode makes this function really slow
@@ -2710,11 +2700,6 @@ void SANA::setTFinalByDoublingMethod() {
     TFinal = doublingMethod(TARGET_FINAL_PBAD, false);
 }
 
-
-double SANA::scoreRandom() {
-    return eval(Alignment::randomAlignmentWithLocking(G1,G2));
-}
-
 bool SANA::isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore) {
     const double NUM_SAMPLES = 5;
 
@@ -2731,42 +2716,14 @@ bool SANA::isRandomTemp(double temp, double highThresholdScore, double lowThresh
     return false;
 }
 
-//takes a random alignment, lets it run for a certain number
-//of iterations (ITERATIONS) with fixed temperature temp
-//and returns its score
+//takes a random alignment, lets it run for 1s with fixed temperature temp and returns its score
 double SANA::scoreForTemp(double temp) {
-    double ITERATIONS = getIterPerSecond();
-
-    //stash current SANA state
-    double oldIterationsPerStep = iterationsPerStep;
-    double oldTInitial = TInitial;
-    bool oldRestart = restart;
-
-    //set state for fixed temp run
-    //nil says: very strange double to uint conversion
-    iterationsPerStep = ITERATIONS;
-    TInitial = temp;
-    restart = false;
-
-    constantTemp = true;
-    enableTrackProgress = false;
-
-    long long int iter = 0;
-    simpleRun(getStartingAlignment(), 1.0, iter);
-
-    constantTemp = false;
-    enableTrackProgress = true;
-
-    //undo stash state
-    iterationsPerStep = oldIterationsPerStep;
-    TInitial = oldTInitial;
-    restart = oldRestart;
-
+    getPBad(temp, 1);
     return currentScore;
 }
 
 void SANA::setTInitialByStatisticalTest() {
-    const double NUM_SAMPLES_RANDOM = 100;
+    const double NUM_RANDOM_SAMPLES = 100;
     const double HIGH_THRESHOLD_P = 0.999999;
     const double LOW_THRESHOLD_P = 0.99;
 
@@ -2775,9 +2732,9 @@ void SANA::setTInitialByStatisticalTest() {
     Timer TImer;
     TImer.start();
     cout << "Computing distribution of scores of random alignments ";
-    vector<double> upperBoundKScores(NUM_SAMPLES_RANDOM);
-    for (uint i = 0; i < NUM_SAMPLES_RANDOM; ++i) {
-        upperBoundKScores[i] = scoreRandom();
+    vector<double> upperBoundKScores(NUM_RANDOM_SAMPLES);
+    for (uint i = 0; i < NUM_RANDOM_SAMPLES; ++i) {
+        upperBoundKScores[i] = eval(Alignment::randomAlignmentWithLocking(G1,G2));
     }
     cout << "(" <<  TImer.elapsedString() << ")" << endl;
     NormalDistribution dist(upperBoundKScores);
@@ -2830,42 +2787,45 @@ void SANA::setTInitialByStatisticalTest() {
     TInitial = upperBoundTInitial;
 }
 
-double SANA::expectedNumAccEInc(double temp, const vector<double>& energyIncSample) {
+double SANA::expectedNumAccEInc(double temp, const vector<double>& EIncSample) {
     double res = 0;
-    for (uint i = 0; i < energyIncSample.size(); ++i) {
-        res += exp(energyIncSample[i]/temp);
+    for (uint i = 0; i < EIncSample.size(); ++i) {
+        res += exp(EIncSample[i]/temp);
     }
     return res;
 }
 
-//returns a sample of energy increments, with size equal to the number of iterations per second
-//after hill climbing
-vector<double> SANA::energyIncSample(double temp) {
+vector<double> SANA::getEIncSample(double temp, int sampleSize) {
+    getPBad(temp, 2);
+    if (sampleSize > numPBadsInBuffer) {
+        cerr << "sample size too large, returning a sample of size " << numPBadsInBuffer << " instead" << endl;
+        sampleSize = numPBadsInBuffer;
+    }
+    vector<double> EIncs(sampleSize);
+    for (int i = 0; i < sampleSize; i++) {
+        EIncs[i] = pBadBuffer[i];
+    }
+    return EIncs;
+}
 
-    getIterPerSecond(); //this runs HC, so it updates the values
-    //of A and currentScore (besides iterPerSecond)
+//old TDecay method
+//find the temperature TFinal such that the expected number of accepted transitions
+//near a local minimum is 1 per second
+//by bisection, since the expected number is monotically increasing in TFinal
+void SANA::setTFinalByCeasedProgress() {
 
-    double iter = iterPerSecond;
-    //cout << "Hill climbing score: " << currentScore << endl;
-    //generate a sample of energy increments, with size equal to the number of iterations per second
+    //get a sample of negative EIncs seen during a second of runtime near local minima
     vector<double> EIncs(0);
-    Temperature = temp;
-    for (uint i = 0; i < iter; ++i) {
+    
+    //this runs hill climbing, moving the current alignment close to local minima
+    initIterPerSecond();
+    
+    for (uint i = 0; i < iterPerSecond; ++i) {
         SANAIteration();
         if (energyInc < 0) {
             EIncs.push_back(energyInc);
         }
     }
-    //avgEnergyInc = vectorMean(EIncs);
-    return EIncs;
-}
-
-//find the temperature TFinal such that the expected number of accepted transitions
-//near a local minimum is 1 per second
-//by bisection, since the expected number is monotically increasing in TFinal
-void SANA::setTFinalByCeasedProgress() {
-    //old TDecay method
-    vector<double> EIncs = energyIncSample();
     cout << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
 
@@ -2898,13 +2858,75 @@ void SANA::setTFinalByAmeurMethod() {         TFinal   = ameurMethod(TARGET_FINA
 void SANA::setTFinalByBayesOptimization() {   TFinal   = bayesOptimization(TARGET_FINAL_PBAD); }
 void SANA::setTFinalByPBadBinarySearch() {    TFinal   = pBadBinarySearch(TARGET_FINAL_PBAD); }    
 
-double SANA::ameurMethod(double pBad) {
+double SANA::ameurMethod(double targetPBad) {
     // double temp = 
     // vector<double> samples = energyIncSample(temp);
     throw runtime_error("not available yet");
 }
 
-double SANA::bayesOptimization(double pBad) {
+//the method from the ameur paper computes a temperature that "fits" a target pbad for a given sample of EIncs
+//james' idea is to iterate this process until convergence: using the resulting temperature,
+//generate a new sample of EIncs by running at that temperature, 
+//and use the ameur method again to find a temperature that "fits" the target pbad with the new EIncs
+//this converges to the temperature that gives rise to that pbad at equilibrium
+double SANA::iteratedAmeurMethod(double targetPBad, double startTempGuess) {
+    int maxIters = 20;
+    double errorTolerance = 0.00001;
+    double tempGuess = startTempGuess;
+    bool converged = false;
+    int iteration = 0;
+
+    //with bigger step sizes, we observed a "bounce back and forth" effect
+    double stepSize = 0.01;
+    cout << "Using iterated Ameur method" << endl;
+
+    while ((not converged) and (iteration < maxIters)) {
+        vector<double> EIncs = getEIncSample(tempGuess, 10000);
+        double nextGuess = tempGuess + stepSize*(ameurMethod(targetPBad, EIncs, tempGuess) - tempGuess);
+        cout << "next temperature guess: " << nextGuess;
+        converged = abs(nextGuess - tempGuess) < errorTolerance;
+        tempGuess = nextGuess;
+        iteration++;
+    }
+    if (converged) {
+        cout << "Iterated Ameur method converged after " << iteration << " iterations" << endl;
+    } else {
+        cout << "Iterated Ameur method did NOT converge after " << iteration << " iterations" << endl;
+    }
+
+    return tempGuess;
+}
+
+double SANA::ameurMethod(double targetPBad, vector<double> EIncs, double startTempGuess) {
+    int maxIters = 100;
+    double errorTolerance = 0.00001;
+    double tempGuess = startTempGuess;
+    bool converged = false;
+    int iteration = 0;
+
+    double paramP = 1.0; //parameter 'p' in the paper, must be >= 1
+    int n = EIncs.size();
+
+    while ((not converged) and (iteration < maxIters)) {
+        vector<double> pBads(n);
+        for (int i = 0; i < n; i++) {
+            pBads[i] = exp(EIncs[i]/tempGuess);
+        }
+        double mean = vectorMean(pBads);
+        double nextGuess = tempGuess * pow((log(mean)/log(targetPBad)), 1.0/paramP);
+        converged = abs(nextGuess - tempGuess) < errorTolerance;
+        tempGuess = nextGuess;
+        iteration++;
+    }
+    if (converged) {
+        cout << "Ameur method converged after " << iteration << " iterations" << endl;
+    } else {
+        cout << "Ameur method did NOT converge after " << iteration << " iterations" << endl;
+    }
+    return tempGuess;
+}
+
+double SANA::bayesOptimization(double targetPBad) {
     throw runtime_error("not available yet");
 }
 
@@ -2924,6 +2946,15 @@ double SANA::pBadBinarySearch(double targetPBad) {
         pBad = getPBad(midTemp, getPBadTime);
     }
     return midTemp;
+}
+
+void SANA::printScheduleStatistics() {
+    cout << "TInitial found for target pBad " << TARGET_INITIAL_PBAD << ": " << endl;
+    getPBad(TInitial, 2);
+    cout << "TFinal found for target pBad " << TARGET_FINAL_PBAD << ": " << endl;
+    getPBad(TFinal, 2);
+    cout << "TDecay needed to traverse this range: " << TDecay << endl;
+    cout << endl;
 }
 
 
@@ -3014,7 +3045,6 @@ void SANA::hillClimbingIterations(long long int iterTarget) {
 
 void SANA::setTDecayFromTempRange() {
     TDecay = -log(TFinal/TInitial);
-    cout << "TDecay: " << TDecay << endl;
 }
 
 
@@ -3026,7 +3056,11 @@ double SANA::getIterPerSecond() {
 }
 
 void SANA::initIterPerSecond() {
-    Timer TImer;
+    initializedIterPerSecond = true;
+
+    //"TImer": is this a typo? or a hack to not overwrite the timer that is a data member in the SANA class?
+    //appears in other functions too...
+    Timer TImer; 
     TImer.start();
     cout << "Determining iteration speed...." << endl;
 
@@ -3036,12 +3070,11 @@ void SANA::initIterPerSecond() {
     /*if (iter == 500000) {
         throw runtime_error("hill climbing stagnated after 0 iterations");
     }*/
-    double res = iter/timer.elapsed();
+    double res = iter/TImer.elapsed();
     cout << "SANA does " << to_string(res)
          << " iterations per second (took " << TImer.elapsedString()
          << " doing " << iter << " iterations)" << endl;
 
-    initializedIterPerSecond = true;
     iterPerSecond = res;
     std::ostringstream ss;
     ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
