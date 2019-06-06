@@ -1220,7 +1220,8 @@ void SANA::performChange(int type) {
             newTarget = (*unassignedmiRNAsG2)[newTargetIndex];
         }
     }
-    unsigned oldOldTargetDeg, oldNewTargetDeg, oldMs3Denom;
+    //added dummy initialization to shut compiler warning -Nil
+    unsigned oldOldTargetDeg = 0, oldNewTargetDeg = 0, oldMs3Denom = 0;
     if (needMS3)
     {
         oldOldTargetDeg = MultiS3::totalDegrees[oldTarget];
@@ -1333,7 +1334,8 @@ void SANA::performSwap(int type) {
     uint source2 = G1RandomUnlockedNode(source1);
     uint target1 = (*A)[source1], target2 = (*A)[source2];
     
-    unsigned oldTarget1Deg, oldTarget2Deg, oldMs3Denom;
+    //added initialization to shut compiler warning -Nil
+    unsigned oldTarget1Deg = 0, oldTarget2Deg = 0, oldMs3Denom = 0;
     if (needMS3)
     {
         oldTarget1Deg = MultiS3::totalDegrees[target1];
@@ -2450,7 +2452,7 @@ double SANA::getPBad(double temp, double maxTime) {
 
     bool reachedEquilibrium = false;
 
-    initDataStructures(getStartingAlignment()); //this initializes the timer
+    initDataStructures(getStartingAlignment()); //this initializes the timer and resets the pbad buffer
 
     bool verbose = false; //print everything going on, for debugging purposes
     uint verbose_i = 0;
@@ -2549,13 +2551,17 @@ double SANA::doublingMethod(double targetPBad, bool nextAbove, double base, doub
     //if the map is empty, just start with 1
     double startTemp = 1;
     double smallestPBadDiff = 2;
-    for (auto tempPBad = tempToPBad.begin(); tempPBad != tempToPBad.end(); tempPBad++) {
-        double temp = tempPBad->first;
-        double pBad = tempPBad->second[0]; //there may be several pbads for that temp; we just look at one (the first one)
+    double startPBad;
+    bool initStartPBad = false;
+    for (auto tempPBadPair = tempToPBad.begin(); tempPBadPair != tempToPBad.end(); tempPBadPair++) {
+        double temp = tempPBadPair->first;
+        double pBad = tempPBadPair->second[0]; //there may be several pbads for that temp; we just look at one (the first one)
         double pBadDiff = abs(pBad-targetPBad);
         if (pBadDiff < smallestPBadDiff) {
             startTemp = temp;
             smallestPBadDiff = pBadDiff;
+            startPBad = pBad;
+            initStartPBad = true;
         }
     }
 
@@ -2570,7 +2576,10 @@ double SANA::doublingMethod(double targetPBad, bool nextAbove, double base, doub
 
     double temp = startTemp;
     double priorTemp = temp;
-    double pBad = getPBad(temp, getPBadTime);
+    double pBad;
+    if (initStartPBad) pBad = startPBad;
+    else pBad = getPBad(temp, getPBadTime);
+
     if (pBad < targetPBad) {
         while (pBad < targetPBad) {
             priorTemp = temp;
@@ -2803,7 +2812,7 @@ vector<double> SANA::getEIncSample(double temp, int sampleSize) {
     }
     vector<double> EIncs(sampleSize);
     for (int i = 0; i < sampleSize; i++) {
-        EIncs[i] = pBadBuffer[i];
+        EIncs[i] = -temp * log(pBadBuffer[i]);
     }
     return EIncs;
 }
@@ -2859,9 +2868,7 @@ void SANA::setTFinalByBayesOptimization() {   TFinal   = bayesOptimization(TARGE
 void SANA::setTFinalByPBadBinarySearch() {    TFinal   = pBadBinarySearch(TARGET_FINAL_PBAD); }    
 
 double SANA::ameurMethod(double targetPBad) {
-    // double temp = 
-    // vector<double> samples = energyIncSample(temp);
-    throw runtime_error("not available yet");
+    return iteratedAmeurMethod(targetPBad, 1);
 }
 
 //the method from the ameur paper computes a temperature that "fits" a target pbad for a given sample of EIncs
@@ -2870,20 +2877,20 @@ double SANA::ameurMethod(double targetPBad) {
 //and use the ameur method again to find a temperature that "fits" the target pbad with the new EIncs
 //this converges to the temperature that gives rise to that pbad at equilibrium
 double SANA::iteratedAmeurMethod(double targetPBad, double startTempGuess) {
-    int maxIters = 20;
+    int maxIters = 30;
     double errorTolerance = 0.00001;
     double tempGuess = startTempGuess;
     bool converged = false;
     int iteration = 0;
 
-    //with bigger step sizes, we observed a "bounce back and forth" effect
-    double stepSize = 0.01;
+    //with bigger step sizes, there may be a "bounce back and forth" effect
+    double stepSize = 1; //keep <= 1
     cout << "Using iterated Ameur method" << endl;
 
     while ((not converged) and (iteration < maxIters)) {
+        cout << "Iteration " << iteration << ":" << endl;
         vector<double> EIncs = getEIncSample(tempGuess, 10000);
         double nextGuess = tempGuess + stepSize*(ameurMethod(targetPBad, EIncs, tempGuess) - tempGuess);
-        cout << "next temperature guess: " << nextGuess;
         converged = abs(nextGuess - tempGuess) < errorTolerance;
         tempGuess = nextGuess;
         iteration++;
@@ -2904,24 +2911,25 @@ double SANA::ameurMethod(double targetPBad, vector<double> EIncs, double startTe
     bool converged = false;
     int iteration = 0;
 
-    double paramP = 1.0; //parameter 'p' in the paper, must be >= 1
+    double paramP = 1.0; //parameter 'p' in the paper, must be >= 1. higher value is slower but is more likely to converge
     int n = EIncs.size();
 
     while ((not converged) and (iteration < maxIters)) {
         vector<double> pBads(n);
         for (int i = 0; i < n; i++) {
-            pBads[i] = exp(EIncs[i]/tempGuess);
+            pBads[i] = exp(-EIncs[i]/tempGuess);
         }
         double mean = vectorMean(pBads);
+        cerr<<"iteration " << iteration << ": mean pbad:" << mean << endl;
         double nextGuess = tempGuess * pow((log(mean)/log(targetPBad)), 1.0/paramP);
         converged = abs(nextGuess - tempGuess) < errorTolerance;
         tempGuess = nextGuess;
         iteration++;
     }
     if (converged) {
-        cout << "Ameur method converged after " << iteration << " iterations" << endl;
+        cout << "temp converged to " << tempGuess << " in " << iteration << " iterations" << endl;
     } else {
-        cout << "Ameur method did NOT converge after " << iteration << " iterations" << endl;
+        cout << "temp reached " << tempGuess << "but did NOT converge after " << iteration << " iterations" << endl;
     }
     return tempGuess;
 }
@@ -2931,18 +2939,26 @@ double SANA::bayesOptimization(double targetPBad) {
 }
 
 double SANA::pBadBinarySearch(double targetPBad) {
+    bool logScale = true;
     double getPBadTime = 2;
     double highTemp = doublingMethod(targetPBad, true, 100, getPBadTime);
     double lowTemp = doublingMethod(targetPBad, false, 100, getPBadTime);
     double rangeSize = highTemp-lowTemp;
     double tolerance = 0.01*rangeSize;
-    double midTemp = (highTemp+lowTemp)/2.0;
+    double midTemp;
+
+    if (not logScale) midTemp = (highTemp+lowTemp)/2.0;
+    else midTemp = exp((log(highTemp)+log(lowTemp))/2.0);
+
     double pBad = getPBad(midTemp, getPBadTime);
     while (rangeSize > tolerance) {
         if (pBad < targetPBad) lowTemp = midTemp;
         else highTemp = midTemp;
         rangeSize = highTemp-lowTemp;
-        midTemp = (highTemp+lowTemp)/2.0;
+
+        if (not logScale) midTemp = (highTemp+lowTemp)/2.0;
+        else midTemp = exp((log(highTemp)+log(lowTemp))/2.0);
+
         pBad = getPBad(midTemp, getPBadTime);
     }
     return midTemp;
