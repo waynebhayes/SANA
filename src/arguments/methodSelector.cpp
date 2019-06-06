@@ -144,6 +144,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 #else
     sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"], args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"]);
 #endif
+    ((SANA*) sana)->setOutputFilenames(args.strings["-o"], args.strings["-localScoresFile"]);
 
     if (useMethodForTIni) {
         Timer T;

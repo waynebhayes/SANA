@@ -346,14 +346,34 @@ void writeDataToFile(const vector<vector<string> >& data, string fileName, bool 
     }
     outfile.close();
 }
-
+//exit, save alignment and exit, save alignment and continue
 bool interrupt;
+bool saveAlignment;
 void sigIntHandler(int s) {
-    interrupt = true;
-    cerr << "Save alignment? (y/n)" << endl << ">> ";
-    char c;
-    cin >> c;
-    if (c != 'y' and c != 'Y') exit(0);
+    string line;
+    int c = -1;
+    do {
+        cerr << "Select an option (0 - 3):\n  (0) Do nothing and continue\n  (1) Exit\n  (2) Save Alignment and Exit\n  (3) Save Alignment and Continue\n>> ";
+        cin >> c;
+        
+        if(cin.eof()) {
+            exit(0);
+        }
+        else if(cin.fail()) {
+            c = -1;
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+        
+        if(c == 0)
+            cerr << "Continuing..." << endl;
+        else if(c == 1)
+            exit(0);
+        else if(c == 2)
+            interrupt = true;
+        else if(c == 3)
+            saveAlignment = true;
+    } while(c < 0 || c > 3);    
 }
 
 uint factorial(uint n) {

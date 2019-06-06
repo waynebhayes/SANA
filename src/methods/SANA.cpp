@@ -38,6 +38,7 @@
 #include "../utils/NormalDistribution.hpp"
 #include "../utils/LinearRegression.hpp"
 #include "../utils/utils.hpp"
+#include "../report.hpp"
 
 
 using namespace std;
@@ -752,6 +753,21 @@ void SANA::setInterruptSignal() {
     sigInt.sa_flags = 0;
     sigaction(SIGINT, &sigInt, NULL);
 }
+void SANA::printReport() {
+    saveAlignment = false;
+    string timestamp = string(currentDateTime()); //necessary to make it not const
+    std::replace(timestamp.begin(), timestamp.end(), ' ', '_');
+    string out = outputFileName+"_"+timestamp;
+    string local = localScoresFileName+"_"+timestamp;
+    saveReport(*G1, *G2, Alignment(*A), *MC, this, out, false);
+    saveLocalMeasures(*G1, *G2, Alignment(*A), *MC, this, local);
+    cout << "Alignment saved. SANA will now continue." << endl;
+}
+void SANA::setOutputFilenames(string outputFileName, string localScoresFileName)
+{
+    this->outputFileName = outputFileName;
+    this->localScoresFileName =  localScoresFileName;
+}
 
 Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds, long long int& iter) {
     initDataStructures(startA);
@@ -761,6 +777,9 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds, l
         Temperature = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
             break;
+        }
+        if (saveAlignment) {
+            printReport();
         }
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
@@ -784,6 +803,9 @@ Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds, l
 		if (interrupt) {
 			break; // return *A;
 		}
+        if (saveAlignment) {
+            printReport();
+        }
 		if (iter%iterationsPerStep == 0) {
 			trackProgress(iter);
 			if( iter != 0 and timer.elapsed() > maxExecutionSeconds and currentScore - previousScore < 0.005 ){
@@ -811,6 +833,9 @@ Alignment SANA::simpleRun(const Alignment& startA, long long int maxExecutionIte
                 Temperature = temperatureFunction(iter, TInitial, TDecay);
                 if (interrupt) {
                         break; // return *A;
+                }
+                if (saveAlignment) {
+                    printReport();
                 }
                 if (iter%iterationsPerStep == 0) {
                         trackProgress(iter);
@@ -842,6 +867,9 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, dou
 	if (interrupt) {
 	    return storedAlignments;
 	}
+    if (saveAlignment) {
+        printReport();
+    }
 	if (iter%iterationsPerStep == 0) {
 	    trackProgress(iter);
 	    if( iter != 0 and timer.elapsed() > maxExecutionSeconds){
@@ -876,6 +904,9 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, lon
     	Temperature = temperatureFunction(iter, TInitial, TDecay);
         if (interrupt) {
             return storedAlignments;
+        }
+        if (saveAlignment) {
+            printReport();
         }
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);

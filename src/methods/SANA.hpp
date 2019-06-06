@@ -56,6 +56,14 @@ public:
     string startAligName = "";
     void prune(string& startAligName);
 
+    //set the file names passed in args in case we want to store the alignment on the fly
+    void setOutputFilenames(string outputFileName, string localMeasuresFileName);
+    double getTInitial(void), getTFinal(void), getTDecay(void);
+    double searchTDecay(double TInitial, uint iterations);
+    double searchTDecay(double TInitial, double minutes);
+    //0 after a certain number of minutes
+    //returns a value of lambda such that with this TInitial, temperature reaches
+    //to compute TDecay automatically
 
 
     void setTInitialAndTFinalByLinearRegression();
@@ -374,6 +382,9 @@ private:
     //others
     Timer timer;
     void setInterruptSignal(); //allows the execution to be paused with Control+C
+    void printReport(); //print out reports from inside SANA
+    string outputFileName = "sana";
+    string localScoresFileName = "sana";
 
     // Used to support locking
     Alignment getStartingAlignment();
@@ -432,7 +443,7 @@ private:
     unordered_map<string, calc> measureCalculation;
     unordered_set<string> localScoreNames = { "edgec", "edged", "esim", "go", "graphlet",
                                               "graphletcosine", "graphletlgraal", "importance",
-                                              "nodec", "noded", "sequence" };
+                                              "nodec", "noded", "sequence", "graphletnorm" };
 
 
     // Code related with parallel pareto run, these code will be later refactored along with the
