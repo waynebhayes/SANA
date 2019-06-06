@@ -424,7 +424,7 @@ private:
     unordered_map<string, calc> measureCalculation;
     unordered_set<string> localScoreNames = { "edgec", "edged", "esim", "go", "graphlet",
                                               "graphletcosine", "graphletlgraal", "importance",
-                                              "nodec", "noded", "sequence" };
+                                              "nodec", "noded", "sequence", "graphletnorm" };
 
 
     // Code related with parallel pareto run, these code will be later refactored along with the
