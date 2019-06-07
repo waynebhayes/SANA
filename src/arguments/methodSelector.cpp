@@ -92,16 +92,49 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 #else
 Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
 #endif
+
+    string TIniArg = args.strings["-tinitial"];
+    string TDecayArg = args.strings["-tdecay"];
+
+    string linRegMethod = "linear-regression";
+    string statMethod = "statistical-test";
+    string ameurMethod = "ameur-method";
+    string bayesMethod = "bayesian-opt";
+    string pBadBinMethod = "pbad-binary-search";
+    vector<string> autoTempMethods = { linRegMethod, statMethod, ameurMethod, bayesMethod, pBadBinMethod };
+    string defaultMethod = linRegMethod; 
+
+    //if user uses 'auto', use our default method of choice (should be the one regarded as best)
+    if (TIniArg == "auto") {
+	   args.strings["-tinitial"] = defaultMethod; //can this line be removed?
+       TIniArg = defaultMethod;
+    }
+    if (TDecayArg == "auto") {
+        args.strings["-tdecay"] = defaultMethod; //can this line be removed?
+        TDecayArg = linRegMethod;        
+    }
+
+    bool useMethodForTIni = contains(autoTempMethods, TIniArg);
+    bool useMethodForTDecay = contains(autoTempMethods, TDecayArg);
+
+    //read explicit values for TInitial or TDecay if not using an automatic method
     double TInitial = 0, TDecay = 0;
-    // First see if explicit values for TInitial or TDecay were given on the command line.
-    if (args.strings["-tinitial"] == "auto")
-	args.strings["-tinitial"] = "by-linear-regression";
-    if (args.strings["-tinitial"] != "by-statistical-test" && args.strings["-tinitial"] != "by-linear-regression")
-        TInitial = stod(args.strings["-tinitial"]);
-    if (args.strings["-tdecay"] == "auto")
-	args.strings["-tdecay"] = "by-linear-regression";
-    if (args.strings["-tdecay"] != "by-statistical-test" && args.strings["-tdecay"] != "by-linear-regression")
-        TDecay = stod(args.strings["-tdecay"]);
+    if (not useMethodForTIni) {
+        try {
+            TInitial = stod(TIniArg);
+        } catch (const invalid_argument& ia) {
+            cerr << "invalid -tinitial argument: " << TIniArg << endl;
+            throw ia;
+        }
+    }
+    if (not useMethodForTDecay) {
+        try {
+            TDecay = stod(TDecayArg);
+        } catch (const invalid_argument& ia) {
+            cerr << "invalid -tdecay argument: " << TDecayArg << endl;
+            throw ia;
+        }
+    }
 
     Method* sana;
 
@@ -113,31 +146,58 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 #endif
     ((SANA*) sana)->setOutputFilenames(args.strings["-o"], args.strings["-localScoresFile"]);
 
-    // t_initial "auto" defaults to by-linear-regression
-    if (args.strings["-tinitial"] == "by-linear-regression") {
+    if (useMethodForTIni) {
         Timer T;
         T.start();
-        ((SANA*) sana)->searchTemperaturesByLinearRegression();
-        cout << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
-    } else if (args.strings["-tinitial"] == "by-statistical-test") {
-        Timer T;
-        T.start();
-        ((SANA*) sana)->searchTemperaturesByStatisticalTest();
-        cout << endl << "TInitial took " << T.elapsed() << " seconds to complete." << endl << endl;
-    }
+        if (TIniArg == linRegMethod) {
+            //linear regression sets both tini and tfinal simultaneously
+            ((SANA*) sana)->setTInitialAndTFinalByLinearRegression();
+        } else if (TIniArg == statMethod) {
+            //statistical test also sets both simultaneously
+            ((SANA*) sana)->setTInitialByStatisticalTest();
+        } else if (TIniArg == ameurMethod) {
+            ((SANA*) sana)->setTInitialByAmeurMethod();
+        } else if (TIniArg == bayesMethod) {
+            ((SANA*) sana)->setTInitialByBayesOptimization();
+        } else if (TIniArg == pBadBinMethod) {
+            ((SANA*) sana)->setTInitialByPBadBinarySearch();
+        } else {
+            throw runtime_error("every method should have been handled as an 'if', so we should not reach here");
+        }
+        cout << endl << "TInitial took " << T.elapsed() << "s to compute" << endl << endl;
+    }    
 
-    Timer T;
-    T.start();
-    if(args.strings["-tdecay"] == "by-linear-regression") {
-	if (args.strings["-tinitial"] == "by-linear-regression" || args.strings["-tinitial"] == "by-statistical-test"){
-	    ((SANA*) sana)->setTDecayAutomatically();
-	} else
-	    ((SANA*) sana)->setAcceptableTFinalFromManualTInitial();
-    } else if(args.strings["-tdecay"] == "by-statistical-test") {
-	TDecay = ((SANA*) sana)->searchTDecay(((SANA*)sana)->getTInitial(), args.doubles["-t"]);
-	((SANA*) sana)->setTDecay(TDecay);
+    if (useMethodForTDecay) {
+        Timer T;
+        T.start();
+
+        //first 'TFinal' is set using the specified method
+        //then 'TDecay' is set based on TFinal
+
+        if(TDecayArg == linRegMethod) {
+            if (TIniArg == linRegMethod) {
+                //nothing to do, TFinal is already set
+            } else {
+                /* this is not using linear regression as the user indicated. */
+        	    ((SANA*) sana)->setTFinalByDoublingMethod();
+            }
+        } else if(TDecayArg == statMethod) {
+            ((SANA*) sana)->setTFinalByCeasedProgress();
+        } else if (TDecayArg == ameurMethod) {
+            ((SANA*) sana)->setTFinalByAmeurMethod();
+        } else if (TDecayArg == bayesMethod) {
+            ((SANA*) sana)->setTFinalByBayesOptimization();
+        } else if (TDecayArg == pBadBinMethod) {
+            ((SANA*) sana)->setTFinalByPBadBinarySearch();
+        } else {
+            throw runtime_error("every method should have been handled as an 'if', so we should not reach here");
+        }
+        ((SANA*) sana)->setTDecayFromTempRange();
+        cout << endl << "TFinal took " << T.elapsed() << "s to compute" << endl << endl;
     }
-    cout << endl << "TFinal took " << T.elapsed() << " seconds to complete." << endl << endl;
+    if (useMethodForTIni or useMethodForTDecay) {
+        ((SANA*) sana)->printScheduleStatistics();
+    }
 
 
     if (args.bools["-restart"]) {

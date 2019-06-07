@@ -20,8 +20,6 @@
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, uint pairsCount
 #endif
 
-#define CIRCULAR_BUFFER_SIZE 10000
-
 class SANA: public Method {
 
 public:
@@ -40,30 +38,9 @@ public:
 
     void enableRestartScheme(double minutesNewAlignments, uint iterationsPerStep,
         uint numCandidates, double minutesPerCandidate, double minutesFinalist);
-
-    //set temperature schedule automatically
-    double temperatureBracket(double l, bool b); //Helper function in finding lower / upper bound for initial temperature
-	void findingUpperLowerTemperatureBound(double& low, double& high); //Finds the initial lower / upper bound for temperature
-    void searchTemperaturesByLinearRegression();
-    void searchTemperaturesByStatisticalTest();
-    void setTDecay(double t);
-    void setTDecayAutomatically();
-    //to compute TDecay automatically
-    //returns a value of lambda such that with this TInitial, temperature reaches
-    //0 after a certain number of minutes
-    double solveTDecay();
-
-    void setAcceptableTInitial();
-    void setAcceptableTFinal();
-    void setAcceptableTFinalFromManualTInitial();
-    double findAcceptableTInitial(double temperature);
-    double findAcceptableTFinal(double temperature);
-    double findAcceptableTFinalFromManualTInitial(double temperature);
-
+    
     //set temperature decay dynamically
     void setDynamicTDecay();
-
-    double simpleSearchTInitial();
 
     double elapsedEstimate = 0;
     int order = 0;
@@ -74,33 +51,93 @@ public:
     Alignment hillClimbingAlignment(long long int idleCountTarget);
 
     //returns an approximation of the the logarithm in base e of the size of the search space
-    double searchSpaceSizeLog();
+    double logOfSearchSpaceSize();
+    
     string startAligName = "";
     void prune(string& startAligName);
 
-    //to compute TDecay automatically
-    //returns a value of lambda such that with this TInitial, temperature reaches
-    //0 after a certain number of minutes
-    double searchTDecay(double TInitial, double minutes);
-    double searchTDecay(double TInitial, uint iterations);
-    double getTInitial(void), getTFinal(void), getTDecay(void);
-    
     //set the file names passed in args in case we want to store the alignment on the fly
     void setOutputFilenames(string outputFileName, string localMeasuresFileName);
 
-private:
-    int maxTriangles = 0;
 
-    //Temperature Boundaries. Use these after the tinitial has been determined
-    double lowerTBound = 0;
-    double upperTBound = 0;
+    void setTInitialAndTFinalByLinearRegression();
+    void setTFinalByDoublingMethod();
+    void setTInitialByStatisticalTest();
+    void setTFinalByCeasedProgress(); //considered part of the "statistical test" input option
+    void setTInitialByAmeurMethod();
+    void setTFinalByAmeurMethod();
+    void setTInitialByBayesOptimization();
+    void setTFinalByBayesOptimization();    
+    void setTInitialByPBadBinarySearch();
+    void setTFinalByPBadBinarySearch();
+
+    //requires TInitial and TFinal to be already initialized
+    void setTDecayFromTempRange();
+
+    void printScheduleStatistics();
+
+private:
+    const double TARGET_FINAL_PBAD = 1e-10; //target final pbad
+    const double TARGET_INITIAL_PBAD = 0.985; //target initial pbad
+    const double HIGH_PBAD_LIMIT = 0.99999;
+    const double LOW_PBAD_LIMIT = 1e-10;
+
+    //temperature schedule
+    double TInitial;
+    double TFinal;
+    double TDecay;
+
+    double getPBad(double temp, double maxTime = 1.0);
+    map<double, vector<double>> tempToPBad; //every call to getPBad adds an entry to this map
+
+    double scoreForTemp(double temp);
+    vector<double> getEIncSample(double temp, int sampleSize);
+
+    double doublingMethod(double targetPBad, bool nextAbove, double base = 10, double getPBadTime = 1);
+    
+    // Statistical Test    
+    bool isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore);
+    double expectedNumAccEInc(double temp, const vector<double>& EIncSample);
+
+    // Binary search based on pbads
+    double pBadBinarySearch(double pBad);
+
+    // Ameur Method    
+    //finds temperature corresponding to a specific pBad
+    //using the method from the paper by Walid Ben-Ameur
+    //"Computing the Initial Temperature of Simulated Annealing"
+    double ameurMethod(double targetPBad, double errorTolerance);
+    double iteratedAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess);
+    double individualAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess, vector<double> EIncs);
+
+
+    double ameurMethod(double pBad);
+    double ameurMethod(double targetPBad, vector<double> EIncs, double startTempGuess);
+    double iteratedAmeurMethod(double targetPBad, double startTempGuess);
+
+    // Bayesian Optimization
+    //finds temperature corresponding to a specific pBad
+    //using bayesian optimization
+    double bayesOptimization(double pBad);
+
+    //circular pBad buffer
+    const int PBAD_CIRCULAR_BUFFER_SIZE = 10000;
+    vector<double> pBadBuffer;
+    int numPBadsInBuffer;
+    int pBadBufferIndex;
+    double pBadBufferSum;
+    double trueAcceptingProbability();
+    double slowTrueAcceptingProbability();
+
+
+
+
+
+
+    int maxTriangles = 0;
 
     //store whether or not most recent move was bad
     bool wasBadMove = false;
-
-    //store index and sum of circular buffer
-    int buffer_index = 0;
-    double buffer_sum = 0;
 
     //data structures for the networks
     uint n1;
@@ -142,18 +179,13 @@ private:
     uint G2RandomUnlockedNode(uint target1);
     uint G2RandomUnlockedNode_Fast();
 
-    //temperature schedule
-    double TInitial;
-    double TFinal;
-    double TDecay;
     double minutes = 0;
     bool usingIterations;
     uint maxIterations = 0;
     uint iterationsPerformed = 0;
     uint oldIterationsPerformed = 0;
     double oldTimeElapsed = 0;
-    const double TInitialScaling = 1;
-    const double TDecayScaling = 1;
+
     //to compute TDecay dynamically
     //vector holds "ideal" temperature values at certain execution times
     bool dynamic_tdecay;
@@ -163,12 +195,6 @@ private:
     double Temperature;
     double temperatureFunction(long long int iter, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double Temperature);
-    double trueAcceptingProbability();
-    //to compute TInitial automatically
-    //returns a value of TInitial such that the temperature is random
-    double scoreForTInitial(double TInitial);
-    bool isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore);
-    double scoreRandom();
 
     double TrimCoreScores(Matrix<ulong>& Freq, vector<ulong>& numPegSamples);
     double TrimCoreScores(Matrix<double>& Freq, vector<double>& totalPegWeight);
@@ -177,9 +203,6 @@ private:
     double iterPerSecond;
     double getIterPerSecond();
     void initIterPerSecond();
-
-    vector<double> energyIncSample(double temp = 0.0);
-    double expectedNumAccEInc(double temp, const vector<double>& energyIncSample);
 
     //data structures for the solution space search
     double changeProbability[2];
@@ -350,8 +373,6 @@ private:
     double currentScore;
     double previousScore;
     double energyInc;
-    double sampledProbability[CIRCULAR_BUFFER_SIZE];
-    int sampledProbabilitySize = 0;
     void SANAIteration();
     void performChange(int type);
     void performSwap(int type);
@@ -368,9 +389,6 @@ private:
     Alignment getStartingAlignment();
     bool implementsLocking(){ return true; }
 
-    double pForTInitial(double TInitial);
-    double getPforTInitial(const Alignment& startA, double maxExecutionSeconds,
-        long long int& iter);
     string getFolder();
     string haveFolder();
     string mkdir(const std::string& file);
