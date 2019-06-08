@@ -1491,7 +1491,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        //using max and min here because with extremely low temps I was seeing weird results
+        //using max and min here because with extremely low temps I was seeing invalid probabilities
         badProbability = max(0.0, min(1.0, exp(energyInc / Temperature)));
         makeChange = (energyInc >= 0 or randomReal(gen) <= badProbability);
         break;
@@ -3112,21 +3112,15 @@ double SANA::getIterPerSecond() {
 void SANA::initIterPerSecond() {
     initializedIterPerSecond = true;
 
-    //"TImer": is this a typo? or a hack to not overwrite the timer that is a data member in the SANA class?
-    //appears in other functions too...
-    Timer TImer; 
-    TImer.start();
     cout << "Determining iteration speed...." << endl;
 
     long long int iter = 1E6;
 
     hillClimbingIterations(iter - 1);
-    /*if (iter == 500000) {
-        throw runtime_error("hill climbing stagnated after 0 iterations");
-    }*/
-    double res = iter/TImer.elapsed();
+
+    double res = iter/timer.elapsed();
     cout << "SANA does " << to_string(res)
-         << " iterations per second (took " << TImer.elapsedString()
+         << " iterations per second (took " << timer.elapsedString()
          << " doing " << iter << " iterations)" << endl;
 
     iterPerSecond = res;
