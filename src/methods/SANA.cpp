@@ -875,7 +875,7 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, dou
 	    if( iter != 0 and timer.elapsed() > maxExecutionSeconds){
 		cout << "ending seconds " << timer.elapsed() << " " << maxExecutionSeconds << endl;
                 if (paretoFront.paretoPropertyViolated()) {
-                    cerr << ">>>>>>>>>>>>>>>>>>>>>>> Warning: Pareto property violated, which means pareto front might not be correct! <<<<<<<<<<<<<<<< " << endl;
+                    cerr << "Warning: Pareto property violated, which means pareto front might not be correct!" << endl;
                 }
                 printParetoFront(fileName);
                 deallocateParetoData();
@@ -914,7 +914,7 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, lon
         if (iter != 0 and iter > maxExecutionIterations) {
             cout << "ending iterations " << iter << " " << maxExecutionIterations << endl;
             if (paretoFront.paretoPropertyViolated()) {
-                cerr << ">>>>>>>>>>>>>>>>>>>>>>> Warning: Pareto property violated, which means pareto front might not be correct! <<<<<<<<<<<<<<<< " << endl;
+                cerr << "Warning: Pareto property violated, which means pareto front might not be correct!" << endl;
             }
             printParetoFront(fileName);
             deallocateParetoData();
@@ -1491,7 +1491,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        //using max and min here because with extremely low temps I was seeing weird results
+        //using max and min here because with extremely low temps I was seeing invalid probabilities
         badProbability = max(0.0, min(1.0, exp(energyInc / Temperature)));
         makeChange = (energyInc >= 0 or randomReal(gen) <= badProbability);
         break;
@@ -3112,21 +3112,12 @@ double SANA::getIterPerSecond() {
 void SANA::initIterPerSecond() {
     initializedIterPerSecond = true;
 
-    //"TImer": is this a typo? or a hack to not overwrite the timer that is a data member in the SANA class?
-    //appears in other functions too...
-    Timer TImer; 
-    TImer.start();
     cout << "Determining iteration speed...." << endl;
-
     long long int iter = 1E6;
-
     hillClimbingIterations(iter - 1);
-    /*if (iter == 500000) {
-        throw runtime_error("hill climbing stagnated after 0 iterations");
-    }*/
-    double res = iter/TImer.elapsed();
+    double res = iter/timer.elapsed();
     cout << "SANA does " << to_string(res)
-         << " iterations per second (took " << TImer.elapsedString()
+         << " iterations per second (took " << timer.elapsedString()
          << " doing " << iter << " iterations)" << endl;
 
     iterPerSecond = res;
@@ -3485,7 +3476,7 @@ unordered_set<vector<uint>*>* SANA::parallelParetoRun(const Alignment& startA, l
 
     cout << "ending iterations " << sharedIter << " " << maxExecutionIterations << endl;
     if (paretoFront.paretoPropertyViolated()) {
-        cerr << ">>>>>>>>>>>>>>>>>>>>>>> Warning: Pareto property violated, which means pareto front might not be correct! <<<<<<<<<<<<<<<< " << endl;
+        cerr << "Warning: Pareto property violated, which means pareto front might not be correct!" << endl;
     }
     printParetoFront(fileName);
     deallocateParetoData();
@@ -3556,7 +3547,7 @@ unordered_set<vector<uint>*>* SANA::parallelParetoRun(const Alignment& startA, d
 
     cout << "ending seconds " << getElapsedTime() << " " << maxExecutionSeconds << endl;
     if (paretoFront.paretoPropertyViolated()) {
-        cerr << ">>>>>>>>>>>>>>>>>>>>>>> Warning: Pareto property violated, which means pareto front might not be correct! <<<<<<<<<<<<<<<< " << endl;
+        cerr << "Warning: Pareto property violated, which means pareto front might not be correct!" << endl;
     }
     printParetoFront(fileName);
     deallocateParetoData();
