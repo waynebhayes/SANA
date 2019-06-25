@@ -116,7 +116,7 @@ class SkipList:
             x = x.next[0]
         return None
 
-    def opop(self,domain=0.1):
+    def pop(self,domain=0.1):
         #check not empty
         if self.__len__()==0:
             raise IndexError()
@@ -146,7 +146,7 @@ class SkipList:
                 return (candidate2.value*self.switch,candidate2.info)
             return None
 
-    def pop(self,domain=0.1):
+    def opop(self,domain=0.1):
         #that's the new one
         if self.__len__()==0:
             raise IndexError()
