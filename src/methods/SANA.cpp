@@ -875,7 +875,7 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, dou
 	    if( iter != 0 and timer.elapsed() > maxExecutionSeconds){
 		cout << "ending seconds " << timer.elapsed() << " " << maxExecutionSeconds << endl;
                 if (paretoFront.paretoPropertyViolated()) {
-                    cerr << ">>>>>>>>>>>>>>>>>>>>>>> Warning: Pareto property violated, which means pareto front might not be correct! <<<<<<<<<<<<<<<< " << endl;
+                    cerr << "Warning: Pareto property violated, which means pareto front might not be correct!" << endl;
                 }
                 printParetoFront(fileName);
                 deallocateParetoData();
@@ -914,7 +914,7 @@ unordered_set<vector<uint>*>* SANA::simpleParetoRun(const Alignment& startA, lon
         if (iter != 0 and iter > maxExecutionIterations) {
             cout << "ending iterations " << iter << " " << maxExecutionIterations << endl;
             if (paretoFront.paretoPropertyViolated()) {
-                cerr << ">>>>>>>>>>>>>>>>>>>>>>> Warning: Pareto property violated, which means pareto front might not be correct! <<<<<<<<<<<<<<<< " << endl;
+                cerr << "Warning: Pareto property violated, which means pareto front might not be correct!" << endl;
             }
             printParetoFront(fileName);
             deallocateParetoData();
@@ -3113,11 +3113,8 @@ void SANA::initIterPerSecond() {
     initializedIterPerSecond = true;
 
     cout << "Determining iteration speed...." << endl;
-
     long long int iter = 1E6;
-
     hillClimbingIterations(iter - 1);
-
     double res = iter/timer.elapsed();
     cout << "SANA does " << to_string(res)
          << " iterations per second (took " << timer.elapsedString()
@@ -3479,7 +3476,7 @@ unordered_set<vector<uint>*>* SANA::parallelParetoRun(const Alignment& startA, l
 
     cout << "ending iterations " << sharedIter << " " << maxExecutionIterations << endl;
     if (paretoFront.paretoPropertyViolated()) {
-        cerr << ">>>>>>>>>>>>>>>>>>>>>>> Warning: Pareto property violated, which means pareto front might not be correct! <<<<<<<<<<<<<<<< " << endl;
+        cerr << "Warning: Pareto property violated, which means pareto front might not be correct!" << endl;
     }
     printParetoFront(fileName);
     deallocateParetoData();
@@ -3550,7 +3547,7 @@ unordered_set<vector<uint>*>* SANA::parallelParetoRun(const Alignment& startA, d
 
     cout << "ending seconds " << getElapsedTime() << " " << maxExecutionSeconds << endl;
     if (paretoFront.paretoPropertyViolated()) {
-        cerr << ">>>>>>>>>>>>>>>>>>>>>>> Warning: Pareto property violated, which means pareto front might not be correct! <<<<<<<<<<<<<<<< " << endl;
+        cerr << "Warning: Pareto property violated, which means pareto front might not be correct!" << endl;
     }
     printParetoFront(fileName);
     deallocateParetoData();

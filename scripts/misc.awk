@@ -41,7 +41,7 @@ function logb(b,x){return log(x)/log(b)}
 function dtob(n,   s,sgn) {n=1*n;if(!n)return "0";s=sgn="";if(n<0){sgn="-";n=-n};while(n){s=sprintf("%d%s",(n%2),s); n=int(n/2)}; return sgn s}
 function btod(n) {}
 
-function ASSERT(cond,str){if(!cond){s=sprintf("assertion failure <%s>\n", str); print s; print s >"/dev/stderr"; exit 1}}
+function ASSERT(cond,str){if(!cond){s=sprintf("assertion failure: %s\n", str); print s; print s >"/dev/stderr"; exit 1}}
 function ABS(x){return x<0?-x:x}
 function SIGN(x){return x==0?0:x/ABS(x)}
 function MAX(x,y){return x>y?x:y}
@@ -172,7 +172,7 @@ function StatConfidenceInterval(name,conf)
 {
     return StatTDistPtoZ((1-conf)/2, _statN[name] - 1) * sqrt(StatVar(name) / _statN[name]);
 }
-function Pearson2T(n,r){return r*sqrt((n-2)/(1-r^2))}
+function Pearson2T(n,r){if(r==1)return 1e30; else return r*sqrt((n-2)/(1-r^2))}
 function PoissonDistribution(l,k){if(l>700)return NormalDist(l,sqrt(l),k);r=exp(-l);for(i=k;i>0;i--)r*=l/i;return r} 
 function PoissonCDF(k, lambda, sum, term, i){sum=term=1;for(i=1;i<=k;i++){term*=lambda/i;sum+=term}; return sum*exp(-lambda)}
 function StatRV_Normal(){if(!_StatRV_which) { do { _StatRV_v1 = 2*rand()-1; _StatRV_v2 = 2*rand()-1; _StatRV_rsq = _StatRV_v1^2+_StatRV_v2^2; } while(_StatRV_rsq >= 1 || _StatRV_rsq == 0); _StatRV_fac=sqrt(-2*log(_StatRV_rsq)/_StatRV_rsq); _StatRV_next = _StatRV_v1*_StatRV_fac; _StatRV_which = 1; return _StatRV_v2*_StatRV_fac; } else { _StatRV_which = 0; return _StatRV_next; } } 
@@ -200,3 +200,21 @@ function PearsonPrint(name){
     # NR = number of samples, rho=Pearson correlation, p=p-value, t = number of standard deviations from random.
     return sprintf("%d %.3g %.3g %.3g", _Pearson_NR[name], _Pearson_rho[name], _Pearson_p[name], _Pearson_t[name])
 }
+
+# Functions for computing the AUPR
+function AUPR_add(name, value, thresh, truth){
+    _AUPR_N[name]++;
+    if(value > thresh){ # predicted
+	if(truth)++_AUPR_TP[name];else ++_AUPR_FP[name]
+    }else{ # not predicted
+	if(truth)++_AUPR_FN[name];else ++_AUPR_TN[name]
+    }
+}
+function AUPR_Prec(name,  TP, FP){TP=_AUPR_TP[name];FP=_AUPR_FP[name];if(TP+FP==0)return 1; else return TP/(TP+FP)}
+function AUPR_Rec(name,     TP, FN){TP=_AUPR_TP[name];FN=_AUPR_FN[name];if(TP+FN==0)return 1; else return TP/(TP+FN)}
+function AUPR_F1(name,         Prec,Rec){Prec=AUPR_Prec(name); Rec=AUPR_Rec(name);
+    if(Prec+Rec==0)return 0; else return 2*Prec*Rec/(Prec+Rec)
+}
+function AUPR_TPR(name,  TP, FN){TP=_AUPR_TP[name];FN=_AUPR_FN[name]; return TP/(TP+FN)}
+function AUPR_FPR(name,  FP, TN){FP=_AUPR_FP[name];TN=_AUPR_TN[name]; return FP/(FP+TN)}
+
