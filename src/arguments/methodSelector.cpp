@@ -95,6 +95,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 
     string TIniArg = args.strings["-tinitial"];
     string TDecayArg = args.strings["-tdecay"];
+    string TGeneralArg = args.strings["-tparams"];
 
     string linRegMethod = "linear-regression";
     string statMethod = "statistical-test";
@@ -104,7 +105,12 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     vector<string> autoTempMethods = { linRegMethod, statMethod, ameurMethod, bayesMethod, pBadBinMethod };
     string defaultMethod = linRegMethod; 
 
-    //if user uses 'auto', use our default method of choice (should be the one regarded as best)
+    //override -tinitial and -tdecay with -tschedule (if it's not use-tinitial-tdecay)
+    if (TGeneralArg != "use-tinitial-tdecay") {
+        TIniArg = TGeneralArg;
+        TDecayArg = TGeneralArg;
+    } 
+    //if user uses 'auto', choose a method here for them (should be the one regarded as best)
     if (TIniArg == "auto") {
 	   args.strings["-tinitial"] = defaultMethod; //can this line be removed?
        TIniArg = defaultMethod;
