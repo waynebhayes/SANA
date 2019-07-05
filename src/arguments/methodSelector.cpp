@@ -95,20 +95,94 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 
     string TIniArg = args.strings["-tinitial"];
     string TDecayArg = args.strings["-tdecay"];
-    string TGeneralArg = args.strings["-tparams"];
+    string TBothArg = args.strings["-tparams"];
 
-    string linRegMethod = "linear-regression";
-    string statMethod = "statistical-test";
-    string ameurMethod = "ameur-method";
-    string bayesMethod = "bayesian-opt";
     string pBadBinMethod = "pbad-binary-search";
-    vector<string> autoTempMethods = { linRegMethod, statMethod, ameurMethod, bayesMethod, pBadBinMethod };
+    string linRegMethod = "linear-regression";
+    string ameurMethod = "ameur-method";
+    string statMethod = "statistical-test";
+    string bayesMethod = "bayesian-opt";
+    vector<string> autoTempMethods = { pBadBinMethod, linRegMethod, ameurMethod, statMethod, bayesMethod };
     string defaultMethod = linRegMethod; 
 
+    //this is a special argument value that does a comparison between all temperature schedule methods
+    //made for the purpose of running the experiments for the paper on the tempertaure schedule
+    if (TBothArg == "comparison") {
+        SANA sana(&G1, &G2, 0, 0, 0, args.bools["-usingIterations"], 0, &M, args.strings["-combinedScoreAs"]);
+        sana.setOutputFilenames(args.strings["-o"], args.strings["-localScoresFile"]);
+
+        vector<string> methods = { pBadBinMethod, linRegMethod, ameurMethod };
+        vector<vector<double>> res;
+        for (string method : methods) {
+            double TIniTime, TFinalTime;
+            Timer T;
+            if (method == linRegMethod) {
+                T.start();
+                sana.setTInitialAndTFinalByLinearRegression();
+                TIniTime = T.elapsed(); 
+                TFinalTime = 0;//linear regression sets both simultaneously
+            } else if (method == statMethod) {
+                T.start();
+                sana.setTInitialByStatisticalTest();
+                TIniTime = T.elapsed();
+                T.start();
+                sana.setTFinalByCeasedProgress();
+                TFinalTime = T.elapsed();
+            } else if (method == ameurMethod) {
+                T.start();
+                sana.setTInitialByAmeurMethod();
+                TIniTime = T.elapsed();
+                T.start();
+                sana.setTFinalByAmeurMethod();
+                TFinalTime = T.elapsed();
+            } else if (method == pBadBinMethod) {
+                T.start();
+                sana.setTInitialByPBadBinarySearch();
+                TIniTime = T.elapsed();
+                T.start();
+                sana.setTFinalByPBadBinarySearch();
+                TFinalTime = T.elapsed();
+            } else throw runtime_error("unexpected method");
+
+            double TIni = sana.TInitial;
+            double TIniPBad = sana.getPBad(TIni, 5);
+            double TIniPBadRelative = TIniPBad/sana.TARGET_INITIAL_PBAD;
+            double TFinal = sana.TFinal;
+            double TFinalPBad = sana.getPBad(TFinal, 5);
+            double TFinalPBadRelative = TFinalPBad/sana.TARGET_FINAL_PBAD;
+            double totalTime = TIniTime + TFinalTime;
+            res.push_back({TIni, TIniPBad, TIniPBadRelative, TIniTime,
+                TFinal, TFinalPBad,TFinalPBadRelative, TFinalTime, totalTime});
+        }
+        cout << endl << endl;
+        cout << "Automatic Temperature Schedule Comparison" << endl;
+        cout << "Target Initial PBad: " << sana.TARGET_INITIAL_PBAD << endl;
+        cout << "Target Final PBad:   " << sana.TARGET_FINAL_PBAD << endl;
+        vector<vector<string> > table;
+        table.push_back({"Method","TInitial","PBad","(relative)","Time",
+            "TFinal","PBad","(relative)","Time","TotalTime"});
+        vector<int> precision = {6,6,6,2,9,9,6,2,2};
+        for (uint i = 0; i < methods.size(); i++) {
+            table.push_back(vector<string> ());
+            table[i+1].push_back(methods[i]);
+            for (int j = 0; j < 9; j++) {
+                table[i+1].push_back(toStringWithPrecision(res[i][j], precision[j]));
+            }
+            if (methods[i] == linRegMethod) {
+                table[i+1][8] = "N/A";
+            }
+        }
+        printTable(table, 3, cout);
+        cout << endl;
+        exit(0);
+    }
+
+
+
     //override -tinitial and -tdecay with -tschedule (if it's not use-tinitial-tdecay)
-    if (TGeneralArg != "use-tinitial-tdecay") {
-        TIniArg = TGeneralArg;
-        TDecayArg = TGeneralArg;
+    if (TBothArg != "use-tinitial-tdecay") {
+        TIniArg = TBothArg;
+        TDecayArg = TBothArg;
     } 
     //if user uses 'auto', choose a method here for them (should be the one regarded as best)
     if (TIniArg == "auto") {
@@ -159,7 +233,6 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
             //linear regression sets both tini and tfinal simultaneously
             ((SANA*) sana)->setTInitialAndTFinalByLinearRegression();
         } else if (TIniArg == statMethod) {
-            //statistical test also sets both simultaneously
             ((SANA*) sana)->setTInitialByStatisticalTest();
         } else if (TIniArg == ameurMethod) {
             ((SANA*) sana)->setTInitialByAmeurMethod();

@@ -76,18 +76,19 @@ public:
 
     void printScheduleStatistics();
 
-private:
-    const double TARGET_FINAL_PBAD = 1e-10; //target final pbad
-    const double TARGET_INITIAL_PBAD = 0.985; //target initial pbad
-    const double HIGH_PBAD_LIMIT = 0.99999;
-    const double LOW_PBAD_LIMIT = 1e-10;
-
     //temperature schedule
     double TInitial;
     double TFinal;
     double TDecay;
+    double getPBad(double temp, double maxTime = 1.0, int cerrUse = 1); //0 for no output, 2 for verbose
 
-    double getPBad(double temp, double maxTime = 1.0);
+    const double TARGET_FINAL_PBAD = 1e-10; //target final pbad
+    const double TARGET_INITIAL_PBAD = 0.985; //target initial pbad
+private:
+
+    const double HIGH_PBAD_LIMIT = 0.99999;
+    const double LOW_PBAD_LIMIT = 1e-10;
+
     map<double, vector<double>> tempToPBad; //every call to getPBad adds an entry to this map
 
     double scoreForTemp(double temp);

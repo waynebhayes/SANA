@@ -2466,8 +2466,9 @@ This function should return the avg pBad at equilibrium.
 we keep track of the score every certain number of iterations
 if the score went down at least half the time,
 this suggests that the upward trend is over and we are at equilirbium
-once we know we are at equilibrium, we use the buffer of pbads to get an average pBad */
-double SANA::getPBad(double temp, double maxTime) {
+once we know we are at equilibrium, we use the buffer of pbads to get an average pBad
+'cerrUse' can be 0 (no output) 1 (logs result in cerr) or 2 (verbose/debug mode)*/
+double SANA::getPBad(double temp, double maxTime, int cerrUse) {
 
     //new state for the run at fixed temperature
     constantTemp = true;
@@ -2485,7 +2486,7 @@ double SANA::getPBad(double temp, double maxTime) {
 
     initDataStructures(getStartingAlignment()); //this initializes the timer and resets the pbad buffer
 
-    bool verbose = false; //print everything going on, for debugging purposes
+    bool verbose = (cerrUse == 2); //print everything going on, for debugging purposes
     uint verbose_i = 0;
     if (verbose) {
         cerr << endl << "****************************************" << endl;
@@ -2546,14 +2547,16 @@ double SANA::getPBad(double temp, double maxTime) {
 
     double pBadAvgAtEq = slowTrueAcceptingProbability();
 
-    cout << "> getPBad(" << temp << ") = " << pBadAvgAtEq << " (score: " << currentScore << ")";
-    if (reachedEquilibrium) cout << " (time: " << timer.elapsed() << "s)";
-    else cout << " (didn't detect eq. after " << maxTime << "s)";
-    cout << endl;
-    
-    if (verbose) {
-        cerr << "final result: " << pBadAvgAtEq << endl;
-        cerr << "****************************************" << endl << endl;
+    if (cerrUse >= 1) {
+        cout << "> getPBad(" << temp << ") = " << pBadAvgAtEq << " (score: " << currentScore << ")";
+        if (reachedEquilibrium) cout << " (time: " << timer.elapsed() << "s)";
+        else cout << " (didn't detect eq. after " << maxTime << "s)";
+        cout << endl;
+        
+        if (verbose) {
+            cerr << "final result: " << pBadAvgAtEq << endl;
+            cerr << "****************************************" << endl << endl;
+        }
     }
     //restore normal execution state
     constantTemp = false;
