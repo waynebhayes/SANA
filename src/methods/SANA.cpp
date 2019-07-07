@@ -2484,7 +2484,7 @@ double SANA::getPBad(double temp, double maxTime, int cerrUse) {
 
     bool reachedEquilibrium = false;
 
-    initDataStructures(getStartingAlignment()); //this initializes the timer and resets the pbad buffer
+    initDataStructures(getStartingAlignment()); //this initializes the timer and resets the pBad buffer
 
     bool verbose = (cerrUse == 2); //print everything going on, for debugging purposes
     uint verbose_i = 0;
@@ -2499,7 +2499,7 @@ double SANA::getPBad(double temp, double maxTime, int cerrUse) {
 
         if (iter%sampleInterval == 0) {
             if (verbose) {
-                cerr << verbose_i << " score: " << currentScore << " (avg pbad: " << slowTrueAcceptingProbability() << ")" << endl;
+                cerr << verbose_i << " score: " << currentScore << " (avg pBad: " << slowTrueAcceptingProbability() << ")" << endl;
                 verbose_i++;
             }
             //circular buffer behavior
@@ -2656,7 +2656,7 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
 
 	cout << "HIGH TEMP = " << pow(10, log10HighTemp) << " LOW TEMP = " << pow(10, log10LowTemp) << endl;
 	cout << "NUM OF STEPS = " << pow(10, log10NumSteps) << endl;
-    cout << "Sampling " << (int) (1+log10NumSteps) << " pbads from " << pow(10, log10LowTemp);
+    cout << "Sampling " << (int) (1+log10NumSteps) << " pBads from " << pow(10, log10LowTemp);
     cout << " to " << pow(10, log10HighTemp) <<" for linear regression" << endl;
 
     int T_i;
@@ -2790,10 +2790,18 @@ void SANA::setTInitialByStatisticalTest() {
 
     double lowerBoundTInitial = 1;
     double upperBoundTInitial = 1;
-    while (not isRandomTemp(upperBoundTInitial, highThresholdScore, lowThresholdScore)) {
-        upperBoundTInitial *= 2;
+    if (isRandomTemp(1, highThresholdScore, lowThresholdScore)) {
+        while (isRandomTemp(lowerBoundTInitial, highThresholdScore, lowThresholdScore)) {
+            lowerBoundTInitial /= 2;
+        }
+    } else {
+        while (not isRandomTemp(upperBoundTInitial, highThresholdScore, lowThresholdScore)) {
+            upperBoundTInitial *= 2;
+        }
     }
     upperBoundTInitial *= 2;    // one more doubling just to be sure
+    lowerBoundTInitial /= 2;
+
     //if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/4;
 
     uint n1 = G1->getNumNodes();
@@ -2851,7 +2859,6 @@ vector<double> SANA::getEIncSample(double temp, int sampleSize) {
     return EIncs;
 }
 
-//old TDecay method
 //find the temperature TFinal such that the expected number of accepted transitions
 //near a local minimum is 1 per second
 //by bisection, since the expected number is monotically increasing in TFinal
@@ -2957,7 +2964,7 @@ double SANA::individualAmeurMethod(double targetPBad, double errorTolerance, dou
             pBads[i] = max(0.0, min(1.0, exp(-EIncs[i]/tempGuess)));
         }
         double pBadMean = vectorMean(pBads);
-        // cout<<"  iteration " << iteration << ": temp: " << tempGuess << " pbad:" << pBadMean << endl;
+        // cout<<"  iteration " << iteration << ": temp: " << tempGuess << " pBad:" << pBadMean << endl;
 
         converged = pBadMean > targetPBad*(1-errorTolerance) and pBadMean < targetPBad*(1+errorTolerance);
         if (converged) break;
@@ -3127,7 +3134,7 @@ void SANA::initIterPerSecond() {
     std::ostringstream ss;
     ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
     ofstream header(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(0) + ".csv");
-    header << "time,score,avgEnergyInc,Temperature,realTemp,pbad,lower,higher,timer" << endl;
+    header << "time,score,avgEnergyInc,Temperature,realTemp,pBad,lower,higher,timer" << endl;
     header.close();
 }
 
