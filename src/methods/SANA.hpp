@@ -75,24 +75,24 @@ public:
     void setTDecayFromTempRange();
 
     void printScheduleStatistics();
+    void tempScheduleComparison(double targetInitialPBad, double targetFinalPBad);
 
+private:
     //temperature schedule
     double TInitial;
     double TFinal;
     double TDecay;
     double getPBad(double temp, double maxTime = 1.0, int cerrUse = 1); //0 for no output, 2 for verbose
-
-    const double TARGET_FINAL_PBAD = 1e-10; //target final pbad
-    const double TARGET_INITIAL_PBAD = 0.985; //target initial pbad
-private:
+    multimap<double, double> tempToPBad; //every call to getPBad adds an entry to this map
 
     const double HIGH_PBAD_LIMIT = 0.99999;
     const double LOW_PBAD_LIMIT = 1e-10;
+    double TARGET_FINAL_PBAD = 1e-10; //target final pbad
+    double TARGET_INITIAL_PBAD = 0.985; //target initial pbad
 
-    map<double, vector<double>> tempToPBad; //every call to getPBad adds an entry to this map
 
     double scoreForTemp(double temp);
-    vector<double> getEIncSample(double temp, int sampleSize);
+    vector<double> getEIncSample(double temp, int sampleSize, double& resPBad);
 
     double doublingMethod(double targetPBad, bool nextAbove, double base = 10, double getPBadTime = 1);
     

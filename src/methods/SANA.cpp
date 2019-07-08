@@ -2563,12 +2563,8 @@ double SANA::getPBad(double temp, double maxTime, int cerrUse) {
     enableTrackProgress = true;
     Temperature = TInitial;
 
-
     //keep track of the pair
-    if (tempToPBad.count(temp) == 0) {
-        tempToPBad[temp] = vector<double> (0);
-    }
-    tempToPBad[temp].push_back(pBadAvgAtEq);
+    tempToPBad.insert({temp, pBadAvgAtEq});
 
     return pBadAvgAtEq;
 }
@@ -2589,7 +2585,7 @@ double SANA::doublingMethod(double targetPBad, bool nextAbove, double base, doub
     bool initStartPBad = false;
     for (auto tempPBadPair = tempToPBad.begin(); tempPBadPair != tempToPBad.end(); tempPBadPair++) {
         double temp = tempPBadPair->first;
-        double pBad = tempPBadPair->second[0]; //there may be several pbads for that temp; we just look at one (the first one)
+        double pBad = tempPBadPair->second;
         double pBadDiff = abs(pBad-targetPBad);
         if (pBadDiff < smallestPBadDiff) {
             startTemp = temp;
@@ -2846,8 +2842,11 @@ double SANA::expectedNumAccEInc(double temp, const vector<double>& EIncSample) {
     return res;
 }
 
-vector<double> SANA::getEIncSample(double temp, int sampleSize) {
-    getPBad(temp, 2);
+vector<double> SANA::getEIncSample(double temp, int sampleSize, double& resPBad) {
+    //this call fills the pBad buffer from which we get the EInc samples
+    //resPBad is passed back by reference because it is needed in Ameur method
+    resPBad = getPBad(temp, 2);
+
     if (sampleSize > numPBadsInBuffer) {
         cerr << "sample size too large, returning a sample of size " << numPBadsInBuffer << " instead" << endl;
         sampleSize = numPBadsInBuffer;
@@ -2929,8 +2928,8 @@ double SANA::iteratedAmeurMethod(double targetPBad, double errorTolerance, doubl
 
     while (not converged and iteration < maxIters) {
         cout << "Iteration " << iteration << ":" << endl;
-        vector<double> EIncs = getEIncSample(tempGuess, 10000);
-        double tempGuessPBad = tempToPBad[tempGuess][tempToPBad[tempGuess].size()-1];
+        double tempGuessPBad; //set by reference in call below
+        vector<double> EIncs = getEIncSample(tempGuess, 10000, tempGuessPBad);
 
         converged = tempGuessPBad > targetPBad*(1-errorTolerance) and tempGuessPBad < targetPBad*(1+errorTolerance);
         if (converged) break;
@@ -2986,28 +2985,129 @@ double SANA::bayesOptimization(double targetPBad) {
     throw runtime_error("not available yet");
 }
 
+// int SANA::numberInversions(map<double,vector<double>> m) {
+//     int res = 0;
+//     for (auto it = m.begin(); it != m.end(); it++) {
+//         for (auto it2 = it+1; it2 != m.end(); it2++) {
+//             for (double val : it->second) {
+//                 for (double val2 : it2->second) {
+//                     if (val > val2) res++;
+//                 }
+//             }
+//         }
+//     }
+//     return res;
+// }
+
 double SANA::pBadBinarySearch(double targetPBad) {
+    //customizable parameters
     bool logScale = true;
-    double getPBadTime = 2;
-    double highTemp = doublingMethod(targetPBad, true, 100, getPBadTime);
-    double lowTemp = doublingMethod(targetPBad, false, 100, getPBadTime);
-    double rangeSize = highTemp-lowTemp;
-    double tolerance = 0.01*rangeSize;
-    double midTemp;
+    double convergenceTime = 2;
+    double tolerance = 0.01;
 
-    if (not logScale) midTemp = (highTemp+lowTemp)/2.0;
-    else midTemp = exp((log(highTemp)+log(lowTemp))/2.0);
+    double targetRangeTop = targetPBad/(1-tolerance);
+    double targetRangeBottom = targetPBad/(1+tolerance);
 
-    double pBad = getPBad(midTemp, getPBadTime);
-    while (rangeSize > tolerance) {
-        if (pBad < targetPBad) lowTemp = midTemp;
-        else highTemp = midTemp;
-        rangeSize = highTemp-lowTemp;
+    //establish starting range
+    double highTemp = doublingMethod(targetPBad, true, 100, convergenceTime);
+    double lowTemp = doublingMethod(targetPBad, false, 100, convergenceTime);
+    double highPBad = (tempToPBad.find(highTemp))->second;
+    double lowPBad = (tempToPBad.find(lowTemp))->second;
 
-        if (not logScale) midTemp = (highTemp+lowTemp)/2.0;
-        else midTemp = exp((log(highTemp)+log(lowTemp))/2.0);
+    //make sure that starting bounds enclose the target range
+    bool areGoodBounds = lowTemp < highTemp and lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+    while (not areGoodBounds) {
+        highTemp *= 10;
+        lowTemp /= 10;
+        highPBad = getPBad(highTemp, convergenceTime);
+        lowPBad = getPBad(lowTemp, convergenceTime);
+        areGoodBounds = lowTemp < highTemp and lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+    }
 
-        pBad = getPBad(midTemp, getPBadTime);
+    double midTemp = logScale ? exp((log(highTemp)+log(lowTemp))/2.0) : (highTemp+lowTemp)/2.0;
+    double midPBad = getPBad(midTemp, convergenceTime);
+
+    if (highPBad >= targetRangeBottom and highPBad <= targetRangeTop) return highTemp;
+    if (lowPBad >= targetRangeBottom and lowPBad <= targetRangeTop) return lowTemp;
+    if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
+
+    cerr<<"Target range: ("<<targetRangeBottom<<", "<<targetRangeTop<<")"<<endl;
+    cerr<<"Start search bounds: temps: ("<<lowTemp<<", "<<midTemp<<", "<<highTemp;
+    cerr<<") pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
+
+    //in the search, the following invariants hold:
+    //(1) lowTemp < midTemp < highTemp ; (2) lowPBad < targetRange < highPBad ;
+    //(3) lowPBad < midPBad < highPBad ; (4) midPBad not in targetRange
+    // at this moment, (1), (2) and (4) hold. (3) we have not checked
+    //(1) will be maintained by definition of binary search and (4) will be easily checked
+    //(2) will hold as long as (3) is maintained
+    //(3) can go wrong due to noise or if the temperatures are very close.
+    //If it does, we recompute all 3 pbads and hope it's fixed.
+    //We try this X times, if we can't get invariant (3) after X attempts, we call it a day
+
+    bool invariants = lowPBad <= midPBad and midPBad <= highPBad and
+                        lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+    int failCount = 0;
+    while (not invariants) {
+        failCount++;
+        if (failCount == 3) {
+            cerr << "Binary search for pBad could not establish a reasonable starting range --" << endl;
+            cerr << "Output temperature is likely not good" << endl;
+            return midTemp;
+        }
+        highPBad = getPBad(highTemp, convergenceTime);
+        if (highPBad >= targetRangeBottom and highPBad <= targetRangeTop) return highTemp;
+        lowPBad = getPBad(lowTemp, convergenceTime);
+        if (lowPBad >= targetRangeBottom and lowPBad <= targetRangeTop) return lowTemp;
+        midPBad = getPBad(midTemp, convergenceTime);
+        if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
+
+        invariants = lowPBad <= midPBad and midPBad <= highPBad and
+                        lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+    }
+
+    //now all invariants hold. Ready to start search
+    int maxGetPBads = 100;
+    int numGetPBads = 0;
+    while (numGetPBads < maxGetPBads) {
+        if (midPBad < targetRangeBottom) {
+            lowTemp = midTemp;
+            lowPBad = midPBad;
+        } else if (midPBad > targetRangeTop) {
+            highTemp = midTemp;
+            highPBad = midPBad;
+        } else throw runtime_error("invariant not maintained in pbad binary search");
+
+        midTemp = logScale ? exp((log(highTemp)+log(lowTemp))/2.0) : (highTemp+lowTemp)/2.0;
+        midPBad = getPBad(midTemp, convergenceTime);
+        numGetPBads++;
+        if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
+
+        invariants = lowPBad <= midPBad and midPBad <= highPBad;
+        failCount = 0;
+        while (not invariants) {
+            cerr<<"Invalid search range: temps: ("<<lowTemp<<", "<<midTemp<<", "<<highTemp;
+            cerr<<") pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
+            failCount++;
+            if (failCount == 2) {
+                return midTemp;
+            }
+            midPBad = getPBad(midTemp, 1.5*convergenceTime);
+            numGetPBads++;
+            if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
+            if (midPBad < lowPBad) {
+                lowPBad = getPBad(lowTemp, 1.5*convergenceTime);
+                numGetPBads++;
+                if (lowPBad >= targetRangeBottom and lowPBad <= targetRangeTop) return lowTemp;
+            }
+            if (midPBad > highPBad) {
+                highPBad = getPBad(highTemp, 1.5*convergenceTime);
+                numGetPBads++;
+                if (highPBad >= targetRangeBottom and highPBad <= targetRangeTop) return highTemp;
+            }
+            invariants = lowPBad <= midPBad and midPBad <= highPBad and
+                         lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+        }
     }
     return midTemp;
 }
@@ -3021,7 +3121,68 @@ void SANA::printScheduleStatistics() {
     cout << endl;
 }
 
+void SANA::tempScheduleComparison(double targetInitialPBad, double targetFinalPBad) {
+    TARGET_INITIAL_PBAD = targetInitialPBad;
+    TARGET_FINAL_PBAD = targetFinalPBad;
 
+    string pBadBinMethod = "bin-search";
+    string linRegMethod = "lin-reg";
+    string ameurMethod = "ameur";
+    string statMethod = "stat-test";
+    vector<string> testedMethods = { pBadBinMethod, linRegMethod, ameurMethod, statMethod };
+
+    vector<vector<double>> res;
+    for (string method : testedMethods) {
+        double TIniTime, TFinTime;
+        int TIniSamples, TFinSamples; //number of times the pBad curve is sampled
+        tempToPBad.clear();
+        Timer T;
+        T.start();
+        if (method == linRegMethod) setTInitialAndTFinalByLinearRegression();
+        else if (method == statMethod) setTInitialByStatisticalTest();
+        else if (method == ameurMethod) setTInitialByAmeurMethod();
+        else if (method == pBadBinMethod) setTInitialByPBadBinarySearch();
+        else throw runtime_error("unexpected method");
+        TIniTime = T.elapsed();
+        TIniSamples = tempToPBad.size();
+        T.start();
+        if (method == linRegMethod) ;
+        else if (method == statMethod) setTFinalByCeasedProgress();
+        else if (method == ameurMethod) setTFinalByAmeurMethod();
+        else if (method == pBadBinMethod) setTFinalByPBadBinarySearch();
+        else throw runtime_error("unexpected method");
+        TFinTime = (method == linRegMethod ? -1 : T.elapsed());
+        TFinSamples = (method == linRegMethod ? -1 : tempToPBad.size() - TIniSamples);
+
+        double TIniPBad = getPBad(TInitial, 5);
+        double TIniPBadRelative = TIniPBad/TARGET_INITIAL_PBAD;
+        double TFinPBad = getPBad(TFinal, 5);
+        double TFinPBadRelative = TFinPBad/TARGET_FINAL_PBAD;
+        double totalTime = TIniTime + (TFinTime == -1 ? 0 : TFinTime);
+        int totalSamples = TIniSamples + (TFinSamples == -1 ? 0 : TFinSamples);
+        res.push_back({ TInitial, TIniPBad, TIniPBadRelative, (double)TIniSamples, TIniTime,
+                        TFinal,   TFinPBad, TFinPBadRelative, (double)TFinSamples, TFinTime,
+                        (double)totalSamples, totalTime });
+    }
+    cout << endl << endl;
+    cout << "Automatic Temperature Schedule Comparison" << endl;
+    cout << "Target Initial PBad: " << TARGET_INITIAL_PBAD << endl;
+    cout << "Target Final PBad:   " << TARGET_FINAL_PBAD << endl;
+    vector<vector<string>> table;
+    table.push_back({"Method","TInitial","PBad","(relative)","Samples","Time",
+        "TFinal","PBad","(relative)","Samples","Time","TotalSamples","TotalTime"});
+    vector<int> precision = {6,6,6,0,2,9,9,6,0,2,0,2};
+    int cols = table[0].size();
+    for (uint i = 0; i < testedMethods.size(); i++) {
+        table.push_back({ testedMethods[i] });
+        for (int j = 0; j < cols-1; j++) {
+            if (res[i][j] == -1) table[i+1].push_back("N/A");
+            else table[i+1].push_back(toStringWithPrecision(res[i][j], precision[j]));
+        }
+    }
+    printTable(table, 1, cout);
+    cout << endl;
+}
 
 
 
