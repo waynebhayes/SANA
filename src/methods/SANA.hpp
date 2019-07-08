@@ -13,6 +13,7 @@
 #include "../utils/randomSeed.hpp"
 #include "../utils/ParetoFront.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
+#include "../utils/LinearRegression.hpp"
 
 #ifdef MULTI_PAIRWISE
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdgesNumer, double edSum, uint pairsCount, uint MS3Numer
@@ -61,15 +62,22 @@ public:
 
 
     void setTInitialAndTFinalByLinearRegression();
+    void setTInitialAndTFinalByLinearRegressionClean(); //cleaned up version of the above
+    void populatePBadCurve();
+    void setTInitialAndTFinal(const LinearRegression& LR);
+
+    void setTInitialByPBadBinarySearch();
+    void setTFinalByPBadBinarySearch();
+
     void setTFinalByDoublingMethod();
     void setTInitialByStatisticalTest();
     void setTFinalByCeasedProgress(); //considered part of the "statistical test" input option
+
     void setTInitialByAmeurMethod();
     void setTFinalByAmeurMethod();
+
     void setTInitialByBayesOptimization();
     void setTFinalByBayesOptimization();    
-    void setTInitialByPBadBinarySearch();
-    void setTFinalByPBadBinarySearch();
 
     //requires TInitial and TFinal to be already initialized
     void setTDecayFromTempRange();

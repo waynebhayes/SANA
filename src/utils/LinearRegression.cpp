@@ -3,29 +3,34 @@
 //
 #include <tuple>
 #include <vector>
+#include <cmath>
 #include <assert.h>
 #include "LinearRegression.hpp"
 using namespace std;
 
 
-LinearRegression::LinearRegression(){
-
-}
-
-void LinearRegression::setup(map<double, double> graph){
-    chart = graph;
-}
-
-tuple<int, double, double, int, double, double, double, double> LinearRegression::run(){
-    SIZE = chart.size();
-    vector<double> scores;
-    vector<double> temperatures;
-
-    for (std::map<double, double>::iterator i = chart.begin(); i != chart.end(); i++)
-    {
-        temperatures.push_back(i->first);
-        scores.push_back(i->second);
+LinearRegression::LinearRegression(multimap<double, double> chart, bool convertXToLogScale) {
+    xs = vector<double> (0);
+    ys = vector<double> (0);
+    for (auto it = chart.begin(); it != chart.end(); it++) {
+        double x = it->first;
+        xs.push_back(convertXToLogScale ? log(x) : x);
+        ys.push_back(it->second);
     }
+}
+
+LinearRegression::LinearRegression(map<double, double> chart) {
+    xs = vector<double> (0);
+    ys = vector<double> (0);
+    for (auto it = chart.begin(); it != chart.end(); it++) {
+        xs.push_back(it->first);
+        ys.push_back(it->second);
+    }
+}
+
+
+tuple<int, double, double, int, double, double, double, double> LinearRegression::run() const {
+    int SIZE = xs.size();
 
     double line1Sum;
     double* line2Values;
@@ -45,19 +50,19 @@ tuple<int, double, double, int, double, double, double, double> LinearRegression
     double currentError;
 
     for (int j = 1; j < SIZE - 2; j++) {
-        line1Sum = initialSum(0, j, scores);
-        line2Values = initialValues(j, j+1, scores);
-        line3Sum = initialSum(j+1, SIZE - 1, scores);
+        line1Sum = initialSum(0, j, ys);
+        line2Values = initialValues(j, j+1, ys);
+        line3Sum = initialSum(j+1, SIZE - 1, ys);
 
         line1LeastSquares = linearLeastSquares(line1Sum, j+1);
-        line1Error = leastSquaresError(0, j, line1LeastSquares, scores);
+        line1Error = leastSquaresError(0, j, line1LeastSquares, ys);
 
         for (int k = j+1; k < SIZE - 1; k++) {
             line2LeastSquares = linearLeastSquares(line2Values, k-j+1);
             line3LeastSquares = linearLeastSquares(line3Sum, SIZE-k);
 
-            line2Error = leastSquaresError(j, k, line2LeastSquares, scores);
-            line3Error = leastSquaresError(k, SIZE - 1, line3LeastSquares, scores);
+            line2Error = leastSquaresError(j, k, line2LeastSquares, ys);
+            line3Error = leastSquaresError(k, SIZE - 1, line3LeastSquares, ys);
 
             currentError = line1Error + line2Error + line3Error;
 
@@ -80,16 +85,16 @@ tuple<int, double, double, int, double, double, double, double> LinearRegression
                 line3Height = line3LeastSquares;
             }
 
-            line2Values = incrementalValues(j, k, false, line2Values, scores);
-            line3Sum = incrementalValues(k, SIZE - 1, true, line3Sum, scores);
+            line2Values = incrementalValues(j, k, false, line2Values, ys);
+            line3Sum = incrementalValues(k, SIZE - 1, true, line3Sum, ys);
         }
     }
     assert(bestJ != -1 && bestK != -1);
     bestJ = bestJ - 1;
     bestK = bestK + 1;
-    return std::make_tuple(bestJ, scores[bestJ], temperatures[bestJ], bestK, scores[bestK], temperatures[bestK], line1Height, line3Height);
+    return std::make_tuple(bestJ, ys[bestJ], xs[bestJ], bestK, ys[bestK], xs[bestK], line1Height, line3Height);
 }
-double LinearRegression::initialSum(int index1, int index2, vector<double> &data){
+double LinearRegression::initialSum(int index1, int index2, const vector<double> &data){
     double sum = 0;
 
     for (int i = index1; i <= index2; i++) {
@@ -98,7 +103,7 @@ double LinearRegression::initialSum(int index1, int index2, vector<double> &data
 
     return sum;
 }
-double* LinearRegression::initialValues(int index1, int index2, vector<double> &data){
+double* LinearRegression::initialValues(int index1, int index2, const vector<double> &data){
     double* neededValues = new double[4]{0, 0, 0, 0}; // [x, y, xy, xSquared]
 
     for (int i = index1; i <= index2; i++) {
@@ -110,7 +115,7 @@ double* LinearRegression::initialValues(int index1, int index2, vector<double> &
 
     return neededValues;
 }
-double LinearRegression::incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double sum, vector<double> &data){
+double LinearRegression::incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double sum, const vector<double> &data){
     if (index1Change) {
         sum -= data[oldIndex1];
     }
@@ -121,7 +126,7 @@ double LinearRegression::incrementalValues(int oldIndex1, int oldIndex2, bool in
 
     return sum;
 }
-double* LinearRegression::incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double values[], vector<double> &data){
+double* LinearRegression::incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double values[], const vector<double> &data){
     if (index1Change) {
         values[0] -= oldIndex1;
         values[1] -= data[oldIndex1];
@@ -152,7 +157,7 @@ double* LinearRegression::linearLeastSquares(double values[], int n){
 
     return linearConstants;
 }
-double LinearRegression::leastSquaresError(int index1, int index2, double constant, vector<double> &data){
+double LinearRegression::leastSquaresError(int index1, int index2, double constant, const vector<double> &data){
     double residual;
     double error = 0;
 
@@ -164,7 +169,7 @@ double LinearRegression::leastSquaresError(int index1, int index2, double consta
 
     return error;
 }
-double LinearRegression::leastSquaresError(int index1, int index2, double constants[], vector<double> &data){
+double LinearRegression::leastSquaresError(int index1, int index2, double constants[], const vector<double> &data){
     double residual;
     double error = 0;
 

@@ -36,7 +36,6 @@
 #include "../measures/EdgeExposure.hpp"
 #include "../measures/MultiS3.hpp"
 #include "../utils/NormalDistribution.hpp"
-#include "../utils/LinearRegression.hpp"
 #include "../utils/utils.hpp"
 #include "../report.hpp"
 
@@ -2629,6 +2628,74 @@ double SANA::doublingMethod(double targetPBad, bool nextAbove, double base, doub
     }
 }
 
+void SANA::setTInitialAndTFinalByLinearRegressionClean() {
+    cout << "Setting TInitial and TFinal by Linear Regression" << endl;
+    populatePBadCurve();
+    pBadBinarySearch(TARGET_INITIAL_PBAD);
+    pBadBinarySearch(TARGET_FINAL_PBAD);        
+    LinearRegression LR(tempToPBad, true);
+    setTInitialAndTFinal(LR);
+}
+
+void SANA::populatePBadCurve() {
+    cout << "Populating PBad curve" << endl;
+    double highTemp = doublingMethod(HIGH_PBAD_LIMIT, false);
+    double lowTemp = doublingMethod(LOW_PBAD_LIMIT, true);
+    double numSteps = pow(10, abs(log10(lowTemp)) + abs(log10(highTemp)));
+    for (int T_i = 0; T_i <= log10(numSteps); T_i++) {
+        double logTemp = log10(lowTemp) + T_i*(log10(highTemp)-log10(lowTemp))/log10(numSteps);
+        double temp = pow(10, logTemp);
+        getPBad(temp, 2.0);
+    }
+}
+
+
+void SANA::setTInitialAndTFinal(const LinearRegression& LR) {
+    tuple<int, double, double, int, double, double, double, double> regressionResult = LR.run();
+    //bestJ,scores[bestJ],temps[bestJ],bestK,scores[bestK],temps[bestK],line1Height,line3Height;
+    double rangeBottom = pow(10, get<2>(regressionResult));
+    double rangeTop = pow(10, get<5>(regressionResult));
+    cout << "Goldilocks range: temp (" << rangeBottom << ", " << rangeTop << ")";
+    cout << "pBad (" << get<6>(regressionResult) << ", " << get<7>(regressionResult) << ")" << endl;
+
+    if (tempToPBad.empty()) throw runtime_error("linear regression did not record any pBads");
+    //set as TInitial the lowest temp in tempToPBad which is in the random region AND
+    //has a pBad bigger (or eq) than the target initial pBad
+    bool found = false;
+    for (auto pair : tempToPBad) {
+        //multimap is an ordered structure, so it iterates keys from low to high
+        if (pair.first >= rangeTop and pair.second >= TARGET_INITIAL_PBAD) {
+            TInitial = pair.first;
+            found = true;
+            break;
+        }
+    }
+    if (not found) {
+        //If no temp is found with both conditions, use
+        //the lowest temp with a pBad bigger than the target initial pBad
+        for (auto pair : tempToPBad) {
+            if (pair.second >= TARGET_INITIAL_PBAD) {
+                TInitial = pair.first;
+                found = true;
+            }
+        }        
+    }
+    if (not found) {
+        //whacky case where no temp in tempToPBad has a pBad above the target.
+        //just take the largest... 
+        TInitial = pow(10, tempToPBad.rbegin()->first);
+    }
+
+    double distFromTarget = std::numeric_limits<double>::max();
+    for (auto pair : tempToPBad) {
+        if (abs(TARGET_FINAL_PBAD - pair.second) < distFromTarget and
+                pair.first <= TInitial) {
+            TFinal = pair.first;
+            distFromTarget = abs(TARGET_FINAL_PBAD - pair.second);
+        }
+    }
+}
+
 void SANA::setTInitialAndTFinalByLinearRegression() {
 
     //if(score == "pareto") //Running in pareto mode makes this function really slow
@@ -2636,6 +2703,7 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
     //                      //otherwise my computer is very slow.
 
 	//check if graph is fully connected
+    //Note: this check is not done for any other automatic schedule method -Nil
 	int g1MaxEdges = n1 * (n1 - 1) / 2;
 	int g2MaxEdges = n2 * (n2 - 1) / 2;
 
@@ -2700,8 +2768,7 @@ void SANA::setTInitialAndTFinalByLinearRegression() {
         else binarySearchRightEnd = mid;
         mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
     }
-    LinearRegression linearRegression;
-    linearRegression.setup(pbadMap);
+    LinearRegression linearRegression(pbadMap);
     tuple<int, double, double, int, double, double, double, double> regressionResult = linearRegression.run();
     // bestJ, scores[bestJ], temperatures[bestJ], bestK, scores[bestK], temperatures[bestK], line1Height, line3Height;
     double lowerEnd = get<2>(regressionResult);
@@ -3000,6 +3067,8 @@ double SANA::bayesOptimization(double targetPBad) {
 // }
 
 double SANA::pBadBinarySearch(double targetPBad) {
+    cerr<<"Using pBad binary search for target pBad = "<<targetPBad<< endl;
+
     //customizable parameters
     bool logScale = true;
     double convergenceTime = 2;
@@ -3127,42 +3196,56 @@ void SANA::tempScheduleComparison(double targetInitialPBad, double targetFinalPB
 
     string pBadBinMethod = "bin-search";
     string linRegMethod = "lin-reg";
+    string linRegMethod2 = "lin-reg2";
     string ameurMethod = "ameur";
     string statMethod = "stat-test";
-    vector<string> testedMethods = { pBadBinMethod, linRegMethod, ameurMethod, statMethod };
 
-    vector<vector<double>> res;
+    //customizable parameters
+    vector<string> testedMethods = { pBadBinMethod, linRegMethod, linRegMethod2, ameurMethod, statMethod };
+    int runsPerMethod = 3;
+
+    vector<vector<double>> data;
     for (string method : testedMethods) {
-        double TIniTime, TFinTime;
-        int TIniSamples, TFinSamples; //number of times the pBad curve is sampled
-        tempToPBad.clear();
-        Timer T;
-        T.start();
-        if (method == linRegMethod) setTInitialAndTFinalByLinearRegression();
-        else if (method == statMethod) setTInitialByStatisticalTest();
-        else if (method == ameurMethod) setTInitialByAmeurMethod();
-        else if (method == pBadBinMethod) setTInitialByPBadBinarySearch();
-        else throw runtime_error("unexpected method");
-        TIniTime = T.elapsed();
-        TIniSamples = tempToPBad.size();
-        T.start();
-        if (method == linRegMethod) ;
-        else if (method == statMethod) setTFinalByCeasedProgress();
-        else if (method == ameurMethod) setTFinalByAmeurMethod();
-        else if (method == pBadBinMethod) setTFinalByPBadBinarySearch();
-        else throw runtime_error("unexpected method");
-        TFinTime = (method == linRegMethod ? -1 : T.elapsed());
-        TFinSamples = (method == linRegMethod ? -1 : tempToPBad.size() - TIniSamples);
+        for (int i = 0; i < runsPerMethod; i++) {
+            double TIniTime, TFinTime;
+            int TIniSamples, TFinSamples; //number of times the pBad curve is sampled
+            tempToPBad.clear();
+            Timer T;
+            T.start();
+            if (method == linRegMethod) setTInitialAndTFinalByLinearRegression();
+            else if (method == linRegMethod2) setTInitialAndTFinalByLinearRegressionClean();
+            else if (method == statMethod) setTInitialByStatisticalTest();
+            else if (method == ameurMethod) setTInitialByAmeurMethod();
+            else if (method == pBadBinMethod) setTInitialByPBadBinarySearch();
+            else throw runtime_error("unexpected method");
+            TIniTime = T.elapsed();
+            TIniSamples = tempToPBad.size();
+            T.start();
+            if (method == linRegMethod or method == linRegMethod2) ;
+            else if (method == statMethod) setTFinalByCeasedProgress();
+            else if (method == ameurMethod) setTFinalByAmeurMethod();
+            else if (method == pBadBinMethod) setTFinalByPBadBinarySearch();
+            else throw runtime_error("unexpected method");
 
-        double TIniPBad = getPBad(TInitial, 5);
-        double TIniPBadRelative = TIniPBad/TARGET_INITIAL_PBAD;
-        double TFinPBad = getPBad(TFinal, 5);
-        double TFinPBadRelative = TFinPBad/TARGET_FINAL_PBAD;
-        double totalTime = TIniTime + (TFinTime == -1 ? 0 : TFinTime);
-        int totalSamples = TIniSamples + (TFinSamples == -1 ? 0 : TFinSamples);
-        res.push_back({ TInitial, TIniPBad, TIniPBadRelative, (double)TIniSamples, TIniTime,
-                        TFinal,   TFinPBad, TFinPBadRelative, (double)TFinSamples, TFinTime,
-                        (double)totalSamples, totalTime });
+            if (method == linRegMethod || method == linRegMethod2) {
+                TFinTime = -1;
+                TFinSamples = -1;            
+            } else {
+                TFinTime = T.elapsed();
+                TFinSamples = tempToPBad.size() - TIniSamples;            
+            }
+
+            double TIniPBad = getPBad(TInitial, 5);
+            double TIniPBadRelative = TIniPBad/TARGET_INITIAL_PBAD;
+            double TFinPBad = getPBad(TFinal, 5);
+            double TFinPBadRelative = TFinPBad/TARGET_FINAL_PBAD;
+            double totalTime = TIniTime + (TFinTime == -1 ? 0 : TFinTime);
+            int totalSamples = TIniSamples + (TFinSamples == -1 ? 0 : TFinSamples);
+            data.push_back(
+                { TInitial, TIniPBad, TIniPBadRelative, (double)TIniSamples, TIniTime,
+                  TFinal,   TFinPBad, TFinPBadRelative, (double)TFinSamples, TFinTime,
+                  (double)totalSamples, totalTime });
+        }
     }
     cout << endl << endl;
     cout << "Automatic Temperature Schedule Comparison" << endl;
@@ -3172,12 +3255,15 @@ void SANA::tempScheduleComparison(double targetInitialPBad, double targetFinalPB
     table.push_back({"Method","TInitial","PBad","(relative)","Samples","Time",
         "TFinal","PBad","(relative)","Samples","Time","TotalSamples","TotalTime"});
     vector<int> precision = {6,6,6,0,2,9,9,6,0,2,0,2};
-    int cols = table[0].size();
     for (uint i = 0; i < testedMethods.size(); i++) {
-        table.push_back({ testedMethods[i] });
-        for (int j = 0; j < cols-1; j++) {
-            if (res[i][j] == -1) table[i+1].push_back("N/A");
-            else table[i+1].push_back(toStringWithPrecision(res[i][j], precision[j]));
+        for (int j = 0; j < runsPerMethod; j++) {
+            vector<string> newRow = { testedMethods[i] };
+            vector<double>& dataRow = data[i*runsPerMethod+j];
+            for (uint k = 0; k < dataRow.size(); k++) {
+                if (dataRow[k] == -1) newRow.push_back("N/A");
+                else newRow.push_back(toStringWithPrecision(dataRow[k], precision[k]));
+            }
+            table.push_back(newRow);
         }
     }
     printTable(table, 1, cout);

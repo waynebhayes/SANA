@@ -17,18 +17,22 @@ using namespace std;
 class LinearRegression {
 
 public:
-    int SIZE;
-    map<double, double> chart;
-    vector<string> temperatures;
-    LinearRegression();
-    void setup(map<double, double> graph);
-    tuple<int, double, double, int, double, double, double, double> run();
-    double incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double sum, vector<double> &data);
-    double* incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double values[], vector<double> &data);
-    double linearLeastSquares(double sum, int n);
-    double* linearLeastSquares(double values[], int n);
-    double leastSquaresError(int index1, int index2, double constant, vector<double> &data);
-    double leastSquaresError(int index1, int index2, double constants[], vector<double> &data);
-    double* initialValues(int index1, int index2, vector<double> &data);
-    double initialSum(int index1, int index2, vector<double> &data);
+
+    LinearRegression(multimap<double, double> chart, bool convertXToLogScale);
+    LinearRegression(map<double, double> chart);
+
+    tuple<int, double, double, int, double, double, double, double> run() const;
+
+private:
+    vector<double> xs;
+    vector<double> ys;
+
+    static double incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double sum, const vector<double> &data);
+    static double* incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double values[], const vector<double> &data);
+    static double linearLeastSquares(double sum, int n);
+    static double* linearLeastSquares(double values[], int n);
+    static double leastSquaresError(int index1, int index2, double constant, const vector<double> &data);
+    static double leastSquaresError(int index1, int index2, double constants[], const vector<double> &data);
+    static double* initialValues(int index1, int index2, const vector<double> &data);
+    static double initialSum(int index1, int index2, const vector<double> &data);
 };
