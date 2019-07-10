@@ -2628,6 +2628,124 @@ double SANA::doublingMethod(double targetPBad, bool nextAbove, double base, doub
     }
 }
 
+double SANA::pBadBinarySearch(double targetPBad) {
+    cerr<<"Using pBad binary search for target pBad = "<<targetPBad<< endl;
+
+    //customizable parameters
+    bool logScale = true;
+    double convergenceTime = 2;
+    double tolerance = 0.01;
+
+    double targetRangeTop = targetPBad/(1-tolerance);
+    double targetRangeBottom = targetPBad/(1+tolerance);
+
+    //establish starting range
+    double highTemp = doublingMethod(targetPBad, true, 100, convergenceTime);
+    double lowTemp = doublingMethod(targetPBad, false, 100, convergenceTime);
+    double highPBad = (tempToPBad.find(highTemp))->second;
+    double lowPBad = (tempToPBad.find(lowTemp))->second;
+
+    //make sure that starting bounds enclose the target range
+    bool areGoodBounds = lowTemp < highTemp and lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+    while (not areGoodBounds) {
+        highTemp *= 10;
+        lowTemp /= 10;
+        highPBad = getPBad(highTemp, convergenceTime);
+        lowPBad = getPBad(lowTemp, convergenceTime);
+        areGoodBounds = lowTemp < highTemp and lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+    }
+
+    double midTemp = logScale ? exp((log(highTemp)+log(lowTemp))/2.0) : (highTemp+lowTemp)/2.0;
+    double midPBad = getPBad(midTemp, convergenceTime);
+
+    if (highPBad >= targetRangeBottom and highPBad <= targetRangeTop) return highTemp;
+    if (lowPBad >= targetRangeBottom and lowPBad <= targetRangeTop) return lowTemp;
+    if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
+
+    cerr<<"Target range: ("<<targetRangeBottom<<", "<<targetRangeTop<<")"<<endl;
+    cerr<<"Start search bounds: temps: ("<<lowTemp<<", "<<midTemp<<", "<<highTemp;
+    cerr<<") pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
+
+    //in the search, the following invariants hold:
+    //(1) lowTemp < midTemp < highTemp ; (2) lowPBad < targetRange < highPBad ;
+    //(3) lowPBad < midPBad < highPBad ; (4) midPBad not in targetRange
+    // at this moment, (1), (2) and (4) hold. (3) we have not checked
+    //(1) will be maintained by definition of binary search and (4) will be easily checked
+    //(2) will hold as long as (3) is maintained
+    //(3) can go wrong due to noise or if the temperatures are very close.
+    //If it does, we recompute all 3 pbads and hope it's fixed.
+    //We try this X times, if we can't get invariant (3) after X attempts, we call it a day
+
+    bool invariants = lowPBad <= midPBad and midPBad <= highPBad and
+                        lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+    int failCount = 0;
+    while (not invariants) {
+        failCount++;
+        if (failCount == 3) {
+            cerr << "Binary search for pBad could not establish a reasonable starting range --" << endl;
+            cerr << "Output temperature is likely not good" << endl;
+            return highTemp;
+        }
+        highPBad = getPBad(highTemp, convergenceTime);
+        if (highPBad >= targetRangeBottom and highPBad <= targetRangeTop) return highTemp;
+        lowPBad = getPBad(lowTemp, convergenceTime);
+        if (lowPBad >= targetRangeBottom and lowPBad <= targetRangeTop) return lowTemp;
+        midPBad = getPBad(midTemp, convergenceTime);
+        if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
+
+        invariants = lowPBad <= midPBad and midPBad <= highPBad and
+                        lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+    }
+
+    //now all invariants hold. Ready to start search
+    int maxGetPBads = 10;
+    int numGetPBads = 0;
+    while (numGetPBads < maxGetPBads) {
+        if (midPBad < targetRangeBottom) {
+            lowTemp = midTemp;
+            lowPBad = midPBad;
+        } else if (midPBad > targetRangeTop) {
+            highTemp = midTemp;
+            highPBad = midPBad;
+        } else throw runtime_error("invariant not maintained in pbad binary search");
+
+        midTemp = logScale ? exp((log(highTemp)+log(lowTemp))/2.0) : (highTemp+lowTemp)/2.0;
+        midPBad = getPBad(midTemp, convergenceTime);
+        numGetPBads++;
+        if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
+
+        invariants = lowPBad <= midPBad and midPBad <= highPBad;
+        failCount = 0;
+        while (not invariants) {
+            cerr<<"Invalid search range: temps: ("<<lowTemp<<", "<<midTemp<<", "<<highTemp;
+            cerr<<") pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
+            failCount++;
+            if (failCount == 2) {
+                return midTemp;
+            }
+            midPBad = getPBad(midTemp, 1.5*convergenceTime);
+            numGetPBads++;
+            if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
+            if (midPBad < lowPBad) {
+                lowPBad = getPBad(lowTemp, 1.5*convergenceTime);
+                numGetPBads++;
+                if (lowPBad >= targetRangeBottom and lowPBad <= targetRangeTop) return lowTemp;
+            }
+            if (midPBad > highPBad) {
+                highPBad = getPBad(highTemp, 1.5*convergenceTime);
+                numGetPBads++;
+                if (highPBad >= targetRangeBottom and highPBad <= targetRangeTop) return highTemp;
+            }
+            invariants = lowPBad <= midPBad and midPBad <= highPBad and
+                         lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+            if (invariants) {
+                cerr<<"Corrected pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
+            }
+        }
+    }
+    return highTemp; //upper bound on actual temp
+}
+
 void SANA::setTInitialAndTFinalByLinearRegressionClean() {
     cout << "Setting TInitial and TFinal by Linear Regression" << endl;
     populatePBadCurve();
@@ -2657,36 +2775,39 @@ void SANA::setTInitialAndTFinal(const LinearRegression& LR) {
     double rangeTop = pow(10, get<5>(regressionResult));
     cout << "Goldilocks range: temp (" << rangeBottom << ", " << rangeTop << ")";
     cout << "pBad (" << get<6>(regressionResult) << ", " << get<7>(regressionResult) << ")" << endl;
-
-    if (tempToPBad.empty()) throw runtime_error("linear regression did not record any pBads");
-    //set as TInitial the lowest temp in tempToPBad which is in the random region AND
-    //has a pBad bigger (or eq) than the target initial pBad
-    bool found = false;
-    for (auto pair : tempToPBad) {
-        //multimap is an ordered structure, so it iterates keys from low to high
-        if (pair.first >= rangeTop and pair.second >= TARGET_INITIAL_PBAD) {
-            TInitial = pair.first;
-            found = true;
-            break;
-        }
-    }
-    if (not found) {
-        //If no temp is found with both conditions, use
-        //the lowest temp with a pBad bigger than the target initial pBad
+    
+    if (getPBad(rangeTop, 2) >= TARGET_INITIAL_PBAD) TInitial = rangeTop;
+    else {
+        //set as TInitial the lowest temp in tempToPBad which is in the random region AND
+        //has a pBad bigger (or eq) than the target initial pBad
+        bool found = false;
         for (auto pair : tempToPBad) {
-            if (pair.second >= TARGET_INITIAL_PBAD) {
+            //multimap is an ordered structure, so it iterates keys from low to high
+            if (pair.first >= rangeTop and pair.second >= TARGET_INITIAL_PBAD) {
                 TInitial = pair.first;
                 found = true;
+                break;
             }
-        }        
-    }
-    if (not found) {
-        //whacky case where no temp in tempToPBad has a pBad above the target.
-        //just take the largest... 
-        TInitial = pow(10, tempToPBad.rbegin()->first);
+        }
+        if (not found) {
+            //If no temp is found with both conditions, use
+            //the lowest temp with a pBad bigger than the target initial pBad
+            for (auto pair : tempToPBad) {
+                if (pair.second >= TARGET_INITIAL_PBAD) {
+                    TInitial = pair.first;
+                    found = true;
+                }
+            }        
+        }
+        if (not found) {
+            //whacky case where no temp in tempToPBad has a pBad above the target.
+            //just take the largest... 
+            TInitial = pow(10, tempToPBad.rbegin()->first);
+        }
     }
 
-    double distFromTarget = std::numeric_limits<double>::max();
+    TFinal = rangeBottom;
+    double distFromTarget = abs(TARGET_FINAL_PBAD - getPBad(rangeBottom, 2));
     for (auto pair : tempToPBad) {
         if (abs(TARGET_FINAL_PBAD - pair.second) < distFromTarget and
                 pair.first <= TInitial) {
@@ -3065,121 +3186,6 @@ double SANA::bayesOptimization(double targetPBad) {
 //     }
 //     return res;
 // }
-
-double SANA::pBadBinarySearch(double targetPBad) {
-    cerr<<"Using pBad binary search for target pBad = "<<targetPBad<< endl;
-
-    //customizable parameters
-    bool logScale = true;
-    double convergenceTime = 2;
-    double tolerance = 0.01;
-
-    double targetRangeTop = targetPBad/(1-tolerance);
-    double targetRangeBottom = targetPBad/(1+tolerance);
-
-    //establish starting range
-    double highTemp = doublingMethod(targetPBad, true, 100, convergenceTime);
-    double lowTemp = doublingMethod(targetPBad, false, 100, convergenceTime);
-    double highPBad = (tempToPBad.find(highTemp))->second;
-    double lowPBad = (tempToPBad.find(lowTemp))->second;
-
-    //make sure that starting bounds enclose the target range
-    bool areGoodBounds = lowTemp < highTemp and lowPBad < targetRangeBottom and highPBad > targetRangeTop;
-    while (not areGoodBounds) {
-        highTemp *= 10;
-        lowTemp /= 10;
-        highPBad = getPBad(highTemp, convergenceTime);
-        lowPBad = getPBad(lowTemp, convergenceTime);
-        areGoodBounds = lowTemp < highTemp and lowPBad < targetRangeBottom and highPBad > targetRangeTop;
-    }
-
-    double midTemp = logScale ? exp((log(highTemp)+log(lowTemp))/2.0) : (highTemp+lowTemp)/2.0;
-    double midPBad = getPBad(midTemp, convergenceTime);
-
-    if (highPBad >= targetRangeBottom and highPBad <= targetRangeTop) return highTemp;
-    if (lowPBad >= targetRangeBottom and lowPBad <= targetRangeTop) return lowTemp;
-    if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
-
-    cerr<<"Target range: ("<<targetRangeBottom<<", "<<targetRangeTop<<")"<<endl;
-    cerr<<"Start search bounds: temps: ("<<lowTemp<<", "<<midTemp<<", "<<highTemp;
-    cerr<<") pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
-
-    //in the search, the following invariants hold:
-    //(1) lowTemp < midTemp < highTemp ; (2) lowPBad < targetRange < highPBad ;
-    //(3) lowPBad < midPBad < highPBad ; (4) midPBad not in targetRange
-    // at this moment, (1), (2) and (4) hold. (3) we have not checked
-    //(1) will be maintained by definition of binary search and (4) will be easily checked
-    //(2) will hold as long as (3) is maintained
-    //(3) can go wrong due to noise or if the temperatures are very close.
-    //If it does, we recompute all 3 pbads and hope it's fixed.
-    //We try this X times, if we can't get invariant (3) after X attempts, we call it a day
-
-    bool invariants = lowPBad <= midPBad and midPBad <= highPBad and
-                        lowPBad < targetRangeBottom and highPBad > targetRangeTop;
-    int failCount = 0;
-    while (not invariants) {
-        failCount++;
-        if (failCount == 3) {
-            cerr << "Binary search for pBad could not establish a reasonable starting range --" << endl;
-            cerr << "Output temperature is likely not good" << endl;
-            return midTemp;
-        }
-        highPBad = getPBad(highTemp, convergenceTime);
-        if (highPBad >= targetRangeBottom and highPBad <= targetRangeTop) return highTemp;
-        lowPBad = getPBad(lowTemp, convergenceTime);
-        if (lowPBad >= targetRangeBottom and lowPBad <= targetRangeTop) return lowTemp;
-        midPBad = getPBad(midTemp, convergenceTime);
-        if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
-
-        invariants = lowPBad <= midPBad and midPBad <= highPBad and
-                        lowPBad < targetRangeBottom and highPBad > targetRangeTop;
-    }
-
-    //now all invariants hold. Ready to start search
-    int maxGetPBads = 100;
-    int numGetPBads = 0;
-    while (numGetPBads < maxGetPBads) {
-        if (midPBad < targetRangeBottom) {
-            lowTemp = midTemp;
-            lowPBad = midPBad;
-        } else if (midPBad > targetRangeTop) {
-            highTemp = midTemp;
-            highPBad = midPBad;
-        } else throw runtime_error("invariant not maintained in pbad binary search");
-
-        midTemp = logScale ? exp((log(highTemp)+log(lowTemp))/2.0) : (highTemp+lowTemp)/2.0;
-        midPBad = getPBad(midTemp, convergenceTime);
-        numGetPBads++;
-        if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
-
-        invariants = lowPBad <= midPBad and midPBad <= highPBad;
-        failCount = 0;
-        while (not invariants) {
-            cerr<<"Invalid search range: temps: ("<<lowTemp<<", "<<midTemp<<", "<<highTemp;
-            cerr<<") pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
-            failCount++;
-            if (failCount == 2) {
-                return midTemp;
-            }
-            midPBad = getPBad(midTemp, 1.5*convergenceTime);
-            numGetPBads++;
-            if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
-            if (midPBad < lowPBad) {
-                lowPBad = getPBad(lowTemp, 1.5*convergenceTime);
-                numGetPBads++;
-                if (lowPBad >= targetRangeBottom and lowPBad <= targetRangeTop) return lowTemp;
-            }
-            if (midPBad > highPBad) {
-                highPBad = getPBad(highTemp, 1.5*convergenceTime);
-                numGetPBads++;
-                if (highPBad >= targetRangeBottom and highPBad <= targetRangeTop) return highTemp;
-            }
-            invariants = lowPBad <= midPBad and midPBad <= highPBad and
-                         lowPBad < targetRangeBottom and highPBad > targetRangeTop;
-        }
-    }
-    return midTemp;
-}
 
 void SANA::printScheduleStatistics() {
     cout << "TInitial found for target pBad " << TARGET_INITIAL_PBAD << ": " << endl;
