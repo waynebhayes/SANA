@@ -115,14 +115,10 @@ private:
     //finds temperature corresponding to a specific pBad
     //using the method from the paper by Walid Ben-Ameur
     //"Computing the Initial Temperature of Simulated Annealing"
-    double ameurMethod(double targetPBad, double errorTolerance);
-    double iteratedAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess);
-    double individualAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess, vector<double> EIncs);
-
-
-    double ameurMethod(double pBad);
-    double ameurMethod(double targetPBad, vector<double> EIncs, double startTempGuess);
-    double iteratedAmeurMethod(double targetPBad, double startTempGuess);
+    //it applies the method iteratively to converge to a better guess
+    double iteratedAmeurMethod(double targetPBad, int maxIters = 30, double stepSize = 0.6);
+    double individualAmeurMethod(double targetPBad, double startTempGuess, vector<double> EIncs);
+    double ameurTolerance(double targetPBad);
 
     // Bayesian Optimization
     //finds temperature corresponding to a specific pBad
@@ -138,6 +134,9 @@ private:
     double trueAcceptingProbability();
     double slowTrueAcceptingProbability();
 
+    void logMethodDataForComparison(string method, vector<vector<string>>& data);
+    vector<string> methodDataForComparison(string method, double TIniTime, double TFinTime,
+        int TIniSamples, int TFinSamples, bool onlyTotalTime);
 
 
 

@@ -3065,7 +3065,6 @@ void SANA::setTFinalByCeasedProgress() {
     }
     cout << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
 
-
     //upper bound and lower bound of x
     uint N = EIncs.size();
     double ESum = vectorSum(EIncs);
@@ -3088,15 +3087,18 @@ void SANA::setTFinalByCeasedProgress() {
     cout << "Final range: (" << x_left << ", " << x_right << ")" << endl;
 }
 
-void SANA::setTInitialByAmeurMethod() {       TInitial = ameurMethod(TARGET_INITIAL_PBAD, 0.001); }
-void SANA::setTInitialByBayesOptimization() { TInitial = bayesOptimization(TARGET_INITIAL_PBAD); }
-void SANA::setTInitialByPBadBinarySearch() {  TInitial = pBadBinarySearch(TARGET_INITIAL_PBAD); }
-void SANA::setTFinalByAmeurMethod() {         TFinal   = ameurMethod(TARGET_FINAL_PBAD, 0.1); }
-void SANA::setTFinalByBayesOptimization() {   TFinal   = bayesOptimization(TARGET_FINAL_PBAD); }
-void SANA::setTFinalByPBadBinarySearch() {    TFinal   = pBadBinarySearch(TARGET_FINAL_PBAD); }    
+void SANA::setTInitialByAmeurMethod(){      TInitial=iteratedAmeurMethod(TARGET_INITIAL_PBAD);}
+void SANA::setTInitialByBayesOptimization(){TInitial=bayesOptimization(TARGET_INITIAL_PBAD)  ;}
+void SANA::setTInitialByPBadBinarySearch(){ TInitial=pBadBinarySearch(TARGET_INITIAL_PBAD)   ;}
+void SANA::setTFinalByAmeurMethod(){        TFinal  =iteratedAmeurMethod(TARGET_FINAL_PBAD)  ;}
+void SANA::setTFinalByBayesOptimization(){  TFinal  =bayesOptimization(TARGET_FINAL_PBAD)    ;}
+void SANA::setTFinalByPBadBinarySearch(){   TFinal  =pBadBinarySearch(TARGET_FINAL_PBAD)     ;}    
 
-double SANA::ameurMethod(double targetPBad, double errorTolerance) {
-    return iteratedAmeurMethod(targetPBad, 1, errorTolerance);
+//how far from the targetPBad we are allowed to be (in relative terms)
+double SANA::ameurTolerance(double targetPBad) {
+    //empirically found values without much experimentation (may not be the best)
+    if (targetPBad < 0.1) return 0.2;
+    return 0.005;
 }
 
 //the method from the ameur paper computes a temperature that "fits" a target pbad for a given sample of EIncs
@@ -3104,14 +3106,16 @@ double SANA::ameurMethod(double targetPBad, double errorTolerance) {
 //generate a new sample of EIncs by running at that temperature, 
 //and use the ameur method again to find a temperature that "fits" the target pbad with the new EIncs
 //this converges to the temperature that gives rise to that pbad at equilibrium
-double SANA::iteratedAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess) {
-    int maxIters = 30;
+//step size should be <= 1
+//with bigger step sizes, there may be a "bounce back and forth" effect:
+double SANA::iteratedAmeurMethod(double targetPBad, int maxIters, double stepSize) {
+    double startTempGuess = 1;
+    double errorTolerance = ameurTolerance(targetPBad);
+
     double tempGuess = startTempGuess;
     bool converged = false;
     int iteration = 0;
 
-    //with bigger step sizes, there may be a "bounce back and forth" effect
-    double stepSize = 0.9; //keep <= 1
     cout << "Using iterated Ameur method" << endl;
 
     while (not converged and iteration < maxIters) {
@@ -3122,7 +3126,7 @@ double SANA::iteratedAmeurMethod(double targetPBad, double errorTolerance, doubl
         converged = tempGuessPBad > targetPBad*(1-errorTolerance) and tempGuessPBad < targetPBad*(1+errorTolerance);
         if (converged) break;
 
-        double nextTempGuess = tempGuess + stepSize*(individualAmeurMethod(targetPBad, tempGuess, errorTolerance, EIncs) - tempGuess);
+        double nextTempGuess = tempGuess + stepSize*(individualAmeurMethod(targetPBad, tempGuess, EIncs) - tempGuess);
 
         tempGuess = nextTempGuess;
         iteration++;
@@ -3136,7 +3140,9 @@ double SANA::iteratedAmeurMethod(double targetPBad, double errorTolerance, doubl
     return tempGuess;
 }
 
-double SANA::individualAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess, vector<double> EIncs) {
+double SANA::individualAmeurMethod(double targetPBad, double startTempGuess, vector<double> EIncs) {
+    double errorTolerance = ameurTolerance(targetPBad);
+
     int maxIters = 100;
     double tempGuess = startTempGuess;
     bool converged = false;
@@ -3196,83 +3202,128 @@ void SANA::printScheduleStatistics() {
     cout << endl;
 }
 
+vector<string> SANA::methodDataForComparison(string method, double TIniTime, double TFinTime,
+        int TIniSamples, int TFinSamples, bool onlyTotalTime) {
+    double TIniPBad = getPBad(TInitial, 5);
+    double TIniPBadRelative = TIniPBad/TARGET_INITIAL_PBAD;
+    double TFinPBad = getPBad(TFinal, 5);
+    double TFinPBadRelative = TFinPBad/TARGET_FINAL_PBAD;
+    vector<double> data;
+    if (onlyTotalTime) {
+        data = { TInitial, TIniPBad, TIniPBadRelative, -1, -1,
+                 TFinal,   TFinPBad, TFinPBadRelative, -1, -1,
+                 (double)TIniSamples, TIniTime };
+    } else {
+        double totalTime = TIniTime + TFinTime;
+        int totalSamples = TIniSamples + TFinSamples;
+        data = { TInitial, TIniPBad, TIniPBadRelative, (double)TIniSamples, TIniTime,
+                 TFinal,   TFinPBad, TFinPBadRelative, (double)TFinSamples, TFinTime,
+                 (double)totalSamples, totalTime };
+    }
+    vector<string> res = {method};
+    vector<int> precision = {6,6,6,0,2,9,9,6,0,2,0,2};
+    for (uint i = 0; i < data.size(); i++) {
+        if (data[i] == -1) res.push_back("N/A");
+        else res.push_back(toStringWithPrecision(data[i], precision[i]));
+    }
+    return res;
+}
+
+void SANA::logMethodDataForComparison(string method, vector<vector<string>>& data) {
+
+    Timer T;
+    T.start();    
+    if (method == "lin-reg") setTInitialAndTFinalByLinearRegression();
+    else if (method ==  "lin-reg2") setTInitialAndTFinalByLinearRegressionClean();
+    else if (method == "bin-search" or method == "hybrid") setTInitialByPBadBinarySearch();
+    else if (method == "ameur") setTInitialByAmeurMethod();
+    //the original ameur method corresponds to the iterated ameur method with 1 iteration:
+    else if (method == "orig-ameur") TInitial = iteratedAmeurMethod(TARGET_INITIAL_PBAD, 1, 1);
+    else if (method == "stat-test") setTInitialByStatisticalTest();
+    else throw runtime_error("unexpected method");
+
+    double TIniTime = T.elapsed();
+    int TIniSamples = tempToPBad.size(); //number of times the pBad curve is sampled
+
+    if (method == "lin-reg" or method ==  "lin-reg2") {
+        data.push_back(methodDataForComparison(method, TIniTime, -1, TIniSamples, -1, true));
+        return;
+    }
+
+    T.start();
+    if (method == "bin-search" or method == "hybrid") setTFinalByPBadBinarySearch();
+    else if (method == "ameur") setTFinalByAmeurMethod();
+    else if (method == "orig-ameur") TFinal = iteratedAmeurMethod(TARGET_FINAL_PBAD, 1, 1);
+    else if (method == "stat-test") setTFinalByCeasedProgress();
+    else throw runtime_error("unexpected method");
+
+    double TFinTime = T.elapsed();
+    int TFinSamples = tempToPBad.size() - TIniSamples;
+
+    if (method != "hybrid") {
+        data.push_back(methodDataForComparison(method, TIniTime, TFinTime, TIniSamples, TFinSamples, false));
+        return;
+    }
+
+    //hybrid
+    //applies L.R. on the samples taken by the binary searches +
+    //samples taken at even intervals to populate the pbad curve
+    data.push_back(methodDataForComparison("bin-search*", TIniTime, TFinTime, TIniSamples, TFinSamples, false));
+
+    T.start();
+    populatePBadCurve();
+    double populateTime = T.elapsed();
+    LinearRegression LR(tempToPBad, true);
+    setTInitialAndTFinal(LR);
+    double totalTime = populateTime + TIniTime + TFinTime;
+    int totalSamples = tempToPBad.size();
+    data.push_back(methodDataForComparison("lin-reg2*", totalTime, -1, totalSamples, -1, true));
+}
+
 void SANA::tempScheduleComparison(double targetInitialPBad, double targetFinalPBad) {
     TARGET_INITIAL_PBAD = targetInitialPBad;
     TARGET_FINAL_PBAD = targetFinalPBad;
 
-    string pBadBinMethod = "bin-search";
-    string linRegMethod = "lin-reg";
-    string linRegMethod2 = "lin-reg2";
-    string ameurMethod = "ameur";
-    string statMethod = "stat-test";
+    string pBadBin = "bin-search";
+    string linReg = "lin-reg";
+    string linReg2 = "lin-reg2";
+    string origameur = "orig-ameur";
+    string ameur = "ameur";
+    string stat = "stat-test";
+    string hybrid = "hybrid";
 
     //customizable parameters
-    vector<string> testedMethods = { pBadBinMethod, linRegMethod, linRegMethod2, ameurMethod, statMethod };
+    vector<string> testedMethods = { stat, pBadBin, origameur, ameur, linReg, linReg2, hybrid };
     int runsPerMethod = 3;
 
-    vector<vector<double>> data;
+    vector<vector<string>> data;
+    data.push_back({"Method","TInitial","PBad","(relative)","Samples","Time",
+        "TFinal","PBad","(relative)","Samples","Time","TotalSamples","TotalTime"});
+
+    multimap<double,double> allTempToPBad;
+
+    Timer T;
+    T.start();
     for (string method : testedMethods) {
         for (int i = 0; i < runsPerMethod; i++) {
-            double TIniTime, TFinTime;
-            int TIniSamples, TFinSamples; //number of times the pBad curve is sampled
             tempToPBad.clear();
-            Timer T;
-            T.start();
-            if (method == linRegMethod) setTInitialAndTFinalByLinearRegression();
-            else if (method == linRegMethod2) setTInitialAndTFinalByLinearRegressionClean();
-            else if (method == statMethod) setTInitialByStatisticalTest();
-            else if (method == ameurMethod) setTInitialByAmeurMethod();
-            else if (method == pBadBinMethod) setTInitialByPBadBinarySearch();
-            else throw runtime_error("unexpected method");
-            TIniTime = T.elapsed();
-            TIniSamples = tempToPBad.size();
-            T.start();
-            if (method == linRegMethod or method == linRegMethod2) ;
-            else if (method == statMethod) setTFinalByCeasedProgress();
-            else if (method == ameurMethod) setTFinalByAmeurMethod();
-            else if (method == pBadBinMethod) setTFinalByPBadBinarySearch();
-            else throw runtime_error("unexpected method");
-
-            if (method == linRegMethod || method == linRegMethod2) {
-                TFinTime = -1;
-                TFinSamples = -1;            
-            } else {
-                TFinTime = T.elapsed();
-                TFinSamples = tempToPBad.size() - TIniSamples;            
-            }
-
-            double TIniPBad = getPBad(TInitial, 5);
-            double TIniPBadRelative = TIniPBad/TARGET_INITIAL_PBAD;
-            double TFinPBad = getPBad(TFinal, 5);
-            double TFinPBadRelative = TFinPBad/TARGET_FINAL_PBAD;
-            double totalTime = TIniTime + (TFinTime == -1 ? 0 : TFinTime);
-            int totalSamples = TIniSamples + (TFinSamples == -1 ? 0 : TFinSamples);
-            data.push_back(
-                { TInitial, TIniPBad, TIniPBadRelative, (double)TIniSamples, TIniTime,
-                  TFinal,   TFinPBad, TFinPBadRelative, (double)TFinSamples, TFinTime,
-                  (double)totalSamples, totalTime });
+            logMethodDataForComparison(method, data);
+            allTempToPBad.insert(tempToPBad.begin(), tempToPBad.end());
         }
     }
+
+    //apply LR on all the samples taken by all the methods
+    double totalTime = T.elapsed();
+    LinearRegression LR(allTempToPBad, true);
+    setTInitialAndTFinal(LR);
+    int totalSamples = allTempToPBad.size();
+    data.push_back(methodDataForComparison("superLR", totalTime, -1, totalSamples, -1, true));
+
     cout << endl << endl;
     cout << "Automatic Temperature Schedule Comparison" << endl;
     cout << "Target Initial PBad: " << TARGET_INITIAL_PBAD << endl;
     cout << "Target Final PBad:   " << TARGET_FINAL_PBAD << endl;
-    vector<vector<string>> table;
-    table.push_back({"Method","TInitial","PBad","(relative)","Samples","Time",
-        "TFinal","PBad","(relative)","Samples","Time","TotalSamples","TotalTime"});
-    vector<int> precision = {6,6,6,0,2,9,9,6,0,2,0,2};
-    for (uint i = 0; i < testedMethods.size(); i++) {
-        for (int j = 0; j < runsPerMethod; j++) {
-            vector<string> newRow = { testedMethods[i] };
-            vector<double>& dataRow = data[i*runsPerMethod+j];
-            for (uint k = 0; k < dataRow.size(); k++) {
-                if (dataRow[k] == -1) newRow.push_back("N/A");
-                else newRow.push_back(toStringWithPrecision(dataRow[k], precision[k]));
-            }
-            table.push_back(newRow);
-        }
-    }
-    printTable(table, 1, cout);
+    printTable(data, 1, cout);
     cout << endl;
 }
 
