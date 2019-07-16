@@ -34,7 +34,7 @@ mkdir $TMPDIR
 GROUP=''
 
 if $TYPES; then readCols=1; else readCols=2; fi # read the second column later if TYPES
-# NOTE: the above means that, when nodes-have-types, nodes are internally numbered as follows:
+# NOTE: the above means that, when bipartite, nodes are internally numbered as follows:
 # first we read through the first column ONLY, incremeting numNodes as we encounter previously unseen nodes;
 # then we do the same for the second column.
 

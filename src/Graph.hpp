@@ -166,7 +166,7 @@ public:
     int getNodeType(uint i);
     bool hasNodeTypes();
 
-    // nodes-have-types -- TODO make them private later
+    // bipartite -- TODO make them private later
     //vector<string> nodeTypes;
     vector<int> nodeTypes;
     bool bipartiteEnabled = false;

@@ -2682,7 +2682,7 @@ unordered_map<uint, uint> Graph::getLocking_ReIndexMap() const{
 
 
 /** This is used for -bipartite,
- *   -- it also support locking so if both locking and  nodes-have-types is turned on this reIndexing is used
+ *   -- it also support locking so if both locking and  bipartite is turned on this reIndexing is used
  *
  *   Reindexing as following order:
  *         gene, miRNA, Locked gene or miRNA

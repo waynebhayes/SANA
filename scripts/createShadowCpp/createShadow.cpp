@@ -383,7 +383,7 @@ int main(int argc, const char** argv) {
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
 
     args::Group opt(parser, "Optional Flag", args::Group::Validators::DontCare);
-    args::Flag bipartiteFlag(opt, "haveTypes", "Enables -bipartite", {'n', "nodes-have-types"});
+    args::Flag bipartiteFlag(opt, "haveTypes", "Enables -bipartite", {'n', "bipartite"});
     args::ValueFlag<std::string> shadowNamesFlag(opt, "shadowNames", "Block size", {"shadowNames"});
 
     // args::Flag compact(parser, "compact", "Alignment file format", {'c',"compact"});
