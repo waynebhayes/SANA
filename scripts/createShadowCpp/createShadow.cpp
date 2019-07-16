@@ -331,7 +331,7 @@ void output_GW_Format( std::vector<std::unordered_map<int, int>> &adjList){
 void output_el_Format( std::vector<std::unordered_map<int, int>> &adjList, 
                             std::vector<std::string> &shadowNames, 
                             std::vector<bool> &nodeTypes,
-                            bool nodesHaveTypes){
+                            bool bipartite){
     std::cerr << "printing out .el assuming bipartite graph (typed nodes)" << std::endl;
     for (unsigned int i = 0; i < adjList.size(); ++i) {
         for (auto it = adjList[i].begin(); it != adjList[i].end(); ++it) {
@@ -347,7 +347,7 @@ void output_el_Format( std::vector<std::unordered_map<int, int>> &adjList,
                 continue;
             }
             
-            if(nodesHaveTypes){
+            if(bipartite){
                 bool firstType  = nodeTypes[i];
                 bool secondType = nodeTypes[it->first];
 
@@ -383,7 +383,7 @@ int main(int argc, const char** argv) {
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
 
     args::Group opt(parser, "Optional Flag", args::Group::Validators::DontCare);
-    args::Flag nodesHaveTypesFlag(opt, "haveTypes", "Enables -nodes-have-types", {'n', "nodes-have-types"});
+    args::Flag bipartiteFlag(opt, "haveTypes", "Enables -bipartite", {'n', "nodes-have-types"});
     args::ValueFlag<std::string> shadowNamesFlag(opt, "shadowNames", "Block size", {"shadowNames"});
 
     // args::Flag compact(parser, "compact", "Alignment file format", {'c',"compact"});
@@ -439,7 +439,7 @@ int main(int argc, const char** argv) {
     std::unordered_map<std::string, unsigned short> shadowName2Index; // TODO
     std::vector<std::string> shadowNames;
     std::vector<bool> nodeTypes;   // 0 gene, 1 miRNA
-    if(args::get(nodesHaveTypesFlag)){
+    if(args::get(bipartiteFlag)){
         std::ifstream f(shadowNamesFile);
         if(!f.good()){
             std::cerr << "Failed to load file: " << shadowNamesFile << std::endl;
@@ -499,14 +499,14 @@ int main(int argc, const char** argv) {
         //std::vector<StringPair> tempAlig(0);
         std::unordered_map<std::string, std::string> tempAlig;
         
-        if(args::get(nodesHaveTypesFlag)){
+        if(args::get(bipartiteFlag)){
             shadow_graph::loadEdgeListAlignment(tempAlig, alignment_files.at(gi));
         }
         else {
             shadow_graph::loadAlignment(tempAligOneline, alignment_files.at(gi));
         }
 
-        unsigned int n = args::get(nodesHaveTypesFlag) ? tempAlig.size(): tempAligOneline.size();
+        unsigned int n = args::get(bipartiteFlag) ? tempAlig.size(): tempAligOneline.size();
      //   std::cerr << "~~ " << n << " " << tempGraph.adjList.size() << std::endl;
         assert(n == tempGraph.adjList.size()); // alignment size should be same as graph node count
 
@@ -527,7 +527,7 @@ int main(int argc, const char** argv) {
                 unsigned short hole     = -1;
                 unsigned short end_hole = -1;
 
-                if(args::get(nodesHaveTypesFlag)){
+                if(args::get(bipartiteFlag)){
                     // expects edge list alignment
                     std::string name1 = tempAlig[tempGraph.rev_node_map[peg]];  // tempAlig.at(peg).second;
                     std::string name2 = tempAlig[tempGraph.rev_node_map[end_peg]];// tempAlig.at(end_peg).second;
@@ -571,7 +571,7 @@ int main(int argc, const char** argv) {
         }
     }
 
-    if(args::get(nodesHaveTypesFlag))
+    if(args::get(bipartiteFlag))
         output_el_Format(adjList, shadowNames, nodeTypes, true);
     else
         output_GW_Format(adjList);

@@ -37,18 +37,18 @@ public:
 
     void setMaxGraphletSize(double number);
     static Graph& loadGraph(string name, Graph& g);
-    static Graph& loadGraphFromPath(string path, string name, Graph& g, bool nodesHaveTypes = false);
+    static Graph& loadGraphFromPath(string path, string name, Graph& g, bool bipartite = false);
     static Graph& multGraph(string name, uint path, Graph& g);
 
-    static void loadFromEdgeListFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
-    static void loadFromLedaFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
-    static void loadFromLgfFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
-    static void loadFromGmlFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
-    static void loadFromGraphmlFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
-    static void loadFromCsvFile(string fin, string graphName, Graph& g, bool nodesHaveTypes = false);
+    static void loadFromEdgeListFile(string fin, string graphName, Graph& g, bool bipartite = false);
+    static void loadFromLedaFile(string fin, string graphName, Graph& g, bool bipartite = false);
+    static void loadFromLgfFile(string fin, string graphName, Graph& g, bool bipartite = false);
+    static void loadFromGmlFile(string fin, string graphName, Graph& g, bool bipartite = false);
+    static void loadFromGraphmlFile(string fin, string graphName, Graph& g, bool bipartite = false);
+    static void loadFromCsvFile(string fin, string graphName, Graph& g, bool bipartite = false);
 
 
-    static void loadGraphFromBinary(Graph& g, string graphName, string lockFile, bool nodesHaveTypes, bool lockedSameName);
+    static void loadGraphFromBinary(Graph& g, string graphName, string lockFile, bool bipartite, bool lockedSameName);
     static void serializeGraph(Graph& G, string outputName, bool typedNodes, bool locked);
     void serializeShadow(Graph& G);
 
@@ -169,7 +169,7 @@ public:
     // nodes-have-types -- TODO make them private later
     //vector<string> nodeTypes;
     vector<int> nodeTypes;
-    bool nodesHaveTypesEnabled = false;
+    bool bipartiteEnabled = false;
     uint geneCount = 0;
     uint miRNACount = 0;
     int unlockedGeneCount = -1;
