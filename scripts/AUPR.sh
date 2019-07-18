@@ -57,7 +57,8 @@ hawk '
 	    Rthresh = (1*'$R'<1e30 ? 1*'$R' : (StatN(3)>2 ? StatMean(3) : 0))
 	    Sthresh = (1*'$S'<1e30 ? 1*'$S' : (StatN(4)>2 ? StatMean(4) : 0))
 	}
-	for(p1 in score)for(p2 in score[p1])if(score[p1][p2][c]>thresh){
+	for(p1 in score)for(p2 in score[p1])
+	    if(score[p1][p2][c]>thresh){
 		if('$PREDICT') {
 		    printf "%d %s %s %g", cols[c],p1,p2,score[p1][p2][c]
 		    if(p1 in O && p2 in O[p1]) printf " ORTHO"
