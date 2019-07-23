@@ -49,7 +49,7 @@ public:
 
 
     static void loadGraphFromBinary(Graph& g, string graphName, string lockFile, bool bipartite, bool lockedSameName);
-    static void serializeGraph(Graph& G, string outputName, bool typedNodes, bool locked);
+    static void serializeGraph(Graph& G, string outputName, bool bipartite, bool locked);
     void serializeShadow(Graph& G);
 
     static void saveInGWFormat(string outputFile, const vector<string>& nodeNames,
@@ -158,13 +158,13 @@ public:
     int getLockedCount();
 
     unordered_map<uint, uint> getLocking_ReIndexMap() const;
-    unordered_map<uint, uint> getNodeTypes_ReIndexMap() const;
+    unordered_map<uint, uint> getBipartiteNodeTypes_ReIndexMap() const;
 
     void reIndexGraph(unordered_map<uint, uint> reIndexMap);  // Changes the node indexes according to the map
 
-    //string getNodeType(uint i);
-    int getNodeType(uint i);
-    bool hasNodeTypes();
+    //string getBipartiteNodeType(uint i);
+    int getBipartiteNodeType(uint i);
+    bool isBipartite();
 
     // bipartite -- TODO make them private later
     //vector<string> nodeTypes;

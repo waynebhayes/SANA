@@ -157,9 +157,9 @@ SANA::SANA(Graph* G1, Graph* G2,
     pBadBuffer = vector<double> (PBAD_CIRCULAR_BUFFER_SIZE, 0);
 
     //data structures for the solution space search
-    assert(G1->hasNodeTypes() == G2->hasNodeTypes());
+    assert(G1->isBipartite() == G2->isBipartite());
     uint ramificationChange[2], ramificationSwap[2], totalRamification[2];
-    if(G1->hasNodeTypes()) {
+    if(G1->isBipartite()) {
 	assert(G1->geneCount <= G2->geneCount);
 	assert(G1->miRNACount <= G2->miRNACount);
 	ramificationChange[0] = G1->geneCount*(G2->geneCount - G1->geneCount);
@@ -294,7 +294,7 @@ Alignment SANA::getStartingAlignment(){
 
     if(this->startAligName != "")
         startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
-    else if (G1->hasNodeTypes())
+    else if (G1->isBipartite())
         startAlig = Alignment::randomAlignmentWithNodeType(G1,G2);
     else if (lockFileName != "")
         startAlig = Alignment::randomAlignmentWithLocking(G1,G2);
@@ -303,8 +303,8 @@ Alignment SANA::getStartingAlignment(){
 
     // Doing a Rexindexing if required
 #ifdef REINDEX
-    if (G1->hasNodeTypes()) {
-    	startAlig.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
+    if (G1->isBipartite()) {
+    	startAlig.reIndexBefore_Iterations(G1->getBipartiteNodeTypes_ReIndexMap());
     }
     else if (lockFileName != "") {
 	    startAlig.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
@@ -638,7 +638,7 @@ double SANA::slowTrueAcceptingProbability() {
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
-    bipartite = G1->hasNodeTypes();
+    bipartite = G1->isBipartite();
 
     A = new vector<uint>(startA.getMapping());
     assignedNodesG2 = new vector<bool> (n2, false);
@@ -1217,7 +1217,7 @@ void SANA::deallocateParetoData() {
 
 void SANA::SANAIteration() {
     ++iterationsPerformed;
-    if(G1->hasNodeTypes()) {
+    if(G1->isBipartite()) {
         // Choose the type here based on counts (and locking...)
         // For example if no locking, then prob (gene) >> prob (miRNA)
         // And if locking, then arrange prob(gene) and prob(miRNA) appropriately
@@ -3145,8 +3145,8 @@ void SANA::prune(string& startAligName) {
 
     Alignment align =  Alignment::loadEdgeList(G1, G2, startAligName);
 #ifdef REINDEX
-    if(G1->hasNodeTypes())
-        align.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
+    if(G1->isBipartite())
+        align.reIndexBefore_Iterations(G1->getBipartiteNodeTypes_ReIndexMap());
     else if (lockFileName != "")
         align.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
 
@@ -3159,8 +3159,8 @@ void SANA::prune(string& startAligName) {
         reIndexedMap[i] = i;
 
 #ifdef REINDEX
-    if(G1->hasNodeTypes())
-        reIndexedMap = G1->getNodeTypes_ReIndexMap();
+    if(G1->isBipartite())
+        reIndexedMap = G1->getBipartiteNodeTypes_ReIndexMap();
     else if (lockFileName != "")
         reIndexedMap = G1->getLocking_ReIndexMap();
 #endif
@@ -3400,7 +3400,7 @@ void SANA::performSwap(Job &job, int type) {
 
 void SANA::parallelParetoSANAIteration(Job &job) {
     ++job.iterationsPerformed;
-    if(G1->hasNodeTypes())
+    if(G1->isBipartite())
     {
 	// Choose the type here based on counts (and locking...)
 	// For example if no locking, then prob (gene) >> prob (miRNA)
