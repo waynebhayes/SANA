@@ -57,8 +57,6 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
     string g1Folder, g2Folder;
     g1Folder = "networks/"+g1Name;
     g2Folder = "networks/"+g2Name;
-    createFolder(g1Folder);
-    createFolder(g2Folder);
     
 #if USE_CACHED_FILES
 // By default, USE_CACHED_FILES is 0 and SANA does not cache files. Change USE_CACHED_FILES at your own risk.
