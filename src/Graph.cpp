@@ -25,6 +25,7 @@ Graph& Graph::loadGraph(string name, Graph& g) {
 
 Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool bipartite){
     g.path = path;
+    g.bipartiteEnabled = bipartite;
     string format = path.substr(path.find_last_of('.')+1);
     string uncompressedFileExt = getUncompressedFileExtension(path);
     if(format == "gw" || uncompressedFileExt == "gw"){
