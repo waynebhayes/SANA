@@ -13,6 +13,6 @@
 #include <algorithm>
 #include <vector>
 
-std::vector<std::vector<uint> > computeGraphlets(int maxGraphletSize, std::string graphFileName);
+std::vector<std::vector<uint> > computeGraphlets(int maxGraphletSize, FILE *fp);
 
 #endif

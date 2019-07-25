@@ -2141,17 +2141,16 @@ vector<vector<uint> > Graph::computeGraphletDegreeVectors() {
     uint n = getNumNodes();
     uint m = getNumEdges();
 
-
-    string fileName = "tmp/compute_dgvs.txt";
-    ofstream fout(fileName.c_str());
-    fout << n << " " << m << endl;
+    FILE *fp = tmpfile();
+    fprintf(fp, "%d %d\n",n,m); // fout << n << " " << m << endl;
     for (uint i = 0; i < m; i++) {
-        fout << edgeList[i][0] << " " << edgeList[i][1] << endl;
+        fprintf(fp, "%d %d\n", edgeList[i][0], edgeList[i][1]);
     }
-    fout.close();
+    rewind(fp); // because computeGraphlets is going to start reading the file from the beginning.
     double GraphletSizemax = Graph::maxGraphletSize;
 
-    vector<vector<uint> > gdvs = computeGraphlets(GraphletSizemax, fileName);
+    vector<vector<uint> > gdvs = computeGraphlets(GraphletSizemax, fp);
+    fclose(fp);
     return gdvs;
 }
 
