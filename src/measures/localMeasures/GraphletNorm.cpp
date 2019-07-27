@@ -13,10 +13,8 @@ GraphletNorm::~GraphletNorm() {}
 
 double GraphletNorm::magnitude(vector<uint> &vector) {
     double res = 0;
-    for(uint i = 0; i < vector.size(); ++i) {
+    for(uint i = 0; i < vector.size(); ++i)
         res += vector[i] * static_cast<double>(vector[i]);
-    }
-
     return sqrt(res);
 }
 
@@ -40,20 +38,21 @@ double GraphletNorm::ODVratio(vector<double> &u, vector<double> &v, uint i){
 }
 
 //use RMSD between the ratio vector and a vector of 1's
-double GraphletNorm::ODVdiff(vector<uint> &u, vector<uint> &v){
+double GraphletNorm::RMS_ODVdiff1(vector<uint> &u, vector<uint> &v){
     vector<double> nU = NODV(u);
     vector<double> nV = NODV(v);
 
-    double sum = 0;
+    double sum2 = 0;
     for(uint i = 0; i < v.size(); i++)
     {
-        sum += pow(ODVratio(nU, nV, i) - 1, 2);
+        double ratio_1 = ODVratio(nU, nV, i) - 1;
+        sum2 += ratio_1*ratio_1;
     }
-    return sqrt(sum/v.size());
+    return sqrt(sum2/v.size());
 }
 
 double GraphletNorm::ODVsim(vector<uint> &u, vector<uint> &v){
-    return 1 - ODVdiff(u, v);
+    return 1 - RMS_ODVdiff1(u, v);
 }
 
 vector<uint> GraphletNorm::reduce(vector<uint> &v) {
