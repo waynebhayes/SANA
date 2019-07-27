@@ -9,8 +9,7 @@ GraphletCosine::GraphletCosine(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "gra
     loadBinSimMatrix(fileName);
 }
 
-GraphletCosine::~GraphletCosine() {
-}
+GraphletCosine::~GraphletCosine() {}
 
 double GraphletCosine::magnitude(vector<uint> vector) {
     double res = 0;

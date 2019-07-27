@@ -4,17 +4,14 @@
 #include "GraphletNorm.hpp"
 using namespace std;
 
-
 GraphletNorm::GraphletNorm(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "graphletnorm") {
     string fileName = autogenMatricesFolder+G1->getName()+"_"+G2->getName()+"_graphletnorm.bin";
     loadBinSimMatrix(fileName);
 }
 
-GraphletNorm::~GraphletNorm() {
-}
+GraphletNorm::~GraphletNorm() {}
 
-//return the magnitude of vector
-double GraphletNorm::magnitude(vector<uint> vector) {
+double GraphletNorm::magnitude(vector<uint> &vector) {
     double res = 0;
     for(uint i = 0; i < vector.size(); ++i) {
         res += vector[i] * static_cast<double>(vector[i]);
@@ -24,26 +21,26 @@ double GraphletNorm::magnitude(vector<uint> vector) {
 }
 
 //return the unit vector of v
-vector<double> GraphletNorm::NODV(vector<uint> v){
-    vector<double> res;
+vector<double> GraphletNorm::NODV(vector<uint> &v){
+    vector<double> res(v.size());
     double mag = magnitude(v);
     if(mag == 0){
         vector<double> empty(v.size());
         return empty;
     }
     for(uint i = 0; i < v.size(); i++){
-        res.push_back(v[i] / mag);
+        res[i] = v[i] / mag; // don't EVER use push_back!!! It's a piece of fucking donkey shit.
     }
     return res;
 }
 
-double GraphletNorm::ODVratio(vector<double> u, vector<double> v, uint i){
+double GraphletNorm::ODVratio(vector<double> &u, vector<double> &v, uint i){
     if(u[i] == v[i]) return 1;
     return min(u[i], v[i]) / max(u[i], v[i]);
 }
 
 //use RMSD between the ratio vector and a vector of 1's
-double GraphletNorm::ODVdiff(vector<uint> u, vector<uint> v){
+double GraphletNorm::ODVdiff(vector<uint> &u, vector<uint> &v){
     vector<double> nU = NODV(u);
     vector<double> nV = NODV(v);
 
@@ -55,11 +52,11 @@ double GraphletNorm::ODVdiff(vector<uint> u, vector<uint> v){
     return sqrt(sum/v.size());
 }
 
-double GraphletNorm::ODVsim(vector<uint> u, vector<uint> v){
+double GraphletNorm::ODVsim(vector<uint> &u, vector<uint> &v){
     return 1 - ODVdiff(u, v);
 }
 
-vector<uint> GraphletNorm::reduce(vector<uint> v) {
+vector<uint> GraphletNorm::reduce(vector<uint> &v) {
     vector<uint> res(11);
     res[0] = v[0];
     res[1] = v[1];
