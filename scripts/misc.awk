@@ -37,6 +37,13 @@ function fact(k) {if(k<=0)return 1; else return k*fact(k-1);}
 function choose(n,k,     r,i) {r=1;for(i=1;i<=k;i++)r*=(n-(k-i))/i; return r}
 function NumBits(n,    b) {b=0;while(n>0){if(n%2==1)b++;n=int(n/2)}; return b}
 
+# And now counting the info in an edge list. One way to view the info is simply the number of edges.
+# Another is to view each node's adjacency list as having log(n) bits for each of its neighbors.
+# This then says that the amount of info is as follows: the end of each edge is listed twice (ie is in two neighbor lists),
+# but only one is strictly needed. And each entry is log2(n) bits. So the total info is just log2(n)*numEdges.
+# But this number is *way* bigger than the number of edges for all 2018 BioGRID networks, so clearly it's too high.
+function netbits(n1,n2,     i,bits){if(n2==0)n2=n1; bits=0;for(i=0;i<MIN(n1,n2);i++)bits+=log(MAX(n1,n2)-i)/log(2); return bits}
+
 function logb(b,x){return log(x)/log(b)}
 function dtob(n,   s,sgn) {n=1*n;if(!n)return "0";s=sgn="";if(n<0){sgn="-";n=-n};while(n){s=sprintf("%d%s",(n%2),s); n=int(n/2)}; return sgn s}
 function btod(n) {}
