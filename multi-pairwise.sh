@@ -89,8 +89,8 @@ SEScol=4 # becomes 4 if TYPES
 while echo "X$1" | grep '^X-' >/dev/null; do
     case "$1" in
     -H) HILLCLIMB=$2; shift;; # in addition to the shift that'll happen below
-    -nodes-have-types) TYPES=true; TYPEargs='-nodes-have-types -lock-same-names'; SEScol=3;
-	CrShOutType=el; CrShAlignInput=align; TYPEcreateSh='--nodes-have-types --shadowNames Jurisica/SHADOW.all.txt';
+    -bipartite) TYPES=true; TYPEargs='-bipartite -lock-same-names'; SEScol=3;
+	CrShOutType=el; CrShAlignInput=align; TYPEcreateSh='--bipartite --shadowNames Jurisica/SHADOW.all.txt';
 	;;
     -*) die "unknown option '$1'";;
     esac
