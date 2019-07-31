@@ -160,7 +160,7 @@ private:
 
     void initTau(void);
     vector<uint> unLockedNodesG1;
-    bool nodesHaveType = false;
+    bool bipartite = false;
     //random number generation
     mt19937 gen;
     uniform_int_distribution<> G1RandomNode;
