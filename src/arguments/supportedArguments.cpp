@@ -48,7 +48,7 @@ vector<array<string, 6>> supportedArguments = {
     { "", "", "banner", "", "Additional options to consider when method is \"sana\" (the default)", "0" },
     { "-tinitial", "dblS", "auto", "Initial Temperature", "Starting temperature of the simulated annealing. \"auto\" means calculate optimal starting temperature (requires extra CPU time).", "1" },
     { "-tdecay", "dblS", "auto", "Rate of Decay", "Exponential decay parameter of the temperature schedule. \"auto\" means calculate optimal starting temperature (requires extra CPU time).", "1" },
-    { "-tparams", "string", "use-tinitial-tdecay", "Temperature schedule parameters", "Use a specific method to set up the initial temperature and decay rate ('-tparams X' is a shorthand for '-tinitial X -tdecay X'; the default value just uses these arguments).", "0" },
+    { "-tparams", "string", "auto", "Method to compute temperature schedule parameters automatically", "Specify the method to use set up the initial temperature and decay rate when they are set to 'auto'", "0" },
     { "-combinedScoreAs", "string", "sum", "Score Combo Method", "If multiple objectives are specified, this specifies how to combine them. Choices are: sum, product, inverse, max, min, maxFactor.", "1" },
     { "-dynamictdecay", "bool", "0", "Dynamically control temperature decay", "Whether or not tdecay is set to auto, this Boolean specifies if we should dynamically adjust the temperature schedule as the anneal progresses. Gives potentially better results than fixed decay rate.", "1" },
     { "-lock", "string", "", "Node-to-Node Locking", "Specify a two column file of node pairs that are locked in the alignment.", "0" },

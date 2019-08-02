@@ -23,8 +23,6 @@ public:
     void checkLockingBeforeReport(Alignment A);
     void checkNodeTypesBeforeReport(Alignment A);
 
-    unordered_map<uint,uint> getReverseMap(const unordered_map<uint,uint> reverse) const;
-
 protected:
     Graph* G1;
     Graph* G2;

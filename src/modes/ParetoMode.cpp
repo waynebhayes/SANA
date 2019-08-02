@@ -87,12 +87,12 @@ vector<Alignment> ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2
 
     for(unsigned int i = 0; i < alignments.size(); i++) {
         if(G1->hasNodeTypes()){
-            G1->reIndexGraph(method->getReverseMap(G1->getNodeTypes_ReIndexMap()));
+            G1->reIndexGraph(getReverseMap(G1->getNodeTypes_ReIndexMap()));
             alignments[i].reIndexAfter_Iterations(G1->getNodeTypes_ReIndexMap());
         }
         // if locking is enabled but hasnodeType is not
         else if(G1->getLockedCount() > 0){
-            G1->reIndexGraph(method->getReverseMap(G1->getLocking_ReIndexMap()));
+            G1->reIndexGraph(getReverseMap(G1->getLocking_ReIndexMap()));
             alignments[i].reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
         }
         method->checkLockingBeforeReport(alignments[i]);

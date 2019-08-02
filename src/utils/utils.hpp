@@ -100,4 +100,8 @@ vector<string> split(const string& s, char c);
 
 bool newerGraphAvailable(const char* graphDir, const char* binaryDir);
 pair<unsigned, unsigned> countVecLens(string& fileName);
+
+unordered_map<uint,uint> getReverseMap(const unordered_map<uint,uint>& reverse);
+
+
 #endif

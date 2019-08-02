@@ -13,7 +13,6 @@
 #include "../utils/randomSeed.hpp"
 #include "../utils/ParetoFront.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
-#include "../utils/LinearRegression.hpp"
 
 #ifdef MULTI_PAIRWISE
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdgesNumer, double edSum, uint pairsCount, uint MS3Numer
@@ -60,70 +59,21 @@ public:
     //set the file names passed in args in case we want to store the alignment on the fly
     void setOutputFilenames(string outputFileName, string localMeasuresFileName);
 
-
-    void setTInitialAndTFinalByLinearRegression();
-    void setTInitialAndTFinalByLinearRegressionClean(); //cleaned up version of the above
-    void populatePBadCurve();
-    void setTInitialAndTFinal(const LinearRegression& LR);
-
-    void setTInitialByPBadBinarySearch();
-    void setTFinalByPBadBinarySearch();
-
-    void setTFinalByDoublingMethod();
-    void setTInitialByStatisticalTest();
-    void setTFinalByCeasedProgress(); //considered part of the "statistical test" input option
-
-    void setTInitialByAmeurMethod();
-    void setTFinalByAmeurMethod();
-
-    void setTInitialByBayesOptimization();
-    void setTFinalByBayesOptimization();    
+    void setTInitial(double t);
+    void setTFinal(double t);
 
     //requires TInitial and TFinal to be already initialized
     void setTDecayFromTempRange();
 
-    void printScheduleStatistics();
-    void tempScheduleComparison(double targetInitialPBad, double targetFinalPBad);
+    double getPBad(double temp, double maxTime = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
 
 private:
+    friend class Ameur; //it needs to read the PBad buffer
+    friend class StatisticalTest;
     //temperature schedule
     double TInitial;
     double TFinal;
     double TDecay;
-    double getPBad(double temp, double maxTime = 1.0, int cerrUse = 1); //0 for no output, 2 for verbose
-    multimap<double, double> tempToPBad; //every call to getPBad adds an entry to this map
-
-    const double HIGH_PBAD_LIMIT = 0.99999;
-    const double LOW_PBAD_LIMIT = 1e-10;
-    double TARGET_FINAL_PBAD = 1e-10; //target final pbad
-    double TARGET_INITIAL_PBAD = 0.985; //target initial pbad
-
-
-    double scoreForTemp(double temp);
-    vector<double> getEIncSample(double temp, int sampleSize, double& resPBad);
-
-    double doublingMethod(double targetPBad, bool nextAbove, double base = 10, double getPBadTime = 1);
-    
-    // Statistical Test    
-    bool isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore);
-    double expectedNumAccEInc(double temp, const vector<double>& EIncSample);
-
-    // Binary search based on pbads
-    double pBadBinarySearch(double pBad);
-
-    // Ameur Method    
-    //finds temperature corresponding to a specific pBad
-    //using the method from the paper by Walid Ben-Ameur
-    //"Computing the Initial Temperature of Simulated Annealing"
-    //it applies the method iteratively to converge to a better guess
-    double iteratedAmeurMethod(double targetPBad, int maxIters = 30, double stepSize = 0.6);
-    double individualAmeurMethod(double targetPBad, double startTempGuess, vector<double> EIncs);
-    double ameurTolerance(double targetPBad);
-
-    // Bayesian Optimization
-    //finds temperature corresponding to a specific pBad
-    //using bayesian optimization
-    double bayesOptimization(double pBad);
 
     //circular pBad buffer
     const int PBAD_CIRCULAR_BUFFER_SIZE = 10000;
@@ -133,13 +83,6 @@ private:
     double pBadBufferSum;
     double trueAcceptingProbability();
     double slowTrueAcceptingProbability();
-
-    void logMethodDataForComparison(string method, vector<vector<string>>& data);
-    vector<string> methodDataForComparison(string method, double TIniTime, double TFinTime,
-        int TIniSamples, int TFinSamples, bool onlyTotalTime);
-
-
-
 
 
     int maxTriangles = 0;

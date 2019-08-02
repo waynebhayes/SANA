@@ -30,6 +30,10 @@
 #include "../methods/wrappers/CytoGEDEVOWrapper.hpp"
 #include "../methods/Dijkstra.hpp"
 
+#include "../schedulemethods/ScheduleMethod.hpp"
+#include "../schedulemethods/scheduleUtils.hpp"
+#include "../schedulemethods/LinearRegressionVintage.hpp"
+
 using namespace std;
 
 Method* initLgraal(Graph& G1, Graph& G2, ArgumentParser& args) {
@@ -95,45 +99,23 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 
     string TIniArg = args.strings["-tinitial"];
     string TDecayArg = args.strings["-tdecay"];
-    string TBothArg = args.strings["-tparams"];
-
-    string pBadBinMethod = "pbad-binary-search";
-    string linRegMethod = "linear-regression";
-    string ameurMethod = "ameur-method";
-    string statMethod = "statistical-test";
-    string bayesMethod = "bayesian-opt";
-    vector<string> autoTempMethods = { pBadBinMethod, linRegMethod, ameurMethod, statMethod, bayesMethod };
-    string defaultMethod = linRegMethod; 
+    string scheduleMethodName = args.strings["-tparams"];
 
     //this is a special argument value that does a comparison between all temperature schedule methods
     //made for the purpose of running the experiments for the paper on the tempertaure schedule
-    if (TBothArg == "comparison") {
+    if (scheduleMethodName == "comparison") {
+
+        //this will not compile if the MULTI_PAIRWISE macro is defined:
         SANA sana(&G1, &G2, 0, 0, 0, args.bools["-usingIterations"], 0, &M, args.strings["-combinedScoreAs"]);
-        sana.setOutputFilenames(args.strings["-o"], args.strings["-localScoresFile"]);
-        sana.tempScheduleComparison(0.95, 10e-4);
+        scheduleMethodComparison(&sana, 0.95, 10e-4);
         exit(0);
     }
 
-    //override -tinitial and -tdecay with -tschedule (if it's not use-tinitial-tdecay)
-    if (TBothArg != "use-tinitial-tdecay") {
-        TIniArg = TBothArg;
-        TDecayArg = TBothArg;
-    } 
-    //if user uses 'auto', choose a method here for them (should be the one regarded as best)
-    if (TIniArg == "auto") {
-	   args.strings["-tinitial"] = defaultMethod; //can this line be removed?
-       TIniArg = defaultMethod;
-    }
-    if (TDecayArg == "auto") {
-        args.strings["-tdecay"] = defaultMethod; //can this line be removed?
-        TDecayArg = linRegMethod;        
-    }
-
-    bool useMethodForTIni = contains(autoTempMethods, TIniArg);
-    bool useMethodForTDecay = contains(autoTempMethods, TDecayArg);
+    double TInitial = 0, TDecay = 0;
+    bool useMethodForTIni = (TIniArg == "auto");
+    bool useMethodForTDecay = (TDecayArg == "auto");
 
     //read explicit values for TInitial or TDecay if not using an automatic method
-    double TInitial = 0, TDecay = 0;
     if (not useMethodForTIni) {
         try {
             TInitial = stod(TIniArg);
@@ -141,7 +123,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
             cerr << "invalid -tinitial argument: " << TIniArg << endl;
             throw ia;
         }
-    }
+    } 
     if (not useMethodForTDecay) {
         try {
             TDecay = stod(TDecayArg);
@@ -151,68 +133,31 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         }
     }
 
-    Method* sana;
-
+    SANA* sana;
     double time = args.doubles["-t"];
 #ifdef MULTI_PAIRWISE
     sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"], args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"], startAligName);
 #else
     sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"], args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"]);
 #endif
-    ((SANA*) sana)->setOutputFilenames(args.strings["-o"], args.strings["-localScoresFile"]);
+    sana->setOutputFilenames(args.strings["-o"], args.strings["-localScoresFile"]);
 
-    if (useMethodForTIni) {
-        Timer T;
-        T.start();
-        if (TIniArg == linRegMethod) {
-            //linear regression sets both tini and tfinal simultaneously
-            ((SANA*) sana)->setTInitialAndTFinalByLinearRegression();
-        } else if (TIniArg == statMethod) {
-            ((SANA*) sana)->setTInitialByStatisticalTest();
-        } else if (TIniArg == ameurMethod) {
-            ((SANA*) sana)->setTInitialByAmeurMethod();
-        } else if (TIniArg == bayesMethod) {
-            ((SANA*) sana)->setTInitialByBayesOptimization();
-        } else if (TIniArg == pBadBinMethod) {
-            ((SANA*) sana)->setTInitialByPBadBinarySearch();
-        } else {
-            throw runtime_error("every method should have been handled as an 'if', so we should not reach here");
-        }
-        cout << endl << "TInitial took " << T.elapsed() << "s to compute" << endl << endl;
-    }    
-
-    if (useMethodForTDecay) {
-        Timer T;
-        T.start();
-
-        //first 'TFinal' is set using the specified method
-        //then 'TDecay' is set based on TFinal
-
-        if(TDecayArg == linRegMethod) {
-            if (TIniArg == linRegMethod) {
-                //nothing to do, TFinal is already set
-            } else {
-                /* this is not using linear regression as the user indicated. */
-        	    ((SANA*) sana)->setTFinalByDoublingMethod();
-            }
-        } else if(TDecayArg == statMethod) {
-            ((SANA*) sana)->setTFinalByCeasedProgress();
-        } else if (TDecayArg == ameurMethod) {
-            ((SANA*) sana)->setTFinalByAmeurMethod();
-        } else if (TDecayArg == bayesMethod) {
-            ((SANA*) sana)->setTFinalByBayesOptimization();
-        } else if (TDecayArg == pBadBinMethod) {
-            ((SANA*) sana)->setTFinalByPBadBinarySearch();
-        } else {
-            throw runtime_error("every method should have been handled as an 'if', so we should not reach here");
-        }
-        ((SANA*) sana)->setTDecayFromTempRange();
-        cout << endl << "TFinal took " << T.elapsed() << "s to compute" << endl << endl;
-    }
     if (useMethodForTIni or useMethodForTDecay) {
-        ((SANA*) sana)->printScheduleStatistics();
-    }
+        if (scheduleMethodName == "auto" ) {
+            //if user uses 'auto', choose for them
+            scheduleMethodName = LinearRegressionVintage::name;
+        }
 
+        auto scheduleMethod = getScheduleMethod(scheduleMethodName, sana);
+        if (useMethodForTIni) {
+            sana->setTInitial(scheduleMethod->getTInitial());
+        }
+        if (useMethodForTDecay) {
+            sana->setTFinal(scheduleMethod->getTFinal());
+            sana->setTDecayFromTempRange();
+        }
+        scheduleMethod->printScheduleStatistics();
+    }
 
     if (args.bools["-restart"]) {
         double tnew = args.doubles["-tnew"];
@@ -220,11 +165,11 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         uint numcand = args.doubles["-numcand"];
         double tcand = args.doubles["-tcand"];
         double tfin = args.doubles["-tfin"];
-        ((SANA*) sana)->enableRestartScheme(tnew, iterperstep, numcand, tcand, tfin);
+        sana->enableRestartScheme(tnew, iterperstep, numcand, tcand, tfin);
     }
 
     if (args.bools["-dynamictdecay"]) {
-       ((SANA*) sana)->setDynamicTDecay();
+       sana->setDynamicTDecay();
     }
     if (args.strings["-lock"] != ""){
       sana->setLockFile(args.strings["-lock"] );
@@ -232,7 +177,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     if(args.bools["-lock-same-names"] && args.strings["-lock"].size()== 0){
         sana->setLockFile("/dev/null");
     }
-    return sana;
+    return static_cast<Method*>(sana);
 }
 
 Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {

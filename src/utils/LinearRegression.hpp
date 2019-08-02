@@ -1,3 +1,5 @@
+#ifndef LINEARREGRESSION_HPP
+#define LINEARREGRESSION_HPP
 //
 // Created by Hudson Hughes on 8/2/16.
 #include "../arguments/ArgumentParser.hpp"
@@ -36,3 +38,6 @@ private:
     static double* initialValues(int index1, int index2, const vector<double> &data);
     static double initialSum(int index1, int index2, const vector<double> &data);
 };
+
+
+#endif

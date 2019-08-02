@@ -103,10 +103,3 @@ void Method::setLockFile(string fileName){
 }
 
 
-unordered_map<uint, uint> Method::getReverseMap(const unordered_map<uint,uint> reverse) const {
-    unordered_map<uint,uint> res;
-    for (const auto &nameIndexPair : reverse ) {
-        res[nameIndexPair.second] = nameIndexPair.first;
-    }
-    return res;
-}

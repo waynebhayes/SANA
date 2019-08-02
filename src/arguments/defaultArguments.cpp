@@ -9,7 +9,7 @@ vector<string> defaultArguments = {
 "-wavenodesim nodec",
 "-tinitial auto",
 "-tdecay auto",
-"-tparams use-tinitial-tdecay",
+"-tparams auto",
 "-t 5",
 "-mode normal",
 "-method sana",
