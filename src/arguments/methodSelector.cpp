@@ -99,7 +99,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 
     string TIniArg = args.strings["-tinitial"];
     string TDecayArg = args.strings["-tdecay"];
-    string scheduleMethodName = args.strings["-tparams"];
+    string scheduleMethodName = args.strings["-schedulemethod"];
 
     //this is a special argument value that does a comparison between all temperature schedule methods
     //made for the purpose of running the experiments for the paper on the tempertaure schedule
