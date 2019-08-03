@@ -14,12 +14,18 @@
 using namespace std;
 
 unique_ptr<ScheduleMethod> getScheduleMethod(string name, SANA* sana) {
-    if (name == LinearRegressionVintage::NAME) return make_unique<LinearRegressionVintage>(sana);
-    if (name == LinearRegressionModern::NAME)  return make_unique<LinearRegressionModern>(sana);
-    if (name == PBadBinarySearch::NAME)        return make_unique<PBadBinarySearch>(sana);
-    if (name == Ameur::NAME)                   return make_unique<Ameur>(sana);
-    if (name == IteratedAmeur::NAME)           return make_unique<IteratedAmeur>(sana);
-    if (name == StatisticalTest::NAME)         return make_unique<StatisticalTest>(sana);
+    if (name == LinearRegressionVintage::NAME) 
+        return unique_ptr<LinearRegressionVintage>(new LinearRegressionVintage(sana));
+    if (name == LinearRegressionModern::NAME)  
+        return unique_ptr<LinearRegressionModern>(new LinearRegressionModern(sana));
+    if (name == PBadBinarySearch::NAME)        
+        return unique_ptr<PBadBinarySearch>(new PBadBinarySearch(sana));
+    if (name == Ameur::NAME)                   
+        return unique_ptr<Ameur>(new Ameur(sana));
+    if (name == IteratedAmeur::NAME)           
+        return unique_ptr<IteratedAmeur>(new IteratedAmeur(sana));
+    if (name == StatisticalTest::NAME)         
+        return unique_ptr<StatisticalTest>(new StatisticalTest(sana));
 
     throw runtime_error("schedule method "+name+" not found");
 }
