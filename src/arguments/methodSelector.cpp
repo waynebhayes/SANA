@@ -107,7 +107,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 
         //this will not compile if the MULTI_PAIRWISE macro is defined:
         SANA sana(&G1, &G2, 0, 0, 0, args.bools["-usingIterations"], 0, &M, args.strings["-combinedScoreAs"]);
-        scheduleMethodComparison(&sana, 0.95, 10e-4);
+        scheduleMethodComparison(&sana);
         exit(0);
     }
 
@@ -150,10 +150,10 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 
         auto scheduleMethod = getScheduleMethod(scheduleMethodName, sana);
         if (useMethodForTIni) {
-            sana->setTInitial(scheduleMethod->getTInitial());
+            sana->setTInitial(scheduleMethod->computeTInitial(60, 200));
         }
         if (useMethodForTDecay) {
-            sana->setTFinal(scheduleMethod->getTFinal());
+            sana->setTFinal(scheduleMethod->computeTFinal(60, 200));
             sana->setTDecayFromTempRange();
         }
         scheduleMethod->printScheduleStatistics();

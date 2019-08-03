@@ -18,8 +18,8 @@ public:
     string getName() override { return name; }
 
 protected:
-    void computeTInitial() override;
-    void computeTFinal() override;
+    void vComputeTInitial(double maxTime, int maxSamples) override;
+    void vComputeTFinal(double maxTime, int maxSamples) override;
 
 private:
     bool isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore);

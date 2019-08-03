@@ -9,30 +9,21 @@ using namespace std;
 Ameur::Ameur(SANA *const sana) :
     ScheduleMethod(sana) {} 
 
-void Ameur::computeTInitial() {
-    TInitial = computeTempForPBad(targetInitialPBad);
-}
-
-void Ameur::computeTFinal() {
-    TFinal = computeTempForPBad(targetFinalPBad);
-}
-
-double Ameur::computeTempForPBad(double pBad) {
+double Ameur::computeTempForPBad(double pBad, double maxTime, int maxSamples) {
     double startTempGuess = 1;
     double unused; //set by reference in call below
+    // cerr<<"here"<<endl;
     vector<double> EIncs = getEIncSample(startTempGuess, 10000, unused);
-    return computeTempForPBad(pBad, startTempGuess, EIncs);
+    // cerr<<"butnothere"<<endl;
+    return computeTempForEIncs(pBad, startTempGuess, EIncs);
 }
 
-//how far from the targetPBad we are allowed to be (in relative terms)
-double Ameur::tolerance(double targetPBad) {
+
+double Ameur::computeTempForEIncs(double targetPBad, double startTempGuess, vector<double> EIncs) {
+
     //empirically found values without much experimentation (may not be the best)
-    if (targetPBad < 0.1) return 0.2;
-    return 0.005;
-}
-
-double Ameur::computeTempForPBad(double targetPBad, double startTempGuess, vector<double> EIncs) {
-    double errorTolerance = tolerance(targetPBad);
+    // if (targetPBad < 0.1) tolerance = 0.2;
+    // else tolerance = 0.005;
 
     int maxIters = 100;
     double tempGuess = startTempGuess;
@@ -50,7 +41,7 @@ double Ameur::computeTempForPBad(double targetPBad, double startTempGuess, vecto
         double pBadMean = vectorMean(pBads);
         // cout<<"  iteration " << iteration << ": temp: " << tempGuess << " pBad:" << pBadMean << endl;
 
-        converged = pBadMean > targetPBad*(1-errorTolerance) and pBadMean < targetPBad*(1+errorTolerance);
+        converged = isWithinTargetRange(pBadMean, targetPBad);
         if (converged) break;
 
         double nextGuess = tempGuess * pow((log(pBadMean)/log(targetPBad)), 1.0/paramP);
@@ -69,7 +60,7 @@ double Ameur::computeTempForPBad(double targetPBad, double startTempGuess, vecto
 vector<double> Ameur::getEIncSample(double temp, int sampleSize, double& resPBad) {
     //this call fills the pBad buffer from which we get the EInc samples
     //resPBad is passed back by reference because it is needed in Ameur method
-    resPBad = getPBad(temp, 2);
+    resPBad = getPBad(temp);
 
     int numPBadsInBuffer = sana->numPBadsInBuffer;
 

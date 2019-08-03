@@ -1,10 +1,10 @@
 #ifndef LINEARREGRESSIONVINTAGE_HPP
 #define LINEARREGRESSIONVINTAGE_HPP
 
-#include "ScheduleMethod.hpp"
+#include "LinearRegressionModern.hpp"
 
 /* Original Linear Regression implementation */
-class LinearRegressionVintage : public ScheduleMethod {
+class LinearRegressionVintage : public LinearRegressionModern {
 public:
     LinearRegressionVintage(SANA *const sana);
 
@@ -12,11 +12,7 @@ public:
     string getName() override { return name; }
 
 protected:
-    void computeTInitial() override;
-    void computeTFinal() override;
-
-private:
-    void computeBoth();
+    void computeBoth(double maxTime, int maxSamples) override;
 
 };
 

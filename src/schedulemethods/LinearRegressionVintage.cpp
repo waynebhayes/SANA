@@ -7,19 +7,10 @@
 using namespace std;
 
 LinearRegressionVintage::LinearRegressionVintage(SANA *const sana):
-    ScheduleMethod(sana) {}
+    LinearRegressionModern(sana) {}
 
-void LinearRegressionVintage::computeTInitial() {
-    computeBoth();
-    hasComputedTFinal = true;
-}
 
-void LinearRegressionVintage::computeTFinal() {
-    computeBoth();
-    hasComputedTInitial = true;
-}
-
-void LinearRegressionVintage::computeBoth() {
+void LinearRegressionVintage::computeBoth(double maxTime, int maxSamples) {
     const double HIGH_PBAD_LIMIT = 0.99999;
     const double LOW_PBAD_LIMIT = 1e-10;
 
@@ -45,7 +36,7 @@ void LinearRegressionVintage::computeBoth() {
 
     for(T_i = 0; T_i <= log10NumSteps; T_i++){
     log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
-        pbadMap[log_temp] = getPBad(pow(10, log_temp), 2.0);
+        pbadMap[log_temp] = getPBad(pow(10, log_temp));
         // cout << T_i << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
     }
     for (T_i=0; T_i <= log10NumSteps; T_i++){
@@ -60,7 +51,7 @@ void LinearRegressionVintage::computeBoth() {
     cout << "Increasing sample density near TFinal. " << " range: (" << pow(10, binarySearchLeftEnd) << ", " << pow(10, binarySearchRightEnd) << ")" << endl;
     for(int j = 0; j < 4; ++j) {
         double temperature = pow(10, mid);
-        double probability = getPBad(temperature, 2.0);
+        double probability = getPBad(temperature);
         pbadMap[mid] = probability;
         if(probability > targetFinalPBad) binarySearchRightEnd = mid;
         else binarySearchLeftEnd = mid;
@@ -78,7 +69,7 @@ void LinearRegressionVintage::computeBoth() {
     cout << "Increasing sample density near TInitial. " << "range: (" << pow(10, binarySearchLeftEnd) << ", " << pow(10, binarySearchRightEnd) << ")" << endl;
     for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
-        double probability = getPBad(temperature, 2.0);
+        double probability = getPBad(temperature);
         pbadMap[mid] = probability;
         if(probability < targetInitialPBad) binarySearchLeftEnd = mid;
         else binarySearchRightEnd = mid;

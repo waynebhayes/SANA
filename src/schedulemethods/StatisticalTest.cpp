@@ -14,21 +14,21 @@ StatisticalTest::StatisticalTest(SANA *const sana) :
 //sets TInitial to a temperature such that SANA run at this
 //temperature produces alignments that are statistically
 //undistinguishable from alignments taken at random
-void StatisticalTest::computeTInitial() {
+void StatisticalTest::vComputeTInitial(double maxTime, int maxSamples) {
     const double NUM_RANDOM_SAMPLES = 100;
     const double HIGH_THRESHOLD_P = 0.999999;
     const double LOW_THRESHOLD_P = 0.99;
 
     cerr<<endl;
     //find the threshold score between random and not random temperature
-    Timer TImer;
-    TImer.start();
+    Timer Timer;
+    Timer.start();
     cout << "Computing distribution of scores of random alignments ";
     vector<double> upperBoundKScores(NUM_RANDOM_SAMPLES);
     for (uint i = 0; i < NUM_RANDOM_SAMPLES; ++i) {
         upperBoundKScores[i] = sana->eval(Alignment::randomAlignmentWithLocking(sana->G1,sana->G2));
     }
-    cout << "(" <<  TImer.elapsedString() << ")" << endl;
+    cout << "(" <<  Timer.elapsedString() << ")" << endl;
     NormalDistribution dist(upperBoundKScores);
     double highThresholdScore = dist.quantile(HIGH_THRESHOLD_P);
     double lowThresholdScore = dist.quantile(LOW_THRESHOLD_P);
@@ -58,7 +58,7 @@ void StatisticalTest::computeTInitial() {
     cout << "Iterations per run: " << 10000.+100.*n1+10.*n2+n1*n2*0.1 << endl;
 
     uint count = 0;
-    TImer.start();
+    Timer.start();
     while (fabs(lowerBoundTInitial - upperBoundTInitial)/lowerBoundTInitial > 0.05 and
             count <= 100) {
         //search in log space
@@ -69,7 +69,7 @@ void StatisticalTest::computeTInitial() {
 
         //we prefer false negatives (random scores classified as non-random)
         //than false positives (non-random scores classified as random)
-        cout << "Test " << count << " (" << TImer.elapsedString() << "): ";
+        cout << "Test " << count << " (" << Timer.elapsedString() << "): ";
         count++;
         if (isRandomTemp(midTInitial, highThresholdScore, lowThresholdScore)) {
             upperBoundTInitial = midTInitial;
@@ -107,7 +107,7 @@ bool StatisticalTest::isRandomTemp(double temp, double highThresholdScore,
 
 //takes a random alignment, lets it run for 1s with fixed temperature temp and returns its score
 double StatisticalTest::scoreForTemp(double temp) {
-    getPBad(temp, 1);
+    getPBad(temp);
     return sana->currentScore;
 }
 
@@ -115,7 +115,7 @@ double StatisticalTest::scoreForTemp(double temp) {
 //find the temperature TFinal such that the expected number of accepted transitions
 //near a local minimum is 1 per second
 //by bisection, since the expected number is monotically increasing in TFinal
-void StatisticalTest::computeTFinal() {
+void StatisticalTest::vComputeTFinal(double maxTime, int maxSamples) {
 
     //get a sample of negative EIncs seen during a second of runtime near local minima
     vector<double> EIncs(0);

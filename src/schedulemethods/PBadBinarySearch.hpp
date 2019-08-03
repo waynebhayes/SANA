@@ -10,11 +10,7 @@ public:
     static constexpr auto name = "pbad-binary-search";
     string getName() override { return name; }
 
-    double computeTempForPBad(double pBad) override;
-
-protected:
-    void computeTInitial() override;
-    void computeTFinal() override;
+    double computeTempForPBad(double targetPBad, double maxTime, int maxSamples) override;
 
 };
 

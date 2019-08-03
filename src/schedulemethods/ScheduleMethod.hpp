@@ -20,64 +20,84 @@ public:
     virtual string getName() =0;
 
     static constexpr double DEFAULT_TARGET_INITIAL_PBAD = 0.985; 
-    static constexpr double DEFAULT_TARGET_FINAL_PBAD = 1e-10; 
-    void setTargetInitialPBad(double pBad);
-    void setTargetFinalPBad(double pBad);
+    static constexpr double DEFAULT_TARGET_FINAL_PBAD = 1e-10;
+    static constexpr double DEFAULT_ERROR_TOL = 0.01;
+    static constexpr double DEFAULT_SAMPLE_TIME = 1;
 
-    double getTInitial();
-    double getTFinal();
+    virtual void setTargetInitialPBad(double pBad) { targetInitialPBad = pBad; }
+    virtual void setTargetFinalPBad(double pBad) { targetFinalPBad = pBad; }
+    void setErrorTol(double errorTol) { this->errorTol = errorTol; }
+    void setSampleTime(double t) { sampleTime = t; }
 
-    //alternative to computing TIni and TFin
-    //for methods that can compute temps for any pBad and not just TIni and TFin
-    //not all methods need implement this (defaults to throwing error)
-    virtual double computeTempForPBad(double pBad);
-
+    //prints and other info collection
     void printScheduleStatistics();
-    vector<double> dataForComparison();
+    static void printTargetRange(double targetPBad, double errorTol);
+    vector<double> dataForComparison(int numValidationSamples);
+    double totalTime();
+    int totalSamples();
+
+    // subclasses should implement EITHER of:
+    //"computeTempForPBad": for classes that can compute temps for arbitrary pbads
+    //"vComputeTInitial" and "vComputeTFinal": for classes that can only compute TInitial and TFinal
+
+    //for methods that can compute temps for any pBad and not just TInitial and TFinal
+    //not all methods need implement this (defaults to throwing error)
+    virtual double computeTempForPBad(double targetPBad, double maxTime, int maxSamples);
+
+    //wrappers around the virtual counterparts that log the runtime and # of samples
+    double computeTInitial(double maxTime, int maxSamples);
+    double computeTFinal(double maxTime, int maxSamples);
 protected:
-    SANA *const sana; //used mainly for getPBad
+    //default to calling computeTempForPBad. It should be overriden by methods
+    //that cannot compute pBads for arbitrary temps
+    virtual void vComputeTInitial(double maxTime, int maxSamples);
+    virtual void vComputeTFinal(double maxTime, int maxSamples);
+
+    SANA *const sana;
 
     double targetInitialPBad, targetFinalPBad;
+    double errorTol;
     double TInitial, TFinal;
-    double TInitialTime, TFinalTime;
-    int TInitialSamples, TFinalSamples;
 
-    virtual void computeTInitial() =0;
-    virtual void computeTFinal() =0;
+    //use these to interface with the error tolerance rather than accessing errorTol directly:
+    double targetRangeMin(double targetPBad);
+    double targetRangeMax(double targetPBad);
+    double distToTargetRange(double pBad, double targetPBad);
+    bool isWithinTargetRange(double pBad, double targetPBad);
+    bool isBelowTargetRange(double pBad, double targetPBad);
+    bool isAboveTargetRange(double pBad, double targetPBad);
 
     //auxiliary functions used by several schedule methods:
 
-    double getPBad(double temp, double maxTime = 1.0, int logLevel = 1);
+    //wrapper around sana->getPBad that saves the result in tempToPBad
+    double getPBad(double temp);
+    double sampleTime; //time getPBad is allowed to run
     multimap<double, double> tempToPBad; //every call to getPBad adds an entry to this map
-    static multimap<double, double> allTempToPBad; //and here, the union of all the methods
 
-    double doublingMethod(double targetPBad, bool nextAbove, double base = 10, double getPBadTime = 1);
+    //samples many pBads and returns the average
+    //this is supposed to be (more) resistant to noise
+    double getPBadAvg(double temp, int numSamples);
+
+    double doublingMethod(double targetPBad, bool nextAbove, double base = 10);
 
     // Binary search based on pbads
-    double pBadBinarySearch(double pBad);
+    double pBadBinarySearch(double targetPBad, double maxTime, int maxSamples);
 
     //uses the tempToPBad map to do regression based on all the pbads collected by this method
     void setTInitialTFinalFromRegression(bool useDataFromAllMethods = false);
 
+    //samples evenly (in log scale) along the pBad spectrum from really low to really high temps
     void populatePBadCurve();
-
-    bool hasComputedTInitial;
-    bool hasComputedTFinal;
 
 private:
 
-/*
+    double TInitialTime, TFinalTime;
+    int TInitialSamples, TFinalSamples;
 
-    double execTime;
-
-
-    Alignment runAndPrintTime();
-    virtual Alignment run() =0;
-    virtual void describeParameters(ostream& stream) =0;
-    virtual string fileNameSuffix(const Alignment& A) =0;
+    //union of the tempToPBad maps of all the methods
+    static multimap<double, double> allTempToPBad; 
 
 
-*/
 };
 
 #endif

@@ -11,60 +11,101 @@ multimap<double, double> ScheduleMethod::allTempToPBad = multimap<double, double
 
 ScheduleMethod::ScheduleMethod(SANA *const sana): sana(sana),
     targetInitialPBad(DEFAULT_TARGET_INITIAL_PBAD), targetFinalPBad(DEFAULT_TARGET_FINAL_PBAD),
-    TInitialTime(0), TFinalTime(0), TInitialSamples(0), TFinalSamples(0),
+    errorTol(DEFAULT_ERROR_TOL), sampleTime(DEFAULT_SAMPLE_TIME),
     tempToPBad(),
-    hasComputedTInitial(false), hasComputedTFinal(false) {}
+    TInitialTime(0), TFinalTime(0),
+    TInitialSamples(0), TFinalSamples(0) {
 
-void ScheduleMethod::setTargetInitialPBad(double pBad) {
-    targetInitialPBad = pBad;
-    hasComputedTInitial = false;
 }
 
-void ScheduleMethod::setTargetFinalPBad(double pBad) {
-    targetFinalPBad = pBad;
-    hasComputedTFinal = false;
-}
+double ScheduleMethod::computeTInitial(double maxTime, int maxSamples) {
+    cout << "Computing TInitial via method " << getName() << endl;
+    int currSamples = tempToPBad.size();
+    Timer T;
+    T.start();
+    
+    vComputeTInitial(maxTime, maxSamples);
+    
+    TInitialTime = T.elapsed();
+    TInitialSamples = tempToPBad.size() - currSamples;
 
-double ScheduleMethod::getTInitial() {
-    if (not hasComputedTInitial) {
-        int currSamples = tempToPBad.size();
-        Timer T;
-        T.start();
-        
-        computeTInitial();
-        
-        TInitialTime = T.elapsed();
-        TInitialSamples = tempToPBad.size() - currSamples;
-        hasComputedTInitial = true;
-    }
+    cout << "Computed TInitial " << TInitial << " in " << TInitialTime << "s" << endl;
     return TInitial;
 }
 
-double ScheduleMethod::getTFinal() {
-    if (not hasComputedTFinal) {
-        int currSamples = tempToPBad.size();
-        Timer T;
-        T.start();
+void ScheduleMethod::vComputeTInitial(double maxTime, int maxSamples) {
+    TInitial = computeTempForPBad(targetInitialPBad, maxTime, maxSamples);
+}
 
-        computeTFinal();
 
-        TFinalTime = T.elapsed();
-        TFinalSamples = tempToPBad.size() - currSamples;
-        hasComputedTFinal = true;
-    }
+double ScheduleMethod::computeTFinal(double maxTime, int maxSamples) {
+    cout << "Computing TFinal via method " << getName() << endl;
+    int currSamples = tempToPBad.size();
+    Timer T;
+    T.start();
+
+    vComputeTFinal(maxTime, maxSamples);
+
+    TFinalTime = T.elapsed();
+    TFinalSamples = tempToPBad.size() - currSamples;
+
+    cout << "Computed TFinal " << TFinal << " in " << TFinalTime << "s" << endl;    
     return TFinal;
 }
 
-double ScheduleMethod::computeTempForPBad(double pBad) {
+void ScheduleMethod::vComputeTFinal(double maxTime, int maxSamples) {
+    TFinal = computeTempForPBad(targetFinalPBad, maxTime, maxSamples);
+}
+
+double ScheduleMethod::computeTempForPBad(double targetPBad, double maxTime, int maxSamples) {
     throw runtime_error("functionality not implemented for this method");
 }
 
-double ScheduleMethod::getPBad(double temp, double maxTime, int logLevel) {
-    double res = sana->getPBad(temp, maxTime, logLevel);
+double ScheduleMethod::getPBad(double temp) {
+    double res = sana->getPBad(temp, sampleTime);
     tempToPBad.insert({temp, res});
     allTempToPBad.insert({temp, res});
     return res;
 }
+
+double ScheduleMethod::getPBadAvg(double temp, int numSamples) {
+    double pBadSum = 0;
+    for (int i = 0; i < numSamples; i++) {
+        pBadSum += getPBad(temp);
+    } 
+    return pBadSum/numSamples;
+}
+
+
+
+double ScheduleMethod::targetRangeMin(double targetPBad) {
+    return targetPBad*(1-errorTol);
+}
+double ScheduleMethod::targetRangeMax(double targetPBad) {
+    return targetPBad*(1+errorTol);
+}
+double ScheduleMethod::distToTargetRange(double pBad, double targetPBad) {
+    if (isAboveTargetRange(pBad, targetPBad)) return pBad-targetRangeMax(targetPBad);
+    if (isBelowTargetRange(pBad, targetPBad)) return targetRangeMin(targetPBad)-pBad;
+    return 0;
+}
+bool ScheduleMethod::isBelowTargetRange(double pBad, double targetPBad) {
+    return pBad < targetRangeMin(targetPBad);
+}
+bool ScheduleMethod::isAboveTargetRange(double pBad, double targetPBad) {
+    return pBad > targetRangeMax(targetPBad);
+}
+bool ScheduleMethod::isWithinTargetRange(double pBad, double targetPBad) {
+    return !isBelowTargetRange(pBad, targetPBad) &&
+           !isAboveTargetRange(pBad, targetPBad);
+}
+void ScheduleMethod::printTargetRange(double targetPBad, double errorTol) {
+    cout << "(" << targetPBad*(1-errorTol) << ", " << targetPBad*(1+errorTol) << ")";
+}
+
+
+
+
 
 /* Returns a temperature of the form 'base'^k (for some integer k) that gives rise to
 a pBad that bounds 'targetPBad' above or below. More precisely, 
@@ -72,7 +113,7 @@ a pBad that bounds 'targetPBad' above or below. More precisely,
 - if 'nextAbove' is false, it retuns the largest such temp that gives rise to a pBad below 'targetPBad'
 higher 'base' -> quicker search, but more coarse bound; defaults to 10.
 */
-double ScheduleMethod::doublingMethod(double targetPBad, bool nextAbove, double base, double getPBadTime) {
+double ScheduleMethod::doublingMethod(double targetPBad, bool nextAbove, double base) {
     
     //use as starting value the temp in the tempToPBad map that has a closest pBad to the target pBad
     //if the map is empty, just start with 1
@@ -105,13 +146,13 @@ double ScheduleMethod::doublingMethod(double targetPBad, bool nextAbove, double 
     double priorTemp = temp;
     double pBad;
     if (initStartPBad) pBad = startPBad;
-    else pBad = getPBad(temp, getPBadTime);
+    else pBad = getPBad(temp);
 
     if (pBad < targetPBad) {
         while (pBad < targetPBad) {
             priorTemp = temp;
             temp *= base;
-            pBad = getPBad(temp, getPBadTime);
+            pBad = getPBad(temp);
         }
         if (nextAbove) return temp;
         return priorTemp;      
@@ -119,50 +160,51 @@ double ScheduleMethod::doublingMethod(double targetPBad, bool nextAbove, double 
         while (pBad > targetPBad) {
             priorTemp = temp;
             temp /= base;
-            pBad = getPBad(temp, getPBadTime);
+            pBad = getPBad(temp);
         }
         if (nextAbove) return priorTemp;
         return temp;
     }
 }
 
-double ScheduleMethod::pBadBinarySearch(double targetPBad) {
-    cerr<<"Using pBad binary search for target pBad = "<<targetPBad<< endl;
+double ScheduleMethod::pBadBinarySearch(double targetPBad, double maxTime, int maxSamples) {
+    Timer T;
+    T.start();
+    int startSamples = tempToPBad.size();
 
     //customizable parameters
     bool logScale = true;
-    double convergenceTime = 2;
-    double tolerance = 0.01;
-
-    double targetRangeTop = targetPBad*(1+tolerance);
-    double targetRangeBottom = targetPBad*(1-tolerance);
+    // double tolerance = 0.01;
 
     //establish starting range
-    double highTemp = doublingMethod(targetPBad, true, 100, convergenceTime);
-    double lowTemp = doublingMethod(targetPBad, false, 100, convergenceTime);
+    double highTemp = doublingMethod(targetPBad, true, 100);
+    double lowTemp = doublingMethod(targetPBad, false, 100);
     double highPBad = (tempToPBad.find(highTemp))->second;
     double lowPBad = (tempToPBad.find(lowTemp))->second;
 
     //make sure that starting bounds enclose the target range
-    bool areGoodBounds = lowTemp < highTemp and lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+    bool areGoodBounds = lowTemp < highTemp and isBelowTargetRange(lowPBad, targetPBad)
+                                            and isAboveTargetRange(highPBad, targetPBad);
+
     while (not areGoodBounds) {
         highTemp *= 10;
         lowTemp /= 10;
-        highPBad = getPBad(highTemp, convergenceTime);
-        lowPBad = getPBad(lowTemp, convergenceTime);
-        areGoodBounds = lowTemp < highTemp and lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+        highPBad = getPBad(highTemp);
+        lowPBad = getPBad(lowTemp);
+        areGoodBounds = lowTemp < highTemp and isBelowTargetRange(lowPBad, targetPBad)
+                                           and isAboveTargetRange(highPBad, targetPBad);
     }
 
     double midTemp = logScale ? exp((log(highTemp)+log(lowTemp))/2.0) : (highTemp+lowTemp)/2.0;
-    double midPBad = getPBad(midTemp, convergenceTime);
+    double midPBad = getPBad(midTemp);
 
-    if (highPBad >= targetRangeBottom and highPBad <= targetRangeTop) return highTemp;
-    if (lowPBad >= targetRangeBottom and lowPBad <= targetRangeTop) return lowTemp;
-    if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
+    if (isWithinTargetRange(highPBad, targetPBad)) return highTemp;
+    if (isWithinTargetRange(lowPBad, targetPBad)) return lowTemp;
+    if (isWithinTargetRange(midPBad, targetPBad)) return midTemp;
 
-    cerr<<"Target range: ("<<targetRangeBottom<<", "<<targetRangeTop<<")"<<endl;
-    cerr<<"Start search bounds: temps: ("<<lowTemp<<", "<<midTemp<<", "<<highTemp;
-    cerr<<") pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
+    cerr<<"Target range: ("<<targetRangeMin(targetPBad)<<", "<<targetRangeMax(targetPBad)<<")"<<endl;
+    cerr<<"Start search bounds: temps: ("<<lowTemp<<", "<<midTemp<<", "<<highTemp<<") ";
+    cerr<<"pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
 
     //in the search, the following invariants hold:
     //(1) lowTemp < midTemp < highTemp ; (2) lowPBad < targetRange < highPBad ;
@@ -175,42 +217,45 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad) {
     //We try this X times, if we can't get invariant (3) after X attempts, we call it a day
 
     bool invariants = lowPBad <= midPBad and midPBad <= highPBad and
-                        lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+                        isBelowTargetRange(lowPBad, targetPBad) and isAboveTargetRange(highPBad, targetPBad);
     int failCount = 0;
     while (not invariants) {
         failCount++;
         if (failCount == 3) {
             cerr << "Binary search for pBad could not establish a reasonable starting range --" << endl;
             cerr << "Output temperature is likely not good" << endl;
+            double dlow = abs(lowPBad - targetPBad);
+            double dmid = abs(midPBad - targetPBad);
+            double dhigh = abs(highPBad - targetPBad);
+            if (dlow < max(dmid,dhigh)) return lowTemp;
+            else if (dmid < dhigh) return midTemp;
             return highTemp;
         }
-        highPBad = getPBad(highTemp, convergenceTime);
-        if (highPBad >= targetRangeBottom and highPBad <= targetRangeTop) return highTemp;
-        lowPBad = getPBad(lowTemp, convergenceTime);
-        if (lowPBad >= targetRangeBottom and lowPBad <= targetRangeTop) return lowTemp;
-        midPBad = getPBad(midTemp, convergenceTime);
-        if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
+        highPBad = getPBad(highTemp);
+        if (isWithinTargetRange(highPBad, targetPBad)) return highTemp;
+        lowPBad = getPBad(lowTemp);
+        if (isWithinTargetRange(lowPBad, targetPBad)) return lowTemp;
+        midPBad = getPBad(midTemp);
+        if (isWithinTargetRange(midPBad, targetPBad)) return midTemp;
 
         invariants = lowPBad <= midPBad and midPBad <= highPBad and
-                        lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+                        isBelowTargetRange(lowPBad, targetPBad) and isAboveTargetRange(highPBad, targetPBad);
     }
 
+
     //now all invariants hold. Ready to start search
-    int maxGetPBads = 10;
-    int numGetPBads = 0;
-    while (numGetPBads < maxGetPBads) {
-        if (midPBad < targetRangeBottom) {
+    while (T.elapsed() < maxTime and (int)tempToPBad.size() - startSamples < maxSamples) {
+        if (isBelowTargetRange(midPBad, targetPBad)) {
             lowTemp = midTemp;
             lowPBad = midPBad;
-        } else if (midPBad > targetRangeTop) {
+        } else if (isAboveTargetRange(midPBad, targetPBad)) {
             highTemp = midTemp;
             highPBad = midPBad;
         } else throw runtime_error("invariant not maintained in pbad binary search");
 
         midTemp = logScale ? exp((log(highTemp)+log(lowTemp))/2.0) : (highTemp+lowTemp)/2.0;
-        midPBad = getPBad(midTemp, convergenceTime);
-        numGetPBads++;
-        if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
+        midPBad = getPBad(midTemp);
+        if (isWithinTargetRange(midPBad, targetPBad)) return midTemp;
 
         invariants = lowPBad <= midPBad and midPBad <= highPBad;
         failCount = 0;
@@ -219,31 +264,37 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad) {
             cerr<<") pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
             failCount++;
             if (failCount == 2) {
-                return midTemp;
+                double dlow = abs(lowPBad - targetPBad);
+                double dmid = abs(midPBad - targetPBad);
+                double dhigh = abs(highPBad - targetPBad);
+                if (dlow < max(dmid,dhigh)) return lowTemp;
+                else if (dmid < dhigh) return midTemp;
+                return highTemp;
             }
-            midPBad = getPBad(midTemp, 1.5*convergenceTime);
-            numGetPBads++;
-            if (midPBad >= targetRangeBottom and midPBad <= targetRangeTop) return midTemp;
+            midPBad = getPBad(midTemp);
+            if (isWithinTargetRange(midPBad, targetPBad)) return midTemp;
             if (midPBad < lowPBad) {
-                lowPBad = getPBad(lowTemp, 1.5*convergenceTime);
-                numGetPBads++;
-                if (lowPBad >= targetRangeBottom and lowPBad <= targetRangeTop) return lowTemp;
+                lowPBad = getPBad(lowTemp);
+                if (isWithinTargetRange(lowPBad, targetPBad)) return lowTemp;
             }
             if (midPBad > highPBad) {
-                highPBad = getPBad(highTemp, 1.5*convergenceTime);
-                numGetPBads++;
-                if (highPBad >= targetRangeBottom and highPBad <= targetRangeTop) return highTemp;
+                highPBad = getPBad(highTemp);
+                if (isWithinTargetRange(highPBad, targetPBad)) return highTemp;
             }
             invariants = lowPBad <= midPBad and midPBad <= highPBad and
-                         lowPBad < targetRangeBottom and highPBad > targetRangeTop;
+                         isBelowTargetRange(lowPBad, targetPBad) and isAboveTargetRange(highPBad, targetPBad);
             if (invariants) {
                 cerr<<"Corrected pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
             }
         }
     }
-    return highTemp; //upper bound on actual temp
+    double dlow = abs(lowPBad - targetPBad);
+    double dmid = abs(midPBad - targetPBad);
+    double dhigh = abs(highPBad - targetPBad);
+    if (dlow < max(dmid,dhigh)) return lowTemp;
+    else if (dmid < dhigh) return midTemp;
+    return highTemp;
 }
-
 
 void ScheduleMethod::setTInitialTFinalFromRegression(bool useDataFromAllMethods) {
 
@@ -256,7 +307,7 @@ void ScheduleMethod::setTInitialTFinalFromRegression(bool useDataFromAllMethods)
     cout << "Goldilocks range: temp (" << rangeBottom << ", " << rangeTop << ")";
     cout << "pBad (" << get<6>(regressionResult) << ", " << get<7>(regressionResult) << ")" << endl;
     
-    if (getPBad(rangeTop, 2) >= targetInitialPBad) TInitial = rangeTop;
+    if (getPBad(rangeTop) >= targetInitialPBad) TInitial = rangeTop;
     else {
         //set as TInitial the lowest temp in tempToPBad which is in the random region AND
         //has a pBad bigger (or eq) than the target initial pBad
@@ -287,7 +338,7 @@ void ScheduleMethod::setTInitialTFinalFromRegression(bool useDataFromAllMethods)
     }
 
     TFinal = rangeBottom;
-    double distFromTarget = abs(targetFinalPBad - getPBad(rangeBottom, 2));
+    double distFromTarget = abs(targetFinalPBad - getPBad(rangeBottom));
     for (auto pair : tempToPBad) {
         if (abs(targetFinalPBad - pair.second) < distFromTarget and
                 pair.first <= TInitial) {
@@ -307,7 +358,8 @@ void ScheduleMethod::populatePBadCurve() {
     for (int T_i = 0; T_i <= log10(numSteps); T_i++) {
         double logTemp = log10(lowTemp) + T_i*(log10(highTemp)-log10(lowTemp))/log10(numSteps);
         double temp = pow(10, logTemp);
-        getPBad(temp, 2.0);
+
+        getPBad(temp);
     }
 }
 
@@ -315,24 +367,31 @@ void ScheduleMethod::populatePBadCurve() {
 
 void ScheduleMethod::printScheduleStatistics() {
     cout << "TInitial found in " << TInitialTime << "s for target pBad " << targetInitialPBad << ": " << endl;
-    getPBad(TInitial, 2);
+    getPBad(TInitial);
     cout << "TFinal found in " << TFinalTime << "s for target pBad " << targetFinalPBad << ": " << endl;
-    getPBad(TFinal, 2);
+    getPBad(TFinal);
     cout << "TDecay needed to traverse this range: " << -log(TFinal/TInitial) << endl;
     cout << endl;
 }
 
-vector<double> ScheduleMethod::dataForComparison() {
+vector<double> ScheduleMethod::dataForComparison(int numValidationSamples) {
 
-    double TIniPBad = getPBad(TInitial, 5);
+    double TIniPBad = getPBadAvg(TInitial, numValidationSamples);
     double TIniPBadRelative = TIniPBad/targetInitialPBad;
-    double TFinPBad = getPBad(TFinal, 5);
+    double TFinPBad = getPBadAvg(TFinal, numValidationSamples);
     double TFinPBadRelative = TFinPBad/targetFinalPBad;
-    double totalTime = TInitialTime + TFinalTime;
-    int totalSamples = TInitialSamples + TFinalSamples;
 
     return 
         { TInitial, TIniPBad, TIniPBadRelative, (double)TInitialSamples, TInitialTime,
           TFinal,   TFinPBad, TFinPBadRelative, (double)TFinalSamples, TFinalTime,
-          (double)totalSamples, totalTime };    
+          (double)totalSamples(), totalTime() };    
+}
+
+
+double ScheduleMethod::totalTime() {
+    return TInitialTime + TFinalTime;
+}
+
+int ScheduleMethod::totalSamples() {
+    return TInitialSamples + TFinalSamples;
 }

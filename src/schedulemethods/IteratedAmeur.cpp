@@ -8,15 +8,8 @@
 using namespace std;
 
 IteratedAmeur::IteratedAmeur(SANA *const sana) :
-    ScheduleMethod(sana) {} 
+    Ameur(sana) {} 
 
-void IteratedAmeur::computeTInitial() {
-    TInitial = computeTempForPBad(targetInitialPBad);
-}
-
-void IteratedAmeur::computeTFinal() {
-    TFinal = computeTempForPBad(targetFinalPBad);
-}
 
 //the method from the ameur paper computes a temperature that "fits" a target pbad for a given sample of EIncs
 //james' idea is to iterate this process until convergence: using the resulting temperature,
@@ -25,30 +18,29 @@ void IteratedAmeur::computeTFinal() {
 //this converges to the temperature that gives rise to that pbad at equilibrium
 //step size should be <= 1
 //with bigger step sizes, there may be a "bounce back and forth" effect:
-double IteratedAmeur::computeTempForPBad(double targetPBad) {
+double IteratedAmeur::computeTempForPBad(double targetPBad, double maxTime, int maxSamples) {
     //configuration
-    int maxIters = 30;
     double stepSize = 0.6;
     double startTempGuess = 1;
-    double errorTolerance = Ameur::tolerance(targetPBad);
 
-    cout << "Using iterated Ameur method" << endl;
+    Timer T;
+    T.start();
+    int startSamples = tempToPBad.size();
 
     double tempGuess = startTempGuess;
     bool converged = false;
     int iteration = 0;
 
-    while (not converged and iteration < maxIters) {
+    while (not converged and T.elapsed() < maxTime and (int) tempToPBad.size()-startSamples < maxSamples) {
         cout << "Iteration " << iteration << ":" << endl;
 
-        Ameur ameur(sana);
         double tempGuessPBad; //set by reference in call below
-        vector<double> EIncs = ameur.getEIncSample(tempGuess, 10000, tempGuessPBad);
+        vector<double> EIncs = getEIncSample(tempGuess, 10000, tempGuessPBad);
 
-        converged = tempGuessPBad > targetPBad*(1-errorTolerance) and tempGuessPBad < targetPBad*(1+errorTolerance);
+        converged = isWithinTargetRange(tempGuessPBad, targetPBad);
         if (converged) break;
 
-        double nextTempGuess = tempGuess + stepSize*(ameur.computeTempForPBad(targetPBad, tempGuess, EIncs) - tempGuess);
+        double nextTempGuess = tempGuess + stepSize*(computeTempForEIncs(targetPBad, tempGuess, EIncs) - tempGuess);
 
         tempGuess = nextTempGuess;
         iteration++;

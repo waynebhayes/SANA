@@ -24,10 +24,9 @@ unique_ptr<ScheduleMethod> getScheduleMethod(string name, SANA* sana) {
     throw runtime_error("schedule method "+name+" not found");
 }
 
-void scheduleMethodComparison(SANA *const sana, double targetInitialPBad, double targetFinalPBad) {
+void scheduleMethodComparison(SANA *const sana) {
 
     //customizable parameters
-    int runsPerMethod = 1;
     vector<string> testedMethodNames = {
          LinearRegressionVintage::name, 
          LinearRegressionModern::name,
@@ -37,11 +36,21 @@ void scheduleMethodComparison(SANA *const sana, double targetInitialPBad, double
          StatisticalTest::name
      };
 
+    double targetInitialPBad = 0.95;
+    double targetFinalPBad = 0.00001;
+    int runsPerMethod = 1;
+    double maxTime = 60;
+    int maxSamples = 60;
+    double sampleTime = 1; //max time for getPBad to reach equilibrium
+    double errorTol = 0.01;
+    int numValidationSamples = 1; //set to a high value for final experiment (30?)
+            //to find the *real* pBad at the temperatures given by the methods
+            //we get an average of this many getPBad samples 
+    
 
-    vector<vector<string>> data;
-    data.push_back({"Method","TInitial","PBad","(relative)","Samples","Time",
+    vector<vector<string>> table;
+    table.push_back({"Method","TInitial","PBad","(relative)","Samples","Time",
         "TFinal","PBad","(relative)","Samples","Time","TotalSamples","TotalTime"});
-
 
     // Timer T;
     // T.start();
@@ -49,9 +58,11 @@ void scheduleMethodComparison(SANA *const sana, double targetInitialPBad, double
         auto method = getScheduleMethod(methodName, sana);
         method->setTargetInitialPBad(targetInitialPBad);
         method->setTargetFinalPBad(targetFinalPBad);
+        method->setSampleTime(sampleTime);
+        method->setErrorTol(errorTol);
 
         for (int i = 0; i < runsPerMethod; i++) {
-            logMethodData(method, data);
+            table.push_back(methodData(method, maxTime, maxSamples, numValidationSamples));
         }
     }
     // double totalTime = T.elapsed();
@@ -61,33 +72,58 @@ void scheduleMethodComparison(SANA *const sana, double targetInitialPBad, double
     // LRM.setTInitialTFinalFromRegression(true);
     // int totalSamples = ScheduleMethod::allTempToPBad.size();
 
-    // data.push_back(methodDataForComparison("superLR", totalTime, -1, totalSamples, -1, true));
+    // table.push_back(methodDataForComparison("superLR", totalTime, -1, totalSamples, -1, true));
     
-    cout << endl << endl;
+    cout << endl;
+    cout << "=================================================" << endl;
+    cout << "=================================================" << endl;
+    cout << "=================================================" << endl;
+    cout << endl;
+
     cout << "Automatic Temperature Schedule Comparison" << endl;
-    cout << "Target Initial PBad: " << targetInitialPBad << endl;
-    cout << "Target Final PBad:   " << targetFinalPBad << endl;
-    printTable(data, 1, cout);
+    cout << "Max time: " << maxTime << " Max samples: " << maxSamples << endl;
+    cout << "Sample time: " << sampleTime << endl;
+
+    cout << "Target Initial PBad: " << targetInitialPBad << " range ";
+    ScheduleMethod::printTargetRange(targetInitialPBad, errorTol);
+    cout << endl << "Target Final PBad:   " << targetFinalPBad << " range ";
+    ScheduleMethod::printTargetRange(targetFinalPBad, errorTol);
+    cout << endl << endl;
+
+    printTable(table, 1, cout);
+
+    cout << endl;
+    cout << "=================================================" << endl;
+    cout << "=================================================" << endl;
+    cout << "=================================================" << endl;
     cout << endl;
 }
 
 
-void logMethodData(const unique_ptr<ScheduleMethod>& method, vector<vector<string>>& table) {
+vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTime, int maxSamples, double numValidationSamples) {
 
-    method->getTInitial();
-    method->getTFinal();
-    vector<double> data = method->dataForComparison();
+    bool singleTime = method->getName() == LinearRegressionVintage::name or
+                      method->getName() == LinearRegressionModern::name;
+
+    if (singleTime) {
+        method->computeTInitial(maxTime, maxSamples);
+        method->computeTFinal(0, 0);
+    } else {
+        method->computeTInitial(maxTime/2, maxSamples/2);
+        method->computeTFinal(maxTime/2, maxSamples/2);
+    }
+
+    vector<double> data = method->dataForComparison(numValidationSamples);
     vector<string> row = {method->getName()};
     vector<int> precision = {6,6,6,0,2,9,9,6,0,2,0,2};
     for (uint i = 0; i < data.size(); i++) {
         row.push_back(toStringWithPrecision(data[i], precision[i]));
     }
     
-    if (method->getName() == LinearRegressionVintage::name or method->getName() == LinearRegressionModern::name) {
+    if (singleTime) {
         row[4] = row[5] = row[9] = row[10] = "NA";
     }
 
-    
-    table.push_back(row);
+    return row;
 
 }

@@ -9,14 +9,18 @@ public:
     LinearRegressionModern(SANA *const sana);
 
     static constexpr auto name = "linear-regression-modern";
-    string getName() override { return name; }
+    virtual string getName() override { return name; }
 
+    void setTargetInitialPBad(double pBad) override; 
+    void setTargetFinalPBad(double pBad) override;
 protected:
-    void computeTInitial() override;
-    void computeTFinal() override;
+    void vComputeTInitial(double maxTime, int maxSamples) override;
+    void vComputeTFinal(double maxTime, int maxSamples) override;
+
+    virtual void computeBoth(double maxTime, int maxSamples);
 
 private:
-    void computeBoth();
+    bool alreadyComputed;
 
 
 };

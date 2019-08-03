@@ -6,22 +6,38 @@
 using namespace std;
 
 LinearRegressionModern::LinearRegressionModern(SANA *const sana):
-    ScheduleMethod(sana) {}
+    ScheduleMethod(sana), alreadyComputed(false) {}
 
-void LinearRegressionModern::computeTInitial() {
-    computeBoth();
-    hasComputedTFinal = true;
+void LinearRegressionModern::setTargetInitialPBad(double pBad) {
+    ScheduleMethod::setTargetInitialPBad(pBad);
+    alreadyComputed = false;
+}
+void LinearRegressionModern::setTargetFinalPBad(double pBad) {
+    ScheduleMethod::setTargetFinalPBad(pBad);
+    alreadyComputed = false;
 }
 
-void LinearRegressionModern::computeTFinal() {
-    computeBoth();
-    hasComputedTInitial = true;
+void LinearRegressionModern::vComputeTInitial(double maxTime, int maxSamples) {
+    if (alreadyComputed) return;
+    computeBoth(maxTime, maxSamples); 
+    alreadyComputed = true;  
 }
 
-void LinearRegressionModern::computeBoth() {
-    cout << "Setting TInitial and TFinal by Linear Regression" << endl;
+void LinearRegressionModern::vComputeTFinal(double maxTime, int maxSamples) {
+    if (alreadyComputed) return;
+    computeBoth(maxTime, maxSamples); 
+    alreadyComputed = true;  
+}
+
+void LinearRegressionModern::computeBoth(double maxTime, int maxSamples) {
+    Timer T; 
+    T.start();
+    int startSamples = tempToPBad.size();
+
     populatePBadCurve();
-    pBadBinarySearch(targetInitialPBad);
-    pBadBinarySearch(targetFinalPBad);        
+    double remainingTime = maxTime - T.elapsed();
+    int remainingSamples = tempToPBad.size()-startSamples;
+    pBadBinarySearch(targetInitialPBad, remainingTime/2, remainingSamples/2);
+    pBadBinarySearch(targetFinalPBad, remainingTime/2, remainingSamples/2);        
     setTInitialTFinalFromRegression();
 }

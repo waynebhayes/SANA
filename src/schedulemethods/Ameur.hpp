@@ -14,23 +14,14 @@ public:
     Ameur(SANA *const sana);
 
     static constexpr auto name = "ameur-method";
-    string getName() override { return name; }
+    virtual string getName() override { return name; }
 
-    double computeTempForPBad(double pBad) override;
-    
-    friend class IteratedAmeur;
+    virtual double computeTempForPBad(double targetPBad, double maxTime, int maxSamples) override;
     
 protected:
-    void computeTInitial() override;
-    void computeTFinal() override;
-
-private:
 
     vector<double> getEIncSample(double temp, int sampleSize, double& resPBad);
-    double computeTempForPBad(double targetPBad, double startTempGuess, vector<double> EIncs);
-
-    static double tolerance(double targetPBad);
-
+    double computeTempForEIncs(double targetPBad, double startTempGuess, vector<double> EIncs);
 
 };
 
