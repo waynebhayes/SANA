@@ -14,8 +14,8 @@ class StatisticalTest : public ScheduleMethod {
 public:
     StatisticalTest(SANA *const sana);
 
-    static constexpr auto name = "statistical-test";
-    string getName() override { return name; }
+    static constexpr auto NAME = "statistical-test";
+    string getName() override { return NAME; }
 
 protected:
     void vComputeTInitial(double maxTime, int maxSamples) override;

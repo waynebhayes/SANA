@@ -8,8 +8,8 @@ class LinearRegressionVintage : public LinearRegressionModern {
 public:
     LinearRegressionVintage(SANA *const sana);
 
-    static constexpr auto name = "linear-regression-vintage";
-    string getName() override { return name; }
+    static constexpr auto NAME = "linear-regression-vintage";
+    string getName() override { return NAME; }
 
 protected:
     void computeBoth(double maxTime, int maxSamples) override;

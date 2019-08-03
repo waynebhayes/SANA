@@ -8,8 +8,8 @@ class LinearRegressionModern : public ScheduleMethod {
 public:
     LinearRegressionModern(SANA *const sana);
 
-    static constexpr auto name = "linear-regression-modern";
-    virtual string getName() override { return name; }
+    static constexpr auto NAME = "linear-regression-modern";
+    virtual string getName() override { return NAME; }
 
     void setTargetInitialPBad(double pBad) override; 
     void setTargetFinalPBad(double pBad) override;

@@ -7,8 +7,8 @@ class PBadBinarySearch : public ScheduleMethod {
 public:
     PBadBinarySearch(SANA *const sana);
 
-    static constexpr auto name = "pbad-binary-search";
-    string getName() override { return name; }
+    static constexpr auto NAME = "pbad-binary-search";
+    string getName() override { return NAME; }
 
     double computeTempForPBad(double targetPBad, double maxTime, int maxSamples) override;
 

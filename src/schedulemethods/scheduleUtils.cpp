@@ -14,12 +14,12 @@
 using namespace std;
 
 unique_ptr<ScheduleMethod> getScheduleMethod(string name, SANA* sana) {
-    if (name == LinearRegressionVintage::name) return make_unique<LinearRegressionVintage>(sana);
-    if (name == LinearRegressionModern::name)  return make_unique<LinearRegressionModern>(sana);
-    if (name == PBadBinarySearch::name)        return make_unique<PBadBinarySearch>(sana);
-    if (name == Ameur::name)                   return make_unique<Ameur>(sana);
-    if (name == IteratedAmeur::name)           return make_unique<IteratedAmeur>(sana);
-    if (name == StatisticalTest::name)         return make_unique<StatisticalTest>(sana);
+    if (name == LinearRegressionVintage::NAME) return make_unique<LinearRegressionVintage>(sana);
+    if (name == LinearRegressionModern::NAME)  return make_unique<LinearRegressionModern>(sana);
+    if (name == PBadBinarySearch::NAME)        return make_unique<PBadBinarySearch>(sana);
+    if (name == Ameur::NAME)                   return make_unique<Ameur>(sana);
+    if (name == IteratedAmeur::NAME)           return make_unique<IteratedAmeur>(sana);
+    if (name == StatisticalTest::NAME)         return make_unique<StatisticalTest>(sana);
 
     throw runtime_error("schedule method "+name+" not found");
 }
@@ -28,12 +28,12 @@ void scheduleMethodComparison(SANA *const sana) {
 
     //customizable parameters
     vector<string> testedMethodNames = {
-         LinearRegressionVintage::name, 
-         LinearRegressionModern::name,
-         PBadBinarySearch::name,
-         Ameur::name,
-         IteratedAmeur::name,
-         StatisticalTest::name
+         LinearRegressionVintage::NAME, 
+         LinearRegressionModern::NAME,
+         PBadBinarySearch::NAME,
+         Ameur::NAME,
+         IteratedAmeur::NAME,
+         StatisticalTest::NAME
      };
 
     double targetInitialPBad = 0.95;
@@ -102,8 +102,8 @@ void scheduleMethodComparison(SANA *const sana) {
 
 vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTime, int maxSamples, double numValidationSamples) {
 
-    bool singleTime = method->getName() == LinearRegressionVintage::name or
-                      method->getName() == LinearRegressionModern::name;
+    bool singleTime = method->getName() == LinearRegressionVintage::NAME or
+                      method->getName() == LinearRegressionModern::NAME;
 
     if (singleTime) {
         method->computeTInitial(maxTime, maxSamples);

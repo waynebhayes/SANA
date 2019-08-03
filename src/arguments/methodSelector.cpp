@@ -145,7 +145,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     if (useMethodForTIni or useMethodForTDecay) {
         if (scheduleMethodName == "auto" ) {
             //if user uses 'auto', choose for them
-            scheduleMethodName = LinearRegressionVintage::name;
+            scheduleMethodName = LinearRegressionVintage::NAME;
         }
 
         auto scheduleMethod = getScheduleMethod(scheduleMethodName, sana);
