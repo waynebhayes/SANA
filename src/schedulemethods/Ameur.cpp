@@ -38,7 +38,7 @@ double Ameur::computeTempForEIncs(double targetPBad, double startTempGuess, vect
         double pBadMean = vectorMean(pBads);
         // cout<<"  iteration " << iteration << ": temp: " << tempGuess << " pBad:" << pBadMean << endl;
 
-        converged = isWithinTargetRange(pBadMean, targetPBad);
+        converged = isWithinTargetRange(pBadMean, targetPBad, errorTol);
         if (converged) break;
 
         double nextGuess = tempGuess * pow((log(pBadMean)/log(targetPBad)), 1.0/paramP);

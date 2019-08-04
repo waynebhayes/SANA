@@ -76,26 +76,28 @@ double ScheduleMethod::getPBad(double temp) {
     return res;
 }
 
-double ScheduleMethod::targetRangeMin(double targetPBad) {
+double ScheduleMethod::targetRangeMin(double targetPBad, double errorTol) {
     return targetPBad*(1-errorTol);
 }
-double ScheduleMethod::targetRangeMax(double targetPBad) {
+double ScheduleMethod::targetRangeMax(double targetPBad, double errorTol) {
     return targetPBad*(1+errorTol);
 }
-double ScheduleMethod::distToTargetRange(double pBad, double targetPBad) {
-    if (isAboveTargetRange(pBad, targetPBad)) return pBad-targetRangeMax(targetPBad);
-    if (isBelowTargetRange(pBad, targetPBad)) return targetRangeMin(targetPBad)-pBad;
+double ScheduleMethod::distToTargetRange(double pBad, double targetPBad, double errorTol) {
+    if (isAboveTargetRange(pBad, targetPBad, errorTol))
+        return pBad-targetRangeMax(targetPBad, errorTol);
+    if (isBelowTargetRange(pBad, targetPBad, errorTol))
+        return targetRangeMin(targetPBad, errorTol)-pBad;
     return 0;
 }
-bool ScheduleMethod::isBelowTargetRange(double pBad, double targetPBad) {
-    return pBad < targetRangeMin(targetPBad);
+bool ScheduleMethod::isBelowTargetRange(double pBad, double targetPBad, double errorTol) {
+    return pBad < targetRangeMin(targetPBad, errorTol);
 }
-bool ScheduleMethod::isAboveTargetRange(double pBad, double targetPBad) {
-    return pBad > targetRangeMax(targetPBad);
+bool ScheduleMethod::isAboveTargetRange(double pBad, double targetPBad, double errorTol) {
+    return pBad > targetRangeMax(targetPBad, errorTol);
 }
-bool ScheduleMethod::isWithinTargetRange(double pBad, double targetPBad) {
-    return !isBelowTargetRange(pBad, targetPBad) &&
-           !isAboveTargetRange(pBad, targetPBad);
+bool ScheduleMethod::isWithinTargetRange(double pBad, double targetPBad, double errorTol) {
+    return !isBelowTargetRange(pBad, targetPBad, errorTol) &&
+           !isAboveTargetRange(pBad, targetPBad, errorTol);
 }
 void ScheduleMethod::printTargetRange(double targetPBad, double errorTol) {
     cout << "(" << targetPBad*(1-errorTol) << ", " << targetPBad*(1+errorTol) << ")";
@@ -181,26 +183,27 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, double maxTime, int m
     double lowPBad = (tempToPBad.find(lowTemp))->second;
 
     //make sure that starting bounds enclose the target range
-    bool areGoodBounds = lowTemp < highTemp and isBelowTargetRange(lowPBad, targetPBad)
-                                            and isAboveTargetRange(highPBad, targetPBad);
+    bool areGoodBounds = lowTemp < highTemp and isBelowTargetRange(lowPBad, targetPBad, errorTol)
+                                            and isAboveTargetRange(highPBad, targetPBad, errorTol);
 
     while (not areGoodBounds) {
         highTemp *= 10;
         lowTemp /= 10;
         highPBad = getPBad(highTemp);
         lowPBad = getPBad(lowTemp);
-        areGoodBounds = lowTemp < highTemp and isBelowTargetRange(lowPBad, targetPBad)
-                                           and isAboveTargetRange(highPBad, targetPBad);
+        areGoodBounds = lowTemp < highTemp and isBelowTargetRange(lowPBad, targetPBad, errorTol)
+                                           and isAboveTargetRange(highPBad, targetPBad, errorTol);
     }
 
     double midTemp = logScale ? exp((log(highTemp)+log(lowTemp))/2.0) : (highTemp+lowTemp)/2.0;
     double midPBad = getPBad(midTemp);
 
-    if (isWithinTargetRange(highPBad, targetPBad)) return highTemp;
-    if (isWithinTargetRange(lowPBad, targetPBad)) return lowTemp;
-    if (isWithinTargetRange(midPBad, targetPBad)) return midTemp;
+    if (isWithinTargetRange(highPBad, targetPBad, errorTol)) return highTemp;
+    if (isWithinTargetRange(lowPBad, targetPBad, errorTol)) return lowTemp;
+    if (isWithinTargetRange(midPBad, targetPBad, errorTol)) return midTemp;
 
-    cerr<<"Target range: ("<<targetRangeMin(targetPBad)<<", "<<targetRangeMax(targetPBad)<<")"<<endl;
+    cerr<<"Target range: ("<<targetRangeMin(targetPBad, errorTol)<<", ";
+    cerr<<targetRangeMax(targetPBad, errorTol)<<")"<<endl;
     cerr<<"Start search bounds: temps: ("<<lowTemp<<", "<<midTemp<<", "<<highTemp<<") ";
     cerr<<"pbads: ("<<lowPBad<<", "<<midPBad<<", "<<highPBad<<")"<<endl;
 
@@ -215,7 +218,8 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, double maxTime, int m
     //We try this X times, if we can't get invariant (3) after X attempts, we call it a day
 
     bool invariants = lowPBad <= midPBad and midPBad <= highPBad and
-                        isBelowTargetRange(lowPBad, targetPBad) and isAboveTargetRange(highPBad, targetPBad);
+                        isBelowTargetRange(lowPBad, targetPBad, errorTol) and
+                        isAboveTargetRange(highPBad, targetPBad, errorTol);
     int failCount = 0;
     while (not invariants) {
         failCount++;
@@ -230,30 +234,31 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, double maxTime, int m
             return highTemp;
         }
         highPBad = getPBad(highTemp);
-        if (isWithinTargetRange(highPBad, targetPBad)) return highTemp;
+        if (isWithinTargetRange(highPBad, targetPBad, errorTol)) return highTemp;
         lowPBad = getPBad(lowTemp);
-        if (isWithinTargetRange(lowPBad, targetPBad)) return lowTemp;
+        if (isWithinTargetRange(lowPBad, targetPBad, errorTol)) return lowTemp;
         midPBad = getPBad(midTemp);
-        if (isWithinTargetRange(midPBad, targetPBad)) return midTemp;
+        if (isWithinTargetRange(midPBad, targetPBad, errorTol)) return midTemp;
 
         invariants = lowPBad <= midPBad and midPBad <= highPBad and
-                        isBelowTargetRange(lowPBad, targetPBad) and isAboveTargetRange(highPBad, targetPBad);
+                        isBelowTargetRange(lowPBad, targetPBad, errorTol) and
+                        isAboveTargetRange(highPBad, targetPBad, errorTol);
     }
 
 
     //now all invariants hold. Ready to start search
     while (T.elapsed() < maxTime and (int)tempToPBad.size() - startSamples < maxSamples) {
-        if (isBelowTargetRange(midPBad, targetPBad)) {
+        if (isBelowTargetRange(midPBad, targetPBad, errorTol)) {
             lowTemp = midTemp;
             lowPBad = midPBad;
-        } else if (isAboveTargetRange(midPBad, targetPBad)) {
+        } else if (isAboveTargetRange(midPBad, targetPBad, errorTol)) {
             highTemp = midTemp;
             highPBad = midPBad;
         } else throw runtime_error("invariant not maintained in pbad binary search");
 
         midTemp = logScale ? exp((log(highTemp)+log(lowTemp))/2.0) : (highTemp+lowTemp)/2.0;
         midPBad = getPBad(midTemp);
-        if (isWithinTargetRange(midPBad, targetPBad)) return midTemp;
+        if (isWithinTargetRange(midPBad, targetPBad, errorTol)) return midTemp;
 
         invariants = lowPBad <= midPBad and midPBad <= highPBad;
         failCount = 0;
@@ -270,17 +275,18 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, double maxTime, int m
                 return highTemp;
             }
             midPBad = getPBad(midTemp);
-            if (isWithinTargetRange(midPBad, targetPBad)) return midTemp;
+            if (isWithinTargetRange(midPBad, targetPBad, errorTol)) return midTemp;
             if (midPBad < lowPBad) {
                 lowPBad = getPBad(lowTemp);
-                if (isWithinTargetRange(lowPBad, targetPBad)) return lowTemp;
+                if (isWithinTargetRange(lowPBad, targetPBad, errorTol)) return lowTemp;
             }
             if (midPBad > highPBad) {
                 highPBad = getPBad(highTemp);
-                if (isWithinTargetRange(highPBad, targetPBad)) return highTemp;
+                if (isWithinTargetRange(highPBad, targetPBad, errorTol)) return highTemp;
             }
             invariants = lowPBad <= midPBad and midPBad <= highPBad and
-                         isBelowTargetRange(lowPBad, targetPBad) and isAboveTargetRange(highPBad, targetPBad);
+                         isBelowTargetRange(lowPBad, targetPBad, errorTol) and
+                         isAboveTargetRange(highPBad, targetPBad, errorTol);
             if (invariants) {
                 cerr<<"Corrected pbads: ("<<lowPBad<<", "<<midPBad<<", "<<highPBad<<")"<<endl;
             }

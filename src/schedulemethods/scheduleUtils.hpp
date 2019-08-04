@@ -13,8 +13,8 @@ unique_ptr<ScheduleMethod> getScheduleMethod(string name);
 
 void scheduleMethodComparison(SANA *const sana);
 
-vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTime,
-                            int maxSamples, int numValidationSamples, double sampleTime);
+vector<string> formatMethodData(string, double, double, double, double, double, int,
+                                double, int, double, int, double, int, double);
 
 NormalDistribution getPBadDis(double temp, int numSamples, double sampleTime);
 

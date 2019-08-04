@@ -33,7 +33,7 @@ double IteratedAmeur::computeTempForPBad(double targetPBad, double maxTime, int 
         double tempGuessPBad; //set by reference in call below
         vector<double> EIncs = getEIncSample(tempGuess, 10000, tempGuessPBad);
 
-        converged = isWithinTargetRange(tempGuessPBad, targetPBad);
+        converged = isWithinTargetRange(tempGuessPBad, targetPBad, errorTol);
         if (converged) break;
 
         double nextTempGuess = tempGuess + stepSize*(computeTempForEIncs(targetPBad, tempGuess, EIncs) - tempGuess);

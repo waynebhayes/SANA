@@ -63,13 +63,13 @@ protected:
     double errorTol;
     double TInitial, TFinal;
 
-    //use these to interface with the error tolerance rather than accessing errorTol directly:
-    double targetRangeMin(double targetPBad);
-    double targetRangeMax(double targetPBad);
-    double distToTargetRange(double pBad, double targetPBad);
-    bool isWithinTargetRange(double pBad, double targetPBad);
-    bool isBelowTargetRange(double pBad, double targetPBad);
-    bool isAboveTargetRange(double pBad, double targetPBad);
+    //use these to interface with the error tolerance rather than using errorTol directly:
+    static double targetRangeMin(double targetPBad, double errorTol);
+    static double targetRangeMax(double targetPBad, double errorTol);
+    static double distToTargetRange(double pBad, double targetPBad, double errorTol);
+    static bool isWithinTargetRange(double pBad, double targetPBad, double errorTol);
+    static bool isBelowTargetRange(double pBad, double targetPBad, double errorTol);
+    static bool isAboveTargetRange(double pBad, double targetPBad, double errorTol);
 
     //auxiliary functions used by several schedule methods:
 
@@ -102,8 +102,8 @@ private:
 
     //stuff for comparison for paper:
     friend void scheduleMethodComparison(SANA *const sana);
-    friend vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTime, 
-                                    int maxSamples, int numValidationSamples, double sampleTime);
+    friend vector<string> formatMethodData(string, double, double, double, double, double, int,
+                                double, int, double, int, double, int, double);
     friend NormalDistribution getPBadDis(double temp, int numSamples, double sampleTime);
 
     //union of the tempToPBad maps of all the methods
