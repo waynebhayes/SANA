@@ -761,6 +761,7 @@ void SANA::setInterruptSignal() {
     sigInt.sa_flags = 0;
     sigaction(SIGINT, &sigInt, NULL);
 }
+
 void SANA::printReport() {
     saveAlignment = false;
     string timestamp = string(currentDateTime()); //necessary to make it not const
