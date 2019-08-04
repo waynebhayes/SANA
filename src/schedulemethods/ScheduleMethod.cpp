@@ -204,7 +204,7 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, double maxTime, int m
 
     cerr<<"Target range: ("<<targetRangeMin(targetPBad)<<", "<<targetRangeMax(targetPBad)<<")"<<endl;
     cerr<<"Start search bounds: temps: ("<<lowTemp<<", "<<midTemp<<", "<<highTemp<<") ";
-    cerr<<"pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
+    cerr<<"pbads: ("<<lowPBad<<", "<<midPBad<<", "<<highPBad<<")"<<endl;
 
     //in the search, the following invariants hold:
     //(1) lowTemp < midTemp < highTemp ; (2) lowPBad < targetRange < highPBad ;
@@ -261,9 +261,9 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, double maxTime, int m
         failCount = 0;
         while (not invariants) {
             cerr<<"Invalid search range: temps: ("<<lowTemp<<", "<<midTemp<<", "<<highTemp;
-            cerr<<") pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
+            cerr<<") pbads: ("<<lowPBad<<", "<<midPBad<<", "<<highPBad<<")"<<endl;
             failCount++;
-            if (failCount == 2) {
+            if (failCount == 3) {
                 double dlow = abs(lowPBad - targetPBad);
                 double dmid = abs(midPBad - targetPBad);
                 double dhigh = abs(highPBad - targetPBad);
@@ -284,7 +284,7 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, double maxTime, int m
             invariants = lowPBad <= midPBad and midPBad <= highPBad and
                          isBelowTargetRange(lowPBad, targetPBad) and isAboveTargetRange(highPBad, targetPBad);
             if (invariants) {
-                cerr<<"Corrected pbads: ("<<lowPBad<<","<<midPBad<<","<<highPBad<<")"<<endl;
+                cerr<<"Corrected pbads: ("<<lowPBad<<", "<<midPBad<<", "<<highPBad<<")"<<endl;
             }
         }
     }
@@ -296,62 +296,50 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, double maxTime, int m
     return highTemp;
 }
 
-void ScheduleMethod::setTInitialTFinalFromRegression(bool useDataFromAllMethods) {
 
-    LinearRegression LR(useDataFromAllMethods ? allTempToPBad : tempToPBad, true);
-    tuple<int, double, double, int, double, double, double, double> regressionResult = LR.run();
-    //bestJ,scores[bestJ],temps[bestJ],bestK,scores[bestK],temps[bestK],line1Height,line3Height;
-
-    double rangeBottom = pow(10, get<2>(regressionResult));
-    double rangeTop = pow(10, get<5>(regressionResult));
-    cout << "Goldilocks range: temp (" << rangeBottom << ", " << rangeTop << ")";
-    cout << "pBad (" << get<6>(regressionResult) << ", " << get<7>(regressionResult) << ")" << endl;
+double ScheduleMethod::tempWithClosestPBad(double targetPBad, const multimap<double,double>& tempToPBad,
+                double atLeast, double atMost) {
     
-    if (getPBad(rangeTop) >= targetInitialPBad) TInitial = rangeTop;
-    else {
-        //set as TInitial the lowest temp in tempToPBad which is in the random region AND
-        //has a pBad bigger (or eq) than the target initial pBad
-        bool found = false;
-        for (auto pair : tempToPBad) {
-            //multimap is an ordered structure, so it iterates keys from low to high
-            if (pair.first >= rangeTop and pair.second >= targetInitialPBad) {
-                TInitial = pair.first;
-                found = true;
-                break;
+    if (tempToPBad.size() < 1) throw runtime_error("no entries in tempToPBad map");
+
+    double minDiff = numeric_limits<double>::max();
+    double bestTemp = -1;
+    for (auto p : tempToPBad) {
+        double temp = p.first;
+        if ((atLeast == -1 or temp >= atLeast) and (atMost == -1 or temp <= atMost)) {
+            double diff = abs(p.second-targetPBad);
+            if (diff < minDiff) {
+                minDiff = diff;
+                bestTemp = temp;
             }
         }
-        if (not found) {
-            //If no temp is found with both conditions, use
-            //the lowest temp with a pBad bigger than the target initial pBad
-            for (auto pair : tempToPBad) {
-                if (pair.second >= targetInitialPBad) {
-                    TInitial = pair.first;
-                    found = true;
-                }
-            }        
-        }
-        if (not found) {
-            //whacky case where no temp in tempToPBad has a pBad above the target.
-            //just take the largest... 
-            TInitial = pow(10, tempToPBad.rbegin()->first);
-        }
     }
 
-    TFinal = rangeBottom;
-    double distFromTarget = abs(targetFinalPBad - getPBad(rangeBottom));
-    for (auto pair : tempToPBad) {
-        if (abs(targetFinalPBad - pair.second) < distFromTarget and
-                pair.first <= TInitial) {
-            TFinal = pair.first;
-            distFromTarget = abs(targetFinalPBad - pair.second);
-        }
-    }
+    if (bestTemp == -1) bestTemp = tempWithClosestPBad(targetPBad, tempToPBad, -1, -1);
+    return bestTemp;
+}
+
+double ScheduleMethod::tempWithClosestPBad(double targetPBad, double atLeast, double atMost) const {
+    return tempWithClosestPBad(targetPBad, tempToPBad, atLeast, atMost);
+}
+
+double ScheduleMethod::tempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad) {
+    auto model = LinearRegression::bestFit(tempToPBad);    
+    if (targetPBad <= model.goldilocksMinPBad)
+        return tempWithClosestPBad(targetPBad, tempToPBad, -1, model.goldilocksMinPBad);
+    if (targetPBad >= model.goldilocksMaxPBad)
+        return tempWithClosestPBad(targetPBad, tempToPBad, model.goldilocksMaxPBad, -1);
+
+    return model.interpolateWithinGoldilocks(targetPBad);
+}
+
+double ScheduleMethod::tempWithBestLRFit(double targetPBad) const {
+    return tempWithBestLRFit(targetPBad, tempToPBad);
 }
 
 void ScheduleMethod::populatePBadCurve() {
     const double HIGH_PBAD_LIMIT = 0.99999;
     const double LOW_PBAD_LIMIT = 1e-10;
-    cout << "Populating PBad curve" << endl;
     double highTemp = doublingMethod(HIGH_PBAD_LIMIT, false);
     double lowTemp = doublingMethod(LOW_PBAD_LIMIT, true);
     double numSteps = pow(10, abs(log10(lowTemp)) + abs(log10(highTemp)));

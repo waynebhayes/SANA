@@ -11,6 +11,8 @@ LinearRegressionVintage::LinearRegressionVintage(SANA *const sana):
 
 
 void LinearRegressionVintage::computeBoth(double maxTime, int maxSamples) {
+    //parameters are ignored for this method
+
     const double HIGH_PBAD_LIMIT = 0.99999;
     const double LOW_PBAD_LIMIT = 1e-10;
 
@@ -31,17 +33,17 @@ void LinearRegressionVintage::computeBoth(double maxTime, int maxSamples) {
     cout << " to " << pow(10, log10HighTemp) <<" for linear regression" << endl;
 
     int T_i;
-    double log_temp;
-    map<double, double> pbadMap;
+    double log_temp = -1;
+    map<double, double> pBadMap;
 
     for(T_i = 0; T_i <= log10NumSteps; T_i++){
-    log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
-        pbadMap[log_temp] = getPBad(pow(10, log_temp));
+        log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
+        pBadMap[pow(10,log_temp)] = getPBad(pow(10, log_temp));
         // cout << T_i << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
     }
     for (T_i=0; T_i <= log10NumSteps; T_i++){
-    log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
-        if(pbadMap[log_temp] > targetFinalPBad)
+        log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
+        if(pBadMap[pow(10,log_temp)] > targetFinalPBad)
             break;
     }
 
@@ -52,14 +54,14 @@ void LinearRegressionVintage::computeBoth(double maxTime, int maxSamples) {
     for(int j = 0; j < 4; ++j) {
         double temperature = pow(10, mid);
         double probability = getPBad(temperature);
-        pbadMap[mid] = probability;
+        pBadMap[temperature] = probability;
         if(probability > targetFinalPBad) binarySearchRightEnd = mid;
         else binarySearchLeftEnd = mid;
         mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
     }
     for (T_i = log10NumSteps; T_i >= 0; T_i--){
         log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
-        if(pbadMap[log_temp] < targetInitialPBad)
+        if(pBadMap[pow(10,log_temp)] < targetInitialPBad)
             break;
     }
 
@@ -70,38 +72,33 @@ void LinearRegressionVintage::computeBoth(double maxTime, int maxSamples) {
     for(int j = 0; j < 4; ++j){
         double temperature = pow(10, mid);
         double probability = getPBad(temperature);
-        pbadMap[mid] = probability;
+        pBadMap[temperature] = probability;
         if(probability < targetInitialPBad) binarySearchLeftEnd = mid;
         else binarySearchRightEnd = mid;
         mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
     }
-    LinearRegression linearRegression(pbadMap);
-    tuple<int, double, double, int, double, double, double, double> regressionResult = linearRegression.run();
-    // bestJ, scores[bestJ], temperatures[bestJ], bestK, scores[bestK], temperatures[bestK], line1Height, line3Height;
-    double lowerEnd = get<2>(regressionResult);
-    double upperEnd = get<5>(regressionResult);
-    cout << "The three lines are: "<<endl;
-    cout << "HillClimbing: y= " << get<6>(regressionResult) << " until x= " << pow(10,lowerEnd) << endl;
-    cout << "GoldilocksZone: starts above, ends at x= " << pow(10,upperEnd) << endl;
-    cout << "RandomRegion: y= " << get<7>(regressionResult) << endl;
-    cout << "Left endpoint of linear regression " << pow(10, lowerEnd) << endl;
-    cout << "Right endpoint of linear regression " << pow(10, upperEnd) << endl;
+
+
+
+    LinearRegression::Model model = LinearRegression::bestFit(multimap<double, double> (pBadMap.begin(), pBadMap.end()));
+    model.print();
+
     TInitial = pow(10, log10HighTemp);
-    for (auto const& keyValue : pbadMap)
+    for (auto const& keyValue : pBadMap)
     {
-        if(keyValue.second >= targetInitialPBad && keyValue.first >= upperEnd){
-            TInitial = pow(10, keyValue.first);
+        if(keyValue.second >= targetInitialPBad && keyValue.first >= model.goldilocksMaxTemp){
+            TInitial = keyValue.first;
             break;
         }
     }
-    TFinal = pow(10,log10LowTemp);
-    double distanceFromTarget = std::numeric_limits<double>::max();
-    for (auto const& keyValue : pbadMap)
+    TFinal = pow(10, log10LowTemp);
+    double minDist = numeric_limits<double>::max();
+    for (auto const& keyValue : pBadMap)
     {
-        if (distanceFromTarget > abs(targetFinalPBad - keyValue.second) and
-                pow(10, keyValue.first) <= TInitial) {
-            distanceFromTarget = abs(targetFinalPBad - keyValue.second);
-            TFinal = pow(10, keyValue.first);
+        if (minDist > abs(targetFinalPBad - keyValue.second) and
+                keyValue.first <= TInitial) {
+            minDist = abs(targetFinalPBad - keyValue.second);
+            TFinal = keyValue.first;
         }
     }
 }

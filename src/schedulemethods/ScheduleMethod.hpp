@@ -32,7 +32,6 @@ public:
     //prints and other info collection
     void printScheduleStatistics();
     static void printTargetRange(double targetPBad, double errorTol);
-    vector<double> dataForComparison(int numValidationSamples);
     double totalTime();
     int totalSamples();
 
@@ -83,8 +82,8 @@ protected:
     // Binary search based on pbads
     double pBadBinarySearch(double targetPBad, double maxTime, int maxSamples);
 
-    //uses the tempToPBad map to do regression based on all the pbads collected by this method
-    void setTInitialTFinalFromRegression(bool useDataFromAllMethods = false);
+    double tempWithClosestPBad(double targetPBad, double atLeast = -1, double atMost = -1) const; 
+    double tempWithBestLRFit(double targetPBad) const; 
 
     //samples evenly (in log scale) along the pBad spectrum from really low to really high temps
     void populatePBadCurve();
@@ -94,9 +93,18 @@ private:
     double TInitialTime, TFinalTime;
     int TInitialSamples, TFinalSamples;
 
+    static double tempWithClosestPBad(double targetPBad, const multimap<double,double>& tempToPBad,
+                double atLeast = -1, double atMost = -1);
+    static double tempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad);
+
+    //stuff for comparison for paper:
+    friend void scheduleMethodComparison(SANA *const sana);
+    friend vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTime, int maxSamples, double numValidationSamples);
+    
+    vector<double> dataForComparison(int numValidationSamples);
     //union of the tempToPBad maps of all the methods
     static multimap<double, double> allTempToPBad; 
-
+    static vector<double> tempsFromRegressionAllSamples(vector<double> pBads);
 
 };
 

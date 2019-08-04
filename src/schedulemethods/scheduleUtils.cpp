@@ -43,11 +43,11 @@ void scheduleMethodComparison(SANA *const sana) {
      };
 
     double targetInitialPBad = 0.95;
-    double targetFinalPBad = 0.00001;
+    double targetFinalPBad = 0.0001;
     int runsPerMethod = 1;
     double maxTime = 60;
     int maxSamples = 60;
-    double sampleTime = 1; //max time for getPBad to reach equilibrium
+    double sampleTime = 2; //max time for getPBad to reach equilibrium
     double errorTol = 0.01;
     int numValidationSamples = 1; //set to a high value for final experiment (30?)
             //to find the *real* pBad at the temperatures given by the methods
@@ -71,6 +71,9 @@ void scheduleMethodComparison(SANA *const sana) {
             table.push_back(methodData(method, maxTime, maxSamples, numValidationSamples));
         }
     }
+
+    // ScheduleMethod::tempsFromRegressionAllSamples({});
+
     // double totalTime = T.elapsed();
 
     //apply LR on all the samples taken by all the methods

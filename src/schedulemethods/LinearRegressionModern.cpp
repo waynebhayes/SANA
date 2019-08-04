@@ -34,10 +34,21 @@ void LinearRegressionModern::computeBoth(double maxTime, int maxSamples) {
     T.start();
     int startSamples = tempToPBad.size();
 
+    cout << "Populating PBad curve" << endl;
     populatePBadCurve();
+
     double remainingTime = maxTime - T.elapsed();
-    int remainingSamples = tempToPBad.size()-startSamples;
+    int remainingSamples = maxSamples-(tempToPBad.size()-startSamples);
+
+    cout << "Increasing density near TInitial" << endl;
     pBadBinarySearch(targetInitialPBad, remainingTime/2, remainingSamples/2);
-    pBadBinarySearch(targetFinalPBad, remainingTime/2, remainingSamples/2);        
-    setTInitialTFinalFromRegression();
+    cout << "Increasing density near TFinal" << endl;
+    pBadBinarySearch(targetFinalPBad, remainingTime/2, remainingSamples/2);  
+
+    auto model = LinearRegression::bestFit(tempToPBad);
+    cout << "*** Linear Regression Model: ";
+    model.print();
+
+    TInitial = tempWithBestLRFit(targetInitialPBad);
+    TFinal = tempWithBestLRFit(targetFinalPBad);
 }

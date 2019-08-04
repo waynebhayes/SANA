@@ -9,175 +9,128 @@
 using namespace std;
 
 
-LinearRegression::LinearRegression(multimap<double, double> chart, bool convertXToLogScale) {
-    xs = vector<double> (0);
-    ys = vector<double> (0);
-    for (auto it = chart.begin(); it != chart.end(); it++) {
-        double x = it->first;
-        xs.push_back(convertXToLogScale ? log(x) : x);
-        ys.push_back(it->second);
-    }
+
+LinearRegression::Model::Model(double glMinT, double gmMaxT, double glMinP, double glMaxP, int numSamples):
+    goldilocksMinTemp(glMinT), goldilocksMaxTemp(gmMaxT), goldilocksMinPBad(glMinP), goldilocksMaxPBad(glMaxP),
+    numSamples(numSamples) {}
+
+
+double LinearRegression::Model::interpolateWithinGoldilocks(double pBad, bool inLogScale) const {
+    if (pBad <= goldilocksMinPBad) return goldilocksMinTemp;
+    if (pBad >= goldilocksMaxPBad) return goldilocksMaxTemp;
+    double xmin = inLogScale ? log10(goldilocksMinTemp) : goldilocksMinTemp;
+    double xmax = inLogScale ? log10(goldilocksMaxTemp) : goldilocksMaxTemp;
+
+    double yfrac = (pBad-goldilocksMinPBad)/(goldilocksMaxPBad-goldilocksMinPBad);
+    double xres = xmin+(yfrac*(xmax-xmin));
+    return inLogScale ? pow(10, xres) : xres;
 }
 
-LinearRegression::LinearRegression(map<double, double> chart) {
-    xs = vector<double> (0);
-    ys = vector<double> (0);
-    for (auto it = chart.begin(); it != chart.end(); it++) {
-        xs.push_back(it->first);
-        ys.push_back(it->second);
-    }
+void LinearRegression::Model::print() const {
+    cout << "Goldilocks range: (temp " << goldilocksMinTemp << " pBad " << goldilocksMinPBad << ") to ";
+    cout << "(temp " << goldilocksMaxTemp << " pBad " << goldilocksMaxPBad << ")" << endl;
 }
 
+LinearRegression::Model LinearRegression::bestFit(const multimap<double, double>& tempToPBad, bool fitTempInLogSpace) {
+    vector<double> temps(0);
+    vector<double> pBads(0);
+    for (auto it : tempToPBad) {
+        double temp = it.first;
+        temps.push_back(fitTempInLogSpace ? log10(temp) : temp);
+        pBads.push_back(it.second);
+    }
 
-tuple<int, double, double, int, double, double, double, double> LinearRegression::run() const {
-    int SIZE = xs.size();
-
-    double line1Sum;
-    double* line2Values;
-    double line3Sum;
-    double line1LeastSquares;
-    double* line2LeastSquares;
-    double line3LeastSquares;
-    double line1Error;
-    double line2Error;
-    double line3Error;
+    int n = temps.size();
+    if (n <= 4) throw runtime_error("too few samples for regression");
 
     double smallestError = -1;
     int bestJ = -1, bestK = -1;
-    double line1Height;
-    //double* line2Coeff;
-    double line3Height;
-    double currentError;
+    double bestLine1Height = -1, bestLine3Height = -1;
 
-    for (int j = 1; j < SIZE - 2; j++) {
-        line1Sum = initialSum(0, j, ys);
-        line2Values = initialValues(j, j+1, ys);
-        line3Sum = initialSum(j+1, SIZE - 1, ys);
+    double line1PBadSum = pBads[0];
+    for (int j = 1; j < n - 2; j++) {
+        line1PBadSum += pBads[j];
+        double line1Height = line1PBadSum/(j+1);
+        double line1Error = flatLineLeastSquaresError(pBads, 0, j, line1Height);
 
-        line1LeastSquares = linearLeastSquares(line1Sum, j+1);
-        line1Error = leastSquaresError(0, j, line1LeastSquares, ys);
+        double line2tempSum = temps[j]+temps[j+1];
+        double line2pBadSum = pBads[j+1]+pBads[j+2];
+        double line2prodSum = temps[j+1]*pBads[j+1] + temps[j+2]*pBads[j+2];
+        double line2sqTempSum = temps[j+1]*temps[j+1] + temps[j+2]*temps[j+2];
 
-        for (int k = j+1; k < SIZE - 1; k++) {
-            line2LeastSquares = linearLeastSquares(line2Values, k-j+1);
-            line3LeastSquares = linearLeastSquares(line3Sum, SIZE-k);
+        double line3PBadSum = rangeSum(pBads, j+1, n-1);
 
-            line2Error = leastSquaresError(j, k, line2LeastSquares, ys);
-            line3Error = leastSquaresError(k, SIZE - 1, line3LeastSquares, ys);
+        for (int k = j+1; k < n - 1; k++) {
+            vector<double> line2SlopeIntercept =
+                linearLeastSquares(line2tempSum, line2pBadSum, line2prodSum, line2sqTempSum, k-j+1);
 
-            currentError = line1Error + line2Error + line3Error;
+            double line3Height = line3PBadSum/(n-k);
 
-            if (j == 1 && k == 2) {
+            double line2Error = leastSquaresError(temps, pBads, j, k, line2SlopeIntercept);
+            double line3Error = flatLineLeastSquaresError(pBads, k, n - 1, line3Height);
+
+            double currentError = line1Error + line2Error + line3Error;
+
+            if (smallestError == -1 or currentError < smallestError) {
                 smallestError = currentError;
                 bestJ = j;
                 bestK = k;
-                line1Height = line1LeastSquares;
-                // line2Coeff = line2LeastSquares;
-                line3Height = line3LeastSquares;
+                bestLine1Height = line1Height;
+                bestLine3Height = line3Height;
             }
 
-	    assert(smallestError != -1);
-            if (currentError < smallestError) {
-                smallestError = currentError;
-                bestJ = j;
-                bestK = k;
-                line1Height = line1LeastSquares;
-                // line2Coeff = line2LeastSquares;
-                line3Height = line3LeastSquares;
-            }
+            line2tempSum += temps[k+1];
+            line2pBadSum += pBads[k+1];
+            line2prodSum += temps[k+1]*pBads[k+1];
+            line2sqTempSum += temps[k+1]*temps[k+1];
 
-            line2Values = incrementalValues(j, k, false, line2Values, ys);
-            line3Sum = incrementalValues(k, SIZE - 1, true, line3Sum, ys);
+            line3PBadSum -= pBads[k];
         }
     }
-    assert(bestJ != -1 && bestK != -1);
+ 
+    //push transition temps outwards by one sample... not sure why -Nil
     bestJ = bestJ - 1;
     bestK = bestK + 1;
-    return std::make_tuple(bestJ, ys[bestJ], xs[bestJ], bestK, ys[bestK], xs[bestK], line1Height, line3Height);
+
+    double glMinT = fitTempInLogSpace ? pow(10, temps[bestJ]) : temps[bestJ];
+    double glMaxT = fitTempInLogSpace ? pow(10, temps[bestK]) : temps[bestK];
+    return Model(glMinT, glMaxT, bestLine1Height, bestLine3Height, n);
 }
-double LinearRegression::initialSum(int index1, int index2, const vector<double> &data){
+
+double LinearRegression::rangeSum(const vector<double> &v, int index1, int index2){
     double sum = 0;
-
     for (int i = index1; i <= index2; i++) {
-        sum += data[i];
+        sum += v[i];
     }
-
     return sum;
 }
-double* LinearRegression::initialValues(int index1, int index2, const vector<double> &data){
-    double* neededValues = new double[4]{0, 0, 0, 0}; // [x, y, xy, xSquared]
 
-    for (int i = index1; i <= index2; i++) {
-        neededValues[0] += i;
-        neededValues[1] += data[i];
-        neededValues[2] += i*data[i];
-        neededValues[3] += i*i;
-    }
+vector<double> LinearRegression::linearLeastSquares(double xSum, double ySum, double xySum, double xxSum, int n) {
+    double xAvg = xSum/n, yAvg = ySum/n, xyAvg = xySum/n, xxAvg = xxSum/n;
 
-    return neededValues;
+    //I haven't checked this formula -Nil
+    double slope = (xyAvg - xAvg*yAvg) / (xxAvg - xAvg*xAvg);
+    double intercept = yAvg - slope*xAvg;
+
+    return {slope, intercept};
 }
-double LinearRegression::incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double sum, const vector<double> &data){
-    if (index1Change) {
-        sum -= data[oldIndex1];
-    }
 
-    else {
-        sum += data[oldIndex2+1];
-    }
-
-    return sum;
-}
-double* LinearRegression::incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double values[], const vector<double> &data){
-    if (index1Change) {
-        values[0] -= oldIndex1;
-        values[1] -= data[oldIndex1];
-        values[2] -= oldIndex1*data[oldIndex1];
-        values[3] -= oldIndex1*oldIndex1;
-    }
-
-    else {
-        values[0] += oldIndex2+1;
-        values[1] += data[oldIndex2+1];
-        values[2] += (oldIndex2+1)*data[oldIndex2+1];
-        values[3] += (oldIndex2+1)*(oldIndex2+1);
-    }
-
-    return values;
-}
-double LinearRegression::linearLeastSquares(double sum, int n){
-    double yIntercept = sum/n;
-
-    return yIntercept;
-}
-double* LinearRegression::linearLeastSquares(double values[], int n){
-    double* averages = new double[4]{values[0]/n, values[1]/n, values[2]/n, values[3]/n}; // [xBar, yBar, xyBar, xSquaredBar]
-    double* linearConstants = new double[2]{0, 0}; // [beta, alpha]
-
-    linearConstants[0] = (averages[2] - (averages[0]*averages[1])) / (averages[3] - (averages[0]*averages[0]));
-    linearConstants[1] = averages[1] - (linearConstants[0]*averages[0]);
-
-    return linearConstants;
-}
-double LinearRegression::leastSquaresError(int index1, int index2, double constant, const vector<double> &data){
-    double residual;
+double LinearRegression::flatLineLeastSquaresError(const vector<double> &pBads, int index1, int index2, double lineHeight) {
     double error = 0;
-
     for (int i = index1; i <= index2; i++) {
-        residual = data[i] - constant;
-
+        double residual = pBads[i] - lineHeight;
         error += residual*residual;
     }
-
     return error;
 }
-double LinearRegression::leastSquaresError(int index1, int index2, double constants[], const vector<double> &data){
-    double residual;
+
+double LinearRegression::leastSquaresError(const vector<double> &temps, const vector<double> &pBads, int index1, int index2, vector<double> slopeIntercept) {
+    double slope = slopeIntercept[0], intercept = slopeIntercept[1];
+
     double error = 0;
-
     for (int i = index1; i <= index2; i++) {
-        residual = data[i] - constants[1] - (constants[0]*i);
-
+        double residual = pBads[i] - (intercept + slope*temps[i]);
         error += residual*residual;
     }
-
     return error;
 }

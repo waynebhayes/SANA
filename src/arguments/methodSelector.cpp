@@ -149,6 +149,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         }
 
         auto scheduleMethod = getScheduleMethod(scheduleMethodName, sana);
+        scheduleMethod->setSampleTime(2);
         if (useMethodForTIni) {
             sana->setTInitial(scheduleMethod->computeTInitial(60, 200));
         }

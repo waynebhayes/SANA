@@ -16,27 +16,34 @@
 #include "utils.hpp"
 using namespace std;
 
+
 class LinearRegression {
 
 public:
 
-    LinearRegression(multimap<double, double> chart, bool convertXToLogScale);
-    LinearRegression(map<double, double> chart);
+    struct Model {
+        Model(double glMinT, double gmMaxT, double glMinP, double glMaxP, int numSamples);
+        const double goldilocksMinTemp;
+        const double goldilocksMaxTemp;
+        const double goldilocksMinPBad;
+        const double goldilocksMaxPBad;
+        const int numSamples;
 
-    tuple<int, double, double, int, double, double, double, double> run() const;
+        //assuming pBad is between goldilocks minPBad and maxPBad
+        //interpolates the temperature that gives rise to that pBad
+        double interpolateWithinGoldilocks(double pBad, bool inLogScale = true) const;
+        void print() const;
+    };
+
+    static Model bestFit(const multimap<double, double>& tempToPBad, bool fitTempInLogSpace = true);
 
 private:
-    vector<double> xs;
-    vector<double> ys;
 
-    static double incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double sum, const vector<double> &data);
-    static double* incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double values[], const vector<double> &data);
-    static double linearLeastSquares(double sum, int n);
-    static double* linearLeastSquares(double values[], int n);
-    static double leastSquaresError(int index1, int index2, double constant, const vector<double> &data);
-    static double leastSquaresError(int index1, int index2, double constants[], const vector<double> &data);
-    static double* initialValues(int index1, int index2, const vector<double> &data);
-    static double initialSum(int index1, int index2, const vector<double> &data);
+    static double rangeSum(const vector<double> &v, int index1, int index2);
+    static vector<double> linearLeastSquares(double xSum, double ySum, double xySum, double xxSum, int n);
+    static double flatLineLeastSquaresError(const vector<double> &pBads, int index1, int index2, double lineHeight);
+    static double leastSquaresError(const vector<double> &temps, const vector<double> &pBads, int index1, int index2, vector<double> slopeIntercept);
+
 };
 
 
