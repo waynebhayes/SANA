@@ -58,8 +58,8 @@ void scheduleMethodComparison(SANA *const sana) {
 
     vector<vector<string>> table;
     table.push_back({"Method",
-        "TInitial","PBadMean","PBadSD","Accuracy","Samp","Time",
-        "TFinal","PBadMean","PBadSD","Accuracy","Samp","Time",
+        "TInitial","x","PBadMean","PBadSD","Accuracy","Samp","Time",
+        "TFinal","x","PBadMean","PBadSD","Accuracy","Samp","Time",
         "AllSamp","AllTime"});
 
     Timer T;
@@ -129,16 +129,20 @@ vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTi
 
     NormalDistribution TIniPBadDis = getPBadDis(TInitial, numValidationSamples, sampleTime);
     double TIniPBadAccuracy = TIniPBadDis.getMean()/method->targetInitialPBad;
+    bool TIniSuccess = method->isWithinTargetRange(TIniPBadDis.getMean(), method->targetInitialPBad);
 
     NormalDistribution TFinPBadDis = getPBadDis(TFinal, numValidationSamples, sampleTime);
     double TFinPBadAccuracy = TFinPBadDis.getMean()/method->targetFinalPBad;
+    bool TFinSuccess = method->isWithinTargetRange(TFinPBadDis.getMean(), method->targetFinalPBad);
 
     vector<pair<double,int>> dataAndPrec =
         {
-          {TInitial, 6}, {TIniPBadDis.getMean(), 6}, {TIniPBadDis.getSD(), 6}, {TIniPBadAccuracy, 6},
-          {(double)method->TInitialSamples, 0}, {method->TInitialTime, 2},
-          {TFinal, 9}, {TFinPBadDis.getMean(), 9}, {TFinPBadDis.getSD(), 9}, {TFinPBadAccuracy, 6},
-          {(double)method->TFinalSamples, 0}, {method->TFinalTime, 2},
+          {TInitial, 6}, {(double)TIniSuccess, 0}, {TIniPBadDis.getMean(), 6}, {TIniPBadDis.getSD(), 6},
+          {TIniPBadAccuracy, 6}, {(double)method->TInitialSamples, 0}, {method->TInitialTime, 2},
+
+          {TFinal, 9}, {(double)TFinSuccess, 0}, {TFinPBadDis.getMean(), 9}, {TFinPBadDis.getSD(), 9},
+          {TFinPBadAccuracy, 6}, {(double)method->TFinalSamples, 0}, {method->TFinalTime, 2},
+
           {(double)method->totalSamples(), 0}, {method->totalTime(), 2}
       };    
 
@@ -153,7 +157,7 @@ vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTi
     }
     
     if (singleTime) {
-        row[5] = row[6] = row[11] = row[12] = "NA";
+        row[6] = row[7] = row[13] = row[14] = "NA";
     }
 
     return row;
