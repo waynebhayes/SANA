@@ -406,7 +406,11 @@ Alignment SANA::run() {
 	unordered_map<uint,string> G1Index2Name = G1->getIndexToNodeNameMap();
 	unordered_map<uint,string> G2Index2Name = G2->getIndexToNodeNameMap();
 	printf("######## core frequencies#########\n");
-	printf("p1 p2 unwgtd w1_pB\n");
+	printf("p1 p2");
+#if UNWEIGHTED_CORES
+	printf(" unwgtd");
+#endif
+	printf("wpB w1_pB\n");
 	for(uint i=0; i<n1; i++) for(uint j=0; j<n2; j++)
 	{
 #if UNWEIGHTED_CORES

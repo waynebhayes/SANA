@@ -14,6 +14,7 @@
 #include "../utils/ParetoFront.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 
+#define UNWEIGHTED_CORES 1
 #ifdef MULTI_PAIRWISE
 #define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdgesNumer, double edSum, uint pairsCount, uint MS3Numer
 #else

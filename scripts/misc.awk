@@ -84,6 +84,16 @@ function StatAddSample(name, x) {
     if(x)_statmin[name]=MIN(_statmin[name],x);
     _statMax[name]=MAX(_statMax[name],x);
 }
+function StatAddDuplicateSamples(name, x, n) {
+    if(1*_statN[name]==0)StatReset(name);
+    _statN[name]+=n;
+    _statNdup[name]++;
+    _statSum[name]+=n*x;
+    _statSum2[name]+=n*x*x;
+    _statMin[name]=MIN(_statMin[name],x);
+    if(x)_statmin[name]=MIN(_statmin[name],x);
+    _statMax[name]=MAX(_statMax[name],x);
+}
 function StatMean(name) {
     return _statSum[name]/_statN[name];
 }
