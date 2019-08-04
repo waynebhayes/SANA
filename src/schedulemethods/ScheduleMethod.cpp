@@ -68,12 +68,12 @@ double ScheduleMethod::getPBad(double temp) {
     return res;
 }
 
-double ScheduleMethod::getPBadAvg(double temp, int numSamples) {
-    double pBadSum = 0;
+NormalDistribution ScheduleMethod::getPBadDis(double temp, int numSamples) {
+    vector<double> samples;
     for (int i = 0; i < numSamples; i++) {
-        pBadSum += getPBad(temp);
+        samples.push_back(getPBad(temp));
     } 
-    return pBadSum/numSamples;
+    return NormalDistribution(samples);
 }
 
 
@@ -361,20 +361,6 @@ void ScheduleMethod::printScheduleStatistics() {
     cout << "TDecay needed to traverse this range: " << -log(TFinal/TInitial) << endl;
     cout << endl;
 }
-
-vector<double> ScheduleMethod::dataForComparison(int numValidationSamples) {
-
-    double TIniPBad = getPBadAvg(TInitial, numValidationSamples);
-    double TIniPBadRelative = TIniPBad/targetInitialPBad;
-    double TFinPBad = getPBadAvg(TFinal, numValidationSamples);
-    double TFinPBadRelative = TFinPBad/targetFinalPBad;
-
-    return 
-        { TInitial, TIniPBad, TIniPBadRelative, (double)TInitialSamples, TInitialTime,
-          TFinal,   TFinPBad, TFinPBadRelative, (double)TFinalSamples, TFinalTime,
-          (double)totalSamples(), totalTime() };    
-}
-
 
 double ScheduleMethod::totalTime() {
     return TInitialTime + TFinalTime;

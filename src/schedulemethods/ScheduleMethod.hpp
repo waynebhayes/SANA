@@ -7,6 +7,7 @@
 #include <map>
 
 #include "../methods/SANA.hpp"
+#include "../utils/NormalDistribution.hpp"
 
 using namespace std;
 
@@ -73,9 +74,7 @@ protected:
     double sampleTime; //time getPBad is allowed to run
     multimap<double, double> tempToPBad; //every call to getPBad adds an entry to this map
 
-    //samples many pBads and returns the average
-    //this is supposed to be (more) resistant to noise
-    double getPBadAvg(double temp, int numSamples);
+    NormalDistribution getPBadDis(double temp, int numSamples);
 
     double doublingMethod(double targetPBad, bool nextAbove, double base = 10);
 
@@ -101,7 +100,6 @@ private:
     friend void scheduleMethodComparison(SANA *const sana);
     friend vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTime, int maxSamples, double numValidationSamples);
     
-    vector<double> dataForComparison(int numValidationSamples);
     //union of the tempToPBad maps of all the methods
     static multimap<double, double> allTempToPBad; 
     static vector<double> tempsFromRegressionAllSamples(vector<double> pBads);

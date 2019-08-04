@@ -49,14 +49,16 @@ void scheduleMethodComparison(SANA *const sana) {
     int maxSamples = 60;
     double sampleTime = 2; //max time for getPBad to reach equilibrium
     double errorTol = 0.01;
-    int numValidationSamples = 1; //set to a high value for final experiment (30?)
+    int numValidationSamples = 5; //set to a high value for final experiment (30?)
             //to find the *real* pBad at the temperatures given by the methods
-            //we get an average of this many getPBad samples 
+            //we compute a normal distribution of this many samples
     
 
     vector<vector<string>> table;
-    table.push_back({"Method","TInitial","PBad","(relative)","Samples","Time",
-        "TFinal","PBad","(relative)","Samples","Time","TotalSamples","TotalTime"});
+    table.push_back({"Method",
+        "TInitial","PBadMean","PBadSD","Accuracy","Samp","Time",
+        "TFinal","PBadMean","PBadSD","Accuracy","Samp","Time",
+        "AllSamp","AllTime"});
 
     // Timer T;
     // T.start();
@@ -114,23 +116,42 @@ vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTi
     bool singleTime = method->getName() == LinearRegressionVintage::NAME or
                       method->getName() == LinearRegressionModern::NAME;
 
+    double TInitial, TFinal;
     if (singleTime) {
-        method->computeTInitial(maxTime, maxSamples);
-        method->computeTFinal(0, 0);
+        TInitial = method->computeTInitial(maxTime, maxSamples);
+        TFinal = method->computeTFinal(0, 0);
     } else {
-        method->computeTInitial(maxTime/2, maxSamples/2);
-        method->computeTFinal(maxTime/2, maxSamples/2);
+        TInitial = method->computeTInitial(maxTime/2, maxSamples/2);
+        TFinal = method->computeTFinal(maxTime/2, maxSamples/2);
     }
 
-    vector<double> data = method->dataForComparison(numValidationSamples);
+    NormalDistribution TIniPBadDis = method->getPBadDis(TInitial, numValidationSamples);
+    double TIniPBadAccuracy = TIniPBadDis.getMean()/method->targetInitialPBad;
+
+    NormalDistribution TFinPBadDis = method->getPBadDis(TFinal, numValidationSamples);
+    double TFinPBadAccuracy = TFinPBadDis.getMean()/method->targetFinalPBad;
+
+    vector<pair<double,int>> dataAndPrec =
+        {
+          {TInitial, 6}, {TIniPBadDis.getMean(), 6}, {TIniPBadDis.getSD(), 6}, {TIniPBadAccuracy, 6},
+          {(double)method->TInitialSamples, 0}, {method->TInitialTime, 2},
+          {TFinal, 9}, {TFinPBadDis.getMean(), 9}, {TFinPBadDis.getSD(), 9}, {TFinPBadAccuracy, 6},
+          {(double)method->TFinalSamples, 0}, {method->TFinalTime, 2},
+          {(double)method->totalSamples(), 0}, {method->totalTime(), 2}
+      };    
+
     vector<string> row = {method->getName()};
-    vector<int> precision = {6,6,6,0,2,9,9,6,0,2,0,2};
-    for (uint i = 0; i < data.size(); i++) {
-        row.push_back(toStringWithPrecision(data[i], precision[i]));
+    if (method->getName() == LinearRegressionVintage::NAME) row[0] = "LR-vintage";
+    if (method->getName() == LinearRegressionModern::NAME) row[0] = "LR-modern";
+
+    for (auto p : dataAndPrec) {
+        double val = p.first;
+        double precision = p.second;
+        row.push_back(toStringWithPrecision(val, precision));
     }
     
     if (singleTime) {
-        row[4] = row[5] = row[9] = row[10] = "NA";
+        row[5] = row[6] = row[11] = row[12] = "NA";
     }
 
     return row;
