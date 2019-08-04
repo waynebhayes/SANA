@@ -12,7 +12,7 @@ NOTE: It does NOT target specific pBads.
 Instead, it finds start and end temps using other criteria */
 class StatisticalTest : public ScheduleMethod {
 public:
-    StatisticalTest(SANA *const sana);
+    StatisticalTest() =default;
 
     static constexpr auto NAME = "statistical-test";
     string getName() override { return NAME; }

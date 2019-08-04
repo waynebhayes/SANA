@@ -6,10 +6,6 @@
 
 using namespace std;
 
-LinearRegressionVintage::LinearRegressionVintage(SANA *const sana):
-    LinearRegressionModern(sana) {}
-
-
 void LinearRegressionVintage::computeBoth(double maxTime, int maxSamples) {
     //parameters are ignored for this method
 

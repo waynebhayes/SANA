@@ -6,7 +6,7 @@
 /* New Linear Regression implementation better integrated with the other schedule methods */
 class LinearRegressionModern : public ScheduleMethod {
 public:
-    LinearRegressionModern(SANA *const sana);
+    LinearRegressionModern();
 
     static constexpr auto NAME = "linear-regression-modern";
     virtual string getName() override { return NAME; }

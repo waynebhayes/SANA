@@ -6,9 +6,6 @@
 
 using namespace std;
 
-Ameur::Ameur(SANA *const sana) :
-    ScheduleMethod(sana) {} 
-
 double Ameur::computeTempForPBad(double pBad, double maxTime, int maxSamples) {
     double startTempGuess = 1;
     double unused; //set by reference in call below

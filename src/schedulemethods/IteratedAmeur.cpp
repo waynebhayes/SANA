@@ -7,10 +7,6 @@
 
 using namespace std;
 
-IteratedAmeur::IteratedAmeur(SANA *const sana) :
-    Ameur(sana) {} 
-
-
 //the method from the ameur paper computes a temperature that "fits" a target pbad for a given sample of EIncs
 //james' idea is to iterate this process until convergence: using the resulting temperature,
 //generate a new sample of EIncs by running at that temperature, 

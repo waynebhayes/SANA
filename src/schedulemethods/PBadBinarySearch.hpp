@@ -5,7 +5,7 @@
 
 class PBadBinarySearch : public ScheduleMethod {
 public:
-    PBadBinarySearch(SANA *const sana);
+    PBadBinarySearch() =default;
 
     static constexpr auto NAME = "pbad-binary-search";
     string getName() override { return NAME; }

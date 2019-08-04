@@ -6,7 +6,7 @@
 /* Original Linear Regression implementation */
 class LinearRegressionVintage : public LinearRegressionModern {
 public:
-    LinearRegressionVintage(SANA *const sana);
+    LinearRegressionVintage() =default;
 
     static constexpr auto NAME = "linear-regression-vintage";
     string getName() override { return NAME; }

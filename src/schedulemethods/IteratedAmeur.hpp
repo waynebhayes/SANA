@@ -10,7 +10,7 @@ using namespace std;
 /* applies the method iteratively to converge to a better guess */
 class IteratedAmeur : public Ameur {
 public:
-    IteratedAmeur(SANA *const sana);
+    IteratedAmeur() =default;
 
     static constexpr auto NAME = "iterated-ameur";
     string getName() override { return NAME; }

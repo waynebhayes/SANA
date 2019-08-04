@@ -7,9 +7,12 @@
 
 using namespace std;
 
+//initialization of static members
 multimap<double, double> ScheduleMethod::allTempToPBad = multimap<double, double> (); 
+SANA* ScheduleMethod::sana = nullptr;
 
-ScheduleMethod::ScheduleMethod(SANA *const sana): sana(sana),
+
+ScheduleMethod::ScheduleMethod():
     targetInitialPBad(DEFAULT_TARGET_INITIAL_PBAD), targetFinalPBad(DEFAULT_TARGET_FINAL_PBAD),
     errorTol(DEFAULT_ERROR_TOL), sampleTime(DEFAULT_SAMPLE_TIME),
     tempToPBad(),
@@ -61,22 +64,17 @@ double ScheduleMethod::computeTempForPBad(double targetPBad, double maxTime, int
     throw runtime_error("functionality not implemented for this method");
 }
 
-double ScheduleMethod::getPBad(double temp) {
+double ScheduleMethod::sGetPBad(double temp, double sampleTime) {
     double res = sana->getPBad(temp, sampleTime);
-    tempToPBad.insert({temp, res});
     allTempToPBad.insert({temp, res});
     return res;
 }
 
-NormalDistribution ScheduleMethod::getPBadDis(double temp, int numSamples) {
-    vector<double> samples;
-    for (int i = 0; i < numSamples; i++) {
-        samples.push_back(getPBad(temp));
-    } 
-    return NormalDistribution(samples);
+double ScheduleMethod::getPBad(double temp) {
+    double res = sGetPBad(temp, sampleTime);
+    tempToPBad.insert({temp, res});
+    return res;
 }
-
-
 
 double ScheduleMethod::targetRangeMin(double targetPBad) {
     return targetPBad*(1-errorTol);

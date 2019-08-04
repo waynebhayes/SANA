@@ -11,7 +11,7 @@ using namespace std;
 by Walid Ben-Ameur et al */
 class Ameur : public ScheduleMethod {
 public:
-    Ameur(SANA *const sana);
+    Ameur() = default;
 
     static constexpr auto NAME = "ameur-method";
     virtual string getName() override { return NAME; }

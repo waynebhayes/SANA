@@ -8,9 +8,6 @@
 
 using namespace std;
 
-StatisticalTest::StatisticalTest(SANA *const sana) :
-    ScheduleMethod(sana) {} 
-
 //sets TInitial to a temperature such that SANA run at this
 //temperature produces alignments that are statistically
 //undistinguishable from alignments taken at random

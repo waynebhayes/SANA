@@ -15,7 +15,11 @@ class ScheduleMethod {
 
 public:
 
-    ScheduleMethod(SANA *const sana);
+    //single, static SANA for all schedule methods
+    //this needs to be called before computing temps
+    static void setSana(SANA *const sana) { ScheduleMethod::sana = sana; }
+
+    ScheduleMethod();
     ~ScheduleMethod() =default;
 
     virtual string getName() =0;
@@ -53,7 +57,7 @@ protected:
     virtual void vComputeTInitial(double maxTime, int maxSamples);
     virtual void vComputeTFinal(double maxTime, int maxSamples);
 
-    SANA *const sana;
+    static SANA* sana;
 
     double targetInitialPBad, targetFinalPBad;
     double errorTol;
@@ -71,10 +75,9 @@ protected:
 
     //wrapper around sana->getPBad that saves the result in tempToPBad
     double getPBad(double temp);
+
     double sampleTime; //time getPBad is allowed to run
     multimap<double, double> tempToPBad; //every call to getPBad adds an entry to this map
-
-    NormalDistribution getPBadDis(double temp, int numSamples);
 
     double doublingMethod(double targetPBad, bool nextAbove, double base = 10);
 
@@ -92,17 +95,20 @@ private:
     double TInitialTime, TFinalTime;
     int TInitialSamples, TFinalSamples;
 
+
     static double tempWithClosestPBad(double targetPBad, const multimap<double,double>& tempToPBad,
                 double atLeast = -1, double atMost = -1);
     static double tempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad);
 
     //stuff for comparison for paper:
     friend void scheduleMethodComparison(SANA *const sana);
-    friend vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTime, int maxSamples, double numValidationSamples);
-    
+    friend vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTime, 
+                                    int maxSamples, int numValidationSamples, double sampleTime);
+    friend NormalDistribution getPBadDis(double temp, int numSamples, double sampleTime);
+
     //union of the tempToPBad maps of all the methods
     static multimap<double, double> allTempToPBad; 
-    static vector<double> tempsFromRegressionAllSamples(vector<double> pBads);
+    static double sGetPBad(double temp, double sampleTime);
 
 };
 

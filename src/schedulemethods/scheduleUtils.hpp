@@ -9,11 +9,13 @@
 
 using namespace std;
 
-unique_ptr<ScheduleMethod> getScheduleMethod(string name, SANA *const sana);
+unique_ptr<ScheduleMethod> getScheduleMethod(string name);
 
 void scheduleMethodComparison(SANA *const sana);
 
-vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTime, int maxSamples, double numSamples);
+vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTime,
+                            int maxSamples, int numValidationSamples, double sampleTime);
 
+NormalDistribution getPBadDis(double temp, int numSamples, double sampleTime);
 
 #endif

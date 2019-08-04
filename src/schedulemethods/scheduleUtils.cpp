@@ -13,19 +13,19 @@
 
 using namespace std;
 
-unique_ptr<ScheduleMethod> getScheduleMethod(string name, SANA* sana) {
+unique_ptr<ScheduleMethod> getScheduleMethod(string name) {
     if (name == LinearRegressionVintage::NAME) 
-        return unique_ptr<LinearRegressionVintage>(new LinearRegressionVintage(sana));
+        return unique_ptr<LinearRegressionVintage>(new LinearRegressionVintage());
     if (name == LinearRegressionModern::NAME)  
-        return unique_ptr<LinearRegressionModern>(new LinearRegressionModern(sana));
+        return unique_ptr<LinearRegressionModern>(new LinearRegressionModern());
     if (name == PBadBinarySearch::NAME)        
-        return unique_ptr<PBadBinarySearch>(new PBadBinarySearch(sana));
+        return unique_ptr<PBadBinarySearch>(new PBadBinarySearch());
     if (name == Ameur::NAME)                   
-        return unique_ptr<Ameur>(new Ameur(sana));
+        return unique_ptr<Ameur>(new Ameur());
     if (name == IteratedAmeur::NAME)           
-        return unique_ptr<IteratedAmeur>(new IteratedAmeur(sana));
+        return unique_ptr<IteratedAmeur>(new IteratedAmeur());
     if (name == StatisticalTest::NAME)         
-        return unique_ptr<StatisticalTest>(new StatisticalTest(sana));
+        return unique_ptr<StatisticalTest>(new StatisticalTest());
 
     throw runtime_error("schedule method "+name+" not found");
 }
@@ -52,7 +52,9 @@ void scheduleMethodComparison(SANA *const sana) {
     int numValidationSamples = 5; //set to a high value for final experiment (30?)
             //to find the *real* pBad at the temperatures given by the methods
             //we compute a normal distribution of this many samples
-    
+
+
+    ScheduleMethod::setSana(sana);
 
     vector<vector<string>> table;
     table.push_back({"Method",
@@ -60,23 +62,24 @@ void scheduleMethodComparison(SANA *const sana) {
         "TFinal","PBadMean","PBadSD","Accuracy","Samp","Time",
         "AllSamp","AllTime"});
 
-    // Timer T;
-    // T.start();
+    Timer T;
+    T.start();
     for (string methodName : testedMethodNames) {
-        auto method = getScheduleMethod(methodName, sana);
+        auto method = getScheduleMethod(methodName);
         method->setTargetInitialPBad(targetInitialPBad);
         method->setTargetFinalPBad(targetFinalPBad);
         method->setSampleTime(sampleTime);
         method->setErrorTol(errorTol);
 
         for (int i = 0; i < runsPerMethod; i++) {
-            table.push_back(methodData(method, maxTime, maxSamples, numValidationSamples));
+            table.push_back(methodData(method, maxTime, maxSamples, numValidationSamples, sampleTime));
         }
     }
+    double totalTime = T.elapsed();
+
 
     // ScheduleMethod::tempsFromRegressionAllSamples({});
 
-    // double totalTime = T.elapsed();
 
     //apply LR on all the samples taken by all the methods
     // LinearRegressionModern LRM(sana);
@@ -110,8 +113,7 @@ void scheduleMethodComparison(SANA *const sana) {
     cout << endl;
 }
 
-
-vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTime, int maxSamples, double numValidationSamples) {
+vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTime, int maxSamples, int numValidationSamples, double sampleTime) {
 
     bool singleTime = method->getName() == LinearRegressionVintage::NAME or
                       method->getName() == LinearRegressionModern::NAME;
@@ -125,10 +127,10 @@ vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTi
         TFinal = method->computeTFinal(maxTime/2, maxSamples/2);
     }
 
-    NormalDistribution TIniPBadDis = method->getPBadDis(TInitial, numValidationSamples);
+    NormalDistribution TIniPBadDis = getPBadDis(TInitial, numValidationSamples, sampleTime);
     double TIniPBadAccuracy = TIniPBadDis.getMean()/method->targetInitialPBad;
 
-    NormalDistribution TFinPBadDis = method->getPBadDis(TFinal, numValidationSamples);
+    NormalDistribution TFinPBadDis = getPBadDis(TFinal, numValidationSamples, sampleTime);
     double TFinPBadAccuracy = TFinPBadDis.getMean()/method->targetFinalPBad;
 
     vector<pair<double,int>> dataAndPrec =
@@ -156,4 +158,12 @@ vector<string> methodData(const unique_ptr<ScheduleMethod>& method, double maxTi
 
     return row;
 
+}
+
+NormalDistribution getPBadDis(double temp, int numSamples, double sampleTime) {
+    vector<double> samples;
+    for (int i = 0; i < numSamples; i++) {
+        samples.push_back(ScheduleMethod::sGetPBad(temp, sampleTime));
+    } 
+    return NormalDistribution(samples);
 }

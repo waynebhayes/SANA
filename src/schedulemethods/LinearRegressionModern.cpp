@@ -5,8 +5,8 @@
 
 using namespace std;
 
-LinearRegressionModern::LinearRegressionModern(SANA *const sana):
-    ScheduleMethod(sana), alreadyComputed(false) {}
+LinearRegressionModern::LinearRegressionModern():
+    ScheduleMethod(), alreadyComputed(false) {}
 
 void LinearRegressionModern::setTargetInitialPBad(double pBad) {
     ScheduleMethod::setTargetInitialPBad(pBad);
