@@ -8,6 +8,10 @@ ifeq ($(SPARSE), 1)
 CXXFLAGS := $(CXXFLAGS)-DSPARSE
 endif
 
+ifeq ($(MULTI), 1)
+CXXFLAGS := $(CXXFLAGS)-DMULTI_PAIRWISE
+endif
+
 
 INCLUDES =
 LFLAGS =
