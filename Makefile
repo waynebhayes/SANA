@@ -196,5 +196,5 @@ optnetalign:
 
 multi:
 	make clean
-	make -j4 --eval 'MULTI=1'
+	make -j4 'MULTI=1'
 	mv sana sana.multi
