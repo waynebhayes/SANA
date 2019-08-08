@@ -394,7 +394,7 @@ Alignment SANA::run() {
 #if PRINT_CORES
 #ifndef CORES
 #error must have CORES macro defined to print them
-#endif
+#else
 #if UNWEIGHTED_CORES
 	double SminUnW = TrimCoreScores(pegHoleFreq,numPegSamples);
 	cout << "Smin_UnW "<< SminUnW << " ";
@@ -436,6 +436,7 @@ Alignment SANA::run() {
 #endif
 			weightedScore_pBad, weightedScore_1mpBad);
 	}
+#endif // cores
 #endif // PRINT_CORES
         return align;
     }
