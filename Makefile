@@ -192,9 +192,9 @@ depend: $(SRCS)
 
 # Here is the targets for making the wrappedAlgorithms
 optnetalign:
-	cd wrappedAlgorithms/OptNetAlign/src; make optnetalignubuntu; chmod +x optnetalign; cp optnetalign ../
+	cd wrappedAlgorithms/OptNetAlign/src; $(MAKE) optnetalignubuntu; chmod +x optnetalign; cp optnetalign ../
 
 multi:
-	make clean
-	make 'MULTI=1'
+	$(MAKE) clean
+	$(MAKE) 'MULTI=1'
 	mv sana sana.multi
