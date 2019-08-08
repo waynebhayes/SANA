@@ -11,7 +11,9 @@ extern bool _graphsSwitched;
 using namespace std;
 
 Sequence::Sequence(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "sequence") {
-    string fileName = autogenMatricesFolder+G1->getName()+"_"+G2->getName()+"_sequence.bin";
+    string subfolder = autogenMatricesFolder+getName()+"/";
+    createFolder(subfolder);
+    string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_sequence.bin";
     loadBinSimMatrix(fileName);
 }
 

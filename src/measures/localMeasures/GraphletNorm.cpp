@@ -5,7 +5,9 @@
 using namespace std;
 
 GraphletNorm::GraphletNorm(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "graphletnorm") {
-    string fileName = autogenMatricesFolder+G1->getName()+"_"+G2->getName()+"_graphletnorm.bin";
+    string subfolder = autogenMatricesFolder+getName()+"/";
+    createFolder(subfolder);
+    string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_graphletnorm.bin";
     loadBinSimMatrix(fileName);
 }
 

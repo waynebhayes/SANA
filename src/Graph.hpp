@@ -34,6 +34,8 @@ public:
 
     static const int NODE_TYPE_GENE;  //= 1;
     static const int NODE_TYPE_MIRNA; // = 2;
+    
+    static const string AUTOGENEREATED_FILES_FOLDER;
 
     void setMaxGraphletSize(double number);
     static Graph& loadGraph(string name, Graph& g);
@@ -181,6 +183,9 @@ public:
     // TODO: make const
     Matrix<float>& getFloatWeights() ;
     bool hasFloatWeight() const;
+    
+    static string autogenFilesFolder();
+    static string serializedFilesFolder();
 private:
     bool parseFloatWeight = false;
     Matrix<float> floatWeights;
@@ -215,8 +220,7 @@ private:
     void addEdge(uint node1, uint node2);
     void addRandomEdge();
     void removeRandomEdge();
-
-    string autogenFilesFolder();
+    
     vector<vector<uint> > computeGraphletDegreeVectors();
 
     //places in dist a matrix with the distance between every pair of nodes (a -1 indicates infinity)

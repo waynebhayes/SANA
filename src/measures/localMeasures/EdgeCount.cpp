@@ -9,7 +9,9 @@ EdgeCount::EdgeCount(Graph* G1, Graph* G2, const vector<double>& distWeights) : 
     normalizeWeights(normWeights);
     this->distWeights = normWeights;
 
-    string fileName = autogenMatricesFolder+G1->getName()+"_"+
+    string subfolder = autogenMatricesFolder+getName()+"/";
+    createFolder(subfolder);
+    string fileName = subfolder+G1->getName()+"_"+
         G2->getName()+"_edgec_"+to_string(normWeights.size());
     for (double w : normWeights)
         fileName += "_" + extractDecimals(w, 3);

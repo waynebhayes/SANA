@@ -11,6 +11,8 @@ class Graph {
 
 public:
 
+    static const string GRAPHETTE_AUTOGENEREATED_FILES_FOLDER;
+
     static Graph loadGraph(string name);
 
 
@@ -130,6 +132,7 @@ private:
     void removeRandomEdge();
 
     string autogenFilesFolder();
+    string serializedFilesFolder();
 
     vector<vector<uint> > computeGraphletDegreeVectors();
 
