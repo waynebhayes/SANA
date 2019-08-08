@@ -1,4 +1,6 @@
 #!/bin/sh
+PATH=`pwd`/scripts:$PATH
+export PATH
 RETURN=0
 for dir in regression-tests/*; do
     echo --- in directory $dir ---
