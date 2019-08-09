@@ -291,7 +291,7 @@ void Graph::printStats(int numConnectedComponentsToPrint, ostream& stream) const
 
 void Graph::getDistanceMatrix(vector<vector<short> >& dist) const {
     string distMatrixFile = serializedFilesFolder()+name+"_distMatrix.txt";
-    if (fileExists(distMatrixFile)) {
+    if (fileExists(distMatrixFile) && !newerGraphAvailable("networks/"+name+"/"+name+".gw", distMatrixFile)) {
         readMatrixFromFile(dist, getNumNodes(), getNumNodes(), distMatrixFile);
     }
     else {
@@ -508,7 +508,7 @@ string Graph::serializedFilesFolder() {
 vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
     string gdvsFileName = autogenFilesFolder() + name + "_gdv.bin";
     uint n = getNumNodes();
-    if (fileExists(gdvsFileName)) {
+    if (fileExists(gdvsFileName) && !newerGraphAvailable("networks/"+name+"/"+name+".gw", gdvsFileName)) {
         vector<vector<uint> > gdvs(n, vector<uint> (73));
         readMatrixFromBinaryFile(gdvs, gdvsFileName);
         return gdvs;

@@ -1846,7 +1846,7 @@ void Graph::getDistanceMatrix(vector<vector<short> >& dist) const {
 #if USE_CACHED_FILES
 // By default, USE_CACHED_FILES is 0 and SANA does not cache files. Change USE_CACHED_FILES at your own risk.
     string distMatrixFile = serializedFilesFolder()+name+"_distMatrix.txt";
-    if (fileExists(distMatrixFile)) {
+    if (fileExists(distMatrixFile) && !newerGraphAvailable(path.c_str(), distMatrixFile.c_str())) {
         readMatrixFromFile(dist, getNumNodes(), getNumNodes(), distMatrixFile);
         return;
     }
@@ -2122,7 +2122,7 @@ vector<vector<uint> > Graph::loadGraphletDegreeVectors() {
     createFolder(autogenFilesFolder() + subfolder);
     string gdvsFileName = autogenFilesFolder() + subfolder + "/"+ name + "_gdv"+oss.str()+".bin";
     uint n = getNumNodes();
-    if (fileExists(gdvsFileName)) {
+    if (fileExists(gdvsFileName) && !newerGraphAvailable(path.c_str(), gdvsFileName.c_str())) {
         vector<vector<uint> > gdvs;
         if(maxGraphletSize == 4){
             gdvs.assign(n, vector<uint>(15));
