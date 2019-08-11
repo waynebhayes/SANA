@@ -195,6 +195,7 @@ namespace shadow_graph {
             {
                 fileName = fileName.substr(0, pos);
             }
+            mkdir(AUTOGENEREATED_FILES_FOLDER.c_str(), ACCESSPERMS);
             mkdir(serializedFilesFolder().c_str(), ACCESSPERMS);
             std::ofstream ofs(serializedFilesFolder() + fileName + "_Shadow.bin", std::ofstream::binary | std::ofstream::out);
             if (ofs.is_open())
