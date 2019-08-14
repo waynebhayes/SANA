@@ -2504,7 +2504,6 @@ this suggests that the upward trend is over and we are at equilirbium
 once we know we are at equilibrium, we use the buffer of pbads to get an average pBad
 'logLevel' can be 0 (no output) 1 (logs result in cerr) or 2 (verbose/debug mode)*/
 double SANA::getPBad(double temp, double maxTime, int logLevel) {
-    logLevel = 2;
     
     //new state for the run at fixed temperature
     constantTemp = true;
