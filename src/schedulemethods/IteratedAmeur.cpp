@@ -14,7 +14,7 @@ using namespace std;
 //this converges to the temperature that gives rise to that pbad at equilibrium
 //step size should be <= 1
 //with bigger step sizes, there may be a "bounce back and forth" effect:
-double IteratedAmeur::computeTempForPBad(double targetPBad, double maxTime, int maxSamples) {
+double IteratedAmeur::computeTempForPBad(double targetPBad, ScheduleMethod::Resources maxRes) {
     //configuration
     double stepSize = 0.6;
     double startTempGuess = 1;
@@ -27,7 +27,8 @@ double IteratedAmeur::computeTempForPBad(double targetPBad, double maxTime, int 
     bool converged = false;
     int iteration = 0;
 
-    while (not converged and T.elapsed() < maxTime and (int) tempToPBad.size()-startSamples < maxSamples) {
+    while (not converged and T.elapsed() < maxRes.runtime and 
+                    (int) tempToPBad.size()-startSamples < maxRes.numSamples) {
         cout << "Iteration " << iteration << ":" << endl;
 
         double tempGuessPBad; //set by reference in call below

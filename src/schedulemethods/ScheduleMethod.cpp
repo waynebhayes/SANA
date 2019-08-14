@@ -16,51 +16,54 @@ ScheduleMethod::ScheduleMethod():
     targetInitialPBad(DEFAULT_TARGET_INITIAL_PBAD), targetFinalPBad(DEFAULT_TARGET_FINAL_PBAD),
     errorTol(DEFAULT_ERROR_TOL), sampleTime(DEFAULT_SAMPLE_TIME),
     tempToPBad(),
-    TInitialTime(0), TFinalTime(0),
-    TInitialSamples(0), TFinalSamples(0) {
+    TIniRes(0, 0.0), TFinRes(0, 0.0) {
+
+    if (sana == nullptr) {
+        throw runtime_error("call ScheduleMethod::setSana() before initializing any schedule methods");
+    }
 
 }
 
-double ScheduleMethod::computeTInitial(double maxTime, int maxSamples) {
-    cout << "Computing TInitial via method " << getName() << endl;
+double ScheduleMethod::computeTInitial(ScheduleMethod::Resources maxRes) {
+    cout << endl << "Computing TInitial via method " << getName() << endl;
     int currSamples = tempToPBad.size();
     Timer T;
     T.start();
     
-    vComputeTInitial(maxTime, maxSamples);
+    vComputeTInitial(maxRes);
     
-    TInitialTime = T.elapsed();
-    TInitialSamples = tempToPBad.size() - currSamples;
+    TIniRes.runtime = T.elapsed();
+    TIniRes.numSamples = tempToPBad.size() - currSamples;
 
-    cout << "Computed TInitial " << TInitial << " in " << TInitialTime << "s" << endl;
+    cout << "Computed TInitial " << TInitial << " in " << TIniRes.runtime << "s" << endl;
     return TInitial;
 }
 
-void ScheduleMethod::vComputeTInitial(double maxTime, int maxSamples) {
-    TInitial = computeTempForPBad(targetInitialPBad, maxTime, maxSamples);
+void ScheduleMethod::vComputeTInitial(ScheduleMethod::Resources maxRes) {
+    TInitial = computeTempForPBad(targetInitialPBad, maxRes);
 }
 
 
-double ScheduleMethod::computeTFinal(double maxTime, int maxSamples) {
-    cout << "Computing TFinal via method " << getName() << endl;
+double ScheduleMethod::computeTFinal(ScheduleMethod::Resources maxRes) {
+    cout << endl << "Computing TFinal via method " << getName() << endl;
     int currSamples = tempToPBad.size();
     Timer T;
     T.start();
 
-    vComputeTFinal(maxTime, maxSamples);
+    vComputeTFinal(maxRes);
 
-    TFinalTime = T.elapsed();
-    TFinalSamples = tempToPBad.size() - currSamples;
+    TFinRes.runtime = T.elapsed();
+    TFinRes.numSamples = tempToPBad.size() - currSamples;
 
-    cout << "Computed TFinal " << TFinal << " in " << TFinalTime << "s" << endl;    
+    cout << "Computed TFinal " << TFinal << " in " << TFinRes.runtime << "s" << endl;    
     return TFinal;
 }
 
-void ScheduleMethod::vComputeTFinal(double maxTime, int maxSamples) {
-    TFinal = computeTempForPBad(targetFinalPBad, maxTime, maxSamples);
+void ScheduleMethod::vComputeTFinal(ScheduleMethod::Resources maxRes) {
+    TFinal = computeTempForPBad(targetFinalPBad, maxRes);
 }
 
-double ScheduleMethod::computeTempForPBad(double targetPBad, double maxTime, int maxSamples) {
+double ScheduleMethod::computeTempForPBad(double targetPBad, ScheduleMethod::Resources maxRes) {
     throw runtime_error("functionality not implemented for this method");
 }
 
@@ -167,7 +170,7 @@ double ScheduleMethod::doublingMethod(double targetPBad, bool nextAbove, double 
     }
 }
 
-double ScheduleMethod::pBadBinarySearch(double targetPBad, double maxTime, int maxSamples) {
+double ScheduleMethod::pBadBinarySearch(double targetPBad, ScheduleMethod::Resources maxRes) {
     Timer T;
     T.start();
     int startSamples = tempToPBad.size();
@@ -247,7 +250,7 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, double maxTime, int m
 
 
     //now all invariants hold. Ready to start search
-    while (T.elapsed() < maxTime and (int)tempToPBad.size() - startSamples < maxSamples) {
+    while (T.elapsed() < maxRes.runtime and (int)tempToPBad.size() - startSamples < maxRes.numSamples) {
         if (isBelowTargetRange(midPBad, targetPBad, errorTol)) {
             lowTemp = midTemp;
             lowPBad = midPBad;
@@ -302,7 +305,7 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, double maxTime, int m
 
 
 double ScheduleMethod::tempWithClosestPBad(double targetPBad, const multimap<double,double>& tempToPBad,
-                double atLeast, double atMost) {
+                double atLeastTemp, double atMostTemp) {
     
     if (tempToPBad.size() < 1) throw runtime_error("no entries in tempToPBad map");
 
@@ -310,7 +313,7 @@ double ScheduleMethod::tempWithClosestPBad(double targetPBad, const multimap<dou
     double bestTemp = -1;
     for (auto p : tempToPBad) {
         double temp = p.first;
-        if ((atLeast == -1 or temp >= atLeast) and (atMost == -1 or temp <= atMost)) {
+        if ((atLeastTemp == -1 or temp >= atLeastTemp) and (atMostTemp == -1 or temp <= atMostTemp)) {
             double diff = abs(p.second-targetPBad);
             if (diff < minDiff) {
                 minDiff = diff;
@@ -323,18 +326,40 @@ double ScheduleMethod::tempWithClosestPBad(double targetPBad, const multimap<dou
     return bestTemp;
 }
 
-double ScheduleMethod::tempWithClosestPBad(double targetPBad, double atLeast, double atMost) const {
-    return tempWithClosestPBad(targetPBad, tempToPBad, atLeast, atMost);
+double ScheduleMethod::tempWithClosestPBad(double targetPBad, double atLeastTemp, double atMostTemp) const {
+    return tempWithClosestPBad(targetPBad, tempToPBad, atLeastTemp, atMostTemp);
 }
 
 double ScheduleMethod::tempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad) {
-    auto model = LinearRegression::bestFit(tempToPBad);    
-    if (targetPBad <= model.goldilocksMinPBad)
-        return tempWithClosestPBad(targetPBad, tempToPBad, -1, model.goldilocksMinPBad);
-    if (targetPBad >= model.goldilocksMaxPBad)
-        return tempWithClosestPBad(targetPBad, tempToPBad, model.goldilocksMaxPBad, -1);
+    bool dbg = false;
+    if (dbg) cerr << "Finding the temp that fits best the pBad " << targetPBad << endl;
+    if (dbg) cerr << "tempToPBad map has " << tempToPBad.size() << " samples" << endl;
 
-    return model.interpolateWithinGoldilocks(targetPBad);
+    auto model = LinearRegression::bestFit(tempToPBad);    
+    if (dbg) model.print();
+    if (dbg) {
+        cerr << "Log of Samples' temps: " << endl;
+        for (auto s : tempToPBad) cerr << log10(s.first) << " ";
+        cerr << endl;
+    }
+    
+    double res;    
+    if (targetPBad <= model.minGLSample.pBad) {
+        if (dbg) cerr << "target pBad is below goldilocks range. Return sampled temp with ";
+        if (dbg) cerr << "closest pBad below t=" << model.minGLSample.temp << endl;
+        res = tempWithClosestPBad(targetPBad, tempToPBad, -1, model.minGLSample.temp);
+    }
+    else if (targetPBad >= model.maxGLSample.pBad) {
+        if (dbg) cerr << "target pBad is above goldilocks range. Return sampled temp with ";
+        if (dbg) cerr << "closest pBad above t=" << model.maxGLSample.temp << endl;
+        res = tempWithClosestPBad(targetPBad, tempToPBad, model.maxGLSample.temp, -1);
+    } else {
+        if (dbg) cerr << "target pBad is within goldilocks range. Interpolate" << endl;
+        res = model.interpolateWithinGoldilocks(targetPBad);
+    }
+
+    if (dbg) cerr << "result: " << res << endl;
+    return res;
 }
 
 double ScheduleMethod::tempWithBestLRFit(double targetPBad) const {
@@ -355,21 +380,15 @@ void ScheduleMethod::populatePBadCurve() {
     }
 }
 
-
-
 void ScheduleMethod::printScheduleStatistics() {
-    cout << "TInitial found in " << TInitialTime << "s for target pBad " << targetInitialPBad << ": " << endl;
-    getPBad(TInitial);
-    cout << "TFinal found in " << TFinalTime << "s for target pBad " << targetFinalPBad << ": " << endl;
-    getPBad(TFinal);
+    cout << "TInitial found in " << TIniRes.runtime << "s for target pBad " << targetInitialPBad << ": " << endl;
+    sGetPBad(TInitial, sampleTime);
+    cout << "TFinal found in " << TFinRes.runtime << "s for target pBad " << targetFinalPBad << ": " << endl;
+    sGetPBad(TFinal, sampleTime);
     cout << "TDecay needed to traverse this range: " << -log(TFinal/TInitial) << endl;
     cout << endl;
 }
 
-double ScheduleMethod::totalTime() {
-    return TInitialTime + TFinalTime;
-}
-
-int ScheduleMethod::totalSamples() {
-    return TInitialSamples + TFinalSamples;
+ScheduleMethod::Resources ScheduleMethod::totalResources() {
+    return Resources(TIniRes.numSamples + TFinRes.numSamples, TIniRes.runtime + TFinRes.runtime);
 }

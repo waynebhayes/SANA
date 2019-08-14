@@ -6,12 +6,11 @@
 
 using namespace std;
 
-double Ameur::computeTempForPBad(double pBad, double maxTime, int maxSamples) {
+double Ameur::computeTempForPBad(double pBad, ScheduleMethod::Resources maxRes) {
+    //this method ignores max resources
     double startTempGuess = 1;
     double unused; //set by reference in call below
-    // cerr<<"here"<<endl;
     vector<double> EIncs = getEIncSample(startTempGuess, 10000, unused);
-    // cerr<<"butnothere"<<endl;
     return computeTempForEIncs(pBad, startTempGuess, EIncs);
 }
 

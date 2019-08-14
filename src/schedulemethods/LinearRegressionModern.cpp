@@ -17,19 +17,19 @@ void LinearRegressionModern::setTargetFinalPBad(double pBad) {
     alreadyComputed = false;
 }
 
-void LinearRegressionModern::vComputeTInitial(double maxTime, int maxSamples) {
+void LinearRegressionModern::vComputeTInitial(ScheduleMethod::Resources maxRes) {
     if (alreadyComputed) return;
-    computeBoth(maxTime, maxSamples); 
+    computeBoth(maxRes); 
     alreadyComputed = true;  
 }
 
-void LinearRegressionModern::vComputeTFinal(double maxTime, int maxSamples) {
+void LinearRegressionModern::vComputeTFinal(ScheduleMethod::Resources maxRes) {
     if (alreadyComputed) return;
-    computeBoth(maxTime, maxSamples); 
+    computeBoth(maxRes); 
     alreadyComputed = true;  
 }
 
-void LinearRegressionModern::computeBoth(double maxTime, int maxSamples) {
+void LinearRegressionModern::computeBoth(ScheduleMethod::Resources maxRes) {
     Timer T; 
     T.start();
     int startSamples = tempToPBad.size();
@@ -37,16 +37,20 @@ void LinearRegressionModern::computeBoth(double maxTime, int maxSamples) {
     cout << "Populating PBad curve" << endl;
     populatePBadCurve();
 
-    double remainingTime = maxTime - T.elapsed();
-    int remainingSamples = maxSamples-(tempToPBad.size()-startSamples);
+    int remainingSamples = maxRes.numSamples-(tempToPBad.size()-startSamples);
+    ScheduleMethod::Resources remRes(remainingSamples, maxRes.runtime - T.elapsed());
+    ScheduleMethod::Resources halfRemRes(remRes.numSamples/2, remRes.runtime/2);
 
     cout << "Increasing density near TInitial" << endl;
-    pBadBinarySearch(targetInitialPBad, remainingTime/2, remainingSamples/2);
+    pBadBinarySearch(targetInitialPBad, halfRemRes);
+
+    remRes.numSamples = maxRes.numSamples-(tempToPBad.size()-startSamples);
+    remRes.runtime = maxRes.runtime - T.elapsed();
     cout << "Increasing density near TFinal" << endl;
-    pBadBinarySearch(targetFinalPBad, remainingTime/2, remainingSamples/2);  
+    pBadBinarySearch(targetFinalPBad, remRes);  
 
     auto model = LinearRegression::bestFit(tempToPBad);
-    cout << "*** Linear Regression Model: ";
+    cout << "*** Linear Regression Model: " << endl;
     model.print();
 
     TInitial = tempWithBestLRFit(targetInitialPBad);

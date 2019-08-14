@@ -151,11 +151,12 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
         ScheduleMethod::setSana(sana);
         auto scheduleMethod = getScheduleMethod(scheduleMethodName);
         scheduleMethod->setSampleTime(2);
+        ScheduleMethod::Resources maxRes(60, 200.0); //#samples, seconds
         if (useMethodForTIni) {
-            sana->setTInitial(scheduleMethod->computeTInitial(60, 200));
+            sana->setTInitial(scheduleMethod->computeTInitial(maxRes));
         }
         if (useMethodForTDecay) {
-            sana->setTFinal(scheduleMethod->computeTFinal(60, 200));
+            sana->setTFinal(scheduleMethod->computeTFinal(maxRes));
             sana->setTDecayFromTempRange();
         }
         scheduleMethod->printScheduleStatistics();

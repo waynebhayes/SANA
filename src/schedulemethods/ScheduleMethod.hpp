@@ -15,8 +15,20 @@ class ScheduleMethod {
 
 public:
 
+    struct Resources {
+        int numSamples; //# getPBad calls
+        double runtime;
+        Resources() =default;
+        Resources(int n, double t): numSamples(n), runtime(t) {}
+        
+        //trick to avoid mixing the order of argument
+        //if args are passed in the this order,
+        //we get a compiler error rather than implicit conversion
+        Resources(double t, int n) =delete;
+    };
+
     //single, static SANA for all schedule methods
-    //this needs to be called before computing temps
+    //call setSana before initializing any schedule method
     static void setSana(SANA *const sana) { ScheduleMethod::sana = sana; }
 
     ScheduleMethod();
@@ -31,37 +43,13 @@ public:
 
     virtual void setTargetInitialPBad(double pBad) { targetInitialPBad = pBad; }
     virtual void setTargetFinalPBad(double pBad) { targetFinalPBad = pBad; }
-    void setErrorTol(double errorTol) { this->errorTol = errorTol; }
+    void setErrorTol(double tol) { errorTol = tol; }
     void setSampleTime(double t) { sampleTime = t; }
 
     //prints and other info collection
     void printScheduleStatistics();
     static void printTargetRange(double targetPBad, double errorTol);
-    double totalTime();
-    int totalSamples();
-
-    // subclasses should implement EITHER of:
-    //"computeTempForPBad": for classes that can compute temps for arbitrary pbads
-    //"vComputeTInitial" and "vComputeTFinal": for classes that can only compute TInitial and TFinal
-
-    //for methods that can compute temps for any pBad and not just TInitial and TFinal
-    //not all methods need implement this (defaults to throwing error)
-    virtual double computeTempForPBad(double targetPBad, double maxTime, int maxSamples);
-
-    //wrappers around the virtual counterparts that log the runtime and # of samples
-    double computeTInitial(double maxTime, int maxSamples);
-    double computeTFinal(double maxTime, int maxSamples);
-protected:
-    //default to calling computeTempForPBad. It should be overriden by methods
-    //that cannot compute pBads for arbitrary temps
-    virtual void vComputeTInitial(double maxTime, int maxSamples);
-    virtual void vComputeTFinal(double maxTime, int maxSamples);
-
-    static SANA* sana;
-
-    double targetInitialPBad, targetFinalPBad;
-    double errorTol;
-    double TInitial, TFinal;
+    Resources totalResources(); //resources used between computeTInitial & computeTFinal
 
     //use these to interface with the error tolerance rather than using errorTol directly:
     static double targetRangeMin(double targetPBad, double errorTol);
@@ -70,6 +58,33 @@ protected:
     static bool isWithinTargetRange(double pBad, double targetPBad, double errorTol);
     static bool isBelowTargetRange(double pBad, double targetPBad, double errorTol);
     static bool isAboveTargetRange(double pBad, double targetPBad, double errorTol);
+
+    // subclasses should implement EITHER OF:
+    //"computeTempForPBad": for classes that can compute temps for arbitrary pbads
+    //"vComputeTInitial" and "vComputeTFinal": for classes that can only compute TInitial and TFinal
+    //see eg. PBadBinarySearch and StatisticalTest as an example of each
+
+    //for methods that can compute temps for any pBad and not just TInitial and TFinal
+    //not all methods need implement this (defaults to throwing error)
+    //so caller needs to be aware whether the method supports it or not
+    virtual double computeTempForPBad(double targetPBad, Resources maxRes);
+
+    //wrappers around the virtual counterparts that log the runtime and # of samples
+    double computeTInitial(Resources maxRes);
+    double computeTFinal(Resources maxRes);
+protected:
+    //default to calling computeTempForPBad. They should be overriden by methods
+    //that cannot compute pBads for arbitrary temps
+    //do not call directly (call computeTInitial and computeTFinal instead)
+    virtual void vComputeTInitial(Resources maxRes);
+    virtual void vComputeTFinal(Resources maxRes);
+
+    static SANA* sana;
+
+    double targetInitialPBad, targetFinalPBad;
+    double errorTol;
+    double TInitial, TFinal; //results of computeTInitial and computeTFinal
+
 
     //auxiliary functions used by several schedule methods:
 
@@ -82,9 +97,9 @@ protected:
     double doublingMethod(double targetPBad, bool nextAbove, double base = 10);
 
     // Binary search based on pbads
-    double pBadBinarySearch(double targetPBad, double maxTime, int maxSamples);
+    double pBadBinarySearch(double targetPBad, Resources maxRes);
 
-    double tempWithClosestPBad(double targetPBad, double atLeast = -1, double atMost = -1) const; 
+    double tempWithClosestPBad(double targetPBad, double atLeastTemp = -1, double atMostTemp = -1) const; 
     double tempWithBestLRFit(double targetPBad) const; 
 
     //samples evenly (in log scale) along the pBad spectrum from really low to really high temps
@@ -92,18 +107,15 @@ protected:
 
 private:
 
-    double TInitialTime, TFinalTime;
-    int TInitialSamples, TFinalSamples;
+    Resources TIniRes, TFinRes;
 
 
     static double tempWithClosestPBad(double targetPBad, const multimap<double,double>& tempToPBad,
-                double atLeast = -1, double atMost = -1);
+                double atLeastTemp = -1, double atMostTemp = -1);
     static double tempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad);
 
     //stuff for comparison for paper:
     friend void scheduleMethodComparison(SANA *const sana);
-    friend vector<string> formatMethodData(string, double, double, double, double, double, int,
-                                double, int, double, int, double, int, double);
     friend NormalDistribution getPBadDis(double temp, int numSamples, double sampleTime);
 
     //union of the tempToPBad maps of all the methods

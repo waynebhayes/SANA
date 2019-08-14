@@ -11,7 +11,9 @@ using namespace std;
 //sets TInitial to a temperature such that SANA run at this
 //temperature produces alignments that are statistically
 //undistinguishable from alignments taken at random
-void StatisticalTest::vComputeTInitial(double maxTime, int maxSamples) {
+void StatisticalTest::vComputeTInitial(Resources maxRes) {
+    //this method ignores max resources
+
     const double NUM_RANDOM_SAMPLES = 100;
     const double HIGH_THRESHOLD_P = 0.999999;
     const double LOW_THRESHOLD_P = 0.99;
@@ -112,7 +114,8 @@ double StatisticalTest::scoreForTemp(double temp) {
 //find the temperature TFinal such that the expected number of accepted transitions
 //near a local minimum is 1 per second
 //by bisection, since the expected number is monotically increasing in TFinal
-void StatisticalTest::vComputeTFinal(double maxTime, int maxSamples) {
+void StatisticalTest::vComputeTFinal(ScheduleMethod::Resources maxRes) {
+    //this method ignores max resources
 
     //get a sample of negative EIncs seen during a second of runtime near local minima
     vector<double> EIncs(0);

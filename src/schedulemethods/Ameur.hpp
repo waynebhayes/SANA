@@ -16,7 +16,7 @@ public:
     static constexpr auto NAME = "ameur-method";
     virtual string getName() override { return NAME; }
 
-    virtual double computeTempForPBad(double targetPBad, double maxTime, int maxSamples) override;
+    virtual double computeTempForPBad(double targetPBad, Resources maxRes) override;
     
 protected:
 

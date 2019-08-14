@@ -6,8 +6,8 @@
 
 using namespace std;
 
-void LinearRegressionVintage::computeBoth(double maxTime, int maxSamples) {
-    //parameters are ignored for this method
+void LinearRegressionVintage::computeBoth(ScheduleMethod::Resources maxRes) {
+    //resources are ignored for this method to preserve original logic
 
     const double HIGH_PBAD_LIMIT = 0.99999;
     const double LOW_PBAD_LIMIT = 1e-10;
@@ -82,7 +82,7 @@ void LinearRegressionVintage::computeBoth(double maxTime, int maxSamples) {
     TInitial = pow(10, log10HighTemp);
     for (auto const& keyValue : pBadMap)
     {
-        if(keyValue.second >= targetInitialPBad && keyValue.first >= model.goldilocksMaxTemp){
+        if(keyValue.second >= targetInitialPBad && keyValue.first >= model.maxGLSample.temp){
             TInitial = keyValue.first;
             break;
         }

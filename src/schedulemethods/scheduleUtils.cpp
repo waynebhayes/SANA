@@ -34,23 +34,24 @@ unique_ptr<ScheduleMethod> getScheduleMethod(string name) {
 void scheduleMethodComparison(SANA *const sana) {
 
     //customizable parameters
-    vector<string> testedMethodNames = {
-         LinearRegressionVintage::NAME, 
-         LinearRegressionModern::NAME,
-         PBadBinarySearch::NAME,
-         Ameur::NAME,
-         IteratedAmeur::NAME,
-         StatisticalTest::NAME
-     };
+    ScheduleExpParams params;
 
-    double targetInitialPBad = 0.95;
-    double targetFinalPBad = 0.0001;
-    int runsPerMethod = 1;
-    double maxTime = 60;
-    int maxSamples = 60;
-    double sampleTime = 2; //max time for getPBad to reach equilibrium
-    double errorTol = 0.01;
-    int numValidationSamples = 5; //set to a high value for final experiment (30?)
+    params.testedMethodNames = {
+        LinearRegressionVintage::NAME, 
+        LinearRegressionModern::NAME,
+        PBadBinarySearch::NAME,
+        Ameur::NAME,
+        IteratedAmeur::NAME,
+        StatisticalTest::NAME
+    };
+    params.targetInitialPBad = 0.95;
+    params.targetFinalPBad = 0.0001;
+    params.runsPerMethod = 2;
+    params.maxResources.numSamples = 60;
+    params.maxResources.runtime = 120.0;
+    params.sampleTime = 2; //max time for getPBad to reach equilibrium
+    params.errorTol = 0.01;
+    params.numValidationSamples = 20; //set to a high value for final experiment (30?)
             //to find the *real* pBad at the temperatures given by the methods
             //we compute a normal distribution of this many samples
 
@@ -59,73 +60,92 @@ void scheduleMethodComparison(SANA *const sana) {
 
     vector<vector<string>> table;
     table.push_back({"Method",
-        "TInitial","x","PBadMean","PBadSD","Accuracy","Samp","Time",
-        "TFinal","x","PBadMean","PBadSD","Accuracy","Samp","Time",
+        "TInitial","PBadMean","PBadSD","x","Accuracy","Samp","Time",
+        "TFinal","PBadMean","PBadSD","x","Accuracy","Samp","Time",
         "AllSamp","AllTime"});
 
     Timer T;
     T.start();
-    for (string methodName : testedMethodNames) {
-        auto method = getScheduleMethod(methodName);
-        method->setTargetInitialPBad(targetInitialPBad);
-        method->setTargetFinalPBad(targetFinalPBad);
-        method->setSampleTime(sampleTime);
-        method->setErrorTol(errorTol);
-
-        for (int i = 0; i < runsPerMethod; i++) {
+    for (string methodName : params.testedMethodNames) {
+        for (int i = 0; i < params.runsPerMethod; i++) {
+            auto method = getScheduleMethod(methodName);
+            method->setTargetInitialPBad(params.targetInitialPBad);
+            method->setTargetFinalPBad(params.targetFinalPBad);
+            method->setSampleTime(params.sampleTime);
+            method->setErrorTol(params.errorTol);
 
             bool uniTime = method->getName() == LinearRegressionVintage::NAME or
                               method->getName() == LinearRegressionModern::NAME;
 
             double TInitial, TFinal;
             if (uniTime) {
-                TInitial = method->computeTInitial(maxTime, maxSamples);
-                TFinal = method->computeTFinal(0, 0);
+                TInitial = method->computeTInitial(params.maxResources);
+                TFinal = method->computeTFinal(ScheduleMethod::Resources(0, 0.0));
             } else {
-                TInitial = method->computeTInitial(maxTime/2, maxSamples/2);
-                TFinal = method->computeTFinal(maxTime/2, maxSamples/2);
-            }       
-            vector<string> row = formatMethodData(method->getName(),
-                targetInitialPBad, targetFinalPBad,
-                errorTol, TInitial, TFinal,
-                numValidationSamples, sampleTime,
-                method->TInitialSamples, method->TInitialTime,
-                method->TFinalSamples, method->TFinalTime,
-                method->totalSamples(), method->totalTime());
+                ScheduleMethod::Resources halfMaxRes(params.maxResources.numSamples/2, 
+                                                     params.maxResources.runtime/2);
+                TInitial = method->computeTInitial(halfMaxRes);
+                TFinal = method->computeTFinal(halfMaxRes);
+            } 
+            vector<string> row = formatMethodData(params, method->getName(), uniTime,
+                                TInitial, TFinal,
+                                method->TIniRes, method->TFinRes, method->totalResources());
 
-            if (uniTime) {
-                if (method->getName() == LinearRegressionVintage::NAME)
-                    row[0] = "LR-vintage";
-                if (method->getName() == LinearRegressionModern::NAME)
-                    row[0] = "LR-modern";
-                row[6] = row[7] = row[13] = row[14] = "NA";
-            }
+            //shorten names to reduce table width
+            if (method->getName() == LinearRegressionVintage::NAME)
+                row[0] = "LR-vintage";
+            if (method->getName() == LinearRegressionModern::NAME)
+                row[0] = "LR-modern";
+
             table.push_back(row);
+
+            if (method->getName() == PBadBinarySearch::NAME) {
+                cout << endl << "Applying Linear Regression on top of PBad Binary search" << endl;
+                double startSamples = method->tempToPBad.size();
+                Timer T2;
+                T2.start();
+                method->populatePBadCurve();
+
+                int popSamples = method->tempToPBad.size()-startSamples;
+                double popTime = T2.elapsed();
+                ScheduleMethod::Resources totalRes = method->totalResources();
+                totalRes.numSamples += popSamples;
+                totalRes.runtime += popTime;
+
+                double TIniFitOverBS = method->tempWithBestLRFit(params.targetInitialPBad);
+                double TFinFitOverBS = method->tempWithBestLRFit(params.targetFinalPBad);
+                vector<string> row2 = formatMethodData(params, "LR-over-BS", true,
+                            TIniFitOverBS, TFinFitOverBS,
+                            ScheduleMethod::Resources(0, 0.0), ScheduleMethod::Resources(0, 0.0), totalRes);
+
+                table.push_back(row2);
+
+                auto model = LinearRegression::bestFit(method->tempToPBad);
+                cout << "Linear Regression model over the PBad binary search samples:" << endl;
+                model.print();
+            }
+
         }
     }
     double totalTime = T.elapsed();
 
-    vector<string> finalRow = formatMethodData("super-LR",
-        targetInitialPBad, targetFinalPBad, errorTol,
-        ScheduleMethod::tempWithBestLRFit(targetInitialPBad, ScheduleMethod::allTempToPBad),
-        ScheduleMethod::tempWithBestLRFit(targetFinalPBad, ScheduleMethod::allTempToPBad),
-        numValidationSamples, sampleTime, 0, 0, 0, 0,
-        ScheduleMethod::allTempToPBad.size(), totalTime);
-    finalRow[6] = finalRow[7] = finalRow[13] = finalRow[14] = "NA";
+    double overallBestFitTIni = 
+        ScheduleMethod::tempWithBestLRFit(params.targetInitialPBad, ScheduleMethod::allTempToPBad);
+    double overallBestFitTFin =
+        ScheduleMethod::tempWithBestLRFit(params.targetFinalPBad, ScheduleMethod::allTempToPBad);
+    ScheduleMethod::Resources overallRes(ScheduleMethod::allTempToPBad.size(), totalTime);
+
+    vector<string> finalRow = formatMethodData(params, "overall-LR", true,
+                overallBestFitTIni, overallBestFitTFin,
+                ScheduleMethod::Resources(0, 0.0), ScheduleMethod::Resources(0, 0.0), overallRes);
+
     table.push_back(finalRow);
+
     auto model = LinearRegression::bestFit(ScheduleMethod::allTempToPBad);
+    cout << "Linear Regression model of all the samples:" << endl;
     model.print();    
 
-    // ScheduleMethod::tempsFromRegressionAllSamples({});
-
-
-    //apply LR on all the samples taken by all the methods
-    // LinearRegressionModern LRM(sana);
-    // LRM.setTInitialTFinalFromRegression(true);
-    // int totalSamples = ScheduleMethod::allTempToPBad.size();
-
-    // table.push_back(methodDataForComparison("superLR", totalTime, -1, totalSamples, -1, true));
-    
+   
     cout << endl;
     cout << "=================================================" << endl;
     cout << "=================================================" << endl;
@@ -133,13 +153,14 @@ void scheduleMethodComparison(SANA *const sana) {
     cout << endl;
 
     cout << "Automatic Temperature Schedule Comparison" << endl;
-    cout << "Max time: " << maxTime << " Max samples: " << maxSamples << endl;
-    cout << "Sample time: " << sampleTime << endl;
+    cout << "Max samples: " << params.maxResources.numSamples;
+    cout << " Max time: " << params.maxResources.runtime << endl;
+    cout << "Sample time: " << params.sampleTime << endl;
 
-    cout << "Target Initial PBad: " << targetInitialPBad << " range ";
-    ScheduleMethod::printTargetRange(targetInitialPBad, errorTol);
-    cout << endl << "Target Final PBad:   " << targetFinalPBad << " range ";
-    ScheduleMethod::printTargetRange(targetFinalPBad, errorTol);
+    cout << "Target Initial PBad: " << params.targetInitialPBad << " range ";
+    ScheduleMethod::printTargetRange(params.targetInitialPBad, params.errorTol);
+    cout << endl << "Target Final PBad:   " << params.targetFinalPBad << " range ";
+    ScheduleMethod::printTargetRange(params.targetFinalPBad, params.errorTol);
     cout << endl << endl;
 
     printTable(table, 1, cout);
@@ -151,32 +172,37 @@ void scheduleMethodComparison(SANA *const sana) {
     cout << endl;
 }
 
-vector<string> formatMethodData(string name, double targetInitialPBad, double targetFinalPBad,
-                            double errorTol,
-                            double TInitial, double TFinal,
-                            int numValidationSamples, double sampleTime,
-                            int TIniSamples, double TIniTime,
-                            int TFinSamples, double TFinTime,
-                            int totalSamples, double totalTime) {
+vector<string> formatMethodData(const ScheduleExpParams& params, string name, bool hasUnifiedRuntime,
+                double TInitial, double TFinal, ScheduleMethod::Resources TIniRes,
+                ScheduleMethod::Resources TFinRes, ScheduleMethod::Resources totalRes) {
 
-    NormalDistribution TIniPBadDis = getPBadDis(TInitial, numValidationSamples, sampleTime);
-    NormalDistribution TFinPBadDis = getPBadDis(TFinal, numValidationSamples, sampleTime);
+    cerr << endl << "Getting PBad distributions on the found temperatures" << endl;
+    NormalDistribution TIniPBadDis = getPBadDis(TInitial,
+            params.numValidationSamples, params.sampleTime);
+    NormalDistribution TFinPBadDis = getPBadDis(TFinal,
+            params.numValidationSamples, params.sampleTime);
 
-    bool TIniSuccess = ScheduleMethod::isWithinTargetRange(TIniPBadDis.getMean(), targetInitialPBad, errorTol);
-    bool TFinSuccess = ScheduleMethod::isWithinTargetRange(TFinPBadDis.getMean(), targetFinalPBad, errorTol);
+    bool TIniSuccess = ScheduleMethod::isWithinTargetRange(TIniPBadDis.getMean(),
+            params.targetInitialPBad, params.errorTol);
+    bool TFinSuccess = ScheduleMethod::isWithinTargetRange(TFinPBadDis.getMean(),
+            params.targetFinalPBad, params.errorTol);
 
-    double TIniPBadAccuracy = TIniPBadDis.getMean()/targetInitialPBad;
-    double TFinPBadAccuracy = TFinPBadDis.getMean()/targetFinalPBad;
+    double TIniPBadAccuracy = TIniPBadDis.getMean()/params.targetInitialPBad;
+    double TFinPBadAccuracy = TFinPBadDis.getMean()/params.targetFinalPBad;
 
     vector<pair<double,int>> dataAndPrec =
         {
-          {TInitial, 6}, {(double)TIniSuccess, 0}, {TIniPBadDis.getMean(), 6}, {TIniPBadDis.getSD(), 6},
-          {TIniPBadAccuracy, 6}, {TIniSamples, 0}, {TIniTime, 2},
+          {TInitial, 8},
+          {TIniPBadDis.getMean(), 8}, {TIniPBadDis.getSD(), 6},
+          {(double)TIniSuccess, 0}, {TIniPBadAccuracy, 6},
+          {TIniRes.numSamples, 0}, {TIniRes.runtime, 2},
 
-          {TFinal, 9}, {(double)TFinSuccess, 0}, {TFinPBadDis.getMean(), 9}, {TFinPBadDis.getSD(), 9},
-          {TFinPBadAccuracy, 6}, {TFinSamples, 0}, {TFinTime, 2},
+          {TFinal, 12},
+          {TFinPBadDis.getMean(), 12}, {TFinPBadDis.getSD(), 9},
+          {(double)TFinSuccess, 0}, {TFinPBadAccuracy, 6},
+          {TFinRes.numSamples, 0}, {TFinRes.runtime, 2},
 
-          {totalSamples, 0}, {totalTime, 2}
+          {totalRes.numSamples, 0}, {totalRes.runtime, 2}
       };    
 
     vector<string> row = {name};
@@ -184,6 +210,11 @@ vector<string> formatMethodData(string name, double targetInitialPBad, double ta
         double val = p.first;
         double precision = p.second;
         row.push_back(toStringWithPrecision(val, precision));
+    }
+
+    if (hasUnifiedRuntime) {
+        vector<int> splitTimeColumns = {6, 7, 13, 14};
+        for (int i : splitTimeColumns) row[i] = "NA";
     }
     return row;
 }

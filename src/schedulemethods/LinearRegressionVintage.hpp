@@ -12,7 +12,7 @@ public:
     string getName() override { return NAME; }
 
 protected:
-    void computeBoth(double maxTime, int maxSamples) override;
+    void computeBoth(Resources maxRes) override;
 
 };
 

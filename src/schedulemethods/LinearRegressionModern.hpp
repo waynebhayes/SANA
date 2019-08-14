@@ -14,10 +14,10 @@ public:
     void setTargetInitialPBad(double pBad) override; 
     void setTargetFinalPBad(double pBad) override;
 protected:
-    void vComputeTInitial(double maxTime, int maxSamples) override;
-    void vComputeTFinal(double maxTime, int maxSamples) override;
+    void vComputeTInitial(Resources maxRes) override;
+    void vComputeTFinal(Resources maxRes) override;
 
-    virtual void computeBoth(double maxTime, int maxSamples);
+    virtual void computeBoth(Resources maxRes);
 
 private:
     bool alreadyComputed;
