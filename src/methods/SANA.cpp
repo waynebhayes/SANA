@@ -1020,7 +1020,11 @@ vector<double> SANA::translateScoresToVector() {
     return addScores;
 }
 
-vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdSum, double newMS3Numer) {
+vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdges,
+            double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum,
+            double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer,
+            double newEdSum, double newMS3Numer) {
+
     vector<double> addScores(numOfMeasures);
 #ifdef MULTI_PAIRWISE
     for(uint i = 0; i < numOfMeasures; i++) {
@@ -1294,7 +1298,9 @@ void SANA::performChange(int type) {
     }
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum, newMS3Numer);
+    bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum,
+            newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum,
+            newSquaredAligEdges, newExposedEdgesNumer, newEdSum, newMS3Numer);
 
 #ifdef CORES
 	// Statistics on the emerging core alignment.
@@ -1345,8 +1351,12 @@ void SANA::performChange(int type) {
         if(randomReal(gen)<=1) {
         double foo = eval(*A);
         if(fabs(foo - newCurrentScore)>20){
-            cout << "\nChange: nCS " << newCurrentScore << " (nSAE) " << newSquaredAligEdges << " eval " << foo << " nCS - eval " << newCurrentScore-foo;
-            //cout << "source " << source << " oldTarget " << oldTarget << " newTarget " << newTarget << " adj? " << G2Matrix[oldTarget][newTarget] << endl;
+            cout << "\nChange: nCS " << newCurrentScore << " (nSAE) " 
+                << newSquaredAligEdges << " eval " << foo   
+                << " nCS - eval " << newCurrentScore-foo;
+            //cout << "source " << source << " oldTarget " 
+            << oldTarget << " newTarget " << newTarget << " adj? "  
+            << G2Matrix[oldTarget][newTarget] << endl;
             newCurrentScore = newSquaredAligEdges = foo;
         } else cout << "c";
         }
@@ -1407,7 +1417,9 @@ void SANA::performSwap(int type) {
     }
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum, MS3Numer);
+    bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum,
+                        newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges,
+                        newExposedEdgesNumer, newEdSum, MS3Numer);
 
 #ifdef CORES
         // Statistics on the emerging core alignment.
@@ -1453,7 +1465,9 @@ void SANA::performSwap(int type) {
         if (randomReal(gen) <= 1) {
             double foo = eval(*A);
             if (fabs(foo - newCurrentScore) > 20) {
-                cout << "\nSwap: nCS " << newCurrentScore << " eval " << foo << " nCS - eval " << newCurrentScore - foo << " adj? " << (G1Matrix[source1][source2] & G2Matrix[target1][target2]);
+                cout << "\nSwap: nCS " << newCurrentScore << " eval " << foo 
+                << " nCS - eval " << newCurrentScore - foo << " adj? "
+                << (G1Matrix[source1][source2] & G2Matrix[target1][target2]);
                 newCurrentScore = newSquaredAligEdges = foo;
             }
             else cout << "s";
@@ -1478,7 +1492,11 @@ void SANA::performSwap(int type) {
     }
 }
 
-bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum, double newMS3Numer) {
+bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum,
+        double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore,
+        double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer,
+        double newEdgeDifferenceSum, double newMS3Numer) {
+
     bool makeChange = false;
     wasBadMove = false;
     double badProbability = 0;
@@ -1506,6 +1524,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
         //using max and min here because with extremely low temps I was seeing invalid probabilities
+        //note: I did not make this change for the other types of Score::  -Nil
         badProbability = max(0.0, min(1.0, exp(energyInc / Temperature)));
         makeChange = (energyInc >= 0 or randomReal(gen) <= badProbability);
         break;
@@ -1623,7 +1642,9 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     }
     case Score::pareto:
     { //This determines whether we should update the current alignment.
-        vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdgeDifferenceSum, newMS3Numer);
+        vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum,
+                    newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges,
+                    newExposedEdgesNumer, newEdgeDifferenceSum, newMS3Numer);
         if(dominates(addScores, currentScores))
         {
             currentScores = addScores;
@@ -2483,7 +2504,8 @@ this suggests that the upward trend is over and we are at equilirbium
 once we know we are at equilibrium, we use the buffer of pbads to get an average pBad
 'logLevel' can be 0 (no output) 1 (logs result in cerr) or 2 (verbose/debug mode)*/
 double SANA::getPBad(double temp, double maxTime, int logLevel) {
-
+    logLevel = 2;
+    
     //new state for the run at fixed temperature
     constantTemp = true;
     Temperature = temp;
