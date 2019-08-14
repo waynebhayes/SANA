@@ -9,11 +9,11 @@ public:
 
 private:
     void initSimMatrix();
-    vector<uint> reduce(vector<uint> v);
+    vector<uint> reduce(vector<uint> &v);
     const uint NUM_ORBITS = 73;
-    double cosineSimilarity(vector<uint> v1, vector<uint> v2);
-    double dot(vector<uint> v1, vector<uint> v2);
-    double magnitude(vector<uint> vector);
+    double cosineSimilarity(vector<uint> &v1, vector<uint> &v2);
+    double dot(vector<uint> &v1, vector<uint> &v2);
+    double magnitude(vector<uint> &vector);
 };
 
 #endif

@@ -7,7 +7,9 @@
 using namespace std;
 
 EdgeDensity::EdgeDensity(Graph* G1, Graph* G2, uint maxDist) : LocalMeasure(G1, G2, "edged") {
-    string fileName = autogenMatricesFolder+G1->getName()+"_"+
+    string subfolder = autogenMatricesFolder+getName()+"/";
+    createFolder(subfolder);
+    string fileName = subfolder+G1->getName()+"_"+
         G2->getName()+"_edged";
     fileName += ".bin";
     this->maxDist = maxDist;

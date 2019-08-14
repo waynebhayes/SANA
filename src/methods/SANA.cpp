@@ -155,9 +155,9 @@ SANA::SANA(Graph* G1, Graph* G2,
     pBadBuffer = vector<double> (PBAD_CIRCULAR_BUFFER_SIZE, 0);
 
     //data structures for the solution space search
-    assert(G1->hasNodeTypes() == G2->hasNodeTypes());
+    assert(G1->isBipartite() == G2->isBipartite());
     uint ramificationChange[2], ramificationSwap[2], totalRamification[2];
-    if(G1->hasNodeTypes()) {
+    if(G1->isBipartite()) {
 	assert(G1->geneCount <= G2->geneCount);
 	assert(G1->miRNACount <= G2->miRNACount);
 	ramificationChange[0] = G1->geneCount*(G2->geneCount - G1->geneCount);
@@ -302,7 +302,7 @@ Alignment SANA::getStartingAlignment(){
 
     if(this->startAligName != "")
         startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
-    else if (G1->hasNodeTypes())
+    else if (G1->isBipartite())
         startAlig = Alignment::randomAlignmentWithNodeType(G1,G2);
     else if (lockFileName != "")
         startAlig = Alignment::randomAlignmentWithLocking(G1,G2);
@@ -311,8 +311,8 @@ Alignment SANA::getStartingAlignment(){
 
     // Doing a Rexindexing if required
 #ifdef REINDEX
-    if (G1->hasNodeTypes()) {
-    	startAlig.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
+    if (G1->isBipartite()) {
+    	startAlig.reIndexBefore_Iterations(G1->getBipartiteNodeTypes_ReIndexMap());
     }
     else if (lockFileName != "") {
 	    startAlig.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
@@ -402,7 +402,7 @@ Alignment SANA::run() {
 #if PRINT_CORES
 #ifndef CORES
 #error must have CORES macro defined to print them
-#endif
+#else
 #if UNWEIGHTED_CORES
 	double SminUnW = TrimCoreScores(pegHoleFreq,numPegSamples);
 	cout << "Smin_UnW "<< SminUnW << " ";
@@ -414,7 +414,11 @@ Alignment SANA::run() {
 	unordered_map<uint,string> G1Index2Name = G1->getIndexToNodeNameMap();
 	unordered_map<uint,string> G2Index2Name = G2->getIndexToNodeNameMap();
 	printf("######## core frequencies#########\n");
-	printf("p1 p2 unwgtd w1_pB\n");
+	printf("p1 p2");
+#if UNWEIGHTED_CORES
+	printf(" unwgtd");
+#endif
+	printf("wpB w1_pB\n");
 	for(uint i=0; i<n1; i++) for(uint j=0; j<n2; j++)
 	{
 #if UNWEIGHTED_CORES
@@ -440,6 +444,7 @@ Alignment SANA::run() {
 #endif
 			weightedScore_pBad, weightedScore_1mpBad);
 	}
+#endif // cores
 #endif // PRINT_CORES
         return align;
     }
@@ -518,7 +523,7 @@ inline uint SANA::G1RandomUnlockedNode(){
 // Gives a random unlocked nodes with the same type as source1
 // Only called from performswap
 inline uint SANA::G1RandomUnlockedNode(uint source1){
-    if(!nodesHaveType){
+    if(!bipartite){
         return SANA::G1RandomUnlockedNode();
     }
     else{
@@ -545,7 +550,7 @@ inline uint SANA::G1RandomUnlockedNode(uint source1){
 
 // Return index of the unassigned node in the unassginedNodesG2 (or unassignedgenesG2, ...)
 inline uint SANA::G2RandomUnlockedNode(uint target1){
-    if(!nodesHaveType){
+    if(!bipartite){
         return G2RandomUnlockedNode_Fast();
     } else {
         bool isGene = G2->nodeTypes[target1] == Graph::NODE_TYPE_GENE;
@@ -646,7 +651,7 @@ double SANA::slowTrueAcceptingProbability() {
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
-    nodesHaveType = G1->hasNodeTypes();
+    bipartite = G1->isBipartite();
 
     A = new vector<uint>(startA.getMapping());
     assignedNodesG2 = new vector<bool> (n2, false);
@@ -657,7 +662,7 @@ void SANA::initDataStructures(const Alignment& startA) {
     unassignedgenesG2        = new vector<uint> ();
     unassignedmiRNAsG2       = new vector<uint> ();
 
-    if(nodesHaveType){
+    if(bipartite){
         cerr << "Seperating unassigned genes and miRNAs in G2" << endl;
         unassignedgenesG2->reserve(G2->geneCount - G1->geneCount);
         unassignedmiRNAsG2->reserve(G2->miRNACount - G1->miRNACount);
@@ -665,7 +670,7 @@ void SANA::initDataStructures(const Alignment& startA) {
     for (uint i = 0, j = 0; i < n2; i++) {
 	if (not (*assignedNodesG2)[i]) {
 	    (*unassignedNodesG2)[j++] = i;
-	    if(nodesHaveType){
+	    if(bipartite){
 		if(G2->nodeTypes[i] == Graph::NODE_TYPE_GENE)
 		    unassignedgenesG2->push_back(i);
 		else
@@ -1074,7 +1079,7 @@ void SANA::prepareMeasureDataByAlignment() {
     currentMeasure = paretoFront.getRandomMeasure();
 
     assignedNodesG2 = new vector<bool>(*storedAssignedNodesG2[A]);
-    if(!nodesHaveType)
+    if(!bipartite)
         unassignedNodesG2 = new vector<uint>(*storedUnassignedNodesG2[A]);
     else {
         unassignedmiRNAsG2 = new vector<uint>(*storedUnassignedmiRNAsG2[A]);
@@ -1117,7 +1122,7 @@ void SANA::insertCurrentAlignmentAndData() {
     storedAlignments->insert(A);
 
     storedAssignedNodesG2[A]        = assignedNodesG2;
-    if(!nodesHaveType)
+    if(!bipartite)
         storedUnassignedNodesG2[A]  = unassignedNodesG2;
     else {
         storedUnassignedmiRNAsG2[A] = unassignedmiRNAsG2;
@@ -1145,7 +1150,7 @@ void SANA::removeAlignmentData(vector<uint>* toRemove) {
     vector<bool>* removeAssignedNodesG2 = storedAssignedNodesG2[toRemove];
     storedAssignedNodesG2.erase(toRemove);
     delete removeAssignedNodesG2;
-    if(!nodesHaveType) {
+    if(!bipartite) {
         vector<uint>* removeUnassignedNodesG2 = storedUnassignedNodesG2[toRemove];
         storedUnassignedNodesG2.erase(toRemove);
         delete removeUnassignedNodesG2;
@@ -1210,7 +1215,7 @@ void SANA::printParetoFront(const string &fileName) {
 void SANA::deallocateParetoData() {
     for(auto i = storedAssignedNodesG2.begin(); i != storedAssignedNodesG2.end(); i++)
         delete i->second;
-    if(!nodesHaveType) {
+    if(!bipartite) {
         for(auto i = storedUnassignedNodesG2.begin(); i != storedUnassignedNodesG2.end(); i++)
             delete i->second;
     }
@@ -1226,7 +1231,7 @@ void SANA::deallocateParetoData() {
 
 void SANA::SANAIteration() {
     ++iterationsPerformed;
-    if(G1->hasNodeTypes()) {
+    if(G1->isBipartite()) {
         // Choose the type here based on counts (and locking...)
         // For example if no locking, then prob (gene) >> prob (miRNA)
         // And if locking, then arrange prob(gene) and prob(miRNA) appropriately
@@ -1245,7 +1250,7 @@ void SANA::performChange(int type) {
 
     uint newTarget = -1;
     bool isGene = false;
-    if(!nodesHaveType)
+    if(!bipartite)
         newTarget    = (*unassignedNodesG2)[newTargetIndex];
     else{
         isGene = G2->nodeTypes[oldTarget] == Graph::NODE_TYPE_GENE;
@@ -1312,7 +1317,7 @@ void SANA::performChange(int type) {
     {
         (*A)[source]                         = newTarget;
         
-        if(!nodesHaveType)
+        if(!bipartite)
             (*unassignedNodesG2)[newTargetIndex] = oldTarget;
         else {
             if(isGene){
@@ -2712,8 +2717,8 @@ void SANA::prune(string& startAligName) {
 
     Alignment align =  Alignment::loadEdgeList(G1, G2, startAligName);
 #ifdef REINDEX
-    if(G1->hasNodeTypes())
-        align.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
+    if(G1->isBipartite())
+        align.reIndexBefore_Iterations(G1->getBipartiteNodeTypes_ReIndexMap());
     else if (lockFileName != "")
         align.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
 
@@ -2726,8 +2731,8 @@ void SANA::prune(string& startAligName) {
         reIndexedMap[i] = i;
 
 #ifdef REINDEX
-    if(G1->hasNodeTypes())
-        reIndexedMap = G1->getNodeTypes_ReIndexMap();
+    if(G1->isBipartite())
+        reIndexedMap = G1->getBipartiteNodeTypes_ReIndexMap();
     else if (lockFileName != "")
         reIndexedMap = G1->getLocking_ReIndexMap();
 #endif
@@ -2790,7 +2795,7 @@ void SANA::performChange(Job &job, int type) {
 
     uint newTarget = -1;
     bool isGene = false;
-    if(!nodesHaveType)
+    if(!bipartite)
         newTarget    = (*info.unassignedNodesG2)[newTargetIndex];
     else{
         isGene = G2->nodeTypes[oldTarget] == Graph::NODE_TYPE_GENE;
@@ -2847,7 +2852,7 @@ void SANA::performChange(Job &job, int type) {
 
        (*A)[source]                         = newTarget;
 
-       if(!nodesHaveType)
+       if(!bipartite)
            (*info.unassignedNodesG2)[newTargetIndex] = oldTarget;
        else {
            if(isGene){
@@ -2967,7 +2972,7 @@ void SANA::performSwap(Job &job, int type) {
 
 void SANA::parallelParetoSANAIteration(Job &job) {
     ++job.iterationsPerformed;
-    if(G1->hasNodeTypes())
+    if(G1->isBipartite())
     {
 	// Choose the type here based on counts (and locking...)
 	// For example if no locking, then prob (gene) >> prob (miRNA)
@@ -3170,7 +3175,7 @@ void SANA::storeAlignment(Job &job) {
     storedAlignments->insert(A);
 
     storedAssignedNodesG2[A]        = info.assignedNodesG2;
-    if(!nodesHaveType)
+    if(!bipartite)
         storedUnassignedNodesG2[A]  = info.unassignedNodesG2;
     else {
         storedUnassignedmiRNAsG2[A] = info.unassignedmiRNAsG2;
@@ -3212,7 +3217,7 @@ void SANA::copyAlignmentFromStorage(Job &job, vector<uint> *A) {
     info.currentMeasure   = paretoFront.getRandomMeasure();
 
     info.assignedNodesG2 = new vector<bool>(*storedAssignedNodesG2[A]);
-    if(!nodesHaveType)
+    if(!bipartite)
         info.unassignedNodesG2 = new vector<uint>(*storedUnassignedNodesG2[A]);
     else {
         info.unassignedmiRNAsG2 = new vector<uint>(*storedUnassignedmiRNAsG2[A]);
@@ -3522,7 +3527,7 @@ inline uint SANA::G2RandomUnlockedNode_Fast(Job &job) {
 }
 
 inline uint SANA::G2RandomUnlockedNode(Job &job, uint target1) {
-    if(!nodesHaveType){
+    if(!bipartite){
         return G2RandomUnlockedNode_Fast(job);
     } else {
         bool isGene = G2->nodeTypes[target1] == Graph::NODE_TYPE_GENE;
@@ -3794,7 +3799,7 @@ double SANA::edgeDifferenceIncSwapOp(Job &job, uint source1, uint source2, uint 
 }
 
 inline uint SANA::G1RandomUnlockedNode(Job &job, uint source1) {
-    if(!nodesHaveType){
+    if(!bipartite){
         return G1RandomUnlockedNode(job);
     } else {
         // Checking node type and returning one with same type

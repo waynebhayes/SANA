@@ -24,9 +24,9 @@ Alignment Method::runAndPrintTime() {
     Timer T2;
     T2.start();
 
-    if(G1->hasNodeTypes()){
-        G1->reIndexGraph(getReverseMap(G1->getNodeTypes_ReIndexMap()));
-        A.reIndexAfter_Iterations(G1->getNodeTypes_ReIndexMap());
+    if(G1->isBipartite()){
+        G1->reIndexGraph(getReverseMap(G1->getBipartiteNodeTypes_ReIndexMap()));
+        A.reIndexAfter_Iterations(G1->getBipartiteNodeTypes_ReIndexMap());
     }
     // if locking is enabled but hasnodeType is not
     else if(G1->getLockedCount() > 0){
@@ -66,7 +66,7 @@ void  Method::checkLockingBeforeReport(Alignment A){
 }
 
 void Method::checkNodeTypesBeforeReport(Alignment A){
-    if(!G1->hasNodeTypes())
+    if(!G1->isBipartite())
         return;
 
     unordered_map<uint,string> g1_NameMap = G1->getIndexToNodeNameMap();
@@ -74,11 +74,11 @@ void Method::checkNodeTypesBeforeReport(Alignment A){
 
     uint n1 = G1->getNumNodes();
     for(uint i=0; i< n1 ; i++){
-        if(G1->getNodeType(i) != G2->getNodeType(A[i])){
-            cout << g1_NameMap[i] << "( " << G1->getNodeType(i) << " ) should not be aligned to " <<
-                 g2_NameMap[A[i]] << "( " << G2->getNodeType(A[i]) << " )" << endl;
-            throw runtime_error(g1_NameMap[i] + "( " + to_string(G1->getNodeType(i)) + " ) should not be aligned to "
-                    + g2_NameMap[A[i]] + "( " + to_string(G2->getNodeType(A[i])) + " )");
+        if(G1->getBipartiteNodeType(i) != G2->getBipartiteNodeType(A[i])){
+            cout << g1_NameMap[i] << "( " << G1->getBipartiteNodeType(i) << " ) should not be aligned to " <<
+                 g2_NameMap[A[i]] << "( " << G2->getBipartiteNodeType(A[i]) << " )" << endl;
+            throw runtime_error(g1_NameMap[i] + "( " + to_string(G1->getBipartiteNodeType(i)) + " ) should not be aligned to "
+                    + g2_NameMap[A[i]] + "( " + to_string(G2->getBipartiteNodeType(A[i])) + " )");
         }
     }
 }

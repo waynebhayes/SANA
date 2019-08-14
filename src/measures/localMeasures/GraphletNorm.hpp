@@ -9,13 +9,13 @@ public:
 
 private:
     void initSimMatrix();
-    double magnitude(vector<uint> vector);
+    double magnitude(vector<uint> &vector);
     const uint NUM_ORBITS = 73;
-    vector<double> NODV(vector<uint> v);
-    double ODVratio(vector<double> u, vector<double> v, uint i);
-    double ODVdiff(vector<uint> u, vector<uint> v);
-    double ODVsim(vector<uint> u, vector<uint> v);
-    vector<uint> reduce(vector<uint> v);
+    vector<double> NODV(vector<uint> &v);
+    double ODVratio(vector<double> &u, vector<double> &v, uint i);
+    double RMS_ODVdiff1(vector<uint> &u, vector<uint> &v);
+    double ODVsim(vector<uint> &u, vector<uint> &v);
+    vector<uint> reduce(vector<uint> &v);
     
 };
 

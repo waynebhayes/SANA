@@ -1,5 +1,5 @@
 #!/bin/sh
-USAGE="USAGE: $0 {true | false, representing --nodes-have-types} OUTDIR {list of network files, LEDA or edgelist accepted}"
+USAGE="USAGE: $0 {true | false, representing --bipartite} OUTDIR {list of network files, LEDA or edgelist accepted}"
 die() { echo "ERROR: $@" >&2; echo "$USAGE" >&2; exit 1
 }
 
@@ -34,7 +34,7 @@ mkdir $TMPDIR
 GROUP=''
 
 if $TYPES; then readCols=1; else readCols=2; fi # read the second column later if TYPES
-# NOTE: the above means that, when nodes-have-types, nodes are internally numbered as follows:
+# NOTE: the above means that, when bipartite, nodes are internally numbered as follows:
 # first we read through the first column ONLY, incremeting numNodes as we encounter previously unseen nodes;
 # then we do the same for the second column.
 
@@ -45,7 +45,7 @@ do
     [ -f $TMPDIR/$b.1.nodes ] && die "argument $i: already have a network called $b"
     GROUP="$GROUP-$b"
     case "$i" in
-    *.gw) if $TYPES; then die "network '$i': can't accept .gw files with -nodes-have-types";fi
+    *.gw) if $TYPES; then die "network '$i': can't accept .gw files with -bipartite";fi
 	awk '/^.{/&&NF==1{print}' $i | sed 's/[|{}]//g';;
     *.el) awk 'BEGIN{numNodes=0}{for(i=1;i<='$readCols';i++)if(!seen[$i]){seen[$i]=1;name[numNodes++]=$i}}END{for(i=0;i<numNodes;i++)print name[i]}' $i;;
     esac | tee $TMPDIR/$b.1.nodes | wc -l > $TMPDIR/$b.1.numNodes

@@ -105,8 +105,11 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     //made for the purpose of running the experiments for the paper on the tempertaure schedule
     if (scheduleMethodName == "comparison") {
 
-        //this will not compile if the MULTI_PAIRWISE macro is defined:
+#ifdef MULTI_PAIRWISE
+        SANA sana(&G1, &G2, 0, 0, 0, args.bools["-usingIterations"], 0, &M, args.strings["-combinedScoreAs"], startAligName);
+#else
         SANA sana(&G1, &G2, 0, 0, 0, args.bools["-usingIterations"], 0, &M, args.strings["-combinedScoreAs"]);
+#endif
         scheduleMethodComparison(&sana);
         exit(0);
     }

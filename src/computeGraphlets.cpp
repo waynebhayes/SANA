@@ -657,34 +657,24 @@ void count5() {
 }
 
 
-fstream fin, fout; // input and output files
+fstream fout; // input and output files
 int GS=5;
 
-int init(int maxGraphletSize, const char* graphFileName) {
+int init(int maxGraphletSize, FILE *fp) {
     // open input, output files
     GS = maxGraphletSize;
     if (GS!=4 && GS!=5) {
         cerr << "Incorrect graphlet size " << maxGraphletSize << ". Should be 4 or 5." << endl;
         return 0;
     }
-    fin.open(graphFileName, fstream::in);
-    // fout.open(argv[3], fstream::out | fstream::binary);
-    if (fin.fail()) {
-        cerr << "Failed to open file " << graphFileName << endl;
-        return 0;
-    }
-    // if (fout.fail()) {
-    //     cerr << "Failed to open file " << argv[3] << endl;
-    //     return 0;
-    // }
     // read input graph
-    fin >> n >> m;
+    fscanf(fp,"%d%d",&n,&m); //fin >> n >> m;
     int d_max=0;
     edges = (PAIR*)malloc(m*sizeof(PAIR));
     deg = (int*)calloc(n,sizeof(int));
     for (int i=0;i<m;i++) {
         int a,b;
-        fin >> a >> b;
+        fscanf(fp, "%d%d",&a,&b); //fin >> a >> b;
         if (!(0<=a && a<n) || !(0<=b && b<n)) {
             cerr << "Node ids should be between 0 and n-1." << endl;
             return 0;
@@ -700,7 +690,7 @@ int init(int maxGraphletSize, const char* graphFileName) {
     fprintf(stderr,"nodes: %d\n",n);
     fprintf(stderr,"edges: %d\n",m);
     fprintf(stderr,"max degree: %d\n",d_max);
-    fin.close();
+    // fin.close();
     if ((int)(set<PAIR>(edges,edges+m).size())!=m) {
         cerr << "Input file contains duplicate undirected edges." << endl;
         return 0;
@@ -757,8 +747,8 @@ void writeResults(int g=5) {
     fout.close();
 }
 
-std::vector<std::vector<uint> > computeGraphlets(int maxGraphletSize, string graphFileName) {
-    if (!init(maxGraphletSize, graphFileName.c_str())) {
+std::vector<std::vector<uint> > computeGraphlets(int maxGraphletSize, FILE *fp) {
+    if (!init(maxGraphletSize, fp)) {
         throw "Could not initialize computeGraphlets";
     }
 

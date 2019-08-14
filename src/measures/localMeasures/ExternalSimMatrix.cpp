@@ -7,7 +7,9 @@ using namespace std;
 ExternalSimMatrix::ExternalSimMatrix(Graph* G1, Graph* G2, string file, int format): LocalMeasure(G1, G2, "esim") {
     this->file = file;
     this->format =format;
-    string fileName = autogenMatricesFolder+G1->getName()+"_"+
+    string subfolder = autogenMatricesFolder+getName()+"/";
+    createFolder(subfolder);
+    string fileName = subfolder+G1->getName()+"_"+
         G2->getName()+"_esim_"+file;
     loadBinSimMatrix(fileName);
 }

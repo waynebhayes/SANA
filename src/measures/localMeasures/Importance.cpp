@@ -10,7 +10,9 @@ const uint Importance::d = 10;
 const double Importance::lambda = 0.2; // best value according to the HubAlign paper.
 
 Importance::Importance(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "importance") {
-    string fileName = autogenMatricesFolder+G1->getName()+"_"+G2->getName()+"_importance.bin";
+    string subfolder = autogenMatricesFolder+getName()+"/";
+    createFolder(subfolder);
+    string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_importance.bin";
     loadBinSimMatrix(fileName);
 }
 

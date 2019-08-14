@@ -5,14 +5,15 @@
 using namespace std;
 
 GraphletCosine::GraphletCosine(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "graphletcosine") {
-    string fileName = autogenMatricesFolder+G1->getName()+"_"+G2->getName()+"_graphletcosine.bin";
+    string subfolder = autogenMatricesFolder+getName()+"/";
+    createFolder(subfolder);
+    string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_graphletcosine.bin";
     loadBinSimMatrix(fileName);
 }
 
-GraphletCosine::~GraphletCosine() {
-}
+GraphletCosine::~GraphletCosine() {}
 
-double GraphletCosine::magnitude(vector<uint> vector) {
+double GraphletCosine::magnitude(vector<uint> &vector) {
     double res = 0;
     for(uint i = 0; i < vector.size(); ++i) {
         res += vector[i] * static_cast<double>(vector[i]);
@@ -21,7 +22,7 @@ double GraphletCosine::magnitude(vector<uint> vector) {
     return sqrt(res);
 }
 
-double GraphletCosine::dot(vector<uint> v1, vector<uint> v2) {
+double GraphletCosine::dot(vector<uint> &v1, vector<uint> &v2) {
     double res = 0;
     for(uint i = 0; i < v1.size(); ++i) {
         res += v1[i] * static_cast<double>(v2[i]);
@@ -30,11 +31,11 @@ double GraphletCosine::dot(vector<uint> v1, vector<uint> v2) {
     return res;
 }
 
-double GraphletCosine::cosineSimilarity(vector<uint> v1, vector<uint> v2) {
+double GraphletCosine::cosineSimilarity(vector<uint> &v1, vector<uint> &v2) {
     return dot(v1, v2) / (magnitude(v1) * magnitude(v2));
 }
 
-vector<uint> GraphletCosine::reduce(vector<uint> v) {
+vector<uint> GraphletCosine::reduce(vector<uint> &v) {
     vector<uint> res(11);
     res[0] = v[0];
     res[1] = v[1];

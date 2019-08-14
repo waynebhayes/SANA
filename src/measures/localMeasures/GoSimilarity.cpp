@@ -22,7 +22,9 @@ GoSimilarity::GoSimilarity(Graph* G1, Graph* G2,
     normalizeWeights(normWeights);
     this->countWeights = normWeights;
 
-    string fileName = autogenMatricesFolder+G1->getName()+"_"+
+    string subfolder = autogenMatricesFolder+getName()+"/";
+    createFolder(subfolder);
+    string fileName = subfolder+G1->getName()+"_"+
         G2->getName()+"_go_"+to_string(normWeights.size());
     for (double w : normWeights)
         fileName += "_" + extractDecimals(w, 3);

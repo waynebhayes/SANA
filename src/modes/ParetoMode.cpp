@@ -86,9 +86,9 @@ vector<Alignment> ParetoMode::runParetoMode(Method *method, Graph *G1, Graph *G2
     // Needs to be reimplemented with unordered_set<vector<uint>>*
 
     for(unsigned int i = 0; i < alignments.size(); i++) {
-        if(G1->hasNodeTypes()){
-            G1->reIndexGraph(getReverseMap(G1->getNodeTypes_ReIndexMap()));
-            alignments[i].reIndexAfter_Iterations(G1->getNodeTypes_ReIndexMap());
+        if(G1->isBipartite()){
+            G1->reIndexGraph(getReverseMap(G1->getBipartiteNodeTypes_ReIndexMap()));
+            alignments[i].reIndexAfter_Iterations(G1->getBipartiteNodeTypes_ReIndexMap());
         }
         // if locking is enabled but hasnodeType is not
         else if(G1->getLockedCount() > 0){

@@ -8,6 +8,10 @@ ifeq ($(SPARSE), 1)
 CXXFLAGS := $(CXXFLAGS)-DSPARSE
 endif
 
+ifeq ($(MULTI), 1)
+CXXFLAGS := $(CXXFLAGS)-DMULTI_PAIRWISE
+endif
+
 
 INCLUDES =
 LFLAGS =
@@ -198,4 +202,9 @@ depend: $(SRCS)
 
 # Here is the targets for making the wrappedAlgorithms
 optnetalign:
-	cd wrappedAlgorithms/OptNetAlign/src; make optnetalignubuntu; chmod +x optnetalign; cp optnetalign ../
+	cd wrappedAlgorithms/OptNetAlign/src; $(MAKE) optnetalignubuntu; chmod +x optnetalign; cp optnetalign ../
+
+multi:
+	$(MAKE) clean
+	$(MAKE) 'MULTI=1'
+	mv sana sana.multi
