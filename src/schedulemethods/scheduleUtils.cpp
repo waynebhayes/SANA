@@ -10,8 +10,6 @@
 #include "IteratedAmeur.hpp"
 #include "StatisticalTest.hpp"
 #include "IteratedLinearRegression.hpp"
-#include "../utils/utils.hpp"
-#include "../utils/LinearRegression.hpp"
 
 using namespace std;
 
@@ -30,7 +28,6 @@ unique_ptr<ScheduleMethod> getScheduleMethod(string name) {
         return unique_ptr<StatisticalTest>(new StatisticalTest());
     if (name == IteratedLinearRegression::NAME)
         return unique_ptr<IteratedLinearRegression>(new IteratedLinearRegression());
-
     throw runtime_error("schedule method "+name+" not found");
 }
 
