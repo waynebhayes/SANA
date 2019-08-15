@@ -3,6 +3,7 @@
 
 #include "scheduleUtils.hpp"
 #include "ScheduleMethod.hpp"
+#include "LinearRegression.hpp"
 #include "LinearRegressionVintage.hpp"
 #include "LinearRegressionModern.hpp"
 #include "PBadBinarySearch.hpp"
