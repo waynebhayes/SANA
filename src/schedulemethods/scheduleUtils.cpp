@@ -40,7 +40,6 @@ void scheduleMethodComparison(SANA *const sana) {
     ScheduleExpParams params;
 
     params.testedMethodNames = {
-        IteratedLinearRegression::NAME,
         LinearRegressionVintage::NAME, 
         LinearRegressionModern::NAME,
         PBadBinarySearch::NAME,
