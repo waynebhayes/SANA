@@ -112,7 +112,8 @@ SCHEDULEMETHODS_SRC =   							\
 	src/schedulemethods/PBadBinarySearch.cpp   				\
 	src/schedulemethods/ScheduleMethod.cpp    					\
 	src/schedulemethods/scheduleUtils.cpp 					\
-	src/schedulemethods/StatisticalTest.cpp  			
+	src/schedulemethods/StatisticalTest.cpp  	\
+	src/schedulemethods/IteratedLinearRegression.cpp		
 
 MODES_SRC = 								\
 	src/modes/AlphaEstimation.cpp 					\

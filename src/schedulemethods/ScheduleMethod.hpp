@@ -112,7 +112,8 @@ private:
 
     static double sTempWithClosestPBad(double targetPBad, const multimap<double,double>& tempToPBad,
                 double atLeastTemp, double atMostTemp);
-    static double sTempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad, bool fixLineHeights);
+    static double sTempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad,
+                                        bool fixLineHeights);
 
     //stuff for comparison for paper:
     friend void scheduleMethodComparison(SANA *const sana);

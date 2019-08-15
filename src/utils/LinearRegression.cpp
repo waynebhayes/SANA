@@ -85,8 +85,8 @@ double LinearRegression::Model::interpolateWithinGoldilocks(double pBad, bool in
 LinearRegression::Line::Line(double slope, double intercept):slope(slope), intercept(intercept) {}
 
 bool LinearRegression::Line::isValid() const {
-    if (isnan(slope) or isnan(-slope) or isnan(intercept) or isnan(-intercept)) return false;
-    if (isinf(slope) or isinf(-slope) or isinf(intercept) or isinf(-intercept)) return false;
+    if (std::isnan(slope) or std::isnan(-slope) or std::isnan(intercept) or std::isnan(-intercept)) return false;
+    if (std::isinf(slope) or std::isinf(-slope) or std::isinf(intercept) or std::isinf(-intercept)) return false;
     double maxSlope = numeric_limits<double>::max()/100;
     double minSlope = -maxSlope;
     if (slope > maxSlope or slope < minSlope) return false;
@@ -229,7 +229,7 @@ LinearRegression::Model LinearRegression::bestFit(const multimap<double, double>
         }
     }
  
-    if (smallestError == -1 or isnan(smallestError) or isnan(-smallestError) or isinf(smallestError) or isinf(-smallestError)) {
+    if (smallestError == -1 or std::isnan(smallestError) or std::isnan(-smallestError) or std::isinf(smallestError) or std::isinf(-smallestError)) {
         throw runtime_error("LR got incorrect values. Likely precision stuff");
     }
 
