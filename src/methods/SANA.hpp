@@ -60,66 +60,21 @@ public:
     //set the file names passed in args in case we want to store the alignment on the fly
     void setOutputFilenames(string outputFileName, string localMeasuresFileName);
 
-
-    void setTInitialAndTFinalByLinearRegression();
-    void setTFinalByDoublingMethod();
-    void setTInitialByStatisticalTest();
-    void setTFinalByCeasedProgress(); //considered part of the "statistical test" input option
-    void setTInitialByAmeurMethod();
-    void setTFinalByAmeurMethod();
-    void setTInitialByBayesOptimization();
-    void setTFinalByBayesOptimization();    
-    void setTInitialByPBadBinarySearch();
-    void setTFinalByPBadBinarySearch();
+    void setTInitial(double t);
+    void setTFinal(double t);
 
     //requires TInitial and TFinal to be already initialized
     void setTDecayFromTempRange();
 
-    void printScheduleStatistics();
+    double getPBad(double temp, double maxTime = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
 
 private:
-    const double TARGET_FINAL_PBAD = 1e-10; //target final pbad
-    const double TARGET_INITIAL_PBAD = 0.985; //target initial pbad
-    const double HIGH_PBAD_LIMIT = 0.99999;
-    const double LOW_PBAD_LIMIT = 1e-10;
-
+    friend class Ameur; //it needs to read the PBad buffer
+    friend class StatisticalTest;
     //temperature schedule
     double TInitial;
     double TFinal;
     double TDecay;
-
-    double getPBad(double temp, double maxTime = 1.0);
-    map<double, vector<double>> tempToPBad; //every call to getPBad adds an entry to this map
-
-    double scoreForTemp(double temp);
-    vector<double> getEIncSample(double temp, int sampleSize);
-
-    double doublingMethod(double targetPBad, bool nextAbove, double base = 10, double getPBadTime = 1);
-    
-    // Statistical Test    
-    bool isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore);
-    double expectedNumAccEInc(double temp, const vector<double>& EIncSample);
-
-    // Binary search based on pbads
-    double pBadBinarySearch(double pBad);
-
-    // Ameur Method    
-    //finds temperature corresponding to a specific pBad
-    //using the method from the paper by Walid Ben-Ameur
-    //"Computing the Initial Temperature of Simulated Annealing"
-    double ameurMethod(double targetPBad, double errorTolerance);
-    double iteratedAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess);
-    double individualAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess, vector<double> EIncs);
-
-
-    double ameurMethod(double pBad);
-    double ameurMethod(double targetPBad, vector<double> EIncs, double startTempGuess);
-    double iteratedAmeurMethod(double targetPBad, double startTempGuess);
-
-    // Bayesian Optimization
-    //finds temperature corresponding to a specific pBad
-    //using bayesian optimization
-    double bayesOptimization(double pBad);
 
     //circular pBad buffer
     const int PBAD_CIRCULAR_BUFFER_SIZE = 10000;
@@ -129,10 +84,6 @@ private:
     double pBadBufferSum;
     double trueAcceptingProbability();
     double slowTrueAcceptingProbability();
-
-
-
-
 
 
     int maxTriangles = 0;

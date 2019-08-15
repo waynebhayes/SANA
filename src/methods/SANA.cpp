@@ -35,8 +35,6 @@
 #include "../measures/localMeasures/Sequence.hpp"
 #include "../measures/EdgeExposure.hpp"
 #include "../measures/MultiS3.hpp"
-#include "../utils/NormalDistribution.hpp"
-#include "../utils/LinearRegression.hpp"
 #include "../utils/utils.hpp"
 #include "../report.hpp"
 
@@ -287,6 +285,16 @@ SANA::SANA(Graph* G1, Graph* G2,
     A                     = new vector<uint> (n1);
     avgEnergyInc          = -0.00001; //to track progress
     this->addHillClimbing = addHillClimbing;
+
+    //check if graph is fully connected
+    int g1MaxEdges = n1 * (n1 - 1) / 2;
+    int g2MaxEdges = n2 * (n2 - 1) / 2;
+    if ((g1Edges == g1MaxEdges || g2Edges == g2MaxEdges)
+         && !needLocal && !needEd) {
+        throw runtime_error("FATAL ERROR: At least one graph is fully connected."
+            " Every alignment is a perfect alignment, thus SANA cannot pick the best alignment.");
+    }
+
 }
 
 Alignment SANA::getStartingAlignment(){
@@ -758,6 +766,7 @@ void SANA::setInterruptSignal() {
     sigInt.sa_flags = 0;
     sigaction(SIGINT, &sigInt, NULL);
 }
+
 void SANA::printReport() {
     saveAlignment = false;
     string timestamp = string(currentDateTime()); //necessary to make it not const
@@ -1011,7 +1020,11 @@ vector<double> SANA::translateScoresToVector() {
     return addScores;
 }
 
-vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdSum, double newMS3Numer) {
+vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdges,
+            double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum,
+            double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer,
+            double newEdSum, double newMS3Numer) {
+
     vector<double> addScores(numOfMeasures);
 #ifdef MULTI_PAIRWISE
     for(uint i = 0; i < numOfMeasures; i++) {
@@ -1285,7 +1298,9 @@ void SANA::performChange(int type) {
     }
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum, newMS3Numer);
+    bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum,
+            newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum,
+            newSquaredAligEdges, newExposedEdgesNumer, newEdSum, newMS3Numer);
 
 #ifdef CORES
 	// Statistics on the emerging core alignment.
@@ -1336,8 +1351,12 @@ void SANA::performChange(int type) {
         if(randomReal(gen)<=1) {
         double foo = eval(*A);
         if(fabs(foo - newCurrentScore)>20){
-            cout << "\nChange: nCS " << newCurrentScore << " (nSAE) " << newSquaredAligEdges << " eval " << foo << " nCS - eval " << newCurrentScore-foo;
-            //cout << "source " << source << " oldTarget " << oldTarget << " newTarget " << newTarget << " adj? " << G2Matrix[oldTarget][newTarget] << endl;
+            cout << "\nChange: nCS " << newCurrentScore << " (nSAE) " 
+                << newSquaredAligEdges << " eval " << foo   
+                << " nCS - eval " << newCurrentScore-foo;
+            //cout << "source " << source << " oldTarget " 
+            << oldTarget << " newTarget " << newTarget << " adj? "  
+            << G2Matrix[oldTarget][newTarget] << endl;
             newCurrentScore = newSquaredAligEdges = foo;
         } else cout << "c";
         }
@@ -1398,7 +1417,9 @@ void SANA::performSwap(int type) {
     }
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdSum, MS3Numer);
+    bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum,
+                        newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges,
+                        newExposedEdgesNumer, newEdSum, MS3Numer);
 
 #ifdef CORES
         // Statistics on the emerging core alignment.
@@ -1444,7 +1465,9 @@ void SANA::performSwap(int type) {
         if (randomReal(gen) <= 1) {
             double foo = eval(*A);
             if (fabs(foo - newCurrentScore) > 20) {
-                cout << "\nSwap: nCS " << newCurrentScore << " eval " << foo << " nCS - eval " << newCurrentScore - foo << " adj? " << (G1Matrix[source1][source2] & G2Matrix[target1][target2]);
+                cout << "\nSwap: nCS " << newCurrentScore << " eval " << foo 
+                << " nCS - eval " << newCurrentScore - foo << " adj? "
+                << (G1Matrix[source1][source2] & G2Matrix[target1][target2]);
                 newCurrentScore = newSquaredAligEdges = foo;
             }
             else cout << "s";
@@ -1469,7 +1492,11 @@ void SANA::performSwap(int type) {
     }
 }
 
-bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newEdgeDifferenceSum, double newMS3Numer) {
+bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum,
+        double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore,
+        double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer,
+        double newEdgeDifferenceSum, double newMS3Numer) {
+
     bool makeChange = false;
     wasBadMove = false;
     double badProbability = 0;
@@ -1497,6 +1524,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
         //using max and min here because with extremely low temps I was seeing invalid probabilities
+        //note: I did not make this change for the other types of Score::  -Nil
         badProbability = max(0.0, min(1.0, exp(energyInc / Temperature)));
         makeChange = (energyInc >= 0 or randomReal(gen) <= badProbability);
         break;
@@ -1614,7 +1642,9 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     }
     case Score::pareto:
     { //This determines whether we should update the current alignment.
-        vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newEdgeDifferenceSum, newMS3Numer);
+        vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum,
+                    newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges,
+                    newExposedEdgesNumer, newEdgeDifferenceSum, newMS3Numer);
         if(dominates(addScores, currentScores))
         {
             currentScores = addScores;
@@ -2471,9 +2501,10 @@ This function should return the avg pBad at equilibrium.
 we keep track of the score every certain number of iterations
 if the score went down at least half the time,
 this suggests that the upward trend is over and we are at equilirbium
-once we know we are at equilibrium, we use the buffer of pbads to get an average pBad */
-double SANA::getPBad(double temp, double maxTime) {
-
+once we know we are at equilibrium, we use the buffer of pbads to get an average pBad
+'logLevel' can be 0 (no output) 1 (logs result in cerr) or 2 (verbose/debug mode)*/
+double SANA::getPBad(double temp, double maxTime, int logLevel) {
+    
     //new state for the run at fixed temperature
     constantTemp = true;
     Temperature = temp;
@@ -2488,9 +2519,9 @@ double SANA::getPBad(double temp, double maxTime) {
 
     bool reachedEquilibrium = false;
 
-    initDataStructures(getStartingAlignment()); //this initializes the timer and resets the pbad buffer
+    initDataStructures(getStartingAlignment()); //this initializes the timer and resets the pBad buffer
 
-    bool verbose = false; //print everything going on, for debugging purposes
+    bool verbose = (logLevel == 2); //print everything going on, for debugging purposes
     uint verbose_i = 0;
     if (verbose) {
         cerr << endl << "****************************************" << endl;
@@ -2503,7 +2534,7 @@ double SANA::getPBad(double temp, double maxTime) {
 
         if (iter%sampleInterval == 0) {
             if (verbose) {
-                cerr << verbose_i << " score: " << currentScore << " (avg pbad: " << slowTrueAcceptingProbability() << ")" << endl;
+                cerr << verbose_i << " score: " << currentScore << " (avg pBad: " << slowTrueAcceptingProbability() << ")" << endl;
                 verbose_i++;
             }
             //circular buffer behavior
@@ -2551,475 +2582,32 @@ double SANA::getPBad(double temp, double maxTime) {
 
     double pBadAvgAtEq = slowTrueAcceptingProbability();
 
-    cout << "> getPBad(" << temp << ") = " << pBadAvgAtEq << " (score: " << currentScore << ")";
-    if (reachedEquilibrium) cout << " (time: " << timer.elapsed() << "s)";
-    else cout << " (didn't detect eq. after " << maxTime << "s)";
-    cout << endl;
-    
-    if (verbose) {
-        cerr << "final result: " << pBadAvgAtEq << endl;
-        cerr << "****************************************" << endl << endl;
+    if (logLevel >= 1) {
+        cout << "> getPBad(" << temp << ") = " << pBadAvgAtEq << " (score: " << currentScore << ")";
+        if (reachedEquilibrium) cout << " (time: " << timer.elapsed() << "s)";
+        else cout << " (didn't detect eq. after " << maxTime << "s)";
+        cout << endl;
+        
+        if (verbose) {
+            cerr << "final result: " << pBadAvgAtEq << endl;
+            cerr << "****************************************" << endl << endl;
+        }
     }
     //restore normal execution state
     constantTemp = false;
     enableTrackProgress = true;
     Temperature = TInitial;
 
-
-    //keep track of the pair
-    if (tempToPBad.count(temp) == 0) {
-        tempToPBad[temp] = vector<double> (0);
-    }
-    tempToPBad[temp].push_back(pBadAvgAtEq);
-
     return pBadAvgAtEq;
 }
 
-/* Returns a temperature of the form 'base'^k (for some integer k) that gives rise to
-a pBad that bounds 'targetPBad' above or below. More precisely, 
-- if 'nextAbove' is true, it returns the smallest such temp that gives rise to a pBad above 'targetPBad'
-- if 'nextAbove' is false, it retuns the largest such temp that gives rise to a pBad below 'targetPBad'
-higher 'base' -> quicker search, but more coarse bound; defaults to 10.
-*/
-double SANA::doublingMethod(double targetPBad, bool nextAbove, double base, double getPBadTime) {
-    
-    //use as starting value the temp in the tempToPBad map that has a closest pBad to the target pBad
-    //if the map is empty, just start with 1
-    double startTemp = 1;
-    double smallestPBadDiff = 2;
-    double startPBad;
-    bool initStartPBad = false;
-    for (auto tempPBadPair = tempToPBad.begin(); tempPBadPair != tempToPBad.end(); tempPBadPair++) {
-        double temp = tempPBadPair->first;
-        double pBad = tempPBadPair->second[0]; //there may be several pbads for that temp; we just look at one (the first one)
-        double pBadDiff = abs(pBad-targetPBad);
-        if (pBadDiff < smallestPBadDiff) {
-            startTemp = temp;
-            smallestPBadDiff = pBadDiff;
-            startPBad = pBad;
-            initStartPBad = true;
-        }
-    }
-
-    //just in case, as these would give math errors
-    if (base == 0) base = 10;
-    if (startTemp == 0) startTemp = 1;
-
-    //turn 'startTemp' into the closest power of 'base' below 'startTemp'
-    double startTempLog = log(startTemp)/log(base); //log_b a = log a / log b
-    startTempLog = floor(startTempLog);
-    startTemp = pow(base, startTempLog);
-
-    double temp = startTemp;
-    double priorTemp = temp;
-    double pBad;
-    if (initStartPBad) pBad = startPBad;
-    else pBad = getPBad(temp, getPBadTime);
-
-    if (pBad < targetPBad) {
-        while (pBad < targetPBad) {
-            priorTemp = temp;
-            temp *= base;
-            pBad = getPBad(temp, getPBadTime);
-        }
-        if (nextAbove) return temp;
-        return priorTemp;      
-    } else {
-        while (pBad > targetPBad) {
-            priorTemp = temp;
-            temp /= base;
-            pBad = getPBad(temp, getPBadTime);
-        }
-        if (nextAbove) return priorTemp;
-        return temp;
-    }
+void SANA::setTInitial(double t) {
+    TInitial = t;
 }
 
-void SANA::setTInitialAndTFinalByLinearRegression() {
-
-    //if(score == "pareto") //Running in pareto mode makes this function really slow
-    //	return;             //and I don't know why, but sometimes I disable using this.
-    //                      //otherwise my computer is very slow.
-
-	//check if graph is fully connected
-	int g1MaxEdges = n1 * (n1 - 1) / 2;
-	int g2MaxEdges = n2 * (n2 - 1) / 2;
-
-	if ((g1Edges == g1MaxEdges || g2Edges == g2MaxEdges) && !needLocal && !needEd) {
-		throw runtime_error("FATAL ERROR: At least one graph is fully connected. Every alignment is a perfect alignment, thus SANA cannot pick the best alignment.");
-	}
-
-    cout << "Finding Upper Bound of the Temperature ... " << endl;
-    double log10HighTemp = log10(doublingMethod(HIGH_PBAD_LIMIT, false));
-    cout << "Finding Lower Bound of the Temperature ... " << endl;
-    double log10LowTemp = log10(doublingMethod(LOW_PBAD_LIMIT, true));
-
-	double log10NumSteps = abs(log10LowTemp) + abs(log10HighTemp);
-
-	cout << "HIGH TEMP = " << pow(10, log10HighTemp) << " LOW TEMP = " << pow(10, log10LowTemp) << endl;
-	cout << "NUM OF STEPS = " << pow(10, log10NumSteps) << endl;
-    cout << "Sampling " << (int) (1+log10NumSteps) << " pbads from " << pow(10, log10LowTemp);
-    cout << " to " << pow(10, log10HighTemp) <<" for linear regression" << endl;
-
-    int T_i;
-    double log_temp;
-    map<double, double> pbadMap;
-
-	for(T_i = 0; T_i <= log10NumSteps; T_i++){
-	log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
-        pbadMap[log_temp] = getPBad(pow(10, log_temp), 2.0);
-        // cout << T_i << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
-    }
-    for (T_i=0; T_i <= log10NumSteps; T_i++){
-	log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
-        if(pbadMap[log_temp] > TARGET_FINAL_PBAD)
-            break;
-    }
-
-    double binarySearchLeftEnd = log10LowTemp + (T_i-1)*(log10HighTemp-log10LowTemp)/log10NumSteps;
-    double binarySearchRightEnd = log_temp;
-    double mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-    cout << "Increasing sample density near TFinal. " << " range: (" << pow(10, binarySearchLeftEnd) << ", " << pow(10, binarySearchRightEnd) << ")" << endl;
-    for(int j = 0; j < 4; ++j) {
-        double temperature = pow(10, mid);
-        double probability = getPBad(temperature, 2.0);
-        pbadMap[mid] = probability;
-        if(probability > TARGET_FINAL_PBAD) binarySearchRightEnd = mid;
-        else binarySearchLeftEnd = mid;
-        mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-    }
-    for (T_i = log10NumSteps; T_i >= 0; T_i--){
-	    log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
-        if(pbadMap[log_temp] < TARGET_INITIAL_PBAD)
-            break;
-    }
-
-    binarySearchLeftEnd = log_temp;
-    binarySearchRightEnd = log10LowTemp + (T_i+1)*(log10HighTemp-log10LowTemp)/log10NumSteps;
-    mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-    cout << "Increasing sample density near TInitial. " << "range: (" << pow(10, binarySearchLeftEnd) << ", " << pow(10, binarySearchRightEnd) << ")" << endl;
-    for(int j = 0; j < 4; ++j){
-        double temperature = pow(10, mid);
-        double probability = getPBad(temperature, 2.0);
-        pbadMap[mid] = probability;
-        if(probability < TARGET_INITIAL_PBAD) binarySearchLeftEnd = mid;
-        else binarySearchRightEnd = mid;
-        mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
-    }
-    LinearRegression linearRegression;
-    linearRegression.setup(pbadMap);
-    tuple<int, double, double, int, double, double, double, double> regressionResult = linearRegression.run();
-    // bestJ, scores[bestJ], temperatures[bestJ], bestK, scores[bestK], temperatures[bestK], line1Height, line3Height;
-    double lowerEnd = get<2>(regressionResult);
-    double upperEnd = get<5>(regressionResult);
-    cout << "The three lines are: "<<endl;
-    cout << "HillClimbing: y= " << get<6>(regressionResult) << " until x= " << pow(10,lowerEnd) << endl;
-    cout << "GoldilocksZone: starts above, ends at x= " << pow(10,upperEnd) << endl;
-    cout << "RandomRegion: y= " << get<7>(regressionResult) << endl;
-    cout << "Left endpoint of linear regression " << pow(10, lowerEnd) << endl;
-    cout << "Right endpoint of linear regression " << pow(10, upperEnd) << endl;
-    double startingTemperature = pow(10, log10HighTemp);
-    for (auto const& keyValue : pbadMap)
-    {
-        if(keyValue.second >= TARGET_INITIAL_PBAD && keyValue.first >= upperEnd){
-            startingTemperature = pow(10, keyValue.first);
-            break;
-        }
-    }
-    double endingTemperature = pow(10,log10LowTemp);
-    double distanceFromTarget = std::numeric_limits<double>::max();
-    for (auto const& keyValue : pbadMap)
-    {
-    	if (distanceFromTarget > abs(TARGET_FINAL_PBAD - keyValue.second) and
-                pow(10, keyValue.first) <= startingTemperature) {
-    		distanceFromTarget = abs(TARGET_FINAL_PBAD - keyValue.second);
-    		endingTemperature = pow(10, keyValue.first);
-    	}
-    }
-    TInitial = startingTemperature;
-    TFinal = endingTemperature;
+void SANA::setTFinal(double t) {
+    TFinal = t;
 }
-
-void SANA::setTFinalByDoublingMethod() {
-    cout << "Searching for an acceptable final temperature" << endl;
-    TFinal = doublingMethod(TARGET_FINAL_PBAD, false);
-}
-
-bool SANA::isRandomTemp(double temp, double highThresholdScore, double lowThresholdScore) {
-    const double NUM_SAMPLES = 5;
-
-    double score = scoreForTemp(temp);
-    cout << "Temp = " << temp << ", score = " << score;
-    //quick filter all the scores that are obviously not random
-    if (score > highThresholdScore) return false;
-    if (score < lowThresholdScore) return true;
-    //make sure that alignments that passed the first test are truly random
-    //(among NUM_SAMPLES runs, at least one of them has a p-value smaller than LOW_THRESHOLD_P)
-    for (uint i = 0; i < NUM_SAMPLES; ++i) {
-        if (scoreForTemp(temp) <= lowThresholdScore) return true;
-    }
-    return false;
-}
-
-//takes a random alignment, lets it run for 1s with fixed temperature temp and returns its score
-double SANA::scoreForTemp(double temp) {
-    getPBad(temp, 1);
-    return currentScore;
-}
-
-void SANA::setTInitialByStatisticalTest() {
-    const double NUM_RANDOM_SAMPLES = 100;
-    const double HIGH_THRESHOLD_P = 0.999999;
-    const double LOW_THRESHOLD_P = 0.99;
-
-    cerr<<endl;
-    //find the threshold score between random and not random temperature
-    Timer TImer;
-    TImer.start();
-    cout << "Computing distribution of scores of random alignments ";
-    vector<double> upperBoundKScores(NUM_RANDOM_SAMPLES);
-    for (uint i = 0; i < NUM_RANDOM_SAMPLES; ++i) {
-        upperBoundKScores[i] = eval(Alignment::randomAlignmentWithLocking(G1,G2));
-    }
-    cout << "(" <<  TImer.elapsedString() << ")" << endl;
-    NormalDistribution dist(upperBoundKScores);
-    double highThresholdScore = dist.quantile(HIGH_THRESHOLD_P);
-    double lowThresholdScore = dist.quantile(LOW_THRESHOLD_P);
-    cout << "Mean: " << dist.getMean() << endl;
-    cout << "sd: " << dist.getSD() << endl;
-    cout << LOW_THRESHOLD_P << " of random runs have a score <= " << lowThresholdScore << endl;
-    cout << HIGH_THRESHOLD_P << " of random runs have a score <= " << highThresholdScore << endl;
-
-    double lowerBoundTInitial = 1;
-    double upperBoundTInitial = 1;
-    while (not isRandomTemp(upperBoundTInitial, highThresholdScore, lowThresholdScore)) {
-        upperBoundTInitial *= 2;
-    }
-    upperBoundTInitial *= 2;    // one more doubling just to be sure
-    //if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/4;
-
-    uint n1 = G1->getNumNodes();
-    uint n2 = G2->getNumNodes();
-    cout << "Iterations per run: " << 10000.+100.*n1+10.*n2+n1*n2*0.1 << endl;
-
-    uint count = 0;
-    TImer.start();
-    while (fabs(lowerBoundTInitial - upperBoundTInitial)/lowerBoundTInitial > 0.05 and
-            count <= 100) {
-        //search in log space
-        double lowerBoundTInitialLog = log2(lowerBoundTInitial+1);
-        double upperBoundTInitialLog = log2(upperBoundTInitial+1);
-        double midTInitialLog = (lowerBoundTInitialLog+upperBoundTInitialLog)/2.;
-        double midTInitial = exp2(midTInitialLog)-1;
-
-        //we prefer false negatives (random scores classified as non-random)
-        //than false positives (non-random scores classified as random)
-        cout << "Test " << count << " (" << TImer.elapsedString() << "): ";
-        count++;
-        if (isRandomTemp(midTInitial, highThresholdScore, lowThresholdScore)) {
-            upperBoundTInitial = midTInitial;
-            cout << " (random behavior)";
-        }
-        else {
-            lowerBoundTInitial = midTInitial;
-            cout << " (NOT random behavior)";
-        }
-        cout << " New range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
-    }
-    //return the top of the range
-    cout << "Final range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
-
-    TInitial = upperBoundTInitial;
-}
-
-double SANA::expectedNumAccEInc(double temp, const vector<double>& EIncSample) {
-    double res = 0;
-    for (uint i = 0; i < EIncSample.size(); ++i) {
-        res += exp(EIncSample[i]/temp);
-    }
-    return res;
-}
-
-vector<double> SANA::getEIncSample(double temp, int sampleSize) {
-    getPBad(temp, 2);
-    if (sampleSize > numPBadsInBuffer) {
-        cerr << "sample size too large, returning a sample of size " << numPBadsInBuffer << " instead" << endl;
-        sampleSize = numPBadsInBuffer;
-    }
-    vector<double> EIncs(sampleSize);
-    for (int i = 0; i < sampleSize; i++) {
-        EIncs[i] = -temp * log(pBadBuffer[i]);
-    }
-    return EIncs;
-}
-
-//old TDecay method
-//find the temperature TFinal such that the expected number of accepted transitions
-//near a local minimum is 1 per second
-//by bisection, since the expected number is monotically increasing in TFinal
-void SANA::setTFinalByCeasedProgress() {
-
-    //get a sample of negative EIncs seen during a second of runtime near local minima
-    vector<double> EIncs(0);
-    
-    //this runs hill climbing, moving the current alignment close to local minima
-    initIterPerSecond();
-    
-    for (uint i = 0; i < iterPerSecond; ++i) {
-        SANAIteration();
-        if (energyInc < 0) {
-            EIncs.push_back(energyInc);
-        }
-    }
-    cout << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
-
-
-    //upper bound and lower bound of x
-    uint N = EIncs.size();
-    double ESum = vectorSum(EIncs);
-    double EMin = vectorMin(EIncs);
-    double EMax = vectorMax(EIncs);
-    double x_left = abs(EMax)/log(N);
-    double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
-    cout << "Starting range for TFinal: (" << x_left << ", " << x_right << ")" << endl;
-
-    const uint NUM_ITER = 100;
-    for (uint i = 0; i < NUM_ITER; ++i) {
-        double x_mid = (x_left + x_right)/2;
-        double y = expectedNumAccEInc(x_mid, EIncs);
-        if (y < 1) x_left = x_mid;
-        else if (y > 1) x_right = x_mid;
-        else break;
-    }
-
-    TFinal = (x_left + x_right)/2;
-    cout << "Final range: (" << x_left << ", " << x_right << ")" << endl;
-}
-
-void SANA::setTInitialByAmeurMethod() {       TInitial = ameurMethod(TARGET_INITIAL_PBAD, 0.001); }
-void SANA::setTInitialByBayesOptimization() { TInitial = bayesOptimization(TARGET_INITIAL_PBAD); }
-void SANA::setTInitialByPBadBinarySearch() {  TInitial = pBadBinarySearch(TARGET_INITIAL_PBAD); }
-void SANA::setTFinalByAmeurMethod() {         TFinal   = ameurMethod(TARGET_FINAL_PBAD, 0.1); }
-void SANA::setTFinalByBayesOptimization() {   TFinal   = bayesOptimization(TARGET_FINAL_PBAD); }
-void SANA::setTFinalByPBadBinarySearch() {    TFinal   = pBadBinarySearch(TARGET_FINAL_PBAD); }    
-
-double SANA::ameurMethod(double targetPBad, double errorTolerance) {
-    return iteratedAmeurMethod(targetPBad, 1, errorTolerance);
-}
-
-//the method from the ameur paper computes a temperature that "fits" a target pbad for a given sample of EIncs
-//james' idea is to iterate this process until convergence: using the resulting temperature,
-//generate a new sample of EIncs by running at that temperature, 
-//and use the ameur method again to find a temperature that "fits" the target pbad with the new EIncs
-//this converges to the temperature that gives rise to that pbad at equilibrium
-double SANA::iteratedAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess) {
-    int maxIters = 30;
-    double tempGuess = startTempGuess;
-    bool converged = false;
-    int iteration = 0;
-
-    //with bigger step sizes, there may be a "bounce back and forth" effect
-    double stepSize = 0.9; //keep <= 1
-    cout << "Using iterated Ameur method" << endl;
-
-    while (not converged and iteration < maxIters) {
-        cout << "Iteration " << iteration << ":" << endl;
-        vector<double> EIncs = getEIncSample(tempGuess, 10000);
-        double tempGuessPBad = tempToPBad[tempGuess][tempToPBad[tempGuess].size()-1];
-
-        converged = tempGuessPBad > targetPBad*(1-errorTolerance) and tempGuessPBad < targetPBad*(1+errorTolerance);
-        if (converged) break;
-
-        double nextTempGuess = tempGuess + stepSize*(individualAmeurMethod(targetPBad, tempGuess, errorTolerance, EIncs) - tempGuess);
-
-        tempGuess = nextTempGuess;
-        iteration++;
-    }
-    if (converged) {
-        cout << "Iterated Ameur method converged after " << iteration << " iterations" << endl;
-    } else {
-        cout << "Iterated Ameur method did NOT converge after " << iteration << " iterations" << endl;
-    }
-
-    return tempGuess;
-}
-
-double SANA::individualAmeurMethod(double targetPBad, double errorTolerance, double startTempGuess, vector<double> EIncs) {
-    int maxIters = 100;
-    double tempGuess = startTempGuess;
-    bool converged = false;
-    int iteration = 0;
-
-    double paramP = 1.0; //parameter 'p' in the paper, must be >= 1. higher value is slower but is more likely to converge
-    int n = EIncs.size();
-
-    while (not converged and iteration < maxIters) {
-        vector<double> pBads(n);
-        for (int i = 0; i < n; i++) {
-            pBads[i] = max(0.0, min(1.0, exp(-EIncs[i]/tempGuess)));
-        }
-        double pBadMean = vectorMean(pBads);
-        // cout<<"  iteration " << iteration << ": temp: " << tempGuess << " pbad:" << pBadMean << endl;
-
-        converged = pBadMean > targetPBad*(1-errorTolerance) and pBadMean < targetPBad*(1+errorTolerance);
-        if (converged) break;
-
-        double nextGuess = tempGuess * pow((log(pBadMean)/log(targetPBad)), 1.0/paramP);
-
-        tempGuess = nextGuess;
-        iteration++;
-    }
-    if (converged) {
-        cout << "temp converged to " << tempGuess << " in " << iteration << " iterations" << endl;
-    } else {
-        cout << "temp reached " << tempGuess << " but did NOT converge after " << iteration << " iterations" << endl;
-    }
-    return tempGuess;
-}
-
-double SANA::bayesOptimization(double targetPBad) {
-    throw runtime_error("not available yet");
-}
-
-double SANA::pBadBinarySearch(double targetPBad) {
-    bool logScale = true;
-    double getPBadTime = 2;
-    double highTemp = doublingMethod(targetPBad, true, 100, getPBadTime);
-    double lowTemp = doublingMethod(targetPBad, false, 100, getPBadTime);
-    double rangeSize = highTemp-lowTemp;
-    double tolerance = 0.01*rangeSize;
-    double midTemp;
-
-    if (not logScale) midTemp = (highTemp+lowTemp)/2.0;
-    else midTemp = exp((log(highTemp)+log(lowTemp))/2.0);
-
-    double pBad = getPBad(midTemp, getPBadTime);
-    while (rangeSize > tolerance) {
-        if (pBad < targetPBad) lowTemp = midTemp;
-        else highTemp = midTemp;
-        rangeSize = highTemp-lowTemp;
-
-        if (not logScale) midTemp = (highTemp+lowTemp)/2.0;
-        else midTemp = exp((log(highTemp)+log(lowTemp))/2.0);
-
-        pBad = getPBad(midTemp, getPBadTime);
-    }
-    return midTemp;
-}
-
-void SANA::printScheduleStatistics() {
-    cout << "TInitial found for target pBad " << TARGET_INITIAL_PBAD << ": " << endl;
-    getPBad(TInitial, 2);
-    cout << "TFinal found for target pBad " << TARGET_FINAL_PBAD << ": " << endl;
-    getPBad(TFinal, 2);
-    cout << "TDecay needed to traverse this range: " << TDecay << endl;
-    cout << endl;
-}
-
-
-
-
-
 
 
 
@@ -3129,7 +2717,7 @@ void SANA::initIterPerSecond() {
     std::ostringstream ss;
     ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
     ofstream header(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(0) + ".csv");
-    header << "time,score,avgEnergyInc,Temperature,realTemp,pbad,lower,higher,timer" << endl;
+    header << "time,score,avgEnergyInc,Temperature,realTemp,pBad,lower,higher,timer" << endl;
     header.close();
 }
 

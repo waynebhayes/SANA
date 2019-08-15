@@ -9,6 +9,7 @@ vector<string> defaultArguments = {
 "-wavenodesim nodec",
 "-tinitial auto",
 "-tdecay auto",
+"-schedulemethod auto",
 "-t 5",
 "-mode normal",
 "-method sana",

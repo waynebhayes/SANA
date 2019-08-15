@@ -1,3 +1,5 @@
+#ifndef LINEARREGRESSION_HPP
+#define LINEARREGRESSION_HPP
 //
 // Created by Hudson Hughes on 8/2/16.
 #include "../arguments/ArgumentParser.hpp"
@@ -14,21 +16,55 @@
 #include "utils.hpp"
 using namespace std;
 
+
 class LinearRegression {
 
 public:
-    int SIZE;
-    map<double, double> chart;
-    vector<string> temperatures;
-    LinearRegression();
-    void setup(map<double, double> graph);
-    tuple<int, double, double, int, double, double, double, double> run();
-    double incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double sum, vector<double> &data);
-    double* incrementalValues(int oldIndex1, int oldIndex2, bool index1Change, double values[], vector<double> &data);
-    double linearLeastSquares(double sum, int n);
-    double* linearLeastSquares(double values[], int n);
-    double leastSquaresError(int index1, int index2, double constant, vector<double> &data);
-    double leastSquaresError(int index1, int index2, double constants[], vector<double> &data);
-    double* initialValues(int index1, int index2, vector<double> &data);
-    double initialSum(int index1, int index2, vector<double> &data);
+
+    struct Sample {
+        const double temp;
+        const double pBad;
+
+        Sample(double temp, double pBad);
+        void print() const;
+    };
+
+    struct Model {
+        Sample minGLSample, maxGLSample;
+        vector<Sample> sortedSamples;//sorted by temp
+
+        Model(Sample minGLSample, Sample maxGLSample, const vector<Sample>& sortedSamples);
+
+        //assuming pBad is between goldilocks minPBad and maxPBad
+        //interpolates the temperature that gives rise to that pBad
+        double interpolateWithinGoldilocks(double pBad, bool inLogScale = true) const;
+
+        Sample minSample() const;
+        Sample maxSample() const;
+        int numSamplesBelow() const;
+        int numSamplesGL() const;
+        int numSamplesAbove() const;
+        void print() const;
+    };
+
+    struct Line {
+        double slope, intercept;
+        Line(double slope, double intercept);
+        bool isValid() const; //checks that the slope and intercept make sense
+    };
+
+    static Model bestFit(const multimap<double, double>& tempToPBad,
+                                bool fitTempInLogSpace = true, bool fixLineHeights = false);
+
+private:
+
+    static double rangeSum(const vector<double> &v, int index1, int index2);
+    static Line linearLeastSquares(double xSum, double ySum, double xySum, double xxSum, int n);
+    static double flatLineLeastSquaresError(const vector<double> &pBads, int index1, int index2, double lineHeight);
+    static double leastSquaresError(const vector<double> &temps, const vector<double> &pBads, 
+        int index1, int index2, const Line& line2);
+
 };
+
+
+#endif

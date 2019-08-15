@@ -1,5 +1,6 @@
 #include <vector>
 #include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -79,4 +80,13 @@ T matrixMin(vector<vector<T> >& matrix) {
 template<typename T>
 bool contains(const vector<T>& v, const T& elem) {
     return find(v.begin(), v.end(), elem) != v.end();
+}
+
+template <typename T>
+string toStringWithPrecision(const T a_value, const int n = 6)
+{
+    std::ostringstream out;
+    out.precision(n);
+    out << std::fixed << a_value;
+    return out.str();
 }

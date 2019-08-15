@@ -510,3 +510,11 @@ pair<unsigned, unsigned> countVecLens(string& fileName) //overcounts # of nodes 
     pair<unsigned, unsigned> ret { nodes.size(), i / 2};
     return ret;
 }
+
+unordered_map<uint, uint> getReverseMap(const unordered_map<uint,uint>& reverse) {
+    unordered_map<uint,uint> res;
+    for (const auto &nameIndexPair : reverse ) {
+        res[nameIndexPair.second] = nameIndexPair.first;
+    }
+    return res;
+}

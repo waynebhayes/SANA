@@ -1,4 +1,4 @@
-CC = g++ -std=c++11
+CC = g++
 
 #CXXFLAGS = -I "src/utils" -Wall -fno-inline -O2 -std=c++11 -g3
 #CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DMULTI_PAIRWISE #-pg -ggdb -Bstatic #-static
@@ -104,6 +104,16 @@ METHOD_WRAPPERS_SRC =    						\
 	src/methods/wrappers/SANAPISWAPWrapper.cpp			\
 	src/methods/wrappers/CytoGEDEVOWrapper.cpp			\
 
+SCHEDULEMETHODS_SRC =   							\
+	src/schedulemethods/Ameur.cpp 					\
+	src/schedulemethods/IteratedAmeur.cpp    				\
+	src/schedulemethods/LinearRegressionModern.cpp  					\
+	src/schedulemethods/LinearRegressionVintage.cpp 					\
+	src/schedulemethods/PBadBinarySearch.cpp   				\
+	src/schedulemethods/ScheduleMethod.cpp    					\
+	src/schedulemethods/scheduleUtils.cpp 					\
+	src/schedulemethods/StatisticalTest.cpp  			
+
 MODES_SRC = 								\
 	src/modes/AlphaEstimation.cpp 					\
 	src/modes/Experiment.cpp 					\
@@ -124,7 +134,7 @@ OTHER_SRC = 							\
 	src/report.cpp
 
 
-SRCS = $(UTILS_SRC) $(MEASURES_SRCS) $(METHODS_SRC) $(METHOD_WRAPPERS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)
+SRCS = $(UTILS_SRC) $(MEASURES_SRCS) $(METHODS_SRC) $(METHOD_WRAPPERS_SRC) $(SCHEDULEMETHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)
 OBJDIR = _objs
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 

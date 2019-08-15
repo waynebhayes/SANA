@@ -13,6 +13,7 @@
 #include "../measures/localMeasures/GoSimilarity.hpp"
 #include "../methods/Method.hpp"
 #include "../methods/SANA.hpp"
+#include "../schedulemethods/LinearRegressionVintage.hpp"
 #include "../Graph.hpp"
 #include "../Alignment.hpp"
 #include "../complementaryProteins.hpp"
@@ -96,8 +97,12 @@ void DebugMode::run(ArgumentParser& args) {
   MeasureCombination M;
   initMeasures(M, G1, G2, args);
   Method* method = initMethod(G1, G2, args, M);
-  ((SANA*) method)->setTInitialAndTFinalByLinearRegression();
-    ((SANA*) method)->setTDecayFromTempRange();
+  ScheduleMethod::setSana((SANA*) method);
+  LinearRegressionVintage LRV;
+  ScheduleMethod::Resources maxRes(60, 200.0);
+  ((SANA*) method)->setTInitial(LRV.computeTInitial(maxRes));
+  ((SANA*) method)->setTFinal(LRV.computeTFinal(maxRes));
+  ((SANA*) method)->setTDecayFromTempRange();
 }
 
 std::string DebugMode::getName(void) {
