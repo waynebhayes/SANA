@@ -304,7 +304,7 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, ScheduleMethod::Resou
 }
 
 
-double ScheduleMethod::tempWithClosestPBad(double targetPBad, const multimap<double,double>& tempToPBad,
+double ScheduleMethod::sTempWithClosestPBad(double targetPBad, const multimap<double,double>& tempToPBad,
                 double atLeastTemp, double atMostTemp) {
     
     if (tempToPBad.size() < 1) throw runtime_error("no entries in tempToPBad map");
@@ -322,20 +322,20 @@ double ScheduleMethod::tempWithClosestPBad(double targetPBad, const multimap<dou
         }
     }
 
-    if (bestTemp == -1) bestTemp = tempWithClosestPBad(targetPBad, tempToPBad, -1, -1);
+    if (bestTemp == -1) bestTemp = sTempWithClosestPBad(targetPBad, tempToPBad, -1, -1);
     return bestTemp;
 }
 
 double ScheduleMethod::tempWithClosestPBad(double targetPBad, double atLeastTemp, double atMostTemp) const {
-    return tempWithClosestPBad(targetPBad, tempToPBad, atLeastTemp, atMostTemp);
+    return sTempWithClosestPBad(targetPBad, tempToPBad, atLeastTemp, atMostTemp);
 }
 
-double ScheduleMethod::tempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad) {
+double ScheduleMethod::sTempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad, bool fixLineHeights) {
     bool dbg = false;
     if (dbg) cerr << "Finding the temp that fits best the pBad " << targetPBad << endl;
     if (dbg) cerr << "tempToPBad map has " << tempToPBad.size() << " samples" << endl;
 
-    auto model = LinearRegression::bestFit(tempToPBad);    
+    auto model = LinearRegression::bestFit(tempToPBad, true, fixLineHeights);    
     if (dbg) model.print();
     if (dbg) {
         cerr << "Log of Samples' temps: " << endl;
@@ -347,12 +347,12 @@ double ScheduleMethod::tempWithBestLRFit(double targetPBad, const multimap<doubl
     if (targetPBad <= model.minGLSample.pBad) {
         if (dbg) cerr << "target pBad is below goldilocks range. Return sampled temp with ";
         if (dbg) cerr << "closest pBad below t=" << model.minGLSample.temp << endl;
-        res = tempWithClosestPBad(targetPBad, tempToPBad, -1, model.minGLSample.temp);
+        res = sTempWithClosestPBad(targetPBad, tempToPBad, -1, model.minGLSample.temp);
     }
     else if (targetPBad >= model.maxGLSample.pBad) {
         if (dbg) cerr << "target pBad is above goldilocks range. Return sampled temp with ";
         if (dbg) cerr << "closest pBad above t=" << model.maxGLSample.temp << endl;
-        res = tempWithClosestPBad(targetPBad, tempToPBad, model.maxGLSample.temp, -1);
+        res = sTempWithClosestPBad(targetPBad, tempToPBad, model.maxGLSample.temp, -1);
     } else {
         if (dbg) cerr << "target pBad is within goldilocks range. Interpolate" << endl;
         res = model.interpolateWithinGoldilocks(targetPBad);
@@ -362,8 +362,8 @@ double ScheduleMethod::tempWithBestLRFit(double targetPBad, const multimap<doubl
     return res;
 }
 
-double ScheduleMethod::tempWithBestLRFit(double targetPBad) const {
-    return tempWithBestLRFit(targetPBad, tempToPBad);
+double ScheduleMethod::tempWithBestLRFit(double targetPBad, bool fixLineHeights) const {
+    return sTempWithBestLRFit(targetPBad, tempToPBad, fixLineHeights);
 }
 
 void ScheduleMethod::populatePBadCurve() {

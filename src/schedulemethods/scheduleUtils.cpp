@@ -130,9 +130,9 @@ void scheduleMethodComparison(SANA *const sana) {
     double totalTime = T.elapsed();
 
     double overallBestFitTIni = 
-        ScheduleMethod::tempWithBestLRFit(params.targetInitialPBad, ScheduleMethod::allTempToPBad);
+        ScheduleMethod::sTempWithBestLRFit(params.targetInitialPBad, ScheduleMethod::allTempToPBad, false);
     double overallBestFitTFin =
-        ScheduleMethod::tempWithBestLRFit(params.targetFinalPBad, ScheduleMethod::allTempToPBad);
+        ScheduleMethod::sTempWithBestLRFit(params.targetFinalPBad, ScheduleMethod::allTempToPBad, false);
     ScheduleMethod::Resources overallRes(ScheduleMethod::allTempToPBad.size(), totalTime);
 
     vector<string> finalRow = formatMethodData(params, "overall-LR", true,

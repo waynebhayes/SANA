@@ -53,7 +53,8 @@ public:
         bool isValid() const; //checks that the slope and intercept make sense
     };
 
-    static Model bestFit(const multimap<double, double>& tempToPBad, bool fitTempInLogSpace = true);
+    static Model bestFit(const multimap<double, double>& tempToPBad,
+                                bool fitTempInLogSpace = true, bool fixLineHeights = false);
 
 private:
 

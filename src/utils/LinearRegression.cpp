@@ -96,7 +96,8 @@ bool LinearRegression::Line::isValid() const {
     return true;
 }
 
-LinearRegression::Model LinearRegression::bestFit(const multimap<double, double>& tempToPBad, bool fitTempInLogSpace) {
+LinearRegression::Model LinearRegression::bestFit(const multimap<double, double>& tempToPBad,
+            bool fitTempInLogSpace, bool fixLineHeights) {
     // bool dbg = false;
     // if(dbg)cerr<<endl<<endl<<"Searching for best 3-line L.R. model to fit tempToPBad"<<endl;
     int n = tempToPBad.size();
@@ -126,7 +127,7 @@ LinearRegression::Model LinearRegression::bestFit(const multimap<double, double>
         // if(dbg)cerr<<"line1PBadSum="<<line1PBadSum<<endl;
 
         double line1Size = j+1;
-        double line1Height = line1PBadSum/line1Size;
+        double line1Height = fixLineHeights ? 0 : line1PBadSum/line1Size;
         double line1Error = flatLineLeastSquaresError(pBads, 0, j, line1Height);
         // if(dbg)cerr<<"line1Height="<<line1Height<<" line1Error="<<line1Error<<endl;
 
@@ -199,7 +200,7 @@ LinearRegression::Model LinearRegression::bestFit(const multimap<double, double>
                 // throw runtime_error("L.R. Line 2 is invalid");
             }
 
-            double line3Height = line3PBadSum/line3Size;
+            double line3Height = fixLineHeights ? 1 : line3PBadSum/line3Size;
             double line3Error = flatLineLeastSquaresError(pBads, k, n - 1, line3Height);
             // if(dbg)cerr<<"line3Height="<<line3Height<<" line3Error="<<line3Error<<endl;
 

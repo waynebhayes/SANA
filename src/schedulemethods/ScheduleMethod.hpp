@@ -100,7 +100,7 @@ protected:
     double pBadBinarySearch(double targetPBad, Resources maxRes);
 
     double tempWithClosestPBad(double targetPBad, double atLeastTemp = -1, double atMostTemp = -1) const; 
-    double tempWithBestLRFit(double targetPBad) const; 
+    double tempWithBestLRFit(double targetPBad, bool fixLineHeights = false) const; 
 
     //samples evenly (in log scale) along the pBad spectrum from really low to really high temps
     void populatePBadCurve();
@@ -110,9 +110,9 @@ private:
     Resources TIniRes, TFinRes;
 
 
-    static double tempWithClosestPBad(double targetPBad, const multimap<double,double>& tempToPBad,
-                double atLeastTemp = -1, double atMostTemp = -1);
-    static double tempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad);
+    static double sTempWithClosestPBad(double targetPBad, const multimap<double,double>& tempToPBad,
+                double atLeastTemp, double atMostTemp);
+    static double sTempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad, bool fixLineHeights);
 
     //stuff for comparison for paper:
     friend void scheduleMethodComparison(SANA *const sana);
