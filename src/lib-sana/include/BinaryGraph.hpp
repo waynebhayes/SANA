@@ -10,8 +10,8 @@ public:
     BinaryGraph(){};
     ~BinaryGraph(){};
 
-    virtual void AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight) throw(GraphInvalidIndexError);
-    virtual void RemoveEdge(const unsigned int &node1, const unsigned int &node2) throw(GraphInvalidIndexError);
+    virtual void AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight = 1);
+    virtual void RemoveEdge(const unsigned int &node1, const unsigned int &node2);
 
     virtual void SetNumNodes(const unsigned int &numNodes);
     

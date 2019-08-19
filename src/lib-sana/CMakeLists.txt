@@ -1,19 +1,48 @@
-file(GLOB_RECURSE lib_sources "./*cpp")
-file(GLOB_RECURSE lib_headers "./*.hpp")
+add_library(sana_lib 
+    # Graph Types
+    Graph/BinaryGraph.cpp 
+    Graph/WeightedGraph.cpp
+    Graph/Graph.cpp
 
-MACRO(HEADER_DIRECTORIES return_list)
-    FILE(GLOB_RECURSE new_list *.hpp)
-    SET(dir_list "")
-    FOREACH(file_path ${new_list})
-        GET_FILENAME_COMPONENT(dir_path ${file_path} PATH)
-        SET(dir_list ${dir_list} ${dir_path})
-    ENDFOREACH()
-    LIST(REMOVE_DUPLICATES dir_list)
-    SET(${return_list} ${dir_list})
-ENDMACRO()
+    # SANA Measures
+    Measures/EdgeCorrectness.cpp
+    Measures/ExternalWeightedEdgeConservation.cpp
+    Measures/GoAverage.cpp
+    Measures/GoSimilarity.cpp
+    Measures/Measure.cpp
+    Measures/SymmetricSubstructureScore.cpp
 
-HEADER_DIRECTORIES(Included-headers-directories)
+    # SANA Configuration
+    Configuration/SANAConfiguration.cpp
 
-add_library(lib-sana ${lib_sources} ${lib_headers} Measures/Measure.cpp Measures/Measure.hpp Measures/EdgeCorrectness.hpp Measures/ExternalWeightedEdgeConservation.cpp Measures/ExternalWeightedEdgeConservation.hpp Measures/GoAverage.cpp Measures/GoAverage.hpp Measures/GoSimilarity.cpp Measures/GoSimilarity.hpp Measures/SymmetricSubstructureScore.cpp Measures/SymmetricSubstructureScore.hpp)
+    # Alignments
+    Alignment/PairwiseAlignment.cpp
 
-target_include_directories(lib-sana PUBLIC ${Included-headers-directories})
+    # Result
+    Result/SANAResult.cpp
+
+    # TemperatureSchedules
+    TemperatureSchedule/LinearRegression.cpp
+    TemperatureSchedule/TemperatureSchedule.cpp
+    # Core
+    Core/SANA.cpp
+
+    # Utilities
+    Utils/Timer.cpp
+    Utils/Random.cpp 
+    Utils/Utils.cpp
+)
+
+target_include_directories(sana_lib
+    PUBLIC
+        $<INSTALL_INTERFACE:include>    
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
+target_compile_options(sana_lib PRIVATE -Werror)
+target_compile_features(sana_lib PRIVATE cxx_std_17)
+
+if (ENABLE_CPPCHECK)
+    add_cppcheck(sana_lib)
+endif()
+

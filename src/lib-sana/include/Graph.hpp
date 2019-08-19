@@ -23,8 +23,13 @@ private:
 };
 
 class Graph {
+    unsigned int numNodes;
+    unsigned int numEdges;
+    vector<vector<unsigned int> > adjLists;
+    vector<string> nodeNames;
+    string name;
 public:
-    Graph(){};
+    Graph():numNodes(0),numEdges(0){};
     ~Graph(){};
 
     unordered_map<string,ushort> getNodeNameToIndexMap() const;
@@ -34,8 +39,8 @@ public:
 
     void genAdjMatrix(vector < vector<bool> > &adjMatrixCopy) const;
 
-    virtual void AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight) throw(GraphInvalidIndexError);
-    virtual void RemoveEdge(const unsigned int &node1, const unsigned int &node2) throw(GraphInvalidIndexError);
+    virtual void AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight = 1) ;
+    virtual void RemoveEdge(const unsigned int &node1, const unsigned int &node2);
 
     virtual void AddRandomEdge();
     virtual void RemoveRandomEdge();
@@ -47,20 +52,12 @@ public:
     string GetName() const;
 
     virtual void SetNumNodes(const unsigned int &);
-    void setName(string name);
+    void setName(const string& name);
 
-    string GetNodeName(const unsigned int &nodeIndex) const throw(GraphInvalidIndexError);
+    string GetNodeName(const unsigned int &nodeIndex) const;
 
-    void SetNodeName(const unsigned int &nodeIndex, const string &name) throw(GraphInvalidIndexError);
+    void SetNodeName(const unsigned int &nodeIndex, const string &name);
     virtual void ClearGraph();
-
-private:
-    unsigned int numNodes;
-    unsigned int numEdges;
-    vector<vector<unsigned int> > adjLists;
-    vector<string> nodeNames;
-    string name;
-
 };
 
 

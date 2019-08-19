@@ -2,14 +2,16 @@
 
 ## Compile & Run
 
-- Run command `cmake .` 
-- Run `make`
+- Run command `./make-distribution`
+- Go to the `build` directory
+- Run `make` 
 
 ## Testing
 
 To run the unit tests, do the following:
 
-- Run command `cmake .`
+- Run command `./make-distribution`
+- Go to the `build` directory
 - Run `make test`
 
 

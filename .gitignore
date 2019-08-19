@@ -1,13 +1,10 @@
-Makefile
+# Intelli-J files
 .idea/
-cmake-build-debug/
-CMakeCache.txt
-CMakeFiles/
-*.cmake
-
-Testing/
-bin/
 
 test/gtest/
 
-*.a
+# CMake build directory
+build/
+
+# Ignore VIM files
+*.swp

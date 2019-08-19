@@ -9,6 +9,24 @@
 #include <Measure.hpp>
 
 class GoSimilarity : public Measure {
+    static const string biogridGOFile;
+
+    vector<double> countWeights;
+    double occurrencesFraction;
+
+    void initSimMatrix();
+
+    static void assertNoRepeatedEntries(const vector<vector<uint> >& goTerms);
+    static void simpleToInternalFormat(const Graph& G, string GOFileSimpleFormat, string GOFileInternalFormat);
+    static void ensureGOFileInternalFormatExists(const Graph& G);
+
+    static ushort numberAnnotatedProteins(const Graph& G);
+
+    static void generateGOFileSimpleFormat(string GOFile, string GOFileSimpleFormat);
+    static void generateGene2GoSimpleFormat();
+
+    static bool isBioGRIDNetwork(const Graph& G);
+    static bool hasGOData(const Graph& G);
 public:
     GoSimilarity(){}
     GoSimilarity(Graph* G1, Graph* G2,
@@ -31,27 +49,6 @@ public:
 
     static vector<uint> leastFrequentGoTerms(const Graph& G,
                                              double occurrencesFraction);
-
-private:
-    static const string biogridGOFile;
-
-    vector<double> countWeights;
-    double occurrencesFraction;
-
-    void initSimMatrix();
-
-    static void assertNoRepeatedEntries(const vector<vector<uint> >& goTerms);
-    static void simpleToInternalFormat(const Graph& G, string GOFileSimpleFormat, string GOFileInternalFormat);
-    static void ensureGOFileInternalFormatExists(const Graph& G);
-
-    static ushort numberAnnotatedProteins(const Graph& G);
-
-    static void generateGOFileSimpleFormat(string GOFile, string GOFileSimpleFormat);
-    static void generateGene2GoSimpleFormat();
-
-    static bool isBioGRIDNetwork(const Graph& G);
-    static bool hasGOData(const Graph& G);
-
 };
 
 
