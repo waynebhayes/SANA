@@ -1,14 +1,7 @@
-set (Main-SRC
-    main.cpp
-    Utility.cpp
-    Utility.hpp
-    Definitions.hpp
-)
+add_executable(sana_exe main.cpp Utility.cpp) 
 
-add_executable(sana ${Main-SRC})
+target_link_libraries(sana_exe sana_lib)
 
-target_link_libraries(sana 
-    lib-sana)
-
-install(TARGETS sana DESTINATION bin)
+target_compile_options(sana_exe PRIVATE -Werror)
+target_compile_features(sana_exe PRIVATE cxx_std_17)
 

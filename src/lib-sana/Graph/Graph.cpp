@@ -14,8 +14,8 @@ string Graph::GetName() const {
     return name;
 }
 
-void Graph::setName(string name) {
-    this -> name = name;
+void Graph::setName(const string& name) {
+    this -> name = string(name);
 }
 
 unsigned int Graph::GetNumNodes() const {
@@ -31,7 +31,7 @@ int Graph::RandomNode() {
     return Utils::RandInt(0,GetNumNodes()-1);
 }
 
-void Graph::AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight) throw(GraphInvalidIndexError) {
+void Graph::AddEdge(const unsigned int &node1, const unsigned int &node2, const unsigned int &weight) {
     if (node1 >= numNodes || node2 >= numNodes)
         throw GraphInvalidIndexError("Invalid node index passed into AddEdge");
     if (node1 > node2) {
@@ -44,7 +44,7 @@ void Graph::AddEdge(const unsigned int &node1, const unsigned int &node2, const 
     ++numEdges;  // Either way we iterate the edge count
 }
 
-void Graph::RemoveEdge(const unsigned int &node1, const unsigned int &node2) throw(GraphInvalidIndexError) {
+void Graph::RemoveEdge(const unsigned int &node1, const unsigned int &node2) {
     if (node1 >= numNodes || node2 >= numNodes)
         throw GraphInvalidIndexError("Invalid node index passed into RemoveEdge");
 
@@ -91,13 +91,13 @@ void Graph::SetNumNodes(const unsigned int &numNodes) {
     nodeNames.resize(numNodes);
 }
 
-void Graph::SetNodeName(const unsigned int &nodeIndex, const string &name) throw(GraphInvalidIndexError) {
+void Graph::SetNodeName(const unsigned int &nodeIndex, const string &name) {
     if (nodeIndex >= numNodes)
         throw GraphInvalidIndexError("Invalid node index passed into SetNodeName");
     nodeNames[nodeIndex] = name;
 }
 
-string Graph::GetNodeName(const unsigned int &nodeIndex) const throw(GraphInvalidIndexError) {
+string Graph::GetNodeName(const unsigned int &nodeIndex) const {
      if (nodeIndex >= numNodes)
          throw GraphInvalidIndexError("Invalid node index passed into GetNodeName");
      return nodeNames[nodeIndex];

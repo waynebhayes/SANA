@@ -1,32 +1,44 @@
-cmake_minimum_required(VERSION 2.8.12)
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+cmake_minimum_required(VERSION 3.10.0)
+project(SANA 
+        DESCRIPTION "Simulated Annealing Network Aligner"
+        VERSION 2.0.0 
+        LANGUAGES CXX
+)
+
+option(ENABLE_CPPCHECK "Enable static CXX checks" OFF)
 
 
-project(SANA)
+if(ENABLE_CPPCHECK)
+    find_program(CPPCHECK_EXECUTABLE cppcheck)
+    if(NOT CPPCHECK_EXECUTABLE)
+        message(FATAL_ERROR "cppcheck not found: quitting")
+    else()
+        message(STATUS "Found cppcheck: enabling static analysis")
+    endif()
+endif()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
-    ${CMAKE_HOME_DIRECTORY}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY
-    ${CMAKE_HOME_DIRECTORY}/build)
+
+# Define cppcheck function
+function(ADD_CPPCHECK TARGET_NAME)
+    get_target_property(target_sources ${TARGET_NAME} SOURCES)
+    set_property(
+        TARGET ${TARGET_NAME}
+        PROPERTY CXX_CPPCHECK
+        ${CPPCHECK_EXECUTABLE}
+        "--enable=warning,performance,portability,information,missingInclude"
+        "--suppress=missingIncludeSystem" # https://stackoverflow.com/questions/6986033/cppcheck-cant-find-include-files
+        "--std=c++11"
+        "--template={file}:{line}: [{severity}][{id}] {message} {callstack}"
+        "--verbose"
+        "--check-config"
+    )
+endfunction()
 
 enable_testing()
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
+    ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(src)
 add_subdirectory(test)
 
-#CPPCheck
-
-# get all project files
-file(GLOB_RECURSE ALL_SOURCE_FILES src/*.cpp src/*.hpp)
-string(REGEX REPLACE "CMakeFiles/[^;]+;?" "" ALL_SOURCE_FILES "${ALL_SOURCE_FILES}") 
-add_custom_target(
-        cppcheck
-        COMMAND cppcheck
-        --enable=warning,performance,portability,information,missingInclude
-        --std=c++11
-        --library=qt.cfg
-        --template="[{severity}][{id}] {message} {callstack} \(On {file}:{line}\)"
-        --verbose
-        --quiet
-        ${ALL_SOURCE_FILES}
-)

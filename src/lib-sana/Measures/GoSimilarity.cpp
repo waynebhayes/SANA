@@ -9,9 +9,8 @@
 
 const string GoSimilarity::biogridGOFile = "go/gene2go";
 
-GoSimilarity::GoSimilarity(Graph *G1, Graph *G2, const vector<double> &countWeights, double occurrencesFraction) {
-
-}
+GoSimilarity::GoSimilarity(Graph *G1, Graph *G2, const vector<double> &countWeights,
+        double occurrencesFraction): occurrencesFraction(occurrencesFraction) {}
 
 GoSimilarity::~GoSimilarity() {
 
