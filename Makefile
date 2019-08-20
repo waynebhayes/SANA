@@ -17,6 +17,17 @@ INCLUDES =
 LFLAGS =
 LIBS =
 
+METHODS_SRC =   							\
+	src/methods/SANA.cpp    					\
+	src/methods/GreedyLCCS.cpp 					\
+	src/methods/HillClimbing.cpp    				\
+	src/methods/Method.cpp  					\
+	src/methods/NoneMethod.cpp 					\
+	src/methods/RandomAligner.cpp   				\
+	src/methods/TabuSearch.cpp 					\
+	src/methods/WeightedAlignmentVoter.cpp  			\
+	src/methods/Dijkstra.cpp
+
 UTILS_SRC = 								\
 	src/utils/NormalDistribution.cpp				\
 	src/utils/templateUtils.cpp					\
@@ -75,17 +86,6 @@ MEASURES_SRCS = 							\
 	src/measures/localMeasures/GraphletCosine.cpp 			\
 	src/measures/localMeasures/GraphletNorm.cpp
 
-METHODS_SRC =   							\
-	src/methods/GreedyLCCS.cpp 					\
-	src/methods/HillClimbing.cpp    				\
-	src/methods/Method.cpp  					\
-	src/methods/NoneMethod.cpp 					\
-	src/methods/RandomAligner.cpp   				\
-	src/methods/SANA.cpp    					\
-	src/methods/TabuSearch.cpp 					\
-	src/methods/WeightedAlignmentVoter.cpp  			\
-	src/methods/Dijkstra.cpp
-
 METHOD_WRAPPERS_SRC =    						\
 	src/methods/wrappers/WrappedMethod.cpp				\
 	src/methods/wrappers/HubAlignWrapper.cpp 			\
@@ -128,15 +128,15 @@ MODES_SRC = 								\
 	src/modes/ParetoMode.cpp
 
 OTHER_SRC = 							\
+	src/Graph.cpp                                       	\
+	src/computeGraphlets.cpp                            	\
 	src/Alignment.cpp                                   	\
 	src/complementaryProteins.cpp                       	\
-	src/computeGraphlets.cpp                            	\
-	src/Graph.cpp                                       	\
 	src/main.cpp                                        	\
 	src/report.cpp
 
 
-SRCS = $(UTILS_SRC) $(MEASURES_SRCS) $(METHODS_SRC) $(METHOD_WRAPPERS_SRC) $(SCHEDULEMETHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC) $(OTHER_SRC)
+SRCS = $(METHODS_SRC) $(OTHER_SRC) $(UTILS_SRC) $(MEASURES_SRCS) $(METHOD_WRAPPERS_SRC) $(SCHEDULEMETHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC)
 OBJDIR = _objs
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
