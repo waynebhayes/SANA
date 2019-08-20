@@ -390,6 +390,7 @@ private:
     unordered_map<vector<uint>*, int> storedNcSum;
     unordered_map<vector<uint>*, double> storedTCSum;
     unordered_map<vector<uint>*, double> storedEdSum;
+    unordered_map<vector<uint>*, double> storedErSum;
     unordered_map<vector<uint>*, double> storedCurrentScore;
     unordered_map<vector<uint>*, map<string, double>*> storedLocalScoreSumMap;
     typedef double (*calc)(PARAMS);

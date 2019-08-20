@@ -455,7 +455,7 @@ Alignment SANA::run() {
 
 double ecC(PARAMS) { return double(aligEdges) / g1Edges; }
 double edC(PARAMS) { return EdgeDifference::adjustSumToTargetScore(edSum, pairsCount); }
-double erC(PARAMS) { return EdgeRatio::adjustSumToTargetScore(edSum, pairsCount); }
+double erC(PARAMS) { return EdgeRatio::adjustSumToTargetScore(erSum, pairsCount); }
 double s3C(PARAMS) { return double(aligEdges) / (g1Edges + inducedEdges - aligEdges); }
 double icsC(PARAMS) { return double(aligEdges) / inducedEdges; }
 double secC(PARAMS) { return double(aligEdges) / (g1Edges + aligEdges) / g2Edges * 0.5; }
@@ -1000,7 +1000,7 @@ vector<double> SANA::translateScoresToVector() {
                                                                               wecSum, ewecSum, ncSum, trueA.back(),
                                                                               g1WeightedEdges, g2WeightedEdges,
                                                                               squaredAligEdges, exposedEdgesNumer,
-                                                                              edSum, pairsCount, MS3Numer
+                                                                              edSum, erSum, pairsCount, MS3Numer
                                                                             );
     }
 #else
@@ -1081,6 +1081,7 @@ void SANA::prepareMeasureDataByAlignment() {
     inducedEdges     = (needInducedEdges) ?  storedInducedEdges[A] : -1;
     TCSum            = (needTC) ?  storedTCSum[A] : -1;
     edSum            = (needEd) ?  storedEdSum[A] : -1;
+    erSum            = (needEr) ?  storedErSum[A] : -1;
     localScoreSum    = (needLocal) ? storedLocalScoreSum[A] : -1;
     localScoreSumMap = (needLocal) ? new map<string, double>(*storedLocalScoreSumMap[A]) : nullptr;
     wecSum           = (needWec) ?  storedWecSum[A] : -1;
@@ -1148,6 +1149,7 @@ void SANA::insertCurrentAlignmentAndData() {
     if(needMS3)         		 storedMS3Numer[A]         = MS3Numer;
     if(needInducedEdges)         storedInducedEdges[A]     = inducedEdges;
     if(needEd)                   storedEdSum[A]            = edSum;
+    if(needEr)                   storedErSum[A]            = erSum;
     if(needTC)                   storedTCSum[A]            = TCSum;
     if(needLocal)                storedLocalScoreSum[A]    = localScoreSum;
     if(needLocal)                storedLocalScoreSumMap[A] = localScoreSumMap;
@@ -1289,7 +1291,7 @@ void SANA::performChange(int type) {
 
     int newAligEdges           = (needAligEdges or needSec) ?  aligEdges + aligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
     double newEdSum            = (needEd) ?  edSum + edgeDifferenceIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newErSum            = (needEr) ?  edSum + edgeRatioIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newErSum            = (needEr) ?  erSum + edgeRatioIncChangeOp(source, oldTarget, newTarget) : -1;
     double newSquaredAligEdges = (needSquaredAligEdges) ?  squaredAligEdges + squaredAligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
     double newExposedEdgesNumer= (needExposedEdges) ? exposedEdgesNumer + exposedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
     double newMS3Numer         = (needMS3) ? MS3Numer + MS3IncChangeOp(source, oldTarget, newTarget) : -1;
@@ -3037,7 +3039,7 @@ void SANA::performSwap(Job &job, int type) {
     double newNcSum            = (needNC) ? info.ncSum + ncIncSwapOp(job, source1, source2, target1, target2) : -1;
     double newLocalScoreSum    = (needLocal) ? info.localScoreSum + localScoreSumIncSwapOp(job, sims, source1, source2, target1, target2) : -1;
     double newEdSum            = (needEd) ? info.edSum + edgeDifferenceIncSwapOp(job, source1, source2, target1, target2) : -1;
-    double newErSum            = (needEr) ? info.edSum + edgeRatioIncSwapOp(job, source1, source2, target1, target2) : -1;
+    double newErSum            = (needEr) ? info.erSum + edgeRatioIncSwapOp(job, source1, source2, target1, target2) : -1;
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
@@ -3318,6 +3320,7 @@ void SANA::storeAlignment(Job &job) {
     if(needInducedEdges)         storedInducedEdges[A]     = info.inducedEdges;
     if(needTC)                   storedTCSum[A]            = info.TCSum;
     if(needEd)                   storedEdSum[A]            = info.edSum;
+    if(needEr)                   storedErSum[A]            = info.erSum;
     if(needLocal)                storedLocalScoreSum[A]    = info.localScoreSum;
     if(needLocal)                storedLocalScoreSumMap[A] = info.localScoreSumMap;
     if(needWec)                  storedWecSum[A]           = info.wecSum;
@@ -3336,6 +3339,7 @@ void SANA::copyAlignmentFromStorage(Job &job, vector<uint> *A) {
     info.inducedEdges     = (needInducedEdges) ?  storedInducedEdges[A] : -1;
     info.TCSum            = (needTC) ?  storedTCSum[A] : -1;
     info.edSum            = (needEd) ?  storedEdSum[A] : -1;
+    info.erSum            = (needEr) ?  storedErSum[A] : -1;
     info.localScoreSum    = (needLocal) ? storedLocalScoreSum[A] : -1;
     info.localScoreSumMap = (needLocal) ? new map<string, double>(*storedLocalScoreSumMap[A]) : nullptr;
     info.wecSum           = (needWec) ?  storedWecSum[A] : -1;
@@ -3373,7 +3377,7 @@ vector<double> SANA::translateScoresToVector(Job &job) {
                                                                     info.wecSum, info.ewecSum, info.ncSum, trueA.back(),
                                                                     g1WeightedEdges, g2WeightedEdges,
                                                                     info.squaredAligEdges, info.exposedEdgesNumer,
-                                                                    info.edSum, pairsCount, info.MS3Numer
+                                                                    info.edSum, info.erSum, pairsCount, info.MS3Numer
                                                                    );
     }
 #else
