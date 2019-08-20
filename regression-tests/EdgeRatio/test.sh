@@ -2,9 +2,9 @@
 die() { echo "$@" >&2; exit 1
 }
 
-echo 'Testing measurement Edge Difference'
+echo 'Testing measurement Edge Ratio'
 
-TEST_DIR=`pwd`/regression-tests/EdgeDifference
+TEST_DIR=`pwd`/regression-tests/EdgeRatio
 [ -d "$TEST_DIR" ] || die "should be run from top-level directory of the SANA repo"
 
 exitCode=0
@@ -31,5 +31,5 @@ for network in $nets; do
     fi
 done
 
-echo 'Done testing measurement Edge Difference.'
+echo 'Done testing measurement Edge Ratio.'
 exit $exitCode
