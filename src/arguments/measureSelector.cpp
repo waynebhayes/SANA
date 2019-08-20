@@ -5,6 +5,7 @@
 
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/EdgeDifference.hpp"
+#include "../measures/EdgeRatio.hpp"
 #include "../measures/InducedConservedStructure.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
 #include "../measures/SymmetricEdgeCoverage.hpp"
@@ -100,7 +101,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableDoubleMeasures = {
-        "ec","ed", "s3","ics","tc","sec","wec","nodec","noded","edgec","edged", "go","importance",
+        "ec","ed", "er", "s3","ics","tc","sec","wec","nodec","noded","edgec","edged", "go","importance",
         "sequence","graphlet","graphletlgraal", "graphletcosine", "graphletnorm", "spc", "nc","mec", "ewec", "ses", "ee", "ms3"
     };
     double total = 0;
@@ -194,6 +195,9 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 
     m = new EdgeDifference(&G1, &G2);
     M.addMeasure(m, getWeight("ed", G1, G2, args));
+
+    m = new EdgeRatio(&G1, &G2);
+    M.addMeasure(m, getWeight("er", G1, G2, args));
 
     m = new InducedConservedStructure(&G1, &G2);
     M.addMeasure(m, getWeight("ics", G1, G2, args));

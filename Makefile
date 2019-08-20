@@ -40,12 +40,13 @@ ARGUMENTS_SRC = 							\
 
 MEASURES_SRCS = 							\
 	src/measures/EdgeCorrectness.cpp 				\
-	src/measures/EdgeDifference.cpp         \
-	src/measures/TriangleCorrectness.cpp			\
+	src/measures/EdgeDifference.cpp         			\
+	src/measures/EdgeRatio.cpp         				\
+	src/measures/TriangleCorrectness.cpp				\
 	src/measures/MultiEdgeCorrectness.cpp 				\
 	src/measures/ExternalWeightedEdgeConservation.cpp               \
 	src/measures/GoAverage.cpp      				\
-	src/measures/NetGO.cpp      				\
+	src/measures/NetGO.cpp      					\
 	src/measures/InducedConservedStructure.cpp			\
 	src/measures/InvalidMeasure.cpp             			\
 	src/measures/LargestCommonConnectedSubgraph.cpp			\
