@@ -207,6 +207,5 @@ optnetalign:
 	cd wrappedAlgorithms/OptNetAlign/src; $(MAKE) optnetalignubuntu; chmod +x optnetalign; cp optnetalign ../
 
 multi:
-	$(MAKE) clean
 	$(MAKE) 'MULTI=1'
 	mv sana sana.multi
