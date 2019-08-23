@@ -2,7 +2,7 @@
 #include <cmath>
 
 unsigned NUM_GRAPHS;
-unsigned MultiS3::denom = 0;
+unsigned MultiS3::denom = 1;
 vector<uint> MultiS3::totalDegrees;
 
 MultiS3::MultiS3(Graph* G1, Graph* G2) : Measure(G1, G2, "ms3")
