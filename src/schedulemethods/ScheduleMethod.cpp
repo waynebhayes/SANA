@@ -122,7 +122,7 @@ double ScheduleMethod::doublingMethod(double targetPBad, bool nextAbove, double 
     //if the map is empty, just start with 1
     double startTemp = 1;
     double smallestPBadDiff = 2;
-    double startPBad;
+    double startPBad = -1; // to shut compiler up
     bool initStartPBad = false;
     for (auto tempPBadPair = tempToPBad.begin(); tempPBadPair != tempToPBad.end(); tempPBadPair++) {
         double temp = tempPBadPair->first;
@@ -148,7 +148,10 @@ double ScheduleMethod::doublingMethod(double targetPBad, bool nextAbove, double 
     double temp = startTemp;
     double priorTemp = temp;
     double pBad;
-    if (initStartPBad) pBad = startPBad;
+    if (initStartPBad) {
+	assert(startPBad != -1); // ensure it got a value before we use it
+	pBad = startPBad;
+    }
     else pBad = getPBad(temp);
 
     if (pBad < targetPBad) {

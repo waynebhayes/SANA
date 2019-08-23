@@ -6,6 +6,7 @@ unsigned MAX_EDGE;
 unsigned EdgeExposure::denom = 0;
 
 EdgeExposure::EdgeExposure(Graph* G1, Graph* G2) : Measure(G1, G2, "ee") {
+#if MULTI_PAIRWISE
     extern char *getetv(char*);
     char *s = getenv((char*)"EDGE_SUM");
     if(s)
@@ -28,6 +29,7 @@ EdgeExposure::EdgeExposure(Graph* G1, Graph* G2) : Measure(G1, G2, "ee") {
 	EdgeExposure::denom = EDGE_SUM - MAX_EDGE;
 	cout << "EdgeExposure: MAX_EDGE is " << MAX_EDGE << ", EDGE_SUM is " << EDGE_SUM <<
 		 ", EE DENOM is " << EdgeExposure::denom << endl;
+#endif
 }
 
 EdgeExposure::~EdgeExposure() {

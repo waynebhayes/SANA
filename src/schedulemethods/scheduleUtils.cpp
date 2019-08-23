@@ -45,14 +45,14 @@ void scheduleMethodComparison(SANA *const sana) {
         IteratedAmeur::NAME,
         StatisticalTest::NAME
     };
-    params.targetInitialPBad = 0.95;
-    params.targetFinalPBad = 0.0001;
+    params.targetInitialPBad = 0.99;
+    params.targetFinalPBad = 1e-8;
     params.runsPerMethod = 2;
     params.maxResources.numSamples = 60;
     params.maxResources.runtime = 120.0;
-    params.sampleTime = 2; //max time for getPBad to reach equilibrium
+    params.sampleTime = 4; //max time for getPBad to reach equilibrium
     params.errorTol = 0.01;
-    params.numValidationSamples = 20; //set to a high value for final experiment (30?)
+    params.numValidationSamples = 50; //set to a high value for final experiment (30?)
             //to find the *real* pBad at the temperatures given by the methods
             //we compute a normal distribution of this many samples
 

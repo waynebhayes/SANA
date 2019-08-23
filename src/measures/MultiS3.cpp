@@ -7,6 +7,8 @@ vector<uint> MultiS3::totalDegrees;
 
 MultiS3::MultiS3(Graph* G1, Graph* G2) : Measure(G1, G2, "ms3")
 {
+#if MULTI_PAIRWISE
+
     extern char *getetv(char*);
     char *s = getenv((char*)"NUM_GRAPHS");
     if (s)
@@ -15,13 +17,14 @@ MultiS3::MultiS3(Graph* G1, Graph* G2) : Measure(G1, G2, "ms3")
     }
     else
     {
-        cout << "Warning: NUM_GRAPHS should be an environment variable; setting to 2 for now\n";
+        cerr << "Warning: NUM_GRAPHS should be an environment variable; setting to 2 for now\n";
         NUM_GRAPHS = 2;
     }
     cout << "Multi S3: NUM_GRAPHS = " << NUM_GRAPHS << endl;
     degreesInit = false;
     //G1->printStats(0, cout);
     //G2->printStats(0, cout);
+#endif
 }
 
 MultiS3::~MultiS3() {

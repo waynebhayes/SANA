@@ -3,6 +3,7 @@
 
 SquaredEdgeScore::SquaredEdgeScore(Graph* G1, Graph* G2) : Measure(G1, G2, "ses")
 {
+#if MULTI_PAIRWISE
     extern char *getetv(char*);
     char *s = getenv((char*)"SES_DENOM");
     if (s)
@@ -11,9 +12,10 @@ SquaredEdgeScore::SquaredEdgeScore(Graph* G1, Graph* G2) : Measure(G1, G2, "ses"
     }
     else
     {
-        cout << "Warning: SES_DENOM should be an environment variable; setting to 1 for now\n";
+        cerr << "Warning: SES_DENOM should be an environment variable; setting to 1 for now\n";
         SES_DENOM = 1;
     }
+#endif
 }
 
 SquaredEdgeScore::~SquaredEdgeScore() {

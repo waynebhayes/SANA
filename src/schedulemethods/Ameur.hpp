@@ -13,7 +13,7 @@ class Ameur : public ScheduleMethod {
 public:
     Ameur() = default;
 
-    static constexpr auto NAME = "ameur-method";
+    static constexpr auto NAME = "ameur";
     virtual string getName() override { return NAME; }
 
     virtual double computeTempForPBad(double targetPBad, Resources maxRes) override;
