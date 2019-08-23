@@ -14,7 +14,7 @@ SANA* ScheduleMethod::sana = nullptr;
 
 ScheduleMethod::ScheduleMethod():
     targetInitialPBad(DEFAULT_TARGET_INITIAL_PBAD), targetFinalPBad(DEFAULT_TARGET_FINAL_PBAD),
-    errorTol(DEFAULT_ERROR_TOL), sampleTime(DEFAULT_SAMPLE_TIME),
+    errorTol(DEFAULT_ERROR_TOL_DIGITS), sampleTime(DEFAULT_SAMPLE_TIME),
     tempToPBad(),
     TIniRes(0, 0.0), TFinRes(0, 0.0) {
 
@@ -80,10 +80,20 @@ double ScheduleMethod::getPBad(double temp) {
 }
 
 double ScheduleMethod::targetRangeMin(double targetPBad, double errorTol) {
-    return targetPBad*(1-errorTol);
+    int digits;
+    if(targetPBad < 0.5) // assume it's tFinal;
+	digits = DEFAULT_TARGET_TFINAL_DIGITS_FROM_0;
+    else
+	digits = DEFAULT_TARGET_TINITIAL_DIGITS_FROM_1;
+    return targetPBad - errorTol*pow(10,-digits); // eg 0.99 + 0.5 * 0.01
 }
 double ScheduleMethod::targetRangeMax(double targetPBad, double errorTol) {
-    return targetPBad*(1+errorTol);
+    int digits;
+    if(targetPBad < 0.5) // assume it's tFinal;
+	digits = DEFAULT_TARGET_TFINAL_DIGITS_FROM_0;
+    else
+	digits = DEFAULT_TARGET_TINITIAL_DIGITS_FROM_1;
+    return targetPBad + errorTol*pow(10,-digits); // eg 0.99 + 0.5 * 0.01
 }
 double ScheduleMethod::distToTargetRange(double pBad, double targetPBad, double errorTol) {
     if (isAboveTargetRange(pBad, targetPBad, errorTol))
@@ -103,7 +113,7 @@ bool ScheduleMethod::isWithinTargetRange(double pBad, double targetPBad, double 
            !isAboveTargetRange(pBad, targetPBad, errorTol);
 }
 void ScheduleMethod::printTargetRange(double targetPBad, double errorTol) {
-    cout << "(" << targetPBad*(1-errorTol) << ", " << targetPBad*(1+errorTol) << ")";
+    cout << "(" << targetRangeMin(targetPBad,errorTol) << ", " << targetRangeMax(targetPBad,errorTol) << ")";
 }
 
 
