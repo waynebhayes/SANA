@@ -202,7 +202,7 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, ScheduleMethod::Resou
     bool areGoodBounds = lowTemp < highTemp and isBelowTargetRange(lowPBad, targetPBad, errorTol)
                                             and isAboveTargetRange(highPBad, targetPBad, errorTol);
 
-    while (not areGoodBounds) {
+    while (not areGoodBounds && highTemp < 1e30 && lowTemp > 1e-30) {
         highTemp *= 10;
         lowTemp /= 10;
         highPBad = getPBad(highTemp);
@@ -380,8 +380,8 @@ double ScheduleMethod::tempWithBestLRFit(double targetPBad, bool fixLineHeights)
 }
 
 void ScheduleMethod::populatePBadCurve() {
-    const double HIGH_PBAD_LIMIT = 0.99999;
-    const double LOW_PBAD_LIMIT = 1e-10;
+    const double HIGH_PBAD_LIMIT = 0.999999;
+    const double LOW_PBAD_LIMIT = 1e-14;
     double highTemp = doublingMethod(HIGH_PBAD_LIMIT, false);
     double lowTemp = doublingMethod(LOW_PBAD_LIMIT, true);
     double numSteps = pow(10, abs(log10(lowTemp)) + abs(log10(highTemp)));
