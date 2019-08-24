@@ -51,7 +51,7 @@ void scheduleMethodComparison(SANA *const sana) {
     params.maxResources.numSamples = 60;
     params.maxResources.runtime = 120.0;
     params.sampleTime = 4; //max time in seconds for getPBad to reach equilibrium
-    params.errorTol = 0.5; // units in the last place, eg for 0.99 its 0.985 to 0.995, and for 1e-10 it's 5e-11 to 1.5e10.
+    params.errorTol = 0.9; // units in the last place, eg for 0.99 its 0.985 to 0.995, and for 1e-10 it's 5e-11 to 1.5e10.
     params.numValidationSamples = 50; //set to a high value for final experiment (30?)
             //to find the *real* pBad at the temperatures given by the methods
             //we compute a normal distribution of this many samples
