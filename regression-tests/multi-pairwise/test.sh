@@ -10,7 +10,7 @@ minutes=2
 echo "Running $ITERS iterations of $minutes minute(s) each"
 nice -19 ./multi-pairwise.sh ./sana.multi '-s3 0 -ses 1' $ITERS $minutes '-parallel 4' $DIR networks/syeast[12]?/*.el || EXIT_CODE=1
 cd $DIR
-rename ';dir;dir0;' dir?
+rename.sh ';dir;dir0;' dir?
 mv dir00 dir0 # all except this zeroth one
 echo "Now check NC values: below are the number of times the multiple alignment contains k correctly matching nodes, k=2,3,4:"
 echo "iter	NC2	NC3	NC4"
