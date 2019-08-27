@@ -1,7 +1,7 @@
 #!/bin/sh
 PATH=`pwd`/scripts:$PATH
 export PATH
-RETURN=0
+EXIT_CODE=0
 for dir in regression-tests/*; do
     echo --- in directory $dir ---
     for r in $dir/*.sh; do
@@ -9,8 +9,8 @@ for dir in regression-tests/*; do
 	if nice -19 "$r"; then
 	    :
 	else
-	    RETURN=1
+	    EXIT_CODE=1
 	fi
     done
 done
-exit $RETURN
+exit $EXIT_CODE
