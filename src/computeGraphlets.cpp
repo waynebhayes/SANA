@@ -668,13 +668,12 @@ int init(int maxGraphletSize, FILE *fp) {
         return 0;
     }
     // read input graph
-    fscanf(fp,"%d%d",&n,&m); //fin >> n >> m;
-    int d_max=0;
+    int d_max=fscanf(fp,"%d%d",&n,&m);
     edges = (PAIR*)malloc(m*sizeof(PAIR));
     deg = (int*)calloc(n,sizeof(int));
     for (int i=0;i<m;i++) {
         int a,b;
-        fscanf(fp, "%d%d",&a,&b); //fin >> a >> b;
+        d_max=fscanf(fp, "%d%d",&a,&b);
         if (!(0<=a && a<n) || !(0<=b && b<n)) {
             cerr << "Node ids should be between 0 and n-1." << endl;
             return 0;
@@ -686,6 +685,7 @@ int init(int maxGraphletSize, FILE *fp) {
         deg[a]++; deg[b]++;
         edges[i]=PAIR(a,b);
     }
+    d_max=0;
     for (int i=0;i<n;i++) d_max=max(d_max,deg[i]);
     fprintf(stderr,"nodes: %d\n",n);
     fprintf(stderr,"edges: %d\n",m);
