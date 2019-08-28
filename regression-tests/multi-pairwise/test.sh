@@ -4,8 +4,11 @@ export PATH
 DIR=/tmp/syeast.$$
 EXIT_CODE=0
 trap "/bin/rm -rf $DIR;"' exit $EXIT_CODE' 0 1 2 3 15
-ITERS=10
-minutes=1
+if [ `hostname` = jenkins ]; then
+    ITERS=20; minutes=5
+else
+    ITERS=10; minutes=1
+fi
 case "$#" in
 2) ITERS=$1;minutes=$2; shift 2;;
 esac
