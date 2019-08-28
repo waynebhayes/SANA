@@ -1,10 +1,10 @@
-#!/bin/sh -x
+#!/bin/sh
 PATH="`pwd`/scripts:$PATH"
 export PATH
 DIR=/tmp/syeast.$$
 EXIT_CODE=0
 trap "/bin/rm -rf $DIR" 0 1 2 3 15
-if [ `hostname` = jenkins ]; then
+if [ `hostname` = Jenkins ]; then
     ITERS=20; minutes=5
 else
     ITERS=10; minutes=1
