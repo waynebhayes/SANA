@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 PATH="`pwd`/scripts:$PATH"
 export PATH
 DIR=/tmp/syeast.$$
