@@ -29,8 +29,8 @@ echo "And now the Multi-NC, or MNC, measure, of the final alignment"
 echo 'k	number	MNC'
 for k in 2 3 4; do echo "$k	`awk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)if(K[i]>='$k')nc++}END{printf "%d\t%.3f\n",nc,nc/NR}' dir$ITERS/multiAlign.tsv`"
 done | tee $DIR/MNC.txt
-echo "Now check that MNC values are high enough: for k=2,3,4, we want MNC 0.3, 0.2, and 0.1 respectively."
-if awk '{k=$1;expect=(0.5-k/10);if($3<expect)exit(1)}' $DIR/MNC.txt; then
+echo "Now check that MNC values are high enough: for k=2,3,4, we want MNC 0.25, 0.15, and 0.05 respectively."
+if awk '{k=$1;expect=(0.45-k/10);if($3<expect)exit(1)}' $DIR/MNC.txt; then
     :
 else
     EXIT_CODE=1
