@@ -48,7 +48,7 @@ function logb(b,x){return log(x)/log(b)}
 function dtob(n,   s,sgn) {n=1*n;if(!n)return "0";s=sgn="";if(n<0){sgn="-";n=-n};while(n){s=sprintf("%d%s",(n%2),s); n=int(n/2)}; return sgn s}
 function btod(n) {}
 
-function ASSERT(cond,str){if(!cond){s=sprintf("assertion failure: %s\n", str); print s; print s >"/dev/stderr"; exit 1}}
+function ASSERT(cond,str){if(!cond){s=sprintf("assertion failure: %s", str); print s >"/dev/stderr"; exit 1}}
 function ABS(x){return x<0?-x:x}
 function SIGN(x){return x==0?0:x/ABS(x)}
 function MAX(x,y){return x>y?x:y}
@@ -84,12 +84,12 @@ function StatAddSample(name, x) {
     if(x)_statmin[name]=MIN(_statmin[name],x);
     _statMax[name]=MAX(_statMax[name],x);
 }
-function StatAddDuplicateSamples(name, x, n) {
+function StatAddWeightedSample(name, x, w) {
     if(1*_statN[name]==0)StatReset(name);
-    _statN[name]+=n;
-    _statNdup[name]++;
-    _statSum[name]+=n*x;
-    _statSum2[name]+=n*x*x;
+    _statN[name]+=w;
+    _statNunWtd[name]++;
+    _statSum[name]+=w*x;
+    _statSum2[name]+=w*x*x;
     _statMin[name]=MIN(_statMin[name],x);
     if(x)_statmin[name]=MIN(_statmin[name],x);
     _statMax[name]=MAX(_statMax[name],x);
