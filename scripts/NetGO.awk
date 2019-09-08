@@ -72,8 +72,12 @@ function K_AC(C,
 		(length(M)==1 && M[u]>1)) # or the same protein multiple times...
 	{
 	    if(DRACONIAN) summand+=K_gset(T)
-	    else for(g in T)if(numA[g]>1)summand+=numA[g]*K_g(g)/numProteins
+	    else {
+		for(i in M)numProteins+=(M[i]-1)
+		for(g in T)if(numA[g]>1)summand+=numA[g]*K_g(g)/numProteins
+	    }
 	}
+	#printf " K=%g\n",summand
 	sum+=summand
     }
     return sum
