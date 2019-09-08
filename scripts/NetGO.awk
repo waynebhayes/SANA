@@ -1,9 +1,11 @@
 #!/bin/sh
-USAGE="$0 [-D] alignFile gene2goFile
-    -D: 'Draconian', which insists a GO term annotating every protein in a cluster for it to count.
+USAGE="USAGE: $0 [-D] alignFile gene2goFile
+    -D: 'Draconian', which insists that a GO term must annotate every protein in a cluster for it to count.
 	By default, a GO term's weight per-cluster is scaled by the number of proteins (>1 at least) it annotates.
     alignFile: each line consists of a cluster of any number of proteins; proteins can appear in more than one cluster.
-    gene2goFile: a standard-format gene2go file downloaded from the GO consortium's website.
+    gene2goFile: a standard-format gene2go file downloaded from the GO consortium's website. For now we only use
+    columns 2 (protein name) and 3 (GO term). We ignore the species, which is a simplification since about 20%
+    of proteins appear in two species, but only 2% appear in more than 2.
 "
 die() { echo "$USAGE" >&2; echo "$@" >&2; exit 1
 }
@@ -99,6 +101,11 @@ BEGIN{DRACONIAN='$DRACONIAN'}
 #Clusters version
 ARGIND==1{for(i=1;i<=NF;i++){CA[FNR][i]=$i;++pC[$i][FNR]}} # CA[][]=cluster alignment; pC[p] = clusters this protein is in.
 ARGIND==2&&($2 in pC){pGO[$2][$3]=1;++GOp[$3][$2]}
-END{for(p in pC)if(!(p in pGO)){pGO[p][0]=1;delete pGO[p][0]} #proteins with no GO terms need pGO[p] explicit empty list.
+END{
+    if(length(pGO) < 0.001 * length(pC)) {
+	print "Warning: Fewer than 0.1% of the proteins in your alignment have GO annotations. This typically happens\n" \
+	    "when your alignment files use a different gene/protein naming convention than the gene2go file." >"/dev/fd/2"
+    }
+    for(p in pC)if(!(p in pGO)){pGO[p][0]=1;delete pGO[p][0]} #proteins with no GO terms need pGO[p] explicit empty list.
     know=K_AC(CA); printf "%d %d %d %g %g\n", length(CA), length(pGO), length(GOp), know, know/length(GOp)
 }' "$@"
