@@ -107,6 +107,7 @@ function StatMax(name) {
     return _statMax[name];
 }
 function StatVar(name) {
+    if(_statN[name]<2)return 0;
     return (_statSum2[name] - _statSum[name]*_statSum[name]/_statN[name]) / (_statN[name]-1);
 }
 function StatStdDev(name,     x) {
