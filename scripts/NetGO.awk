@@ -45,9 +45,10 @@ function K_A2(A,
 
 # Knowledge in a general alignment of protein clusters
 function K_AC(C,
-    sum,numProteins,numA,cl,i,u,g,T,M){
+    sum,numProteins,numA,cl,i,u,g,T,M,summand){
     sum=0;
     for(cl in C){
+	summand=0;
 	#printf "Cluster %d, length %d;",cl,length(C[cl])
 	numProteins=length(C[cl]);
 	delete M; M[0]=1;delete M[0]; # initialize M to empty list; M=set of protein members;
@@ -66,10 +67,14 @@ function K_AC(C,
 	    }
 	    #printf " col %d=%s, |T|=%d", i, u,length(T)
 	}
-	if(length(T)>0&&(length(M)>1||(length(M)==1&&M[u]>1))){
-	    if(DRACONIAN) sum+=K_gset(T)
-	    else for(g in T)if(numA[g]>1)sum+=numA[g]*K_g(g)/numProteins
+	if(length(T)>0 && # if this cluster has any annotations...
+	    (length(M)>1) || # and it has more than one protein...
+		(length(M)==1 && M[u]>1)) # or the same protein multiple times...
+	{
+	    if(DRACONIAN) summand+=K_gset(T)
+	    else for(g in T)if(numA[g]>1)summand+=numA[g]*K_g(g)/numProteins
 	}
+	sum+=summand
     }
     return sum
 }
@@ -84,12 +89,12 @@ function sim_A2(A){return K_A2(A)/length(GOp)}
 
 #Old only-2-column alignment files
 #ARGIND==1{C[$1]=$2; C_[$2]=$1}
-#ARGIND==2&&($2 in C || $2 in C_){pGO[$2][$3]=GOp[$3][$2]=1}
+#ARGIND==2&&($2 in C || $2 in C_){pGO[$2][$3]=1;++GOp[$3][$2]}
 
 BEGIN{DRACONIAN='$DRACONIAN'}
 #Clusters version
-ARGIND==1{for(i=1;i<=NF;i++){CA[FNR][i]=$i;pC[$i][FNR]=1}} # CA[][]=cluster alignment; pC[p] = clusters this protein is in.
-ARGIND==2&&($2 in pC){pGO[$2][$3]=GOp[$3][$2]=1}
+ARGIND==1{for(i=1;i<=NF;i++){CA[FNR][i]=$i;++pC[$i][FNR]}} # CA[][]=cluster alignment; pC[p] = clusters this protein is in.
+ARGIND==2&&($2 in pC){pGO[$2][$3]=1;++GOp[$3][$2]}
 END{for(p in pC)if(!(p in pGO)){pGO[p][0]=1;delete pGO[p][0]} #proteins with no GO terms need pGO[p] explicit empty list.
     know=K_AC(CA); printf "%d %d %d %g %g\n", length(CA), length(pGO), length(GOp), know, know/length(GOp)
 }' "$@"
