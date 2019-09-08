@@ -11,11 +11,6 @@ USAGE="$0 alignFile gene2go"
 # line of the parameter declarations.
 
 hawk '
-function SetSwap(A,B,
-    e){delete _SetSwap; for(e in A)_SetSwap[e]=A[e];
-    delete A; for(e in B)A[e]=B[e];
-    delete B; for(e in _SetSwap)B[e]=_SetSwap[e];
-}
 function SetIntersect(res1,T1,T2,
     g){delete res1;if(length(T1)<length(T2)){for(g in T1)if(g in T2)res1[g]=1}
                                                        else{for(g in T2)if(g in T1)res1[g]=1}}
