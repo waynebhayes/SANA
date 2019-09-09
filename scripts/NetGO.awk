@@ -10,8 +10,9 @@ USAGE="USAGE: $0 [-L] gene2goFile alignFile[s]
     The Lenient option gives a GO term a weight per-cluster that is scaled by the
     number of proteins it annotates (so long as it's more than 1).
 
-    alignFile: each line consists of a cluster of any number of proteins;
-    proteins can appear in more than one cluster.
+    alignFile: each line consists of a cluster of any number of proteins; proteins can
+    appear in more than one cluster. Note it must use the same protein naming convention
+    as your gene2go file.
 
     gene2goFile: a standard-format gene2go file downloaded from the GO consortium's
     website. For now we only use columns 2 (protein name) and 3 (GO term). We ignore
