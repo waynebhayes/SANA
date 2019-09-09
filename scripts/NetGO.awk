@@ -5,15 +5,18 @@
 # is in the awk at the bottom of this Bourne shell script.
 
 USAGE="USAGE: $0 [-L] gene2goFile alignFile[s]
-    -L: 'Lenient'. The default behavior is what we call 'Dracanion' in the paper, which insists that a GO term must annotate every protein
-    in a cluster for it to count.  The Lenient option gives a GO term a weight per-cluster that is scaled by the number of proteins
-    it annotates (so long as it's more than 1).
+    -L: 'Lenient'. The default behavior is what we call 'Dracanion' in the paper, which
+    insists that a GO term must annotate every protein in a cluster for it to count.
+    The Lenient option gives a GO term a weight per-cluster that is scaled by the
+    number of proteins it annotates (so long as it's more than 1).
 
-    alignFile: each line consists of a cluster of any number of proteins; proteins can appear in more than one cluster.
+    alignFile: each line consists of a cluster of any number of proteins;
+    proteins can appear in more than one cluster.
 
-    gene2goFile: a standard-format gene2go file downloaded from the GO consortium's website. For now we only use
-    columns 2 (protein name) and 3 (GO term). We ignore the species, which is a simplification since about 20%
-    of proteins appear in two species, but only 2% appear in more than 2.
+    gene2goFile: a standard-format gene2go file downloaded from the GO consortium's
+    website. For now we only use columns 2 (protein name) and 3 (GO term). We ignore
+    the species, which is a simplification since about 20% of proteins appear in two
+    species, but only 2% appear in more than 2.
 "
 die() { echo "$USAGE" >&2; echo "$@" >&2; exit 1
 }
@@ -25,7 +28,6 @@ die() { echo "$USAGE" >&2; echo "$@" >&2; exit 1
 # IMPLEMENTATION DECISIONS
 # Though the math for NetGO is pretty straightforward, there are are a large number of implementation decisions that must be made.
 # Few of these are carved in stone.
-#
 #
 # First, for now WE IGNORE SPECIES IN THE gene2go FILE.
 # Most proteins (about 80%) occur in only one species, so only 20% occur in more than one species, and only about 2% occur in more
@@ -66,13 +68,12 @@ die() { echo "$USAGE" >&2; echo "$@" >&2; exit 1
 
 
 # CODING CONVENTIONS
-# AWK is a very simple, error prone language. I like it because it's lightning fast (usually faster than Java or Python),
-# and can be used on the Unix command line to do simple (or complex) tasks.
+# AWK is an error prone language. I like it primarily because it's eminantly portable (should run anywhere a Linux distribution exists),
+# it's lightning fast (usually faster than Java or Python), and it can be used on the Unix command line to do simple (or complex) tasks.
+# Variables have dynamic type, and there are only 3 types: double precision, string, and array. All arrays are associative
+# (ie., dictionaries), and an element of an array can be another array, and different elements of the same array can have different type.
 #
-# Variables have dynamic type, and there are only 3 types: double precision,
-# string, and array. All arrays are associative (ie., dictionaries), and an element of an array can be another array, and
-# different elements of the same array can have different type.
-# To implement "sets", I use A[x]=1 to mean that x is in the set A; x can be a number, string, etc.
+# To implement "sets" in AWK, I use A[x]=1 to mean that x is in the set A; x can be a number, string, etc.
 # Sometimes I interpret it as a multi-set, where the value is an integer rather than Boolean. such as the membership array
 # M[] which contains string elements that are names of proteins that occur in the cluster currently being processed.
 # (The multi-set is how we keep track of multiple occurances of the same protein in the same cluster.)
