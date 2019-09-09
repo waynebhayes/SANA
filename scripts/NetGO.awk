@@ -5,6 +5,7 @@
 # is in the awk at the bottom of this Bourne shell script.
 
 USAGE="USAGE: $0 [-L] gene2goFile alignFile[s]
+
     -L: 'Lenient'. The default behavior is what we call 'Dracanion' in the paper, which
     insists that a GO term must annotate every protein in a cluster for it to count.
     The Lenient option gives a GO term a weight per-cluster that is scaled by the
