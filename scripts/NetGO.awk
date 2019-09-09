@@ -129,9 +129,11 @@ case "$1" in
 -L*) DRACONIAN=0;shift;;
 -*) die "unknown option '$1'";;
 esac
-[ $# -ge 2 ] || die "expecting at least 2 arguments, alignFile and gene2goFile"
+[ $# -ge 2 ] || die "expecting at least 2 arguments: gene2goFile, and then a list of clusterAlignFiles"
 
 GENE2GO=$1; shift
+
+[ `cat $GENE2GO | head -10 | grep -c '	GO:'` -ge 9 ] || die "first argument must be the gene2go file"
 
 for i
 do
