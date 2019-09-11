@@ -39,9 +39,10 @@ public:
 
     void setMaxGraphletSize(double number);
     static Graph& loadGraph(string name, Graph& g);
-    static Graph& loadGraphFromPath(string path, string name, Graph& g, bool bipartite = false);
+    static Graph& loadGraphFromPath(string path, string name, Graph& g, int multipartite = 1);
     static Graph& multGraph(string name, uint path, Graph& g);
 
+    static void loadFromMultipartiteEdgeList(string fin, string graphName, Graph& g, int multipartite);
     static void loadFromEdgeListFile(string fin, string graphName, Graph& g, bool bipartite = false);
     static void loadFromLedaFile(string fin, string graphName, Graph& g, bool bipartite = false);
     static void loadFromLgfFile(string fin, string graphName, Graph& g, bool bipartite = false);
@@ -167,10 +168,12 @@ public:
     //string getBipartiteNodeType(uint i);
     int getBipartiteNodeType(uint i);
     bool isBipartite();
+    int getNumMultipartite();
 
     // bipartite -- TODO make them private later
     //vector<string> nodeTypes;
     vector<int> nodeTypes;
+    vector<int> nodeTypesCount;
     bool bipartiteEnabled = false;
     uint geneCount = 0;
     uint miRNACount = 0;
@@ -178,7 +181,10 @@ public:
     int unlockedmiRNACount = -1;
     vector<uint> geneIndexList;
     vector<uint> miRNAIndexList;
+    vector<vector<uint>> typedNodesIndexList;
     void removeEdge(uint node1, uint node2);
+    
+    int multipartite = 1;
 
     // TODO: make const
     Matrix<float>& getFloatWeights() ;

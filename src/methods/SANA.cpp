@@ -285,6 +285,12 @@ SANA::SANA(Graph* G1, Graph* G2,
     unassignedNodesG2     = new vector<uint> (n2-n1);
     unassignedgenesG2     = new vector<uint> (G2->geneCount - G1->geneCount);
     unassignedmiRNAsG2    = new vector<uint> (G2->miRNACount - G1->miRNACount);
+    
+    
+    unassignedMultipartiteNodes = new vector<vector<uint>>();
+    for(int i = 0; i < G1->getNumMultipartite(); i++)
+        unassignedMultipartiteNodes->push_back(vector<uint>{});
+        
     A                     = new vector<uint> (n1);
     avgEnergyInc          = -0.00001; //to track progress
     this->addHillClimbing = addHillClimbing;
@@ -305,12 +311,17 @@ Alignment SANA::getStartingAlignment(){
 
     if(this->startAligName != "")
         startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
-    else if (G1->isBipartite())
-        startAlig = Alignment::randomAlignmentWithNodeType(G1,G2);
+    else if(G1->getNumMultipartite() > 1)
+        startAlig = Alignment::startingMultipartiteAlignment(G1,G2);
     else if (lockFileName != "")
         startAlig = Alignment::randomAlignmentWithLocking(G1,G2);
     else
         startAlig = Alignment::random(n1, n2);
+        
+        
+    ofstream outfile;
+    outfile.open("starting_align.txt");
+    startAlig.writeEdgeList(G1, G2, outfile);
 
     // Doing a Rexindexing if required
 #ifdef REINDEX
@@ -528,7 +539,7 @@ inline uint SANA::G1RandomUnlockedNode(){
 // Gives a random unlocked nodes with the same type as source1
 // Only called from performswap
 inline uint SANA::G1RandomUnlockedNode(uint source1){
-    if(!bipartite){
+    if(multipartite == 1){
         return SANA::G1RandomUnlockedNode();
     }
     else{
@@ -540,33 +551,39 @@ inline uint SANA::G1RandomUnlockedNode(uint source1){
             else
                 return G1->unlockedGeneCount + G1RandomUnlockedmiRNADist(gen);
         #else
-            bool isGene = G1->nodeTypes[source1] == Graph::NODE_TYPE_GENE;
-            if(isGene){
-                int index = G1RandomUnlockedGeneDist(gen);
-                return G1->geneIndexList[index];
-            }
-            else{
-                int index =  G1RandomUnlockedmiRNADist(gen);
-                return G1->miRNAIndexList[index];
-            }
+            int type = G1->nodeTypes[source1];
+            uniform_int_distribution<> dist = uniform_int_distribution<>(0, G1->typedNodesIndexList[type].size() - 1);
+            return G1->typedNodesIndexList[type][dist(gen)];
+
+            // bool isGene = G1->nodeTypes[source1] == Graph::NODE_TYPE_GENE;
+            // if(isGene){
+            //     int index = G1RandomUnlockedGeneDist(gen);
+            //     return G1->geneIndexList[index];
+            // }
+            // else{
+            //     int index =  G1RandomUnlockedmiRNADist(gen);
+            //     return G1->miRNAIndexList[index];
+            // }
         #endif
     }
 }
 
 // Return index of the unassigned node in the unassginedNodesG2 (or unassignedgenesG2, ...)
 inline uint SANA::G2RandomUnlockedNode(uint target1){
-    if(!bipartite){
+    if(multipartite == 1){
         return G2RandomUnlockedNode_Fast();
     } else {
-        bool isGene = G2->nodeTypes[target1] == Graph::NODE_TYPE_GENE;
-        if(isGene){
-            int index = G2RandomUnassignedGeneDist(gen);
-            return index;
-        }
-        else {
-            int index = G2RandomUnassignedmiRNADist(gen);
-            return index;
-        }
+        int type = G2->nodeTypes[target1];
+        uniform_int_distribution<> dist = uniform_int_distribution<>(0, G2->typedNodesIndexList[type].size() -1);
+        return dist(gen);
+        // if(isGene){
+        //     int index = G2RandomUnassignedGeneDist(gen);
+        //     return index;
+        // }
+        // else {
+        //     int index = G2RandomUnassignedmiRNADist(gen);
+        //     return index;
+        // }
         // uint node;
         // do {
         //     node = G2RandomUnlockedNode_Fast(); // gives back unlocked G2 node
@@ -656,7 +673,7 @@ double SANA::slowTrueAcceptingProbability() {
 }
 
 void SANA::initDataStructures(const Alignment& startA) {
-    bipartite = G1->isBipartite();
+    multipartite = G1->getNumMultipartite();
 
     A = new vector<uint>(startA.getMapping());
     assignedNodesG2 = new vector<bool> (n2, false);
@@ -666,22 +683,24 @@ void SANA::initDataStructures(const Alignment& startA) {
     unassignedNodesG2        = new vector<uint> (n2-n1);
     unassignedgenesG2        = new vector<uint> ();
     unassignedmiRNAsG2       = new vector<uint> ();
+    
+    unassignedMultipartiteNodes = new vector<vector<uint>>();
+    
+    for(int i = 0; i < multipartite; i++)
+        unassignedMultipartiteNodes->push_back(vector<uint>{});
 
-    if(bipartite){
-        cerr << "Seperating unassigned genes and miRNAs in G2" << endl;
-        unassignedgenesG2->reserve(G2->geneCount - G1->geneCount);
-        unassignedmiRNAsG2->reserve(G2->miRNACount - G1->miRNACount);
-    }
+    // if(multipartite > 1){
+    //     cerr << "Seperating unassigned node types" << endl;
+    //     unassignedgenesG2->reserve(G2->geneCount - G1->geneCount);
+    //     unassignedmiRNAsG2->reserve(G2->miRNACount - G1->miRNACount);
+    // }
     for (uint i = 0, j = 0; i < n2; i++) {
-	if (not (*assignedNodesG2)[i]) {
-	    (*unassignedNodesG2)[j++] = i;
-	    if(bipartite){
-		if(G2->nodeTypes[i] == Graph::NODE_TYPE_GENE)
-		    unassignedgenesG2->push_back(i);
-		else
-		    unassignedmiRNAsG2->push_back(i);
-	    }
-	}
+    	if (not (*assignedNodesG2)[i]) {
+    	    (*unassignedNodesG2)[j++] = i;
+    	    if(multipartite > 1){
+                (*unassignedMultipartiteNodes)[G2->nodeTypes[i]].push_back(i);
+    	    }
+        }
     }
     //  Init unlockedNodesG1
     uint unlockedG1            = n1 - G1->getLockedCount();
@@ -1099,7 +1118,7 @@ void SANA::prepareMeasureDataByAlignment() {
     currentMeasure = paretoFront.getRandomMeasure();
 
     assignedNodesG2 = new vector<bool>(*storedAssignedNodesG2[A]);
-    if(!bipartite)
+    if(multipartite == 1)
         unassignedNodesG2 = new vector<uint>(*storedUnassignedNodesG2[A]);
     else {
         unassignedmiRNAsG2 = new vector<uint>(*storedUnassignedmiRNAsG2[A]);
@@ -1142,7 +1161,7 @@ void SANA::insertCurrentAlignmentAndData() {
     storedAlignments->insert(A);
 
     storedAssignedNodesG2[A]        = assignedNodesG2;
-    if(!bipartite)
+    if(multipartite == 1)
         storedUnassignedNodesG2[A]  = unassignedNodesG2;
     else {
         storedUnassignedmiRNAsG2[A] = unassignedmiRNAsG2;
@@ -1171,7 +1190,7 @@ void SANA::removeAlignmentData(vector<uint>* toRemove) {
     vector<bool>* removeAssignedNodesG2 = storedAssignedNodesG2[toRemove];
     storedAssignedNodesG2.erase(toRemove);
     delete removeAssignedNodesG2;
-    if(!bipartite) {
+    if(multipartite == 1) {
         vector<uint>* removeUnassignedNodesG2 = storedUnassignedNodesG2[toRemove];
         storedUnassignedNodesG2.erase(toRemove);
         delete removeUnassignedNodesG2;
@@ -1236,7 +1255,7 @@ void SANA::printParetoFront(const string &fileName) {
 void SANA::deallocateParetoData() {
     for(auto i = storedAssignedNodesG2.begin(); i != storedAssignedNodesG2.end(); i++)
         delete i->second;
-    if(!bipartite) {
+    if(multipartite == 1) {
         for(auto i = storedUnassignedNodesG2.begin(); i != storedUnassignedNodesG2.end(); i++)
             delete i->second;
     }
@@ -1252,12 +1271,13 @@ void SANA::deallocateParetoData() {
 
 void SANA::SANAIteration() {
     ++iterationsPerformed;
-    if(G1->isBipartite()) {
+    if(G1->multipartite >  1) {
         // Choose the type here based on counts (and locking...)
         // For example if no locking, then prob (gene) >> prob (miRNA)
         // And if locking, then arrange prob(gene) and prob(miRNA) appropriately
         int type = /* something clever */ 0;
         (randomReal(gen) < changeProbability[type]) ? performChange(type) : performSwap(type);
+//performChange(type);
     } else {
         (randomReal(gen) < changeProbability[0]) ? performChange(0) : performSwap(0);
     }
@@ -1270,21 +1290,28 @@ void SANA::performChange(int type) {
     uint newTargetIndex = G2RandomUnlockedNode(oldTarget);
 
     uint newTarget = -1;
-    bool isGene = false;
-    if(!bipartite)
+    if(multipartite == 1)
         newTarget    = (*unassignedNodesG2)[newTargetIndex];
     else{
-        isGene = G2->nodeTypes[oldTarget] == Graph::NODE_TYPE_GENE;
-        if(isGene){
-            if(unassignedgenesG2->size() == 0)
-                return; // cannot perform change, all genes are assigned
-            newTarget = (*unassignedgenesG2)[newTargetIndex];
-        }
-        else{
-            if(unassignedmiRNAsG2->size() == 0)
-                return; // cannot perform change, all miRNA are assigned
-            newTarget = (*unassignedmiRNAsG2)[newTargetIndex];
-        }
+        int type = G2->nodeTypes[oldTarget];
+        if((*unassignedMultipartiteNodes)[type].size() == 0)
+            return; // cannot perform change, all genes are assigned
+            
+        newTarget = (*unassignedMultipartiteNodes)[type][newTargetIndex];
+        
+        
+        // bool isGene = false;
+        // isGene = G2->nodeTypes[oldTarget] == Graph::NODE_TYPE_GENE;
+        // if(isGene){
+        //     if(unassignedgenesG2->size() == 0)
+        //         return; // cannot perform change, all genes are assigned
+        //     newTarget = (*unassignedgenesG2)[newTargetIndex];
+        // }
+        // else{
+        //     if(unassignedmiRNAsG2->size() == 0)
+        //         return; // cannot perform change, all miRNA are assigned
+        //     newTarget = (*unassignedmiRNAsG2)[newTargetIndex];
+        // }
     }
     //added dummy initialization to shut compiler warning -Nil
     unsigned oldOldTargetDeg = 0, oldNewTargetDeg = 0, oldMs3Denom = 0;
@@ -1341,15 +1368,18 @@ void SANA::performChange(int type) {
     {
         (*A)[source]                         = newTarget;
         
-        if(!bipartite)
+        cout << newTarget << " " << newTarget << endl;
+        
+        if(multipartite == 1)
             (*unassignedNodesG2)[newTargetIndex] = oldTarget;
         else {
-            if(isGene){
-                (*unassignedgenesG2)[newTargetIndex] = oldTarget;
-            }
-            else {
-                (*unassignedmiRNAsG2)[newTargetIndex] = oldTarget;
-            }
+            (*unassignedMultipartiteNodes)[type][newTargetIndex] = oldTarget;
+            // if(isGene){
+            //     (*unassignedgenesG2)[newTargetIndex] = oldTarget;
+            // }
+            // else {
+            //     (*unassignedmiRNAsG2)[newTargetIndex] = oldTarget;
+            // }
         }
 
         (*assignedNodesG2)[oldTarget]        = false;
@@ -2936,7 +2966,7 @@ void SANA::performChange(Job &job, int type) {
 
     uint newTarget = -1;
     bool isGene = false;
-    if(!bipartite)
+    if(multipartite == 1)
         newTarget    = (*info.unassignedNodesG2)[newTargetIndex];
     else{
         isGene = G2->nodeTypes[oldTarget] == Graph::NODE_TYPE_GENE;
@@ -2995,7 +3025,7 @@ void SANA::performChange(Job &job, int type) {
 
        (*A)[source]                         = newTarget;
 
-       if(!bipartite)
+       if(multipartite == 1)
            (*info.unassignedNodesG2)[newTargetIndex] = oldTarget;
        else {
            if(isGene){
@@ -3322,7 +3352,7 @@ void SANA::storeAlignment(Job &job) {
     storedAlignments->insert(A);
 
     storedAssignedNodesG2[A]        = info.assignedNodesG2;
-    if(!bipartite)
+    if(multipartite == 1)
         storedUnassignedNodesG2[A]  = info.unassignedNodesG2;
     else {
         storedUnassignedmiRNAsG2[A] = info.unassignedmiRNAsG2;
@@ -3366,7 +3396,7 @@ void SANA::copyAlignmentFromStorage(Job &job, vector<uint> *A) {
     info.currentMeasure   = paretoFront.getRandomMeasure();
 
     info.assignedNodesG2 = new vector<bool>(*storedAssignedNodesG2[A]);
-    if(!bipartite)
+    if(multipartite == 1)
         info.unassignedNodesG2 = new vector<uint>(*storedUnassignedNodesG2[A]);
     else {
         info.unassignedmiRNAsG2 = new vector<uint>(*storedUnassignedmiRNAsG2[A]);
@@ -3679,7 +3709,7 @@ inline uint SANA::G2RandomUnlockedNode_Fast(Job &job) {
 }
 
 inline uint SANA::G2RandomUnlockedNode(Job &job, uint target1) {
-    if(!bipartite){
+    if(multipartite == 1){
         return G2RandomUnlockedNode_Fast(job);
     } else {
         bool isGene = G2->nodeTypes[target1] == Graph::NODE_TYPE_GENE;
@@ -4027,7 +4057,7 @@ double SANA::edgeRatioIncSwapOp(Job &job, uint source1, uint source2, uint targe
 }
 
 inline uint SANA::G1RandomUnlockedNode(Job &job, uint source1) {
-    if(!bipartite){
+    if(multipartite == 1){
         return G1RandomUnlockedNode(job);
     } else {
         // Checking node type and returning one with same type

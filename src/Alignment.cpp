@@ -478,6 +478,10 @@ Alignment Alignment::randomAlignmentWithLocking(Graph* G1, Graph* G2){
     return alig;
 }
 
+Alignment Alignment::startingMultipartiteAlignment(Graph* G1, Graph* G2) {
+    
+    return vector<uint>{3, 4, 5, 0, 1, 2};
+}
 
 Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
         assert(G1->getLockedCount() == G2->getLockedCount());

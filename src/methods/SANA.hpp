@@ -112,7 +112,7 @@ private:
 
     void initTau(void);
     vector<uint> unLockedNodesG1;
-    bool bipartite = false;
+    int multipartite;
     //random number generation
     mt19937 gen;
     uniform_int_distribution<> G1RandomNode;
@@ -162,6 +162,9 @@ private:
     vector<uint> *unassignedNodesG2;
     vector<uint> *unassignedmiRNAsG2;
     vector<uint> *unassignedgenesG2;
+    
+    vector<vector<uint>>* unassignedMultipartiteNodes;
+    
     vector<uint>* A;
     //initializes all the necessary data structures for a new run
     void initDataStructures(const Alignment& startA);
