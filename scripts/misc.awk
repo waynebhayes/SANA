@@ -191,8 +191,9 @@ function StatConfidenceInterval(name,conf)
     return StatTDistPtoZ((1-conf)/2, _statN[name] - 1) * sqrt(StatVar(name) / _statN[name]);
 }
 function Pearson2T(n,r){if(r==1)return 1e30; else return r*sqrt((n-2)/(1-r^2))}
-function PoissonDistribution(l,k){if(l>700)return NormalDist(l,sqrt(l),k);r=exp(-l);for(i=k;i>0;i--)r*=l/i;return r} 
-function PoissonCDF(k, lambda, sum, term, i){sum=term=1;for(i=1;i<=k;i++){term*=lambda/i;sum+=term}; return sum*exp(-lambda)}
+# The Poisson1_CDF is 1-CDF, and sums terms smallest to largest; near CDF=1 (ie., 1-CDF=0) it is accurate well below eps_mach.
+function Poisson1_CDF(l,k, r,i){if(k==0)return 1; if(l>700)return NormalDist(l,sqrt(l),k);r=exp(-l);for(i=k;i>0;i--)r*=l/i;return r} 
+function PoissonCDF(l,k){return 1-Poisson1_CDF(l,k)}
 function StatRV_Normal(){if(!_StatRV_which) { do { _StatRV_v1 = 2*rand()-1; _StatRV_v2 = 2*rand()-1; _StatRV_rsq = _StatRV_v1^2+_StatRV_v2^2; } while(_StatRV_rsq >= 1 || _StatRV_rsq == 0); _StatRV_fac=sqrt(-2*log(_StatRV_rsq)/_StatRV_rsq); _StatRV_next = _StatRV_v1*_StatRV_fac; _StatRV_which = 1; return _StatRV_v2*_StatRV_fac; } else { _StatRV_which = 0; return _StatRV_next; } } 
 function PearsonAddSample(name,X,Y) {
     _Pearson_sumX[name]+=X
