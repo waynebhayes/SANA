@@ -193,14 +193,14 @@ vector<string> formatMethodData(const ScheduleExpParams& params, string name, bo
 
     vector<pair<double,int>> dataAndPrec =
         {
-          {TInitial, 8},
-          {TIniPBadDis.getMean(), 8}, {TIniPBadDis.getSD(), 6},
-          {(double)TIniSuccess, 0}, {TIniPBadAccuracy, 6},
+          {TInitial, 17},
+          {TIniPBadDis.getMean(), 17}, {TIniPBadDis.getSD(), 17},
+          {(double)TIniSuccess, 0}, {TIniPBadAccuracy, 17},
           {TIniRes.numSamples, 0}, {TIniRes.runtime, 2},
 
-          {TFinal, 12},
-          {TFinPBadDis.getMean(), 12}, {TFinPBadDis.getSD(), 9},
-          {(double)TFinSuccess, 0}, {TFinPBadAccuracy, 6},
+          {TFinal, 20},
+          {TFinPBadDis.getMean(), 20}, {TFinPBadDis.getSD(), 20},
+          {(double)TFinSuccess, 0}, {TFinPBadAccuracy, 20},
           {TFinRes.numSamples, 0}, {TFinRes.runtime, 2},
 
           {totalRes.numSamples, 0}, {totalRes.runtime, 2}
