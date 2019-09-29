@@ -2,6 +2,10 @@
 USAGE="USAGE: $0 [-H N] sana.exe 'measures' iterations time-per-iter parallel-spec outdir {list of input networks}
 parallel-spec is either a machine file for distrib_stdin, or '-parallel K' for K processes locally"
 
+EXEDIR=`dirname $0`
+PATH="$EXEDIR:$EXEDIR/NeGO:$EXEDIR/scripts:$PATH"
+export PATH
+
 die() { echo "$USAGE" >&2; echo "FATAL ERROR: $*" >&2; exit 1
 }
 warn() { echo "Warning: $*" >&2
