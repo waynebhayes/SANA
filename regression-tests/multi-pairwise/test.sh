@@ -5,7 +5,7 @@ DIR=/tmp/syeast.$$
 EXIT_CODE=0
 #trap "/bin/rm -rf $DIR" 0 1 2 3 15
 if [ `hostname` = Jenkins ]; then
-    ITERS=40; minutes=5
+    ITERS=90; minutes=1
 else
     ITERS=10; minutes=1
 fi
