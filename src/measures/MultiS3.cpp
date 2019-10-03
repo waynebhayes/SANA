@@ -109,7 +109,7 @@ unsigned MultiS3::computeDenom(const Alignment& A, const Graph& G1, const Graph&
         }
     }
 #endif
-    assert(LaddersUnderG1 % 2 == 0);
+    //assert(LaddersUnderG1 % 2 == 0);
     LaddersUnderG1 /= 2;
     denom = LaddersUnderG1;
     return denom;
