@@ -29,7 +29,7 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-TMPDIR=/tmp/named-col-prog.$$
+TMPDIR=/tmp/awkcel.$$
 trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
 mkdir $TMPDIR
 argi=0
@@ -49,14 +49,14 @@ fi
 awk -F "$FIELD_SEP" "`cat $HOME/bin/misc.awk`${FUNC}"'
     BEGINFILE{'"`cat $TMPDIR/VARCOLS`"'}
     # I am not sure why the next line was signaled as an error; comments before header are easy to ignore.
-    #/^#/&&!_namedColProgStarted[ARGIND]{print "FATAL ERROR: No comments allowed in data file before the header" > "/dev/stderr"; exit(1)}
+    #/^#/&&!_awkcelStarted[ARGIND]{print "FATAL ERROR: No comments allowed in data file before the header" > "/dev/stderr"; exit(1)}
     /^#/{next}
-    /^[^#]/{_namedColProgStarted[ARGIND]=1}
+    /^[^#]/{_awkcelStarted[ARGIND]=1}
     # never mind, do not remove comments because sometimes a hash is on the line and it is too hard to figure out
     # {gsub("#.*","")} # do not remove comments (see above)
     /^$/{next}
-    _namedColProgStarted[ARGIND]&&!seenHeader[ARGIND]{header=$0;NumCols[ARGIND]=NF;seenHeader[ARGIND]=1;if('"$HEADER"')print;next}
-    NF!=NumCols[ARGIND]&&'$QUIET'==0{printf "named-col-prog: warning: expected %d columns at %s:%d but found %d\n", NumCols[ARGIND], FILENAME, FNR, NF > "/dev/stderr";if('$VERBOSE')print > "/dev/stderr"}
-    !_namedColProgStarted[ARGIND]{next}
+    _awkcelStarted[ARGIND]&&!seenHeader[ARGIND]{header=$0;NumCols[ARGIND]=NF;seenHeader[ARGIND]=1;if('"$HEADER"')print;next}
+    NF!=NumCols[ARGIND]&&'$QUIET'==0{printf "awkcel: warning: expected %d columns at %s:%d but found %d\n", NumCols[ARGIND], FILENAME, FNR, NF > "/dev/stderr";if('$VERBOSE')print > "/dev/stderr"}
+    !_awkcelStarted[ARGIND]{next}
     {'"`cat $TMPDIR/ASSIGN`"'}
     '"$PROG" "$@"
