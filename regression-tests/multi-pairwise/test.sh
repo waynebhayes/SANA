@@ -39,5 +39,6 @@ if awk 'BEGIN{code=0}{k=$1;expect=(0.45-k/10);sum+=$3;if($3<expect)code=1}END{if
     :
 else
     EXIT_CODE=1
+    echo "Multi-pairwise FAILED stringency tests" >&2
 fi
 exit $EXIT_CODE
