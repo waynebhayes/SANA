@@ -10,12 +10,14 @@ vector<string> stringVectorArgs;
 
 //This file contains every argument supported by SANA contained basically inside an array, each element in the array contains 6 fields.
 //A Description of each field:
-//    "Option" is the name we use to set the value of a specific option when executing SANA. Example: ./sana -Option ARG
-//    "Type" Describes what the datatype/datastructure is expected as an argument for that option.
-//    "Default" Means what the value of the default argument for an option is (if unspecified when ./sana is invoked).
-//    "Title" Gives a more general title of the option that serves to describe the option better than the first field "Option" does.
-//    "Description" Provides a small description for the option.
-//    "0/1", or the Last field is, for each element entry, either a '0' or '1'. '1' means the option can be accessed from other interfaces controlling SANA (when SANA is NOT run from a shell). A '0' means it is not accessible.
+// "Option": name of the argument, always begins with a dash.
+// "Type": datatype/datastructure that is expected as an argument for that option.
+// "Default": default value if none is given on the command line
+// "Title": longer English title (used only by "./sana --help")
+// "Description": arbitrarily long description for the option.
+// "0/1": Boolean: can this option be accessed from other interfaces controlling SANA (when SANA is NOT run from a shell)
+//
+// Each line below must start with a "{" and end with "}," (modulo whitespace), since we use a script to convert this to CSV.
 
 vector<array<string, 6>> supportedArguments = {
     { "Option", "Type", "Default", "Title", "Description", "0/1" },
@@ -96,36 +98,37 @@ vector<array<string, 6>> supportedArguments = {
 
     //--------------------Objective Function Type Specifications-------------------------
     { "", "", "banner", "", "Objective Function Specification and Weight. Combine with \"-objfuntype x\"", "0" },
-    { "-alpha", "double", "0", "alpha=0 means toplogy only; alpha=1 means sequence only.", "Trade off between biological (alpha = 1) and topological (alpha = 0) measures. Range: [0, 1]. Used when \"-objfuntype\" is \"alpha\".", "1" },
-    { "-beta", "double", "0", "Like -alpha, but values are normalized first.", "Same as alpha but with topological and biological scores balanced according to size. Range: [0, 1]. Used when \"-objfuntype\" is \"beta\".", "1" },
-    { "-ics", "double", "0", "Weight of ICS", "The weight of the Induced Conserved Structure in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ec", "double", "0", "Weight of EC", "The weight of the Edge Coverage (aka Edge Conservation or Edge Correctness) in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-s3", "double", "1", "Weight of S3", "The weight of the Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-ics", "double", "0", "Weight of ICS", "The weight of the Induced Conserved Structure in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-importance", "double", "0", "Weight of Importance", "HubAlign's objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-graphlet", "double", "0", "Weight of Graphlet Similarity.", "The weight of the Graphlet Objective Function as defined in the original GRAAL paper (2010). Used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-graphletlgraal", "double", "0", "Weight of Graphlet Similarity (LGRAAL)", "The weight of LGRAAL's objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-esim", "dbl_vec", "0", "External Similarity Weights", "An integer followed by that many weights, specifying objective function weights for external similarity files (must be the same integer as given to -simFile and -simFormat).", "1" },
+    { "-wec", "double", "0", "Weight of WEC.", "Weight of the weighted edge coverage. To be used when \"-objfuntype\" is \"generic\". If non-zero, must specify how to weigh the edge using -wecnodesim.", "1" },
+    { "-ewec", "double", "0", "External Weighted Edge Similarity", "The weighted of the external edge similarity file.", "1" },
     { "-ed", "double", "0", "Weight of ED", "The weight of the Edge Difference in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-er", "double", "0", "Weight of ER", "The weight of the Edge Ratio in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
-    { "-mec", "double", "0", "Weight of MEC", "The weight of the Multiple Edge Coverage in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
-    { "-ses", "double", "0", "Weight of SES", "The weight of the Squared Edge Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
-	{ "-ee", "double", "0", "Weight of EE", "The weight of the Edge Exposure Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
-    { "-ms3", "double", "0", "Weight of MS3", "The weight of the Multi Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
-    { "-s3", "double", "1", "Weight of S3", "The weight of the Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-nc", "double", "0", "Weight of NC", "This weight of Node Correctness in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-tc", "double", "0", "Weight of TC", "The weight of Triangle Correctness in the objetive function. To be used when \"-objfuntype\" is \"generic\".", "1" },
-    { "-wec", "double", "0", "Weight of WEC.", "Weight of the weighted edge coverage. To be used when \"-objfuntype\" is \"generic\". If non-zero, must specify how to weigh the edge using -wecnodesim.", "1" },
     { "-spc", "double", "0", "Shortest Path Conservation", "Objective function to minimize shortest path difference between pairs of nodes in G1 and G2. Used when \"-objfuntype\" is \"generic\".", "1" },
-    { "-importance", "double", "0", "Weight of Importance", "HubAlign's objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-nodec", "double", "0", "Weight of Node Count", "The weight of the Local Node Count objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-noded", "double", "0", "Weight of Node Density", "The weight of the Local Node Density objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-edgec", "double", "0", "Weight of Edge Count", "The weight of the Local Edge Count objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-edged", "double", "0", "Weight of Edge Density", "The weight of the Local Edge Density objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
-    { "-esim", "dbl_vec", "0", "External Similarity Weights", "An integer followed by that many weights, specifying objective function weights for external similarity files (must be the same integer as given to -simFile and -simFormat).", "1" },
-    { "-ewec", "double", "0", "External Weighted Edge Similarity", "The weighted of the external edge similarity file.", "1" },
-        { "-graphlet", "double", "0", "Weight of Graphlet Similarity.", "The weight of the Graphlet Objective Function as defined in the original GRAAL paper (2010). Used when \"-objfuntype\" is \"generic\".", "1" },
-    { "-graphletlgraal", "double", "0", "Weight of Graphlet Similarity (LGRAAL)", "The weight of LGRAAL's objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-alpha", "double", "0", "alpha=0 means toplogy only; alpha=1 means sequence only.", "Trade off between biological (alpha = 1) and topological (alpha = 0) measures. Range: [0, 1]. Used when \"-objfuntype\" is \"alpha\".", "1" },
+    { "-beta", "double", "0", "Like -alpha, but values are normalized first.", "Same as alpha but with topological and biological scores balanced according to size. Range: [0, 1]. Used when \"-objfuntype\" is \"beta\".", "1" },
     { "-sequence", "double", "0", "Weight of Sequence Similarity", "The weight of the Sequence Similarity function. Used when \"-objfuntype\" is \"generic\".", "1" },
         { "-graphletnorm", "double", "0", "similarities between the normalization of 2 GDV vectors", "objective function based on the ratio between vector elements. Used when \"-objfuntype\" is \"generic\".", "1" },
 
     { "-go_k", "double", "0", "k-common GO terms", "Objective function based on having up to k GO terms in common. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-graphletcosine", "double", "0", "Similarity of cosine between GDV vectors", "Objective function based on the cosine angle between graphlet degree vectors. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-topomeasure", "string", "", "Topological Measure", "Topological component of the scoring function. Used when \"-objfuntype\" is either \"alpha\" or \"beta\".", "1" },
+    { "", "", "banner", "", "Multiple Alignment Objectives (must compile SANA with \"make multi\")", "0" },
+    { "-mec", "double", "0", "Weight of MEC", "The weight of the Multiple Edge Coverage in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-ses", "double", "0", "Weight of SES", "The weight of the Squared Edge Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-ee", "double", "0", "Weight of EE", "The weight of the Edge Exposure Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-ms3", "double", "0", "Weight of MS3", "The weight of the Multi Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "End Objective Function Specification and Weight. Combine with \"-objfuntype x\"", "", "banner", "", "", "0" },
     //-------------------END Objective Function Tyoe Specifications----------------------
 
@@ -137,7 +140,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-nodecweights", "dbl_vec", "4 .1 .25 .5 .15", "Weights of Node Density Measure", "Weights w of the Node count/density measure. They are automatically scaled to 1.", "1" },
     { "-edgecweights", "dbl_vec", "4 .1 .25 .5 .15", "Weights of Edge Density Measure", "Weights w of the Edge count/density measure. They are automatically scaled to 1.", "1" },
     { "-goweights", "dbl_vec", "1 1", "Weight and Measure of GO Measures", "Specifies the maximum GO measure and the weight of each one.", "1" },
-    { "-wecnodesim", "string", "graphletlgraal", "Weighted Edge Coverage Node Pair Similarity", "Node pair similarity used to weight the edges in the WEC measure. The edges are weighted by taking the average of the scores of an edge's two ending nodes using some node similarity measure which can be different from the default node sim measure.", "1" },
+    { "-wecnodesim", "string", "graphletlgraal", "Weighted EC based on mean Node Pair Similarity", "Node pair similarity used to weight the edges in the WEC measure. The edges are weighted by taking the average of the scores of an edge's two ending nodes using some node similarity measure which can be different from the default node sim measure.", "1" },
     { "-wavenodesim", "string", "nodec", "Weighted Average Node Pair Similarity", "Node pair similarity to use when emulating WAVE.", "1" },
     { "-maxGraphletSize", "double", "", "Maximum Graphlet Size", "Chooses the maximum size of graphlets to use. Saves human_gdv and yeast_gdv files ending with the given maximum graphlet size in order to distinguish between different-sized graphlets (e.g. human_gdv4.txt and yeast_gdv4.txt, for maximum graphlet size of 4).", "0" },
     { "-simFile", "str_vec", "0", "External Similarity Filenames", "An integer (same integer as given to -esim and -simFormat) followed by that many filenames, specifying external three-columnn (node from G1, node from  G2, similarity) similarities. The similarities in the 3rd column will be normalized to be in [0,1]. These simFiles will be given weight according to the -esim argument.", "1" },

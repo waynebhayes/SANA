@@ -116,6 +116,7 @@ double totalGenericWeight(ArgumentParser& args) {
         for (auto j : args.doubleVectors["-" + optimizableDoubleVectorsMeasures[i] ])
             total += j;
     }
+    if(total == 0) throw runtime_error("must choose a measure; for options, type './sana --help | less' and search for 'Objective'");
     return total;
 }
 
