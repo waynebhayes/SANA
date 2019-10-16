@@ -16,7 +16,7 @@ for network in $nets; do
 
     # Run SANA to align the graph to itself
     echo "Aligning network $network" >&2
-    echo "./sana -s3 1 -t 10 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
+    echo "./sana -t 20 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
 done | parallel -s /bin/bash 3
 
 for network in $nets; do
