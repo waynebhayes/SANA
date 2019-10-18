@@ -1,5 +1,6 @@
-#Yisheng Zhou, 12.11.15
 import random
+import numpy
+import fastrand
 
 class SkipNode:   
     def __init__(self, height = 0, value = None, info = None):
@@ -36,6 +37,8 @@ class SkipList:
     def flip_coin(self): #determine the height of the new node
         count = 1
         while random.randint(0,1)!=0: #if toll head, have one more hierarchy
+        #while numpy.random.randint(0,2)!=0: #if toll head, have one more hierarchy
+        #while fastrand.pcg32bounded(2) != 0:
             count+=1
         return count
 
@@ -121,6 +124,7 @@ class SkipList:
         if self.__len__()==0:
             raise IndexError()
         #get a random value in the given random value range
+        #rand_value=random.uniform(self.head.next[0].value,self.head.next[0].value+domain)
         rand_value=random.uniform(self.head.next[0].value,self.head.next[0].value+domain)
         #if this value exist, directly remove it
         if self.__contains__(rand_value):
@@ -160,34 +164,9 @@ class SkipList:
             temp=temp.next[0]
             n+=1
             
-            j=random.randint(0,n)
+            #j=random.randint(0,n)
+            j=numpy.random.randint(0,n+1)
             if j==0:
                 choice=(temp.value,temp.info)
         self.remove(choice[0])
         return (choice[0]*self.switch,choice[1])
-
-        
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        

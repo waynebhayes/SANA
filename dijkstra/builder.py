@@ -1,5 +1,10 @@
 from graph import Graph
-import pickle
+try:
+	import _pickle as pickle
+	print("Using Cpickle")
+except:
+	import pickle
+	print("using regular pickle")
 import numpy as np
 import lzma
 """
@@ -57,7 +62,7 @@ It stores the matrix in a pickle to minimize calls to build_sim. Future calls
 to this function will just load the pickle, which is faster for large datasets
 than calling build_sims().
 """
-def get_sim(file, graph1, graph2, pickle_name = ".sim.pickle"):
+def get_sim(file, graph1, graph2, pickle_name = ""):
     """
     build_sim takes a file and builds a [yeast_size X human_size]
     array of similarity values. This function takes a long time to run
@@ -66,20 +71,33 @@ def get_sim(file, graph1, graph2, pickle_name = ".sim.pickle"):
     """
     def build_sim(file, graph1, graph2):
         similarity = np.zeros((len(graph1), len(graph2)))
-        with lzma.open(file, mode = 'rt') as f:
-            for line in f:
-                node_y, node_h, sim_val = line.strip().split() # 8 seconds
-                try:
-                    node_y, node_h, sim_val = graph1.indexes[node_y], graph2.indexes[node_h], float(sim_val) #17 seconds
-                    similarity[node_y][node_h] = sim_val
-                except:
-                    pass
+        if file.endswith("xz"):
+            with lzma.open(file, mode = 'rt') as f:
+                for line in f:
+                    node_y, node_h, sim_val = line.strip().split(" ") # 8 seconds
+                    try:
+                        node_y, node_h, sim_val = graph1.indexes[node_y], graph2.indexes[node_h], float(sim_val) #17 seconds
+                        similarity[node_y][node_h] = sim_val
+                    except:
+                        pass
+        else:
+            with open(file, mode = 'rt') as f:
+                for line in f:
+                    node_y, node_h, sim_val = line.strip().split(" ") # 8 seconds
+                    try:
+                        node_y, node_h, sim_val = graph1.indexes[node_y], graph2.indexes[node_h], float(sim_val) #17 seconds
+                        similarity[node_y][node_h] = sim_val
+                    except:
+                        pass
         return similarity
     
-    if ".sim.pickle" == pickle_name:
-        pickle_name = graph1.name + graph2.name + pickle_name
+    #if ".sim.pickle" == pickle_name:
+    #    pickle_name = graph1.name + graph2.name + pickle_name
+    if pickle_name == "":
+        pickle_name = graph1.name + graph2.name + ".sim.pickle"
     try:
         with open(pickle_name,'rb') as f:
+            print("picke found")
             return pickle.load(f)
     except FileNotFoundError as e:
         sims = build_sim(file, graph1, graph2)
