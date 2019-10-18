@@ -2,7 +2,6 @@
 USAGE="$0 [-c] [-1] species1 species2 column1 column2 [list of files]
 or
 $0 [-a] [-1] species [species2]: to just list all the homologs of either 1 or 2 species
-or
 "
 die() { echo "$USAGE" >&2; echo "$@" >&2; exit 1
 }
