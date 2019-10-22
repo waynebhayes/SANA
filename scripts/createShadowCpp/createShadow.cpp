@@ -387,7 +387,8 @@ int main(int argc, const char** argv) {
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
 
     args::Group opt(parser, "Optional Flag", args::Group::Validators::DontCare);
-    args::Flag bipartiteFlag(opt, "haveTypes", "Enables -bipartite", {'n', "bipartite"});
+    args::Flag bipartiteFlag(opt, "bipartite", "Enables -bipartite", {'n', "bipartite"});
+    args::Flag verboseFlag  (opt, "verbose",   "Enables -verbose",   {'n', "verbose"});
     args::ValueFlag<std::string> shadowNamesFlag(opt, "shadowNames", "Block size", {"shadowNames"});
 
     // args::Flag compact(parser, "compact", "Alignment file format", {'c',"compact"});
@@ -487,16 +488,16 @@ int main(int argc, const char** argv) {
     }
     assert(network_files.size() == alignment_files.size());
 
-    std::cerr << "Starting to make Shadow graph " << std::endl;
+    if(args::get(verboseFlag)) std::cerr << "Starting to make Shadow graph " << std::endl;
 
     std::vector<std::unordered_map<int, int>> adjList(args::get(shadowNodeSize));
     shadow_graph::Graph tempGraph;
     for (unsigned int gi = 0; gi < network_files.size(); ++gi) {
-        std::cerr << "graph " << gi << ": " << network_files.at(gi);        
+        if(args::get(verboseFlag)) std::cerr << "graph " << gi << ": " << network_files.at(gi);        
         
         tempGraph.load(network_files.at(gi));
 
-        std::cerr << ", nodes = " << tempGraph.adjList.size() << std::endl;
+        if(args::get(verboseFlag)) std::cerr << ", nodes = " << tempGraph.adjList.size() << std::endl;
 
         // Load alignment
         std::vector<unsigned short> tempAligOneline(0); 
@@ -511,7 +512,7 @@ int main(int argc, const char** argv) {
         }
 
         unsigned int n = args::get(bipartiteFlag) ? tempAlig.size(): tempAligOneline.size();
-     //   std::cerr << "~~ " << n << " " << tempGraph.adjList.size() << std::endl;
+        if(args::get(verboseFlag)) std::cerr << "~~ " << n << " " << tempGraph.adjList.size() << std::endl;
         assert(n == tempGraph.adjList.size()); // alignment size should be same as graph node count
 
         for (unsigned int peg = 0; peg < n; ++peg) {
@@ -551,7 +552,8 @@ int main(int argc, const char** argv) {
                     hole     = shadowName2Index[name1];
                     end_hole = shadowName2Index[name2];
 
-                    // std::cerr << ".. " << name1 << " " << name2 << " " << hole << " " << end_hole << std::endl;
+                    if(args::get(verboseFlag))
+			std::cerr << ".. " << name1 << " " << name2 << " " << hole << " " << end_hole << std::endl;
                 }
                 else {
                     // expects one line interger alignment
