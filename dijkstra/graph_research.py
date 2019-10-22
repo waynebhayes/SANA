@@ -1,11 +1,12 @@
 from builder import *
+import numpy
 ##import random
 from collections import defaultdict
 import datetime
 from skip_list import *
 import lzma
 
-def get_seed(file, graph1, graph2):
+def get_seed(file, graph1, graph2, delta):
     """
     get_seed() returns a generator that reads through a file and
     returns a 2-element tuple of yeast and human nodes. The file
@@ -20,34 +21,50 @@ def get_seed(file, graph1, graph2):
                 yield [int(n) for n in (line.strip().split()[0:2])]
     """
     tied_seeds = []
-    curr_value = 1.0
-    with lzma.open(file, mode = 'rt') as f3:
-        for line in f3:
+    #curr_value = 1.0
+    curr_value = 1.0 - delta
+    if file.endswith("xz"):
+        with lzma.open(file, mode = 'rt') as f3:
+            for line in f3:
+                row = line.strip().split()
+                if row[0] not in graph1.indexes or row[1] not in graph2.indexes:
+                    continue
+                row[0], row[1], row[2] = graph1.indexes[row[0]], graph2.indexes[row[1]], float(row[2])
+                if row[2] < curr_value:
+                    random.shuffle(tied_seeds)
+                    for seed in tied_seeds:
+                        yield seed[0:2]
+                    del tied_seeds
+                    tied_seeds = [row[0:2]]
+                    curr_value = row[2]
+                else:
+                    tied_seeds.append(row[0:2])
+            random.shuffle(tied_seeds)
+            for seed in tied_seeds:
+                yield seed[0:2]
 
-            row = line.strip().split()
-            if row[0] not in graph1.indexes or row[1] not in graph2.indexes:
-                continue
-            row[0], row[1], row[2] = graph1.indexes[row[0]], graph2.indexes[row[1]], float(row[2])
-            if row[2] < curr_value:
-##                tree_trace.append(('s',len(tied_seeds)))
-                random.shuffle(tied_seeds)
-##                    print("this node has lower similarity\n")
-                for seed in tied_seeds:
-                    yield seed[0:2]
-                del tied_seeds
-                tied_seeds = [row[0:2]]
-                curr_value = row[2]
-##                    print("reset tied seeds" + str(len(tied_seeds)))
-            else:
-                tied_seeds.append(row[0:2])
-        random.shuffle(tied_seeds)
-##        tree_trace.append(('s',len(tied_seeds)))
-        for seed in tied_seeds:
-            yield seed[0:2]
-
+    else:
+        with open(file, mode = 'rt') as f3:
+            for line in f3:
+                row = line.strip().split()
+                if row[0] not in graph1.indexes or row[1] not in graph2.indexes:
+                    continue
+                row[0], row[1], row[2] = graph1.indexes[row[0]], graph2.indexes[row[1]], float(row[2])
+                if row[2] < curr_value:
+                    random.shuffle(tied_seeds)
+                    for seed in tied_seeds:
+                        yield seed[0:2]
+                    del tied_seeds
+                    tied_seeds = [row[0:2]]
+                    curr_value = row[2]
+                else:
+                    tied_seeds.append(row[0:2])
+            random.shuffle(tied_seeds)
+            for seed in tied_seeds:
+                yield seed[0:2]
+                
 def update_best_pair(pq, yeast_graph, human_graph, yeast_node, human_node, pairs, sims, delta = 0):
 ##    nonlocal pq
-##    print("looking for neighbors of ", (yeast_node, human_node))
     paired_yeast_nodes = np.fromiter((pair[0] for pair in pairs), dtype=int)
     paired_human_nodes = np.fromiter((pair[1] for pair in pairs), dtype=int)
     yeast_neighbors = np.setdiff1d(
@@ -63,11 +80,9 @@ def update_best_pair(pq, yeast_graph, human_graph, yeast_node, human_node, pairs
         return
     
     bp_list = sub_best_pair(yeast_neighbors, human_neighbors, sims, delta)
-##    print(bp_list)
     for (val, new_pairs) in bp_list:
         if val >= 0:
             for pair in new_pairs:
-##                print((val, pair))
                 pq.add((val, pair))
     
                 ##pq.insert((val, pair))
@@ -115,45 +130,11 @@ def best_pair(pq, delta):
         pair_list = pq.pop(delta)
     except IndexError:
         raise StopIteration("no more pair values")
-    #print(type(pair_list))
-    val=pair_list[0]
-    pair_arr=pair_list[1]
-    #print(pair_list)
-    return pair_arr 
-
-##    np.random.shuffle(pair_arr)
-##    pair = pair_arr[0] #pick the first pair from the list
-##    rest_of_pairs = np.delete(pair_arr, 0, axis = 0) #axis=0 to delete the pair, not a value from each pair
-##    if rest_of_pairs.size > 0:
-##        pq.requeue((val, rest_of_pairs))
-##    return pair 
-    
-    """
-    try:
-        pair_list = pq.pop_equals()
-##        print(pair_list)
-    except IndexError:
-        raise StopIteration("no more pair values")
-    if len(pair_list) < 1:
-        raise EmptyList("list is empty")
-    random.shuffle(pair_list)
-    val, pair_select = pair_list[0] #pick the first pair list e.g (1, [[1, 2]])
-    rest_of_pairs = pair_list[1:]
-    if len(rest_of_pairs) > 0:
-        pq.enqueue(rest_of_pairs)
-    np.random.shuffle(pair_select)
-    pair = pair_select[0] #pick the first pair from the list
-    rest_of_pairs = np.delete(pair_select, 0, axis = 0) #axis=0 to delete the pair, not a value from each pair
-    if rest_of_pairs.size > 0:
-        pq.insert((val, rest_of_pairs))
-    return pair
-""" 
-
+    return pair_list[1] 
 
 def dijkstra(yeast_graph, human_graph, seed, sims, delta, num_seeds = 1):
     #global delta
     #delta above 0.01 takes a very long time to finish
-    # 0.05 ~ 10 min
     pq = SkipList() 
     pairs = set()
     yeast_nodes = set()
@@ -163,7 +144,7 @@ def dijkstra(yeast_graph, human_graph, seed, sims, delta, num_seeds = 1):
 
     while len(yeast_nodes) < len(yeast_graph):
         for _ in range(num_seeds):
-            try: #get seeds
+            try: 
                 seed_Y, seed_H = next(seed)
                 while seed_Y in yeast_nodes or seed_H in human_nodes: #throw away bad seeds until you get a good one
                     seed_Y, seed_H = next(seed)
@@ -225,119 +206,3 @@ def to_name(pairs, yd, hd):
 def log_file_name(start = 'bionet_yeast_human', ext = '.txt'):
     dtime = datetime.datetime.now()
     return start + '_' +dtime.strftime("%Y-%m-%d_%H-%M-%S") + ext
-
-
-
-
-if __name__ == "__main__":
-    
-   
-
-    yeast_graph = build_graph("yeasti.txt")
-    human_graph = build_graph("humani.txt")
-    sims = get_sim("sorted_simsi.txt", len(yeast_graph), len(human_graph))
-    global delta
-    delta=0.01
-    yeast_dict = read_dict("yeastd.txt")
-    human_dict = read_dict("humand.txt")
-
-    """
-    don't use rsorted_simsi.txt ! Since the similarity is reversed,
-    we should also reverse the file and use sorted_simsi.txt instead!
-    """
-##    global tree_trace
-##    tree_trace = list()
-#    for _ in range(1):
-#        a,b,c = dijkstra(yeast_graph, human_graph, get_seed("sorted_simsi.txt"), sims)
-#        d = induced_subgraph(yeast_graph, human_graph, list(c))
-#
-#        print(coverage(yeast_graph, human_graph,d))
-#        write_result(log_file_name('result1'),c)
-#        write_result(log_file_name('result2'),to_name(c, yeast_dict, human_dict))
-
-#with time record
-    import matplotlib.pyplot as plt
-    import time
-#    bias=[]
-#    #fullrand=[]
-#    k=20
-#    for i in range(k):
-#        starttime=time.time()
-#        a,b,c = dijkstra(yeast_graph, human_graph, get_seed("sorted_simsi.txt"), sims)
-#        d = induced_subgraph(yeast_graph, human_graph, list(c))
-#        cov=coverage(yeast_graph, human_graph,d)[0]
-#        print(cov)
-#        bias.append(cov)
-#    plt.boxplot(bias,fullrand)
-#    plt.title("ec different algorithm. k="+str(k))
-#    plt.xlabel("left:bias right:full_rand")
-#    plt.ylabel("edge coverage")
-#    plt.figure()
-
-    result=[]
-    time_record=[]    
-    
-    delta=0.05
-    ss=10
-    # for i in range(1):
-    #     result.append([])
-    #     time_record.append([])
-    #     #delta=(i**2)*0.0025
-    #     delta=0
-    #     for j in range(ss):
-    #         start_time = time.clock()
-            
-    #         a,b,c = dijkstra(yeast_graph, human_graph, get_seed("sorted_simsi.txt"), sims)
-    #         d = induced_subgraph(yeast_graph, human_graph, list(c))
-    #         cov=coverage(yeast_graph, human_graph,d)[0]
-    #         print(cov)
-    #         result[i].append(cov)
-            
-    #         time_used = time.clock() - start_time
-    #         time_record[i].append(time_used)
-            
-    #         file_name='delta='+str(delta)+'_time='+str(int(time_used))+"_"
-    #         write_result(log_file_name(file_name),c)
-    #     time_record[i]=np.mean(time_record[i])
-       
-    #    #plt.histgram(result[0])       
-    plt.boxplot(result)
-    plt.title("different delta for ec (distributed random), sample size="+str(ss))
-    plt.xlabel("delta=(i-1)^2 * 0.0025")
-    plt.ylabel("edge_coverage")
-    plt.figure()
-   
-    plt.plot(time_record)
-    plt.title("different delta for ec (distributed random), sample size="+str(ss))
-    plt.xlabel("delta=(i-1)^2 * 0.0025")
-    plt.ylabel("time_used")
-    plt.figure()
-        
-    start_time = time.clock()
-    print("start ")
-    print(start_time)
-    result=[]
-    for i in range(100):
-        #delta=(10*2)*0.0025
-        delta = (i**2)*0.0025
-        a,b,c = dijkstra(yeast_graph, human_graph, get_seed("sorted_simsi.txt"), sims)
-        d = induced_subgraph(yeast_graph, human_graph, list(c))
-        cov=coverage(yeast_graph, human_graph,d)[0]
-        result.append(cov)
-        print(cov)
-    plt.boxplot(result)
-    plt.title("different delta for ec (rand in range), sample size="+str(ss))
-    plt.xlabel("delta=(i-1)^2 * 0.0025")
-    plt.ylabel("edge coverage")
-    plt.figure()
-    plt.show()
-    print("end ", time.clock() - start_time)
-
-
-
-
-
-
-
-
-
