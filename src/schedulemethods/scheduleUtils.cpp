@@ -47,7 +47,7 @@ void scheduleMethodComparison(SANA *const sana) {
     };
     params.targetInitialPBad = 0.99;
     params.targetFinalPBad = 1e-10;
-    params.runsPerMethod = 2;
+    params.runsPerMethod = 30;
     params.maxResources.numSamples = 60;
     params.maxResources.runtime = 120.0;
     params.sampleTime = 4; //max time in seconds for getPBad to reach equilibrium

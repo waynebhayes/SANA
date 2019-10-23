@@ -9,7 +9,7 @@ trap "/bin/rm -rf $DIR" 0 1 2 3 15
 if [ `hostname` = Jenkins ]; then
     ITERS=99; minutes=1
 else
-    ITERS=10; minutes=1
+    ITERS=40; minutes=1
 fi
 case "$#" in
 2) ITERS=$1;minutes=$2; shift 2;;

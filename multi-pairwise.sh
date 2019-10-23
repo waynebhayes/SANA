@@ -105,7 +105,7 @@ while echo "X$1" | grep '^X-' >/dev/null; do
     -bipartite) TYPES=true; TYPEargs='-bipartite -lock-same-names'; SEScol=3;
 	CrShOutType=el; CrShAlignInput=align; TYPEcreateSh='--bipartite --shadowNames Jurisica/SHADOW.all.txt';
 	;;
-    -VERBOSE) VERBOSE=-verbose;;
+    -[vV]*) VERBOSE=-verbose;;
     -*) die "unknown option '$1'";;
     esac
     shift
@@ -222,5 +222,7 @@ do
     [ $TYPES ] && yes | head | (awk '{printf "DUMMY\tmRNA-%c\t0\n", 64+NR}' >> $OUTDIR/dir$i1/$NAME-shadow$i1.el)
 #   awk '{gsub("[|{}]","")}$'$SEScol'>1{sum2+=$'$SEScol'^2}END{printf " SES %g\n", sum2/'$SES_DENOM'}' $OUTDIR/dir$i1/$NAME-shadow$i1.$CrShOutType
 done
+[ "$VERBOSE" = "" ] && echo "" # final newline
+
 #echo "Computing CIQ... may take awhile..."
 #/CIQ.sh $OUTDIR/dir$i1/multiAlign.tsv `echo "$@" | newlines | sed 's/\.gw/.el/'`
