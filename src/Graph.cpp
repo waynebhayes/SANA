@@ -1170,9 +1170,9 @@ void Graph::loadFromMultipartiteEdgeList(string fin, string graphName, Graph& g,
         string token;
         numTypes = 0;
         while(getline(iss, token, '\t')) {
-            if(token != " ") {
-                if(token.back() == 13)
-                    token = token.substr(0, token.size()-1);
+            if(token.back() == 13)
+                token = token.substr(0, token.size()-1);
+            if(token != "-") {
                 record.insert(token);
             }
             numTypes++;
@@ -1217,9 +1217,9 @@ void Graph::loadFromMultipartiteEdgeList(string fin, string graphName, Graph& g,
         string token;
         int type = 0;
         while(getline(iss, token, '\t')){
-            if(token != " ") {
-                if(token.back() == 13)
-                    token = token.substr(0, token.size()-1);
+            if(token.back() == 13)
+                token = token.substr(0, token.size()-1);
+            if(token != "-") {
                 words.push_back(token);
                 types.push_back(type);
             }

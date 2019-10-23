@@ -311,6 +311,8 @@ Alignment SANA::getStartingAlignment(){
 
     if(this->startAligName != "")
         startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
+    else if(G1->isBipartite())
+        startAlig = Alignment::startingMultipartiteAlignment(G1,G2);
     else if(G1->getNumMultipartite() > 1)
         startAlig = Alignment::startingMultipartiteAlignment(G1,G2);
     else if (lockFileName != "")
@@ -318,10 +320,6 @@ Alignment SANA::getStartingAlignment(){
     else
         startAlig = Alignment::random(n1, n2);
         
-        
-    ofstream outfile;
-    outfile.open("starting_align.txt");
-    startAlig.writeEdgeList(G1, G2, outfile);
 
     // Doing a Rexindexing if required
 #ifdef REINDEX
@@ -1368,7 +1366,6 @@ void SANA::performChange(int type) {
     {
         (*A)[source]                         = newTarget;
         
-        cout << newTarget << " " << newTarget << endl;
         
         if(multipartite == 1)
             (*unassignedNodesG2)[newTargetIndex] = oldTarget;

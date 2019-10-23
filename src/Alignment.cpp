@@ -479,8 +479,61 @@ Alignment Alignment::randomAlignmentWithLocking(Graph* G1, Graph* G2){
 }
 
 Alignment Alignment::startingMultipartiteAlignment(Graph* G1, Graph* G2) {
+    unordered_map<uint,string> g1_NameMap = G1->getIndexToNodeNameMap();
+    unordered_map<string,uint> g2_IndexMap = G2->getNodeNameToIndexMap();
     
-    return vector<uint>{3, 4, 5, 0, 1, 2};
+    uint n1 = G1->getNumNodes();
+    uint n2 = G2->getNumNodes();
+    
+    vector<vector<uint>> G2UnlockedTypedIndices(G2->typedNodesIndexList.size(), vector<uint>{});
+    for(uint i = 0; i < n2; i++){
+        if(G2->isLocked(i))
+            continue;
+        G2UnlockedTypedIndices[G2->nodeTypes[i]].push_back(i);
+    }
+    
+    vector<uint> A(n1, n2);
+    
+    for (uint i = 0; i < n1; i++) {
+        if(!G1->isLocked(i))
+            continue;
+        string node1 = g1_NameMap[i];
+        string node2 = G1->getLockedTo(i);
+        uint node2Index = g2_IndexMap[node2];
+        if(G1->nodeTypes[i] != G2-> nodeTypes[node2Index]){
+            cout << "Invalid lock -- cannot lock two nodes of different types " << node1 <<  ", " << node2 << endl;
+        }
+        assert (G1->nodeTypes[i] == G2-> nodeTypes[node2Index]);
+        A[i] = node2Index;
+    }
+    
+    
+    vector<bool> G2AssignedNodes(n2, false);
+    for (uint i = 0; i < n1; i++) {
+        if (A[i] != n2)
+            G2AssignedNodes[A[i]] = true;
+    }
+    
+    for (uint i = 0; i < n1; i++) {
+        if (A[i] == n2) {
+            int type = G1->nodeTypes[i];
+            int randSize = G2UnlockedTypedIndices[type].size();
+            int j = randMod(randSize);
+            while (G2AssignedNodes[G2UnlockedTypedIndices[type][j]])
+                j = randMod(randSize);
+            A[i] = G2UnlockedTypedIndices[type][j];
+            G2AssignedNodes[G2UnlockedTypedIndices[type][j]] = true;
+        }
+    }
+    
+    for (uint i = 0; i < n1; i++) {
+        assert (G1->nodeTypes[i] == G2-> nodeTypes[A[i]]);
+    }
+
+    Alignment alig(A);
+    alig.printDefinitionErrors(*G1, *G2);
+    assert(alig.isCorrectlyDefined(*G1, *G2));
+    return alig;
 }
 
 Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
@@ -540,7 +593,6 @@ Alignment Alignment::randomAlignmentWithNodeType(Graph* G1, Graph* G2){
                     A[i] = G2_UnlockedRNAIndexes[j];
                     G2AssignedNodes[G2_UnlockedRNAIndexes[j]] = true;
                 }
-
             }
         }
 
