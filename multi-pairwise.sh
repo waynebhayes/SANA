@@ -105,7 +105,7 @@ while echo "X$1" | grep '^X-' >/dev/null; do
     -bipartite) TYPES=true; TYPEargs='-bipartite -lock-same-names'; SEScol=3;
 	CrShOutType=el; CrShAlignInput=align; TYPEcreateSh='--bipartite --shadowNames Jurisica/SHADOW.all.txt';
 	;;
-    -[vV]*) VERBOSE=-verbose;;
+    -[vV]*) VERBOSE=-v;;
     -*) die "unknown option '$1'";;
     esac
     shift

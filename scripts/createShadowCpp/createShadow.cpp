@@ -388,8 +388,8 @@ int main(int argc, const char** argv) {
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
 
     args::Group opt(parser, "Optional Flag", args::Group::Validators::DontCare);
-    args::Flag bipartiteFlag(opt, "bipartite", "Enables -bipartite", {'n', "bipartite"});
-    args::Flag verboseFlag  (opt, "verbose",   "Enables -verbose",   {'n', "verbose"});
+    args::Flag bipartiteFlag(opt, "bipartite", "Enables --bipartite", {'b', "bipartite"});
+    args::Flag verboseFlag  (opt, "verbose",   "Enables --verbose",   {'v', "verbose"});
     if(args::get(verboseFlag)) _verbose=true;
     args::ValueFlag<std::string> shadowNamesFlag(opt, "shadowNames", "Block size", {"shadowNames"});
 
