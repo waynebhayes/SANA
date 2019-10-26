@@ -145,7 +145,7 @@ MAIN = sana
 
 .PHONY: depend clean test test_all regression_test
 
-all:    $(MAIN) argumentCSV
+all:    $(MAIN) argumentCSV createShadow
 
 $(MAIN): $(OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
@@ -213,3 +213,6 @@ optnetalign:
 multi:
 	$(MAKE) 'MULTI=1'
 	mv sana sana.multi
+
+createShadow: scripts/createShadowCpp/createShadow
+	mv scripts/createShadowCpp/createShadow .
