@@ -256,8 +256,8 @@ SANA::SANA(Graph* G1, Graph* G2,
     }
 #ifdef CORES
 #if UNWEIGHTED_CORES
-    numPegSamples = vector<ulong>(n1, 0);
-    pegHoleFreq = Matrix<ulong>(n1, n2);
+    numPegSamples = vector<unsigned long>(n1, 0);
+    pegHoleFreq = Matrix<unsigned long>(n1, n2);
 #endif
     weightedPegHoleFreq_pBad = Matrix<double>(n1, n2);
     totalWeightedPegWeight_pBad = vector<double>(n1, 0);
@@ -351,7 +351,7 @@ Alignment SANA::getStartingAlignment(){
 ** that we want to output, and it guarantees that every node appears in at
 ** least one aligned node-pair according to this score.  We output this Smin.
 */
-double SANA::TrimCoreScores(Matrix<ulong>& Freq, vector<ulong>& numPegSamples)
+double SANA::TrimCoreScores(Matrix<unsigned long>& Freq, vector<unsigned long>& numPegSamples)
 {
     uint n1 = Freq.size(), n2 = Freq[0].size();
     vector<double> high1(n1,0.0);
