@@ -15,7 +15,7 @@
 using namespace std;
 
 struct greaterThan {
-        bool operator()(const double &a, const double &b) { return a > b; }
+        bool operator()(const double &a, const double &b) const { return a > b; }
 };
 
 typedef vector<uint>* alignmentPtr;
