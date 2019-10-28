@@ -3,7 +3,7 @@ USAGE="USAGE: $0 [-H N] sana.exe 'measures' iterations time-per-iter parallel-sp
 parallel-spec is either a job name for distrib_sge, or '-parallel K' (including the quotes!) for K processes locally"
 
 EXEDIR=`dirname $0`
-EXEDIR=`cd "$EXEDIR"; pwd`
+EXEDIR=`cd "$EXEDIR"; /bin/pwd`
 PATH="$EXEDIR:$EXEDIR/NetGO:$EXEDIR/scripts:$PATH"
 export PATH
 
