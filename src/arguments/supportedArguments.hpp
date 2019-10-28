@@ -5,6 +5,7 @@
 #include <iomanip> //Used to format the text console output when ./sana -h or ./sana --help is executed.
 #include <sstream> //Used to format the text console output when ./sana -h or ./sana --help is executed.
 #include <fstream> //Used to access a text file called helpOutput which contains information useful to the user to understand how to run SANA on the command line.
+#include <unordered_set> //Used for tracking help arguments
 
 using namespace std;
 
@@ -16,7 +17,7 @@ extern vector<string> stringVectorArgs;
 extern vector<array<string, 6>> supportedArguments; //Initially stores information on options/arguments in SANA.
 
 void validateAndAddArguments(); //Checks to make sure fields inside supportedArguments are properly filled out and adds them to the four Args datatypes.
-void printAllArgumentDescriptions(); //Used to generate the help text when ./sana -h or ./sana --help is invoked from command line.
+void printAllArgumentDescriptions(unordered_set<string> help_args); //Used to generate the help text when ./sana -h or ./sana --help is invoked from command line.
 string printItem(const array<string, 6> &item);    //Helper function of printAllArgumentDescriptions() that prints a single argument to the console.
 string formatDescription(string description); //helper function of printItem() that helps with the formatting of console output.
 bool hasNewLines(const string &item4); //helper function of formatDescription() that evaluates whether a description of an argument should be formatted on many lines.

@@ -5,10 +5,6 @@ Above example aligns yeast and human for a duration of 5 minutes, optimizing s3.
 Note that the running time and objective function is implicit (default arguments).
 For more examples and information, see usage notes at bottom.
 
-The following is a list of supported options.
-
-OPTIONS, ARGS, AND DESCRIPTIONS GO HERE.
-
 Sana Usage Notes:
 
 The interface to using SANA is modeled after a standard linux command line
@@ -189,3 +185,5 @@ More documentation can be found at:
 	<http://www. ...>
 	<http://www. ...>
 	<http://www. ...>
+
+For more specialized help, Use the following commands:
