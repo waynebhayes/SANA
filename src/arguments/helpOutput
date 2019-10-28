@@ -187,3 +187,22 @@ More documentation can be found at:
 	<http://www. ...>
 
 For more specialized help, Use the following commands:
+
+./sana -h -go                   for General Options
+./sana -h -m                    for Method Options
+./sana -h -ms                   for additional Options when Method is SANA
+./sana -h -mt                   for additional Options when Method is TABU
+./sana -h -mdj                  for additional Options when Method is Djikstra
+./sana -h -ml                   for additional Options when Method is lgraal
+./sana -h -of                   for Objective Function Types
+./sana -h -ofspec               for Objective Function Specifications and weights
+./sana -h -mof                  for Further Weight Specification of Method and Objective Function Types
+./sana -h -md                   for Mode Options
+./sana -h -mdc                  for additional Options when Mode is Cluster
+./sana -h -mde                  for additional Options when Mode is Experimental
+./sana -h -mdpm                 for additional Options when Mode is Parameter Estimation
+./sana -h -mdal                 for additional Options when Mode is Alpha Estimation
+./sana -h -mdan                 for additional Options when Mode is Analysis
+./sana -h -mds                  for additional Options when Mode is Similarity
+./sana -h -mdpt                 for additional Options when Mode is Pareto
+./sana -h -all                  to print all the help sections

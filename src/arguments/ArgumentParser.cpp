@@ -92,19 +92,19 @@ vector<string> ArgumentParser::getFullArgList(const vector<string>& argv,
 void ArgumentParser::initParsedValues(vector<string> vArg) {
     int n = vArg.size();
     bool help_found = false;
-    unordered_set<string> help_args;
+    unordered_set<string> helpArgs;
     //check to see if there is a help argument
     for (string arg : vArg) {
         if (arg == "-h" or arg == "--help") {
             help_found = true;
         }
         else if (help_found == true){
-            help_args.insert(arg);
+            helpArgs.insert(arg);
         }
     }
 
     if (help_found == true){
-        printAllArgumentDescriptions(help_args);
+        printAllArgumentDescriptions(helpArgs);
         exit(0);
     }
 

@@ -79,7 +79,7 @@ vector<array<string, 6>> supportedArguments = {
     //----------------------------------END TABU-----------------------------------------
 
     //----------------------------------Dijkstra-----------------------------------------
-    { "", "-md", "banner", "", "Additional options to consider when method is \"dijkstra\"", "0" },
+    { "", "-mdj", "banner", "", "Additional options to consider when method is \"dijkstra\"", "0" },
     { "-dijkstradelta","double","0","Dijkstra Randomness Amount","When picking the next edge to cross when adding a new node in the seed-and-extend Dijkstra algorithm, -dijkstradelta will set the width of the range of node similarity values that should be considered equal. Larger values inject more randomness; zero means \"pick best node according to current measure\".", "0" },
     { "END Additional options to consider when method is \"dijkstra\"", "", "banner", "", "", "0" },
     //---------------------------------END Dikstra---------------------------------------
@@ -284,35 +284,8 @@ void printAllArgumentDescriptions(unordered_set<string> help_args) {
     ifstream helpOutput;
     helpOutput.open("./src/arguments/helpOutput");
     string line;
-    // getline(helpOutput, line);
-    // while (line != "OPTIONS, ARGS, AND DESCRIPTIONS GO HERE.")
-    // {
-    //     cout << line << endl;
-    //     getline(helpOutput, line);
-    // }
 
-    // for (auto it = supportedArguments.begin(); it != supportedArguments.end(); it++)
-    // {
-    //     cout << printItem(*it);
-    // }
-
-    /*string allOutput = "";
- *     while(!helpOutput.eof()){
- *        getline(helpOutput, line);
- *         allOutput += line + " ";
- *     }
- *
- *     while(!allOutput.size() > 80){                                 //In case a way is found to automatically generate the width of the helpOutput file in a non-complicated way, this commented code will
- *         int space_location = 80;                               //extract a line from the helpOutput file at a specified width and print to the console. Change the constant 80 to some variable.
- *         while(allOutput[space_location] != ' ')
- *             space_location--;
- *         cout << '\n' << allOutput.substr(0, space_location);
- *         allOutput = allOutput.substr(space_location+1, allOutput.size() - space_location);
- *     }
- *     cout << '\n' << allOutput;*/
-
-// TODO: Add to helpOutput file, clean up and add a check to only print helpOutput is nothing in help_args
-    if (help_args.size() == 0){
+    if (help_args.size() == 0){ // Checks if no extra flag is given, If none prints general helpOutput file
         while (!helpOutput.eof())
         {
             getline(helpOutput, line);
@@ -331,7 +304,7 @@ void printAllArgumentDescriptions(unordered_set<string> help_args) {
         {
             printingArguments = false;
             for (const auto& ele: help_args){
-                if (!ele.compare((*it)[1])){
+                if (!ele.compare((*it)[1]) || !ele.compare("-all")){
                     printingArguments = true;
                     break;
                 }
@@ -342,10 +315,6 @@ void printAllArgumentDescriptions(unordered_set<string> help_args) {
             cout << printItem(*it) << endl;
         }
     }
-
-    // for (const auto& ele: help_args){
-    //     cout << ele;
-    // }
 
     helpOutput.close();
 }
