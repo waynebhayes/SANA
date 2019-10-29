@@ -145,7 +145,7 @@ MAIN = sana
 
 .PHONY: depend clean test test_all regression_test
 
-all:    $(MAIN) argumentCSV createShadow
+all:    $(MAIN) argumentCSV createShadow NetGO
 
 $(MAIN): $(OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
@@ -209,6 +209,9 @@ depend: $(SRCS)
 # Here is the targets for making the wrappedAlgorithms
 optnetalign:
 	cd wrappedAlgorithms/OptNetAlign/src; $(MAKE) optnetalignubuntu; chmod +x optnetalign; cp optnetalign ../
+
+NetGO:
+	(cd NetGO && git pull)
 
 multi: parallel
 	$(MAKE) 'MULTI=1'
