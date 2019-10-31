@@ -3,8 +3,8 @@
 
 echo "First test NetGO.awk on BioGRID:"
 
-gunzip resnik/2018/*.gz
-unxz regression-tests/multi-pairwise/BioGRID-100x1-dir300-multiAlign.tsv.xz
+gunzip -f resnik/2018/*.gz
+unxz -f regression-tests/multi-pairwise/BioGRID-100x1-dir300-multiAlign.tsv.xz
 ./NetGO/NetGO.awk resnik/2018/go.obo resnik/2018/gene2go regression-tests/multi-pairwise/BioGRID-100x1-dir300-multiAlign.tsv
 
 PATH="`pwd`/scripts:$PATH"
