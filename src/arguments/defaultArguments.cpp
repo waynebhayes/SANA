@@ -10,7 +10,6 @@ vector<string> defaultArguments = {
 "-tinitial auto",
 "-tdecay auto",
 "-schedulemethod auto",
-"-t 5",
 "-mode normal",
 "-method sana",
 "-s3 0",
