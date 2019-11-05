@@ -275,8 +275,10 @@ string extractDecimals(double value, int count) {
 }
 
 string intToString(int n) {
-    std::ostringstream oss = std::ostringstream() << n;
-    return oss.str();
+	return std::to_string(n);
+	// std::string nString = std::to_string(n);
+    // std::ostringstream oss = std::ostringstream() << nString;
+    // return oss.str();
     // return static_cast<ostringstream*>( &(ostringstream() << n) )->str();
 }
 
