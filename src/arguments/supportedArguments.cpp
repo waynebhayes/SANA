@@ -91,7 +91,7 @@ vector<array<string, 6>> supportedArguments = {
     //---------------------------------END LGRAAL----------------------------------------
 
     //---------------------------Objective Function Type---------------------------------
-    { "", "-of", "banner", "", "Objective Function", "0" },
+    { "", "objectives-type", "banner", "", "Objective Function", "0" },
     { "-objfuntype", "string", "generic", "Objective Function Type", "Acceptable arguments are \"alpha\", \"beta\", or \"generic\". Make sure the chosen argument of \"-objectfuntype\" also matches with the chosen argument for \"-method\".", "1" },
     { "End Objective Function", "", "banner", "", "", "0" },
     //-------------------------END Objective Function Type-------------------------------

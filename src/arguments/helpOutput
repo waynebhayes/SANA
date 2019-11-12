@@ -18,9 +18,9 @@ For more specialized help, Use the following commands:
 ./sana -h method-tabu               for additional Options when Method is TABU
 ./sana -h method-djikstra           for additional Options when Method is Djikstra
 ./sana -h method-lgraal             for additional Options when Method is lgraal
-./sana -h //decide_here             for Objective Function Types
-./sana -h objectives-simple         for Objective Function Specifications and weights
-./sana -h objectives-complex        for Further Weight Specification of Method and Objective Function Types
+./sana -h objectives-type           for Objective Function Types
+./sana -h objectives-simple         for Simple Objective Function Specifications and weights
+./sana -h objectives-complex        for Weight Specification of Complex Objective Function Types
 ./sana -h mode                      for Mode Options
 ./sana -h mode-cluster              for additional Options when Mode is Cluster
 ./sana -h mode-experimental         for additional Options when Mode is Experimental
