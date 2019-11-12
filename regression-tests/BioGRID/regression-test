@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-PARALLEL='parallel -s bash 4'  # run in parallel on jenkins
+PARALLEL='./parallel -s bash 4'  # run in parallel on jenkins
 #PARALLEL=bash # if you don't have the parallel program
 
 die() { echo "ERROR: $@" >&2; exit 1
@@ -132,7 +132,16 @@ if [ ! -z "$CompareFile" ]; then
         newItem=`echo -e $NewAverages | awk '{print $'$i'}'`
         name=`echo -e $Names | awk '{print $'$i'}'`
         errorDif=`parse "($newItem - $baseItem)/$baseItem"`
-	echo "$name: ($newItem - $baseItem)/$baseItem, changeFrac: $errorDif, margin $ErrorMargin" >&2
+	EXTRA_MARGIN=1
+	echo -n "$name: ($newItem - $baseItem)/$baseItem, changeFrac: $errorDif, margin $ErrorMargin" >&2
+	case $name in
+	Iterations)
+	    EXTRA_MARGIN=2.5
+	    echo -n " * $EXTRA_MARGIN (wider margin)" >&2
+	    ;;
+	esac
+	echo "" # finish the "echo -n" line above
+	errorDif=`parse "$errorDif/$EXTRA_MARGIN"`
         errorDif=`parse "ABS($errorDif)" | awk '{printf "%.16f\n",$1}'`
         if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
             touch $TMPDIR/failed
