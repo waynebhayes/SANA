@@ -74,7 +74,7 @@ for i in $(seq 1 $Networks_count);do
     for j in $(seq $((i + 1)) $Networks_count); do
         Network2=`echo -e $Biogrid_network | awk '{print $'$i'}'`
         Network1=`echo -e $Biogrid_network | awk '{print $'$j'}'`
-        echo "echo Running $Network1-$Network2; ./sana -s3 1 -g1 $Network1 -g2 $Network2 -o '$OutputDir/$Network1-$Network2' &> '$OutputDir/$Network1-$Network2.progress'"
+        echo "echo Running $Network1-$Network2; ./sana -t 10 -s3 1 -g1 $Network1 -g2 $Network2 -o '$OutputDir/$Network1-$Network2' &> '$OutputDir/$Network1-$Network2.progress'"
     done
 done | eval $PARALLEL
 
@@ -166,7 +166,7 @@ if [ ! -z "$CompareFile" ]; then
         fi
     done
     cat $TMPDIR/networks.locking | while read Network1 Network2; do
-	echo "echo checking locking between $Network1 and $Network2; ./sana -s3 1 -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null"
+	echo "echo checking locking between $Network1 and $Network2; ./sana -t 10 -s3 1 -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null"
     done | eval $PARALLEL
     cat $TMPDIR/networks.locking | while read Network1 Network2; do
 	if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.align" | wc -l` -ne 50 ]]; then

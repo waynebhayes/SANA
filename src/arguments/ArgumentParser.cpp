@@ -114,7 +114,7 @@ void ArgumentParser::initParsedValues(vector<string> vArg) {
 
     // Removed time from default arguments, Instead checks here if time provided
     if (time_found != true){
-        throw runtime_error("what(): Time not chosen, Choosing the right time for the particular objective/measure chosen is very important");
+        throw runtime_error("ERROR: please specify a run time in minutes using the '-t xxx' option; type './sana -h' for help");
     }
 
     string arg = "";
