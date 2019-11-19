@@ -1,6 +1,6 @@
 import random
 import numpy
-import fastrand
+#import fastrand
 
 class SkipNode:   
     def __init__(self, height = 0, value = None, info = None):
