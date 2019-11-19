@@ -1,8 +1,12 @@
 import argparse
 #from research_for_graph import *
-from graph_research import *
+#from graph_research import *
+import alignment
 import seeding
+import builder
 import lzma
+
+
 import time
 import os.path
 import time
@@ -37,10 +41,10 @@ if __name__ == '__main__':
 
     delta = float(args.delta)
 
-    graph1 = build_graph(args.graph1)
+    graph1 = builder.build_graph(args.graph1)
     graph1.name = os.path.basename(args.graph1)
     graph1.name = os.path.splitext(graph1.name)[0]
-    graph2 = build_graph(args.graph2)
+    graph2 = builder.build_graph(args.graph2)
     graph2.name = os.path.basename(args.graph2)
     graph2.name = os.path.splitext(graph2.name)[0]
     
@@ -51,7 +55,7 @@ if __name__ == '__main__':
 
     seed_length = seeding.get_seed_length(g1_seed_file)
 
-    sims = get_sim(args.sim, graph1, graph2, args.pickle)
+    sims = builder.get_sim(args.sim, graph1, graph2, args.pickle)
 
     for seed in seeding.generate_seed(g1_seed_file,g2_seed_file):
         
@@ -63,10 +67,10 @@ if __name__ == '__main__':
             print(mat2)
 
         start = time.time()
-        a, b, pairs = stop_align2(graph1, graph2, get_aligned_seed(zip(*seed),graph1, graph2), sims, delta)
-        subgraph = induced_subgraph(graph1, graph2, list(pairs))
-        cov = coverage(graph1, graph2, subgraph)[0]
-        cov2 = coverage(graph1, graph2, subgraph)[1]
+        a, b, pairs = alignment.stop_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, delta)
+        subgraph = alignment.induced_subgraph(graph1, graph2, list(pairs))
+        cov = alignment.coverage(graph1, graph2, subgraph)[0]
+        cov2 = alignment.coverage(graph1, graph2, subgraph)[1]
 
         print("Edges aligned in subgraph:",len(subgraph))
         print("Pairs aligned in subgraph:",len(pairs))
@@ -78,7 +82,7 @@ if __name__ == '__main__':
         uid = uuidstr[:13]
         
         fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--" + str(newcov) + "--"  + uid +  ".dijkstra"
-        write_result(fname, pairs, graph1, graph2)
+        alignment.write_result(fname, pairs, graph1, graph2)
         end = time.time()
         hours, rem = divmod(end-start, 3600)
         minutes, seconds = divmod(rem, 60)

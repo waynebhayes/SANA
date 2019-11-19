@@ -5,12 +5,8 @@ from collections import defaultdict
 import datetime
 from skip_list import *
 import lzma
-import seeding
+from measures import edgecoverage 
 
-def get_aligned_seed(s, graph1, graph2):
-    for pair in s:
-        #yield [int(pair[0]),int(pair[1])]
-        yield [graph1.indexes[pair[0]], graph2.indexes[pair[1]]]
 
 
 def update_best_pair(pq, yeast_graph, human_graph, yeast_node, human_node, pairs, sims, delta = 0):
