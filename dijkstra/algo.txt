@@ -1,0 +1,9 @@
+lnode = node with lower degree between g1node, g2node
+mnode = node with higher degree between g1node, g2node
+
+for node V in lnode neighbor nodes:
+	if V is in subgraph_nodes:
+		if there is no mnode edge from V to (mnode):
+			break   #node V will not be aligned
+		else:
+			align edge

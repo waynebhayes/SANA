@@ -1,4 +1,12 @@
 #!/bin/sh
+
+
+echo "First test NetGO.awk on BioGRID:"
+
+gunzip -f resnik/2018/*.gz
+unxz -f regression-tests/multi-pairwise/BioGRID-100x1-dir300-multiAlign.tsv.xz
+./NetGO/NetGO.awk resnik/2018/go.obo resnik/2018/gene2go regression-tests/multi-pairwise/BioGRID-100x1-dir300-multiAlign.tsv
+
 PATH="`pwd`/scripts:$PATH"
 export PATH
 DIR=/tmp/syeast.$$
@@ -9,7 +17,7 @@ trap "/bin/rm -rf $DIR" 0 1 2 3 15
 if [ `hostname` = Jenkins ]; then
     ITERS=99; minutes=1
 else
-    ITERS=10; minutes=1
+    ITERS=40; minutes=1
 fi
 case "$#" in
 2) ITERS=$1;minutes=$2; shift 2;;

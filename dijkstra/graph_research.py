@@ -21,6 +21,7 @@ def get_seed(file, graph1, graph2, delta):
                 yield [int(n) for n in (line.strip().split()[0:2])]
     """
     tied_seeds = []
+<<<<<<< HEAD
     #curr_value = 1.0
     curr_value = 1.0 - delta
     if file.endswith("xz"):
@@ -63,6 +64,83 @@ def get_seed(file, graph1, graph2, delta):
             for seed in tied_seeds:
                 yield seed[0:2]
                 
+||||||| merged common ancestors
+    curr_value = 1.0
+    with lzma.open(file, mode = 'rt') as f3:
+        for line in f3:
+
+            row = line.strip().split()
+            if row[0] not in graph1.indexes or row[1] not in graph2.indexes:
+                continue
+            row[0], row[1], row[2] = graph1.indexes[row[0]], graph2.indexes[row[1]], float(row[2])
+            if row[2] < curr_value:
+##                tree_trace.append(('s',len(tied_seeds)))
+                random.shuffle(tied_seeds)
+##                    print("this node has lower similarity\n")
+                for seed in tied_seeds:
+                    yield seed[0:2]
+                del tied_seeds
+                tied_seeds = [row[0:2]]
+                curr_value = row[2]
+##                    print("reset tied seeds" + str(len(tied_seeds)))
+            else:
+                tied_seeds.append(row[0:2])
+        random.shuffle(tied_seeds)
+##        tree_trace.append(('s',len(tied_seeds)))
+        for seed in tied_seeds:
+            yield seed[0:2]
+
+=======
+    #curr_value = 1.0
+    curr_value = 1.0 - delta
+    if file.endswith("xz"):
+        with lzma.open(file, mode = 'rt') as f3:
+            for line in f3:
+                row = line.strip().split()
+                if row[0] not in graph1.indexes or row[1] not in graph2.indexes:
+                    continue
+                row[0], row[1], row[2] = graph1.indexes[row[0]], graph2.indexes[row[1]], float(row[2])
+                if row[2] < curr_value:
+                    random.shuffle(tied_seeds)
+                    for seed in tied_seeds:
+                        yield seed[0:2]
+                    del tied_seeds
+                    tied_seeds = [row[0:2]]
+                    curr_value = row[2]
+                else:
+                    tied_seeds.append(row[0:2])
+            random.shuffle(tied_seeds)
+            for seed in tied_seeds:
+                yield seed[0:2]
+
+    else:
+        with open(file, mode = 'rt') as f3:
+            for line in f3:
+                row = line.strip().split()
+                if row[0] not in graph1.indexes or row[1] not in graph2.indexes:
+                    continue
+                row[0], row[1], row[2] = graph1.indexes[row[0]], graph2.indexes[row[1]], float(row[2])
+                if row[2] < curr_value:
+                    random.shuffle(tied_seeds)
+                    for seed in tied_seeds:
+                        yield seed[0:2]
+                    del tied_seeds
+                    tied_seeds = [row[0:2]]
+                    curr_value = row[2]
+                else:
+                    tied_seeds.append(row[0:2])
+            random.shuffle(tied_seeds)
+            for seed in tied_seeds:
+                yield seed[0:2]
+
+
+def get_aligned_seed(s, graph1, graph2):
+    for pair in s:
+        #yield [int(pair[0]),int(pair[1])]
+        yield [graph1.indexes[pair[0]], graph2.indexes[pair[1]]]
+
+
+>>>>>>> 9d46a06f71c587b60383c55831059bd6b7c8ed73
 def update_best_pair(pq, yeast_graph, human_graph, yeast_node, human_node, pairs, sims, delta = 0):
 ##    nonlocal pq
     paired_yeast_nodes = np.fromiter((pair[0] for pair in pairs), dtype=int)
@@ -87,11 +165,6 @@ def update_best_pair(pq, yeast_graph, human_graph, yeast_node, human_node, pairs
     
                 ##pq.insert((val, pair))
     
-##    (val, new_pairs) = sub_best_pair(yeast_neighbors, human_neighbors, sims)
-####    print((val, new_pairs))
-##    if val < 0:
-##        return
-##    pq.insert((val, new_pairs))
 
 def sub_best_pair(yeast_neighbors, human_neighbors, sims, delta):
     """
@@ -105,7 +178,9 @@ def sub_best_pair(yeast_neighbors, human_neighbors, sims, delta):
 ##    if s.size == 0:
 ##        return (-1,[])
 
-    low = max(s.max() - delta, 0.0)
+    #low = 1
+    #low = max(s.max() - delta, 0.0)
+    low = 0
     answers = []
     while(s.max() >= low):
         y_found, h_found = np.where(s == s.max())
@@ -130,7 +205,146 @@ def best_pair(pq, delta):
         pair_list = pq.pop(delta)
     except IndexError:
         raise StopIteration("no more pair values")
+<<<<<<< HEAD
     return pair_list[1] 
+||||||| merged common ancestors
+    #print(type(pair_list))
+    val=pair_list[0]
+    pair_arr=pair_list[1]
+    #print(pair_list)
+    return pair_arr 
+
+##    np.random.shuffle(pair_arr)
+##    pair = pair_arr[0] #pick the first pair from the list
+##    rest_of_pairs = np.delete(pair_arr, 0, axis = 0) #axis=0 to delete the pair, not a value from each pair
+##    if rest_of_pairs.size > 0:
+##        pq.requeue((val, rest_of_pairs))
+##    return pair 
+    
+    """
+    try:
+        pair_list = pq.pop_equals()
+##        print(pair_list)
+    except IndexError:
+        raise StopIteration("no more pair values")
+    if len(pair_list) < 1:
+        raise EmptyList("list is empty")
+    random.shuffle(pair_list)
+    val, pair_select = pair_list[0] #pick the first pair list e.g (1, [[1, 2]])
+    rest_of_pairs = pair_list[1:]
+    if len(rest_of_pairs) > 0:
+        pq.enqueue(rest_of_pairs)
+    np.random.shuffle(pair_select)
+    pair = pair_select[0] #pick the first pair from the list
+    rest_of_pairs = np.delete(pair_select, 0, axis = 0) #axis=0 to delete the pair, not a value from each pair
+    if rest_of_pairs.size > 0:
+        pq.insert((val, rest_of_pairs))
+    return pair
+""" 
+
+=======
+    return pair_list[1] 
+
+
+def fit_in_curr_align(g1, g2, node1, node2, pairs):
+    neighbor1 = g1.get_neighbors(node1)
+    #neighbor1 = g1.get_neighbors(g1.indexes[node1])
+    neighbor2 = g2.get_neighbors(node2)
+    #neighbor2 = g2.get_neighbors(g2.indexes[node2])
+    flipped = False
+    if len(neighbor1) > len(neighbor2):
+        g1, g2 = g2, g1
+        node1, node2 = node2, node1
+        neighbor1, neighbor2 = neighbor2, neighbor1
+        flipped = True 
+    curr_alignment = {pair[1]:pair[0] for pair in pairs} if flipped else {pair[0]:pair[1] for pair in pairs}
+
+    #n2 = []
+    #for node in neighbor2:
+    #    n2.append(g2.nodes[node])
+    
+    for node in neighbor1:
+        if node in curr_alignment and curr_alignment[node] not in neighbor2:
+        #if g1.nodes[node] in curr_alignment and curr_alignment[node] not in n2:
+            return False
+    return True
+
+
+def get_neighbor_pairs(g1, g2, node1, node2, sims, delta = 0):
+    result = []
+    for i in g1.get_neighbors(node1):
+    #for i in g1.get_neighbors(g1.indexes[node1]):
+        for j in g2.get_neighbors(node2):
+        #for j in g2.get_neighbors(g2.indexes[node2]):
+            if sims[i][j] != 0:
+                result.append((i,j))
+    return result
+
+
+def strict_align(g1, g2, seed, sims, delta = 0):
+    used_node1 = set()
+    used_node2 = set()
+    stack = []
+    pairs = set()
+    # initialize
+    #print(g1.nodes)
+    for seed1, seed2 in seed:
+        #pairs.add((seed1, seed2, sims[seed1][seed2]))
+        #print(g1.nodes[seed1])
+        #print(seed1)
+        pairs.add((seed1, seed2, sims[seed1][seed2]))
+        used_node1.add(seed1)
+        used_node2.add(seed2)
+        stack += get_neighbor_pairs(g1,g2,seed1,seed2,sims) 
+
+    # while we still have still nodes to expand
+    while stack:
+        node1, node2 = stack.pop()
+        if node1 not in used_node1 and node2 not in used_node2:
+            used_node1.add(node1)
+            used_node2.add(node2)
+            if fit_in_curr_align(g1,g2,node1,node2,pairs):
+                pairs.add((node1,node2,sims[node1][node2]))
+                #pairs.add((seed1, seed2, sims[g1.indexes[seed1]][g2.indexes[seed2]]))
+                stack += get_neighbor_pairs(g1,g2,node1,node2,sims)
+    return (used_node1, used_node2, pairs)
+
+
+def stop_align2(g1, g2, seed, sims, delta = 0):
+    g1alignednodes = set()
+    g2alignednodes = set()
+    aligned_pairs = set()
+    pq = SkipList()
+    stack = []
+    
+    for seed1, seed2 in seed:
+        aligned_pairs.add((seed1, seed2, sims[seed1][seed2]))
+        g1alignednodes.add(seed1)
+        g2alignednodes.add(seed2)
+        stack += get_neighbor_pairs(g1,g2,seed1,seed2,sims) 
+        update_best_pair(pq, g1, g2, seed1, seed2, aligned_pairs, sims, delta)
+
+
+    while len(g1alignednodes) < len(g1):
+        try:
+            curr_pair = best_pair(pq, delta)
+            g1node = curr_pair[0]
+            g2node = curr_pair[1]
+            if g1node in g1alignednodes or g2node in g2alignednodes:
+                continue
+            if fit_in_curr_align(g1, g2, g1node, g2node, aligned_pairs):
+                update_best_pair(pq, g1, g2, g1node, g2node, aligned_pairs, sims, delta)
+                aligned_pairs.add((g1node, g2node, sims[g1node][g2node]))
+                g1alignednodes.add(g1node)
+                g2alignednodes.add(g2node)
+        except(StopIteration): 
+            break
+
+    return (g1alignednodes, g2alignednodes, aligned_pairs)
+
+
+
+>>>>>>> 9d46a06f71c587b60383c55831059bd6b7c8ed73
 
 def dijkstra(yeast_graph, human_graph, seed, sims, delta, num_seeds = 1):
     #global delta
@@ -162,12 +376,13 @@ def dijkstra(yeast_graph, human_graph, seed, sims, delta, num_seeds = 1):
                 while curr_pair[0] in yeast_nodes or curr_pair[1] in human_nodes : #reject loop
                     curr_pair = best_pair(pq,delta)
                 update_best_pair(pq, yeast_graph, human_graph, curr_pair[0], curr_pair[1], pairs, sims, delta)
-
+                
+                pairs.add(tuple(curr_pair) + (sims[curr_pair[0]][curr_pair[1]],))
                 yeast_nodes.add(curr_pair[0])
                 human_nodes.add(curr_pair[1])
-                pairs.add(tuple(curr_pair) + (sims[curr_pair[0]][curr_pair[1]],))
             except StopIteration:
                 break;
+
     return (yeast_nodes, human_nodes, pairs)
 
 
@@ -189,6 +404,22 @@ def coverage(yeast, human, subgraph):
     y = len(subgraph) / (yeast.num_edges() / 2) * 100.0
     h = len(subgraph) / (human.num_edges() / 2) * 100.0
     return (y,h)
+
+def unaligned_edges_g2_in(graph1, graph2, aligned_pairs, subgraph):
+    uedges = []
+    while aligned_pairs:
+        p = aligned_pairs.pop()
+        uedges.extend( [ (p[1], q[1]) for q in aligned_pairs if graph2.has_edge(p[1], q[1]) and ((p[0], q[0]), (p[1], q[1])) not in subgraph ]   )
+    return uedges
+
+
+def s3score(g1, g2, pairs, subgraph):
+    print("calculating s3..")
+    aligned_edges = len(subgraph)
+    u2in = unaligned_edges_g2_in(g1, g2, pairs, subgraph)
+    denom = aligned_edges + (g1.num_edges() / 2) + len(u2in) 
+    return aligned_edges/denom
+
 
 
 def write_result(file, pairs, graph1, graph2):
