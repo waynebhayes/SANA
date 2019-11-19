@@ -1,10 +1,10 @@
 from graph import Graph
 try:
-	import _pickle as pickle
-	print("Using Cpickle")
+    import _pickle as pickle
+    #print("Using Cpickle")
 except:
-	import pickle
-	print("using regular pickle")
+    import pickle
+    #print("using regular pickle")
 import numpy as np
 import lzma
 """
@@ -19,42 +19,83 @@ and returns a graph with every edge Node 1 <-> Node 2
 
 
 def convert_graph_int(file):
-	nodes = {}
-	count = 0
-	int_graph = open("int_graph.txt", "w")
-	for line in open(file):
-		n1, n2 = line.split()
-		if n1 not in nodes:
-			nodes[n1] = count
-			count += 1
-		if n2 not in nodes:
-			nodes[n2] = count
-			count += 1
-		int_graph.write(f"{nodes[n1]} {nodes[n2]}\n")
+    nodes = {}
+    count = 0
+    int_graph = open("int_graph.txt", "w")
+    for line in open(file):
+        n1, n2 = line.split()
+        if n1 not in nodes:
+            nodes[n1] = count
+            count += 1
+        if n2 not in nodes:
+            nodes[n2] = count
+            count += 1
+        int_graph.write(f"{nodes[n1]} {nodes[n2]}\n")
 
-	dict_file = open("dict.txt", 'w')
-	for node, value in nodes.items():
-		dict_file.write(f"{value} {node}\n")
+    dict_file = open("dict.txt", 'w')
+    for node, value in nodes.items():
+        dict_file.write(f"{value} {node}\n")
 
-	int_graph.close()
-	dict_file.close()
-		
+    int_graph.close()
+    dict_file.close()
+        
 
 def build_graph(file):
-	count = 0
-	g = Graph()
-	for line in open(file):
-		n1, n2 = line.split()
-		if n1 not in g.indexes:
-			g.indexes[n1] = count
-			g.nodes[count] = n1
-			count += 1
-		if n2 not in g.indexes:
-			g.indexes[n2] = count
-			g.nodes[count] = n2
-			count += 1
-		g.add_edge(g.indexes[n1], g.indexes[n2])
-	return g
+    count = 0
+    g = Graph()
+    for line in open(file):
+        n1, n2 = line.split()
+        if n1 not in g.indexes:
+            g.indexes[n1] = count
+            g.nodes[count] = n1
+            count += 1
+        if n2 not in g.indexes:
+            g.indexes[n2] = count
+            g.nodes[count] = n2
+            count += 1
+        g.add_edge(g.indexes[n1], g.indexes[n2])
+    return g
+
+
+
+def degree_diff_matrix(graph1, graph2):
+    similarity = np.zeros((len(graph1),len(graph2)))
+    for node_y in graph1.nodes:
+        for node_h in graph2.nodes:
+            similarity[node_y][node_h] = abs(graph1.degree(node_y)-graph2.degree(node_h))
+    max_val = similarity.max()
+    for node_y in graph1.nodes:
+        for node_h in graph2.nodes:
+            similarity[node_y][node_h] = (max_val - similarity[node_y][node_h])/max_val
+    return similarity 
+
+
+def get_degree_diff_matrix(graph1, graph2, pickle_name = ""):
+    def build_degree_diff_matrix(graph1, graph2):
+        similarity = np.zeros((len(graph1),len(graph2)))
+        for node_y in graph1.nodes:
+            for node_h in graph2.nodes:
+                similarity[node_y][node_h] = abs(graph1.degree(node_y)-graph2.degree(node_h))
+        max_val = similarity.max()
+        for node_y in graph1.nodes:
+            for node_h in graph2.nodes:
+                similarity[node_y][node_h] = (max_val - similarity[node_y][node_h])/max_val
+        return similarity 
+    if pickle_name == "":
+        pickle_name = graph1.name + graph2.name + ".diffsim.pickle"
+    print(pickle_name)
+    try:
+        with open(pickle_name,'rb') as f:
+            print("picke found")
+            return pickle.load(f)
+    except FileNotFoundError as e:
+        print("building sim")
+        sims = build_degree_diff_matrix(graph1, graph2)
+        with open(pickle_name,'wb') as f:
+            pickle.dump(sims,f)
+        return sims
+
+
 
 """
 get_sim() provides a wrapper to speed up the construction of the sims matrix.
@@ -101,6 +142,7 @@ def get_sim(file, graph1, graph2, pickle_name = ""):
             return pickle.load(f)
     except FileNotFoundError as e:
         sims = build_sim(file, graph1, graph2)
+        print("build sim")
         with open(pickle_name,'wb') as f:
             pickle.dump(sims,f)
         return sims

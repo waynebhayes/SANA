@@ -21,12 +21,27 @@ def initParser():
     return parser
 
 
+def adj_mat(nodes, graph):
+    print('nodes:',nodes)
+    mat = [[0]*len(nodes) for _ in range(len(nodes))]
+    for i in range(len(mat)):
+        for j in range(i, len(mat)):
+            if graph.has_edge(graph.indexes[nodes[i]],graph.indexes[nodes[j]]):
+                mat[i][j] = 1
+                mat[j][i] = 1
+    return mat
+
+
+
 def get_g1_seed(g1_seed_file) -> dict:
     g1_seed = defaultdict(list)
     for line in open(g1_seed_file):
         line = line.split()
         g1_seed[line[0]].append(line[1:])
     return g1_seed
+
+
+
 
 def generate_seed(g1_seed_file, g2_seed_file):
     g1_seed = get_g1_seed(g1_seed_file)
@@ -35,8 +50,10 @@ def generate_seed(g1_seed_file, g2_seed_file):
         line = line.split()
         if line[0] in g1_seed:
             for nodes in g1_seed[line[0]]:
-                #print (nodes, line[1:])
                 yield nodes,line[1:]
+
+        
+
 
 def get_seed_length(network) -> int:
     #RNorvegicus_5_30_300000_MAX.txt 
@@ -75,19 +92,41 @@ if __name__ == '__main__':
     #print("seed length")
     #print(seed_length)
 
-    sims = get_degree_diff_matrix(graph1, graph2)
-    #sims = degree_diff_matrix(graph1, graph2)
-    
+    #sims = get_degree_diff_matrix(graph1, graph2)
+    sims = get_sim(args.sim, graph1, graph2, args.pickle)
+
     for seed in generate_seed(g1_seed_file,g2_seed_file):
+        
+        n1, n2 = seed
+        mat1 = adj_mat(n1,graph1)
+        mat2 = adj_mat(n2,graph2)
+        if mat1 != mat2:
+            print(mat1)
+            print(mat2)
+
         start = time.time()
-        a, b, pairs = dijkstra(graph1, graph2, get_aligned_seed(zip(*seed), graph1, graph2), sims, delta)
+        #a, b, pairs = dijkstra(graph1, graph2, get_aligned_seed(zip(*seed), graph1, graph2), sims, delta)
+        a, b, pairs = stop_align2(graph1, graph2, get_aligned_seed(zip(*seed),graph1, graph2), sims, delta)
         subgraph = induced_subgraph(graph1, graph2, list(pairs))
         cov = coverage(graph1, graph2, subgraph)[0]
-        #print(subgraph)
+        cov2 = coverage(graph1, graph2, subgraph)[1]
+#        if len(pairs) == 4:
+#            print(subgraph)
+#            print(pairs)
+#            pairs = list(pairs)
+#            for i in range(len(pairs)):
+#                for j in range(i+1,len(pairs)):
+#                    print(pairs[i],pairs[j])
+#                    print(graph1.has_edge(pairs[i][0], pairs[j][0]),graph2.has_edge(pairs[i][1], pairs[j][1]) )
+#            
+
         #print(cov)
-        print("Nodes aligned: "+str(len(subgraph)))
+        print("Edges aligned in subgraph:",len(subgraph))
+        print("Pairs aligned in subgraph:",len(pairs))
         newcov = round(cov, 2)
-        
+        newcov2 = round(cov2, 2)
+        s3 = s3score(graph1, graph2, pairs, subgraph) 
+        s3cov = round(s3, 2) 
         uuidstr = str(uuid.uuid4())
         uid = uuidstr[:13]
         
@@ -97,26 +136,17 @@ if __name__ == '__main__':
         hours, rem = divmod(end-start, 3600)
         minutes, seconds = divmod(rem, 60)
         runtime = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
-        write_log(fname, runtime, seed, delta)
-       
-
-#    for i in range(runs):
-#        start = time.time()
-#        a, b, pairs = dijkstra(graph1, graph2, get_seed(args.s__sim, graph1, graph2, delta), sims, delta)
-#
-#        subgraph = induced_subgraph(graph1, graph2, list(pairs))
-#        cov = coverage(graph1, graph2, subgraph)[0]
-#
-#        newcov = round(cov,2)
-#
-#        uuidstr = str(uuid.uuid4())
-#        uid = uuidstr[:8]
-#
-#        fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "-" + str(newcov) + "-" + str(i) + uid +  ".dijkstra"
-#        write_result(fname, pairs, graph1, graph2)
-#        
-#        end = time.time()
-#        hours, rem = divmod(end-start, 3600)
-#        minutes, seconds = divmod(rem, 60)
-#        print("{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds))
-#
+        #write_log(fname, runtime, seed, delta)
+        logname = fname.replace("dijkstra", "log")
+        with open(logname, 'w+') as logfile:
+            logfile.write(fname + '\n')
+            logfile.write(str(seed) + '\n')
+            logfile.write(str(runtime) + '\n')
+            logfile.write("delta: " + str(delta) + "\n")
+            logfile.write("EC: " + str(cov) + "\n") 
+            logfile.write("EC2: " + str(cov2) + "\n") 
+            logfile.write("S3: " + str(s3cov) + "\n") 
+            if mat1 != mat2:
+                logfile.write("Seeds not matched" + "\n" )
+                logfile.write(str(mat1) + "\n")
+                logfile.write(str(mat2) + "\n")
