@@ -1,21 +1,10 @@
 from graph import Graph
-<<<<<<< HEAD
-try:
-	import _pickle as pickle
-	print("Using Cpickle")
-except:
-	import pickle
-	print("using regular pickle")
-||||||| merged common ancestors
-import pickle
-=======
 try:
     import _pickle as pickle
     #print("Using Cpickle")
 except:
     import pickle
     #print("using regular pickle")
->>>>>>> 9d46a06f71c587b60383c55831059bd6b7c8ed73
 import numpy as np
 import lzma
 """

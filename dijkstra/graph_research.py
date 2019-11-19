@@ -21,76 +21,6 @@ def get_seed(file, graph1, graph2, delta):
                 yield [int(n) for n in (line.strip().split()[0:2])]
     """
     tied_seeds = []
-<<<<<<< HEAD
-    #curr_value = 1.0
-    curr_value = 1.0 - delta
-    if file.endswith("xz"):
-        with lzma.open(file, mode = 'rt') as f3:
-            for line in f3:
-                row = line.strip().split()
-                if row[0] not in graph1.indexes or row[1] not in graph2.indexes:
-                    continue
-                row[0], row[1], row[2] = graph1.indexes[row[0]], graph2.indexes[row[1]], float(row[2])
-                if row[2] < curr_value:
-                    random.shuffle(tied_seeds)
-                    for seed in tied_seeds:
-                        yield seed[0:2]
-                    del tied_seeds
-                    tied_seeds = [row[0:2]]
-                    curr_value = row[2]
-                else:
-                    tied_seeds.append(row[0:2])
-            random.shuffle(tied_seeds)
-            for seed in tied_seeds:
-                yield seed[0:2]
-
-    else:
-        with open(file, mode = 'rt') as f3:
-            for line in f3:
-                row = line.strip().split()
-                if row[0] not in graph1.indexes or row[1] not in graph2.indexes:
-                    continue
-                row[0], row[1], row[2] = graph1.indexes[row[0]], graph2.indexes[row[1]], float(row[2])
-                if row[2] < curr_value:
-                    random.shuffle(tied_seeds)
-                    for seed in tied_seeds:
-                        yield seed[0:2]
-                    del tied_seeds
-                    tied_seeds = [row[0:2]]
-                    curr_value = row[2]
-                else:
-                    tied_seeds.append(row[0:2])
-            random.shuffle(tied_seeds)
-            for seed in tied_seeds:
-                yield seed[0:2]
-                
-||||||| merged common ancestors
-    curr_value = 1.0
-    with lzma.open(file, mode = 'rt') as f3:
-        for line in f3:
-
-            row = line.strip().split()
-            if row[0] not in graph1.indexes or row[1] not in graph2.indexes:
-                continue
-            row[0], row[1], row[2] = graph1.indexes[row[0]], graph2.indexes[row[1]], float(row[2])
-            if row[2] < curr_value:
-##                tree_trace.append(('s',len(tied_seeds)))
-                random.shuffle(tied_seeds)
-##                    print("this node has lower similarity\n")
-                for seed in tied_seeds:
-                    yield seed[0:2]
-                del tied_seeds
-                tied_seeds = [row[0:2]]
-                curr_value = row[2]
-##                    print("reset tied seeds" + str(len(tied_seeds)))
-            else:
-                tied_seeds.append(row[0:2])
-        random.shuffle(tied_seeds)
-##        tree_trace.append(('s',len(tied_seeds)))
-        for seed in tied_seeds:
-            yield seed[0:2]
-
-=======
     #curr_value = 1.0
     curr_value = 1.0 - delta
     if file.endswith("xz"):
@@ -140,7 +70,6 @@ def get_aligned_seed(s, graph1, graph2):
         yield [graph1.indexes[pair[0]], graph2.indexes[pair[1]]]
 
 
->>>>>>> 9d46a06f71c587b60383c55831059bd6b7c8ed73
 def update_best_pair(pq, yeast_graph, human_graph, yeast_node, human_node, pairs, sims, delta = 0):
 ##    nonlocal pq
     paired_yeast_nodes = np.fromiter((pair[0] for pair in pairs), dtype=int)
@@ -205,44 +134,6 @@ def best_pair(pq, delta):
         pair_list = pq.pop(delta)
     except IndexError:
         raise StopIteration("no more pair values")
-<<<<<<< HEAD
-    return pair_list[1] 
-||||||| merged common ancestors
-    #print(type(pair_list))
-    val=pair_list[0]
-    pair_arr=pair_list[1]
-    #print(pair_list)
-    return pair_arr 
-
-##    np.random.shuffle(pair_arr)
-##    pair = pair_arr[0] #pick the first pair from the list
-##    rest_of_pairs = np.delete(pair_arr, 0, axis = 0) #axis=0 to delete the pair, not a value from each pair
-##    if rest_of_pairs.size > 0:
-##        pq.requeue((val, rest_of_pairs))
-##    return pair 
-    
-    """
-    try:
-        pair_list = pq.pop_equals()
-##        print(pair_list)
-    except IndexError:
-        raise StopIteration("no more pair values")
-    if len(pair_list) < 1:
-        raise EmptyList("list is empty")
-    random.shuffle(pair_list)
-    val, pair_select = pair_list[0] #pick the first pair list e.g (1, [[1, 2]])
-    rest_of_pairs = pair_list[1:]
-    if len(rest_of_pairs) > 0:
-        pq.enqueue(rest_of_pairs)
-    np.random.shuffle(pair_select)
-    pair = pair_select[0] #pick the first pair from the list
-    rest_of_pairs = np.delete(pair_select, 0, axis = 0) #axis=0 to delete the pair, not a value from each pair
-    if rest_of_pairs.size > 0:
-        pq.insert((val, rest_of_pairs))
-    return pair
-""" 
-
-=======
     return pair_list[1] 
 
 
@@ -344,7 +235,6 @@ def stop_align2(g1, g2, seed, sims, delta = 0):
 
 
 
->>>>>>> 9d46a06f71c587b60383c55831059bd6b7c8ed73
 
 def dijkstra(yeast_graph, human_graph, seed, sims, delta, num_seeds = 1):
     #global delta
