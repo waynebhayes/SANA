@@ -13,5 +13,5 @@ for network in yeast; do
     echo "./sana -s3 1 -t 1 -fg1 '$file.el' -fg2 '$file.csv' -o '$file' &> '${file}_csv.progress'"
     echo "./sana -s3 1 -t 1 -fg1 '$file.el' -fg2 '$file.lgf' -o '$file' &> '${file}_lgf.progress'"
     echo "./sana -s3 1 -t 1 -fg1 '$file.el' -fg2 '$file.xml' -o '$file' &> '${file}_xml.progress'"
-done | parallel -s /bin/bash 4
+done | ./parallel -s /bin/bash 4
 exit $?

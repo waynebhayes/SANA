@@ -145,7 +145,7 @@ MAIN = sana
 
 .PHONY: depend clean test test_all regression_test
 
-all:    $(MAIN) argumentCSV createShadow
+all:    $(MAIN) argumentCSV createShadow NetGO
 
 $(MAIN): $(OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
@@ -193,7 +193,7 @@ $(GTEST_OBJS):
 clean: #clear_cache
 	$(RM) -rf cache*  # mostly for pBad
 	$(RM) -rf $(OBJDIR)/src
-	$(RM) $(MAIN)
+	$(RM) $(MAIN) createShadow
 	$(RM) -f src/arguments/argumentTable.csv
 
 clear_cache:
@@ -210,9 +210,15 @@ depend: $(SRCS)
 optnetalign:
 	cd wrappedAlgorithms/OptNetAlign/src; $(MAKE) optnetalignubuntu; chmod +x optnetalign; cp optnetalign ../
 
-multi:
+NetGO:
+	(cd NetGO && git pull)
+
+multi: parallel
 	$(MAKE) 'MULTI=1'
 	mv sana sana.multi
 
 createShadow: scripts/createShadowCpp/createShadow
 	mv scripts/createShadowCpp/createShadow .
+
+parallel: src/parallel.c
+	gcc -o parallel src/parallel.c
