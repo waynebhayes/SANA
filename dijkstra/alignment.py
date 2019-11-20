@@ -1,10 +1,8 @@
 from builder import *
 import numpy
-##import random
 from collections import defaultdict
 import datetime
 from skip_list import *
-import lzma
 from measures import edgecoverage 
 
 
@@ -76,36 +74,46 @@ def best_pair(pq, delta):
     return pair_list[1] 
 
 
+
+
+
+
+
+#def fit_in_curr_align(g1, g2, node1, node2, pairs):
+#    neighbor1 = g1.get_neighbors(node1)
+#    neighbor2 = g2.get_neighbors(node2)
+#    flipped = False
+#    if len(neighbor1) > len(neighbor2):
+#        g1, g2 = g2, g1
+#        node1, node2 = node2, node1
+#        neighbor1, neighbor2 = neighbor2, neighbor1
+#        flipped = True 
+#    curr_alignment = {pair[1]:pair[0] for pair in pairs} if flipped else {pair[0]:pair[1] for pair in pairs}
+#
+#    
+#    for node in neighbor1:
+#        if node in curr_alignment and curr_alignment[node] not in neighbor2:
+#            return False
+#    return True
+
+
 def fit_in_curr_align(g1, g2, node1, node2, pairs):
     neighbor1 = g1.get_neighbors(node1)
-    #neighbor1 = g1.get_neighbors(g1.indexes[node1])
     neighbor2 = g2.get_neighbors(node2)
-    #neighbor2 = g2.get_neighbors(g2.indexes[node2])
-    flipped = False
-    if len(neighbor1) > len(neighbor2):
-        g1, g2 = g2, g1
-        node1, node2 = node2, node1
-        neighbor1, neighbor2 = neighbor2, neighbor1
-        flipped = True 
-    curr_alignment = {pair[1]:pair[0] for pair in pairs} if flipped else {pair[0]:pair[1] for pair in pairs}
-
-    #n2 = []
-    #for node in neighbor2:
-    #    n2.append(g2.nodes[node])
+    
+    curr_alignment = {pair[0]:pair[1] for pair in pairs}
     
     for node in neighbor1:
         if node in curr_alignment and curr_alignment[node] not in neighbor2:
-        #if g1.nodes[node] in curr_alignment and curr_alignment[node] not in n2:
             return False
     return True
+
 
 
 def get_neighbor_pairs(g1, g2, node1, node2, sims, delta = 0):
     result = []
     for i in g1.get_neighbors(node1):
-    #for i in g1.get_neighbors(g1.indexes[node1]):
         for j in g2.get_neighbors(node2):
-        #for j in g2.get_neighbors(g2.indexes[node2]):
             if sims[i][j] != 0:
                 result.append((i,j))
     return result
@@ -117,11 +125,7 @@ def strict_align(g1, g2, seed, sims, delta = 0):
     stack = []
     pairs = set()
     # initialize
-    #print(g1.nodes)
     for seed1, seed2 in seed:
-        #pairs.add((seed1, seed2, sims[seed1][seed2]))
-        #print(g1.nodes[seed1])
-        #print(seed1)
         pairs.add((seed1, seed2, sims[seed1][seed2]))
         used_node1.add(seed1)
         used_node2.add(seed2)
@@ -135,18 +139,21 @@ def strict_align(g1, g2, seed, sims, delta = 0):
             used_node2.add(node2)
             if fit_in_curr_align(g1,g2,node1,node2,pairs):
                 pairs.add((node1,node2,sims[node1][node2]))
-                #pairs.add((seed1, seed2, sims[g1.indexes[seed1]][g2.indexes[seed2]]))
                 stack += get_neighbor_pairs(g1,g2,node1,node2,sims)
     return (used_node1, used_node2, pairs)
 
 
-def stop_align2(g1, g2, seed, sims, delta = 0):
+def stop_align(g1, g2, seed, sims, ec_bound = (0,0,0), delta = 0):
     g1alignednodes = set()
     g2alignednodes = set()
     aligned_pairs = set()
     pq = SkipList()
     stack = []
-    
+
+    # need vars to keep track ec scores
+    # like the curr aligned edges 
+
+
     for seed1, seed2 in seed:
         aligned_pairs.add((seed1, seed2, sims[seed1][seed2]))
         g1alignednodes.add(seed1)
@@ -154,6 +161,7 @@ def stop_align2(g1, g2, seed, sims, delta = 0):
         stack += get_neighbor_pairs(g1,g2,seed1,seed2,sims) 
         update_best_pair(pq, g1, g2, seed1, seed2, aligned_pairs, sims, delta)
 
+    # after adding seeds, ec1/ec2/s3 should be 1
 
     while len(g1alignednodes) < len(g1):
         try:
@@ -162,6 +170,10 @@ def stop_align2(g1, g2, seed, sims, delta = 0):
             g2node = curr_pair[1]
             if g1node in g1alignednodes or g2node in g2alignednodes:
                 continue
+
+            # update ec scores
+            # if ec1/ec2/s3 is lower than boundary, align strictly...
+            #
             if fit_in_curr_align(g1, g2, g1node, g2node, aligned_pairs):
                 update_best_pair(pq, g1, g2, g1node, g2node, aligned_pairs, sims, delta)
                 aligned_pairs.add((g1node, g2node, sims[g1node][g2node]))
@@ -174,7 +186,7 @@ def stop_align2(g1, g2, seed, sims, delta = 0):
 
 
 
-
+## dijkstra with single seed pair that sorted by sims
 def dijkstra(yeast_graph, human_graph, seed, sims, delta, num_seeds = 1):
     #global delta
     #delta above 0.01 takes a very long time to finish
