@@ -78,9 +78,7 @@ def best_pair(pq, delta):
 
 def fit_in_curr_align(g1, g2, node1, node2, pairs):
     neighbor1 = g1.get_neighbors(node1)
-    #neighbor1 = g1.get_neighbors(g1.indexes[node1])
     neighbor2 = g2.get_neighbors(node2)
-    #neighbor2 = g2.get_neighbors(g2.indexes[node2])
     flipped = False
     if len(neighbor1) > len(neighbor2):
         g1, g2 = g2, g1
@@ -89,13 +87,9 @@ def fit_in_curr_align(g1, g2, node1, node2, pairs):
         flipped = True 
     curr_alignment = {pair[1]:pair[0] for pair in pairs} if flipped else {pair[0]:pair[1] for pair in pairs}
 
-    #n2 = []
-    #for node in neighbor2:
-    #    n2.append(g2.nodes[node])
     
     for node in neighbor1:
         if node in curr_alignment and curr_alignment[node] not in neighbor2:
-        #if g1.nodes[node] in curr_alignment and curr_alignment[node] not in n2:
             return False
     return True
 
@@ -103,9 +97,7 @@ def fit_in_curr_align(g1, g2, node1, node2, pairs):
 def get_neighbor_pairs(g1, g2, node1, node2, sims, delta = 0):
     result = []
     for i in g1.get_neighbors(node1):
-    #for i in g1.get_neighbors(g1.indexes[node1]):
         for j in g2.get_neighbors(node2):
-        #for j in g2.get_neighbors(g2.indexes[node2]):
             if sims[i][j] != 0:
                 result.append((i,j))
     return result
@@ -140,7 +132,7 @@ def strict_align(g1, g2, seed, sims, delta = 0):
     return (used_node1, used_node2, pairs)
 
 
-def stop_align2(g1, g2, seed, sims, delta = 0):
+def stop_align2(g1, g2, seed, sims, ec_mode, delta = 0):
     g1alignednodes = set()
     g2alignednodes = set()
     aligned_pairs = set()
@@ -172,8 +164,74 @@ def stop_align2(g1, g2, seed, sims, delta = 0):
 
     return (g1alignednodes, g2alignednodes, aligned_pairs)
 
+def num_edges_back_to_subgraph(graph, node, aligned_nodes):
+    edges = 0
+    for neighbor_node in graph.get_neigbhors(node):
+        if neighbor_node in aligned_nodes:
+            edges += 1
+    return edges
 
 
+def num_edge_pairs_back_to_subgraph(g1, g2, g1node, g2node, aligned_pairs):
+    edgepairs = 0
+
+    """
+    for n1, n2 in aligned_pairs:
+        if g1.has_edge(g1node, n1) and g2.has_edge(g2node, n2):
+            edgepairs += 1
+    """
+
+    for n1 in g1.get_neighbors(g1node):
+        for n2 in g2.get_neighbors(g2node):
+            if (n1, n2) in aligned_pairs:
+                edgepairs += 1
+    return edgepairs
+
+def local_align(g1, g2, seed, sims, ec_mode, m, delta):
+    #m is number of edges in seed graphlet
+    g1alignednodes = set()
+    g2alignednodes = set()
+    aligned_pairs = set()
+    pq = SkipList()
+    candidatePairs = []
+    
+    E1 = E2 = EA = m
+    local_over_global = False
+
+    for seed1, seed2 in seed:
+        aligned_pairs.add((seed1, seed2, sims[seed1][seed2]))
+        g1alignednodes.add(seed1)
+        g2alignednodes.add(seed2)
+        candidatePairs += get_neighbor_pairs(g1,g2,seed1,seed2,sims) 
+        update_best_pair(pq, g1, g2, seed1, seed2, aligned_pairs, sims, delta)
+
+    done = False
+    while(not done):
+        done = True
+        #candidatePairs = all pairs (u,v) within 1 step of S, u in G1, v in G2.
+        if(local_over_global):
+            edge_freq = {}
+            for g1node, g2node in candidatePairs:
+                n1 = num_edges_back_to_subgraph(g1, g1node, g1alignednodes)   
+                n2 = num_edges_back_to_subgraph(g2, g2node, g2alignednodes)   
+                M = num_edge_pairs_back_to_subgraph(g1, g2, g1node, g2node, aligned_pairs)            
+                edge_freq[(g1node, g2node)] = (n1, n2, M)
+
+
+            if ec1 > 0 and ec2 == 0:
+                candidatePairs = sorted(edge_freq, key = lambda x: -(edge_freq[x][2]/edge_freq[x][0]-ec1) )
+            elif ec2 > 0 and ec1 == 0:
+                candidatePairs = sorted(edge_freq, key = lambda x: -(edge_freq[x][2]/edge_freq[x][1]-ec2) )
+            elif ec1 > 0 and ec2 > 0:
+                candidatePairs = sorted(edge_freq, key = lambda x: -(edge_freq[x][2]/(edge_freq[x][0]+edge_freq[x][1])) )
+
+        for pair in candidatePairs:
+            n1val = candidatePairs[pair][0]
+            n2val = candidatePairs[pair][1]
+            mval = candidatePairs[pair][2]
+            if ((EA + mval)/(E1 + n1val) >= ec1 and ((EA + mval)/(E2 + n2val)):
+                aligned_pairsi.add(pair)
+        
 
 def dijkstra(yeast_graph, human_graph, seed, sims, delta, num_seeds = 1):
     #global delta
@@ -248,6 +306,7 @@ def s3score(g1, g2, pairs, subgraph):
     u2in = unaligned_edges_g2_in(g1, g2, pairs, subgraph)
     denom = aligned_edges + (g1.num_edges() / 2) + len(u2in) 
     return aligned_edges/denom
+
 
 
 
