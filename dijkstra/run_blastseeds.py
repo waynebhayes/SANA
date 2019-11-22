@@ -22,6 +22,9 @@ def initParser():
     parser.add_argument("-r", "--runs", required=False, default = 1, help = "number of times to run")
     parser.add_argument("-g1s", "--g1seed", required=False, help ="g1 seed file")
     parser.add_argument("-g2s", "--g2seed", required=False, help ="g2 seed file")
+    parser.add_argument("-ec1", "--ec1bound", required=False, default = "0.0", help ="lower bound for ec1")
+    parser.add_argument("-ec2", "--ec2bound", required=False, default = "0.0", help ="lower bound for ec2")
+    parser.add_argument("-s3", "--s3bound", required=False, default = "0.0", help ="lower bound for s3")
     parser.add_argument("-pk", "--pickle", required=False, default = "", help = "location of existing pickle file")
     return parser
 
@@ -52,7 +55,7 @@ if __name__ == '__main__':
     g1_seed_file = args.g1seed
     g2_seed_file = args.g2seed
     
-
+    ec_mode = (float(args.ec1bound), float(args.ec2bound), float(args.s3bound))
     seed_length = seeding.get_seed_length(g1_seed_file)
 
     sims = builder.get_sim(args.sim, graph1, graph2, args.pickle)
@@ -60,14 +63,16 @@ if __name__ == '__main__':
     for seed in seeding.generate_seed(g1_seed_file,g2_seed_file):
         
         n1, n2 = seed
-        mat1 = seeding.adj_mat(n1,graph1)
-        mat2 = seeding.adj_mat(n2,graph2)
+        mat1, e1 = seeding.adj_mat(n1,graph1)
+        mat2, e2 = seeding.adj_mat(n2,graph2)
         if mat1 != mat2:
             print(mat1)
             print(mat2)
 
+
         start = time.time()
-        a, b, pairs = alignment.stop_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, delta)
+        a, b, pairs = alignment.local_align(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, e1, delta)    
+        #a, b, pairs = alignment.stop_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, delta)
         subgraph = alignment.induced_subgraph(graph1, graph2, list(pairs))
         cov = alignment.coverage(graph1, graph2, subgraph)[0]
         cov2 = alignment.coverage(graph1, graph2, subgraph)[1]
@@ -76,7 +81,7 @@ if __name__ == '__main__':
         print("Pairs aligned in subgraph:",len(pairs))
         newcov = round(cov, 2)
         newcov2 = round(cov2, 2)
-        s3 = s3score(graph1, graph2, pairs, subgraph) 
+        s3 = alignment.s3score(graph1, graph2, pairs, subgraph) 
         s3cov = round(s3, 2) 
         uuidstr = str(uuid.uuid4())
         uid = uuidstr[:13]
