@@ -194,9 +194,10 @@ def local_align(g1, g2, seed, sims, ec_mode, m, delta):
     aligned_pairs = set()
     pq = SkipList()
     candidatePairs = []
-    
+    ec1 = ec_mode[0]
+	ec2 = ec_mode[1]
     E1 = E2 = EA = m
-    local_over_global = False
+    local_over_global = True
 
     for seed1, seed2 in seed:
         aligned_pairs.add((seed1, seed2, sims[seed1][seed2]))
@@ -208,9 +209,10 @@ def local_align(g1, g2, seed, sims, ec_mode, m, delta):
     done = False
     while(not done):
         done = True
+		new_candidatePairs = []
         #candidatePairs = all pairs (u,v) within 1 step of S, u in G1, v in G2.
         if(local_over_global):
-            edge_freq = {}
+			edge_freq = {}
             for g1node, g2node in candidatePairs:
                 n1 = num_edges_back_to_subgraph(g1, g1node, g1alignednodes)   
                 n2 = num_edges_back_to_subgraph(g2, g2node, g2alignednodes)   
@@ -224,14 +226,36 @@ def local_align(g1, g2, seed, sims, ec_mode, m, delta):
                 candidatePairs = sorted(edge_freq, key = lambda x: -(edge_freq[x][2]/edge_freq[x][1]-ec2) )
             elif ec1 > 0 and ec2 > 0:
                 candidatePairs = sorted(edge_freq, key = lambda x: -(edge_freq[x][2]/(edge_freq[x][0]+edge_freq[x][1])) )
+		
+		    for pair in candidatePairs:
+			    n1val = edge_freq[pair][0]
+				n2val = edge_freq[pair][1]
+				mval = edge_freq[pair][2]
+				if ((EA + mval)/(E1 + n1val) >= ec1 and ((EA + mval)/(E2 + n2val)):
+					aligned_pairs.add(pair)
+					g1alignednodes.add(pair[0])
+					g2alignednodes.add(pair[1])
+					candidatePairs += get_neighbor_pairs(g1,g2,pair[0],pair[1],sims) 
+					update_best_pair(pq, g1, g2, pair[0], pair[1], aligned_pairs, sims, delta)
+					E1 += n1val
+					E2 += n2val
+					EA += mval
+		else: # else use the similarity order
+	        curr_pair = best_pair(pq, delta)
+            g1node = curr_pair[0]
+            g2node = curr_pair[1]
+            if g1node in g1alignednodes or g2node in g2alignednodes:
+                continue
+            update_best_pair(pq, g1, g2, g1node, g2node, aligned_pairs, sims, delta)
+            aligned_pairs.add((g1node, g2node, sims[g1node][g2node]))
+            g1alignednodes.add(g1node)
+            g2alignednodes.add(g2node)
+ 		
+		if len(new_candidatePairs) != 0:
+			done = False
+			candidatePairs = new_candidatePairs
 
-        for pair in candidatePairs:
-            n1val = candidatePairs[pair][0]
-            n2val = candidatePairs[pair][1]
-            mval = candidatePairs[pair][2]
-            if ((EA + mval)/(E1 + n1val) >= ec1 and ((EA + mval)/(E2 + n2val)):
-                aligned_pairsi.add(pair)
-        
+    return (g1alignednodes, g2alignednodes, aligned_pairs)
 
 def dijkstra(yeast_graph, human_graph, seed, sims, delta, num_seeds = 1):
     #global delta
