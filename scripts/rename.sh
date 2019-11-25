@@ -5,9 +5,10 @@ die() { echo "$@" >&2; exit 1
 }
 
 # check for options
-ASK='-i' # default to always ask before overwriting.
+ASK='-n' # default to not clobber
 ECHO_ONLY=false
 case "$1" in
+-i) ASK='-i'; shift;; # interactive
 -f) ASK=''; shift;;
 -n) ECHO_ONLY=true; shift;;
 esac

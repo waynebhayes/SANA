@@ -27,6 +27,7 @@ Sample Run (assuming shadow is the compiled binary)
 #include "../../src/utils/Matrix.hpp"
 
 typedef std::pair<std::string, std::string> StringPair;
+static bool _verbose;
 
 namespace fnv {
     constexpr static unsigned int FNV_PRIME  = 0x01000193;
@@ -47,9 +48,9 @@ GraphType getGraphType(const char* c_str) {
         case (fnv::hash(".gw")): return GraphType::gw;
         case (fnv::hash(".el")): return GraphType::el;
         default: { err << "Invalid graphType: " << c_str;
-                     std::cerr << err.str().c_str() << std::endl;
-                     throw err.str().c_str();
-                 }
+	     std::cerr << err.str().c_str() << std::endl;
+	     throw err.str().c_str();
+	 }
     }
     return GraphType::gw;
 }
@@ -114,7 +115,7 @@ namespace shadow_graph {
             iss >> numEdges;
 
             adjList = std::vector<std::vector<Pair> >(numNodes, std::vector<Pair>(0));
-            //std::cerr << "\tNodes: " << numNodes << ", Edges: " << numEdges << std::endl;
+            if(_verbose) std::cerr << "\tNodes: " << numNodes << ", Edges: " << numEdges << std::endl;
             for (int i = 0; i < numEdges; i++) {
                 getline(reader, line);
                 iss.str(line);
@@ -291,7 +292,7 @@ namespace shadow_graph {
 }
 
 void output_GW_Format( std::vector<std::unordered_map<int, int>> &adjList){
-    std::cerr << "printing out .gw assuming untyped nodes" << std::endl;
+    if(_verbose) std::cerr << "printing out .gw assuming untyped nodes" << std::endl;
 
     std::cout << "LEDA.GRAPH" << std::endl;
     std::cout << "string" << std::endl;
@@ -336,7 +337,7 @@ void output_el_Format( std::vector<std::unordered_map<int, int>> &adjList,
                             std::vector<std::string> &shadowNames, 
                             std::vector<bool> &nodeTypes,
                             bool bipartite){
-    std::cerr << "printing out .el assuming bipartite graph (typed nodes)" << std::endl;
+    if(_verbose) std::cerr << "printing out .el assuming bipartite graph (typed nodes)" << std::endl;
     for (unsigned int i = 0; i < adjList.size(); ++i) {
         for (auto it = adjList[i].begin(); it != adjList[i].end(); ++it) {
             if ((unsigned) it->first <= i) {
@@ -387,7 +388,9 @@ int main(int argc, const char** argv) {
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
 
     args::Group opt(parser, "Optional Flag", args::Group::Validators::DontCare);
-    args::Flag bipartiteFlag(opt, "haveTypes", "Enables -bipartite", {'n', "bipartite"});
+    args::Flag bipartiteFlag(opt, "bipartite", "Enables --bipartite", {'b', "bipartite"});
+    args::Flag verboseFlag  (opt, "verbose",   "Enables --verbose",   {'v', "verbose"});
+    if(args::get(verboseFlag)) _verbose=true;
     args::ValueFlag<std::string> shadowNamesFlag(opt, "shadowNames", "Block size", {"shadowNames"});
 
     // args::Flag compact(parser, "compact", "Alignment file format", {'c',"compact"});
@@ -487,16 +490,16 @@ int main(int argc, const char** argv) {
     }
     assert(network_files.size() == alignment_files.size());
 
-    std::cerr << "Starting to make Shadow graph " << std::endl;
+    if(args::get(verboseFlag)) std::cerr << "Starting to make Shadow graph " << std::endl;
 
     std::vector<std::unordered_map<int, int>> adjList(args::get(shadowNodeSize));
     shadow_graph::Graph tempGraph;
     for (unsigned int gi = 0; gi < network_files.size(); ++gi) {
-        std::cerr << "graph " << gi << ": " << network_files.at(gi);        
+        if(args::get(verboseFlag)) std::cerr << "graph " << gi << ": " << network_files.at(gi);        
         
         tempGraph.load(network_files.at(gi));
 
-        std::cerr << ", nodes = " << tempGraph.adjList.size() << std::endl;
+        if(args::get(verboseFlag)) std::cerr << ", nodes = " << tempGraph.adjList.size() << std::endl;
 
         // Load alignment
         std::vector<unsigned short> tempAligOneline(0); 
@@ -511,7 +514,7 @@ int main(int argc, const char** argv) {
         }
 
         unsigned int n = args::get(bipartiteFlag) ? tempAlig.size(): tempAligOneline.size();
-     //   std::cerr << "~~ " << n << " " << tempGraph.adjList.size() << std::endl;
+        if(args::get(verboseFlag)) std::cerr << "~~ " << n << " " << tempGraph.adjList.size() << std::endl;
         assert(n == tempGraph.adjList.size()); // alignment size should be same as graph node count
 
         for (unsigned int peg = 0; peg < n; ++peg) {
@@ -551,7 +554,8 @@ int main(int argc, const char** argv) {
                     hole     = shadowName2Index[name1];
                     end_hole = shadowName2Index[name2];
 
-                    // std::cerr << ".. " << name1 << " " << name2 << " " << hole << " " << end_hole << std::endl;
+                    if(args::get(verboseFlag))
+			std::cerr << ".. " << name1 << " " << name2 << " " << hole << " " << end_hole << std::endl;
                 }
                 else {
                     // expects one line interger alignment

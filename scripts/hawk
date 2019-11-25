@@ -1,5 +1,0 @@
-#!/bin/sh
-# Wayne's awk
-PROG="$1"
-shift
-exec awk "`cat ./scripts/misc.awk`$PROG" "$@"
