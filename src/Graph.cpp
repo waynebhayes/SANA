@@ -1342,7 +1342,7 @@ void Graph::loadFromMultipartiteEdgeList(string fin, string graphName, Graph& g,
             //     g.updateUnlockedGeneCount();
             g.initConnectedComponents();
             
-            for(int i = 0; i < g.nodeTypes.size(); i++)
+            for(unsigned int i = 0; i < g.nodeTypes.size(); i++)
                 cout << g.nodeTypes[i] << " ";
             cout << endl;
     
