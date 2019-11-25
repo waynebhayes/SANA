@@ -32,5 +32,6 @@ vector<string> defaultArguments = {
 "-paretoInitial 1",
 "-paretoCapacity 200",
 "-paretoIterations 10000",
-"-paretoThreads 1"
+"-paretoThreads 1",
+"-multipartite 1"
 };

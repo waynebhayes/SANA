@@ -24,33 +24,36 @@ Graph& Graph::loadGraph(string name, Graph& g) {
     return g;
 }
 
-Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, bool bipartite){
+Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, int multipartite){
     g.path = path;
-    g.bipartiteEnabled = bipartite;
+    g.multipartite = multipartite;
     string format = path.substr(path.find_last_of('.')+1);
     string uncompressedFileExt = getUncompressedFileExtension(path);
-    if(format == "gw" || uncompressedFileExt == "gw"){
+    if(format == "mpel" || uncompressedFileExt == "mpel"){
+        Graph::loadFromMultipartiteEdgeList(path, name, g, multipartite);
+    }
+    else if(format == "gw" || uncompressedFileExt == "gw"){
         g.loadGwFile(path);
         g.name = name;
     }
     else if(format == "el" || uncompressedFileExt == "el"){
-        Graph::loadFromEdgeListFile(path, name, g, bipartite);
+        Graph::loadFromEdgeListFile(path, name, g, multipartite == 2);
     }
     else if(format == "elw" || uncompressedFileExt == "elw"){
         g.parseFloatWeight = true;
-        Graph::loadFromEdgeListFile(path, name, g, bipartite);
+        Graph::loadFromEdgeListFile(path, name, g, multipartite == 2);
     }
     else if(format == "lgf"){
-        Graph::loadFromLgfFile(path, name, g, bipartite);
+        Graph::loadFromLgfFile(path, name, g, multipartite == 2);
     }
     else if(format == "xml"){
-        Graph::loadFromGraphmlFile(path, name, g, bipartite);
+        Graph::loadFromGraphmlFile(path, name, g, multipartite == 2);
     }
     else if(format == "csv"){
-        Graph::loadFromCsvFile(path, name, g, bipartite);
+        Graph::loadFromCsvFile(path, name, g, multipartite == 2);
     }
     else if(format == "gml"){
-        Graph::loadFromGmlFile(path, name, g, bipartite);
+        Graph::loadFromGmlFile(path, name, g, multipartite == 2);
     }
     else
         throw runtime_error("Unsupported graph format: " + format);
@@ -1153,7 +1156,197 @@ void Graph::loadFromGmlFile(string fin, string graphName, Graph& g, bool biparti
     g.initConnectedComponents();
 }
 
+void Graph::loadFromMultipartiteEdgeList(string fin, string graphName, Graph& g, int multipartite) {
+    unordered_set<string> record;
+    size_t lineCount = 0;
+    stdiobuf sbuf = readFileAsStreamBuffer(fin);
+    istream infile(&sbuf);
+    int numTypes = 0;
+    
+    g.typedNodesIndexList = vector<vector<uint>>{};
+    for (string line; getline(infile, line); ) {
+        string node1, node2;
+        istringstream iss(line);
+        string token;
+        numTypes = 0;
+        while(getline(iss, token, '\t')) {
+            if(token.back() == 13)
+                token = token.substr(0, token.size()-1);
+            if(token != "-") {
+                record.insert(token);
+            }
+            numTypes++;
+        }
+        ++lineCount;
+    }
+    
+    for(int i = 0; i < numTypes; i++)
+        g.typedNodesIndexList.push_back(vector<uint>{});
 
+    const size_t nodeLen = record.size();
+    const size_t vecLen = lineCount;
+    cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
+    
+    g.name = graphName;
+    g.nodeTypesCount.resize(numTypes);
+    
+#ifdef MULTI_PAIRWISE
+    g.edgeList = vector<vector<uint>>(vecLen, vector<uint>(3));
+#else
+    g.edgeList = vector<vector<uint>>(vecLen, vector<uint>(2));
+    if (g.parseFloatWeight) {
+        g.floatWeights = Matrix<float>(nodeLen);
+    }
+#endif
+    stringstream errorMsg;
+    string edgeValue;
+    uint index1;
+    uint index2;
+    unordered_map<string, unordered_map<string, uint>* > adjMatrix;
+    g.nodeNameToIndexMap.reserve(nodeLen);
+
+    checkFileExists(fin);
+    stdiobuf sbuf2 = readFileAsStreamBuffer(fin);
+    istream ifs(&sbuf2);
+    size_t nodesCount = 0;
+    string line;
+    for (uint i = 0; getline(ifs, line); ++i) {
+        istringstream iss(line);
+        vector<string> words;
+        vector<int> types;
+        string token;
+        int type = 0;
+        while(getline(iss, token, '\t')){
+            if(token.back() == 13)
+                token = token.substr(0, token.size()-1);
+            if(token != "-") {
+                words.push_back(token);
+                types.push_back(type);
+            }
+            type++;
+        }
+        
+        string node1s = words[0];
+        string node2s = words[1];
+        
+        int node1type = types[0];
+        int node2type = types[1];
+        
+        
+        
+        if(g.nodeNameToIndexMap.find(node1s) == g.nodeNameToIndexMap.end()){
+            g.nodeNameToIndexMap[node1s] = nodesCount;
+            g.nodeTypesCount[node1type]++;
+            g.nodeTypes.push_back(node1type);
+            g.typedNodesIndexList[node1type].push_back(g.nodeNameToIndexMap[node1s]);
+            nodesCount++;
+        }
+        if(g.nodeNameToIndexMap.find(node2s) == g.nodeNameToIndexMap.end()){
+            g.nodeNameToIndexMap[node2s] = nodesCount;
+            g.nodeTypesCount[node2type]++;
+            g.nodeTypes.push_back(node2type);
+            g.typedNodesIndexList[node2type].push_back(g.nodeNameToIndexMap[node2s]);
+            nodesCount++;
+        }
+        
+        #ifdef MULTI_PAIRWISE
+                if (words.size() == 2) {
+                    edgeValue = '1';
+                }
+                else if (words.size() == 3) {
+                    edgeValue = words[2];
+                }
+                else {
+                    throw runtime_error("File not in edge-list format: "+fin);
+                }
+        #else
+                if (g.parseFloatWeight) {
+                    if (words.size() != 3)
+                        throw runtime_error("File not in edge-list-weight format: "+fin);
+                    // Get float weight
+                    edgeValue = words[2];
+                }
+                else if (words.size() != 2) {
+                    throw runtime_error("File not in edge-list format: "+fin);
+                }
+        #endif
+                /*------------------ Detects duplicate edges ------------------ */
+                unordered_map<string, uint> *adjTo1;
+                if(adjMatrix.count(node1s) == 0)
+                    adjMatrix[node1s] = new unordered_map<string, uint>();
+                adjTo1 = adjMatrix.at(node1s);
+        
+                unordered_map<string, uint> *adjTo2;
+                if(adjMatrix.count(node2s) == 0)
+                    adjMatrix[node2s] = new unordered_map<string, uint>();
+                adjTo2 = adjMatrix.at(node2s);
+        
+                if( (adjTo1->count(node2s) != 0) || (adjTo2->count(node1s) != 0) ) {
+                    uint dupEdgeLineNum = adjTo1->at(node2s);
+                    errorMsg << "duplicate edges not allowed in file\n" <<
+                        "\t'" << fin << ":" << dupEdgeLineNum+1 << "' " << node1s << " - " << node2s << '\n' <<
+                        "\t'" << fin << ":" << i+1              << "' " << node1s << " - " << node2s << '\n';
+                    throw runtime_error(errorMsg.str().c_str());
+                }else{
+                    (*adjTo1)[node2s] = i;
+                    (*adjTo2)[node1s] = i;
+                }
+        
+                /*------------------------ Fill edge list ------------------*/
+                index1 = g.nodeNameToIndexMap[node1s];
+                index2 = g.nodeNameToIndexMap[node2s];
+                g.edgeList[i][0] = index1;
+                g.edgeList[i][1] = index2;
+                
+        #ifdef MULTI_PAIRWISE
+                g.edgeList[i][2] = stoi(edgeValue);
+                assert(g.edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
+        #endif
+              /*----------------------------- Fill float weight ----------------------- */
+              if (g.parseFloatWeight) {
+                    g.floatWeights[index1][index2] = g.floatWeights[index2][index1] = stof(edgeValue);
+              }
+            }
+            g.edgeList.shrink_to_fit();
+            for(auto itr : adjMatrix) { delete itr.second; }
+        
+            /*----------------------------- Fill adjLists and matrix ------------------------- */
+            g.adjLists = vector<vector<uint> > (nodeLen, vector<uint>(0));
+            g.matrix = Matrix<MATRIX_UNIT>(nodeLen);
+            uint node1;
+            uint node2;
+            for(unsigned i = 0; i < g.edgeList.size(); ++i){
+                node1 = g.edgeList[i][0];
+                node2 = g.edgeList[i][1];
+        
+                // Note that when MULTI_PAIRWISE is on, the adjacency matrix contains full integers, not just bits.
+                #ifdef MULTI_PAIRWISE
+                    g.matrix[node1][node2] = g.matrix[node2][node1] = g.edgeList[i][2];
+                #else
+                    g.matrix[node1][node2] = g.matrix[node2][node1] = true;
+                #endif
+        
+                // Self-loop
+                if(node1 == node2) {
+                    g.adjLists[node1].push_back(node1);
+                }else{
+                    g.adjLists[node1].push_back(node2);
+                    g.adjLists[node2].push_back(node1);
+                }
+            }
+        
+            /*------------------------------- Init rest of graph --------------------------------- */
+            g.lockedList = vector<bool> (nodeLen, false);
+            g.lockedTo = vector<string> (nodeLen, "");
+            // if(bipartite)
+            //     g.updateUnlockedGeneCount();
+            g.initConnectedComponents();
+            
+            for(unsigned int i = 0; i < g.nodeTypes.size(); i++)
+                cout << g.nodeTypes[i] << " ";
+            cout << endl;
+    
+}
 
 
 void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool bipartite) {
@@ -2765,6 +2958,10 @@ void Graph::reIndexGraph(unordered_map<uint, uint> reIndexMap){
 bool Graph::isBipartite(){
     //return geneCount > 0 || miRNACount > 0;
     return bipartiteEnabled;
+}
+
+int Graph::getNumMultipartite() {
+    return multipartite;
 }
 
 int Graph::getBipartiteNodeType(uint i){
