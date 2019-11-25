@@ -135,12 +135,20 @@ SANA::SANA(Graph* G1, Graph* G2,
     uint G1UnLockedCount      = n1 - G1->getLockedCount() -1;
     G1RandomUnlockedNodeDist  = uniform_int_distribution<>(0, G1UnLockedCount);
     G2RandomUnassignedNode    = uniform_int_distribution<>(0, n2-n1-1);
-    G1RandomUnlockedGeneDist  = uniform_int_distribution<>(0, G1->unlockedGeneCount - 1);
-    G1RandomUnlockedmiRNADist = uniform_int_distribution<>(0, G1->unlockedmiRNACount - 1);
-    randomReal                = uniform_real_distribution<>(0, 1);
+    
+    
+    if(G1->getNumMultipartite() == 2) {
+        G1RandomUnlockedGeneDist  = uniform_int_distribution<>(0, G1->unlockedGeneCount - 1);
+        G1RandomUnlockedmiRNADist = uniform_int_distribution<>(0, G1->unlockedmiRNACount - 1);
 
-    G2RandomUnassignedGeneDist = uniform_int_distribution<>(0, G2->geneCount - G1->geneCount -1);
-    G2RandomUnassignedmiRNADist = uniform_int_distribution<>(0, G2->miRNACount - G1->miRNACount -1);
+        G2RandomUnassignedGeneDist = uniform_int_distribution<>(0, G2->geneCount - G1->geneCount -1);
+        G2RandomUnassignedmiRNADist = uniform_int_distribution<>(0, G2->miRNACount - G1->miRNACount -1);
+        
+    }
+    
+    
+    
+    randomReal                = uniform_real_distribution<>(0, 1);
 
     //temperature schedule
     this->TInitial        = TInitial;
@@ -572,7 +580,7 @@ inline uint SANA::G2RandomUnlockedNode(uint target1){
         return G2RandomUnlockedNode_Fast();
     } else {
         int type = G2->nodeTypes[target1];
-        uniform_int_distribution<> dist = uniform_int_distribution<>(0, G2->typedNodesIndexList[type].size() -1);
+        uniform_int_distribution<> dist = uniform_int_distribution<>(0, abs(G2->nodeTypesCount[type] - G1->nodeTypesCount[type]) - 1);
         return dist(gen);
         // if(isGene){
         //     int index = G2RandomUnassignedGeneDist(gen);
@@ -692,6 +700,7 @@ void SANA::initDataStructures(const Alignment& startA) {
     //     unassignedgenesG2->reserve(G2->geneCount - G1->geneCount);
     //     unassignedmiRNAsG2->reserve(G2->miRNACount - G1->miRNACount);
     // }
+    
     for (uint i = 0, j = 0; i < n2; i++) {
     	if (not (*assignedNodesG2)[i]) {
     	    (*unassignedNodesG2)[j++] = i;
@@ -1285,16 +1294,20 @@ void SANA::performChange(int type) {
     uint source       = G1RandomUnlockedNode();
     uint oldTarget    = (*A)[source];
 
-    uint newTargetIndex = G2RandomUnlockedNode(oldTarget);
+    uint newTargetIndex;
 
     uint newTarget = -1;
-    if(multipartite == 1)
+    if(multipartite == 1) {
+        newTargetIndex = G2RandomUnlockedNode(oldTarget);
         newTarget    = (*unassignedNodesG2)[newTargetIndex];
+    }
     else{
         int type = G2->nodeTypes[oldTarget];
         if((*unassignedMultipartiteNodes)[type].size() == 0)
             return; // cannot perform change, all genes are assigned
-            
+        newTargetIndex = G2RandomUnlockedNode(oldTarget);
+        
+    
         newTarget = (*unassignedMultipartiteNodes)[type][newTargetIndex];
         
         
@@ -1319,7 +1332,6 @@ void SANA::performChange(int type) {
         oldNewTargetDeg = MultiS3::totalDegrees[newTarget];
         oldMs3Denom = MultiS3::denom;
     }
-
     int newAligEdges           = (needAligEdges or needSec) ?  aligEdges + aligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
     double newEdSum            = (needEd) ?  edSum + edgeDifferenceIncChangeOp(source, oldTarget, newTarget) : -1;
     double newErSum            = (needEr) ?  erSum + edgeRatioIncChangeOp(source, oldTarget, newTarget) : -1;

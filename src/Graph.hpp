@@ -170,7 +170,6 @@ public:
     bool isBipartite();
     int getNumMultipartite();
 
-    // bipartite -- TODO make them private later
     //vector<string> nodeTypes;
     vector<int> nodeTypes;
     vector<int> nodeTypesCount;
