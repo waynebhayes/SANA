@@ -32,7 +32,7 @@ public:
     static void setSana(SANA *const sana) { ScheduleMethod::sana = sana; }
 
     ScheduleMethod();
-    ~ScheduleMethod() =default;
+    virtual ~ScheduleMethod() =default;
 
     virtual string getName() =0;
 
