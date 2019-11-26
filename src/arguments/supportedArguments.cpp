@@ -22,7 +22,7 @@ vector<string> stringVectorArgs;
 vector<array<string, 6>> supportedArguments = {
     { "Option", "Type", "Default", "Title", "Description", "0/1" },
     //-----------------------------------GENERAL-----------------------------------------
-    { "", "-go", "banner", "", "General Options", "0" },
+    { "", "general", "banner", "", "General Options", "0" },
     { "-g1", "string", "yeast", "Network 1", "First nerwork (smaller one). Requirement: An alignment file must exist inside the networks directory which matches the name of the specified species.", "0" },
     { "-g2", "string", "human", "Network 2", "Second (larger in number of nodes) network.  Requirement: An alignment file must exist inside the networks directory which matches the name of the specified species.", "0" },
     { "-fg1", "string", "yeast", "Network 1", "Initializes the network G1 with an external file. Make sure that the name and path of the file exists.", "1" },
@@ -41,13 +41,13 @@ vector<array<string, 6>> supportedArguments = {
     //---------------------------------END GENERAL---------------------------------------
 
     //------------------------------------METHOD-----------------------------------------
-    { "", "-m", "banner", "", "Method", "0" },
+    { "", "methods", "banner", "", "Method", "0" },
     { "-method", "string", "sana", "Method", "Sets the algorithm that performs the alignment. NOTE: All methods except \"sana\" call an external algorithm written by other authors. \nPossible aligners are: \"lgraal\", \"hubalign\", \"sana\", \"wave\", \"random\", \"tabu\", \"dijkstra\", \"netal\", \"mi-graal\", \"ghost\", \"piswap\", \"optnetalign\", \"spinal\", \"great\", \"natalie\", \"gedevo\", \"greedylccs\", \"magna\", \"waveSim\", \"none\", and \"hc\".", "1" },
     { "End Method", "", "banner", "", "", "0" },
     //----------------------------------END METHOD---------------------------------------
 
     //------------------------------------SANA-------------------------------------------
-    { "", "-ms", "banner", "", "Additional options to consider when method is \"sana\" (the default)", "0" },
+    { "", "method-sana", "banner", "", "Additional options to consider when method is \"sana\" (the default)", "0" },
     { "-tinitial", "dblS", "auto", "Initial Temperature", "Starting temperature of the simulated annealing. \"auto\" means calculate optimal starting temperature (requires extra CPU time).", "1" },
     { "-tdecay", "dblS", "auto", "Rate of Decay", "Exponential decay parameter of the temperature schedule. \"auto\" means calculate optimal starting temperature (requires extra CPU time).", "1" },
     { "-schedulemethod", "string", "auto", "Method to compute temperature schedule parameters automatically", "Specify the method to use set up the initial temperature and decay rate when they are set to 'auto'", "0" },
@@ -71,7 +71,7 @@ vector<array<string, 6>> supportedArguments = {
     //----------------------------------END SANA-----------------------------------------
 
     //------------------------------------TABU-------------------------------------------
-    { "", "-mt", "banner", "", "Additional options to consider when method is \"tabu\"", "0" },
+    { "", "method-tabu", "banner", "", "Additional options to consider when method is \"tabu\"", "0" },
     { "-ntabus", "double", "300", "(DEPRECATED)TABU Argument", "(DEPRECATED)Argument for the TABU search function.", "0" },
     { "-nneighbors", "double", "50", "(DEPRECATED)See TABU", "(DEPRECATED)See TABU.", "0" },
     { "-nodetabus", "bool", "false", "(DEPRECATED)See TABU", "(DEPRECATED)See TABU.", "0" },
@@ -79,25 +79,25 @@ vector<array<string, 6>> supportedArguments = {
     //----------------------------------END TABU-----------------------------------------
 
     //----------------------------------Dijkstra-----------------------------------------
-    { "", "-mdj", "banner", "", "Additional options to consider when method is \"dijkstra\"", "0" },
+    { "", "method-djikstra", "banner", "", "Additional options to consider when method is \"dijkstra\"", "0" },
     { "-dijkstradelta","double","0","Dijkstra Randomness Amount","When picking the next edge to cross when adding a new node in the seed-and-extend Dijkstra algorithm, -dijkstradelta will set the width of the range of node similarity values that should be considered equal. Larger values inject more randomness; zero means \"pick best node according to current measure\".", "0" },
     { "END Additional options to consider when method is \"dijkstra\"", "", "banner", "", "", "0" },
     //---------------------------------END Dikstra---------------------------------------
 
     //-----------------------------------LGRAAL------------------------------------------
-    { "", "-ml", "banner", "", "Additional options to consider when method is \"lgraal\"", "0" },
+    { "", "method-lgraal", "banner", "", "Additional options to consider when method is \"lgraal\"", "0" },
     { "-lgraaliter", "double", "1000", "LGRAAL Iteration", "Number of LGRAAL Iterations. This option is passed along to the external LGRAAL program.", "0" },
     { "End Additional options to consider when method is \"lgraal\"", "", "banner", "", "", "0" },
     //---------------------------------END LGRAAL----------------------------------------
 
     //---------------------------Objective Function Type---------------------------------
-    { "", "-of", "banner", "", "Objective Function", "0" },
+    { "", "objectives-type", "banner", "", "Objective Function", "0" },
     { "-objfuntype", "string", "generic", "Objective Function Type", "Acceptable arguments are \"alpha\", \"beta\", or \"generic\". Make sure the chosen argument of \"-objectfuntype\" also matches with the chosen argument for \"-method\".", "1" },
     { "End Objective Function", "", "banner", "", "", "0" },
     //-------------------------END Objective Function Type-------------------------------
 
     //--------------------Objective Function Type Specifications-------------------------
-    { "", "-ofspec", "banner", "", "Objective Function Specification and Weight. Combine with \"-objfuntype x\"", "0" },
+    { "", "objectives-simple", "banner", "", "Objective Function Specification and Weight. Combine with \"-objfuntype x\"", "0" },
     { "-ec", "double", "0", "Weight of EC", "The weight of the Edge Coverage (aka Edge Conservation or Edge Correctness) in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-s3", "double", "1", "Weight of S3", "The weight of the Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ics", "double", "0", "Weight of ICS", "The weight of the Induced Conserved Structure in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
@@ -133,7 +133,7 @@ vector<array<string, 6>> supportedArguments = {
     //-------------------END Objective Function Tyoe Specifications----------------------
 
     //-----------------Further details of \"-method x -objfuntype y\"--------------------
-    { "", "-mof", "banner", "", "Further Weight Specification. Combine with \"-method x -objfuntype y\"", "0" },
+    { "", "objectives-complex", "banner", "", "Further Weight Specification. Combine with \"-method x -objfuntype y\"", "0" },
     { "-wrappedArgs", "string", "", "Wrapper Function Arguments", "Arguments to pass verbatim to wrapped methods.", "0" },
     { "-maxDist", "double", "1", "Radial Distance from Node", "When using nodec, edgec, noded, or edged, the radial distance region over which to compute the count/density. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-gofrac", "double", "1", "Fraction of GO_k Terms to Keep", "Used for GO similarity (\"-go_k\"). It is the fraction of GO term ocurrences corresponding to the least frequent terms to be kept.", "1" },
@@ -150,13 +150,13 @@ vector<array<string, 6>> supportedArguments = {
     //--------------END Further details of \"-method x -objfuntype y\"-------------------
 
     //------------------------------------MODE-------------------------------------------
-    { "", "-md", "banner", "", "Mode", "0" },
+    { "", "mode", "banner", "", "Mode", "0" },
     { "-mode", "string", "normal", "Mode", "Runs SANA in a specified mode. Arguments for this option are: \"cluster\", \"exp\", \"param\", \"alpha\", \"dbg\", \"normal\", \"analysis\", \"similarity\", \"pareto\".", "0" },
     { "End Mode", "", "banner", "", "", "0" },
     //----------------------------------END MODE-----------------------------------------
 
     //----------------------------------CLUSTER------------------------------------------
-    { "", "-mdc", "banner", "", "More options for \"-mode cluster\"", "0" },
+    { "", "mode-cluster", "banner", "", "More options for \"-mode cluster\"", "0" },
     { "-qmode", "string", "normal", "Queue Mode", "The \"Queue Mode\" when using SGE", "0" },
     { "-qsuboutfile", "string", "", "Queue Mode Output File", "Output file when using SGE", "0" },
     { "-qsuberrfile", "string", "", "Queue Error File", "Error file when using SGE", "0" },
@@ -166,7 +166,7 @@ vector<array<string, 6>> supportedArguments = {
     //--------------------------------END CLUSTER----------------------------------------
 
     //--------------------------------EXPERIMENTAL---------------------------------------
-    { "", "-mde", "banner", "", "More options for \"-mode exp\"", "0" },
+    { "", "mode-experimental", "banner", "", "More options for \"-mode exp\"", "0" },
     { "-outfolder", "string", "", "Experimental Mode Output Folder", "The folder SANA will output results to during Experiment Mode.", "0" },
     { "-experiment", "string", "", "Experimental Mode", "If any of the arguments -experiment, -paramestimation, or -alphaestimation is present, then the corresponding experiment is executed. See below for a description on experiment mode.", "0" },
     { "-collect", "bool", "false", "SGE Results Collection", "Collects results from a running or finished SGE job.", "0" },
@@ -177,14 +177,14 @@ vector<array<string, 6>> supportedArguments = {
     //------------------------------END EXPERIMENTAL-------------------------------------
 
     //----------------------------PARAMETER ESTIMATION-----------------------------------
-    { "", "-mdpm", "banner", "", "More options for \"-mode param\"", "0" },
+    { "", "mode-parameter", "banner", "", "More options for \"-mode param\"", "0" },
     { "-paramestimation", "string", "", "Parameter Estimation Mode", "If any of the arguments -experiment, -paramestimation, or -alphaestimation is present, then the corresponding experiment is executed. See below for a description on parameter estimation mode", "0" },
     { "-submit", "bool", "false", "Print Jobs Instead of Submitting", "Used with Debugging Mode for SGE. If false, SGE jobs will not be submitted to queues, but will be printed to console instead.", "0" },
     { "End More options for \"-mode param\"", "", "banner", "", "", "0" },
     //--------------------------END PARAMETER ESTIMATION---------------------------------
 
     //------------------------------ALPHA ESTIMATION-------------------------------------
-    { "", "-mdal", "banner", "", "More options for \"-mode alpha\"", "0" },
+    { "", "mode-alpha", "banner", "", "More options for \"-mode alpha\"", "0" },
     { "-alphaestimation", "string", "", "Alpha Estimation Mode", "If any of the arguments -experiment, -paramestimation, or -alphaestimation is present, then the corresponding experiment is executed. See below for a description on parameter estimation mode", "0" },
     { "End More options for \"-mode alpha\"", "", "banner", "", "", "0" },
     //----------------------------END ALPHA ESTIMATION-----------------------------------
@@ -196,20 +196,20 @@ vector<array<string, 6>> supportedArguments = {
     //--------------------------------END NORMAL-----------------------------------------
 
     //---------------------------------ANALYSIS------------------------------------------
-    { "", "-mdan", "banner", "", "More options for \"-mode analysis\"", "0" },
+    { "", "-mode-analysis", "banner", "", "More options for \"-mode analysis\"", "0" },
     { "-alignFormat", "intD", "0", "Alignfile Format", "Used in Analysis Mode \"-mode analysis\". alignFormat can be 1, 2, 3, or 4 which mean the following:\n1: sana.out format\n2. edge list format\n3. partial edge list format\n4. mapping format (old sana.out one line).", "0" },
     { "-alignFile", "string", "", "Alignment File Analysis Mode", "Used with \"-mode analysis\" to specify which pre-existing alignment file is being analyzed. Allowed values are 1=sana.out; 2=edge list; 3=partial edge list; 4=mapping (one line).", "0" },
     { "End More options for \"-mode analysis\"", "", "banner", "", "", "0" },
     //-------------------------------END ANALYSIS----------------------------------------
 
     //---------------------------------SIMILARITY----------------------------------------
-    { "", "-mds", "banner", "", "More options for \"-mode similarity (which exports and saves the internal similarity matrix)\"", "0" },
+    { "", "mode-similarity", "banner", "", "More options for \"-mode similarity (which exports and saves the internal similarity matrix)\"", "0" },
     { "-simFormat", "int_vec", "0", "Similarity File Formats", "An integer (must be the same one used by -esim and -simFiles) followed by that many integer simFormats. Allowed values are 2=G1 doubles down by G2 doubles across matrix where node order corresponds to .gw files; 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
     { "End More options for \"-mode similarity\"", "", "banner", "", "", "0" },
     //-------------------------------END SIMILARITY--------------------------------------
 
     //----------------------------------PARETO-------------------------------------------
-    { "", "-mdpt", "banner", "", "More options for \"-mode pareto\"", "0" },
+    { "", "mode-pareto", "banner", "", "More options for \"-mode pareto\"", "0" },
     { "-paretoInitial", "intD", "10", "Initial Pareto Size", "Used in Pareto Mode \"-mode pareto\". This argument specifies the starting number of Alignments in the Pareto Front. All of the starting alignments are the same", "0" },
     { "-paretoCapacity", "intD", "200", "Capacity of Pareto Front", "Used in Pareto Mode \"-mode pareto\". The pareto front can potentially hold N (different scores) by X (possible values/precision of the datatype used (i.e. float or double). Therefore, if a capacity is not specified, after the billions of SANA iterations, there may be too many different alignments stored in memory.", "0" },
     {"-paretoIterations", "intD", "10000", "Iterations per Pareto Insertion", "Used in Pareto Mode \"-mode pareto\". Pareto mode operates on a copy of an alignment (which already exists in the Pareto front). The number of changes and swaps happens -paretoIterations number of times on this copy before attempting to add this new alignment to the Pareto front.", "0"},
@@ -221,6 +221,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-balance", "string", "", "TITLE", "DESCRIPTION", "0" },
     { "-sec", "double", "0", "TITLE", "DESCRIPTION", "0" },
     { "-bipartite", "bool", "", "TITLE", "DESCRIPTION", "0" },
+    { "-multipartite", "double", "", "TITLE", "DESCRIPTION", "0" },
     { "-balance-all", "bool", "", "TITLE", "DESCRIPTION", "0" },
     { "-usingIterations", "bool", "", "TITLE", "DESCRIPTION", "0" },
     { "-add-hill-climbing", "bool", "", "TITLE", "DESCRIPTION", "0" },
@@ -282,7 +283,11 @@ void validateAndAddArguments(){
 
 void printAllArgumentDescriptions(unordered_set<string> help_args) {
     ifstream helpOutput;
+    ifstream helpTutorial;
+
     helpOutput.open("./src/arguments/helpOutput");
+    helpTutorial.open("./src/arguments/helpTutorial");
+    
     string line;
 
     if (help_args.size() == 0){ // Checks if no extra flag is given, If none prints general helpOutput file
@@ -295,28 +300,46 @@ void printAllArgumentDescriptions(unordered_set<string> help_args) {
         }
     }
 
-
-
+    bool hasTutorial = false; // To check if tutorial file need to be printed
     bool printingArguments = false; // Checks if the help arguments ask for the banner being iterated over
+    
     for (auto it = supportedArguments.begin(); it != supportedArguments.end(); it++)
     {
-        if ((*it)[2] == "banner")
+        auto argLine = *it;
+        if (argLine == supportedArguments[0]){
+            cout << printItem(argLine) << endl;
+        }
+        if (argLine[2] == "banner")
         {
             printingArguments = false;
             for (const auto& ele: help_args){
-                if (!ele.compare((*it)[1]) || !ele.compare("-all")){
+                if (!ele.compare(argLine[1]) || !ele.compare("all")){
                     printingArguments = true;
                     break;
+                }
+                else if(!ele.compare("tutorial")){
+                    hasTutorial = true;
                 }
             }
         }
         if (printingArguments == true)
         {
-            cout << printItem(*it) << endl;
+            cout << printItem(argLine) << endl;
+        }
+    }
+
+    if (hasTutorial == true){ // if tutorial is asked for print tutorial
+        while (!helpTutorial.eof())
+        {
+            getline(helpTutorial, line);
+            if (line != "OPTIONS, ARGS, AND DESCRIPTIONS GO HERE."){
+                cout << endl << line;
+            }
         }
     }
 
     helpOutput.close();
+    helpTutorial.close();
 }
 
 string printItem(const array<string, 6> &item)

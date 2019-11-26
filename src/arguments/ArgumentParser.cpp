@@ -92,6 +92,7 @@ vector<string> ArgumentParser::getFullArgList(const vector<string>& argv,
 void ArgumentParser::initParsedValues(vector<string> vArg) {
     int n = vArg.size();
     bool help_found = false;
+    bool time_found = false;
     unordered_set<string> helpArgs;
     //check to see if there is a help argument
     for (string arg : vArg) {
@@ -101,11 +102,19 @@ void ArgumentParser::initParsedValues(vector<string> vArg) {
         else if (help_found == true){
             helpArgs.insert(arg);
         }
+        if (arg == "-t"){
+            time_found = true;
+        }
     }
 
     if (help_found == true){
         printAllArgumentDescriptions(helpArgs);
         exit(0);
+    }
+
+    // Removed time from default arguments, Instead checks here if time provided
+    if (time_found != true){
+        throw runtime_error("ERROR: please specify a run time in minutes using the '-t xxx' option; type './sana -h' for help");
     }
 
     string arg = "";

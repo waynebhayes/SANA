@@ -8,10 +8,12 @@ like rc(1).  To distinguish '-s {n}' from '-s {shell-name}', it assumes\n\
 your shell name doesn't start with a digit.";
 
 #include <strings.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <unistd.h>
 
 int parallel;
 

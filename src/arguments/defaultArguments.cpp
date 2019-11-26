@@ -10,7 +10,6 @@ vector<string> defaultArguments = {
 "-tinitial auto",
 "-tdecay auto",
 "-schedulemethod auto",
-"-t 5",
 "-mode normal",
 "-method sana",
 "-s3 0",
@@ -33,5 +32,6 @@ vector<string> defaultArguments = {
 "-paretoInitial 1",
 "-paretoCapacity 200",
 "-paretoIterations 10000",
-"-paretoThreads 1"
+"-paretoThreads 1",
+"-multipartite 1"
 };

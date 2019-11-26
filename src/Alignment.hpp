@@ -70,6 +70,7 @@ public:
 
     static Alignment randomAlignmentWithLocking(Graph* G1, Graph* G2);
     static Alignment randomAlignmentWithNodeType(Graph *G1, Graph *G2);
+    static Alignment startingMultipartiteAlignment(Graph* G1, Graph* G2);
 
     // These two reIndex the alignment based on the reIndex Map from G1
     void reIndexBefore_Iterations(unordered_map<uint, uint> reIndexMap);
