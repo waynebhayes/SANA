@@ -5,6 +5,7 @@ from collections import defaultdict
 import datetime
 from skip_list import *
 import lzma
+import sys
 from measures import edgecoverage 
 
 
@@ -187,24 +188,32 @@ def num_edge_pairs_back_to_subgraph(g1, g2, g1node, g2node, aligned_pairs):
                 edgepairs += 1
     return edgepairs
 
-def local_align(g1, g2, seed, sims, ec_mode, m, delta):
+def local_align(g1, g2, seed, sims, ec_mode, m, delta, debug=False):
     #m is number of edges in seed graphlet
     g1alignednodes = set()
     g2alignednodes = set()
     aligned_pairs = set()
     pq = SkipList()
+
     candidatePairs = []
     ec1 = ec_mode[0]
     ec2 = ec_mode[1]
     E1 = E2 = EA = m
-    local_over_global = True
+    local_over_global = False 
+    if debug:
+        print("aligning inital seeds*************************************************************************")
 
     for seed1, seed2 in seed:
         aligned_pairs.add((seed1, seed2, sims[seed1][seed2]))
         g1alignednodes.add(seed1)
         g2alignednodes.add(seed2)
         candidatePairs += get_neighbor_pairs(g1,g2,seed1,seed2,sims) 
-        update_best_pair(pq, g1, g2, seed1, seed2, aligned_pairs, sims, delta)
+        #update_best_pair(pq, g1, g2, seed1, seed2, aligned_pairs, sims, delta)
+
+    if(debug):
+        print("ec1: " + str(ec1))
+        print("ec2: " + str(ec2))
+        print("local_over_global: " + str(local_over_global))
 
     done = False
     while(not done):
@@ -213,6 +222,11 @@ def local_align(g1, g2, seed, sims, ec_mode, m, delta):
         #candidatePairs = all pairs (u,v) within 1 step of S, u in G1, v in G2.
         if(local_over_global):
             edge_freq = {}
+            
+            if debug:
+                print("Calculating n1,n2,m for cand pairs: len= " + str(len(candidatePairs)), end=" ")
+                sys.stdout.flush()
+
             for g1node, g2node in candidatePairs:
                 n1 = num_edges_back_to_subgraph(g1, g1node, g1alignednodes)   
                 n2 = num_edges_back_to_subgraph(g2, g2node, g2alignednodes)   
@@ -221,12 +235,19 @@ def local_align(g1, g2, seed, sims, ec_mode, m, delta):
 
 
             if ec1 > 0 and ec2 == 0:
+                print("ec1 > 0 and ec2")
                 candidatePairs = sorted(edge_freq, key = lambda x: -(edge_freq[x][2]/edge_freq[x][0]-ec1) )
             elif ec2 > 0 and ec1 == 0:
                 candidatePairs = sorted(edge_freq, key = lambda x: -(edge_freq[x][2]/edge_freq[x][1]-ec2) )
             elif ec1 > 0 and ec2 > 0:
                 candidatePairs = sorted(edge_freq, key = lambda x: -(edge_freq[x][2]/(edge_freq[x][0]+edge_freq[x][1])) )
+            
+            assert(len(candidatePairs) > 0)
         
+            if debug:
+                print("sorted cand pairs")
+                print("aligning cand pairs...")
+                
             for pair in candidatePairs:
                 n1val = edge_freq[pair][0]
                 n2val = edge_freq[pair][1]
@@ -234,16 +255,24 @@ def local_align(g1, g2, seed, sims, ec_mode, m, delta):
                 if ((EA + mval)/(E1 + n1val)) >= ec1 and ((EA + mval)/(E2 + n2val)):
                     if pair not in aligned_pairs:
                         aligned_pairs.add(pair)
+                        if debug:
+                            print(str(pair),end=" ")
                         g1alignednodes.add(pair[0])
                         g2alignednodes.add(pair[1])
                         new_candidatePairs += get_neighbor_pairs(g1,g2,pair[0],pair[1],sims) 
-                        update_best_pair(pq, g1, g2, pair[0], pair[1], aligned_pairs, sims, delta)
+                        #update_best_pair(pq, g1, g2, pair[0], pair[1], aligned_pairs, sims, delta)
                         E1 += n1val
                         E2 += n2val
                         EA += mval
+                        if debug:
+                            print("E1: " + str(E1),end=" ")
+                            print("E2: " + str(E2),end=" ")
+                            print("EA: " + str(EA),end=" ")
+                        done = False
 
-                else:
-                    new_candidatePairs.append(pair)
+                #else:
+                    #new_candidatePairs.append(pair)
+            print("Size of S: " + str(len(aligned_pairs)))
         else: # else use the similarity order
             curr_pair = best_pair(pq, delta)
             g1node = curr_pair[0]
@@ -256,9 +285,13 @@ def local_align(g1, g2, seed, sims, ec_mode, m, delta):
             g2alignednodes.add(g2node)
          
         if len(new_candidatePairs) != 0:
-            done = False
+            #done = False
+            print("updating candPairs with newcandPairs")
             candidatePairs = new_candidatePairs
+        if len(new_candidatePairs) == 0:
+            break
 
+    #print("DONE!!!!!!!!!!!!!!!!!!!!!!!!!!")
     return (g1alignednodes, g2alignednodes, aligned_pairs)
 
 def dijkstra(yeast_graph, human_graph, seed, sims, delta, num_seeds = 1):
@@ -341,8 +374,10 @@ def s3score(g1, g2, pairs, subgraph):
 def write_result(file, pairs, graph1, graph2):
     with open(file, 'w+')as f:
         #f.write(str(len(d)) + ' ' + str(coverage(yeast_graph, human_graph,d)) + '\n')
-        for x in pairs:
-            f.write(str(graph1.nodes[x[0]]) + ' ' + str(graph2.nodes[x[1]]) + '\n')
+        #for x in pairs:
+        #    f.write(str(graph1.nodes[x[0]]) + ' ' + str(graph2.nodes[x[1]]) + '\n')
+        for g1node, g2node in pairs:
+            f.write(str(graph1.nodes[g1node]) + ' ' + str(graph2.nodes[g2node]) + '\n')
 
 
 def to_name(pairs, yd, hd):
