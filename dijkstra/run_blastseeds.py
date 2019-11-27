@@ -25,6 +25,8 @@ def initParser():
     parser.add_argument("-ec1", "--ec1bound", required=False, default = "0.0", help ="lower bound for ec1")
     parser.add_argument("-ec2", "--ec2bound", required=False, default = "0.0", help ="lower bound for ec2")
     parser.add_argument("-s3", "--s3bound", required=False, default = "0.0", help ="lower bound for s3")
+    parser.add_argument("-a", "--alpha", required=False, default = "", help = "weight given to aligning based on local measurement")
+    parser.add_argument("-b", "--beta", required=False, default = "", help = "weight given to aligning based on similarity matrix")
     parser.add_argument("-pk", "--pickle", required=False, default = "", help = "location of existing pickle file")
     return parser
 
@@ -56,6 +58,7 @@ if __name__ == '__main__':
     g2_seed_file = args.g2seed
     
     ec_mode = (float(args.ec1bound), float(args.ec2bound), float(args.s3bound))
+    alpha = float(args.alpha)
     seed_length = seeding.get_seed_length(g1_seed_file)
 
     sims = builder.get_sim(args.sim, graph1, graph2, args.pickle)
@@ -71,7 +74,7 @@ if __name__ == '__main__':
 
 
         start = time.time()
-        a, b, pairs = alignment.local_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, e1, delta, debug=False)    
+        a, b, pairs = alignment.local_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, e1, delta, alpha, debug=False)    
         #a, b, pairs = alignment.stop_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, delta)
         subgraph = alignment.induced_subgraph(graph1, graph2, list(pairs))
         cov = alignment.coverage(graph1, graph2, subgraph)[0]
