@@ -95,12 +95,17 @@ def fit_in_curr_align(g1, g2, node1, node2, pairs):
     return True
 
 
-def get_neighbor_pairs(g1, g2, node1, node2, sims, delta = 0):
+def get_neighbor_pairs(g1, g2, node1, node2, g1alignednodes, g2alignednodes, sims):
     result = []
+    
     for i in g1.get_neighbors(node1):
         for j in g2.get_neighbors(node2):
-            if sims[i][j] != 0:
-                result.append((i,j))
+            if i not in g1alignednodes and j not in g2alignednodes:
+                if sims[i][j] > 0:
+        #pairs.add((seed1, seed2, sims[seed1][seed2]))
+                    result.append((i,j))
+            #if sims[i][j] != 0:
+            #    result.append((i,j))
     return result
 
 
@@ -167,26 +172,230 @@ def stop_align2(g1, g2, seed, sims, ec_mode, delta = 0):
 
 def num_edges_back_to_subgraph(graph, node, aligned_nodes):
     edges = 0
+   
+    for neighbor_node in aligned_nodes:
+        if graph.has_edge(node, neighbor_node):
+            edges += 1
+
+    '''
     for neighbor_node in graph.get_neighbors(node):
         if neighbor_node in aligned_nodes:
             edges += 1
+    '''
     return edges
 
 
 def num_edge_pairs_back_to_subgraph(g1, g2, g1node, g2node, aligned_pairs):
     edgepairs = 0
-
-    """
+    print("printing edges for M")
     for n1, n2 in aligned_pairs:
         if g1.has_edge(g1node, n1) and g2.has_edge(g2node, n2):
+            print(n1, n2)
             edgepairs += 1
-    """
 
+    """
     for n1 in g1.get_neighbors(g1node):
         for n2 in g2.get_neighbors(g2node):
             if (n1, n2) in aligned_pairs:
                 edgepairs += 1
+    """
     return edgepairs
+
+
+def local_align2(g1, g2, seed, sims, ec_mode, m, delta, debug=False):
+    def update_edge_freq(g1node,g2node):
+        del_nodes = []
+        for n1, n2 in edge_freq:
+            if n1 in g1alignednodes or n2 in g2alignednodes:
+                del_nodes.append((n1,n2))
+                continue
+
+            if g1.has_edge(n1, g1node) and g2.has_edge(n2, g2node):
+                edge_freq[(n1,n2)][0] += 1
+                edge_freq[(n1,n2)][1] += 1
+                edge_freq[(n1, n2)][2] += 1
+            elif g1.has_edge(n1, g1node):
+                edge_freq[(n1,n2)][0] += 1
+            elif g2.has_edge(n2, g2node):
+                edge_freq[(n1,n2)][1] += 1
+        for node in del_nodes:
+            del edge_freq[node]
+            
+    #m is number of edges in seed graphlet
+    g1alignednodes = set()
+    g2alignednodes = set()
+    aligned_pairs = set()
+    #pq = SkipList()
+
+    candidatePairs = []
+    ec1 = ec_mode[0]
+    ec2 = ec_mode[1]
+    E1 = E2 = EA = m
+    local_over_global = True 
+    if debug:
+        print("aligning inital seeds*************************************************************************")
+
+    for seed1, seed2 in seed:
+        #aligned_pairs.add((seed1, seed2, sims[seed1][seed2]))
+        aligned_pairs.add((seed1, seed2))
+        g1alignednodes.add(seed1)
+        g2alignednodes.add(seed2)
+        candidatePairs += get_neighbor_pairs(g1,g2,seed1,seed2,g1alignednodes, g2alignednodes,sims) 
+        #update_best_pair(pq, g1, g2, seed1, seed2, aligned_pairs, sims, delta)
+
+    if(debug):
+        print("ec1: " + str(ec1))
+        print("ec2: " + str(ec2))
+        print("local_over_global: " + str(local_over_global))
+
+    done = False
+        #candidatePairs = all pairs (u,v) within 1 step of S, u in G1, v in G2.
+
+    edge_freq = {}
+
+    whilecount = 0
+
+    while(not done):
+
+        done = True
+        new_candidatePairs = []
+
+        if(local_over_global):
+            
+            if debug:
+                print("Calculating n1,n2,m for cand pairs: len= " + str(len(candidatePairs)), end=" ")
+                sys.stdout.flush()
+
+            for g1node, g2node in candidatePairs:
+                if (g1node, g2node) in edge_freq:
+                    continue
+                n1 = num_edges_back_to_subgraph(g1, g1node, g1alignednodes)   
+                n2 = num_edges_back_to_subgraph(g2, g2node, g2alignednodes)   
+                M = num_edge_pairs_back_to_subgraph(g1, g2, g1node, g2node, aligned_pairs)            
+                flag = M <= n1 and M <= n2
+                if not flag:
+                    print("g1 nieghbors : ")
+                    print(g1.get_neighbors(g1node))
+                    
+                    alignedneighbors1 = [n for n in g1.get_neighbors(g1node) if n in g1alignednodes]
+
+                    print("alignedneighbors g1node") 
+                    print(alignedneighbors1) 
+
+                    print("g2 nieghbors : ")
+                    print(g2.get_neighbors(g2node))
+                    
+                    alignedneighbors2 = [n for n in g2.get_neighbors(g2node) if n in g2alignednodes]
+
+                    print("alignedneighbors g2node") 
+                    print(alignedneighbors2) 
+
+                    print("aligned pairs:")
+                    print(aligned_pairs)
+            
+                    
+        
+
+                    
+        
+    
+                assert(M <= n1 and M <= n2), f"M={M}, n1={n1}, n2={n2}, nodes=({g1node},{g2node})"
+
+
+                
+                edge_freq[(g1node, g2node)] = [n1, n2, M]
+             
+
+            '''
+            if debug and whilecount == 0:
+                print("edge freq")
+                print(edge_freq)
+            '''
+        
+
+
+            if ec1 > 0 and ec2 == 0:
+                print("ec1 > 0 and ec2")
+                candidatePairs = sorted(edge_freq, key = lambda x: (edge_freq[x][2]/edge_freq[x][0]-ec1) )
+            elif ec2 > 0 and ec1 == 0:
+                candidatePairs = sorted(edge_freq, key = lambda x: (edge_freq[x][2]/edge_freq[x][1]-ec2) )
+            elif ec1 > 0 and ec2 > 0:
+                candidatePairs = sorted(edge_freq, key = lambda x: (edge_freq[x][2]/(edge_freq[x][0]+edge_freq[x][1])) )
+            
+            assert(len(candidatePairs) > 0)
+        
+            if debug:
+                print("sorted cand pairs")
+                print("aligning cand pairs...")
+   
+            #if debug and whilecount < 4:
+            #    for pair in candidatePairs:
+            #        print(edge_freq[pair])
+           
+            for i in range(len(candidatePairs)-1, -1, -1):
+                pair = candidatePairs.pop()
+                n1val = edge_freq[pair][0]
+                n2val = edge_freq[pair][1]
+                mval = edge_freq[pair][2]
+
+                assert n1val >= mval and n2val >= mval, "mval is smaller than n1val and n2val"
+                if pair not in aligned_pairs:
+                    if ((EA + mval)/(E1 + n1val)) >= ec1 and ((EA + mval)/(E2 + n2val)) >= ec2:
+                        aligned_pairs.add(pair)
+                        
+                        if debug:
+                            print("Added New Pair:", str(pair),end=" ")
+                        
+                        g1alignednodes.add(pair[0])
+                        g2alignednodes.add(pair[1])
+                        new_candidatePairs += get_neighbor_pairs(g1,g2,pair[0],pair[1], g1alignednodes, g2alignednodes, sims) 
+                        #update_best_pair(pq, g1, g2, pair[0], pair[1], aligned_pairs, sims, delta)
+                        
+                        E1 += n1val
+                        E2 += n2val
+                        EA += mval
+                        update_edge_freq(pair[0], pair[1])
+
+                        if debug:
+                            print("E1: " + str(E1),end=" ")
+                            print("E2: " + str(E2),end=" ")
+                            print("EA: " + str(EA),end=" ")
+                        done = False
+
+                        break
+
+                    else:
+                        new_candidatePairs.append(pair)
+            print("Size of S: " + str(len(aligned_pairs)))
+
+        whilecount += 1
+        if len(new_candidatePairs) > 0:
+            #done = False
+            print("updating candPairs with newcandPairs")
+            candidatePairs += new_candidatePairs
+        else:
+            if debug:
+                print("Exiting because no new cand pairs")
+            break
+    if debug:
+        print("whilecount: " + str(whilecount))
+        print("DONE!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
+    '''
+        else: # else use the similarity order
+            curr_pair = best_pair(pq, delta)
+            g1node = curr_pair[0]
+            g2node = curr_pair[1]
+            if g1node in g1alignednodes or g2node in g2alignednodes:
+                continue
+            update_best_pair(pq, g1, g2, g1node, g2node, aligned_pairs, sims, delta)
+            aligned_pairs.add((g1node, g2node, sims[g1node][g2node]))
+            g1alignednodes.add(g1node)
+            g2alignednodes.add(g2node)
+    '''
+         
+    return (g1alignednodes, g2alignednodes, aligned_pairs)
+
 
 def local_align(g1, g2, seed, sims, ec_mode, m, delta, debug=False):
     #m is number of edges in seed graphlet
@@ -371,13 +580,18 @@ def s3score(g1, g2, pairs, subgraph):
 
 
 
-def write_result(file, pairs, graph1, graph2):
-    with open(file, 'w+')as f:
+def write_result(filename, pairs, graph1, graph2):
+    print('############',filename, len(pairs))
+    #for pair in pairs:
+    #    print(pair)
+        
+    with open(filename, 'w+')as f:
         #f.write(str(len(d)) + ' ' + str(coverage(yeast_graph, human_graph,d)) + '\n')
-        #for x in pairs:
-        #    f.write(str(graph1.nodes[x[0]]) + ' ' + str(graph2.nodes[x[1]]) + '\n')
-        for g1node, g2node in pairs:
-            f.write(str(graph1.nodes[g1node]) + ' ' + str(graph2.nodes[g2node]) + '\n')
+        for x in pairs:
+            f.write(str(graph1.nodes[x[0]]) + ' ' + str(graph2.nodes[x[1]]) + '\n')
+        #for g1node, g2node in pairs:
+        #    print(str(graph1.nodes[g1node]) + ' ' + str(graph2.nodes[g2node]) + '\n')
+        #    f.write(str(graph1.nodes[g1node]) + ' ' + str(graph2.nodes[g2node]) + '\n')
 
 
 def to_name(pairs, yd, hd):
