@@ -71,10 +71,7 @@ if __name__ == '__main__':
 
 
         start = time.time()
-        print("E1: " + str(e1))
-        print("E2: " + str(e2))
-        print("ec_mode: " + str(ec_mode))
-        a, b, pairs = alignment.local_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, e1, delta, debug=True)    
+        a, b, pairs = alignment.local_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, e1, delta, debug=False)    
         #a, b, pairs = alignment.stop_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, delta)
         subgraph = alignment.induced_subgraph(graph1, graph2, list(pairs))
         cov = alignment.coverage(graph1, graph2, subgraph)[0]
@@ -87,8 +84,6 @@ if __name__ == '__main__':
         #print(pairs)
         fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--" + str(newcov) + "--"  + uid +  ".dijkstra"
         alignment.write_result(fname, pairs, graph1, graph2)
-        print("Edges aligned in subgraph:",len(subgraph))
-        print("Pairs aligned in subgraph:",len(pairs))
         s3 = alignment.s3score(graph1, graph2, pairs, subgraph) 
         s3cov = round(s3, 2) 
         

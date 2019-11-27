@@ -138,11 +138,9 @@ def get_sim(file, graph1, graph2, pickle_name = ""):
         pickle_name = graph1.name + graph2.name + ".sim.pickle"
     try:
         with open(pickle_name,'rb') as f:
-            print("picke found")
             return pickle.load(f)
     except FileNotFoundError as e:
         sims = build_sim(file, graph1, graph2)
-        print("build sim")
         with open(pickle_name,'wb') as f:
             pickle.dump(sims,f)
         return sims

@@ -187,10 +187,10 @@ def num_edges_back_to_subgraph(graph, node, aligned_nodes):
 
 def num_edge_pairs_back_to_subgraph(g1, g2, g1node, g2node, aligned_pairs):
     edgepairs = 0
-    print("printing edges for M")
+    #print("printing edges for M")
     for n1, n2 in aligned_pairs:
         if g1.has_edge(g1node, n1) and g2.has_edge(g2node, n2):
-            print(n1, n2)
+            #print(n1, n2)
             edgepairs += 1
 
     """
@@ -234,14 +234,24 @@ def local_align2(g1, g2, seed, sims, ec_mode, m, delta, debug=False):
     local_over_global = True 
     if debug:
         print("aligning inital seeds*************************************************************************")
-
+   
+    listg1seed = "" 
+    listg2seed = ""
     for seed1, seed2 in seed:
+        listg1seed += str(g1.nodes[seed1]) + " " 
+        listg2seed += str(g2.nodes[seed2]) + " " 
         #aligned_pairs.add((seed1, seed2, sims[seed1][seed2]))
+        if debug:
+            print((seed1,seed2))
         aligned_pairs.add((seed1, seed2))
         g1alignednodes.add(seed1)
         g2alignednodes.add(seed2)
+            
         candidatePairs += get_neighbor_pairs(g1,g2,seed1,seed2,g1alignednodes, g2alignednodes,sims) 
         #update_best_pair(pq, g1, g2, seed1, seed2, aligned_pairs, sims, delta)
+
+    listg1seed += listg2seed
+    k = len(aligned_pairs)
 
     if(debug):
         print("ec1: " + str(ec1))
@@ -294,15 +304,9 @@ def local_align2(g1, g2, seed, sims, ec_mode, m, delta, debug=False):
                     print(aligned_pairs)
             
                     
-        
-
-                    
-        
-    
                 assert(M <= n1 and M <= n2), f"M={M}, n1={n1}, n2={n2}, nodes=({g1node},{g2node})"
 
 
-                
                 edge_freq[(g1node, g2node)] = [n1, n2, M]
              
 
@@ -339,7 +343,7 @@ def local_align2(g1, g2, seed, sims, ec_mode, m, delta, debug=False):
                 mval = edge_freq[pair][2]
 
                 assert n1val >= mval and n2val >= mval, "mval is smaller than n1val and n2val"
-                if pair not in aligned_pairs:
+                if pair[0] not in g1alignednodes and pair[1] not in g2alignednodes:
                     if ((EA + mval)/(E1 + n1val)) >= ec1 and ((EA + mval)/(E2 + n2val)) >= ec2:
                         aligned_pairs.add(pair)
                         
@@ -366,12 +370,14 @@ def local_align2(g1, g2, seed, sims, ec_mode, m, delta, debug=False):
 
                     else:
                         new_candidatePairs.append(pair)
-            print("Size of S: " + str(len(aligned_pairs)))
+            if debug:
+                print("Size of S: " + str(len(aligned_pairs)))
 
         whilecount += 1
         if len(new_candidatePairs) > 0:
             #done = False
-            print("updating candPairs with newcandPairs")
+            if debug:
+                print("updating candPairs with newcandPairs")
             candidatePairs += new_candidatePairs
         else:
             if debug:
@@ -379,6 +385,8 @@ def local_align2(g1, g2, seed, sims, ec_mode, m, delta, debug=False):
             break
     if debug:
         print("whilecount: " + str(whilecount))
+
+        print("E1: " + str(E1) + "E2: " + str(E2) + "EA: " + str(EA), end = " ")  
         print("DONE!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
     '''
@@ -393,8 +401,14 @@ def local_align2(g1, g2, seed, sims, ec_mode, m, delta, debug=False):
             g1alignednodes.add(g1node)
             g2alignednodes.add(g2node)
     '''
-         
+   
+    output(k, E1,E2,EA,listg1seed,len(aligned_pairs))
     return (g1alignednodes, g2alignednodes, aligned_pairs)
+
+
+def output(k, E1, E2, EA, seed, size):
+    print("k:" + str(k) +  " size:" + str(size) + " E1:" + str(E1) + " E2:" + str(E2) + " EA:" + str(EA) + " seed: " + str(seed))
+
 
 
 def local_align(g1, g2, seed, sims, ec_mode, m, delta, debug=False):
@@ -571,7 +585,6 @@ def unaligned_edges_g2_in(graph1, graph2, aligned_pairs, subgraph):
 
 
 def s3score(g1, g2, pairs, subgraph):
-    print("calculating s3..")
     aligned_edges = len(subgraph)
     u2in = unaligned_edges_g2_in(g1, g2, pairs, subgraph)
     denom = aligned_edges + (g1.num_edges() / 2) + len(u2in) 
@@ -581,13 +594,14 @@ def s3score(g1, g2, pairs, subgraph):
 
 
 def write_result(filename, pairs, graph1, graph2):
-    print('############',filename, len(pairs))
+    #print('############',filename, len(pairs))
     #for pair in pairs:
     #    print(pair)
         
     with open(filename, 'w+')as f:
         #f.write(str(len(d)) + ' ' + str(coverage(yeast_graph, human_graph,d)) + '\n')
         for x in pairs:
+            print(str(graph1.nodes[x[0]]) + ' ' + str(graph2.nodes[x[1]]))
             f.write(str(graph1.nodes[x[0]]) + ' ' + str(graph2.nodes[x[1]]) + '\n')
         #for g1node, g2node in pairs:
         #    print(str(graph1.nodes[g1node]) + ' ' + str(graph2.nodes[g2node]) + '\n')
