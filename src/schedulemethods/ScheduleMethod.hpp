@@ -32,16 +32,23 @@ public:
     static void setSana(SANA *const sana) { ScheduleMethod::sana = sana; }
 
     ScheduleMethod();
-    ~ScheduleMethod() =default;
+    virtual ~ScheduleMethod() =default;
 
     virtual string getName() =0;
 
-    static constexpr double DEFAULT_TARGET_TINITIAL_DIGITS_FROM_1 = 2; // represents 0.99
-    static constexpr double DEFAULT_TARGET_TFINAL_DIGITS_FROM_0 = 10; // represents 1e-10
-    static constexpr double DEFAULT_TARGET_INITIAL_PBAD = (1-pow(10,-DEFAULT_TARGET_TINITIAL_DIGITS_FROM_1));
-    static constexpr double DEFAULT_TARGET_FINAL_PBAD = pow(10,-DEFAULT_TARGET_TFINAL_DIGITS_FROM_0);
-    static constexpr double DEFAULT_ERROR_TOL_DIGITS = 0.9; // as a fraction of digits in the last place from the above.
-    static constexpr double DEFAULT_SAMPLE_TIME = 1;
+    // static constexpr double DEFAULT_TARGET_TINITIAL_DIGITS_FROM_1 = 2; // represents 0.99
+    // static constexpr double DEFAULT_TARGET_TFINAL_DIGITS_FROM_0 = 10; // represents 1e-10
+    // constexpr static double DEFAULT_TARGET_INITIAL_PBAD = (1-pow(10,-DEFAULT_TARGET_TINITIAL_DIGITS_FROM_1));
+    // static constexpr double DEFAULT_TARGET_FINAL_PBAD = pow(10,-DEFAULT_TARGET_TFINAL_DIGITS_FROM_0);
+    // constexpr static double DEFAULT_ERROR_TOL_DIGITS = 0.9; // as a fraction of digits in the last place from the above.
+    // constexpr static double DEFAULT_SAMPLE_TIME = 1;
+
+    static double DEFAULT_TARGET_TINITIAL_DIGITS_FROM_1; // represents 0.99
+    static double DEFAULT_TARGET_TFINAL_DIGITS_FROM_0; // represents 1e-10
+    static double DEFAULT_TARGET_INITIAL_PBAD;
+    static double DEFAULT_TARGET_FINAL_PBAD;
+    static double DEFAULT_ERROR_TOL_DIGITS; // as a fraction of digits in the last place from the above.
+    static double DEFAULT_SAMPLE_TIME;
 
     virtual void setTargetInitialPBad(double pBad) { targetInitialPBad = pBad; }
     virtual void setTargetFinalPBad(double pBad) { targetFinalPBad = pBad; }

@@ -66,3 +66,7 @@ cache-pbad/
 
 .vscode/
 sana\.weighted
+
+# Macbook files
+*.DS_Store
+src/*.DS_Store
