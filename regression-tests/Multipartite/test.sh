@@ -12,7 +12,7 @@ rm -f $TEST_DIR/sana.align
 
 exitCode=0
 
-./sana -t 1 -fg1 "$TEST_DIR/multipartite_test.mpel" -fg2 "$TEST_DIR/multipartite_test_2.mpel" -o "$TEST_DIR/sana" -multipartite 3
+./sana -s3 1 -t 1 -fg1 "$TEST_DIR/multipartite_test.mpel" -fg2 "$TEST_DIR/multipartite_test_2.mpel" -o "$TEST_DIR/sana" -multipartite 3 || exit
 
 cd $TEST_DIR
 matches=`awk '{ if ($1 == $2) { print "same"; } }' < sana.align | wc -l`
