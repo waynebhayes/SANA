@@ -67,7 +67,7 @@ NL='
 [ -x ./sana ] || die "can't find ./sana executable"
 
 nets='AThaliana CElegans DMelanogaster HSapiens MMusculus RNorvegicus SCerevisiae SPombe'
-Networks_count=`echo $nets | wc -w`
+export Networks_count=`echo $nets | wc -w`
 Biogrid_network=`echo $nets | newlines | sed 's/$/.el/' | (cd networks; xargs ls -Sr) | sed 's/\.el$//'`
 echo "$Biogrid_network" |
 	awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; ./sana -t 5 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
@@ -143,18 +143,17 @@ if [ ! -z "$CompareFile" ]; then
 	    echo "$name failed error margin: ($newItem - $baseItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
         fi
     done
-
     echo "Checking SANA Locking Mechanism" | tee -a $OutputFile
     # First create the shuffled list so we can run them in parallel in the next loop.
     touch $TMPDIR/networks.locking
-    for i in `seq 8`; do
-        random=`shuf -i "1-$Networks_count" -n 2 | sort -n`
+    for i in `seq $Networks_count`; do
+        random=`awk 'BEGIN{n='"$Networks_count"';srand();printf "%d\n%d\n",1+n*rand(),1+n*rand();exit}' | sort -n`
         select=`echo $random | tr "$NL" " " | awk '{print $1}'`
         select2=`echo $random | tr "$NL" " " | awk '{print $2}'`
         Network2=`echo -e $Biogrid_network | awk '{print $'$select'}'`
         Network1=`echo -e $Biogrid_network | awk '{print $'$select2'}'`
         if [ -n "$Network1" -a -n "$Network2" ]; then
-	    paste <(cat ./networks/$Network1/${Network1}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) <(cat ./networks/$Network2/${Network2}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | shuf -n 50) > $OutputDir/$Network1-$Network2.locking
+	    paste <(cat ./networks/$Network1/${Network1}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | randomizeLines | head -50) <(cat ./networks/$Network2/${Network2}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | randomizeLines | head -50) > $OutputDir/$Network1-$Network2.locking
 	    echo "$Network1" "$Network2" >> $TMPDIR/networks.locking
         else
             echo "WARNING (temporary hack): one of the following is empty: Network1 = '$Network1', Network2 = '$Network2'" >&2

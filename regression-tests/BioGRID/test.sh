@@ -1,2 +1,3 @@
 #!/bin/sh
-./regression-tests/BioGRID/regression-test -c regression-tests/BioGRID/regression-test.baseline.`hostname`
+HOST=`hostname|sed 's/\..*//'`
+./regression-tests/BioGRID/regression-test -c regression-tests/BioGRID/regression-test.baseline.$HOST
