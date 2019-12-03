@@ -23,6 +23,9 @@ class Graph:
     def get_neighbors(self, node):
        return self.edges.get(node, [])
 
+    def degree(self,node):
+        return len(self.get_neighbors(node))
+
     def __repr__(self):
         return "\n".join([str(s) for s in self.edges.items()])
     
