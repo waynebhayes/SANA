@@ -7,6 +7,9 @@ PARALLEL='./parallel -s bash 4'  # run in parallel on jenkins
 die() { echo "ERROR: $@" >&2; exit 1
 }
 
+newlines() { /bin/awk '{for(i=1; i<=NF; i++) print $i}' "$@"
+}
+
 PATH="$PATH:`pwd`/scripts"
 export PATH
 
