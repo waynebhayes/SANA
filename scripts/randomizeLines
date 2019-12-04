@@ -1,0 +1,12 @@
+#!/bin/sh
+cat "$@" | awk 'BEGIN{srand();srand(int(2^30*rand())+'$$')}
+    function randint(N){return int(N*rand())}
+    {line[NR]=$0}
+    END{
+	N=NR;
+	while(N) {
+	    k=randint(N)+1;
+	    print line[k];
+	    line[k]=line[N--];
+	}
+    }'
