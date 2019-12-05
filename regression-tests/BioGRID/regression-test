@@ -69,8 +69,16 @@ NL='
 nets='AThaliana CElegans DMelanogaster HSapiens MMusculus RNorvegicus SCerevisiae SPombe'
 export Networks_count=`echo $nets | wc -w`
 Biogrid_network=`echo $nets | newlines | sed 's/$/.el/' | (cd networks; xargs ls -Sr) | sed 's/\.el$//'`
+echo "Creating random lock files"
+echo -n > $OutputDir/networks.locking
 echo "$Biogrid_network" |
-	awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; ./sana -t 5 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
+    awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "%s %s\n",net[i],net[j]}' | while read g1 g2
+    do
+	echo $g1 $g2 >> $OutputDir/networks.locking
+	paste <(cat networks/$g1.el | newlines | sort -u | randomizeLines | head -50) <(cat networks/$g2.el | newlines | sort -u | randomizeLines | head -50) > $OutputDir/$g1-$g2.lock
+    done
+
+echo "$Biogrid_network" | awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; ./sana -t 5 -s3 1 -g1 %s -g2 %s -lock '$OutputDir'/%s-%s.lock -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
 
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
@@ -143,35 +151,18 @@ if [ ! -z "$CompareFile" ]; then
 	    echo "$name failed error margin: ($newItem - $baseItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
         fi
     done
-    echo "Checking SANA Locking Mechanism" | tee -a $OutputFile
-    # First create the shuffled list so we can run them in parallel in the next loop.
-    touch $TMPDIR/networks.locking
-    for i in `seq $Networks_count`; do
-        random=`awk 'BEGIN{n='"$Networks_count"';srand();printf "%d\n%d\n",1+n*rand(),1+n*rand();exit}' | sort -n`
-        select=`echo $random | tr "$NL" " " | awk '{print $1}'`
-        select2=`echo $random | tr "$NL" " " | awk '{print $2}'`
-        Network2=`echo -e $Biogrid_network | awk '{print $'$select'}'`
-        Network1=`echo -e $Biogrid_network | awk '{print $'$select2'}'`
-        if [ -n "$Network1" -a -n "$Network2" ]; then
-	    paste <(cat ./networks/$Network1/${Network1}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | randomizeLines | head -50) <(cat ./networks/$Network2/${Network2}.gw | grep "|{[0-9]\+}|" | grep -o "[0-9]\+" | randomizeLines | head -50) > $OutputDir/$Network1-$Network2.locking
-	    echo "$Network1" "$Network2" >> $TMPDIR/networks.locking
-        else
-            echo "WARNING (temporary hack): one of the following is empty: Network1 = '$Network1', Network2 = '$Network2'" >&2
-        fi
-    done
-    cat $TMPDIR/networks.locking | while read Network1 Network2; do
-	echo "echo checking locking between $Network1 and $Network2; ./sana -t 1 -s3 1 -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null"
-    done | eval $PARALLEL
-    cat $TMPDIR/networks.locking | while read Network1 Network2; do
-	if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.align" | wc -l` -ne 50 ]]; then
-	    touch $TMPDIR/failed
-	    echo "Locking mechanism regression testing failed on $Network1 and $Network2 on $OutputDir/$Network1-$Network2.locking file" >&2
-	fi
-    done
+fi
 
-    if [ -f $TMPDIR/failed ] ;then
-        exit 1
-    else
-        exit 0
+echo "Checking SANA Locking Mechanism" | tee -a $OutputFile
+cat $OutputDir/networks.locking | while read Network1 Network2; do
+    if [[ `grep -c -x -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2.align"` -ne 50 ]]; then
+	touch $TMPDIR/failed
+	echo "LOCKING FAILED on $OutputDir/$Network1-$Network2" >&2
     fi
+done
+
+if [ -f $TMPDIR/failed ] ;then
+    exit 1
+else
+    exit 0
 fi
