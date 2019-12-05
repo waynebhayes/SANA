@@ -155,7 +155,7 @@ fi
 
 echo "Checking SANA Locking Mechanism" | tee -a $OutputFile
 cat $OutputDir/networks.locking | while read Network1 Network2; do
-    if [[ `grep -c -x -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2.align"` -ne 50 ]]; then
+    if [[ `grep -c -x -f "$OutputDir/$Network1-$Network2.lock" "$OutputDir/$Network1-$Network2.align"` -ne 50 ]]; then
 	touch $TMPDIR/failed
 	echo "LOCKING FAILED on $OutputDir/$Network1-$Network2" >&2
     fi
