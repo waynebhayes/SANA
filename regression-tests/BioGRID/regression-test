@@ -160,7 +160,7 @@ if [ ! -z "$CompareFile" ]; then
         fi
     done
     cat $TMPDIR/networks.locking | while read Network1 Network2; do
-	echo "echo checking locking between $Network1 and $Network2; ./sana -t 5 -s3 1 -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null"
+	echo "echo checking locking between $Network1 and $Network2; ./sana -t 1 -s3 1 -g1 $Network1 -g2 $Network2 -lock $OutputDir/$Network1-$Network2.locking -o $OutputDir/$Network1-$Network2-locking-test &> /dev/null"
     done | eval $PARALLEL
     cat $TMPDIR/networks.locking | while read Network1 Network2; do
 	if [[ `grep -f "$OutputDir/$Network1-$Network2.locking" "$OutputDir/$Network1-$Network2-locking-test.align" | wc -l` -ne 50 ]]; then

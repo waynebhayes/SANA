@@ -8,7 +8,7 @@ cat "$@" | sort -S1G | uniq -c | awk ' { delete K; for(i=2;i<=NF;i++)++K[$i];del
 for i
 do
     echo -n "$i	"
-awk '{
+    awk '{
 	# Here you only get points for one of the largest, if there are multiple
 	delete K
 	for(i=1;i<=NF;i++)++K[$i]
