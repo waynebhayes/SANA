@@ -3,7 +3,7 @@ set -e
 
 PARALLEL='./parallel -s bash 4'  # run in parallel on jenkins
 #PARALLEL=bash # if you don't have the parallel program
-NUM_LOCK=20 # number of nodes to lock
+NUM_LOCK=100 # number of nodes to lock
 
 die() { echo "ERROR: $@" >&2; exit 1
 }
