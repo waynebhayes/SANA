@@ -7,7 +7,7 @@ echo 'Testing measurement Edge Ratio'
 TEST_DIR=`pwd`/regression-tests/EdgeRatio
 [ -d "$TEST_DIR" ] || die "should be run from top-level directory of the SANA repo"
 
-exitCode=0
+NUM_FAILS=0
 
 nets="150 WMean_con WMean_ocd"
 
@@ -27,9 +27,9 @@ for network in $nets; do
     echo "  EXPECTED matching nodes: $nodes_count GOT: $match_nodes"
     if (( $match_nodes != $nodes_count )); then
         echo "Failed to align $network to itself" 
-        exitCode=1
+        (( ++NUM_FAILS ))
     fi
 done
 
 echo 'Done testing measurement Edge Ratio.'
-exit $exitCode
+exit $NUM_FAILS
