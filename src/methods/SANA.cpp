@@ -342,6 +342,15 @@ Alignment SANA::getStartingAlignment(){
     return startAlig;
 }
 
+SANA::~SANA(){
+delete assignedNodesG2;
+delete unassignedNodesG2;
+delete unassignedgenesG2;
+delete unassignedmiRNAsG2;
+delete A;
+delete storedAlignments;
+}
+
 /*
 ** The following is designed so that every single node from both networks
 ** is printed at least once. First, we find for every single node (across
