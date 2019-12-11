@@ -6,12 +6,15 @@ echo 'Testing SANA use different format as it input.'
 
 TEST_DIR=`pwd`/regression-tests/DifferentFormat
 [ -d "$TEST_DIR" ] || die "should be run from top-level directory of the SANA repo"
-
-for network in yeast; do
+TYPES='gml csv lgf xml'
+NETS=yeast
+for network in $NETS; do
     file="$TEST_DIR/$network"
-    echo "./sana -s3 1 -t 1 -fg1 '$file.el' -fg2 '$file.gml' -o '$file' &> '${file}_gml.progress'"
-    echo "./sana -s3 1 -t 1 -fg1 '$file.el' -fg2 '$file.csv' -o '$file' &> '${file}_csv.progress'"
-    echo "./sana -s3 1 -t 1 -fg1 '$file.el' -fg2 '$file.lgf' -o '$file' &> '${file}_lgf.progress'"
-    echo "./sana -s3 1 -t 1 -fg1 '$file.el' -fg2 '$file.xml' -o '$file' &> '${file}_xml.progress'"
+    for type in $TYPES; do
+	echo "./sana -s3 1 -t 1 -fg1 '$file.el' -fg2 '$file.$type' -o '$file' &> '${file}_$type.progress'"
+    done
 done | ./parallel -s /bin/bash 4
-exit $?
+status=$?
+echo -n "The number of successful completions was ";
+cat $TEST_DIR/*.progress | fgrep -c 'Saving report as'
+exit $status

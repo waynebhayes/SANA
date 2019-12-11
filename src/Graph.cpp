@@ -179,15 +179,15 @@ void Graph::loadGraphFromBinary(Graph& g, string graphName, string lockFile, boo
 }
 
 
-
-
 void Graph::loadFromLgfFile(string fin, string graphName, Graph& g, bool bipartite) {
     ifstream infile;
     infile.open(fin,ifstream::in);
     string line;
     unordered_set<string> record;
     size_t lineCount = 0;
-    regex pattern("^(.+)(\\s+)(.+)(\\s+)(\\d+)(\\s+)(\\d+)(\\s*)$");
+    // This is a perfectly valid regular expression that mysteriously fails on some systems
+    try {
+	regex pattern("^(.+)(\\s+)(.+)(\\s+)(\\d+)(\\s+)(\\d+)(\\s*)$");
     while(!infile.eof()){
     getline(infile,line);
     
@@ -435,6 +435,11 @@ void Graph::loadFromLgfFile(string fin, string graphName, Graph& g, bool biparti
     if(bipartite)
         g.updateUnlockedGeneCount();
     g.initConnectedComponents();
+    }
+    catch (std::regex_error& e) { 
+	std::cerr << "Sorry, regex is broken on your system, can't load LGF file\n";
+	exit(1);
+    }
 }
 
 
