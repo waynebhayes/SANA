@@ -13,7 +13,12 @@ echo "" > $TEST_DIR/test2.align
 NUM_FAILS=0
 
 echo "Test 1: Testing compressed edgelists AThaliana.el.bz2 and MMusculus.el.gz"
-./sana -s3 1 -t 1 -fg1 "$TEST_DIR/AThaliana.el.bz2" -fg2 "$TEST_DIR/MMusculus.el.gz"  -o "$TEST_DIR/test1" &> "$TEST_DIR/test1.progress"
+./sana -s3 1 -t 1 -fg1 "$TEST_DIR/AThaliana.el.bz2" -fg2 "$TEST_DIR/MMusculus.el.gz"  -o "$TEST_DIR/test1" &> "$TEST_DIR/test1.progress" &
+echo "Test 2: Testing compressed edgelists AThaliana.el.gz and yeast-reduced-wayne.gw.gz"
+./sana -s3 1 -t 1 -fg1 "$TEST_DIR/AThaliana.el.gz" -fg2 "$TEST_DIR/yeast-reduced-wayne.gw.gz"  -o "$TEST_DIR/test2" &> "$TEST_DIR/test2.progress"
+
+wait
+
 lines=`wc -l $TEST_DIR/test1.align | awk '{print 100-$1}'`;
 if [ $lines -gt 0 ]
 then
@@ -21,8 +26,6 @@ then
     (( NUM_FAILS+=$lines ))
 fi
 
-echo "Test 2: Testing compressed edgelists AThaliana.el.gz and yeast-reduced-wayne.gw.gz"
-./sana -s3 1 -t 1 -fg1 "$TEST_DIR/AThaliana.el.gz" -fg2 "$TEST_DIR/yeast-reduced-wayne.gw.gz"  -o "$TEST_DIR/test2" &> "$TEST_DIR/test2.progress"
 lines=`wc -l $TEST_DIR/test1.align | awk '{print 100-$1}'`;
 if [ $lines -gt 0 ]
 then
