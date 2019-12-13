@@ -343,12 +343,12 @@ Alignment SANA::getStartingAlignment(){
 }
 
 SANA::~SANA(){
-delete assignedNodesG2;
-delete unassignedNodesG2;
-delete unassignedgenesG2;
-delete unassignedmiRNAsG2;
-delete A;
-delete storedAlignments;
+    delete assignedNodesG2;
+    delete unassignedNodesG2;
+    delete unassignedgenesG2;
+    delete unassignedmiRNAsG2;
+    delete A;
+    delete storedAlignments;
 }
 
 /*
