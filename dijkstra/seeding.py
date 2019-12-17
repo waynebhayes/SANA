@@ -4,14 +4,15 @@ from collections import defaultdict
 
 
 def adj_mat(nodes, graph):
-    print('nodes:',nodes)
+    edges = 0
     mat = [[0]*len(nodes) for _ in range(len(nodes))]
     for i in range(len(mat)):
         for j in range(i, len(mat)):
             if graph.has_edge(graph.indexes[nodes[i]],graph.indexes[nodes[j]]):
                 mat[i][j] = 1
                 mat[j][i] = 1
-    return mat
+                edges += 1
+    return mat, edges
 
 
 def get_g1_seed(g1_seed_file) -> dict:
@@ -25,11 +26,14 @@ def get_g1_seed(g1_seed_file) -> dict:
 def generate_seed(g1_seed_file, g2_seed_file):
     g1_seed = get_g1_seed(g1_seed_file)
     #print (g1_seed)
+    #seeds = []
     for line in open(g2_seed_file):
         line = line.split()
         if line[0] in g1_seed:
             for nodes in g1_seed[line[0]]:
                 yield nodes,line[1:]
+                #seeds.append((nodes, line[1:]))
+    #return seeds
 
 def get_aligned_seed(s, graph1, graph2):
     for pair in s:
