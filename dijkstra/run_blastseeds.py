@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
 
         start = time.time()
-        a, b, pairs = alignment.local_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, e1, delta, alpha, seednum, debug=args.debugval)    
+        a, b, pairs = alignment.local_align3(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, e1, delta, alpha, seednum, debug=args.debugval)    
         #a, b, pairs = alignment.stop_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, delta)
         subgraph = alignment.induced_subgraph(graph1, graph2, list(pairs))
         cov = alignment.coverage(graph1, graph2, subgraph)[0]
