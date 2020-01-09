@@ -187,254 +187,253 @@ void Graph::loadFromLgfFile(string fin, string graphName, Graph& g, bool biparti
     size_t lineCount = 0;
     // This is a perfectly valid regular expression that mysteriously fails on some systems
     try {
-	regex pattern("^(.+)(\\s+)(.+)(\\s+)(\\d+)(\\s+)(\\d+)(\\s*)$");
-    while(!infile.eof()){
-    getline(infile,line);
-    
-    if(regex_match(line,pattern))
-    {
+	regex pattern("^(\\w+)(\\s+)(\\w+)(\\s+)(\\d+)(\\s+)(\\d+)(\\s*)$");
+
+	while(!infile.eof()){
+	    getline(infile,line);
+	    
+	    if(regex_match(line,pattern))
+	    {
 		int check = 0;
 		int target_start =0;
 		unsigned int i = 0;
 		string start,target;
 		while(i < line.length())
-			{
-				if(isspace(line[i]) && check == 0){
-					check = 1;
-					start =  line.substr(0,i);
-				}
-				if(!isspace(line[i]) && check == 1){
-					check = 2;
-					target_start = i;
-				}
-				if(isspace(line[i]) && check == 2){
-					check = 0;
-					target = line.substr(target_start,i-target_start);
-		record.insert(start);
-		record.insert(target);
-		lineCount ++;
+		{
+		    if(isspace(line[i]) && check == 0){
+			check = 1;
+			start =  line.substr(0,i);
+		    }
+		    if(!isspace(line[i]) && check == 1){
+			check = 2;
+			target_start = i;
+		    }
+		    if(isspace(line[i]) && check == 2){
+			check = 0;
+			target = line.substr(target_start,i-target_start);
+			record.insert(start);
+			record.insert(target);
+			lineCount++;
 			break;
-			}
-			i++;
+		    }
+		    i++;
 		}
-		}
+	    }
 	}
 	infile.close();	
 
-    const size_t nodeLen = record.size();
-    const size_t vecLen = lineCount;
-    cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
+	const size_t nodeLen = record.size();
+	const size_t vecLen = lineCount;
+	cout << graphName << ": number of nodes = " << nodeLen << ", number of edges = " << vecLen << endl;
 
-    g.name = graphName;
-    g.geneCount = 0;
-    g.miRNACount = 0;
+	g.name = graphName;
+	g.geneCount = 0;
+	g.miRNACount = 0;
 
-    vector<string> nodes;
-    nodes.reserve(nodeLen);
-    unordered_map<string,uint> nodeName2IndexMap;
-    nodeName2IndexMap.reserve(nodeLen);
+	vector<string> nodes;
+	nodes.reserve(nodeLen);
+	unordered_map<string,uint> nodeName2IndexMap;
+	nodeName2IndexMap.reserve(nodeLen);
 
-    vector<vector<string> > edges;
-    edges.reserve(vecLen);
+	vector<vector<string> > edges;
+	edges.reserve(vecLen);
 
+	ifstream ifs;
+	ifs.open(fin,ifstream::in);
+	while(!ifs.eof()){
+	getline(ifs,line);
+	
+	if(regex_match(line,pattern))
+	{
+		    vector<string> words;
+		    words.reserve(2);
+		    int check = 0;
+		    int target_start =0;
+		    unsigned int i = 0;
+		    string start,target;
+		    while(i < line.length())
+			    {
+				    if(isspace(line[i]) && check == 0){
+					    check = 1;
+					    start =  line.substr(0,i);
+				    }
+				    if(!isspace(line[i]) && check == 1){
+					    check = 2;
+					    target_start = i;
+				    }
+				    if(isspace(line[i]) && check == 2){
+					    check = 0;
+					    target = line.substr(target_start,i-target_start);
+		    words.push_back(start);
+		    words.push_back(target);
+		    edges.push_back(words);
+			    break;
+			    }
+			    i++;
+		    }
+		    }
+	    }
+	    ifs.close();	
 
+	string node1s;
+	string node2s;
 
-    ifstream ifs;
-    ifs.open(fin,ifstream::in);
-    while(!ifs.eof()){
-    getline(ifs,line);
-    
-    if(regex_match(line,pattern))
-    {
-		vector<string> words;
-		words.reserve(2);
-		int check = 0;
-		int target_start =0;
-		unsigned int i = 0;
-		string start,target;
-		while(i < line.length())
-			{
-				if(isspace(line[i]) && check == 0){
-					check = 1;
-					start =  line.substr(0,i);
-				}
-				if(!isspace(line[i]) && check == 1){
-					check = 2;
-					target_start = i;
-				}
-				if(isspace(line[i]) && check == 2){
-					check = 0;
-					target = line.substr(target_start,i-target_start);
-		words.push_back(start);
-		words.push_back(target);
-		edges.push_back(words);
-			break;
-			}
-			i++;
+	for(unsigned i = 0; i < vecLen; ++i){
+	    node1s = edges[i][0];
+	    node2s = edges[i][1];
+
+	    if(nodeName2IndexMap.find(node1s) == nodeName2IndexMap.end()){
+		nodeName2IndexMap[node1s] = nodes.size();
+		nodes.push_back(node1s);
+		if(bipartite){
+		    g.nodeTypes.push_back(Graph::NODE_TYPE_GENE);//"gene");
+		    g.geneIndexList.push_back(nodeName2IndexMap[node1s]);
+		    ++g.geneCount;
 		}
+	    }
+
+	   if(nodeName2IndexMap.find(node2s) == nodeName2IndexMap.end()){
+		nodeName2IndexMap[node2s] = nodes.size();
+		nodes.push_back(node2s);
+		if(bipartite){
+		    g.nodeTypes.push_back(Graph::NODE_TYPE_MIRNA);//"miRNA");
+		    g.miRNAIndexList.push_back(nodeName2IndexMap[node2s]);
+		    ++g.miRNACount;
 		}
+	    }
 	}
-	ifs.close();	
-
-    string node1s;
-    string node2s;
-
-    for(unsigned i = 0; i < vecLen; ++i){
-        node1s = edges[i][0];
-        node2s = edges[i][1];
-
-        if(nodeName2IndexMap.find(node1s) == nodeName2IndexMap.end()){
-            nodeName2IndexMap[node1s] = nodes.size();
-            nodes.push_back(node1s);
-            if(bipartite){
-                g.nodeTypes.push_back(Graph::NODE_TYPE_GENE);//"gene");
-                g.geneIndexList.push_back(nodeName2IndexMap[node1s]);
-                ++g.geneCount;
-            }
-        }
-
-       if(nodeName2IndexMap.find(node2s) == nodeName2IndexMap.end()){
-            nodeName2IndexMap[node2s] = nodes.size();
-            nodes.push_back(node2s);
-            if(bipartite){
-                g.nodeTypes.push_back(Graph::NODE_TYPE_MIRNA);//"miRNA");
-                g.miRNAIndexList.push_back(nodeName2IndexMap[node2s]);
-                ++g.miRNACount;
-            }
-        }
-    }
 
 #ifdef MULTI_PAIRWISE
-    vector<vector<uint>> edgeList(vecLen, vector<uint> (3));
+	vector<vector<uint>> edgeList(vecLen, vector<uint> (3));
 #else
-    vector<vector<uint>> edgeList(vecLen, vector<uint> (2));
-    vector<float> floatWeightList;
-    if (g.parseFloatWeight) {
-        floatWeightList = vector<float>(vecLen, 0);
-    }
+	vector<vector<uint>> edgeList(vecLen, vector<uint> (2));
+	vector<float> floatWeightList;
+	if (g.parseFloatWeight) {
+	    floatWeightList = vector<float>(vecLen, 0);
+	}
 #endif
-    stringstream errorMsg;
-    string edgeValue;
-    uint index1;
-    uint index2;
-    unordered_map<string, unordered_map<string, uint>* > adjMatrix;
+	stringstream errorMsg;
+	string edgeValue;
+	uint index1;
+	uint index2;
+	unordered_map<string, unordered_map<string, uint>* > adjMatrix;
 
-    for (uint i = 0; i < vecLen; ++i) {
+	for (uint i = 0; i < vecLen; ++i) {
 #ifdef MULTI_PAIRWISE
-        if (edges[i].size() == 2) {
-            edgeValue = '1';
-        }
-        else if (edges[i].size() == 3) {
-            edgeValue = edges[i][2];
-        }
-        else {
-            throw runtime_error("File not in edge-list format: "+fin);
-        }
-#else
-        if (g.parseFloatWeight) {
-            if (edges[i].size() != 3)
-                throw runtime_error("File not in edge-list-weight format: "+fin);
-            // Get float weight
-            edgeValue = edges[i][2];
-        }
-        else if (edges[i].size() != 2) {
-            throw runtime_error("File not in edge-list format: "+fin);
-        }
-#endif
-        node1s = edges[i][0];
-        node2s = edges[i][1];
+	    if (edges[i].size() == 2) {
+		edgeValue = '1';
+	    }
+	    else if (edges[i].size() == 3) {
+		edgeValue = edges[i][2];
+	    }
+	    else {
+		throw runtime_error("File not in edge-list format: "+fin);
+	    }
+    #else
+	    if (g.parseFloatWeight) {
+		if (edges[i].size() != 3)
+		    throw runtime_error("File not in edge-list-weight format: "+fin);
+		// Get float weight
+		edgeValue = edges[i][2];
+	    }
+	    else if (edges[i].size() != 2) {
+		throw runtime_error("File not in edge-list format: "+fin);
+	    }
+    #endif
+	    node1s = edges[i][0];
+	    node2s = edges[i][1];
 
-        // Detects self-looping edges.
-        if(node1s == node2s && !g.parseFloatWeight) {
-            errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1s << '\n';
-            throw runtime_error(errorMsg.str().c_str());
-        }
+	    // Detects self-looping edges.
+	    if(node1s == node2s && !g.parseFloatWeight) {
+		errorMsg << "self-loops not allowed in file '" << fin << "' node " << node1s << '\n';
+		throw runtime_error(errorMsg.str().c_str());
+	    }
 
-        // Detects duplicate edges.
-        unordered_map<string, uint> *adjTo1;
-        if(adjMatrix.count(node1s) == 0)
-            adjMatrix[node1s] = new unordered_map<string, uint>();
-        adjTo1 = adjMatrix.at(node1s);
+	    // Detects duplicate edges.
+	    unordered_map<string, uint> *adjTo1;
+	    if(adjMatrix.count(node1s) == 0)
+		adjMatrix[node1s] = new unordered_map<string, uint>();
+	    adjTo1 = adjMatrix.at(node1s);
 
-        unordered_map<string, uint> *adjTo2;
-        if(adjMatrix.count(node2s) == 0)
-            adjMatrix[node2s] = new unordered_map<string, uint>();
-        adjTo2 = adjMatrix.at(node2s);
+	    unordered_map<string, uint> *adjTo2;
+	    if(adjMatrix.count(node2s) == 0)
+		adjMatrix[node2s] = new unordered_map<string, uint>();
+	    adjTo2 = adjMatrix.at(node2s);
 
-        if( (adjTo1->count(node2s) != 0) || (adjTo2->count(node1s) != 0) ) {
-            uint dupEdgeLineNum = adjTo1->at(node2s);
-            errorMsg << "duplicate edges not allowed in file\n" <<
-                "\t'" << fin << ":" << dupEdgeLineNum+1 << "' " << node1s << " - " << node2s << '\n' <<
-                "\t'" << fin << ":" << i+1              << "' " << node1s << " - " << node2s << '\n';
-            throw runtime_error(errorMsg.str().c_str());
-        }else{
-            (*adjTo1)[node2s] = i;
-            (*adjTo2)[node1s] = i;
-        }
+	    if( (adjTo1->count(node2s) != 0) || (adjTo2->count(node1s) != 0) ) {
+		uint dupEdgeLineNum = adjTo1->at(node2s);
+		errorMsg << "duplicate edges not allowed in file\n" <<
+		    "\t'" << fin << ":" << dupEdgeLineNum+1 << "' " << node1s << " - " << node2s << '\n' <<
+		    "\t'" << fin << ":" << i+1              << "' " << node1s << " - " << node2s << '\n';
+		throw runtime_error(errorMsg.str().c_str());
+	    }else{
+		(*adjTo1)[node2s] = i;
+		(*adjTo2)[node1s] = i;
+	    }
 
-        index1 = nodeName2IndexMap[node1s];
-        index2 = nodeName2IndexMap[node2s];
-        edgeList[i][0] = index1;
-        edgeList[i][1] = index2;
+	    index1 = nodeName2IndexMap[node1s];
+	    index2 = nodeName2IndexMap[node2s];
+	    edgeList[i][0] = index1;
+	    edgeList[i][1] = index2;
 #ifndef MULTI_PAIRWISE
-        if (g.parseFloatWeight) {
-            floatWeightList[i] = stof(edgeValue);
-        }
+	    if (g.parseFloatWeight) {
+		floatWeightList[i] = stof(edgeValue);
+	    }
 #else
-        edgeList[i][2] = stoi(edgeValue);
-        assert(edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
+	    edgeList[i][2] = stoi(edgeValue);
+	    assert(edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
 #endif
-    }
-    for(auto itr : adjMatrix) { delete itr.second; }
+	}
+	for(auto itr : adjMatrix) { delete itr.second; }
 
-    nodes.shrink_to_fit();
-    const size_t nodeSize = nodes.size();
-    g.adjLists = vector<vector<uint> > (nodeSize, vector<uint>(0));
-    g.matrix = Matrix<MATRIX_UNIT>(nodeSize);
-    if (g.parseFloatWeight) {
-        g.floatWeights = Matrix<float>(nodeSize);
-    }
-    uint node1;
-    uint node2;
-    const size_t edgeListLen = edgeList.size();
-    edgeList.shrink_to_fit();
-    for(unsigned i = 0; i < edgeListLen; ++i){
-        node1 = edgeList[i][0];
-        node2 = edgeList[i][1];
+	nodes.shrink_to_fit();
+	const size_t nodeSize = nodes.size();
+	g.adjLists = vector<vector<uint> > (nodeSize, vector<uint>(0));
+	g.matrix = Matrix<MATRIX_UNIT>(nodeSize);
+	if (g.parseFloatWeight) {
+	    g.floatWeights = Matrix<float>(nodeSize);
+	}
+	uint node1;
+	uint node2;
+	const size_t edgeListLen = edgeList.size();
+	edgeList.shrink_to_fit();
+	for(unsigned i = 0; i < edgeListLen; ++i){
+	    node1 = edgeList[i][0];
+	    node2 = edgeList[i][1];
 
-        if(g.matrix[node1][node2] || g.matrix[node2][node1]) {
-            errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
-	          //unordered_map<uint,string> index2name = g.getIndexToNodeNameMap();
-	          //errorMsg << "In graph[" << graphName << "]: duplicate edges not allowed (in either direction), node names are " <<
-            //          index2name[node1] << " " << index2name[node2] << '\n';
-            throw runtime_error(errorMsg.str().c_str());
-        }
+	    if(g.matrix[node1][node2] || g.matrix[node2][node1]) {
+		errorMsg << "duplicate edges not allowed (in either direction), node numbers are " << node1 << " " << node2 << '\n';
+		      //unordered_map<uint,string> index2name = g.getIndexToNodeNameMap();
+		      //errorMsg << "In graph[" << graphName << "]: duplicate edges not allowed (in either direction), node names are " <<
+		//          index2name[node1] << " " << index2name[node2] << '\n';
+		throw runtime_error(errorMsg.str().c_str());
+	    }
 
-        if(node1 == node2 && !g.parseFloatWeight) {
-          errorMsg << "self-loops not allowed, node number " << node1 << '\n';
-          throw runtime_error(errorMsg.str().c_str());
-        }
+	    if(node1 == node2 && !g.parseFloatWeight) {
+	      errorMsg << "self-loops not allowed, node number " << node1 << '\n';
+	      throw runtime_error(errorMsg.str().c_str());
+	    }
 
-        // Note that when MULTI_PAIRWISE is on, the adjacency matrix contains full integers, not just bits.
-        #ifdef MULTI_PAIRWISE
-            g.matrix[node1][node2] = g.matrix[node2][node1] = edgeList[i][2];
-        #else
-            g.matrix[node1][node2] = g.matrix[node2][node1] = true;
-            if (g.parseFloatWeight) {
-                g.floatWeights[node1][node2] = g.floatWeights[node2][node1] = floatWeightList[i];
-            }
-        #endif
-        g.adjLists[node1].push_back(node2);
-        g.adjLists[node2].push_back(node1);
-    }
-    // init rest of graph
-    g.lockedList = vector<bool> (nodeSize, false);
-    g.lockedTo = vector<string> (nodeSize, "");
-    g.nodeNameToIndexMap = nodeName2IndexMap;
-    g.edgeList = edgeList;
-    if(bipartite)
-        g.updateUnlockedGeneCount();
-    g.initConnectedComponents();
+	    // Note that when MULTI_PAIRWISE is on, the adjacency matrix contains full integers, not just bits.
+	    #ifdef MULTI_PAIRWISE
+		g.matrix[node1][node2] = g.matrix[node2][node1] = edgeList[i][2];
+	    #else
+		g.matrix[node1][node2] = g.matrix[node2][node1] = true;
+		if (g.parseFloatWeight) {
+		    g.floatWeights[node1][node2] = g.floatWeights[node2][node1] = floatWeightList[i];
+		}
+	    #endif
+	    g.adjLists[node1].push_back(node2);
+	    g.adjLists[node2].push_back(node1);
+	}
+	// init rest of graph
+	g.lockedList = vector<bool> (nodeSize, false);
+	g.lockedTo = vector<string> (nodeSize, "");
+	g.nodeNameToIndexMap = nodeName2IndexMap;
+	g.edgeList = edgeList;
+	if(bipartite)
+	    g.updateUnlockedGeneCount();
+	g.initConnectedComponents();
     }
     catch (std::regex_error& e) { 
 	std::cerr << "Sorry, regex is broken on your system, can't load LGF file\n";
