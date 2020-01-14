@@ -65,18 +65,22 @@ class SkipList:
                     #print("level: " + str(i))
                     candiate = level.next[i]
                     #while candidate != None and candidate.value >= value and candidate.info != node_info:
+
                     while candidate != None  and candidate.info != node_info:
                         #print("candinfo: " + str(candidate.info))
                         #print("candval: " + str(candidate.value))
                         update[i] = update[i].next[i]
                         candidate  = candidate.next[i]
-                   # if candidate.info != node_info:
-                   #     break
 
+                
                     if candidate != None and candidate.info == node_info:  
                         #print("found candidate!: " + str(candidate.info))
                         found = candidate
-                    
+                   
+                    elif candidate == None:
+                        for j in range(i, len(update)):
+                            update[j] = None
+                        break
 
             return found, update
 
@@ -128,6 +132,7 @@ class SkipList:
         x = self.find(value, update)
         #if find the value
         if x != None:
+
             for i in reversed(range(len(x.next))):
                 #update every rank, change the left node pointer
                 update[i].next[i] = x.next[i]
@@ -151,8 +156,17 @@ class SkipList:
         x, update = self.find_by_name(value, node_info, update)
         #if find the value
         if x != None:
-            for i in reversed(range(len(x.next))):
+            for i in reversed(range(min(len(update),len(x.next)))):
                 #update every rank, change the left node pointer
+
+                #if i == len(update):
+                #    print(update[i-1].info)
+                #    print(update[i-1].value)
+
+                assert i < len(update), "update len: "+  str(len(update)) + ", x next len: " + str(len(x.next))
+                
+                if update[i] == None:
+                    continue
                 update[i].next[i] = x.next[i]
                 #check whether this node is the only node in this rank
                 if self.head.next[i] == None:

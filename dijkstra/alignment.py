@@ -336,8 +336,8 @@ def local_align3(g1, g2, seed, sims, ec_mode, m, delta, alpha, seednum, debug=Fa
             #if (g1node, g2node) in edge_freq:
             #    continue
             if g1node in g1alignednodes or g2node in g2alignednodes:
-                #if debug:
-                    #print("updating edge_freq: candPair already aligned")
+                if debug:
+                    print("updating edge_freq: ", (g1node, g2node), " already aligned")
                 continue
             n1 = num_edges_back_to_subgraph(g1, g1node, g1alignednodes)   
             n2 = num_edges_back_to_subgraph(g2, g2node, g2alignednodes)   
@@ -386,14 +386,8 @@ def local_align3(g1, g2, seed, sims, ec_mode, m, delta, alpha, seednum, debug=Fa
                         g1alignednodes.add(pair[0])
                         g2alignednodes.add(pair[1])
                          
-                        g1candidatenodes[pair[0]].remove(pair[1])
-                        if len(g1candidatenodes[pair[0]]) == 0:
-                            del g1candidatenodes[pair[0]]
-
-                        g2candidatenodes[pair[1]].remove(pair[0])
-                        if len(g2candidatenodes[pair[1]]) == 0:
-                            del g2candidatenodes[pair[1]]
-
+                        del g1candidatenodes[pair[0]]
+                        del g2candidatenodes[pair[1]]
 
                         if debug:
                             #print("Added New Pair:", str(pair),end=" ")
@@ -443,13 +437,15 @@ def local_align3(g1, g2, seed, sims, ec_mode, m, delta, alpha, seednum, debug=Fa
                         new_candidatePairs.add(pair)
                 else:
                     print("throw away cand: ", pair)
-                    g1candidatenodes[pair[0]].remove(pair[1])
-                    if len(g1candidatenodes[pair[0]]) == 0:
-                            del g1candidatenodes[pair[0]]
-
-                    g2candidatenodes[pair[1]].remove(pair[0])
-                    if len(g2candidatenodes[pair[1]]) == 0:
-                            del g2candidatenodes[pair[1]]
+                   
+                   
+                    if pair[0] in g1alignednodes and pair[0] in g1candidatenodes:
+                        g2candidatenodes[pair[1]].remove(pair[0])
+                        del g1candidatenodes[pair[0]]
+                 
+                    if pair[1] in g2alignednodes and pair[1] in g2candidatenodes:
+                        g1candidatenodes[pair[0]].remove(pair[1])
+                        del g2candidatenodes[pair[1]]
 
             except StopIteration:
                 break

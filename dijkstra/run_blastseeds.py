@@ -96,8 +96,8 @@ if __name__ == '__main__':
         #print(pairs)
         fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--" + str(newcov) + "--"  + uid +  ".dijkstra"
         alignment.write_result(fname, pairs, graph1, graph2)
-        s3 = alignment.s3score(graph1, graph2, pairs, subgraph) 
-        s3cov = round(s3, 2) 
+        #s3 = alignment.s3score(graph1, graph2, pairs, subgraph) 
+        #s3cov = round(s3, 2) 
         
         #fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--" + str(newcov) + "--"  + uid +  ".dijkstra"
         #alignment.write_result(fname, pairs, graph1, graph2)
@@ -114,7 +114,7 @@ if __name__ == '__main__':
             logfile.write("delta: " + str(delta) + "\n")
             logfile.write("EC: " + str(cov) + "\n") 
             logfile.write("EC2: " + str(cov2) + "\n") 
-            logfile.write("S3: " + str(s3cov) + "\n") 
+            #logfile.write("S3: " + str(s3cov) + "\n") 
             if mat1 != mat2:
                 logfile.write("Seeds not matched" + "\n" )
                 logfile.write(str(mat1) + "\n")
