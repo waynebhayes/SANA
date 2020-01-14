@@ -30,7 +30,56 @@ class SkipList:
                 if candidate.value == value:
                     return candidate
         return None #cannot find node with this value
-    
+   
+    '''
+    def find_by_name(self, value, node_info, update = None): #get node with the given value
+        if update == None:
+            update = self.updateList(value) #path to the given value
+        if len(update) > 0:
+            candidate = update[0].next[0] #bottom node of the entire route
+            if candidate != None:
+                print("candinfo: " + str(candidate.info))
+                print("candval: " + str(candidate.value))
+                if candidate.value == value and candidate.info == node_info:
+                    return candidate
+    '''
+
+    def print_list(self):
+        for i in range(self.maxHeight-1, -1, -1):
+            print("level:",i, end = " ")
+            curr = self.head.next[i]
+            while curr != None:
+                print(curr.info, end = "->")
+                curr = curr.next[i]
+            print()
+
+
+    def find_by_name(self, value, node_info, update = None): #get node with the given value
+        if update == None:
+            update = self.updateList(value) #path to the given value
+        if len(update) > 0:
+            candidate = update[0].next[0] #bottom node of the entire route
+            found = None
+            if candidate != None:
+                for i, level in enumerate(update):
+                    #print("level: " + str(i))
+                    candiate = level.next[i]
+                    #while candidate != None and candidate.value >= value and candidate.info != node_info:
+                    while candidate != None  and candidate.info != node_info:
+                        #print("candinfo: " + str(candidate.info))
+                        #print("candval: " + str(candidate.value))
+                        update[i] = update[i].next[i]
+                        candidate  = candidate.next[i]
+                   # if candidate.info != node_info:
+                   #     break
+
+                    if candidate != None and candidate.info == node_info:  
+                        #print("found candidate!: " + str(candidate.info))
+                        found = candidate
+                    
+
+            return found, update
+
     def __contains__(self, value): #check whether a value in this list
         return self.find(value, update=None) != None 
 
@@ -55,6 +104,7 @@ class SkipList:
         #self.switch determines min_heap(1) or max_heap(-1)
         value=input_tuple[0]*self.switch
         info=input_tuple[1]
+        print("adding " + str(info) + ": " + str(value))
         #flip coin to get the height of the new node
         node = SkipNode(self.flip_coin(), value , info)
         #update skip list if has new highest: maxHeight, head_node
@@ -91,6 +141,30 @@ class SkipList:
             return 1
         return 0
     
+    def remove_by_name(self, value, node_info):
+        #find the route to the given value
+        value = value*self.switch 
+        #print("removing by " + str(node_info))
+        #print("removing by " + str(value))
+        update = self.updateList(value)
+        #whether the value exist, the route can accelerate the find progress
+        x, update = self.find_by_name(value, node_info, update)
+        #if find the value
+        if x != None:
+            for i in reversed(range(len(x.next))):
+                #update every rank, change the left node pointer
+                update[i].next[i] = x.next[i]
+                #check whether this node is the only node in this rank
+                if self.head.next[i] == None:
+                    #if it is, decrease the height of the skiplist
+                    self.maxHeight -= 1
+            #change list size
+            self.len -= 1
+        #1 means removed, 0 means cannot find the value
+            return 1
+        return 0
+
+
     def __str__(self):
         #return the list as a string
         result=[]
