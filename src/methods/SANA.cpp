@@ -2848,12 +2848,13 @@ void SANA::hillClimbingIterations(long long int iterTarget) {
     long long int iter = 1;
 
     initDataStructures(startA);
-    Temperature = 0;
+    Temperature = TInitial;
     for (; iter < iterTarget ; ++iter) {
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
         }
         SANAIteration();
+	Temperature = Temperature * TDecay;
     }
     trackProgress(iter);
 }
