@@ -5,6 +5,7 @@
 #include "../utils/utils.hpp"
 #include "../utils/Timer.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
+#include "../measures/JaccardSimilarity.hpp"
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/LargestCommonConnectedSubgraph.hpp"
 #include "../measures/NodeCorrectness.hpp"
@@ -510,6 +511,9 @@ vector<vector<string>> Experiment::getNetworkPairs(string dataset) {
 Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
     if (name == "s3") {
         return new SymmetricSubstructureScore(G1, G2);
+    }
+    if (name == "js") {
+        return new JaccardSimilarity(G1, G2);
     }
     if (name == "ec") {
         return new EdgeCorrectness(G1, G2);

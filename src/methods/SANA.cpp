@@ -24,6 +24,7 @@
 
 #include "SANA.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
+#include "../measures/JaccardSimilarity.hpp"
 #include "../measures/InducedConservedStructure.hpp"
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/EdgeDifference.hpp"
@@ -194,6 +195,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     edWeight  = MC->getWeight("ed");
     erWeight  = MC->getWeight("er");
     s3Weight  = MC->getWeight("s3");
+    jsWeight  = MC->getWeight("js");
     icsWeight = MC->getWeight("ics");
     secWeight = MC->getWeight("sec");
     mecWeight = MC->getWeight("mec");
@@ -241,7 +243,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     needSquaredAligEdges = sesWeight > 0; // to evaluate SES incrementally
     needExposedEdges	 = eeWeight > 0; // to eval EE incrementally
     needMS3              = ms3Weight > 0; // to eval MS3 incrementally
-    needInducedEdges     = s3Weight > 0 || icsWeight > 0; //to evaluate S3 & ICS incrementally
+    needInducedEdges     = s3Weight > 0 || icsWeight > 0 || jsWeight> 0; //to evaluate S3 & ICS incrementally
     needWec              = wecWeight > 0; //to evaluate WEC incrementally
     needEwec             = ewecWeight>0; //to evaluate EWEC incrementally
     needSec              = secWeight > 0; //to evaluate SEC incrementally

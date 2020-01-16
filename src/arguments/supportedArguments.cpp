@@ -100,6 +100,7 @@ vector<array<string, 6>> supportedArguments = {
     { "", "objectives-simple", "banner", "", "Objective Function Specification and Weight. Combine with \"-objfuntype x\"", "0" },
     { "-ec", "double", "0", "Weight of EC", "The weight of the Edge Coverage (aka Edge Conservation or Edge Correctness) in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-s3", "double", "1", "Weight of S3", "The weight of the Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-js", "double", "1", "Weight of JS", "The weight of the Jaccard Similarity in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ics", "double", "0", "Weight of ICS", "The weight of the Induced Conserved Structure in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-importance", "double", "0", "Weight of Importance", "HubAlign's objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-graphlet", "double", "0", "Weight of Graphlet Similarity.", "The weight of the Graphlet Objective Function as defined in the original GRAAL paper (2010). Used when \"-objfuntype\" is \"generic\".", "1" },

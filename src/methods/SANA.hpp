@@ -178,6 +178,7 @@ private:
     double ecWeight;
     double edWeight, erWeight;
     double s3Weight;
+    double jsWeight;
     double icsWeight;
     double wecWeight;
     double secWeight;

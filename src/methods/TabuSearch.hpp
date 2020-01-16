@@ -57,6 +57,7 @@ private:
     double eval(const Alignment& A);
     double ecWeight;
     double s3Weight;
+    double jsWeight;
     double wecWeight;
     double localWeight;
 
@@ -73,6 +74,8 @@ private:
     int inducedEdges;
     int inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
 
+    // to evaluate JS incrmentally
+    // TODO: add code here
 
     //to evaluate wec incrementally
     bool needWec;

@@ -94,11 +94,12 @@ Alignment HillClimbing::run() {
     double ecWeight = M->getWeight("ec");
     double icsWeight = M->getWeight("ics");
     double s3Weight = M->getWeight("s3");
+    double jsWeight = M->getWeight("js");
     double g1Edges = G1->getNumEdges();
     double g1Nodes = n1;
 
     int aligEdges = Alignment(A).numAlignedEdges(*G1, *G2);
-    bool needG2InducedEdges = (icsWeight > 0 or s3Weight > 0);
+    bool needG2InducedEdges = (icsWeight > 0 or s3Weight > 0 or jsweight > 0);
     int g2InducedEdges;
     if (needG2InducedEdges) g2InducedEdges = G2->numNodeInducedSubgraphEdges(A);
     else g2InducedEdges = 1; //dummy value
