@@ -104,11 +104,12 @@ class SkipList:
             update[i] = x #save the route
         return update
         
-    def add(self,input_tuple):
+    def add(self,input_tuple, debug=False):
         #self.switch determines min_heap(1) or max_heap(-1)
         value=input_tuple[0]*self.switch
         info=input_tuple[1]
-        print("adding " + str(info) + ": " + str(value))
+        if debug:
+            print("adding " + str(info) + ": " + str(value))
         #flip coin to get the height of the new node
         node = SkipNode(self.flip_coin(), value , info)
         #update skip list if has new highest: maxHeight, head_node
