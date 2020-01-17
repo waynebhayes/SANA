@@ -5,11 +5,11 @@ CC = g++
  CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread #-ggdb -DMULTI_PAIRWISE #-DCORES #-DUSE_CACHED_FILES #-DSPARSE -ggdb #-pg
 
 ifeq ($(SPARSE), 1)
-CXXFLAGS := $(CXXFLAGS)-DSPARSE
+CXXFLAGS := $(CXXFLAGS) -DSPARSE
 endif
 
 ifeq ($(MULTI), 1)
-CXXFLAGS := $(CXXFLAGS)-DMULTI_PAIRWISE
+CXXFLAGS := $(CXXFLAGS) -DMULTI_PAIRWISE
 endif
 
 

@@ -30,7 +30,7 @@ public:
 	, string& startAligName
 #endif
     );
-    ~SANA(){}
+    ~SANA();
 
     Alignment run();
     unordered_set<vector<uint>*>* paretoRun(const string &fileName);
