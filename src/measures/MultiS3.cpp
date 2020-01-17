@@ -123,7 +123,7 @@ double MultiS3::eval(const Alignment& A)
         initDegrees(A, *G1, *G2);
     }
     computeDenom(A, *G1, *G2);
-    return double ((A.multiS3Numerator(*G1, *G2)) / LaddersUnderG1) / NUM_GRAPHS;
+    return double(A.multiS3Numerator(*G1, *G2)) / LaddersUnderG1 / NUM_GRAPHS;
 #else
     return 0.0;
 #endif
