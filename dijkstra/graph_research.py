@@ -1,4 +1,4 @@
-from builder import *
+rom builder import *
 import numpy
 ##import random
 from collections import defaultdict
@@ -244,14 +244,6 @@ def unaligned_edges_g2_in(graph1, graph2, aligned_pairs, subgraph):
         p = aligned_pairs.pop()
         uedges.extend( [ (p[1], q[1]) for q in aligned_pairs if graph2.has_edge(p[1], q[1]) and ((p[0], q[0]), (p[1], q[1])) not in subgraph ]   )
     return uedges
-
-
-def s3score(g1, g2, pairs, subgraph):
-    print("calculating s3..")
-    aligned_edges = len(subgraph)
-    u2in = unaligned_edges_g2_in(g1, g2, pairs, subgraph)
-    denom = aligned_edges + (g1.num_edges() / 2) + len(u2in) 
-    return aligned_edges/denom
 
 
 
