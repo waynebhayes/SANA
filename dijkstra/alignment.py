@@ -266,7 +266,7 @@ def num_edge_pairs_back_to_subgraph(g1, g2, g1node, g2node, aligned_pairs):
     return edgepairs
 
 
-def local_align3(g1, g2, seed, sims, ec_mode, m, delta, alpha, seednum, debug=False):
+def local_align3(g1, g2, seed, sims, ec_mode, ed, m, delta, alpha, seednum, debug=False):
             
     #m is number of edges in seed graphlet
     g1alignednodes = set()
@@ -298,7 +298,6 @@ def local_align3(g1, g2, seed, sims, ec_mode, m, delta, alpha, seednum, debug=Fa
         #candidatePairs += get_neighbor_pairs(g1,g2,seed1,seed2,g1alignednodes, g2alignednodes,sims) 
         candidatePairs.update(get_new_neighbor_pairs(g1,g2,seed1,seed2,g1alignednodes, g2alignednodes,sims)) 
 
-    print(candidatePairs)
     g1edges = induced_graph1(g1,aligned_pairs)
     g2edges = induced_graph2(g2,aligned_pairs)
     eaedges = induced_subgraph(g1,g2,aligned_pairs)
@@ -349,15 +348,17 @@ def local_align3(g1, g2, seed, sims, ec_mode, m, delta, alpha, seednum, debug=Fa
             g2candidatenodes[g2node].add(g1node)
             #inset pair into skiplist based on val
             pair = (g1node, g2node)
-            print(pair, " updated in edge_freq ", edge_freq[pair])
+            if debug:
+                print(pair, " updated in edge_freq ", edge_freq[pair])
             val = alpha*(edge_freq[pair][0]) + (1-alpha)*sims[pair[0]][pair[1]]
-            pq.add((val,pair)) 
+            pq.add((val,pair), debug=debug) 
         
         #clear throwaway candpairs
         candidatePairs.clear()
 
         bad_candidates = 0
-
+        lastbad = None
+        lastthrow = None
         while(True): 
             try:
                 pair = best_pair(pq,delta)
@@ -368,8 +369,9 @@ def local_align3(g1, g2, seed, sims, ec_mode, m, delta, alpha, seednum, debug=Fa
                     n1val = edge_freq[pair][1]
                     n2val = edge_freq[pair][2]
                     assert n1val >= mval and n2val >= mval, "mval is smaller than n1val and n2val"
-                    if ((EA + mval)/(E1 + n1val)) >= ec1 and ((EA + mval)/(E2 + n2val)) >= ec2:
-
+                    S=len(aligned_pairs)
+                    newed = (EA+mval)/(((S+1)*S)/2)
+                    if ((EA + mval)/(E1 + n1val)) >= ec1 and ((EA + mval)/(E2 + n2val)) >= ec2 and newed >= ed: 
                         print("Trying to add New Pair: " + str(pair) ,end=" ")
                         if n1val != num_edges_back_to_subgraph(g1, pair[0], g1alignednodes): 
                             print("wrong edge_freq val")
@@ -401,11 +403,13 @@ def local_align3(g1, g2, seed, sims, ec_mode, m, delta, alpha, seednum, debug=Fa
 
                         for p in exisiting_neighbor_candidatePairs:
                             if p not in new_candidatePairs:
-                                print("n_cp: " + str(p))
+                                if debug:
+                                    print("n_cp: " + str(p))
                                 val = alpha*(edge_freq[p][0]) + (1-alpha)*sims[p[0]][p[1]]
                                 #print("val: " + str(val))
                                 if pq.remove_by_name(val, p):
-                                    print("removed from skiplist")
+                                    if debug:
+                                        print("removed from skiplist")
                                     new_candidatePairs.add(p)
 
                         E1 += n1val
@@ -433,11 +437,22 @@ def local_align3(g1, g2, seed, sims, ec_mode, m, delta, alpha, seednum, debug=Fa
                         break
 
                     else:
-                        print("bad cand: ", pair)
+                        if debug:    
+                            print("bad cand: ", pair)
+                        if pair == lastbad:
+                            print("DUPLICATE")
+                            continue
+                        else:
+                            lastbad = pair
                         new_candidatePairs.add(pair)
                 else:
-                    print("throw away cand: ", pair)
-                   
+                    if debug:
+                        print("throw away cand: ", pair)
+                  
+                    if pair == lastthrow:
+                        break 
+                    else:
+                        lastthrow = pair
                    
                     if pair[0] in g1alignednodes and pair[0] in g1candidatenodes:
                         g2candidatenodes[pair[1]].remove(pair[0])
@@ -454,7 +469,6 @@ def local_align3(g1, g2, seed, sims, ec_mode, m, delta, alpha, seednum, debug=Fa
             print("Went through " + str(bad_candidates) + " candidates; Size of S: " + str(len(aligned_pairs)))
 
         whilecount += 1
-        
 
         if len(new_candidatePairs) > 0:
             #done = False
