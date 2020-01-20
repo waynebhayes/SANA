@@ -37,8 +37,6 @@ double EdgeRatio::getEdgeRatioSum(Graph *G1, Graph *G2, const Alignment &A) {
 
     double edgeRatioSum = 0;
     double c = 0;
-    //for (uint node1 = 0; node1 < G1NodesCount; ++node1) {
-    //   for (uint node2 = node1; node2 < G1NodesCount; ++node2) { 
     const vector<vector<uint>> &edgeLists = G1->getEdgeList();
     for (uint i = 0; i < edgeLists.size(); ++i) {
       uint node1 = edgeLists[i][0], node2 = edgeLists[i][1];
