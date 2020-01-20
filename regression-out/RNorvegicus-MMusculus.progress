@@ -1,0 +1,125 @@
+pop-os.localdomain
+Sun Jan 19 05:45:58 EST 2020
+=== Parsed arguments ===
+-combinedScoreAs: sum	-g1: RNorvegicus	-g2: MMusculus	-localScoresFile: sana	-method: sana	-mode: normal	-o: regression-out/RNorvegicus-MMusculus	-objfuntype: generic	-paretoThreads: 1	-qmode: normal	-schedulemethod: auto	-tdecay: auto	-tinitial: auto	-wavenodesim: nodec	-wecnodesim: graphletlgraal	
+-gofrac: 1	-iterperstep: 1e+07	-lgraaliter: 1000	-maxGraphletSize: 5	-multipartite: 1	-nneighbors: 50	-ntabus: 300	-numcand: 3	-paretoCapacity: 200	-paretoInitial: 1	-paretoIterations: 10000	-qcount: 1	-s3: 1	-t: 5	-tcand: 1	-tfin: 3	-tnew: 3	
+
+-edgecweights: 0.1 0.25 0.5 0.15 
+-esim: 
+-goweights: 1 
+-nodecweights: 0.1 0.25 0.5 0.15 
+-simFormat: 
+Seed: 1587777565
+Initializing graphs...
+Loading graphs using Graph::loadGraph()
+Graph loading completed in 0.028s
+Setting maximum graphlet size to 5
+Locking initialization done (0.000s)
+Total time for loading graphs (0.028s)
+Initializing measures... done (0.015s)
+=== optimize: ===
+weight s3: 1
+
+
+Computing TInitial via method linear-regression-vintage
+Finding Upper Bound of the Temperature ... 
+> getPBad(1) = 0.999997 (score: 0.000284091) (time: 0.104s)
+> getPBad(0.1) = 0.999954 (score: 0.000578536) (time: 0.057s)
+Finding Lower Bound of the Temperature ... 
+> getPBad(0.01) = 0.999518 (score: 0.00027465) (time: 0.043s)
+> getPBad(0.001) = 0.953863 (score: 0.0163889) (time: 0.125s)
+> getPBad(0.0001) = 0.454471 (score: 0.0580913) (time: 0.065s)
+> getPBad(1e-05) = 8.50541e-07 (score: 0.376058) (time: 1.398s)
+> getPBad(1e-06) = 2.21203e-12 (score: 0.348374) (time: 1.787s)
+HIGH TEMP = 0.1 LOW TEMP = 1e-05
+NUM OF STEPS = 1e+06
+Sampling 7 pBads from 1e-05 to 0.1 for linear regression
+> getPBad(1e-05) = 4.98907e-07 (score: 0.313522) (time: 1.909s)
+> getPBad(4.64159e-05) = 0.0318838 (score: 0.22609) (time: 0.47s)
+> getPBad(0.000215443) = 0.651005 (score: 0.0498553) (time: 0.063s)
+> getPBad(0.001) = 0.996543 (score: 0.000872093) (time: 0.047s)
+> getPBad(0.00464159) = 0.999135 (score: 0.000564334) (time: 0.044s)
+> getPBad(0.0215443) = 0.999773 (score: 0.000294031) (time: 0.07s)
+> getPBad(0.1) = 0.999961 (score: 0.000265675) (time: 0.043s)
+Increasing sample density near TFinal.  range: (2.15443e-06, 1e-05)
+> getPBad(4.64159e-06) = 1.60114e-10 (score: 0.395386) (didn't detect eq. after 2s)
+> getPBad(3.16228e-06) = 2.12429e-05 (score: 0.243625) (time: 1.711s)
+> getPBad(2.61016e-06) = 2.73343e-11 (score: 0.291217) (time: 1.855s)
+> getPBad(2.87298e-06) = 1.70393e-05 (score: 0.320563) (didn't detect eq. after 2s)
+Increasing sample density near TInitial. range: (0.000215443, 0.001)
+> getPBad(0.000464159) = 0.949288 (score: 0.0066305) (time: 0.081s)
+> getPBad(0.000681292) = 0.991142 (score: 0.000562272) (time: 0.056s)
+> getPBad(0.000562341) = 0.992536 (score: 0.00105904) (time: 0.041s)
+> getPBad(0.000510897) = 0.870808 (score: 0.032325) (time: 0.042s)
+Hill Climb range: (temp 0.000002610157 pBad 0.000000000027) to (temp 0.000046415888 pBad 0.005320422752) [5 samples in this range]
+Goldilocks range: (temp 0.000046415888 pBad 0.005320422752) to (temp 0.000562341325 pBad 0.996515117763) [5 samples in this range]
+Random sol range: (temp 0.000562341325 pBad 0.996515117763) to (temp 0.100000000000 pBad 0.999960721226) [5 samples in this range]
+Computed TInitial 0.000562341 in 14.149s
+
+Computing TFinal via method linear-regression-vintage
+Computed TFinal 4.64159e-06 in 0s
+TInitial found in 14.149s for target pBad 0.99: 
+> getPBad(0.000562341) = 0.944159 (score: 0.0121051) (time: 0.051s)
+TFinal found in 0s for target pBad 1e-10: 
+> getPBad(4.64159e-06) = 5.48496e-08 (score: 0.367421) (didn't detect eq. after 2s)
+TDecay needed to traverse this range: 4.79705
+
+Start execution of SANA_s3
+usingIterations = 0
+Determining iteration speed....
+0 (inf%,0.443s): score = 0.157588 ips = 2.25733e+06, P(0) = 0, pBad = 0
+SANA does 2242152.466368 iterations per second (took 0.446s doing 1000000 iterations)
+0 (0%,0s): score = 0.00116414 ips = inf, P(0.000562341) = 0.982374, pBad = -nan
+1 (1.48667%,4.688s): score = 0.0343953 ips = 2.13311e+06, P(0.000523634) = 0.981084, pBad = 0.877234
+2 (2.97333%,9.37s): score = 0.0368852 ips = 2.13584e+06, P(0.000487591) = 0.9797, pBad = 0.841666
+3 (4.46%,14.054s): score = 0.0393678 ips = 2.13493e+06, P(0.000454029) = 0.978216, pBad = 0.838217
+4 (5.94667%,18.869s): score = 0.0321588 ips = 2.07684e+06, P(0.000422777) = 0.976624, pBad = 0.825955
+5 (7.43333%,23.594s): score = 0.0431008 ips = 2.1164e+06, P(0.000393676) = 0.974918, pBad = 0.797924
+6 (8.92%,28.541s): score = 0.0373157 ips = 2.02143e+06, P(0.000366578) = 0.973089, pBad = 0.774583
+7 (10.4067%,33.398s): score = 0.0434018 ips = 2.05888e+06, P(0.000341346) = 0.971129, pBad = 0.751346
+8 (11.8933%,38.227s): score = 0.0467548 ips = 2.07082e+06, P(0.00031785) = 0.969028, pBad = 0.735961
+9 (13.38%,43.253s): score = 0.0489808 ips = 1.98965e+06, P(0.000295972) = 0.966777, pBad = 0.715632
+10 (14.8667%,47.964s): score = 0.0586058 ips = 2.12269e+06, P(0.000275599) = 0.964366, pBad = 0.679664
+11 (16.3533%,52.809s): score = 0.0630075 ips = 2.06398e+06, P(0.000256629) = 0.961783, pBad = 0.64414
+12 (17.84%,57.789s): score = 0.0639516 ips = 2.00803e+06, P(0.000238964) = 0.959016, pBad = 0.638712
+13 (19.3267%,62.794s): score = 0.0698603 ips = 1.998e+06, P(0.000222516) = 0.956054, pBad = 0.574448
+14 (20.8133%,67.971s): score = 0.0820106 ips = 1.93162e+06, P(0.0002072) = 0.952883, pBad = 0.545376
+15 (22.3%,73.125s): score = 0.0848287 ips = 1.94024e+06, P(0.000192938) = 0.94949, pBad = 0.512566
+16 (23.7867%,78.201s): score = 0.101757 ips = 1.97006e+06, P(0.000179657) = 0.945859, pBad = 0.471171
+17 (25.2733%,83.32s): score = 0.0990133 ips = 1.95351e+06, P(0.000167291) = 0.941975, pBad = 0.435527
+18 (26.76%,88.447s): score = 0.121968 ips = 1.95046e+06, P(0.000155776) = 0.937822, pBad = 0.356377
+19 (28.2467%,93.586s): score = 0.13308 ips = 1.9459e+06, P(0.000145053) = 0.933383, pBad = 0.330097
+20 (29.7333%,98.676s): score = 0.151612 ips = 1.96464e+06, P(0.000135069) = 0.928638, pBad = 0.272819
+21 (31.22%,103.519s): score = 0.160579 ips = 2.06484e+06, P(0.000125772) = 0.92357, pBad = 0.242712
+22 (32.7067%,108.801s): score = 0.177695 ips = 1.89322e+06, P(0.000117115) = 0.918157, pBad = 0.205666
+23 (34.1933%,113.853s): score = 0.208061 ips = 1.97941e+06, P(0.000109053) = 0.91238, pBad = 0.149128
+24 (35.68%,118.949s): score = 0.222265 ips = 1.96232e+06, P(0.000101547) = 0.906217, pBad = 0.121605
+25 (37.1667%,124.051s): score = 0.248327 ips = 1.96002e+06, P(9.45572e-05) = 0.899644, pBad = 0.089046
+26 (38.6533%,128.777s): score = 0.280998 ips = 2.11595e+06, P(8.80486e-05) = 0.892638, pBad = 0.0668671
+27 (40.14%,132.869s): score = 0.294892 ips = 2.44379e+06, P(8.19879e-05) = 0.885176, pBad = 0.0542648
+28 (41.6267%,136.79s): score = 0.351582 ips = 2.55037e+06, P(7.63445e-05) = 0.877231, pBad = 0.0297667
+29 (43.1133%,140.373s): score = 0.37408 ips = 2.79096e+06, P(7.10895e-05) = 0.868778, pBad = 0.0196534
+30 (44.6%,143.816s): score = 0.400994 ips = 2.90444e+06, P(6.61962e-05) = 0.859791, pBad = 0.0134137
+31 (46.0867%,147.278s): score = 0.428986 ips = 2.8885e+06, P(6.16398e-05) = 0.850243, pBad = 0.00813546
+32 (47.5733%,150.765s): score = 0.459154 ips = 2.86779e+06, P(5.7397e-05) = 0.840108, pBad = 0.00465248
+33 (49.06%,154.289s): score = 0.486611 ips = 2.83768e+06, P(5.34462e-05) = 0.829357, pBad = 0.00252277
+34 (50.5467%,157.754s): score = 0.506912 ips = 2.886e+06, P(4.97673e-05) = 0.817966, pBad = 0.00149295
+35 (52.0333%,161.215s): score = 0.523129 ips = 2.88934e+06, P(4.63417e-05) = 0.805906, pBad = 0.000732535
+36 (53.52%,164.751s): score = 0.544996 ips = 2.82805e+06, P(4.31519e-05) = 0.793153, pBad = 0.000407401
+37 (55.0067%,168.312s): score = 0.558502 ips = 2.8082e+06, P(4.01817e-05) = 0.779681, pBad = 0.000227367
+38 (56.4933%,171.736s): score = 0.565053 ips = 2.92056e+06, P(3.74158e-05) = 0.765469, pBad = 0.000127678
+39 (57.98%,175.063s): score = 0.569334 ips = 3.00571e+06, P(3.48404e-05) = 0.750494, pBad = 9.08614e-05
+40 (59.4667%,178.391s): score = 0.576342 ips = 3.00481e+06, P(3.24423e-05) = 0.734739, pBad = 8.17194e-05
+41 (60.9533%,181.728s): score = 0.579722 ips = 2.9967e+06, P(3.02092e-05) = 0.718187, pBad = 3.90713e-05
+42 (62.44%,185.068s): score = 0.583473 ips = 2.99401e+06, P(2.81298e-05) = 0.700827, pBad = 2.86551e-05
+43 (63.9267%,188.379s): score = 0.583963 ips = 3.02024e+06, P(2.61936e-05) = 0.68265, pBad = 1.79044e-05
+44 (65.4133%,191.681s): score = 0.584693 ips = 3.02847e+06, P(2.43906e-05) = 0.663654, pBad = 1.31249e-05
+45 (66.9%,195.107s): score = 0.585356 ips = 2.91886e+06, P(2.27117e-05) = 0.643842, pBad = 1.33923e-05
+46 (68.3867%,198.417s): score = 0.585774 ips = 3.02115e+06, P(2.11484e-05) = 0.623224, pBad = 1.65533e-05
+47 (69.8733%,201.709s): score = 0.585947 ips = 3.03767e+06, P(1.96927e-05) = 0.601817, pBad = 3.97459e-06
+Select an option (0 - 3):
+  (0) Do nothing and continue
+  (1) Exit
+  (2) Save Alignment and Exit
+  (3) Save Alignment and Continue
+>> 

@@ -1,0 +1,83 @@
+pop-os.localdomain
+Sun Jan 19 11:31:20 EST 2020
+=== Parsed arguments ===
+-combinedScoreAs: sum	-fg1: /home/jyshi/SANA/regression-tests/EdgeRatio/WMean_con.elw	-fg2: /home/jyshi/SANA/regression-tests/EdgeRatio/WMean_con.elw	-localScoresFile: sana	-method: sana	-mode: normal	-o: /home/jyshi/SANA/regression-tests/EdgeRatio/WMean_con	-objfuntype: generic	-paretoThreads: 1	-qmode: normal	-schedulemethod: auto	-tdecay: auto	-tinitial: auto	-wavenodesim: nodec	-wecnodesim: graphletlgraal	
+-er: 1	-gofrac: 1	-iterperstep: 1e+07	-lgraaliter: 1000	-maxGraphletSize: 5	-multipartite: 1	-nneighbors: 50	-ntabus: 300	-numcand: 3	-paretoCapacity: 200	-paretoInitial: 1	-paretoIterations: 10000	-qcount: 1	-t: 1	-tcand: 1	-tfin: 3	-tnew: 3	
+
+-edgecweights: 0.1 0.25 0.5 0.15 
+-esim: 
+-goweights: 1 
+-nodecweights: 0.1 0.25 0.5 0.15 
+-simFormat: 
+Seed: 1587801588
+Initializing graphs...
+Loading graphs using Graph::loadGraph()
+WMean_con: number of nodes = 100, number of edges = 4950
+WMean_con: number of nodes = 100, number of edges = 4950
+Graph loading completed in 0.044s
+Setting maximum graphlet size to 5
+Locking initialization done (0.000s)
+Total time for loading graphs (0.044s)
+Initializing measures... done (0.000s)
+=== optimize: ===
+weight er: 1
+
+
+Computing TInitial via method linear-regression-vintage
+Finding Upper Bound of the Temperature ... 
+> getPBad(1) = 0.999714 (score: 0.816569) (time: 0.481s)
+> getPBad(10) = 0.999971 (score: 0.817542) (time: 0.431s)
+> getPBad(100) = 0.999997 (score: 0.819543) (time: 0.383s)
+Finding Lower Bound of the Temperature ... 
+> getPBad(0.1) = 0.997173 (score: 0.816634) (time: 0.405s)
+> getPBad(0.01) = 0.971544 (score: 0.816529) (time: 0.641s)
+> getPBad(0.001) = 0.740426 (score: 0.820832) (time: 0.569s)
+> getPBad(0.0001) = 1.07802e-12 (score: 1) (time: 0.368s)
+HIGH TEMP = 10 LOW TEMP = 0.001
+NUM OF STEPS = 10000
+Sampling 5 pBads from 0.001 to 10 for linear regression
+> getPBad(0.001) = 0.743268 (score: 0.821999) (time: 0.441s)
+> getPBad(0.01) = 0.971698 (score: 0.817462) (time: 0.405s)
+> getPBad(0.1) = 0.997148 (score: 0.816154) (time: 0.404s)
+> getPBad(1) = 0.999719 (score: 0.817811) (time: 0.371s)
+> getPBad(10) = 0.999972 (score: 0.819384) (time: 0.474s)
+Increasing sample density near TFinal.  range: (0.0001, 0.001)
+> getPBad(0.000316228) = 2.2026e-06 (score: 1) (time: 0.436s)
+> getPBad(0.000177828) = 6.83073e-09 (score: 1) (time: 0.334s)
+> getPBad(0.000133352) = 3.2586e-10 (score: 1) (time: 0.336s)
+> getPBad(0.000115478) = 1.83034e-11 (score: 1) (time: 0.335s)
+Increasing sample density near TInitial. range: (0.01, 0.1)
+> getPBad(0.0316228) = 0.991068 (score: 0.818702) (time: 0.753s)
+> getPBad(0.0177828) = 0.983979 (score: 0.818482) (time: 0.377s)
+> getPBad(0.0237137) = 0.988011 (score: 0.819016) (time: 0.485s)
+> getPBad(0.0273842) = 0.989662 (score: 0.818581) (time: 0.413s)
+Hill Climb range: (temp 0.000115478198 pBad 0.000000000018) to (temp 0.000316227766 pBad 0.000000552445) [3 samples in this range]
+Goldilocks range: (temp 0.000316227766 pBad 0.000000552445) to (temp 0.001000000000 pBad 0.962724858559) [2 samples in this range]
+Random sol range: (temp 0.001000000000 pBad 0.962724858559) to (temp 10.000000000000 pBad 0.999971653035) [8 samples in this range]
+Computed TInitial 0.0316228 in 8.844s
+
+Computing TFinal via method linear-regression-vintage
+Computed TFinal 0.000115478 in 0s
+TInitial found in 8.844s for target pBad 0.99: 
+> getPBad(0.0316228) = 0.99093 (score: 0.81581) (time: 0.446s)
+TFinal found in 0s for target pBad 1e-10: 
+> getPBad(0.000115478) = 1.70866e-11 (score: 1) (time: 0.365s)
+TDecay needed to traverse this range: 5.61255
+
+Start execution of SANA_er
+usingIterations = 0
+Determining iteration speed....
+0 (inf%,2.778s): score = 1 ips = 359970, P(0) = 0, pBad = 0
+SANA does 359971.202304 iterations per second (took 2.778s doing 1000000 iterations)
+0 (0%,0s): score = 0.818117 ips = inf, P(0.0316228) = 0.999684, pBad = -nan
+1 (46.3%,37.064s): score = 0.815681 ips = 269804, P(0.002352) = 0.995757, pBad = 0.884101
+2 (92.6%,73.286s): score = 1 ips = 276075, P(0.000174934) = 0.944439, pBad = 9.09158e-09
+2 (100%,78.229s): score = 1 ips = 323341, P(0.000115478) = 0.917047, pBad = 2.04688e-11
+Performed 21598273 total iterations
+Executed SANA_er in 81.007s
+Saving report as "/home/jyshi/SANA/regression-tests/EdgeRatio/WMean_con.out"
+  printing stats done (0.002s)
+  printing scores done (0.007s)
+  printing tables done (0.014s)
+Took 0.016 seconds to save the alignment and scores.
+No local measures provided, not writing local scores file.
