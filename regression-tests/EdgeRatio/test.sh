@@ -20,6 +20,7 @@ for network in $nets; do
     echo "./sana -t 20 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
 done | ./parallel -s /bin/bash $CORES
 
+
 for network in $nets; do
     file="$TEST_DIR/$network"
     # Test if SANA has aligned the graph to itself
