@@ -1870,7 +1870,10 @@ double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, u
      */
     double edgeDifferenceIncDiff = 0;
     double c = 0;
-    for (uint node2 = 0; node2 < n1; ++node2) {
+   vector<uint> &adjList = G1AdjLists[source1];
+   for (uint i = 0; i < adjList.size(); ++i) {
+   //for (uint node2 = 0; node2 < n1; ++node2) {
+        uint node2 = adjList[i];
         double y = -abs(G1FloatWeights[source1][node2] - G2FloatWeights[target1][(*A)[node2]])
                   - c;
         double t = edgeDifferenceIncDiff + y;
@@ -1899,7 +1902,10 @@ double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, u
    /*
     * Handle source2
     */
-   for (uint node2 = 0; node2 < n1; ++node2) {
+   vector<uint> &adjList2 = G1AdjLists[source2];
+   for (uint i = 0; i < adjList2.size(); ++i) {
+   //for (uint node2 = 0; node2 < n1; ++node2) {
+       uint node2 = adjList2[i];
        if (node2 == source1)
          continue;
        double y = -abs(G1FloatWeights[source2][node2] - G2FloatWeights[target2][(*A)[node2]])
@@ -1936,6 +1942,7 @@ double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint t
   
    vector<uint> &adjList = G1AdjLists[source1];
    for (uint i = 0; i < adjList.size(); ++i) {
+   //for (uint node2 = 0; node2 < n1; ++node2) {
         uint node2 = adjList[i];
         double r = getRatio(G1FloatWeights[source1][node2], G2FloatWeights[target1][(*A)[node2]]);
         double y = -r - c;
@@ -1963,6 +1970,7 @@ double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint t
    vector<uint> &adjList2 = G1AdjLists[source2];
    for (uint i = 0; i < adjList2.size(); ++i) {
         uint node2 = adjList2[i];
+   //for (uint node2 = 0; node2 < n1; ++node2) {
         if (node2 == source1)
           continue;
 
@@ -1996,6 +2004,7 @@ double SANA::edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarg
    vector<uint> &adjList = G1AdjLists[source];
    for (uint i = 0; i < adjList.size(); ++i) {
        uint node2 = adjList[i];
+   //for (uint node2 = 0; node2 < n1; ++node2) {
        double y = -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
                   - c;
        double t = edgeDifferenceIncDiff + y;
