@@ -3944,7 +3944,11 @@ double SANA::edgeDifferenceIncChangeOp(Job &job, uint source, uint oldTarget, ui
    vector<uint> *A = job.info.A;
    double edgeDifferenceIncDiff = 0;
    double c = 0;
-   for (uint node2 = 0; node2 < n1; ++node2) {
+
+   vector<uint> &adjList = G1AdjLists[source];
+   for (uint i = 0; i < adjList.size(); ++i) {
+       uint node2 = adjList[i];
+
        double y = -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
                   - c;
        double t = edgeDifferenceIncDiff + y;
@@ -3965,7 +3969,9 @@ double SANA::edgeRatioIncChangeOp(Job &job, uint source, uint oldTarget, uint ne
    vector<uint> *A = job.info.A;
    double edgeRatioIncDiff = 0;
    double c = 0;
-   for (uint node2 = 0; node2 < n1; ++node2) {
+   vector<uint> &adjList = G1AdjLists[source];
+   for (uint i = 0; i < adjList.size(); ++i) {
+       uint node2 = adjList[i];
        double r = getRatio(G1FloatWeights[source][node2], G2FloatWeights[oldTarget][(*A)[node2]]);
        double y = -r - c;
        double t = edgeRatioIncDiff + y;
@@ -3993,7 +3999,9 @@ double SANA::edgeDifferenceIncSwapOp(Job &job, uint source1, uint source2, uint 
     // Add source1-target2
     double edgeDifferenceIncDiff = 0;
     double c = 0;
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList = G1AdjLists[source1];
+    for (uint i = 0; i < adjList.size(); ++i) {
+        uint node2 = adjList[i];
         double y = -abs(G1FloatWeights[source1][node2] - G2FloatWeights[target1][(*A)[node2]])
                   - c;
         double t = edgeDifferenceIncDiff + y;
@@ -4017,8 +4025,11 @@ double SANA::edgeDifferenceIncSwapOp(Job &job, uint source1, uint source2, uint 
 
     // Subtract source2-target2
     // Add source2-target1
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList2 = G1AdjLists[source2];
+    for (uint i = 0; i < adjList2.size(); ++i) {
+        uint node2 = adjList[i];
         if (node2 == source1) continue;
+
         double y = -abs(G1FloatWeights[source2][node2] - G2FloatWeights[target2][(*A)[node2]])
                   - c;
         double t = edgeDifferenceIncDiff + y;
@@ -4049,7 +4060,9 @@ double SANA::edgeRatioIncSwapOp(Job &job, uint source1, uint source2, uint targe
 
     double edgeRatioIncDiff = 0;
     double c = 0;
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList = G1AdjLists[source1];
+    for (uint i = 0; i < adjList.size(); ++i) {
+        uint node2 = adjList[i];
         double r = getRatio(G1FloatWeights[source1][node2], G2FloatWeights[target1][(*A)[node2]]);
         double y = -r - c;
         double t = edgeRatioIncDiff + y;
@@ -4073,7 +4086,9 @@ double SANA::edgeRatioIncSwapOp(Job &job, uint source1, uint source2, uint targe
 
     // Subtract source2-target2
     // Add source2-target1
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList2 = G1AdjLists[source2];
+    for (uint i = 0; i < adjList2.size(); ++i) {
+        uint node2 = adjList[i];
         if (node2 == source1) continue;
         double r = getRatio(G1FloatWeights[source2][node2], G2FloatWeights[target2][(*A)[node2]]);
         double y = -r - c;
