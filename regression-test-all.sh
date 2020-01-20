@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 PATH=`pwd`/scripts:$PATH
 export PATH
-EXIT_CODE=0
+NUM_FAILS=0
 for dir in regression-tests/*; do
     echo --- in directory $dir ---
     for r in $dir/*.sh; do
@@ -9,8 +9,9 @@ for dir in regression-tests/*; do
 	if nice -19 "$r"; then
 	    :
 	else
-	    EXIT_CODE=1
+	    (( NUM_FAILS+=$? ))
 	fi
     done
 done
-exit $EXIT_CODE
+echo Number of failures: $NUM_FAILS
+exit $NUM_FAILS

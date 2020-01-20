@@ -18,7 +18,7 @@ private:
     string getScriptFileName();
     string makeScript(const vector<string>& argv, string dir);
     string getQModeArgValue(const vector<string>& argv);
-    uint getOArgValueIndex(const vector<string>& argv);
+    unsigned int getOArgValueIndex(const vector<string>& argv);
     string getQsubCommand(const string& scriptFile);
 
     string scriptFileNameArg;

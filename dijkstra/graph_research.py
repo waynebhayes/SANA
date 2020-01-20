@@ -246,7 +246,6 @@ def unaligned_edges_g2_in(graph1, graph2, aligned_pairs, subgraph):
     return uedges
 
 
-
 def write_result(file, pairs, graph1, graph2):
     with open(file, 'w+')as f:
         #f.write(str(len(d)) + ' ' + str(coverage(yeast_graph, human_graph,d)) + '\n')

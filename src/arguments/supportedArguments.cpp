@@ -221,6 +221,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-balance", "string", "", "TITLE", "DESCRIPTION", "0" },
     { "-sec", "double", "0", "TITLE", "DESCRIPTION", "0" },
     { "-bipartite", "bool", "", "TITLE", "DESCRIPTION", "0" },
+    { "-multipartite", "double", "", "TITLE", "DESCRIPTION", "0" },
     { "-balance-all", "bool", "", "TITLE", "DESCRIPTION", "0" },
     { "-usingIterations", "bool", "", "TITLE", "DESCRIPTION", "0" },
     { "-add-hill-climbing", "bool", "", "TITLE", "DESCRIPTION", "0" },

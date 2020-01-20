@@ -275,7 +275,11 @@ string extractDecimals(double value, int count) {
 }
 
 string intToString(int n) {
-    return static_cast<ostringstream*>( &(ostringstream() << n) )->str();
+	return std::to_string(n);
+	// std::string nString = std::to_string(n);
+    // std::ostringstream oss = std::ostringstream() << nString;
+    // return oss.str();
+    // return static_cast<ostringstream*>( &(ostringstream() << n) )->str();
 }
 
 bool folderExists(string folderName) {

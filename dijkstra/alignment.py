@@ -113,7 +113,6 @@ def fit_in_curr_align(g1, g2, node1, node2, pairs):
 
 def get_new_neighbor_pairs(g1, g2, node1, node2, g1alignednodes, g2alignednodes, sims):
     result = set()
-    
     for i in g1.get_neighbors(node1):
         for j in g2.get_neighbors(node2):
             if i not in g1alignednodes and j not in g2alignednodes:
@@ -169,7 +168,6 @@ def get_aligned_neighbor_pairs(g1,g2, node1,node2, aligned_pairs, trace = False)
                 result.append((i,j))
     return result
 
- 
 
 def strict_align(g1, g2, seed, sims, delta = 0):
     used_node1 = set()
@@ -479,7 +477,6 @@ def local_align3(g1, g2, seed, sims, ec_mode, ed, m, delta, alpha, seednum, debu
             if debug:
                 print("Exiting because no new cand pairs")
             break
-
 
 
     if debug:
@@ -889,9 +886,6 @@ def induced_graph2(graph2, aligned_pairs):
                  for q in aligned_pairs
                     if graph2.has_edge(p[1],q[1])])
     return result
-
-
-
 
 def coverage(yeast, human, subgraph):
     y = len(subgraph) / (yeast.num_edges() / 2) * 100.0
