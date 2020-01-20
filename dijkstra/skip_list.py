@@ -61,27 +61,26 @@ class SkipList:
             candidate = update[0].next[0] #bottom node of the entire route
             found = None
             if candidate != None:
-                for i, level in enumerate(update):
+                for i in range(len(update)):
                     #print("level: " + str(i))
-                    candiate = level.next[i]
-                    #while candidate != None and candidate.value >= value and candidate.info != node_info:
-
-                    while candidate != None  and candidate.info != node_info:
+                    candidate = update[i].next[i]
+                    #print("candidate info", candidate.info)
+                    while candidate != None and candidate.value == value  and candidate.info != node_info:
                         #print("candinfo: " + str(candidate.info))
                         #print("candval: " + str(candidate.value))
                         update[i] = update[i].next[i]
-                        candidate  = candidate.next[i]
-
-                
-                    if candidate != None and candidate.info == node_info:  
-                        #print("found candidate!: " + str(candidate.info))
+                        candidate  = update[i].next[i]
+                    
+                    # if we find the candidate 
+                    if candidate != None and candidate.info == node_info:
                         found = candidate
                    
-                    elif candidate == None:
-                        for j in range(i, len(update)):
-                            update[j] = None
+                    # else we can't find the candidate in this level and the levels above this level
+                    else:
                         break
 
+            #for i in reversed(update):
+            #    print(i.info)
             return found, update
 
     def __contains__(self, value): #check whether a value in this list
@@ -157,20 +156,19 @@ class SkipList:
         x, update = self.find_by_name(value, node_info, update)
         #if find the value
         if x != None:
-            for i in reversed(range(min(len(update),len(x.next)))):
+            for i in reversed(range(len(x.next))):
                 #update every rank, change the left node pointer
-
-                #if i == len(update):
-                #    print(update[i-1].info)
-                #    print(update[i-1].value)
-
-                assert i < len(update), "update len: "+  str(len(update)) + ", x next len: " + str(len(x.next))
+               
+                #if i >= len(update):
+                #    print(node_info)
+                #    print(x.info, x.next[i])
+                #    #self.print_list()
+                #assert i < len(update), "update len: "+  str(len(update)) + ", x next len: " + str(len(x.next)) + ", skiplist height:" + str(self.maxHeight)
                 
-                if update[i] == None:
-                    continue
                 update[i].next[i] = x.next[i]
                 #check whether this node is the only node in this rank
                 if self.head.next[i] == None:
+                    #print("Decreasing height")
                     #if it is, decrease the height of the skiplist
                     self.maxHeight -= 1
             #change list size
