@@ -221,7 +221,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
             }
             else
             {
-                t1 = thread(Graph::loadGraphFromPath, fg1, g1Name, ref(G1), args.bools["-bipartite"]);
+                t1 = thread(Graph::loadGraphFromPath, fg1, g1Name, ref(G1), args.doubles["-multipartite"]);
                 //Graph::loadFromEdgeListFile(fg1, g1Name, G1, args.bools["-bipartite"]);
             }
 
@@ -231,7 +231,7 @@ void initGraphs(Graph& G1, Graph& G2, ArgumentParser& args) {
             }
             else
             {
-                t2 = thread(Graph::loadGraphFromPath, fg2, g2Name, ref(G2), args.bools["-bipartite"]);
+                t2 = thread(Graph::loadGraphFromPath, fg2, g2Name, ref(G2), args.doubles["-multipartite"]);
                 //Graph::loadFromEdgeListFile(fg2, g2Name, G2, args.bools["-bipartite"])
             }
             //G1.maxsize = 4;

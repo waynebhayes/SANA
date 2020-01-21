@@ -30,7 +30,7 @@ public:
 	, string& startAligName
 #endif
     );
-    ~SANA(){}
+    ~SANA();
 
     Alignment run();
     unordered_set<vector<uint>*>* paretoRun(const string &fileName);
@@ -112,7 +112,7 @@ private:
 
     void initTau(void);
     vector<uint> unLockedNodesG1;
-    bool bipartite = false;
+    int multipartite;
     //random number generation
     mt19937 gen;
     uniform_int_distribution<> G1RandomNode;
@@ -148,7 +148,7 @@ private:
     double temperatureFunction(long long int iter, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double Temperature);
 
-    double TrimCoreScores(Matrix<ulong>& Freq, vector<ulong>& numPegSamples);
+    double TrimCoreScores(Matrix<unsigned long>& Freq, vector<unsigned long>& numPegSamples);
     double TrimCoreScores(Matrix<double>& Freq, vector<double>& totalPegWeight);
 
     bool initializedIterPerSecond;
@@ -162,6 +162,9 @@ private:
     vector<uint> *unassignedNodesG2;
     vector<uint> *unassignedmiRNAsG2;
     vector<uint> *unassignedgenesG2;
+    
+    vector<vector<uint>>* unassignedMultipartiteNodes;
+    
     vector<uint>* A;
     //initializes all the necessary data structures for a new run
     void initDataStructures(const Alignment& startA);
@@ -291,8 +294,8 @@ private:
     vector<vector<float> > sims;
 #ifdef CORES
 #if UNWEIGHTED_CORES
-    Matrix<ulong> pegHoleFreq;
-    vector<ulong> numPegSamples; // number of times this node in g1 was sampled.
+    Matrix<unsigned long> pegHoleFreq;
+    vector<unsigned long> numPegSamples; // number of times this node in g1 was sampled.
 #endif
     Matrix<double> weightedPegHoleFreq_pBad; // weighted by 1-pBad
     vector<double> totalWeightedPegWeight_pBad;
