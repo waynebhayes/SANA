@@ -68,6 +68,8 @@ class SkipList:
 
                 if candidate != None and candidate.info == node_info:
                     found = candidate
+                else:
+                    return (None, None)
 
                 for i in range(len(found.next)):
                     candidate = update[i].next[i]
@@ -78,6 +80,7 @@ class SkipList:
             #for i in reversed(update):
             #    print(i.info)
             return found, update
+        return (None, None)
 
     def __contains__(self, value): #check whether a value in this list
         return self.find(value, update=None) != None 
