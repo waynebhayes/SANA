@@ -2,6 +2,7 @@ import random
 import numpy
 #import fastrand
 
+
 class SkipNode:   
     def __init__(self, height = 0, value = None, info = None):
         self.next = [None]*height #list of pointers
@@ -61,23 +62,18 @@ class SkipList:
             candidate = update[0].next[0] #bottom node of the entire route
             found = None
             if candidate != None:
-                for i in range(len(update)):
-                    #print("level: " + str(i))
+                while candidate != None and candidate.value == value and candidate.info != node_info:
+                    update[0] = update[0].next[0]
+                    candidate = update[0].next[0]
+
+                if candidate != None and candidate.info == node_info:
+                    found = candidate
+
+                for i in range(len(found.next)):
                     candidate = update[i].next[i]
-                    #print("candidate info", candidate.info)
-                    while candidate != None and candidate.value == value  and candidate.info != node_info:
-                        #print("candinfo: " + str(candidate.info))
-                        #print("candval: " + str(candidate.value))
+                    while candidate != None and candidate.value == value and candidate != found:
                         update[i] = update[i].next[i]
                         candidate  = update[i].next[i]
-                    
-                    # if we find the candidate 
-                    if candidate != None and candidate.info == node_info:
-                        found = candidate
-                   
-                    # else we can't find the candidate in this level and the levels above this level
-                    else:
-                        break
 
             #for i in reversed(update):
             #    print(i.info)
@@ -158,11 +154,11 @@ class SkipList:
         if x != None:
             for i in reversed(range(len(x.next))):
                 #update every rank, change the left node pointer
-               
+                #print(i)
                 #if i >= len(update):
-                #    print(node_info)
-                #    print(x.info, x.next[i])
-                #    #self.print_list()
+                    #print(node_info)
+                #print(x.index, x.next[i].index,update[i].index)
+                #self.print_list()
                 #assert i < len(update), "update len: "+  str(len(update)) + ", x next len: " + str(len(x.next)) + ", skiplist height:" + str(self.maxHeight)
                 
                 update[i].next[i] = x.next[i]
