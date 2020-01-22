@@ -273,46 +273,54 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, debug):
                     assert mval == num_edge_pairs_back_to_subgraph(g1, g2, pair[0], pair[1], aligned_pairs), str(edge_freq[pair])+ " " + str(mval) 
                
                     #save current state of alignment into tempcurralign
-                    tempcurralign = copy.deepcopy(curralign)
+                    newcurralign = copy.deepcopy(curralign)
                     #save current candidatePairs and this pair
-                    tempcandidatePairs = candidatePairs.copy() 
-                    tempcandidatePairs.add(pair)                
+                    newcandidatePairs = candidatePairs.copy() 
+            
 
+                    #TODO 
+                    #make helper than updates all the data structures
                     #make updates to alignment data structres based on pair
-                    curralign.aligned_pairs.add(pair)
-                    curralign.g1alignednodes.add(g1node)
-                    curralign.g2alignednodes.add(g2node)
+                    newcurralign.aligned_pairs.add(pair)
+                    newcurralign.g1alignednodes.add(g1node)
+                    newcurralign.g2alignednodes.add(g2node)
                      
-                    del curralign.g1candidatenodes[g1node]
-                    del curralign.g2candidatenodes[g2node]
+                    del newcurralign.g1candidatenodes[g1node]
+                    del mewcurralign.g2candidatenodes[g2node]
 
                     if debug:
-                        pval = alpha*(edge_freq[pair][0]) + (1-alpha)*sims[pair[0]][pair[1]]
+                        pval = alpha*(curralign.edge_freq[pair][0]) + (1-alpha)*sims[pair[0]][pair[1]]
                         print("Added New Pair: " + str(pair) + ",val :" + str(pval) ,end=" ")
 
-                    candidatePairs.update(get_new_neighbor_pairs(g1,g2,pair[0],pair[1], curralign.g1alignednodes, curralign.g2alignednodes, sims)) 
-                    exisiting_neighbor_candidatePairs = get_neighbor_candidate_pairs2(g1, g2, pair[0], pair[1], g1alignednodes, g2alignednodes, g1candidatenodes, g2candidatenodes, edge_freq) 
+                    newcandidatePairs.update(get_new_neighbor_pairs(g1,g2,pair[0],pair[1], newcurralign.g1alignednodes, newcurralign.g2alignednodes, sims)) 
+                    exisiting_neighbor_candidatePairs = get_neighbor_candidate_pairs2(g1, g2, pair[0], pair[1], newcurralign.g1alignednodes, newcurralign.g2alignednodes, newcurralign.g1candidatenodes, newcurralign.g2candidatenodes, newcurralign.edge_freq) 
                    
 
-                
+                    #TODO 
+                    #make into helper function
                     for p in exisiting_neighbor_candidatePairs:
-                        if p not in candidatePairs:
+                        if p not in newcandidatePairs:
                             val = alpha*(edge_freq[p][0]) + (1-alpha)*sims[p[0]][p[1]]
                             if pq.remove_by_name(val, p):
-                                candidatePairs.add(p)
+                                newcandidatePairs.add(p)
 
-                    curralign.E1 += n1val
-                    curralign.E2 += n2val
-                    curralign.EA += mval
+                    #TODO
+                    #make into helper function
+                    newcurralign.E1 += n1val
+                    newcurralign.E2 += n2val
+                    newcurralign.EA += mval
 
                     if debug:
                         print("E1: " + str(E1),end=" ")
                         print("E2: " + str(E2),end=" ")
                         print("EA: " + str(EA),end=" ")
             
-                    rec_alignhelper(g1,g2, curralign, candidatePairs, debug):
+                    #recursive call on newcurralign which has added the current pair and updated data structures
+                    rec_alignhelper(g1,g2, newcurralign, newcandidatePairs, debug):
+
+                    #continue iterating through skiplist, with this pair added to candidatePairs
+                    candidatePairs.add(pair)
                     
-                    #need to remove current pair aligned, and 
 
                 else:
                     #pair does not satify constraints currently
@@ -322,6 +330,10 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, debug):
         except StopIteration:
             if debug:
                 print("No more candidate Nodes, outputting")
+            
+            # make a recursive call with curralign?
+            #rec_alignhelper(g1,g2, newcurralign, newcandidatePairs, debug):
+                
             printoutput(k, E1,E2,EA,g1seedstr,runtime, seednum, len(aligned_pairs))
             writelog(curralign)
             return
