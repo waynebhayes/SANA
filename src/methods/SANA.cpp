@@ -2749,11 +2749,13 @@ double SANA::getPBad(double temp, double maxTime, int logLevel) {
     }
 
     double pBadAvgAtEq = slowTrueAcceptingProbability();
-
+    double nextIps = (double)iter / (double)timer.elapsed();
+    ipsList.push_back(nextIps);
     if (logLevel >= 1) {
         cout << "> getPBad(" << temp << ") = " << pBadAvgAtEq << " (score: " << currentScore << ")";
         if (reachedEquilibrium) cout << " (time: " << timer.elapsed() << "s)";
         else cout << " (didn't detect eq. after " << maxTime << "s)";
+	cout << " iterations = " << iter << ", ips = " << nextIps;
         cout << endl;
         
         if (verbose) {
@@ -2875,14 +2877,23 @@ void SANA::initIterPerSecond() {
     initializedIterPerSecond = true;
 
     cout << "Determining iteration speed...." << endl;
-    long long int iter = 1E6;
-    hillClimbingIterations(iter - 1);
-    double res = iter/timer.elapsed();
-    cout << "SANA does " << to_string(res)
-         << " iterations per second (took " << timer.elapsedString()
-         << " doing " << iter << " iterations)" << endl;
+    //long long int iter = 1E6;
+    //hillClimbingIterations(iter - 1);
+    //double res = iter/timer.elapsed();
+    //cout << "SANA does " << to_string(res)
+    //     << " iterations per second (took " << timer.elapsedString()
+    //     << " doing " << iter << " iterations)" << endl;
+    double totalIps = 0.0;
+    for(double ips : ipsList){
+	if(TInitial>ips && ips>TFinal){
+		cout << "recorded ips: " << ips << endl;
+		totalIps+=ips;
+	}
+    }
+    totalIps = totalIps / (double) ipsList.size();
+    cout << "SANA does " << totalIps << " iterations per second on average" << endl;
 
-    iterPerSecond = res;
+    iterPerSecond = totalIps;
     std::ostringstream ss;
     ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
     ofstream header(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(0) + ".csv");

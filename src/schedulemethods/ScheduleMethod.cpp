@@ -56,6 +56,9 @@ double ScheduleMethod::computeTFinal(ScheduleMethod::Resources maxRes) {
     Timer T;
     T.start();
 
+    //sana->ipsList.clear();
+    //sana redundantly tracks some temps while finding TInitial, but
+    //there's no noticeable performance difference.
     vComputeTFinal(maxRes);
 
     TFinRes.runtime = T.elapsed();
