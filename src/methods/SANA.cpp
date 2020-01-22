@@ -342,15 +342,6 @@ Alignment SANA::getStartingAlignment(){
     return startAlig;
 }
 
-SANA::~SANA(){
-delete assignedNodesG2;
-delete unassignedNodesG2;
-delete unassignedgenesG2;
-delete unassignedmiRNAsG2;
-delete A;
-delete storedAlignments;
-}
-
 /*
 ** The following is designed so that every single node from both networks
 ** is printed at least once. First, we find for every single node (across
@@ -2850,13 +2841,12 @@ void SANA::hillClimbingIterations(long long int iterTarget) {
     long long int iter = 1;
 
     initDataStructures(startA);
-    Temperature = TInitial;
+    Temperature = 0;
     for (; iter < iterTarget ; ++iter) {
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
         }
         SANAIteration();
-	Temperature = Temperature * TDecay;
     }
     trackProgress(iter);
 }
