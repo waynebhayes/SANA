@@ -2877,12 +2877,7 @@ void SANA::initIterPerSecond() {
     double totalIps = 0.0;
     int ipsListSize = 0;
     for(pair<double,double> ipsPair : ipsList){
-	cout << "recorded ips temp: " << ipsPair.first << endl;
-	cout << "recorded ips val: " << ipsPair.second << endl;
-	cout << TInitial << endl;
-	cout << TFinal << endl;
 	if(TInitial>ipsPair.first && ipsPair.first>TFinal){
-		cout << "yes\n\n";
 		totalIps+=ipsPair.second;
 		ipsListSize+=1;
 	}
