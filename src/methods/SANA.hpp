@@ -8,6 +8,7 @@
 #include <ctime>
 #include <random>
 #include <list>
+#include <utility>
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
@@ -68,7 +69,7 @@ public:
     void setTDecayFromTempRange();
 
     double getPBad(double temp, double maxTime = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
-    list<double> ipsList;
+    list<pair<double, double>> ipsList;
 private:
     friend class Ameur; //it needs to read the PBad buffer
     friend class StatisticalTest;

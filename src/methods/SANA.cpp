@@ -2741,7 +2741,8 @@ double SANA::getPBad(double temp, double maxTime, int logLevel) {
 
     double pBadAvgAtEq = slowTrueAcceptingProbability();
     double nextIps = (double)iter / (double)timer.elapsed();
-    ipsList.push_back(nextIps);
+    pair<double, double> nextPair (temp, nextIps);
+    ipsList.push_back(nextPair);
     if (logLevel >= 1) {
         cout << "> getPBad(" << temp << ") = " << pBadAvgAtEq << " (score: " << currentScore << ")";
         if (reachedEquilibrium) cout << " (time: " << timer.elapsed() << "s)";
@@ -2874,13 +2875,19 @@ void SANA::initIterPerSecond() {
     //     << " iterations per second (took " << timer.elapsedString()
     //     << " doing " << iter << " iterations)" << endl;
     double totalIps = 0.0;
-    for(double ips : ipsList){
-	if(TInitial>ips && ips>TFinal){
-		cout << "recorded ips: " << ips << endl;
-		totalIps+=ips;
+    int ipsListSize = 0;
+    for(pair<double,double> ipsPair : ipsList){
+	cout << "recorded ips temp: " << ipsPair.first << endl;
+	cout << "recorded ips val: " << ipsPair.second << endl;
+	cout << TInitial << endl;
+	cout << TFinal << endl;
+	if(TInitial>ipsPair.first && ipsPair.first>TFinal){
+		cout << "yes\n\n";
+		totalIps+=ipsPair.second;
+		ipsListSize+=1;
 	}
     }
-    totalIps = totalIps / (double) ipsList.size();
+    totalIps = totalIps / (double) ipsListSize;
     cout << "SANA does " << totalIps << " iterations per second on average" << endl;
 
     iterPerSecond = totalIps;
