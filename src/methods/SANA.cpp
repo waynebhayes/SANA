@@ -2868,16 +2868,10 @@ void SANA::initIterPerSecond() {
     initializedIterPerSecond = true;
 
     cout << "Determining iteration speed...." << endl;
-    //long long int iter = 1E6;
-    //hillClimbingIterations(iter - 1);
-    //double res = iter/timer.elapsed();
-    //cout << "SANA does " << to_string(res)
-    //     << " iterations per second (took " << timer.elapsedString()
-    //     << " doing " << iter << " iterations)" << endl;
     double totalIps = 0.0;
     int ipsListSize = 0;
     for(pair<double,double> ipsPair : ipsList){
-	if(TInitial>ipsPair.first && ipsPair.first>TFinal){
+	if(TFinal <= ipsPair.first <= TInitial){
 		totalIps+=ipsPair.second;
 		ipsListSize+=1;
 	}
