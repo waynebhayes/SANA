@@ -186,7 +186,7 @@ def num_edge_pairs_back_to_subgraph(g1, g2, g1node, g2node, aligned_pairs):
 
 
 class Alignment:
-    def __init__(self, seed, m, ec_mode, alpha, delta, seednum):
+    def __init__(self, seed, m, ec_mode, ed, alpha, delta, seednum):
         self.g1alignednodes = set()
         self.g2alignednodes = set()
         self.aligned_pairs = set()
@@ -194,12 +194,13 @@ class Alignment:
         #self.candidatePairs = set()
         self.ec1 = ec_mode[0]
         self.ec2 = ec_mode[1]
+        self.ed = ed
         self.edge_freq = {}
         self.E1 = m
         self.E2 = m
         self.EA = m
-        self.g1candidatenodes = defaultdict(set())
-        self.g2candidatenodes = defaultdict(set())
+        self.g1candidatenodes = defaultdict(set)
+        self.g2candidatenodes = defaultdict(set)
         self.g1seedstr = ""
         self.g2seedstr = ""
         self.k = 0
@@ -207,8 +208,9 @@ class Alignment:
         self.alpha = alpha
         self.delta = delta
         self.seednum = seednum
+        self.currtime = 0 
 
-def writelog(curralign) 
+def writelog(curralign): 
     g1edges = induced_graph1(g1, curralign.aligned_pairs)
     g2edges = induced_graph2(g2,curralign.aligned_pairs)
     eaedges = induced_subgraph(g1,g2,curralign.aligned_pairs)
@@ -217,15 +219,29 @@ def writelog(curralign)
     print("s3score: ", s3score(len(g1edges)/2, len(g2edges)/2,len(eaedges)/2))
 
 def printoutput(k, E1, E2, EA, seed, runtime, seednum, size):
+
     print("seednum: " + str(seednum) + " k:" + str(k) +  " size:" + str(size) + " E1:" + str(E1) + " E2:" + str(E2) + " EA:" + str(EA) + " time:" + str(runtime) + " seed: " + str(seed))
 
-def rec_alignhelper(g1, g2, curralign, candidatePairs, debug):
+def printoutput2(curralign):
+
+    size = len(curralign.aligned_pairs)
+
+    hours, rem = divmod(curralign.currtime, 3600)
+    minutes, seconds = divmod(rem, 60)
+    runtime = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+
+    print("seednum: " + str(curralign.seednum) + " k:" + str(curralign.k) +  " size:" + str(size) + " E1:" + str(curralign.E1) + " E2:" + str(curralign.E2) + " EA:" + str(curralign.EA) + " time:" + str(runtime) + " seed: " + str(curralign.seed))
+
+
+def rec_alignhelper(g1, g2, curralign, candidatePairs, sims, debug):
     if len(candidatePairs) == 0:
         print("No more candidatePairs, outputing alignment")
         printoutput(k, E1,E2,EA,g1seedstr,runtime, seednum, len(aligned_pairs))
-        writelog(curralign)
+        writeresult2(g1,g2,curralign)
         return
 
+    start = time.time()
+            
     for g1node, g2node in candidatePairs:
         if g1node in curralign.g1alignednodes or g2node in curralign.g2alignednodes:
             if debug:
@@ -243,7 +259,7 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, debug):
         pair = (g1node, g2node)
         if debug:
             print(pair, " updated in edge_freq ", edge_freq[pair])
-        val = alpha*(edge_freq[pair][0]) + (1-alpha)*sims[pair[0]][pair[1]]
+        val = curralign.alpha*(curralign.edge_freq[pair][0]) + (1-curralign.alpha)*sims[pair[0]][pair[1]]
         curralign.pq.add((val,pair), debug=debug) 
     
     candidatePairs.clear()
@@ -268,11 +284,12 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, debug):
                 if ((curralign.EA + mval)/(curralign.E1 + n1val)) >= curralign.ec1 and ((curralign.EA + mval)/(curralign.E2 + n2val)) >= curralign.ec2 and newed >= curralign.ed: 
                     print("Trying to add New Pair: " + str(pair) ,end=" ")
 
-                    assert n1val == num_edges_back_to_subgraph(g1, pair[0], g1alignednodes), str(edge_freq[pair]) +  " "+ str(num_edges_back_to_subgraph(g1, pair[0], g1alignednodes))
-                    assert n2val == num_edges_back_to_subgraph(g2, pair[1], g2alignednodes), str(edge_freq[pair]) + " " + str(num_edges_back_to_subgraph(g2, pair[1], g2alignednodes))
-                    assert mval == num_edge_pairs_back_to_subgraph(g1, g2, pair[0], pair[1], aligned_pairs), str(edge_freq[pair])+ " " + str(mval) 
+                    #assert n1val == num_edges_back_to_subgraph(g1, pair[0], g1alignednodes), str(edge_freq[pair]) +  " "+ str(num_edges_back_to_subgraph(g1, pair[0], g1alignednodes))
+                    #assert n2val == num_edges_back_to_subgraph(g2, pair[1], g2alignednodes), str(edge_freq[pair]) + " " + str(num_edges_back_to_subgraph(g2, pair[1], g2alignednodes))
+                    #assert mval == num_edge_pairs_back_to_subgraph(g1, g2, pair[0], pair[1], aligned_pairs), str(edge_freq[pair])+ " " + str(mval) 
                
                     #save current state of alignment into tempcurralign
+                    print("S: ", len(curralign.aligned_pairs))
                     newcurralign = copy.deepcopy(curralign)
                     #save current candidatePairs and this pair
                     newcandidatePairs = candidatePairs.copy() 
@@ -315,8 +332,12 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, debug):
                         print("E2: " + str(E2),end=" ")
                         print("EA: " + str(EA),end=" ")
             
+
+                    end = time.time()
+                    newcurralign.currtime += (end - start)            
+
                     #recursive call on newcurralign which has added the current pair and updated data structures
-                    rec_alignhelper(g1,g2, newcurralign, newcandidatePairs, debug):
+                    rec_alignhelper(g1,g2, newcurralign, newcandidatePairs, sims, debug)
 
                     #continue iterating through skiplist, with this pair added to candidatePairs
                     candidatePairs.add(pair)
@@ -329,19 +350,17 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, debug):
                 #throw away pair
         except StopIteration:
             if debug:
-                print("No more candidate Nodes, outputting")
-            
-            # make a recursive call with curralign?
-            #rec_alignhelper(g1,g2, newcurralign, newcandidatePairs, debug):
+                print("No valid candidate pairs in skiplist, outputting alignment")
                 
             printoutput(k, E1,E2,EA,g1seedstr,runtime, seednum, len(aligned_pairs))
-            writelog(curralign)
+            writeresult2(g1,g2,curralign)
+            #writelog(curralign)
             return
 
 
 def rec_align(g1, g2, seed, sims, ec_mode, ed, m, delta, alpha, seednum, debug=False):
         
-    curralign = Alignment(seed, m, ec_mode, alpha, delta, seednum)
+    curralign = Alignment(seed, m, ec_mode, ed, alpha, delta, seednum)
 
     candidatePairs = set()
     if debug:
@@ -357,16 +376,16 @@ def rec_align(g1, g2, seed, sims, ec_mode, ed, m, delta, alpha, seednum, debug=F
         curralign.aligned_pairs.add((seed1, seed2))
         curralign.g1alignednodes.add(seed1)
         curralign.g2alignednodes.add(seed2)
-        candidatePairs.update(get_new_neighbor_pairs(g1,g2,seed1,seed2,g1alignednodes, g2alignednodes,sims)) 
+        candidatePairs.update(get_new_neighbor_pairs(g1,g2,seed1,seed2,curralign.g1alignednodes, curralign.g2alignednodes,sims)) 
 
     curralign.g1seedstr += curralign.g2seedstr
-    curralign.k = len(aligned_pairs)
+    curralign.k = len(curralign.aligned_pairs)
 
     if(debug):
         print("ec1: " + str(curralign.ec1))
         print("ec2: " + str(curralign.ec2))
 
-    rec_alignhelper(g1, g2, curralign, candidatePairs, debug)
+    rec_alignhelper(g1, g2, curralign, candidatePairs, sims,debug)
 
 def output(k, E1, E2, EA, seed, runtime, seednum, size):
     print("seednum: " + str(seednum) + " k:" + str(k) +  " size:" + str(size) + " E1:" + str(E1) + " E2:" + str(E2) + " EA:" + str(EA) + " time:" + str(runtime) + " seed: " + str(seed))
@@ -447,6 +466,8 @@ def write_result(filename, pairs, graph1, graph2):
         #    print(str(graph1.nodes[g1node]) + ' ' + str(graph2.nodes[g2node]) + '\n')
         #    f.write(str(graph1.nodes[g1node]) + ' ' + str(graph2.nodes[g2node]) + '\n')
 
+def write_result2(g1,g2, curralign):
+    fname = g1.name + "--" + g2.name + "--" + str(curralign.delta) + "--" + str(curralign.k) + "--"  + uid +  ".dijkstra"
 
 def to_name(pairs, yd, hd):
     return [(yd[yeast_graph], hd[human_graph]) for (yeast_graph, human_graph, sims) in pairs]
