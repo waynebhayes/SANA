@@ -1311,13 +1311,13 @@ void SANA::performChange(int type) {
         newTarget    = (*unassignedNodesG2)[newTargetIndex];
     }
     else{
-        int type = G2->nodeTypes[oldTarget];
-        if((*unassignedMultipartiteNodes)[type].size() == 0)
+        int nodeType = G2->nodeTypes[oldTarget];
+        if((*unassignedMultipartiteNodes)[nodeType].size() == 0)
             return; // cannot perform change, all genes are assigned
         newTargetIndex = G2RandomUnlockedNode(oldTarget);
         
     
-        newTarget = (*unassignedMultipartiteNodes)[type][newTargetIndex];
+        newTarget = (*unassignedMultipartiteNodes)[nodeType][newTargetIndex];
         
         
         // bool isGene = false;
@@ -1391,7 +1391,8 @@ void SANA::performChange(int type) {
         if(multipartite == 1)
             (*unassignedNodesG2)[newTargetIndex] = oldTarget;
         else {
-            (*unassignedMultipartiteNodes)[type][newTargetIndex] = oldTarget;
+            int nodeType = G2->nodeTypes[oldTarget];
+            (*unassignedMultipartiteNodes)[nodeType][newTargetIndex] = oldTarget;
             // if(isGene){
             //     (*unassignedgenesG2)[newTargetIndex] = oldTarget;
             // }
