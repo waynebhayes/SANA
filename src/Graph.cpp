@@ -29,7 +29,7 @@ Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, int multipar
     g.multipartite = multipartite;
     string format = path.substr(path.find_last_of('.')+1);
     string uncompressedFileExt = getUncompressedFileExtension(path);
-    if(format == "mpel" || uncompressedFileExt == "mpel"){
+    if(format == "mpel" || uncompressedFileExt == "mpel" || ((format == "el" || uncompressedFileExt == "el") && multipartite == 2)){
         Graph::loadFromMultipartiteEdgeList(path, name, g, multipartite);
     }
     else if(format == "gw" || uncompressedFileExt == "gw"){
@@ -37,23 +37,23 @@ Graph& Graph::loadGraphFromPath(string path, string name, Graph& g, int multipar
         g.name = name;
     }
     else if(format == "el" || uncompressedFileExt == "el"){
-        Graph::loadFromEdgeListFile(path, name, g, multipartite == 2);
+        Graph::loadFromEdgeListFile(path, name, g, false);
     }
     else if(format == "elw" || uncompressedFileExt == "elw"){
         g.parseFloatWeight = true;
-        Graph::loadFromEdgeListFile(path, name, g, multipartite == 2);
+        Graph::loadFromEdgeListFile(path, name, g, false);
     }
     else if(format == "lgf"){
-        Graph::loadFromLgfFile(path, name, g, multipartite == 2);
+        Graph::loadFromLgfFile(path, name, g, false);
     }
     else if(format == "xml"){
-        Graph::loadFromGraphmlFile(path, name, g, multipartite == 2);
+        Graph::loadFromGraphmlFile(path, name, g, false);
     }
     else if(format == "csv"){
-        Graph::loadFromCsvFile(path, name, g, multipartite == 2);
+        Graph::loadFromCsvFile(path, name, g, false);
     }
     else if(format == "gml"){
-        Graph::loadFromGmlFile(path, name, g, multipartite == 2);
+        Graph::loadFromGmlFile(path, name, g, false);
     }
     else
         throw runtime_error("Unsupported graph format: " + format);
@@ -1345,10 +1345,6 @@ void Graph::loadFromMultipartiteEdgeList(string fin, string graphName, Graph& g,
             // if(bipartite)
             //     g.updateUnlockedGeneCount();
             g.initConnectedComponents();
-            
-            for(unsigned int i = 0; i < g.nodeTypes.size(); i++)
-                cout << g.nodeTypes[i] << " ";
-            cout << endl;
     
 }
 
