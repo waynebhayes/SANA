@@ -365,11 +365,12 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, sims, debug):
             #writelog(curralign)
             return
 
-def rec_alignhelper2(g1, g2, curralign, candidatePairs, sims, debug):
+def rec_alignhelper2(g1, g2, curralign, candidatePairs, seen, sims, debug):
     curralign.recdepth += 1
     
     if len(candidatePairs) == 0:
         print("No more candidatePairs, outputing alignment")
+        #seen.append(curralign.aligned_pairs)
         printoutput2(curralign)
         write_result2(g1,g2,curralign)
         return
@@ -402,6 +403,8 @@ def rec_alignhelper2(g1, g2, curralign, candidatePairs, sims, debug):
     lastbad = None
     lastthrow = None
 
+    aligned = set()
+
     while(True): 
         try:
             newcandidatePairs = set()
@@ -409,7 +412,7 @@ def rec_alignhelper2(g1, g2, curralign, candidatePairs, sims, debug):
             g1node, g2node = pair
             bad_candidates += 1
 
-            if g1node not in curralign.g1alignednodes and g2node not in curralign.g2alignednodes:
+            if g1node not in curralign.g1alignednodes and g2node not in curralign.g2alignednodes and (g1node,g2node) not in aligned:
                 mval = curralign.edge_freq[pair][0]
                 n1val = curralign.edge_freq[pair][1]
                 n2val = curralign.edge_freq[pair][2]
@@ -425,11 +428,15 @@ def rec_alignhelper2(g1, g2, curralign, candidatePairs, sims, debug):
                
                     print("S: ", len(curralign.aligned_pairs))
                     print("recdepth: ", curralign.recdepth)
-            
+           
+                    #if curralign.aligned_pairs.union(pair) in seen:
+                    #    print("seen")
+                    #    continue
 
                     #TODO 
                     #make helper than updates all the data structures
                     #make updates to alignment data structres based on pair
+                    aligned.add(pair)
                     curralign.aligned_pairs.add(pair)
                     curralign.g1alignednodes.add(g1node)
                     curralign.g2alignednodes.add(g2node)
@@ -469,9 +476,10 @@ def rec_alignhelper2(g1, g2, curralign, candidatePairs, sims, debug):
                     curralign.currtime += tottime            
 
                     #recursive call on newcurralign which has added the current pair and updated data structures
-                    rec_alignhelper2(g1,g2, curralign, candidatePairs.union(newcandidatePairs), sims, debug)
+                    rec_alignhelper2(g1,g2, curralign, candidatePairs.union(newcandidatePairs), seen, sims, debug)
 
                     #revert all data structures
+                    curralign.recdepth -= 1
                     curralign.aligned_pairs.remove(pair) 
                     curralign.g1alignednodes.remove(g1node) 
                     curralign.g2alignednodes.remove(g2node) 
@@ -488,7 +496,7 @@ def rec_alignhelper2(g1, g2, curralign, candidatePairs, sims, debug):
                     curralign.EA -= mval
 
                     #continue iterating through skiplist, with this pair added to candidatePairs
-                    #candidatePairs.add(pair)
+                    candidatePairs.add(pair)
                     
 
                 else:
@@ -498,8 +506,8 @@ def rec_alignhelper2(g1, g2, curralign, candidatePairs, sims, debug):
                 #throw away pair
         except StopIteration:
             if debug:
-                print("No valid candidate pairs in skiplist, outputting alignment")
-                
+                print("No valid candidate pairs in skiplist, returning..")
+            #seen.append(curralign.aligned_pairs)    
             printoutput2(curralign)
             write_result2(g1,g2,curralign)
             #writelog(curralign)
@@ -533,7 +541,8 @@ def rec_align(g1, g2, seed, sims, ec_mode, ed, m, delta, alpha, seednum, debug=F
         print("ec1: " + str(curralign.ec1))
         print("ec2: " + str(curralign.ec2))
 
-    rec_alignhelper2(g1, g2, curralign, candidatePairs, sims,debug)
+    seen = []
+    rec_alignhelper2(g1, g2, curralign, candidatePairs, seen, sims,debug)
 
 def output(k, E1, E2, EA, seed, runtime, seednum, size):
     print("seednum: " + str(seednum) + " k:" + str(k) +  " size:" + str(size) + " E1:" + str(E1) + " E2:" + str(E2) + " EA:" + str(EA) + " time:" + str(runtime) + " seed: " + str(seed))

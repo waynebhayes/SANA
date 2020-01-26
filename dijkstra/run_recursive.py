@@ -94,7 +94,7 @@ if __name__ == '__main__':
         #uid = uuidstr[:13]
 
         #print(pairs)
-        fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--" + str(newcov) + "--"  + uid +  ".dijkstra"
+        #fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--"  + uid +  ".dijkstra"
         #recalignment.write_result(fname, pairs, graph1, graph2)
         #s3 = recalignment.s3score(graph1, graph2, pairs, subgraph) 
         #s3cov = round(s3, 2) 
