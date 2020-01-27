@@ -1,0 +1,7 @@
+#!/bin/sh
+[ -d /dev/cpu ] && ls -F /dev/cpu | fgrep -c /
+([ `arch` = Darwin -o `uname` = Darwin ] || uname -a | grep Darwin >/dev/null) && sysctl -n hw.ncpu
+
+case `arch` in
+CYGWIN*) awk '/^cpu cores/{print $NF;exit}' /proc/cpuinfo;;
+esac

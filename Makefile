@@ -145,7 +145,7 @@ MAIN = sana
 
 .PHONY: depend clean test test_all regression_test
 
-all:    $(MAIN) argumentCSV createShadow NetGO
+all:    $(MAIN) argumentCSV createShadow NetGO parallel
 
 $(MAIN): $(OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
@@ -193,7 +193,7 @@ $(GTEST_OBJS):
 clean: #clear_cache
 	$(RM) -rf cache*  # mostly for pBad
 	$(RM) -rf $(OBJDIR)/src
-	$(RM) $(MAIN) createShadow
+	$(RM) -f $(MAIN) $(MAIN).multi createShadow parallel
 	$(RM) -f src/arguments/argumentTable.csv
 
 clear_cache:
@@ -213,7 +213,7 @@ optnetalign:
 NetGO:
 	(cd NetGO && git pull)
 
-multi: parallel
+multi:
 	$(MAKE) 'MULTI=1'
 	mv sana sana.multi
 
