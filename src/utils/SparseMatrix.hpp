@@ -41,7 +41,7 @@ public:
     T get(uint node1, uint node2) const {
         auto got = v[node1].find(node2);
         if (got == v[node1].end()) {
-            return T();
+            return T(0);
         } else {
             return got->second;
         }
