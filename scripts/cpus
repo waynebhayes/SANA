@@ -3,5 +3,5 @@
 ([ `arch` = Darwin -o `uname` = Darwin ] || uname -a | grep Darwin >/dev/null) && sysctl -n hw.ncpu
 
 case `arch` in
-CYGWIN*) awk '/^cpu cores/{print $NF;exit}' /proc/cpuinfo;;
+CYGWIN*) grep -c '^processor[ 	]*:' /proc/cpuinfo ;;
 esac
