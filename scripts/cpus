@@ -10,8 +10,12 @@ lscpu >$TMP 2>/dev/null && awk '/^CPU[(s)]*:/{print $NF; exit 0}END{exit 1}' $TM
 
 # Cygwin:
 case `arch` in
-CYGWIN*) grep -c '^processor[ 	]*:' /proc/cpuinfo ;;
-*) [ -d /dev/cpu -a ! -f /dev/cpu/microcode ] && ls -F /dev/cpu | fgrep -c / && exit;;
+CYGWIN*) grep -c '^processor[ 	]*:' /proc/cpuinfo; exit ;;
+*) if [ -d /dev/cpu -a ! -f /dev/cpu/microcode ]; then
+    ls -F /dev/cpu | fgrep -c
+    exit
+   fi
+    ;;
 esac
 
 # Oops
