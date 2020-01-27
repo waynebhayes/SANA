@@ -2806,10 +2806,6 @@ void SANA::setTFinal(double t) {
 
 
 
-
-
-
-
 string SANA::getFolder(){
     //create (if neccessary) and return the path of the measure combinations respcetive cache folder
 #if USE_CACHED_FILES
@@ -2904,13 +2900,13 @@ void SANA::initIterPerSecond() {
     double totalIps = 0.0;
     int ipsListSize = 0;
     for(pair<double,double> ipsPair : ipsList){
-	if(TFinal <= ipsPair.first <= TInitial){
+	if(TFinal <= ipsPair.first && ipsPair.first <= TInitial){
 		totalIps+=ipsPair.second;
 		ipsListSize+=1;
 	}
     }
     totalIps = totalIps / (double) ipsListSize;
-    cout << "SANA does " << totalIps << " iterations per second on average" << endl;
+    cout << "SANA does " << long(totalIps) << " iterations per second on average" << endl;
 
     iterPerSecond = totalIps;
     std::ostringstream ss;
