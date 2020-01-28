@@ -193,7 +193,7 @@ $(GTEST_OBJS):
 clean: #clear_cache
 	$(RM) -rf cache*  # mostly for pBad
 	$(RM) -rf $(OBJDIR)/src
-	$(RM) -f $(MAIN) $(MAIN).multi createShadow parallel
+	$(RM) -f $(MAIN) createShadow parallel
 	$(RM) -f src/arguments/argumentTable.csv
 
 clear_cache:
