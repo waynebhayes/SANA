@@ -27,6 +27,7 @@ def initParser():
     parser.add_argument("-s3", "--s3bound", required=False, default = "0.0", help ="lower bound for s3")
     parser.add_argument("-a", "--alpha", required=False, default = "1.0", help = "weight given to aligning based on local measurement")
     parser.add_argument("-b", "--beta", required=False, default = "", help = "weight given to aligning based on similarity matrix")
+    parser.add_argument("-ed", "--edbound", required=False, default = "0.0", help = "edge density lower bound")
     parser.add_argument("-pk", "--pickle", required=False, default = "", help = "location of existing pickle file")
     parser.add_argument('-debug', "--debugval",action='store_true', help="adding debug will set to True, no entry is False")
 
@@ -59,6 +60,7 @@ if __name__ == '__main__':
     g2_seed_file = args.g2seed
     
     ec_mode = (float(args.ec1bound), float(args.ec2bound), float(args.s3bound))
+    ed = (float(args.edbound))
     alpha = float(args.alpha)
     seed_length = seeding.get_seed_length(g1_seed_file)
 
@@ -83,7 +85,7 @@ if __name__ == '__main__':
 
 
         start = time.time()
-        a, b, pairs = alignment.local_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, e1, delta, alpha, seednum, debug=args.debugval)    
+        a, b, pairs = alignment.local_align3(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, ed, e1, delta, alpha, seednum, debug=args.debugval)    
         #a, b, pairs = alignment.stop_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, delta)
         subgraph = alignment.induced_subgraph(graph1, graph2, list(pairs))
         cov = alignment.coverage(graph1, graph2, subgraph)[0]
@@ -96,8 +98,8 @@ if __name__ == '__main__':
         #print(pairs)
         fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--" + str(newcov) + "--"  + uid +  ".dijkstra"
         alignment.write_result(fname, pairs, graph1, graph2)
-        s3 = alignment.s3score(graph1, graph2, pairs, subgraph) 
-        s3cov = round(s3, 2) 
+        #s3 = alignment.s3score(graph1, graph2, pairs, subgraph) 
+        #s3cov = round(s3, 2) 
         
         #fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--" + str(newcov) + "--"  + uid +  ".dijkstra"
         #alignment.write_result(fname, pairs, graph1, graph2)
@@ -114,7 +116,7 @@ if __name__ == '__main__':
             logfile.write("delta: " + str(delta) + "\n")
             logfile.write("EC: " + str(cov) + "\n") 
             logfile.write("EC2: " + str(cov2) + "\n") 
-            logfile.write("S3: " + str(s3cov) + "\n") 
+            #logfile.write("S3: " + str(s3cov) + "\n") 
             if mat1 != mat2:
                 logfile.write("Seeds not matched" + "\n" )
                 logfile.write(str(mat1) + "\n")

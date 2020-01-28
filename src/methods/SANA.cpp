@@ -1311,13 +1311,13 @@ void SANA::performChange(int type) {
         newTarget    = (*unassignedNodesG2)[newTargetIndex];
     }
     else{
-        int type = G2->nodeTypes[oldTarget];
-        if((*unassignedMultipartiteNodes)[type].size() == 0)
+        int nodeType = G2->nodeTypes[oldTarget];
+        if((*unassignedMultipartiteNodes)[nodeType].size() == 0)
             return; // cannot perform change, all genes are assigned
         newTargetIndex = G2RandomUnlockedNode(oldTarget);
         
     
-        newTarget = (*unassignedMultipartiteNodes)[type][newTargetIndex];
+        newTarget = (*unassignedMultipartiteNodes)[nodeType][newTargetIndex];
         
         
         // bool isGene = false;
@@ -1391,7 +1391,8 @@ void SANA::performChange(int type) {
         if(multipartite == 1)
             (*unassignedNodesG2)[newTargetIndex] = oldTarget;
         else {
-            (*unassignedMultipartiteNodes)[type][newTargetIndex] = oldTarget;
+            int nodeType = G2->nodeTypes[oldTarget];
+            (*unassignedMultipartiteNodes)[nodeType][newTargetIndex] = oldTarget;
             // if(isGene){
             //     (*unassignedgenesG2)[newTargetIndex] = oldTarget;
             // }
@@ -1855,33 +1856,33 @@ static double getRatio(double w1, double w2) {
     return r;
 }
 
-// 1 2 3 4 5
-// 11 12 13 14 15
-// 22 23 24 25
-// 33 34 35
-// 44 45
-// 55
-
-// Now change 23
-// - 21 22 23 24 25        // 23 pair should be handled by the first?
-// + 21 22 23 24 25        // 3 matches to a new target
-
-// - 31 33 34 35
-// + 31 33 34 35
+/*
+ * We swap the mapping of two nodes source1 and source2
+ * We can first handle source1, then do the same with source2
+ * Subtract old edge difference with edge (source1, target1)
+ * Add new edge difference with edge (source1, target2)
+ */
 double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    if (source1 == source2) return 0;
+    if (source1 == source2)
+        return 0;
 
-    // Subtract source1-target1
-    // Add source1-target2
+    /*
+     * Handle source1
+     */
     double edgeDifferenceIncDiff = 0;
     double c = 0;
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList = G1AdjLists[source1];
+    for (uint i = 0; i < adjList.size(); ++i) {
+        uint node2 = adjList[i];
         double y = -abs(G1FloatWeights[source1][node2] - G2FloatWeights[target1][(*A)[node2]])
                   - c;
         double t = edgeDifferenceIncDiff + y;
         c = (t - edgeDifferenceIncDiff) - y;
         edgeDifferenceIncDiff = t;
 
+        /*
+         * Determine the new target node for node2
+         */
         uint node2Target = 0;
         if (node2 == source1) {
             node2Target = target2;
@@ -1890,6 +1891,7 @@ double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, u
         } else {
             node2Target = (*A)[node2];
         }
+
         y = +abs(G1FloatWeights[source1][node2] - G2FloatWeights[target2][node2Target])
            - c;
         t = edgeDifferenceIncDiff + y;
@@ -1897,41 +1899,51 @@ double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, u
         edgeDifferenceIncDiff = t;
    }
 
-    // Subtract source2-target2
-    // Add source2-target1
-    for (uint node2 = 0; node2 < n1; ++node2) {
-        if (node2 == source1) continue;
-        double y = -abs(G1FloatWeights[source2][node2] - G2FloatWeights[target2][(*A)[node2]])
-                  - c;
-        double t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
+   /*
+    * Handle source2
+    */
+   vector<uint> &adjList2 = G1AdjLists[source2];
+   for (uint i = 0; i < adjList2.size(); ++i) {
+       uint node2 = adjList2[i];
+       if (node2 == source1)
+         continue;
 
-        uint node2Target = 0;
-        if (node2 == source2) {
-            node2Target = target1;
-        } else {
-            node2Target = (*A)[node2];
-        }
-        y = +abs(G1FloatWeights[source2][node2] - G2FloatWeights[target1][node2Target])
-           - c;
-        t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
+       double y = -abs(G1FloatWeights[source2][node2] - G2FloatWeights[target2][(*A)[node2]])
+                  - c;
+       double t = edgeDifferenceIncDiff + y;
+       c = (t - edgeDifferenceIncDiff) - y;
+       edgeDifferenceIncDiff = t;
+
+       uint node2Target = 0;
+       if (node2 == source2) {
+           node2Target = target1;
+       } else {
+           node2Target = (*A)[node2];
+       }
+       y = +abs(G1FloatWeights[source2][node2] - G2FloatWeights[target1][node2Target])
+          - c;
+       t = edgeDifferenceIncDiff + y;
+       c = (t - edgeDifferenceIncDiff) - y;
+       edgeDifferenceIncDiff = t;
    }
 
-    return edgeDifferenceIncDiff;
+   return edgeDifferenceIncDiff;
 }
 
 
 double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    if (source1 == source2) return 0;
+    if (source1 == source2)
+      return 0;
 
     // Subtract source1-target1
     // Add source1-target2
     double edgeRatioIncDiff = 0;
     double c = 0;
-    for (uint node2 = 0; node2 < n1; ++node2) {
+  
+    vector<uint> &adjList = G1AdjLists[source1];
+    for (uint i = 0; i < adjList.size(); ++i) {
+        uint node2 = adjList[i];
+
         double r = getRatio(G1FloatWeights[source1][node2], G2FloatWeights[target1][(*A)[node2]]);
         double y = -r - c;
         double t = edgeRatioIncDiff + y;
@@ -1953,10 +1965,14 @@ double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint t
         edgeRatioIncDiff = t;
    }
 
-    // Subtract source2-target2
-    // Add source2-target1
-    for (uint node2 = 0; node2 < n1; ++node2) {
-        if (node2 == source1) continue;
+   // Subtract source2-target2
+   // Add source2-target1
+   vector<uint> &adjList2 = G1AdjLists[source2];
+   for (uint i = 0; i < adjList2.size(); ++i) {
+        uint node2 = adjList2[i];
+        if (node2 == source1)
+          continue;
+
         double r = getRatio(G1FloatWeights[source2][node2], G2FloatWeights[target2][(*A)[node2]]);
         double y = -r - c;
         double t = edgeRatioIncDiff + y;
@@ -1983,7 +1999,11 @@ double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint t
 double SANA::edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarget) {
    double edgeDifferenceIncDiff = 0;
    double c = 0;
-   for (uint node2 = 0; node2 < n1; ++node2) {
+
+   vector<uint> &adjList = G1AdjLists[source];
+   for (uint i = 0; i < adjList.size(); ++i) {
+       uint node2 = adjList[i];
+
        double y = -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
                   - c;
        double t = edgeDifferenceIncDiff + y;
@@ -2006,7 +2026,11 @@ double SANA::edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarg
 double SANA::edgeRatioIncChangeOp(uint source, uint oldTarget, uint newTarget) {
    double edgeRatioIncDiff = 0;
    double c = 0;
-   for (uint node2 = 0; node2 < n1; ++node2) {
+
+   vector<uint> &adjList = G1AdjLists[source];
+   for (uint i = 0; i < adjList.size(); ++i) {
+       uint node2 = adjList[i];
+
        double r = getRatio(G1FloatWeights[source][node2], G2FloatWeights[oldTarget][(*A)[node2]]);
        double y = -r - c;
        double t = edgeRatioIncDiff + y;
@@ -2749,11 +2773,14 @@ double SANA::getPBad(double temp, double maxTime, int logLevel) {
     }
 
     double pBadAvgAtEq = slowTrueAcceptingProbability();
-
+    double nextIps = (double)iter / (double)timer.elapsed();
+    pair<double, double> nextPair (temp, nextIps);
+    ipsList.push_back(nextPair);
     if (logLevel >= 1) {
         cout << "> getPBad(" << temp << ") = " << pBadAvgAtEq << " (score: " << currentScore << ")";
         if (reachedEquilibrium) cout << " (time: " << timer.elapsed() << "s)";
         else cout << " (didn't detect eq. after " << maxTime << "s)";
+	cout << " iterations = " << iter << ", ips = " << nextIps;
         cout << endl;
         
         if (verbose) {
@@ -2776,10 +2803,6 @@ void SANA::setTInitial(double t) {
 void SANA::setTFinal(double t) {
     TFinal = t;
 }
-
-
-
-
 
 
 
@@ -2874,14 +2897,18 @@ void SANA::initIterPerSecond() {
     initializedIterPerSecond = true;
 
     cout << "Determining iteration speed...." << endl;
-    long long int iter = 1E6;
-    hillClimbingIterations(iter - 1);
-    double res = iter/timer.elapsed();
-    cout << "SANA does " << to_string(res)
-         << " iterations per second (took " << timer.elapsedString()
-         << " doing " << iter << " iterations)" << endl;
+    double totalIps = 0.0;
+    int ipsListSize = 0;
+    for(pair<double,double> ipsPair : ipsList){
+	if(TFinal <= ipsPair.first && ipsPair.first <= TInitial){
+		totalIps+=ipsPair.second;
+		ipsListSize+=1;
+	}
+    }
+    totalIps = totalIps / (double) ipsListSize;
+    cout << "SANA does " << long(totalIps) << " iterations per second on average" << endl;
 
-    iterPerSecond = res;
+    iterPerSecond = totalIps;
     std::ostringstream ss;
     ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
     ofstream header(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(0) + ".csv");
@@ -3921,7 +3948,11 @@ double SANA::edgeDifferenceIncChangeOp(Job &job, uint source, uint oldTarget, ui
    vector<uint> *A = job.info.A;
    double edgeDifferenceIncDiff = 0;
    double c = 0;
-   for (uint node2 = 0; node2 < n1; ++node2) {
+
+   vector<uint> &adjList = G1AdjLists[source];
+   for (uint i = 0; i < adjList.size(); ++i) {
+       uint node2 = adjList[i];
+
        double y = -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
                   - c;
        double t = edgeDifferenceIncDiff + y;
@@ -3942,7 +3973,9 @@ double SANA::edgeRatioIncChangeOp(Job &job, uint source, uint oldTarget, uint ne
    vector<uint> *A = job.info.A;
    double edgeRatioIncDiff = 0;
    double c = 0;
-   for (uint node2 = 0; node2 < n1; ++node2) {
+   vector<uint> &adjList = G1AdjLists[source];
+   for (uint i = 0; i < adjList.size(); ++i) {
+       uint node2 = adjList[i];
        double r = getRatio(G1FloatWeights[source][node2], G2FloatWeights[oldTarget][(*A)[node2]]);
        double y = -r - c;
        double t = edgeRatioIncDiff + y;
@@ -3970,7 +4003,9 @@ double SANA::edgeDifferenceIncSwapOp(Job &job, uint source1, uint source2, uint 
     // Add source1-target2
     double edgeDifferenceIncDiff = 0;
     double c = 0;
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList = G1AdjLists[source1];
+    for (uint i = 0; i < adjList.size(); ++i) {
+        uint node2 = adjList[i];
         double y = -abs(G1FloatWeights[source1][node2] - G2FloatWeights[target1][(*A)[node2]])
                   - c;
         double t = edgeDifferenceIncDiff + y;
@@ -3994,8 +4029,11 @@ double SANA::edgeDifferenceIncSwapOp(Job &job, uint source1, uint source2, uint 
 
     // Subtract source2-target2
     // Add source2-target1
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList2 = G1AdjLists[source2];
+    for (uint i = 0; i < adjList2.size(); ++i) {
+        uint node2 = adjList[i];
         if (node2 == source1) continue;
+
         double y = -abs(G1FloatWeights[source2][node2] - G2FloatWeights[target2][(*A)[node2]])
                   - c;
         double t = edgeDifferenceIncDiff + y;
@@ -4026,7 +4064,9 @@ double SANA::edgeRatioIncSwapOp(Job &job, uint source1, uint source2, uint targe
 
     double edgeRatioIncDiff = 0;
     double c = 0;
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList = G1AdjLists[source1];
+    for (uint i = 0; i < adjList.size(); ++i) {
+        uint node2 = adjList[i];
         double r = getRatio(G1FloatWeights[source1][node2], G2FloatWeights[target1][(*A)[node2]]);
         double y = -r - c;
         double t = edgeRatioIncDiff + y;
@@ -4050,7 +4090,9 @@ double SANA::edgeRatioIncSwapOp(Job &job, uint source1, uint source2, uint targe
 
     // Subtract source2-target2
     // Add source2-target1
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList2 = G1AdjLists[source2];
+    for (uint i = 0; i < adjList2.size(); ++i) {
+        uint node2 = adjList[i];
         if (node2 == source1) continue;
         double r = getRatio(G1FloatWeights[source2][node2], G2FloatWeights[target2][(*A)[node2]]);
         double y = -r - c;
