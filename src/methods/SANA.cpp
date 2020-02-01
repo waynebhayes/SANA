@@ -2869,9 +2869,7 @@ Alignment SANA::hillClimbingAlignment(long long int idleCountTarget){
 void SANA::hillClimbingIterations(long long int iterTarget) {
     Alignment startA = getStartingAlignment();
     long long int iter = 1;
-
     initDataStructures(startA);
-    Temperature = 0;
     for (; iter < iterTarget ; ++iter) {
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
