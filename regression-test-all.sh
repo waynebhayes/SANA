@@ -1,7 +1,20 @@
-#!/bin/sh
-PATH=`pwd`/scripts:$PATH
+#!/bin/bash
+die() { echo "FATAL ERROR: $@" >&2; exit 1
+}
+PATH=`pwd`:`pwd`/scripts:$PATH
 export PATH
-EXIT_CODE=0
+
+case "$1" in
+-make)
+    CORES=`cpus 2>/dev/null || echo 4`
+    make clean; make multi -j$CORES; [ -x sana.multi ] || die "could not create executable 'sana.multi'"
+    make clean; make -j$CORES; [ -x sana ] || die "could not create 'sana' executable"
+    ;;
+"") ;;
+*) die "unknown argument '$1'" ;;
+esac
+
+NUM_FAILS=0
 for dir in regression-tests/*; do
     echo --- in directory $dir ---
     for r in $dir/*.sh; do
@@ -9,8 +22,9 @@ for dir in regression-tests/*; do
 	if nice -19 "$r"; then
 	    :
 	else
-	    EXIT_CODE=1
+	    (( NUM_FAILS+=$? ))
 	fi
     done
 done
-exit $EXIT_CODE
+echo Number of failures: $NUM_FAILS
+exit $NUM_FAILS

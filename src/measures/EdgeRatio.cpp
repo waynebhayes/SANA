@@ -35,18 +35,18 @@ double EdgeRatio::getEdgeRatioSum(Graph *G1, Graph *G2, const Alignment &A) {
     Matrix<float>& G1FloatWeights = G1->getFloatWeights();
     Matrix<float>& G2FloatWeights = G2->getFloatWeights();
 
-    uint G1NodesCount = G1->getNumNodes();
     double edgeRatioSum = 0;
     double c = 0;
-    for (uint node1 = 0; node1 < G1NodesCount; ++node1) {
-       for (uint node2 = node1; node2 < G1NodesCount; ++node2) { 
-           double r = getRatio(G1FloatWeights[node1][node2], G2FloatWeights[A[node1]][A[node2]]);
-           double y = r - c;
-           double t = edgeRatioSum + y;
-           c = (t - edgeRatioSum) - y;
-           edgeRatioSum = t;
-       }
+    const vector<vector<uint>> &edgeLists = G1->getEdgeList();
+    for (uint i = 0; i < edgeLists.size(); ++i) {
+      uint node1 = edgeLists[i][0], node2 = edgeLists[i][1];
+      double r = getRatio(G1FloatWeights[node1][node2], G2FloatWeights[A[node1]][A[node2]]);
+      double y = r - c;
+      double t = edgeRatioSum + y;
+      c = (t - edgeRatioSum) - y;
+      edgeRatioSum = t;
     }
+    
 
     return edgeRatioSum;
 }
