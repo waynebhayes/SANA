@@ -2870,14 +2870,22 @@ void SANA::initIterPerSecond() {
     cout << "Determining iteration speed...." << endl;
     double totalIps = 0.0;
     int ipsListSize = 0;
-    for(pair<double,double> ipsPair : ipsList){
-	if(TFinal <= ipsPair.first <= TInitial){
+    if(ipsList.size()!=0){
+        for(pair<double,double> ipsPair : ipsList){
+	    if(TFinal <= ipsPair.first && ipsPair.first <= TInitial){
 		totalIps+=ipsPair.second;
 		ipsListSize+=1;
-	}
+	    }
+        }
+	totalIps = totalIps / (double) ipsListSize;
+    }else{
+	cout << "Since temperature schedule is provided, ips will be calculated using hillClimbingIterations" << endl;
+        long long int iter = 1E6;
+        hillClimbingIterations(iter - 1);
+        double res = iter/timer.elapsed();
+        totalIps = res;
     }
-    totalIps = totalIps / (double) ipsListSize;
-    cout << "SANA does " << totalIps << " iterations per second on average" << endl;
+    cout << "SANA does " << long(totalIps) << " iterations per second on average" << endl;
 
     iterPerSecond = totalIps;
     std::ostringstream ss;
