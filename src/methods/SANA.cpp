@@ -2866,12 +2866,10 @@ Alignment SANA::hillClimbingAlignment(long long int idleCountTarget){
     return hillClimbingAlignment(getStartingAlignment(), idleCountTarget);
 }
 
-void SANA::hillClimbingIterations(long long int iterTarget) {
+void SANA::constantTempIterations(long long int iterTarget) {
     Alignment startA = getStartingAlignment();
     long long int iter = 1;
-
     initDataStructures(startA);
-    Temperature = 0;
     for (; iter < iterTarget ; ++iter) {
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
@@ -2899,13 +2897,21 @@ void SANA::initIterPerSecond() {
     cout << "Determining iteration speed...." << endl;
     double totalIps = 0.0;
     int ipsListSize = 0;
-    for(pair<double,double> ipsPair : ipsList){
-	if(TFinal <= ipsPair.first && ipsPair.first <= TInitial){
+    if(ipsList.size()!=0){
+        for(pair<double,double> ipsPair : ipsList){
+	    if(TFinal <= ipsPair.first && ipsPair.first <= TInitial){
 		totalIps+=ipsPair.second;
 		ipsListSize+=1;
-	}
+	    }
+        }
+	totalIps = totalIps / (double) ipsListSize;
+    }else{
+	cout << "Since temperature schedule is provided, ips will be calculated using constantTempIterations" << endl;
+        long long int iter = 1E6;
+        constantTempIterations(iter - 1);
+        double res = iter/timer.elapsed();
+        totalIps = res;
     }
-    totalIps = totalIps / (double) ipsListSize;
     cout << "SANA does " << long(totalIps) << " iterations per second on average" << endl;
 
     iterPerSecond = totalIps;
