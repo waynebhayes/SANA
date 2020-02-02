@@ -2866,7 +2866,7 @@ Alignment SANA::hillClimbingAlignment(long long int idleCountTarget){
     return hillClimbingAlignment(getStartingAlignment(), idleCountTarget);
 }
 
-void SANA::hillClimbingIterations(long long int iterTarget) {
+void SANA::constantTempIterations(long long int iterTarget) {
     Alignment startA = getStartingAlignment();
     long long int iter = 1;
     initDataStructures(startA);
@@ -2906,9 +2906,9 @@ void SANA::initIterPerSecond() {
         }
 	totalIps = totalIps / (double) ipsListSize;
     }else{
-	cout << "Since temperature schedule is provided, ips will be calculated using hillClimbingIterations" << endl;
+	cout << "Since temperature schedule is provided, ips will be calculated using constantTempIterations" << endl;
         long long int iter = 1E6;
-        hillClimbingIterations(iter - 1);
+        constantTempIterations(iter - 1);
         double res = iter/timer.elapsed();
         totalIps = res;
     }
