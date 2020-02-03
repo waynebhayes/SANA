@@ -266,7 +266,7 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
         #print("No more candidatePairs, outputing alignment")
         #seen.append(curralign.aligned_pairs)
         printoutput2(curralign)
-        write_result2(g1,g2,curralign)
+        #write_result2(g1,g2,curralign)
         return
 
     start = time.time()
@@ -430,7 +430,7 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
                 return  
             printoutput2(curralign)
             write_result2(g1,g2,curralign)
-            writelog(curralign)
+            #writelog(curralign)
             return
 
 
