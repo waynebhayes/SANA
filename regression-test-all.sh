@@ -1,6 +1,19 @@
 #!/bin/bash
-PATH=`pwd`/scripts:$PATH
+die() { echo "FATAL ERROR: $@" >&2; exit 1
+}
+PATH=`pwd`:`pwd`/scripts:$PATH
 export PATH
+
+case "$1" in
+-make)
+    CORES=`cpus 2>/dev/null || echo 4`
+    make clean; make multi -j$CORES; [ -x sana.multi ] || die "could not create executable 'sana.multi'"
+    make clean; make -j$CORES; [ -x sana ] || die "could not create 'sana' executable"
+    ;;
+"") ;;
+*) die "unknown argument '$1'" ;;
+esac
+
 NUM_FAILS=0
 for dir in regression-tests/*; do
     echo --- in directory $dir ---
