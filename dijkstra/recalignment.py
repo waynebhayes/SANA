@@ -255,7 +255,13 @@ def printoutput2(curralign):
     minutes, seconds = divmod(rem, 60)
     runtime = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
 
-    print("seednum: " + str(curralign.seednum) + " k:" + str(curralign.k) +  " size:" + str(size) + " E1:" + str(curralign.E1) + " E2:" + str(curralign.E2) + " EA:" + str(curralign.EA) + " time:" + str(runtime) + " seed: " + str(curralign.seed))
+    result = ("seednum: " + str(curralign.seednum) + " k:" + str(curralign.k) +  " size:" + str(size) + " E1:" + str(curralign.E1) + " E2:" + str(curralign.E2) + " EA:" + str(curralign.EA) + " time:" + str(runtime) + " seed: " + str(curralign.seed))
+
+    print(result)
+    with open("log.log", "a") as f:
+        f.write(result+"\n") 
+        for n1, n2 in curralign.aligned_pairs:
+            f.write(str(n1)+" "+str(n2)+"\n")
 
 
    
