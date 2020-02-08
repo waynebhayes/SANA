@@ -261,11 +261,15 @@ def printoutput2(curralign):
    
 def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
     curralign.recdepth += 1
-    
+    printoutput2(curralign)
+    write_result2(g1,g2,curralign)
+    #writelog(curralign)
+    if curralign.currtime >= 600:
+        sys.exit()
+
+   
     if len(candidatePairs) == 0 and len(curralign.pq) == 0:
         #print("No more candidatePairs, outputing alignment")
-        printoutput2(curralign)
-        #write_result2(g1,g2,curralign)
         return
 
     start = time.time()
@@ -367,6 +371,9 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
                 print("existing ncp before call:", exisiting_neighbor_candidatePairs)
             #recursive call on newcurralign which has added the current pair and updated data structures
             rec_alignhelper(g1,g2, curralign, candidatePairs.union(newcandidatePairs), aligncombs, sims, debug)
+
+            
+
             if debug:
                 print("Reverting", curralign.recdepth-1, pair)
                 print("existing ncp after:", exisiting_neighbor_candidatePairs)
@@ -411,9 +418,6 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
                 print("No valid candidate pairs in skiplist, returning..")
             #print("No valid candidate pairs in skiplist, returning..")
             
-            printoutput2(curralign)
-            write_result2(g1,g2,curralign)
-            #writelog(curralign)
             return
 
 
