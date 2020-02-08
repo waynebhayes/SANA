@@ -264,8 +264,8 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
     printoutput2(curralign)
     write_result2(g1,g2,curralign)
     #writelog(curralign)
-    if curralign.currtime >= 600:
-        sys.exit()
+#    if curralign.currtime >= 600:
+#        sys.exit()
 
    
     if len(candidatePairs) == 0 and len(curralign.pq) == 0:
