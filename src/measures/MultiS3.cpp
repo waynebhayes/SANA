@@ -34,9 +34,6 @@ MultiS3::MultiS3(Graph* G1, Graph* G2, int type) : Measure(G1, G2, "ms3")
     degreesInit = false;
     //G1->printStats(0, cout);
     //G2->printStats(0, cout);
-#else
-    cerr << "MULTI_PAIRWISE must be defined for ms3 to work\n";
-    assert(false);
 #endif
 }
 
