@@ -239,7 +239,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     needEd               = edWeight > 0; // to evaluate edge difference score incrementally
     needEr               = erWeight > 0; // to evaluate edge ratio score incrementally
     needSquaredAligEdges = sesWeight > 0; // to evaluate SES incrementally
-    needExposedEdges	 = eeWeight > 0; // to eval EE incrementally
+    needExposedEdges	 = eeWeight > 0 || ms3Weight > 0; // to eval EE incrementally; if needMS3, might use ee as denom
     needMS3              = ms3Weight > 0; // to eval MS3 incrementally
     needInducedEdges     = s3Weight > 0 || icsWeight > 0; //to evaluate S3 & ICS incrementally
     needWec              = wecWeight > 0; //to evaluate WEC incrementally
@@ -1454,7 +1454,15 @@ void SANA::performChange(int type) {
 
 void SANA::performSwap(int type) {
     uint source1 = G1RandomUnlockedNode();
-    uint source2 = G1RandomUnlockedNode(source1);
+    
+    uint max_try = 1000;
+    uint source2,i;
+    for (i=0;i<max_try;i++){
+        source2 = G1RandomUnlockedNode(source1);
+        if (source1!=source2){break;}
+    }
+    assert(i!=max_try);
+    
     uint target1 = (*A)[source1], target2 = (*A)[source2];
     
     //added initialization to shut compiler warning -Nil
@@ -1590,7 +1598,10 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += mecWeight * (newAligEdges / (g1WeightedEdges + g2WeightedEdges));
         newCurrentScore += sesWeight * newSquaredAligEdges / (double)SquaredEdgeScore::getDenom();
 	newCurrentScore += eeWeight * (1 - (newExposedEdgesNumer / (double)EdgeExposure::getDenom()));
-        newCurrentScore += ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)NUM_GRAPHS;
+        if (MultiS3::_type==1){
+	    MultiS3::denom = newExposedEdgesNumer;
+	}
+	newCurrentScore += ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)NUM_GRAPHS;
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -2215,10 +2226,23 @@ int SANA::MS3IncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) 
     return 0;
 }
 int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
+    if (MultiS3::_type==1){
+        //denom is ee
+        int res = 0, diff;
+        uint neighbor;
+        const uint n = G1AdjLists[source].size();
+        for (uint i = 0; i < n; ++i) {
+            neighbor = G1AdjLists[source][i];
+            diff = G2Matrix[oldTarget][(*A)[neighbor]] + 1;
+            res -= (diff==1?0:diff);
+            diff = G2Matrix[newTarget][(*A)[neighbor]] + 1;
+            res += (diff==1?0:diff) ;
+            }
+        return res;
+    }
     int ret = 0;
     unsigned oldOldTargetDeg = MultiS3::totalDegrees[oldTarget];
     unsigned oldNewTargetDeg = MultiS3::totalDegrees[newTarget];
-
     bool selfLoopAtSource, selfLoopAtOldTarget, selfLoopAtNewTarget;
 #ifdef SPARSE
     selfLoopAtSource = G1->hasSelfLoop(source);
@@ -2273,6 +2297,41 @@ int SANA::MS3IncSwapOp(Job &job, uint source1, uint source2, uint target1, uint 
     return 0;
 }
 int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
+    if (MultiS3::_type==1){
+        //denom is ee
+        int res = 0, diff;
+        uint neighbor;
+        const uint n = G1AdjLists[source1].size();
+        uint i = 0;
+        for (; i < n; ++i) {
+            neighbor = G1AdjLists[source1][i];
+            diff = G2Matrix[target1][(*A)[neighbor]] + 1;//SQRDIFF(target1, neighbor);
+            res -= (diff==1?0:diff);
+            diff = G2Matrix[target2][(*A)[neighbor]] + 1;//SQRDIFF(target2, neighbor);
+            if (target2==(*A)[neighbor]){
+                diff=0;
+            }
+            res += (diff==1?0:diff);
+        }
+        const uint m = G1AdjLists[source2].size();
+        for (i = 0; i < m; ++i) {
+            neighbor = G1AdjLists[source2][i];
+            diff = G2Matrix[target2][(*A)[neighbor]] + 1;//SQRDIFF(target2, neighbor);
+            res -= (diff==1?0:diff);
+            diff = G2Matrix[target1][(*A)[neighbor]] + 1;//SQRDIFF(target1, neighbor);
+            if (target1==(*A)[neighbor]){
+                diff=0;
+            }
+            res += (diff==1?0:diff);
+        }
+        if(G2Matrix[target1][target2] and  G1Matrix[source1][source2])
+        {
+            diff = ( G2Matrix[target1][(*A)[source2]] + 1);
+            res += 2*(diff==1?0:diff);
+        }
+        return res;
+    }
+    
     int ret = 0;
     unsigned oldTarget1Deg = MultiS3::totalDegrees[target1];
     unsigned oldTarget2Deg = MultiS3::totalDegrees[target2];
