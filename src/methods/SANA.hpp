@@ -241,7 +241,6 @@ private:
 
 	// to evaluate EE incrementally
     bool needExposedEdges;
-    int exposedEdgesNumer;
     int exposedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
     int exposedEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
     

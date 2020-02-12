@@ -3,6 +3,7 @@
 
 unsigned NUM_GRAPHS;
 unsigned MultiS3::denom = 1;
+unsigned MultiS3::numer = 1;
 double MultiS3::_type = 0;
 vector<uint> MultiS3::totalDegrees;
 
@@ -33,6 +34,9 @@ MultiS3::MultiS3(Graph* G1, Graph* G2, int type) : Measure(G1, G2, "ms3")
     degreesInit = false;
     //G1->printStats(0, cout);
     //G2->printStats(0, cout);
+#else
+    cerr << "MULTI_PAIRWISE must be defined for ms3 to work\n";
+    assert(false);
 #endif
 }
 
@@ -138,7 +142,10 @@ double MultiS3::eval(const Alignment& A)
     else if (_type==0){
         computeDenom(A, *G1, *G2);
     }
-    return double(A.multiS3Numerator(*G1, *G2)) / denom / NUM_GRAPHS;
+    unsigned newNumer = A.multiS3Numerator(*G1, *G2);
+    if(newNumer != numer) cerr << "inc eval MS3numer wrong: should be "<<newNumer<<" but is "<<numer << '\n';
+    numer = newNumer;
+    return double(newNumer) / denom / NUM_GRAPHS;
 #else
     return 0.0;
 #endif

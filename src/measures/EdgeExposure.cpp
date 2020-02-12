@@ -4,6 +4,7 @@
 unsigned EDGE_SUM;
 unsigned MAX_EDGE;
 unsigned EdgeExposure::denom = 0;
+unsigned EdgeExposure::numer = 0;
 
 EdgeExposure::EdgeExposure(Graph* G1, Graph* G2) : Measure(G1, G2, "ee") {
 #if MULTI_PAIRWISE
@@ -47,11 +48,13 @@ unsigned EdgeExposure::getMaxEdge()
 
 double EdgeExposure::eval(const Alignment& A) {
 #if MULTI_PAIRWISE
-	uint ne = A.numExposedEdges(*G1, *G2);
-	assert(ne >= MAX_EDGE);
-	assert(ne <= EDGE_SUM);
+    uint ne = A.numExposedEdges(*G1, *G2);
+    if(ne != numer) cerr << "EdgeExposure::numer should be "<<ne<<" but is "<<ne <<'\n';
+    numer = ne;
+    assert(ne >= MAX_EDGE);
+    assert(ne <= EDGE_SUM);
     return 1 - ((ne - MAX_EDGE) / (double)EdgeExposure::getDenom());
 #else
-	return 0.0;
+    return 0.0;
 #endif
 }

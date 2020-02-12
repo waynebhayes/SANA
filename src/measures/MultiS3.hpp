@@ -17,7 +17,7 @@ public:
     static vector<uint> totalDegrees; // sum of neighboring edge weights including G1
     unsigned computeDenom(const Alignment& A, const Graph& G1, const Graph& G2);
     
-    static unsigned denom; // used for inc eval
+    static unsigned numer, denom; // used for inc eval
     static double _type; //0 default ; 1 ee
     unsigned LaddersUnderG1;
 private:

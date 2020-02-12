@@ -493,8 +493,8 @@ double ncC(PARAMS) { return double(ncSum) / trueA_back; }
 #ifdef MULTI_PAIRWISE
 double mecC(PARAMS) { return double(aligEdges) / (g1WeightedEdges + g2WeightedEdges); }
 double sesC(PARAMS) { return squaredAligEdges; }
-double eeC(PARAMS)  { return 1-exposedEdgesNumer/(double)EdgeExposure::getDenom(); }
-double ms3C(PARAMS)  { return (MS3Numer / (double)MultiS3::denom) / (double) NUM_GRAPHS; }
+double eeC(PARAMS)  { return 1-EdgeExposure::numer/(double)EdgeExposure::getDenom(); }
+double ms3C(PARAMS)  { return (MultiS3::numer / (double)MultiS3::denom) / (double) NUM_GRAPHS; }
 #endif
 
 unordered_set<vector<uint>*>* SANA::paretoRun(const string& fileName) {
@@ -747,11 +747,11 @@ void SANA::initDataStructures(const Alignment& startA) {
     }
     if (needExposedEdges)
     {
-	exposedEdgesNumer = startA.numExposedEdges(*G1, *G2) - EdgeExposure::getMaxEdge();
+	EdgeExposure::numer = startA.numExposedEdges(*G1, *G2) - EdgeExposure::getMaxEdge();
     }
     if (needMS3)
     {
-	MS3Numer = startA.multiS3Numerator(*G1, *G2);
+	MultiS3::numer = startA.multiS3Numerator(*G1, *G2);
     }
 #endif
     if (needInducedEdges) {
@@ -1036,7 +1036,7 @@ vector<double> SANA::translateScoresToVector() {
                                                                               g2Edges, TCSum, localScoreSum, n1,
                                                                               wecSum, ewecSum, ncSum, trueA.back(),
                                                                               g1WeightedEdges, g2WeightedEdges,
-                                                                              squaredAligEdges, exposedEdgesNumer, MS3Numer,
+                                                                              squaredAligEdges, EdgeExposure::numer, MS3Numer,
                                                                               edSum, erSum, pairsCount
                                                                             );
     }
@@ -1117,8 +1117,8 @@ void SANA::prepareMeasureDataByAlignment() {
     assert(storedAlignments->find(A) != storedAlignments->end() and "Alignment does not exist in the Pareto front.");
     aligEdges        = (needAligEdges or needSec) ?  storedAligEdges[A] : -1;
     squaredAligEdges = (needSquaredAligEdges) ?  storedSquaredAligEdges[A] : -1;
-    exposedEdgesNumer= (needExposedEdges) ?  storedExposedEdgesNumer[A] : -1;
-    MS3Numer         = (needMS3) ?  storedMS3Numer[A] : -1;
+    EdgeExposure::numer= (needExposedEdges) ?  storedExposedEdgesNumer[A] : -1;
+    MultiS3::numer   = (needMS3) ?  storedMS3Numer[A] : -1;
     inducedEdges     = (needInducedEdges) ?  storedInducedEdges[A] : -1;
     TCSum            = (needTC) ?  storedTCSum[A] : -1;
     edSum            = (needEd) ?  storedEdSum[A] : -1;
@@ -1186,8 +1186,8 @@ void SANA::insertCurrentAlignmentAndData() {
 
     if(needAligEdges or needSec) storedAligEdges[A]        = aligEdges;
     if(needSquaredAligEdges)     storedSquaredAligEdges[A] = squaredAligEdges;
-    if(needExposedEdges)	 storedExposedEdgesNumer[A]= exposedEdgesNumer;
-    if(needMS3)         	 storedMS3Numer[A]         = MS3Numer;
+    if(needExposedEdges)	 storedExposedEdgesNumer[A]= EdgeExposure::numer;
+    if(needMS3)         	 storedMS3Numer[A]         = MultiS3::numer;
     if(needInducedEdges)         storedInducedEdges[A]     = inducedEdges;
     if(needEd)                   storedEdSum[A]            = edSum;
     if(needEr)                   storedErSum[A]            = erSum;
@@ -1345,8 +1345,8 @@ void SANA::performChange(int type) {
     double newEdSum            = (needEd) ?  edSum + edgeDifferenceIncChangeOp(source, oldTarget, newTarget) : -1;
     double newErSum            = (needEr) ?  erSum + edgeRatioIncChangeOp(source, oldTarget, newTarget) : -1;
     double newSquaredAligEdges = (needSquaredAligEdges) ?  squaredAligEdges + squaredAligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newExposedEdgesNumer= (needExposedEdges) ? exposedEdgesNumer + exposedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newMS3Numer         = (needMS3) ? MS3Numer + MS3IncChangeOp(source, oldTarget, newTarget) : -1;
+    double newExposedEdgesNumer= (needExposedEdges) ? EdgeExposure::numer + exposedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newMS3Numer         = (needMS3) ? MultiS3::numer + MS3IncChangeOp(source, oldTarget, newTarget) : -1;
     int newInducedEdges        = (needInducedEdges) ?  inducedEdges + inducedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
     double newTCSum            = (needTC) ?  TCSum + TCIncChangeOp(source, oldTarget, newTarget) : -1;
     double newLocalScoreSum    = (needLocal) ? localScoreSum + localScoreSumIncChangeOp(sims, source, oldTarget, newTarget) : -1;
@@ -1430,9 +1430,9 @@ void SANA::performChange(int type) {
         }
 #endif
         currentScore     = newCurrentScore;
-	exposedEdgesNumer= newExposedEdgesNumer;
+	EdgeExposure::numer= newExposedEdgesNumer;
         squaredAligEdges = newSquaredAligEdges;
-        MS3Numer         = newMS3Numer;
+        MultiS3::numer         = newMS3Numer;
     }
     else
     {
@@ -1477,8 +1477,8 @@ void SANA::performSwap(int type) {
     int newAligEdges           = (needAligEdges or needSec) ?  aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
     int newTCSum               = (needTC) ?  TCSum + TCIncSwapOp(source1, source2, target1, target2) : -1;
     double newSquaredAligEdges = (needSquaredAligEdges) ? squaredAligEdges + squaredAligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    double newExposedEdgesNumer= (needExposedEdges) ?  exposedEdgesNumer + exposedEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    double newMS3Numer         = (needMS3) ?  MS3Numer + MS3IncSwapOp(source1, source2, target1, target2) : -1;
+    double newExposedEdgesNumer= (needExposedEdges) ?  EdgeExposure::numer + exposedEdgesIncSwapOp(source1, source2, target1, target2) : -1;
+    double newMS3Numer         = (needMS3) ?  MultiS3::numer + MS3IncSwapOp(source1, source2, target1, target2) : -1;
     double newWecSum           = (needWec) ?  wecSum + WECIncSwapOp(source1, source2, target1, target2) : -1;
     double newEwecSum          = (needEwec) ?  ewecSum + EWECIncSwapOp(source1, source2, target1, target2) : -1;
     double newNcSum            = (needNC) ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
@@ -1535,8 +1535,8 @@ void SANA::performSwap(int type) {
         ncSum               = newNcSum;
         currentScore        = newCurrentScore;
         squaredAligEdges    = newSquaredAligEdges;
-	exposedEdgesNumer   = newExposedEdgesNumer;
-        MS3Numer            = newMS3Numer;
+	EdgeExposure::numer   = newExposedEdgesNumer;
+        MultiS3::numer      = newMS3Numer;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
 #if 0
@@ -2222,12 +2222,15 @@ int SANA::exposedEdgesIncSwapOp(Job &job, uint source1, uint source2, uint targe
 }
 
 int SANA::MS3IncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
+    cerr << "MS3 not implemented yet for Pareto mode\n";
     assert(false);
     return 0;
 }
+
+// Return the change in NUMERATOR of MS3
 int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
     if (MultiS3::_type==1){
-        //denom is ee
+        //denom is ee, computed elsewhere
         int res = 0, diff;
         uint neighbor;
         const uint n = G1AdjLists[source].size();
@@ -2293,9 +2296,11 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
 }
 
 int SANA::MS3IncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2) {
+    cerr << "MS3 not implemented yet for Pareto mode\n";
     assert(false);
     return 0;
 }
+// Return change in NUMERATOR only
 int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     if (MultiS3::_type==1){
         //denom is ee
