@@ -94,15 +94,28 @@ class SkipList:
             count+=1
         return count
 
-    def updateList(self, value): #get a route to the node
+    def updateListInfo(self, value:float, info:tuple): #get a route to the node
         update = [None]*self.maxHeight #save the route
         x = self.head #from the left headnode
         for i in reversed(range(self.maxHeight)): #from top to bottom
-            while x.next[i] != None and x.next[i].value < value: #next_value>=given_value => walk down
+            #while x.next[i] != None and x.next[i].value < value: #next_value>=given_value => walk down
+            #while x.next[i] != None and x.next[i].value < value and x.next[i].info < info: #next_value>=given_value => walk down
+            while x.next[i] != None and x.next[i].value < value: 
+                x = x.next[i] 
+            while x.next[i] != None and x.next[i].info < info: #next_value>=given_value => walk down
                 x = x.next[i] #go to next value
             update[i] = x #save the route
         return update
         
+    def updateList(self, value:float): #get a route to the node
+        update = [None]*self.maxHeight #save the route
+        x = self.head #from the left headnode
+        for i in reversed(range(self.maxHeight)): #from top to bottom
+            while x.next[i] != None and x.next[i].value < value: 
+                x = x.next[i] 
+            update[i] = x #save the route
+        return update
+
     def add(self,input_tuple, debug=False):
         #self.switch determines min_heap(1) or max_heap(-1)
         value=input_tuple[0]*self.switch
@@ -116,7 +129,7 @@ class SkipList:
         if len(self.head.next) < self.maxHeight:
             self.head.next.extend([None]*(self.maxHeight- len(self.head.next)))
         #find route to the given value
-        update = self.updateList(value)
+        update = self.updateListInfo(value, info)
         #update every node in the given route
         for i in range(len(node.next)):
             #every rank point to the next
@@ -151,7 +164,7 @@ class SkipList:
         value = value*self.switch 
         #print("removing by " + str(node_info))
         #print("removing by " + str(value))
-        update = self.updateList(value)
+        update = self.updateListInfo(value, node_info)
         #whether the value exist, the route can accelerate the find progress
         x, update = self.find_by_name(value, node_info, update)
         #if find the value

@@ -29,6 +29,7 @@ def initParser():
     parser.add_argument("-b", "--beta", required=False, default = "", help = "weight given to aligning based on similarity matrix")
     parser.add_argument("-ed", "--edbound", required=False, default = "0.0", help = "edge density lower bound")
     parser.add_argument("-pk", "--pickle", required=False, default = "", help = "location of existing pickle file")
+    parser.add_argument("-t", "--timestop", required=False, default = "-1.0", help = "Stop program after specified time, units in hours")
     parser.add_argument('-debug', "--debugval",action='store_true', help="adding debug will set to True, no entry is False")
 
     return parser
@@ -64,6 +65,18 @@ if __name__ == '__main__':
     alpha = float(args.alpha)
     seed_length = seeding.get_seed_length(g1_seed_file)
 
+
+    timestop_arg = float(args.timestop)
+    if timestop_arg < 0:
+        timestop_arg = None
+    else:
+        #convert seconds to hours
+        
+        ntimestop = timestop_arg * 3600  
+        timestop_arg = ntimestop
+
+    print("timestop_arg: ", timestop_arg)
+
     sims = builder.get_sim(args.sim, graph1, graph2, args.pickle)
 
     seednum = 0
@@ -83,39 +96,4 @@ if __name__ == '__main__':
             print(mat1)
             print(mat2)
 
-        #start = time.time()
-        recalignment.rec_align(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, ed, e1, delta, alpha, seednum, debug=args.debugval)    
-        #subgraph = recalignment.induced_subgraph(graph1, graph2, list(pairs))
-        #cov = recalignment.coverage(graph1, graph2, subgraph)[0]
-        #cov2 = recalignment.coverage(graph1, graph2, subgraph)[1]
-        #newcov = round(cov, 2)
-        #newcov2 = round(cov2, 2)
-        #uuidstr = str(uuid.uuid4())
-        #uid = uuidstr[:13]
-
-        #print(pairs)
-        #fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--"  + uid +  ".dijkstra"
-        #recalignment.write_result(fname, pairs, graph1, graph2)
-        #s3 = recalignment.s3score(graph1, graph2, pairs, subgraph) 
-        #s3cov = round(s3, 2) 
-        
-        #fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--" + str(newcov) + "--"  + uid +  ".dijkstra"
-        #recalignment.write_result(fname, pairs, graph1, graph2)
-        #end = time.time()
-        #hours, rem = divmod(end-start, 3600)
-        #minutes, seconds = divmod(rem, 60)
-        #runtime = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
-        #write_log(fname, runtime, seed, delta)
-        #logname = fname.replace("dijkstra", "log")
-        #with open(logname, 'w+') as logfile:
-        #    logfile.write(fname + '\n')
-        #    logfile.write(str(seed) + '\n')
-        #    logfile.write(str(runtime) + '\n')
-        #    logfile.write("delta: " + str(delta) + "\n")
-            #logfile.write("EC: " + str(cov) + "\n") 
-            #logfile.write("EC2: " + str(cov2) + "\n") 
-            #logfile.write("S3: " + str(s3cov) + "\n") 
-        #    if mat1 != mat2:
-        #        logfile.write("Seeds not matched" + "\n" )
-        #        logfile.write(str(mat1) + "\n")
-        #        logfile.write(str(mat2) + "\n")
+        recalignment.rec_align(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, ed, e1, delta, alpha, seednum, timestop=timestop_arg, debug=args.debugval)    
