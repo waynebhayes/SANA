@@ -1,6 +1,7 @@
 #include "Alignment.hpp"
 #include "Graph.hpp"
 #include "utils/utils.hpp"
+#include "./measures/MultiS3.hpp"
 
 using namespace std;
 extern bool _graphsSwitched;
@@ -376,7 +377,13 @@ unsigned Alignment::multiS3Numerator(const Graph& G1, const Graph& G2) const {
     for (const auto& edge: G1EdgeList)
     {
         node1 = edge[0], node2 = edge[1];
-        ret += G2Matrix[A[node1]][A[node2]] + 1; // +1 because G1 was pruned out of G2
+        if (MultiS3::_type==1){
+            if (G2Matrix[A[node1]][A[node2]]>=1){
+                ret += G2Matrix[A[node1]][A[node2]] + 1; // +1 because G1 was pruned out of G2
+            }
+        }else if (MultiS3::_type==0){
+            ret += G2Matrix[A[node1]][A[node2]] + 1; // +1 because G1 was pruned out of G2
+        }
     }
     return ret;
 }
