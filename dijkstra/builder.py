@@ -1,4 +1,4 @@
-from graph import Graph
+from graph import Graph, BitVector
 try:
     import _pickle as pickle
     #print("Using Cpickle")
@@ -38,8 +38,8 @@ def convert_graph_int(file):
 
     int_graph.close()
     dict_file.close()
-        
 
+"""
 def build_graph(file):
     count = 0
     g = Graph()
@@ -55,8 +55,35 @@ def build_graph(file):
             count += 1
         g.add_edge(g.indexes[n1], g.indexes[n2])
     return g
+"""
 
+# bitMat version
+def build_graph(file):
+    count = 0
+    g = Graph()
+    for line in open(file):
+        n1, n2 = line.split()
+        if n1 not in g.indexes:
+            g.indexes[n1] = count
+            g.nodes[count] = n1
+            count += 1
+        if n2 not in g.indexes:
+            g.indexes[n2] = count
+            g.nodes[count] = n2
+            count += 1
+        g.add_edge(g.indexes[n1], g.indexes[n2])
 
+    build_bitMat(g)
+    return g
+
+def build_bitMat(g):
+    n = len(g)
+    g.bitEdges = BitVector(size = n*n)
+    for i in range(len(g)):
+        for j in g.get_neighbors(i):
+            g.bitEdges[i*n+j] = 1
+            g.bitEdges[j*n+i] = 1
+    #print(g.bitEdges)
 
 def degree_diff_matrix(graph1, graph2):
     similarity = np.zeros((len(graph1),len(graph2)))
