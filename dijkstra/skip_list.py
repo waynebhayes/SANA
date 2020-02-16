@@ -57,30 +57,31 @@ class SkipList:
 
     def find_by_name(self, value, node_info, update = None): #get node with the given value
         if update == None:
-            update = self.updateList(value) #path to the given value
+            update = self.updateList(value, node_info) #path to the given value
         if len(update) > 0:
             candidate = update[0].next[0] #bottom node of the entire route
-            found = None
-            if candidate != None:
-                while candidate != None and candidate.value == value and candidate.info != node_info:
-                    update[0] = update[0].next[0]
-                    candidate = update[0].next[0]
+            #found = None
+            if candidate != None and candidate.value == value and candidate.info == node_info:
+                return candidate
+                #while candidate != None and candidate.value == value and candidate.info != node_info:
+                #    update[0] = update[0].next[0]
+                #    candidate = update[0].next[0]
 
-                if candidate != None and candidate.info == node_info:
-                    found = candidate
-                else:
-                    return (None, None)
+                #if candidate != None and candidate.info == node_info:
+                 #   found = candidate
+                #else:
+                #    return (None, None)
 
-                for i in range(len(found.next)):
-                    candidate = update[i].next[i]
-                    while candidate != None and candidate.value == value and candidate != found:
-                        update[i] = update[i].next[i]
-                        candidate  = update[i].next[i]
+                #for i in range(len(found.next)):
+                #    candidate = update[i].next[i]
+                #    while candidate != None and candidate.value == value and candidate != found:
+                #        update[i] = update[i].next[i]
+                #        candidate  = update[i].next[i]
 
             #for i in reversed(update):
             #    print(i.info)
-            return found, update
-        return (None, None)
+            #return found, update
+        #return (None, None)
 
 
     def __contains__(self, value): #check whether a value in this list
@@ -102,7 +103,7 @@ class SkipList:
             #while x.next[i] != None and x.next[i].value < value and x.next[i].info < info: #next_value>=given_value => walk down
             while x.next[i] != None and x.next[i].value < value: 
                 x = x.next[i] 
-            while x.next[i] != None and x.next[i].info < info: #next_value>=given_value => walk down
+            while x.next[i] != None and x.next[i].value == value and x.next[i].info < info: #next_value>=given_value => walk down
                 x = x.next[i] #go to next value
             update[i] = x #save the route
         return update
@@ -166,7 +167,7 @@ class SkipList:
         #print("removing by " + str(value))
         update = self.updateListInfo(value, node_info)
         #whether the value exist, the route can accelerate the find progress
-        x, update = self.find_by_name(value, node_info, update)
+        x = self.find_by_name(value, node_info, update)
         #if find the value
         if x != None:
             for i in reversed(range(len(x.next))):

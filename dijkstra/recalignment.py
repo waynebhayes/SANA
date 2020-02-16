@@ -107,6 +107,54 @@ def get_new_neighbor_pairs(g1, g2, node1, node2, g1alignednodes, g2alignednodes,
                     result.add((i,j))
     return result
 
+def get_candidate_pairs(g1,g2, node1, node2, g1alignednodes, g2alignednodes, g1candidatenodes, g2candidatenodes, edge_freq, sims):
+    
+    newcp = set()
+    existingcp = set()
+    
+    for i in g1.get_neighbors(node1):
+        for j in g2.get_neighbors(node2):
+            g1nodealigned = i in g1alignednodes
+            g2nodealigned = j in g2alignednodes
+            if not g1nodealigned and not g2nodealigned:
+                if sims[i][j] > 0:
+                    newcp.add((i,j))
+            elif not g1nodealigned:
+                for g2node in g1candidatenodes[i]:
+                    if (i, g2node) in edge_freq:
+                        existingcp.add((i,g2node))            
+            elif not g2nodealigned:
+                for g1node in g2candidatenodes[j]:
+                    if (g1node, j) in edge_freq:
+                        existingcp.add((g1node,j))            
+
+    return newcp, existingcp
+
+
+def get_neighbor_candidate_pairs2(g1, g2, node1, node2, g1alignednodes, g2alignednodes, g1candidatenodes, g2candidatenodes, edge_freq):
+    candidate_neighbors = set()
+   
+    for g1node in g1.get_neighbors(node1):
+        if g1node not in g1alignednodes:
+            for g2node in g1candidatenodes[g1node]:
+                if (g1node, g2node) in edge_freq:
+                    candidate_neighbors.add((g1node,g2node))            
+
+    for g2node in g2.get_neighbors(node2):
+        if g2node not in g2alignednodes:
+            for g1node in g2candidatenodes[g2node]:
+                if (g1node, g2node) in edge_freq:
+                    candidate_neighbors.add((g1node,g2node))            
+
+    return candidate_neighbors
+    '''
+    for i, j in neigbor_pairs:
+        if (i, j) in edge_freq:
+            candidate_neighbors.add(i,j)
+
+    len(neighbor_pairs) < g1.get_neighbors(node1) + g2.get_neighbors(node2)
+    '''
+
 def get_neighbor_candidate_pairs(g1, g2, node1, node2, g1alignednodes, g2alignednodes, edge_freq, sims):
     new_neighbors = []
     candidate_neighbors = []
@@ -127,23 +175,6 @@ def get_neighbor_candidate_pairs(g1, g2, node1, node2, g1alignednodes, g2aligned
     return new_neighbors, candidate_neighbors
 
 
-def get_neighbor_candidate_pairs2(g1, g2, node1, node2, g1alignednodes, g2alignednodes, g1candidatenodes, g2candidatenodes, edge_freq):
-    candidate_neighbors = set()
-   
-    for g1node in g1.get_neighbors(node1):
-        if g1node not in g1alignednodes:
-            for g2node in g1candidatenodes[g1node]:
-                if (g1node, g2node) in edge_freq:
-                    candidate_neighbors.add((g1node,g2node))            
-
-    for g2node in g2.get_neighbors(node2):
-        if g2node not in g2alignednodes:
-            for g1node in g2candidatenodes[g2node]:
-                if (g1node, g2node) in edge_freq:
-                    candidate_neighbors.add((g1node,g2node))            
-
-    return candidate_neighbors
-
 def get_aligned_neighbor_pairs(g1,g2, node1,node2, aligned_pairs, trace = False):
     result = []
     
@@ -158,20 +189,21 @@ def get_aligned_neighbor_pairs(g1,g2, node1,node2, aligned_pairs, trace = False)
  
 def num_edges_back_to_subgraph(graph, node, aligned_nodes, trace=False):
     edges = 0
-   
+  
     for neighbor_node in aligned_nodes:
         if graph.has_edge(node, neighbor_node):
             if trace:
                 print("Nnode in graph : " + str(neighbor_node)) 
             edges += 1
-
+    return edges
     '''
+
     for neighbor_node in graph.get_neighbors(node):
         if neighbor_node in aligned_nodes:
             edges += 1
-    '''
     return edges
 
+    '''
 
 def num_edge_pairs_back_to_subgraph(g1, g2, g1node, g2node, aligned_pairs):
     edgepairs = 0
@@ -360,6 +392,10 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
             newcandidatePairs = get_new_neighbor_pairs(g1,g2,pair[0],pair[1], curralign.g1alignednodes, curralign.g2alignednodes, sims)
              
             exisiting_neighbor_candidatePairs = get_neighbor_candidate_pairs2(g1, g2, pair[0], pair[1], curralign.g1alignednodes, curralign.g2alignednodes, curralign.g1candidatenodes, curralign.g2candidatenodes, curralign.edge_freq) 
+
+            #newcandidatePairs, exisiting_neighbor_candidatePairs = get_candidate_pairs(g1, g2, pair[0], pair[1], curralign.g1alignednodes, curralign.g2alignednodes, curralign.g1candidatenodes, curralign.g2candidatenodes, curralign.edge_freq, sims) 
+
+
 
             #TODO 
             #make into helper function
