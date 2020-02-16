@@ -9,10 +9,10 @@ class Graph:
         #self.name = "graph_name"
 
     def add_edge(self, from_node, to_node):
-        self.edges.setdefault(from_node, [])
-        self.edges.setdefault(to_node, [])
-        self.edges[from_node].append(to_node)
-        self.edges[to_node].append(from_node)
+        self.edges.setdefault(from_node, set())
+        self.edges.setdefault(to_node, set())
+        self.edges[from_node].add(to_node)
+        self.edges[to_node].add(from_node)
 
 
     def has_edge(self, from_node, to_node):
@@ -20,7 +20,7 @@ class Graph:
 
     """  
     def has_edge(self, from_node, to_node):
-        return to_node in self.edges.get(from_node, [])
+        return to_node in self.edges.get(from_node, set())
     """
 
     def num_edges(self):
