@@ -241,7 +241,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     needEd               = edWeight > 0; // to evaluate edge difference score incrementally
     needEr               = erWeight > 0; // to evaluate edge ratio score incrementally
     needSquaredAligEdges = sesWeight > 0; // to evaluate SES incrementally
-    needExposedEdges	 = eeWeight > 0; // to eval EE incrementally
+    needExposedEdges	 = eeWeight > 0 || ms3Weight > 0; // to eval EE incrementally; if needMS3, might use ee as denom
     needMS3              = ms3Weight > 0; // to eval MS3 incrementally
     needInducedEdges     = s3Weight > 0 || icsWeight > 0 || jsWeight> 0; //to evaluate S3 & ICS incrementally
     needWec              = wecWeight > 0; //to evaluate WEC incrementally
@@ -495,8 +495,8 @@ double ncC(PARAMS) { return double(ncSum) / trueA_back; }
 #ifdef MULTI_PAIRWISE
 double mecC(PARAMS) { return double(aligEdges) / (g1WeightedEdges + g2WeightedEdges); }
 double sesC(PARAMS) { return squaredAligEdges; }
-double eeC(PARAMS)  { return 1-exposedEdgesNumer/(double)EdgeExposure::getDenom(); }
-double ms3C(PARAMS)  { return (MS3Numer / (double)MultiS3::denom) / (double) NUM_GRAPHS; }
+double eeC(PARAMS)  { return 1-EdgeExposure::numer/(double)EdgeExposure::getDenom(); }
+double ms3C(PARAMS)  { return (MultiS3::numer / (double)MultiS3::denom) / (double) NUM_GRAPHS; }
 #endif
 
 unordered_set<vector<uint>*>* SANA::paretoRun(const string& fileName) {
@@ -749,11 +749,11 @@ void SANA::initDataStructures(const Alignment& startA) {
     }
     if (needExposedEdges)
     {
-	exposedEdgesNumer = startA.numExposedEdges(*G1, *G2) - EdgeExposure::getMaxEdge();
+	EdgeExposure::numer = startA.numExposedEdges(*G1, *G2) - EdgeExposure::getMaxEdge();
     }
     if (needMS3)
     {
-	MS3Numer = startA.multiS3Numerator(*G1, *G2);
+	MultiS3::numer = startA.multiS3Numerator(*G1, *G2);
     }
 #endif
     if (needInducedEdges) {
@@ -1038,7 +1038,7 @@ vector<double> SANA::translateScoresToVector() {
                                                                               g2Edges, TCSum, localScoreSum, n1,
                                                                               wecSum, ewecSum, ncSum, trueA.back(),
                                                                               g1WeightedEdges, g2WeightedEdges,
-                                                                              squaredAligEdges, exposedEdgesNumer, MS3Numer,
+                                                                              squaredAligEdges, EdgeExposure::numer, MS3Numer,
                                                                               edSum, erSum, pairsCount
                                                                             );
     }
@@ -1119,8 +1119,8 @@ void SANA::prepareMeasureDataByAlignment() {
     assert(storedAlignments->find(A) != storedAlignments->end() and "Alignment does not exist in the Pareto front.");
     aligEdges        = (needAligEdges or needSec) ?  storedAligEdges[A] : -1;
     squaredAligEdges = (needSquaredAligEdges) ?  storedSquaredAligEdges[A] : -1;
-    exposedEdgesNumer= (needExposedEdges) ?  storedExposedEdgesNumer[A] : -1;
-    MS3Numer         = (needMS3) ?  storedMS3Numer[A] : -1;
+    EdgeExposure::numer= (needExposedEdges) ?  storedExposedEdgesNumer[A] : -1;
+    MultiS3::numer   = (needMS3) ?  storedMS3Numer[A] : -1;
     inducedEdges     = (needInducedEdges) ?  storedInducedEdges[A] : -1;
     TCSum            = (needTC) ?  storedTCSum[A] : -1;
     edSum            = (needEd) ?  storedEdSum[A] : -1;
@@ -1188,8 +1188,8 @@ void SANA::insertCurrentAlignmentAndData() {
 
     if(needAligEdges or needSec) storedAligEdges[A]        = aligEdges;
     if(needSquaredAligEdges)     storedSquaredAligEdges[A] = squaredAligEdges;
-    if(needExposedEdges)	 storedExposedEdgesNumer[A]= exposedEdgesNumer;
-    if(needMS3)         	 storedMS3Numer[A]         = MS3Numer;
+    if(needExposedEdges)	 storedExposedEdgesNumer[A]= EdgeExposure::numer;
+    if(needMS3)         	 storedMS3Numer[A]         = MultiS3::numer;
     if(needInducedEdges)         storedInducedEdges[A]     = inducedEdges;
     if(needEd)                   storedEdSum[A]            = edSum;
     if(needEr)                   storedErSum[A]            = erSum;
@@ -1313,13 +1313,13 @@ void SANA::performChange(int type) {
         newTarget    = (*unassignedNodesG2)[newTargetIndex];
     }
     else{
-        int type = G2->nodeTypes[oldTarget];
-        if((*unassignedMultipartiteNodes)[type].size() == 0)
+        int nodeType = G2->nodeTypes[oldTarget];
+        if((*unassignedMultipartiteNodes)[nodeType].size() == 0)
             return; // cannot perform change, all genes are assigned
         newTargetIndex = G2RandomUnlockedNode(oldTarget);
         
     
-        newTarget = (*unassignedMultipartiteNodes)[type][newTargetIndex];
+        newTarget = (*unassignedMultipartiteNodes)[nodeType][newTargetIndex];
         
         
         // bool isGene = false;
@@ -1347,8 +1347,8 @@ void SANA::performChange(int type) {
     double newEdSum            = (needEd) ?  edSum + edgeDifferenceIncChangeOp(source, oldTarget, newTarget) : -1;
     double newErSum            = (needEr) ?  erSum + edgeRatioIncChangeOp(source, oldTarget, newTarget) : -1;
     double newSquaredAligEdges = (needSquaredAligEdges) ?  squaredAligEdges + squaredAligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newExposedEdgesNumer= (needExposedEdges) ? exposedEdgesNumer + exposedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newMS3Numer         = (needMS3) ? MS3Numer + MS3IncChangeOp(source, oldTarget, newTarget) : -1;
+    double newExposedEdgesNumer= (needExposedEdges) ? EdgeExposure::numer + exposedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newMS3Numer         = (needMS3) ? MultiS3::numer + MS3IncChangeOp(source, oldTarget, newTarget) : -1;
     int newInducedEdges        = (needInducedEdges) ?  inducedEdges + inducedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
     double newTCSum            = (needTC) ?  TCSum + TCIncChangeOp(source, oldTarget, newTarget) : -1;
     double newLocalScoreSum    = (needLocal) ? localScoreSum + localScoreSumIncChangeOp(sims, source, oldTarget, newTarget) : -1;
@@ -1393,7 +1393,8 @@ void SANA::performChange(int type) {
         if(multipartite == 1)
             (*unassignedNodesG2)[newTargetIndex] = oldTarget;
         else {
-            (*unassignedMultipartiteNodes)[type][newTargetIndex] = oldTarget;
+            int nodeType = G2->nodeTypes[oldTarget];
+            (*unassignedMultipartiteNodes)[nodeType][newTargetIndex] = oldTarget;
             // if(isGene){
             //     (*unassignedgenesG2)[newTargetIndex] = oldTarget;
             // }
@@ -1431,9 +1432,9 @@ void SANA::performChange(int type) {
         }
 #endif
         currentScore     = newCurrentScore;
-	exposedEdgesNumer= newExposedEdgesNumer;
+	EdgeExposure::numer= newExposedEdgesNumer;
         squaredAligEdges = newSquaredAligEdges;
-        MS3Numer         = newMS3Numer;
+        MultiS3::numer         = newMS3Numer;
     }
     else
     {
@@ -1455,7 +1456,15 @@ void SANA::performChange(int type) {
 
 void SANA::performSwap(int type) {
     uint source1 = G1RandomUnlockedNode();
-    uint source2 = G1RandomUnlockedNode(source1);
+    
+    uint max_try = 1000;
+    uint source2,i;
+    for (i=0;i<max_try;i++){
+        source2 = G1RandomUnlockedNode(source1);
+        if (source1!=source2){break;}
+    }
+    assert(i!=max_try);
+    
     uint target1 = (*A)[source1], target2 = (*A)[source2];
     
     //added initialization to shut compiler warning -Nil
@@ -1470,8 +1479,8 @@ void SANA::performSwap(int type) {
     int newAligEdges           = (needAligEdges or needSec) ?  aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
     int newTCSum               = (needTC) ?  TCSum + TCIncSwapOp(source1, source2, target1, target2) : -1;
     double newSquaredAligEdges = (needSquaredAligEdges) ? squaredAligEdges + squaredAligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    double newExposedEdgesNumer= (needExposedEdges) ?  exposedEdgesNumer + exposedEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    double newMS3Numer         = (needMS3) ?  MS3Numer + MS3IncSwapOp(source1, source2, target1, target2) : -1;
+    double newExposedEdgesNumer= (needExposedEdges) ?  EdgeExposure::numer + exposedEdgesIncSwapOp(source1, source2, target1, target2) : -1;
+    double newMS3Numer         = (needMS3) ?  MultiS3::numer + MS3IncSwapOp(source1, source2, target1, target2) : -1;
     double newWecSum           = (needWec) ?  wecSum + WECIncSwapOp(source1, source2, target1, target2) : -1;
     double newEwecSum          = (needEwec) ?  ewecSum + EWECIncSwapOp(source1, source2, target1, target2) : -1;
     double newNcSum            = (needNC) ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
@@ -1528,8 +1537,8 @@ void SANA::performSwap(int type) {
         ncSum               = newNcSum;
         currentScore        = newCurrentScore;
         squaredAligEdges    = newSquaredAligEdges;
-	exposedEdgesNumer   = newExposedEdgesNumer;
-        MS3Numer            = newMS3Numer;
+	EdgeExposure::numer   = newExposedEdgesNumer;
+        MultiS3::numer      = newMS3Numer;
         if (needLocal)
             (*localScoreSumMap) = newLocalScoreSumMap;
 #if 0
@@ -1591,7 +1600,10 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += mecWeight * (newAligEdges / (g1WeightedEdges + g2WeightedEdges));
         newCurrentScore += sesWeight * newSquaredAligEdges / (double)SquaredEdgeScore::getDenom();
 	newCurrentScore += eeWeight * (1 - (newExposedEdgesNumer / (double)EdgeExposure::getDenom()));
-        newCurrentScore += ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)NUM_GRAPHS;
+        if (MultiS3::_type==1){
+	    MultiS3::denom = newExposedEdgesNumer;
+	}
+	newCurrentScore += ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)NUM_GRAPHS;
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -1857,33 +1869,33 @@ static double getRatio(double w1, double w2) {
     return r;
 }
 
-// 1 2 3 4 5
-// 11 12 13 14 15
-// 22 23 24 25
-// 33 34 35
-// 44 45
-// 55
-
-// Now change 23
-// - 21 22 23 24 25        // 23 pair should be handled by the first?
-// + 21 22 23 24 25        // 3 matches to a new target
-
-// - 31 33 34 35
-// + 31 33 34 35
+/*
+ * We swap the mapping of two nodes source1 and source2
+ * We can first handle source1, then do the same with source2
+ * Subtract old edge difference with edge (source1, target1)
+ * Add new edge difference with edge (source1, target2)
+ */
 double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    if (source1 == source2) return 0;
+    if (source1 == source2)
+        return 0;
 
-    // Subtract source1-target1
-    // Add source1-target2
+    /*
+     * Handle source1
+     */
     double edgeDifferenceIncDiff = 0;
     double c = 0;
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList = G1AdjLists[source1];
+    for (uint i = 0; i < adjList.size(); ++i) {
+        uint node2 = adjList[i];
         double y = -abs(G1FloatWeights[source1][node2] - G2FloatWeights[target1][(*A)[node2]])
                   - c;
         double t = edgeDifferenceIncDiff + y;
         c = (t - edgeDifferenceIncDiff) - y;
         edgeDifferenceIncDiff = t;
 
+        /*
+         * Determine the new target node for node2
+         */
         uint node2Target = 0;
         if (node2 == source1) {
             node2Target = target2;
@@ -1892,6 +1904,7 @@ double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, u
         } else {
             node2Target = (*A)[node2];
         }
+
         y = +abs(G1FloatWeights[source1][node2] - G2FloatWeights[target2][node2Target])
            - c;
         t = edgeDifferenceIncDiff + y;
@@ -1899,41 +1912,51 @@ double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, u
         edgeDifferenceIncDiff = t;
    }
 
-    // Subtract source2-target2
-    // Add source2-target1
-    for (uint node2 = 0; node2 < n1; ++node2) {
-        if (node2 == source1) continue;
-        double y = -abs(G1FloatWeights[source2][node2] - G2FloatWeights[target2][(*A)[node2]])
-                  - c;
-        double t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
+   /*
+    * Handle source2
+    */
+   vector<uint> &adjList2 = G1AdjLists[source2];
+   for (uint i = 0; i < adjList2.size(); ++i) {
+       uint node2 = adjList2[i];
+       if (node2 == source1)
+         continue;
 
-        uint node2Target = 0;
-        if (node2 == source2) {
-            node2Target = target1;
-        } else {
-            node2Target = (*A)[node2];
-        }
-        y = +abs(G1FloatWeights[source2][node2] - G2FloatWeights[target1][node2Target])
-           - c;
-        t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
+       double y = -abs(G1FloatWeights[source2][node2] - G2FloatWeights[target2][(*A)[node2]])
+                  - c;
+       double t = edgeDifferenceIncDiff + y;
+       c = (t - edgeDifferenceIncDiff) - y;
+       edgeDifferenceIncDiff = t;
+
+       uint node2Target = 0;
+       if (node2 == source2) {
+           node2Target = target1;
+       } else {
+           node2Target = (*A)[node2];
+       }
+       y = +abs(G1FloatWeights[source2][node2] - G2FloatWeights[target1][node2Target])
+          - c;
+       t = edgeDifferenceIncDiff + y;
+       c = (t - edgeDifferenceIncDiff) - y;
+       edgeDifferenceIncDiff = t;
    }
 
-    return edgeDifferenceIncDiff;
+   return edgeDifferenceIncDiff;
 }
 
 
 double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    if (source1 == source2) return 0;
+    if (source1 == source2)
+      return 0;
 
     // Subtract source1-target1
     // Add source1-target2
     double edgeRatioIncDiff = 0;
     double c = 0;
-    for (uint node2 = 0; node2 < n1; ++node2) {
+  
+    vector<uint> &adjList = G1AdjLists[source1];
+    for (uint i = 0; i < adjList.size(); ++i) {
+        uint node2 = adjList[i];
+
         double r = getRatio(G1FloatWeights[source1][node2], G2FloatWeights[target1][(*A)[node2]]);
         double y = -r - c;
         double t = edgeRatioIncDiff + y;
@@ -1955,10 +1978,14 @@ double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint t
         edgeRatioIncDiff = t;
    }
 
-    // Subtract source2-target2
-    // Add source2-target1
-    for (uint node2 = 0; node2 < n1; ++node2) {
-        if (node2 == source1) continue;
+   // Subtract source2-target2
+   // Add source2-target1
+   vector<uint> &adjList2 = G1AdjLists[source2];
+   for (uint i = 0; i < adjList2.size(); ++i) {
+        uint node2 = adjList2[i];
+        if (node2 == source1)
+          continue;
+
         double r = getRatio(G1FloatWeights[source2][node2], G2FloatWeights[target2][(*A)[node2]]);
         double y = -r - c;
         double t = edgeRatioIncDiff + y;
@@ -1985,7 +2012,11 @@ double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint t
 double SANA::edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarget) {
    double edgeDifferenceIncDiff = 0;
    double c = 0;
-   for (uint node2 = 0; node2 < n1; ++node2) {
+
+   vector<uint> &adjList = G1AdjLists[source];
+   for (uint i = 0; i < adjList.size(); ++i) {
+       uint node2 = adjList[i];
+
        double y = -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
                   - c;
        double t = edgeDifferenceIncDiff + y;
@@ -2008,7 +2039,11 @@ double SANA::edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarg
 double SANA::edgeRatioIncChangeOp(uint source, uint oldTarget, uint newTarget) {
    double edgeRatioIncDiff = 0;
    double c = 0;
-   for (uint node2 = 0; node2 < n1; ++node2) {
+
+   vector<uint> &adjList = G1AdjLists[source];
+   for (uint i = 0; i < adjList.size(); ++i) {
+       uint node2 = adjList[i];
+
        double r = getRatio(G1FloatWeights[source][node2], G2FloatWeights[oldTarget][(*A)[node2]]);
        double y = -r - c;
        double t = edgeRatioIncDiff + y;
@@ -2189,14 +2224,30 @@ int SANA::exposedEdgesIncSwapOp(Job &job, uint source1, uint source2, uint targe
 }
 
 int SANA::MS3IncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
+    cerr << "MS3 not implemented yet for Pareto mode\n";
     assert(false);
     return 0;
 }
+
+// Return the change in NUMERATOR of MS3
 int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
+    if (MultiS3::_type==1){
+        //denom is ee, computed elsewhere
+        int res = 0, diff;
+        uint neighbor;
+        const uint n = G1AdjLists[source].size();
+        for (uint i = 0; i < n; ++i) {
+            neighbor = G1AdjLists[source][i];
+            diff = G2Matrix[oldTarget][(*A)[neighbor]] + 1;
+            res -= (diff==1?0:diff);
+            diff = G2Matrix[newTarget][(*A)[neighbor]] + 1;
+            res += (diff==1?0:diff) ;
+            }
+        return res;
+    }
     int ret = 0;
     unsigned oldOldTargetDeg = MultiS3::totalDegrees[oldTarget];
     unsigned oldNewTargetDeg = MultiS3::totalDegrees[newTarget];
-
     bool selfLoopAtSource, selfLoopAtOldTarget, selfLoopAtNewTarget;
 #ifdef SPARSE
     selfLoopAtSource = G1->hasSelfLoop(source);
@@ -2247,10 +2298,47 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
 }
 
 int SANA::MS3IncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2) {
+    cerr << "MS3 not implemented yet for Pareto mode\n";
     assert(false);
     return 0;
 }
+// Return change in NUMERATOR only
 int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
+    if (MultiS3::_type==1){
+        //denom is ee
+        int res = 0, diff;
+        uint neighbor;
+        const uint n = G1AdjLists[source1].size();
+        uint i = 0;
+        for (; i < n; ++i) {
+            neighbor = G1AdjLists[source1][i];
+            diff = G2Matrix[target1][(*A)[neighbor]] + 1;//SQRDIFF(target1, neighbor);
+            res -= (diff==1?0:diff);
+            diff = G2Matrix[target2][(*A)[neighbor]] + 1;//SQRDIFF(target2, neighbor);
+            if (target2==(*A)[neighbor]){
+                diff=0;
+            }
+            res += (diff==1?0:diff);
+        }
+        const uint m = G1AdjLists[source2].size();
+        for (i = 0; i < m; ++i) {
+            neighbor = G1AdjLists[source2][i];
+            diff = G2Matrix[target2][(*A)[neighbor]] + 1;//SQRDIFF(target2, neighbor);
+            res -= (diff==1?0:diff);
+            diff = G2Matrix[target1][(*A)[neighbor]] + 1;//SQRDIFF(target1, neighbor);
+            if (target1==(*A)[neighbor]){
+                diff=0;
+            }
+            res += (diff==1?0:diff);
+        }
+        if(G2Matrix[target1][target2] and  G1Matrix[source1][source2])
+        {
+            diff = ( G2Matrix[target1][(*A)[source2]] + 1);
+            res += 2*(diff==1?0:diff);
+        }
+        return res;
+    }
+    
     int ret = 0;
     unsigned oldTarget1Deg = MultiS3::totalDegrees[target1];
     unsigned oldTarget2Deg = MultiS3::totalDegrees[target2];
@@ -2760,11 +2848,14 @@ double SANA::getPBad(double temp, double maxTime, int logLevel) {
     }
 
     double pBadAvgAtEq = slowTrueAcceptingProbability();
-
+    double nextIps = (double)iter / (double)timer.elapsed();
+    pair<double, double> nextPair (temp, nextIps);
+    ipsList.push_back(nextPair);
     if (logLevel >= 1) {
         cout << "> getPBad(" << temp << ") = " << pBadAvgAtEq << " (score: " << currentScore << ")";
         if (reachedEquilibrium) cout << " (time: " << timer.elapsed() << "s)";
         else cout << " (didn't detect eq. after " << maxTime << "s)";
+	cout << " iterations = " << iter << ", ips = " << nextIps;
         cout << endl;
         
         if (verbose) {
@@ -2787,10 +2878,6 @@ void SANA::setTInitial(double t) {
 void SANA::setTFinal(double t) {
     TFinal = t;
 }
-
-
-
-
 
 
 
@@ -2854,12 +2941,10 @@ Alignment SANA::hillClimbingAlignment(long long int idleCountTarget){
     return hillClimbingAlignment(getStartingAlignment(), idleCountTarget);
 }
 
-void SANA::hillClimbingIterations(long long int iterTarget) {
+void SANA::constantTempIterations(long long int iterTarget) {
     Alignment startA = getStartingAlignment();
     long long int iter = 1;
-
     initDataStructures(startA);
-    Temperature = 0;
     for (; iter < iterTarget ; ++iter) {
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter);
@@ -2885,14 +2970,26 @@ void SANA::initIterPerSecond() {
     initializedIterPerSecond = true;
 
     cout << "Determining iteration speed...." << endl;
-    long long int iter = 1E6;
-    hillClimbingIterations(iter - 1);
-    double res = iter/timer.elapsed();
-    cout << "SANA does " << to_string(res)
-         << " iterations per second (took " << timer.elapsedString()
-         << " doing " << iter << " iterations)" << endl;
+    double totalIps = 0.0;
+    int ipsListSize = 0;
+    if(ipsList.size()!=0){
+        for(pair<double,double> ipsPair : ipsList){
+	    if(TFinal <= ipsPair.first && ipsPair.first <= TInitial){
+		totalIps+=ipsPair.second;
+		ipsListSize+=1;
+	    }
+        }
+	totalIps = totalIps / (double) ipsListSize;
+    }else{
+	cout << "Since temperature schedule is provided, ips will be calculated using constantTempIterations" << endl;
+        long long int iter = 1E6;
+        constantTempIterations(iter - 1);
+        double res = iter/timer.elapsed();
+        totalIps = res;
+    }
+    cout << "SANA does " << long(totalIps) << " iterations per second on average" << endl;
 
-    iterPerSecond = res;
+    iterPerSecond = totalIps;
     std::ostringstream ss;
     ss << "progress_" << std::fixed << std::setprecision(0) << minutes;
     ofstream header(mkdir(ss.str()) + G1->getName() + "_" + G2->getName() + "_" + std::to_string(0) + ".csv");
@@ -3932,7 +4029,11 @@ double SANA::edgeDifferenceIncChangeOp(Job &job, uint source, uint oldTarget, ui
    vector<uint> *A = job.info.A;
    double edgeDifferenceIncDiff = 0;
    double c = 0;
-   for (uint node2 = 0; node2 < n1; ++node2) {
+
+   vector<uint> &adjList = G1AdjLists[source];
+   for (uint i = 0; i < adjList.size(); ++i) {
+       uint node2 = adjList[i];
+
        double y = -abs(G1FloatWeights[source][node2] - G2FloatWeights[oldTarget][(*A)[node2]])
                   - c;
        double t = edgeDifferenceIncDiff + y;
@@ -3953,7 +4054,9 @@ double SANA::edgeRatioIncChangeOp(Job &job, uint source, uint oldTarget, uint ne
    vector<uint> *A = job.info.A;
    double edgeRatioIncDiff = 0;
    double c = 0;
-   for (uint node2 = 0; node2 < n1; ++node2) {
+   vector<uint> &adjList = G1AdjLists[source];
+   for (uint i = 0; i < adjList.size(); ++i) {
+       uint node2 = adjList[i];
        double r = getRatio(G1FloatWeights[source][node2], G2FloatWeights[oldTarget][(*A)[node2]]);
        double y = -r - c;
        double t = edgeRatioIncDiff + y;
@@ -3981,7 +4084,9 @@ double SANA::edgeDifferenceIncSwapOp(Job &job, uint source1, uint source2, uint 
     // Add source1-target2
     double edgeDifferenceIncDiff = 0;
     double c = 0;
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList = G1AdjLists[source1];
+    for (uint i = 0; i < adjList.size(); ++i) {
+        uint node2 = adjList[i];
         double y = -abs(G1FloatWeights[source1][node2] - G2FloatWeights[target1][(*A)[node2]])
                   - c;
         double t = edgeDifferenceIncDiff + y;
@@ -4005,8 +4110,11 @@ double SANA::edgeDifferenceIncSwapOp(Job &job, uint source1, uint source2, uint 
 
     // Subtract source2-target2
     // Add source2-target1
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList2 = G1AdjLists[source2];
+    for (uint i = 0; i < adjList2.size(); ++i) {
+        uint node2 = adjList[i];
         if (node2 == source1) continue;
+
         double y = -abs(G1FloatWeights[source2][node2] - G2FloatWeights[target2][(*A)[node2]])
                   - c;
         double t = edgeDifferenceIncDiff + y;
@@ -4037,7 +4145,9 @@ double SANA::edgeRatioIncSwapOp(Job &job, uint source1, uint source2, uint targe
 
     double edgeRatioIncDiff = 0;
     double c = 0;
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList = G1AdjLists[source1];
+    for (uint i = 0; i < adjList.size(); ++i) {
+        uint node2 = adjList[i];
         double r = getRatio(G1FloatWeights[source1][node2], G2FloatWeights[target1][(*A)[node2]]);
         double y = -r - c;
         double t = edgeRatioIncDiff + y;
@@ -4061,7 +4171,9 @@ double SANA::edgeRatioIncSwapOp(Job &job, uint source1, uint source2, uint targe
 
     // Subtract source2-target2
     // Add source2-target1
-    for (uint node2 = 0; node2 < n1; ++node2) {
+    vector<uint> &adjList2 = G1AdjLists[source2];
+    for (uint i = 0; i < adjList2.size(); ++i) {
+        uint node2 = adjList[i];
         if (node2 == source1) continue;
         double r = getRatio(G1FloatWeights[source2][node2], G2FloatWeights[target2][(*A)[node2]]);
         double y = -r - c;

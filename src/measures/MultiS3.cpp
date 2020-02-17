@@ -3,12 +3,14 @@
 
 unsigned NUM_GRAPHS;
 unsigned MultiS3::denom = 1;
+unsigned MultiS3::numer = 1;
+double MultiS3::_type = 0;
 vector<uint> MultiS3::totalDegrees;
 
-MultiS3::MultiS3(Graph* G1, Graph* G2) : Measure(G1, G2, "ms3")
+MultiS3::MultiS3(Graph* G1, Graph* G2, int type) : Measure(G1, G2, "ms3")
 {
 #if MULTI_PAIRWISE
-
+    
     extern char *getetv(char*);
     char *s = getenv((char*)"NUM_GRAPHS");
     if (s)
@@ -20,6 +22,14 @@ MultiS3::MultiS3(Graph* G1, Graph* G2) : Measure(G1, G2, "ms3")
         cerr << "Warning: NUM_GRAPHS should be an environment variable; setting to 2 for now\n";
         NUM_GRAPHS = 2;
     }
+    _type=0;//default
+    _type = type;
+    if (type==1){
+        cout<<"Multi S3: denom = ee"<<endl;
+    }else if(type==0){
+        cout<<"Multi S3: denom = default"<<endl;
+    }
+    
     cout << "Multi S3: NUM_GRAPHS = " << NUM_GRAPHS << endl;
     degreesInit = false;
     //G1->printStats(0, cout);
@@ -122,8 +132,17 @@ double MultiS3::eval(const Alignment& A)
     {
         initDegrees(A, *G1, *G2);
     }
-    computeDenom(A, *G1, *G2);
-    return double ((A.multiS3Numerator(*G1, *G2)) / LaddersUnderG1) / NUM_GRAPHS;
+    if (_type==1){
+        uint ne = A.numExposedEdges(*G1, *G2);
+        denom = ne;
+    }
+    else if (_type==0){
+        computeDenom(A, *G1, *G2);
+    }
+    unsigned newNumer = A.multiS3Numerator(*G1, *G2);
+    if(newNumer != numer) cerr << "inc eval MS3numer wrong: should be "<<newNumer<<" but is "<<numer << '\n';
+    numer = newNumer;
+    return double(newNumer) / denom / NUM_GRAPHS;
 #else
     return 0.0;
 #endif

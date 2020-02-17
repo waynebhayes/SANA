@@ -1,7 +1,7 @@
 import argparse
 #from research_for_graph import *
 #from graph_research import *
-import alignment
+import recalignment
 import seeding
 import builder
 import lzma
@@ -83,41 +83,39 @@ if __name__ == '__main__':
             print(mat1)
             print(mat2)
 
-
-        start = time.time()
-        a, b, pairs = alignment.local_align3(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, ed, e1, delta, alpha, seednum, debug=args.debugval)    
-        #a, b, pairs = alignment.stop_align2(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, delta)
-        subgraph = alignment.induced_subgraph(graph1, graph2, list(pairs))
-        cov = alignment.coverage(graph1, graph2, subgraph)[0]
-        cov2 = alignment.coverage(graph1, graph2, subgraph)[1]
-        newcov = round(cov, 2)
-        newcov2 = round(cov2, 2)
-        uuidstr = str(uuid.uuid4())
-        uid = uuidstr[:13]
+        #start = time.time()
+        recalignment.rec_align(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, ed, e1, delta, alpha, seednum, debug=args.debugval)    
+        #subgraph = recalignment.induced_subgraph(graph1, graph2, list(pairs))
+        #cov = recalignment.coverage(graph1, graph2, subgraph)[0]
+        #cov2 = recalignment.coverage(graph1, graph2, subgraph)[1]
+        #newcov = round(cov, 2)
+        #newcov2 = round(cov2, 2)
+        #uuidstr = str(uuid.uuid4())
+        #uid = uuidstr[:13]
 
         #print(pairs)
-        fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--" + str(newcov) + "--"  + uid +  ".dijkstra"
-        alignment.write_result(fname, pairs, graph1, graph2)
-        #s3 = alignment.s3score(graph1, graph2, pairs, subgraph) 
+        #fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--"  + uid +  ".dijkstra"
+        #recalignment.write_result(fname, pairs, graph1, graph2)
+        #s3 = recalignment.s3score(graph1, graph2, pairs, subgraph) 
         #s3cov = round(s3, 2) 
         
         #fname = graph1.name + "--" + graph2.name + "--" + str(delta) + "--" + str(seed_length) + "--" + str(newcov) + "--"  + uid +  ".dijkstra"
-        #alignment.write_result(fname, pairs, graph1, graph2)
-        end = time.time()
-        hours, rem = divmod(end-start, 3600)
-        minutes, seconds = divmod(rem, 60)
-        runtime = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
+        #recalignment.write_result(fname, pairs, graph1, graph2)
+        #end = time.time()
+        #hours, rem = divmod(end-start, 3600)
+        #minutes, seconds = divmod(rem, 60)
+        #runtime = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds)
         #write_log(fname, runtime, seed, delta)
-        logname = fname.replace("dijkstra", "log")
-        with open(logname, 'w+') as logfile:
-            logfile.write(fname + '\n')
-            logfile.write(str(seed) + '\n')
-            logfile.write(str(runtime) + '\n')
-            logfile.write("delta: " + str(delta) + "\n")
-            logfile.write("EC: " + str(cov) + "\n") 
-            logfile.write("EC2: " + str(cov2) + "\n") 
+        #logname = fname.replace("dijkstra", "log")
+        #with open(logname, 'w+') as logfile:
+        #    logfile.write(fname + '\n')
+        #    logfile.write(str(seed) + '\n')
+        #    logfile.write(str(runtime) + '\n')
+        #    logfile.write("delta: " + str(delta) + "\n")
+            #logfile.write("EC: " + str(cov) + "\n") 
+            #logfile.write("EC2: " + str(cov2) + "\n") 
             #logfile.write("S3: " + str(s3cov) + "\n") 
-            if mat1 != mat2:
-                logfile.write("Seeds not matched" + "\n" )
-                logfile.write(str(mat1) + "\n")
-                logfile.write(str(mat2) + "\n")
+        #    if mat1 != mat2:
+        #        logfile.write("Seeds not matched" + "\n" )
+        #        logfile.write(str(mat1) + "\n")
+        #        logfile.write(str(mat2) + "\n")

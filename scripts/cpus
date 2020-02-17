@@ -1,0 +1,23 @@
+#!/bin/sh
+TMP=/tmp/cpus.$$
+trap "/bin/rm -f $TMP; exit" 0 1 2 3 15
+
+# Most Linux machines:
+lscpu >$TMP 2>/dev/null && awk '/^CPU[(s)]*:/{cpus=$NF}END{if(cpus)print cpus; else exit 1}' $TMP && exit
+
+# MacOS:
+([ `arch` = Darwin -o `uname` = Darwin ] || uname -a | grep Darwin >/dev/null) && sysctl -n hw.ncpu && exit
+
+# Cygwin:
+case `arch` in
+CYGWIN*) grep -c '^processor[ 	]*:' /proc/cpuinfo; exit ;;
+*) if [ -d /dev/cpu -a ! -f /dev/cpu/microcode ]; then
+    ls -F /dev/cpu | fgrep -c
+    exit
+   fi
+    ;;
+esac
+
+# Oops
+echo "couldn't figure out number of CPUs" >&2; exit 1
+

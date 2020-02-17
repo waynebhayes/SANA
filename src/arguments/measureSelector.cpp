@@ -215,7 +215,7 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 	m = new EdgeExposure(&G1, &G2);
     M.addMeasure(m, getWeight("ee", G1, G2, args));
     
-    m = new MultiS3(&G1, &G2);
+    m = new MultiS3(&G1, &G2, getWeight("ms3_type",G1,G2,args));
     M.addMeasure(m, getWeight("ms3", G1, G2, args));
 
     m = new InducedConservedStructure(&G1, &G2);

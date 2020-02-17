@@ -3,7 +3,7 @@ die() { echo "$@" >&2; exit 1
 }
 
 echo 'Testing measurement Edge Ratio'
-CORES=`cores 2>/dev/null || echo 4`
+CORES=`cpus 2>/dev/null || echo 4`
 
 TEST_DIR=`pwd`/regression-tests/EdgeRatio
 [ -d "$TEST_DIR" ] || die "should be run from top-level directory of the SANA repo"
@@ -19,6 +19,7 @@ for network in $nets; do
     echo "Aligning network $network" >&2
     echo "./sana -t 20 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
 done | ./parallel -s /bin/bash $CORES
+
 
 for network in $nets; do
     file="$TEST_DIR/$network"

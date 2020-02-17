@@ -130,6 +130,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-ses", "double", "0", "Weight of SES", "The weight of the Squared Edge Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ee", "double", "0", "Weight of EE", "The weight of the Edge Exposure Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ms3", "double", "0", "Weight of MS3", "The weight of the Multi Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-ms3_type", "double", "0", "type of MS3", "some description", "0" },
     { "End Objective Function Specification and Weight. Combine with \"-objfuntype x\"", "", "banner", "", "", "0" },
     //-------------------END Objective Function Tyoe Specifications----------------------
 
