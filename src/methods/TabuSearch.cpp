@@ -66,6 +66,7 @@ TabuSearch::TabuSearch(Graph* G1, Graph* G2,
     this->MC = MC;
     ecWeight = MC->getWeight("ec");
     s3Weight = MC->getWeight("s3");
+    jsWeight = MC->getWeight("js");
     try {
         wecWeight = MC->getWeight("wec");
     } catch(...) {
@@ -74,10 +75,13 @@ TabuSearch::TabuSearch(Graph* G1, Graph* G2,
     localWeight = MC->getSumLocalWeight();
 
     //to evaluate EC incrementally
-    needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0;
+    needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or jsWeight > 0;
 
     //to evaluate S3 incrementally
-    needInducedEdges = s3Weight > 0;
+    needInducedEdges = s3Weight > 0 or jsWeight > 0;
+
+    //to evaluate JS incrementally
+    // TODO: JS here
 
 
     //to evaluate WEC incrementally

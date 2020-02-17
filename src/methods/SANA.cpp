@@ -2444,6 +2444,15 @@ double SANA::EWECSimCombo(uint source, uint target){
     return score/(2*g1Edges);
 }
 
+double SANA::JSIncChangeSum(uint source, uint oldTarget, uint newTarget){
+    const uint n = G1AdjLists[source].size();
+    uint neighbor;
+    for (uint i = 0; i < n; ++i) {
+        neighbor = G1AdjLists[source][i];
+        
+    }
+}
+
 double SANA::TCIncChangeOp(uint source, uint oldTarget, uint newTarget){
     double deltaTriangles = 0;
     const uint n = G1AdjLists[source].size();

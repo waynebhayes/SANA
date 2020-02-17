@@ -288,6 +288,14 @@ private:
     double EWECIncSwapOp(uint source1, uint source2, uint target1, uint target2);
     double EWECSimCombo(uint source, uint target);
 
+    // to evaluate js incrementally
+    bool needJS;
+    double jsSum; // initial alignment it starts with
+    vector<uint> G1NodeEdgeAligned;
+    vector<uint> G1NodeEdgeTotal;
+    double JSIncChangeSum(uint source, uint oldTarget, uint newTarget);
+
+
     //to evaluate local measures incrementally
     bool needLocal;
     double localScoreSum;
