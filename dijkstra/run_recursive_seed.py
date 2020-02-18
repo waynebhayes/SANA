@@ -52,7 +52,6 @@ if __name__ == '__main__':
 
     g1_seedstr = args.g1seed
     g2_seedstr = args.g2seed
-    print(g1_seedstr) 
 
     ec_mode = (float(args.ec1bound), float(args.ec2bound), float(args.s3bound))
     ed = (float(args.edbound))
@@ -62,7 +61,11 @@ if __name__ == '__main__':
     sims = builder.get_sim(args.sim, graph1, graph2, args.pickle)
     g1seed = seeding.get_seed_line(args.g1seed, args.g1seedline)
     g2seed = seeding.get_seed_line(args.g2seed, args.g2seedline)
+    print(g1seed)
+    print(g2seed)
+    print(graph1.nodes)
     seed = (g1seed, g2seed)
+    mat1, e1 = seeding.adj_mat(g1seed,graph1)
     timestop_arg = float(args.timestop)
     if timestop_arg < 0:
         timestop_arg = None
