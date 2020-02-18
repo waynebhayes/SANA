@@ -296,7 +296,6 @@ private:
     vector<uint> G1NodeEdgeTotal;
     double JSIncChangeSum(uint source, uint oldTarget, uint newTarget);
 
-
     //to evaluate local measures incrementally
     bool needLocal;
     double localScoreSum;
