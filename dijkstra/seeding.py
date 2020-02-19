@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import islice
 
 
 
@@ -8,7 +9,7 @@ def adj_mat(nodes, graph):
     mat = [[0]*len(nodes) for _ in range(len(nodes))]
     for i in range(len(mat)):
         for j in range(i, len(mat)):
-            if graph.has_edge(graph.indexes[nodes[i]],graph.indexes[nodes[j]]):
+            if graph.has_edge(graph.indexes[nodes[i]], graph.indexes[nodes[j]]):
                 mat[i][j] = 1
                 mat[j][i] = 1
                 edges += 1
@@ -23,6 +24,7 @@ def get_g1_seed(g1_seed_file) -> dict:
     return g1_seed
 
 
+
 def generate_seed(g1_seed_file, g2_seed_file):
     g1_seed = get_g1_seed(g1_seed_file)
     #print (g1_seed)
@@ -35,6 +37,21 @@ def generate_seed(g1_seed_file, g2_seed_file):
                 #seeds.append((nodes, line[1:]))
     #return seeds
 
+def get_g1_seedinfo(g1_seed_file) -> dict:
+    g1_seed = defaultdict(list)
+    for linenum, line in enumerate(open(g1_seed_file)):
+        line = line.split()
+        g1_seed[line[0]].append((line[1:], linenum))
+    return g1_seed
+
+def generate_seedinfo(g1_seed_file, g2_seed_file):
+    g1_seed = get_g1_seedinfo(g1_seed_file)
+    for g2linenum, line in enumerate(open(g2_seed_file)):
+        line = line.split()
+        if line[0] in g1_seed:
+            for nodes, g1linenum in g1_seed[line[0]]:
+                yield g1linenum, g2linenum
+
 def get_aligned_seed(s, graph1, graph2):
     for pair in s:
         #yield [int(pair[0]),int(pair[1])]
@@ -45,6 +62,25 @@ def get_seed_length(network) -> int:
     info = network.split("/")
     data = info[-1].split("_")
     return data[1]
+
+
+def seek_to_line(f, n):
+    n = int(n)
+    if n > 0:
+        for ignored_line in islice(f, n-1):
+            pass
+
+def get_seed_line_str(seedfile, line_number):
+    f = open(seedfile, "r")
+    
+    seek_to_line(f, line_number)
+    for line in f:
+        return line.strip()
+
+
+def get_seed_line(seedfile, line_number):
+    seedstr = get_seed_line_str(seedfile, line_number)
+    return list(map(int, seedstr.split()))
 
 def get_seed(file, graph1, graph2, delta):
     """
