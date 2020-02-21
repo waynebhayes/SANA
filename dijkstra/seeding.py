@@ -39,17 +39,20 @@ def generate_seed(g1_seed_file, g2_seed_file):
 
 def get_g1_seedinfo(g1_seed_file) -> dict:
     g1_seed = defaultdict(list)
-    for linenum, line in enumerate(open(g1_seed_file)):
+    for linenum, line in enumerate(open(g1_seed_file), start = 1):
         line = line.split()
-        g1_seed[line[0]].append((line[1:], linenum))
+        kval = line[0]
+        #g1_seed[line[0]].append((]line[1:], linenum))
+        g1_seed[kval].append(linenum) 
     return g1_seed
 
 def generate_seedinfo(g1_seed_file, g2_seed_file):
     g1_seed = get_g1_seedinfo(g1_seed_file)
-    for g2linenum, line in enumerate(open(g2_seed_file)):
+    for g2linenum, line in enumerate(open(g2_seed_file), start = 1):
         line = line.split()
-        if line[0] in g1_seed:
-            for nodes, g1linenum in g1_seed[line[0]]:
+        kval = line[0]
+        if kval in g1_seed:
+            for g1linenum in g1_seed[kval]:
                 yield g1linenum, g2linenum
 
 def get_aligned_seed(s, graph1, graph2):
@@ -80,7 +83,9 @@ def get_seed_line_str(seedfile, line_number):
 
 def get_seed_line(seedfile, line_number):
     seedstr = get_seed_line_str(seedfile, line_number)
-    return list(map(int, seedstr.split()))
+    return seedstr.split()
+
+    #return list(map(int, seedstr.split()))
 
 def get_seed(file, graph1, graph2, delta):
     """
