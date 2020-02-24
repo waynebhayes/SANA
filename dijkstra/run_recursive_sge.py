@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 #from research_for_graph import *
 #from graph_research import *
 import recalignment
@@ -27,6 +28,7 @@ def initParser():
     parser.add_argument("-s3", "--s3bound", required=False, default = "0.0", help ="lower bound for s3")
     parser.add_argument("-a", "--alpha", required=False, default = "1.0", help = "weight given to aligning based on local measurement")
     parser.add_argument("-b", "--beta", required=False, default = "", help = "weight given to aligning based on similarity matrix")
+    parser.add_argument("-sb", "--simbound", required=False, default = "0.0", help = "lower bound for similarity measure")
     parser.add_argument("-ed", "--edbound", required=False, default = "0.0", help = "edge density lower bound")
     parser.add_argument("-pk", "--pickle", required=False, default = "", help = "location of existing pickle file")
     parser.add_argument("-t", "--timestop", required=False, default = "-1.0", help = "Stop program after specified time, units in hours")
@@ -41,13 +43,13 @@ if __name__ == '__main__':
 
     delta = float(args.delta)
 
-
     g1_seed_file = args.g1seed
     g2_seed_file = args.g2seed
     ec_mode = (float(args.s3bound), float(args.ec2bound), float(args.ec1bound))
     ed = (float(args.edbound))
     alpha = float(args.alpha)
     seed_length = seeding.get_seed_length(g1_seed_file)
+    simbound = float(args.simbound)
 
     timestop_arg = float(args.timestop)
     if timestop_arg < 0:
@@ -59,7 +61,7 @@ if __name__ == '__main__':
 
 
     seednum = 0
-    for g1linenum, g2linenum in seeding.generate_seedinfo(g1_seed_file,g2_seed_file):
+    for g1linenum, g2linenum in seeding.generate_seedinfo(g1_seed_file, g2_seed_file):
         seednum += 1 
         pgraph1 =  "-g1 "+ args.graph1+ " "
         pgraph2 =  "-g2 "+ args.graph2+ " " 
@@ -72,6 +74,9 @@ if __name__ == '__main__':
         pec1 = "-ec1 "+ str(ec_mode[1])
         pec2 = "-ec2 "+ str(ec_mode[2])
         ped = "-ed "+ str(ed)+ " "
+        psb = "-sb "+ str(simbound)+ " "
         psn = "-sn " + str(seednum) + " " 
         ppk = " -pk "+ args.pickle+ " "
-        print("python3 run_recursive_seed.py ", pgraph1, pgraph2, pg1s, pg2s, pg1linenum, pg2linenum, psim, pdelta, pec1, pec2, ped, psn, ppk) 
+        path = subprocess.run(['pwd'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+        prog = "python3.7 " + path.strip() + "/run_recursive_seed.py "
+        print(prog, pgraph1, pgraph2, pg1s, pg2s, pg1linenum, pg2linenum, psim, pdelta, pec1, pec2, ped, psb, psn, ppk) 
