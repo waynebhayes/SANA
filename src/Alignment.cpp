@@ -271,6 +271,7 @@ int Alignment::numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const {
         uint hole1 = A[edge[0]];
         uint hole2 = A[edge[1]];
         G2Matrix[hole1][hole2] += 1;
+	G2Matrix[hole2][hole1] += 1;
     }
 #endif
 
