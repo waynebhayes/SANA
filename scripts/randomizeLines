@@ -1,4 +1,6 @@
 #!/bin/sh
+DIR=`dirname $0`
+PATH="$DIR:$DIR/../NetGO:$PATH"
 cat "$@" | hawk 'BEGIN{Srand()}
     function randint(N){return int(N*rand())}
     {line[NR]=$0}
