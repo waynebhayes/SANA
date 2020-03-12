@@ -2,6 +2,7 @@ import argparse
 #from research_for_graph import *
 #from graph_research import *
 import recalignment
+import recalignment_nosim
 import seeding
 import builder
 import lzma
@@ -61,7 +62,6 @@ if __name__ == '__main__':
     alpha = float(args.alpha)
     seednum = int(args.seednum)
     simbound = float(args.simbound)
-    sims = builder.get_sim(args.sim, graph1, graph2, args.pickle)
     g1seed = seeding.get_seed_line(args.g1seed, args.g1seedline)
     g2seed = seeding.get_seed_line(args.g2seed, args.g2seedline)
     assert g1seed[0] == g2seed[0], "Kval not matching"
@@ -80,5 +80,10 @@ if __name__ == '__main__':
         ntimestop = timestop_arg * 3600  
         timestop_arg = ntimestop
 
+    if simbound > 0:
+        sims = builder.get_sim(args.sim, graph1, graph2, args.pickle)
+        recalignment.rec_align(graph1, graph2, seed, sims, ec_mode, ed, e1, simbound, delta, alpha, seednum, args.outputdir, timestop=timestop_arg, debug=args.debugval)   
+    else:
+        recalignment_nosim.rec_align(graph1, graph2, seed, ec_mode, ed, e1, delta, alpha, seednum, args.outputdir, timestop=timestop_arg, debug=args.debugval)    
 
-    recalignment.rec_align(graph1, graph2, seed, sims, ec_mode, ed, e1, simbound, delta, alpha, seednum, args.outputdir, timestop=timestop_arg, debug=args.debugval)    
+

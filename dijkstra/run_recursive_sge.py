@@ -68,15 +68,15 @@ if __name__ == '__main__':
         pg1s = "-g1s "+ g1_seed_file+ " " 
         pg2s = "-g2s "+ g2_seed_file+ " " 
         pg1linenum = "-g1sline "+ str(g1linenum)+ " " 
-        pg2linenum = "-g2sline "+ str(g2linenum)+ " " 
-        psim = "-s " + args.sim+ " "
+        pg2linenum = "-g2sline "+ str(g2linenum)+ " "
+        psim = "-s " + args.sim+ " " if args.sim else ""
         pdelta = " -d 0.0 " 
         pec1 = "-ec1 "+ str(ec_mode[1])
         pec2 = "-ec2 "+ str(ec_mode[2])
         ped = "-ed "+ str(ed)+ " "
         psb = "-sb "+ str(simbound)+ " "
         psn = "-sn " + str(seednum) + " " 
-        ppk = " -pk "+ args.pickle+ " "
+        ppk = " -pk "+ args.pickle+ " " if args.pickle else ""
         path = subprocess.run(['pwd'], stdout=subprocess.PIPE).stdout.decode('utf-8')
         prog = "python3.7 " + path.strip() + "/run_recursive_seed.py "
         print(prog, pgraph1, pgraph2, pg1s, pg2s, pg1linenum, pg2linenum, psim, pdelta, pec1, pec2, ped, psb, psn, ppk) 

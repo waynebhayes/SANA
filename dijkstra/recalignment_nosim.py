@@ -98,56 +98,53 @@ def best_pair(pq, delta):
         raise StopIteration("no more pair values")
     return pair_list[1] 
 
-def get_new_neighbor_pairs(g1, g2, node1, node2, g1alignednodes, g2alignednodes, simbound, sims):
+def get_new_neighbor_pairs(g1, g2, node1, node2, g1alignednodes, g2alignednodes):
     result = set()
     
     for i in g1.get_neighbors(node1):
         for j in g2.get_neighbors(node2):
             if i not in g1alignednodes and j not in g2alignednodes:
-                if sims[i][j] >= simbound:
-                    result.add((i,j))
+                result.add((i,j))
     return result
 
-def get_candidate_pairs(g1,g2, node1, node2, g1alignednodes, g2alignednodes, g1candidatenodes, g2candidatenodes, edge_freq, simbound, sims):
-    
-    newcp = set()
-    existingcp = set()
-    
-    for i in g1.get_neighbors(node1):
-        for j in g2.get_neighbors(node2):
-            g1nodealigned = i in g1alignednodes
-            g2nodealigned = j in g2alignednodes
-            if not g1nodealigned and not g2nodealigned:
-                if sims[i][j] >= simbound:
-                    newcp.add((i,j))
-            elif not g1nodealigned:
-                for g2node in g1candidatenodes[i]:
-                    if (i, g2node) in edge_freq:
-                        existingcp.add((i,g2node))            
-            elif not g2nodealigned:
-                for g1node in g2candidatenodes[j]:
-                    if (g1node, j) in edge_freq:
-                        existingcp.add((g1node,j))            
+#def get_candidate_pairs(g1,g2, node1, node2, g1alignednodes, g2alignednodes, g1candidatenodes, g2candidatenodes, edge_freq, simbound, sims):
+#    
+#    newcp = set()
+#    existingcp = set()
+#    
+#    for i in g1.get_neighbors(node1):
+#        for j in g2.get_neighbors(node2):
+#            g1nodealigned = i in g1alignednodes
+#            g2nodealigned = j in g2alignednodes
+#            if not g1nodealigned and not g2nodealigned:
+#                if sims[i][j] >= simbound:
+#                    newcp.add((i,j))
+#            elif not g1nodealigned:
+#                for g2node in g1candidatenodes[i]:
+#                    if (i, g2node) in edge_freq:
+#                        existingcp.add((i,g2node))            
+#            elif not g2nodealigned:
+#                for g1node in g2candidatenodes[j]:
+#                    if (g1node, j) in edge_freq:
+#                        existingcp.add((g1node,j))            
+#
+#    return newcp, existingcp
 
-    return newcp, existingcp
 
-
-def get_neighbor_candidate_pairs2(g1, g2, node1, node2, g1alignednodes, g2alignednodes, g1candidatenodes, g2candidatenodes, edge_freq, simbound, sims):
+def get_neighbor_candidate_pairs2(g1, g2, node1, node2, g1alignednodes, g2alignednodes, g1candidatenodes, g2candidatenodes, edge_freq):
     candidate_neighbors = set()
    
     for g1node in g1.get_neighbors(node1):
         if g1node not in g1alignednodes:
             for g2node in g1candidatenodes[g1node]:
                 if (g1node, g2node) in edge_freq:
-                    if sims[g1node][g2node] >= simbound: 
-                        candidate_neighbors.add((g1node,g2node))            
+                    candidate_neighbors.add((g1node,g2node))            
 
     for g2node in g2.get_neighbors(node2):
         if g2node not in g2alignednodes:
             for g1node in g2candidatenodes[g2node]:
                 if (g1node, g2node) in edge_freq:
-                    if sims[g1node][g2node] >= simbound: 
-                        candidate_neighbors.add((g1node,g2node))            
+                    candidate_neighbors.add((g1node,g2node))            
 
     return candidate_neighbors
     '''
@@ -158,24 +155,24 @@ def get_neighbor_candidate_pairs2(g1, g2, node1, node2, g1alignednodes, g2aligne
     len(neighbor_pairs) < g1.get_neighbors(node1) + g2.get_neighbors(node2)
     '''
 
-def get_neighbor_candidate_pairs(g1, g2, node1, node2, g1alignednodes, g2alignednodes, edge_freq, sims):
-    new_neighbors = []
-    candidate_neighbors = []
-    for i in g1.get_neighbors(node1):
-        for j in g2.get_neighbors(node2):
-            if i not in g1alignednodes and j not in g2alignednodes:
-                if (i,j) in edge_freq:
-                    candidate_neighbors.append((i,j))            
-                else:
-                    if sims[i][j] >= simbound:
-                        new_neighbors.append((i,j))
-
-            #if i not in g1alignednodes and j not in g2alignednodes and (i,j) in edge_freq:
-            #    candidate_neighbors.append((i,j))            
-            #elif i not in g1alignednodes and j not in g2alignednodes:
-            #    if sims[i][j] > 0:
-            #        neighbors.append((i,j))
-    return new_neighbors, candidate_neighbors
+#def get_neighbor_candidate_pairs(g1, g2, node1, node2, g1alignednodes, g2alignednodes, edge_freq, sims):
+#    new_neighbors = []
+#    candidate_neighbors = []
+#    for i in g1.get_neighbors(node1):
+#        for j in g2.get_neighbors(node2):
+#            if i not in g1alignednodes and j not in g2alignednodes:
+#                if (i,j) in edge_freq:
+#                    candidate_neighbors.append((i,j))            
+#                else:
+#                    if sims[i][j] >= simbound:
+#                        new_neighbors.append((i,j))
+#
+#            #if i not in g1alignednodes and j not in g2alignednodes and (i,j) in edge_freq:
+#            #    candidate_neighbors.append((i,j))            
+#            #elif i not in g1alignednodes and j not in g2alignednodes:
+#            #    if sims[i][j] > 0:
+#            #        neighbors.append((i,j))
+#    return new_neighbors, candidate_neighbors
 
 
 def get_aligned_neighbor_pairs(g1,g2, node1,node2, aligned_pairs, trace = False):
@@ -224,7 +221,7 @@ def num_edge_pairs_back_to_subgraph(g1, g2, g1node, g2node, aligned_pairs):
     """
     return edgepairs
 
-def update_skip_list(g1, g2, curralign, candidatePairs, sims, debug):
+def update_skip_list(g1, g2, curralign, candidatePairs, debug):
     for g1node, g2node in candidatePairs:
         if g1node in curralign.g1alignednodes or g2node in curralign.g2alignednodes:
             if debug:
@@ -247,7 +244,7 @@ def update_skip_list(g1, g2, curralign, candidatePairs, sims, debug):
         curralign.pq.add((val,pair), debug=debug)
 
 class Alignment:
-    def __init__(self, seed, m, ec_mode, ed, sb, alpha, delta, seednum, outputdir,timestop):
+    def __init__(self, seed, m, ec_mode, ed, alpha, delta, seednum, outputdir,timestop):
         self.g1alignednodes = set()
         self.g2alignednodes = set()
         self.aligned_pairs = set()
@@ -259,7 +256,6 @@ class Alignment:
         self.ec1 = ec_mode[0]
         self.ec2 = ec_mode[1]
         self.ed = ed
-        self.sb = sb
         self.E1 = m
         self.E2 = m
         self.EA = m
@@ -310,7 +306,7 @@ def printoutput(curralign):
 
 
    
-def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
+def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, debug):
     curralign.recdepth += 1
     printoutput(curralign)
     write_result(g1,g2,curralign)
@@ -326,7 +322,7 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
         return
 
     #print("CandidatePairs:", candidatePairs) 
-    update_skip_list(g1, g2, curralign, candidatePairs, sims, debug)
+    update_skip_list(g1, g2, curralign, candidatePairs, debug)
 
     bad_candidates = 0
     lastbad = None
@@ -370,8 +366,6 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
                 candidatePairs.add(pair)
                 continue
     
-            if sims[pair[0]][pair[1]] < curralign.sb:
-                continue
 
             print("Trying to add New Pair: " + str(pair) ,end=" ")
 
@@ -405,18 +399,16 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
             del curralign.g1candidatenodes[g1node]
             del curralign.g2candidatenodes[g2node]
 
-            newcandidatePairs = get_new_neighbor_pairs(g1,g2,pair[0],pair[1], curralign.g1alignednodes, curralign.g2alignednodes, curralign.sb, sims)
+            newcandidatePairs = get_new_neighbor_pairs(g1,g2,pair[0],pair[1], curralign.g1alignednodes, curralign.g2alignednodes)
              
-            exisiting_neighbor_candidatePairs = get_neighbor_candidate_pairs2(g1, g2, pair[0], pair[1], curralign.g1alignednodes, curralign.g2alignednodes, curralign.g1candidatenodes, curralign.g2candidatenodes, curralign.edge_freq, curralign.sb, sims) 
+            exisiting_neighbor_candidatePairs = get_neighbor_candidate_pairs2(g1, g2, pair[0], pair[1], curralign.g1alignednodes, curralign.g2alignednodes, curralign.g1candidatenodes, curralign.g2candidatenodes, curralign.edge_freq) 
 
-            #newcandidatePairs, exisiting_neighbor_candidatePairs = get_candidate_pairs(g1, g2, pair[0], pair[1], curralign.g1alignednodes, curralign.g2alignednodes, curralign.g1candidatenodes, curralign.g2candidatenodes, curralign.edge_freq, sims) 
 
 
 
             #TODO 
             #make into helper function
             for p in exisiting_neighbor_candidatePairs:
-                #val = curralign.alpha*(curralign.edge_freq[p][0]) + (1-curralign.alpha)*sims[p[0]][p[1]]
                 val = curralign.edge_freq[p][0]
                 curralign.pq.remove_by_name(val, p)
 
@@ -440,7 +432,7 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
                 print("Adding", curralign.recdepth, pair)
                 #print("existing ncp before call:", exisiting_neighbor_candidatePairs)
             #recursive call on newcurralign which has added the current pair and updated data structures
-            rec_alignhelper(g1,g2, curralign, candidatePairs.union(newcandidatePairs), aligncombs, sims, debug)
+            rec_alignhelper(g1,g2, curralign, candidatePairs.union(newcandidatePairs), aligncombs, debug)
         
             start3 = time.time()
             
@@ -493,9 +485,9 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
             return
 
 
-def rec_align(g1, g2, seed, sims, ec_mode, ed, m, sb, delta, alpha, seednum, outputdir, timestop=None, debug=False):
+def rec_align(g1, g2, seed, ec_mode, ed, m, delta, alpha, seednum, outputdir, timestop=None, debug=False):
         
-    curralign = Alignment(seed, m, ec_mode, ed, sb, alpha, delta, seednum, outputdir, timestop)
+    curralign = Alignment(seed, m, ec_mode, ed, alpha, delta, seednum, outputdir, timestop)
     curralign.logfile = g1.name + "_" + g2.name + "_" + str(seednum) + ".log" 
 
     candidatePairs = set()
@@ -516,7 +508,7 @@ def rec_align(g1, g2, seed, sims, ec_mode, ed, m, sb, delta, alpha, seednum, out
         curralign.aligned_pairs.add((seed1, seed2))
         curralign.g1alignednodes.add(seed1)
         curralign.g2alignednodes.add(seed2)
-        candidatePairs.update(get_new_neighbor_pairs(g1,g2,seed1,seed2,curralign.g1alignednodes, curralign.g2alignednodes, curralign.sb, sims)) 
+        candidatePairs.update(get_new_neighbor_pairs(g1,g2,seed1,seed2,curralign.g1alignednodes, curralign.g2alignednodes)) 
 
     curralign.g1seedstr += curralign.g2seedstr
     curralign.k = len(curralign.aligned_pairs)
@@ -528,7 +520,7 @@ def rec_align(g1, g2, seed, sims, ec_mode, ed, m, sb, delta, alpha, seednum, out
         print("ec2: " + str(curralign.ec2))
 
     aligncombs = structs.alignCombinations()
-    rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims,debug)
+    rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs,debug)
 
 def output(k, E1, E2, EA, seed, runtime, seednum, size):
     print("seednum: " + str(seednum) + " k:" + str(k) +  " size:" + str(size) + " E1:" + str(E1) + " E2:" + str(E2) + " EA:" + str(EA) + " time:" + str(runtime) + " seed: " + str(seed))
