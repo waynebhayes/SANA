@@ -34,6 +34,7 @@ def initParser():
     parser.add_argument("-pk", "--pickle", required=False, default = "", help = "location of existing pickle file")
     parser.add_argument("-t", "--timestop", required=False, default = "-1.0", help = "Stop program after specified time, units in hours")
     parser.add_argument("-sn", "--seednum", required=False, default = "", help = "seed num")
+    parser.add_argument("-od", "--outputdir", required=False, default = "", help = "outputdir")
     parser.add_argument('-debug', "--debugval",action='store_true', help="adding debug will set to True, no entry is False")
 
     return parser
@@ -80,4 +81,4 @@ if __name__ == '__main__':
         timestop_arg = ntimestop
 
 
-    recalignment.rec_align(graph1, graph2, seed, sims, ec_mode, ed, e1, simbound, delta, alpha, seednum, timestop=timestop_arg, debug=args.debugval)    
+    recalignment.rec_align(graph1, graph2, seed, sims, ec_mode, ed, e1, simbound, delta, alpha, seednum, args.outputdir, timestop=timestop_arg, debug=args.debugval)    

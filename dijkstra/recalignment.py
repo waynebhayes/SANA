@@ -247,7 +247,7 @@ def update_skip_list(g1, g2, curralign, candidatePairs, sims, debug):
         curralign.pq.add((val,pair), debug=debug)
 
 class Alignment:
-    def __init__(self, seed, m, ec_mode, ed, sb, alpha, delta, seednum, timestop):
+    def __init__(self, seed, m, ec_mode, ed, sb, alpha, delta, seednum, outputdir,timestop):
         self.g1alignednodes = set()
         self.g2alignednodes = set()
         self.aligned_pairs = set()
@@ -275,6 +275,7 @@ class Alignment:
         self.timestop = timestop
         self.g1name = ""
         self.g1name = ""
+        self.outputdir = outputdir
 
 def writelog(curralign): 
     g1edges = induced_graph1(g1, curralign.aligned_pairs)
@@ -284,11 +285,8 @@ def writelog(curralign):
     print("ec2score: ", ec2score(len(g2edges)/2, len(eaedges)/2))
     print("s3score: ", s3score(len(g1edges)/2, len(g2edges)/2,len(eaedges)/2))
 
-def printoutput(k, E1, E2, EA, seed, runtime, seednum, size):
 
-    print("seednum: " + str(seednum) + " k:" + str(k) +  " size:" + str(size) + " E1:" + str(E1) + " E2:" + str(E2) + " EA:" + str(EA) + " time:" + str(runtime) + " seed: " + str(seed))
-
-def printoutput2(curralign):
+def printoutput(curralign):
 
     size = len(curralign.aligned_pairs)
 
@@ -298,7 +296,10 @@ def printoutput2(curralign):
 
     result = ("seednum: " + str(curralign.seednum) + " k:" + str(curralign.k) +  " size:" + str(size) + " E1:" + str(curralign.E1) + " E2:" + str(curralign.E2) + " EA:" + str(curralign.EA) + " time:" + str(runtime) + " seed: " + curralign.g1seedstr)
     
-    output_dir = "seed" + str(curralign.seednum)
+    if curralign.outputdir == "":
+        output_dir =  "seed" + str(curralign.seednum)
+    else: 
+        output_dir = curralign.outputdir + "/seed" + str(curralign.seednum)
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     output_file = output_dir + "/" + curralign.logfile
 
@@ -311,8 +312,8 @@ def printoutput2(curralign):
    
 def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
     curralign.recdepth += 1
-    printoutput2(curralign)
-    write_result2(g1,g2,curralign)
+    printoutput(curralign)
+    write_result(g1,g2,curralign)
 
 
     if curralign.timestop and curralign.currtime >= curralign.timestop:
@@ -492,9 +493,9 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
             return
 
 
-def rec_align(g1, g2, seed, sims, ec_mode, ed, m, sb, delta, alpha, seednum, timestop=None, debug=False):
+def rec_align(g1, g2, seed, sims, ec_mode, ed, m, sb, delta, alpha, seednum, outputdir, timestop=None, debug=False):
         
-    curralign = Alignment(seed, m, ec_mode, ed, sb, alpha, delta, seednum, timestop)
+    curralign = Alignment(seed, m, ec_mode, ed, sb, alpha, delta, seednum, outputdir, timestop)
     curralign.logfile = g1.name + "_" + g2.name + "_" + str(seednum) + ".log" 
 
     candidatePairs = set()
@@ -593,26 +594,16 @@ def ec2score(E2, EA):
 def s3score(E1,E2, EA):
     return EA/(E1+E1-EA)    
 
-def write_result(filename, pairs, graph1, graph2):
-    #print('############',filename, len(pairs))
-    #for pair in pairs:
-    #    print(pair)
-        
-    with open(filename, 'w+')as f:
-        #f.write(str(len(d)) + ' ' + str(coverage(yeast_graph, human_graph,d)) + '\n')
-        for x in pairs:
-            print(str(graph1.nodes[x[0]]) + ' ' + str(graph2.nodes[x[1]]))
-            f.write(str(graph1.nodes[x[0]]) + ' ' + str(graph2.nodes[x[1]]) + '\n')
-        #for g1node, g2node in pairs:
-        #    print(str(graph1.nodes[g1node]) + ' ' + str(graph2.nodes[g2node]) + '\n')
-        #    f.write(str(graph1.nodes[g1node]) + ' ' + str(graph2.nodes[g2node]) + '\n')
 
-def write_result2(g1,g2, curralign):
+def write_result(g1,g2, curralign):
     uuidstr = str(uuid.uuid4())
     uid = uuidstr[:13]
     fname = g1.name + "--" + g2.name + "--" + str(curralign.delta) + "--" + str(curralign.k) + "--"  + uid +  ".dijkstra"
 
-    output_dir = "seed" + str(curralign.seednum)
+    if curralign.outputdir == "":
+        output_dir =  "seed" + str(curralign.seednum)
+    else: 
+        output_dir = curralign.outputdir + "/seed" + str(curralign.seednum)
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     output_file = output_dir + "/" + fname
     with open(output_file, 'w+')as f:
