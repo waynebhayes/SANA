@@ -33,7 +33,6 @@ def initParser():
     parser.add_argument("-pk", "--pickle", required=False, default = "", help = "location of existing pickle file")
     parser.add_argument("-t", "--timestop", required=False, default = "-1.0", help = "Stop program after specified time, units in hours")
     parser.add_argument('-debug', "--debugval",action='store_true', help="adding debug will set to True, no entry is False")
-
     return parser
 
 
@@ -69,14 +68,20 @@ if __name__ == '__main__':
         pg2s = "-g2s "+ g2_seed_file+ " " 
         pg1linenum = "-g1sline "+ str(g1linenum)+ " " 
         pg2linenum = "-g2sline "+ str(g2linenum)+ " " 
-        psim = "-s " + args.sim+ " "
+        if args.sim is None:
+            psim = ""
+        else:
+            psim = "-s " + args.sim+ " "
         pdelta = " -d 0.0 " 
         pec1 = "-ec1 "+ str(ec_mode[1])
         pec2 = "-ec2 "+ str(ec_mode[2])
         ped = "-ed "+ str(ed)+ " "
         psb = "-sb "+ str(simbound)+ " "
         psn = "-sn " + str(seednum) + " " 
-        ppk = " -pk "+ args.pickle+ " "
+        if args.pickle is None:
+            ppk = ""
+        else:
+            ppk = " -pk "+ args.pickle+ " "
         path = subprocess.run(['pwd'], stdout=subprocess.PIPE).stdout.decode('utf-8')
         prog = "python3.7 " + path.strip() + "/run_recursive_seed.py "
         print(prog, pgraph1, pgraph2, pg1s, pg2s, pg1linenum, pg2linenum, psim, pdelta, pec1, pec2, ped, psb, psn, ppk) 
