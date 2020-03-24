@@ -217,6 +217,10 @@ multi:
 	$(MAKE) 'MULTI=1'
 	mv sana sana.multi
 
+sparse:
+	$(MAKE) 'SPARSE=1'
+	mv sana sana.sparse
+
 createShadow: scripts/createShadowCpp/createShadow
 	mv scripts/createShadowCpp/createShadow .
 

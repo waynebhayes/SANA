@@ -2098,7 +2098,7 @@ static int _edgeVal;
 // between the value of this ladder and the ladder with one edge added or removed.  Mathematically
 // it should be edgeVal^2 - (edgeVal+1)^2 which is (2e + 1), but for some reason I had to make
 // it 2*(e+1).  That seemed to work better.  So yeah... big ugly hack.
-#define SQRDIFF(i,j) ((_edgeVal=G2Matrix[i][(*A)[j]]), 2*((_edgeVal<1000?_edgeVal:0) + 1))
+#define SQRDIFF(i,j) ((_edgeVal=G2Matrix[i][(*A)[j]]), 2*_edgeVal + 1)
 int SANA::squaredAligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int res = 0, diff;
     uint neighbor;
@@ -2107,11 +2107,11 @@ int SANA::squaredAligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarge
         neighbor = G1AdjLists[source][i];
         // Account for uint edges? Or assume smaller graph is edge value 1?
         diff = SQRDIFF(oldTarget, neighbor);
-        assert(fabs(diff)<1100);
-        res -= diff>0?diff:0;
+        // assert(fabs(diff)<1100);
+        res -= diff;// >0?diff:0;
         diff = SQRDIFF(newTarget, neighbor);
-        assert(fabs(diff)<1100);
-        res += diff>0?diff:0;
+        // assert(fabs(diff)<1100);
+        res += diff;// >0?diff:0;
     }
     return res;
 }
@@ -2124,21 +2124,25 @@ int SANA::squaredAligEdgesIncSwapOp(uint source1, uint source2, uint target1, ui
     for (; i < n; ++i) {
         neighbor = G1AdjLists[source1][i];
         diff = SQRDIFF(target1, neighbor);
-        assert(fabs(diff)<1100);
-        res -= diff>0?diff:0;
+        // assert(fabs(diff)<1100);
+        res -= diff;// >0?diff:0;
         diff = SQRDIFF(target2, neighbor);
-        assert(fabs(diff)<1100);
-        res += diff>0?diff:0;
+        if (target2==(*A)[neighbor]){
+                diff=0;
+        }// assert(fabs(diff)<1100);
+        res += diff;// >0?diff:0;
     }
     const uint m = G1AdjLists[source2].size();
     for (i = 0; i < m; ++i) {
         neighbor = G1AdjLists[source2][i];
         diff = SQRDIFF(target2, neighbor);
-        assert(fabs(diff)<1100);
-        res -= diff>0?diff:0;
+        // assert(fabs(diff)<1100);
+        res -= diff;// >0?diff:0;
         diff = SQRDIFF(target1, neighbor);
-        assert(fabs(diff)<1100);
-        res += diff>0?diff:0;
+        if (target1==(*A)[neighbor]){
+                diff=0;
+        }// assert(fabs(diff)<1100);
+        res += diff;// >0?diff:0;
     }
     // How to do for squared?
     // address case swapping between adjacent nodes with adjacent images:
@@ -3671,7 +3675,7 @@ int SANA::aligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTa
     return res;
 }
 
-#define SQRDIFF2(A,i,j) ((_edgeVal=G2Matrix[i][(*A)[j]]), 2*((_edgeVal<1000?_edgeVal:0) + 1))
+#define SQRDIFF2(A,i,j) ((_edgeVal=G2Matrix[i][(*A)[j]]), 2*_edgeVal + 1)
 int SANA::squaredAligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
     int res = 0, diff;
     uint neighbor;
@@ -3681,11 +3685,11 @@ int SANA::squaredAligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uin
         neighbor = G1AdjLists[source][i];
         // Account for uint edges? Or assume smaller graph is edge value 1?
         diff = SQRDIFF2(A, oldTarget, neighbor);
-        assert(fabs(diff)<1100);
-        res -= diff>0?diff:0;
+        // assert(fabs(diff)<1100);
+        res -= diff;// >0?diff:0;
         diff = SQRDIFF2(A, newTarget, neighbor);
-        assert(fabs(diff)<1100);
-        res += diff>0?diff:0;
+        // assert(fabs(diff)<1100);
+        res += diff;// >0?diff:0;
     }
     return res;
 }
@@ -4011,21 +4015,25 @@ int SANA::squaredAligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint t
     for (; i < n; ++i) {
         neighbor = G1AdjLists[source1][i];
         diff = SQRDIFF2(A, target1, neighbor);
-        assert(fabs(diff)<1100);
-        res -= diff>0?diff:0;
+        // assert(fabs(diff)<1100);
+        res -= diff;// >0?diff:0;
         diff = SQRDIFF2(A, target2, neighbor);
-        assert(fabs(diff)<1100);
-        res += diff>0?diff:0;
+        if (target2==(*A)[neighbor]){
+                diff=0;
+        }// assert(fabs(diff)<1100);
+        res += diff;// >0?diff:0;
     }
     const uint m = G1AdjLists[source2].size();
     for (i = 0; i < m; ++i) {
         neighbor = G1AdjLists[source2][i];
         diff = SQRDIFF2(A, target2, neighbor);
-        assert(fabs(diff)<1100);
-        res -= diff>0?diff:0;
+        // assert(fabs(diff)<1100);
+        res -= diff;// >0?diff:0;
         diff = SQRDIFF2(A, target1, neighbor);
-        assert(fabs(diff)<1100);
-        res += diff>0?diff:0;
+        if (target1==(*A)[neighbor]){
+                diff=0;
+        }// assert(fabs(diff)<1100);
+        res += diff;// >0?diff:0;
     }
     //  How to do for squared?
     // address case swapping between adjacent nodes with adjacent images:
