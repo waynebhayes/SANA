@@ -5,7 +5,7 @@
 #include "../utils/utils.hpp"
 #include "../utils/Timer.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
-#include "../measures/JaccardSimilarity.hpp"
+#include "../measures/JaccardSimilarityScore.hpp"
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/LargestCommonConnectedSubgraph.hpp"
 #include "../measures/NodeCorrectness.hpp"
@@ -513,7 +513,7 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
         return new SymmetricSubstructureScore(G1, G2);
     }
     if (name == "js") {
-        return new JaccardSimilarity(G1, G2);
+        return new JaccardSimilarityScore(G1, G2);
     }
     if (name == "ec") {
         return new EdgeCorrectness(G1, G2);

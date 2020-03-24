@@ -8,7 +8,7 @@
 #include "../measures/EdgeRatio.hpp"
 #include "../measures/InducedConservedStructure.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
-#include "../measures/JaccardSimilarity.hpp"
+#include "../measures/JaccardSimilarityScore.hpp"
 #include "../measures/SymmetricEdgeCoverage.hpp"
 #include "../measures/LargestCommonConnectedSubgraph.hpp"
 #include "../measures/GoAverage.hpp"
@@ -224,7 +224,7 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     m = new SymmetricSubstructureScore(&G1, &G2);
     M.addMeasure(m, getWeight("s3", G1, G2, args));
 
-    m = new JaccardSimilarity(&G1, &G2);
+    m = new JaccardSimilarityScore(&G1, &G2);
     M.addMeasure(m, getWeight("js", G1, G2, args));
 
     m = new LargestCommonConnectedSubgraph(&G1, &G2);

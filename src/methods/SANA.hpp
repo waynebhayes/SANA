@@ -18,9 +18,9 @@
 
 #define UNWEIGHTED_CORES 1
 #ifdef MULTI_PAIRWISE
-#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdgesNumer, int MS3Numer, double edSum, double erSum, uint pairsCount
+#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double jsSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdgesNumer, int MS3Numer, double edSum, double erSum, uint pairsCount
 #else
-#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, double erSum, uint pairsCount
+#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double jsSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, double erSum, uint pairsCount
 #endif
 
 class SANA: public Method {
@@ -176,13 +176,13 @@ private:
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A);
-    bool scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newMS3Numer, double newEdgeDifferenceSum, double newEdgeRatioSum);
+    bool scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newJsSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newMS3Numer, double newEdgeDifferenceSum, double newEdgeRatioSum);
     double ecWeight;
     double edWeight, erWeight;
     double s3Weight;
-    double jsWeight;
     double icsWeight;
     double wecWeight;
+    double jsWeight;
     double secWeight;
     double ncWeight;
     double localWeight;
@@ -281,6 +281,13 @@ private:
     double WECIncChangeOp(uint source, uint oldTarget, uint newTarget);
     double WECIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
+    //to evaluate js incrementally
+    bool needJs;
+    double jsSum;
+    vector<uint> jsAlignedByNode;
+    double JSIncChangeOp(uint source, uint oldTarget, uint newTarget);
+    double JSIncSwapOp(uint source1, uint source2, uint target1, uint target2);
+
     //to evaluate ewec incrementally
     bool needEwec;
     ExternalWeightedEdgeConservation* ewec;
@@ -288,13 +295,6 @@ private:
     double EWECIncChangeOp(uint source, uint oldTarget, uint newTarget);
     double EWECIncSwapOp(uint source1, uint source2, uint target1, uint target2);
     double EWECSimCombo(uint source, uint target);
-
-    // to evaluate js incrementally
-    bool needJS;
-    double jsSum; // initial alignment it starts with
-    vector<uint> G1NodeEdgeAligned;
-    vector<uint> G1NodeEdgeTotal;
-    double JSIncChangeSum(uint source, uint oldTarget, uint newTarget);
 
     //to evaluate local measures incrementally
     bool needLocal;
@@ -370,7 +370,7 @@ private:
     void removeAlignmentData(vector<uint>* toRemove);
     void initializeParetoFront();
     vector<double> getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum,
-                                     double newLocalScoreSum, double newWecSum, double newNcSum,
+                                     double newLocalScoreSum, double newWecSum, double newJsSum, double newNcSum,
                                      double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer,
 				     double newMS3Numer, double newEdSum, double newErSum);
     bool dominates(vector<double> &left, vector<double> &right);
@@ -398,6 +398,7 @@ private:
     unordered_map<vector<uint>*, int> storedInducedEdges;
     unordered_map<vector<uint>*, double> storedLocalScoreSum;
     unordered_map<vector<uint>*, double> storedWecSum;
+    unordered_map<vector<uint>*, double> storedJsSum;
     unordered_map<vector<uint>*, double> storedEwecSum;
     unordered_map<vector<uint>*, int> storedNcSum;
     unordered_map<vector<uint>*, double> storedTCSum;
@@ -429,6 +430,7 @@ private:
         int MS3Numer;
         int inducedEdges;
         double wecSum;
+        double jsSum;
         double ewecSum;
         double ncSum;
         double TCSum;
@@ -492,6 +494,7 @@ private:
     double TCIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     double localScoreSumIncChangeOp(Job &job, vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
     double WECIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
+    double JSIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     double EWECSimCombo(Job &job, uint source, uint target);
     double EWECIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     int ncIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
@@ -505,12 +508,13 @@ private:
     int squaredAligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
 	int exposedEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double WECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
+    double JSIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double EWECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     int ncIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double localScoreSumIncSwapOp(Job &job, vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
 
     bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum,
-                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore,
+                         double newLocalScoreSum, double newWecSum, double newJssum, double newNcSum, double& newCurrentScore,
                          double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newMS3Numer,
 			 double newEdgeDifferenceSum, double newEdgeRatioSum);
 
