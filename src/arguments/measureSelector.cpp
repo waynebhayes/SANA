@@ -200,6 +200,9 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     m = new EdgeDifference(&G1, &G2);
     M.addMeasure(m, getWeight("ed", G1, G2, args));
 
+    m = new JaccardSimilarityScore(&G1, &G2);
+    M.addMeasure(m, getWeight("js", G1, G2, args));
+
     m = new EdgeRatio(&G1, &G2);
     M.addMeasure(m, getWeight("er", G1, G2, args));
 
@@ -223,9 +226,6 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 
     m = new SymmetricSubstructureScore(&G1, &G2);
     M.addMeasure(m, getWeight("s3", G1, G2, args));
-
-    m = new JaccardSimilarityScore(&G1, &G2);
-    M.addMeasure(m, getWeight("js", G1, G2, args));
 
     m = new LargestCommonConnectedSubgraph(&G1, &G2);
     M.addMeasure(m);
@@ -351,6 +351,12 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
         m = new WeightedEdgeConservation(&G1, &G2, nodeSim);
         M.addMeasure(m, wecWeight);
     }
+
+    // double jsWeight = getWeight("js", G1, G2, args);
+    // if (jsWeight > 0){
+    //     m = new JaccardSimilarityScore(&G1, &G2);
+    //     M.addMeasure(m, jsWeight);
+    // }
 
     if (args.strings["-truealignment"] != "") {
         vector<string> edges = fileToStrings(args.strings["-truealignment"]);

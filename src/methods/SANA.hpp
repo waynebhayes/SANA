@@ -283,8 +283,9 @@ private:
 
     //to evaluate js incrementally
     bool needJs;
+    bool needAlignedByNode;
     double jsSum;
-    vector<uint> jsAlignedByNode;
+    vector<uint> alignedByNode;
     double JSIncChangeOp(uint source, uint oldTarget, uint newTarget);
     double JSIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 

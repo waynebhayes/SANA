@@ -245,6 +245,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     needMS3              = ms3Weight > 0; // to eval MS3 incrementally
     needInducedEdges     = s3Weight > 0 || icsWeight > 0 ; //to evaluate S3 & ICS incrementally
     needJs               = jsWeight > 0; //to evaluate JS incrementally
+    needAlignedByNode    = jsWeight > 0; //to evaluate JS incrementally
     needWec              = wecWeight > 0; //to evaluate WEC incrementally
     needEwec             = ewecWeight>0; //to evaluate EWEC incrementally
     needSec              = secWeight > 0; //to evaluate SEC incrementally
@@ -256,11 +257,6 @@ SANA::SANA(Graph* G1, Graph* G2,
         LocalMeasure* m                  = ((WeightedEdgeConservation*) wec)->getNodeSimMeasure();
         vector<vector<float> >* wecSimsP = m->getSimMatrix();
         wecSims                          = (*wecSimsP);
-    }
-    if (needJs) {
-        Measure* js                     = MC->getMeasure("js");
-        // jsAlignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, startA);
-        jsSum           = js->eval(*A);
     }
 #ifdef CORES
 #if UNWEIGHTED_CORES
@@ -784,8 +780,9 @@ void SANA::initDataStructures(const Alignment& startA) {
 
     if (needJs) {
         Measure* js = MC->getMeasure("js");
-        jsAlignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, startA);
+        // jsAlignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, startA);
         jsSum       = js->eval(*A);
+        alignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, startA);
     }
 
     if(needEwec){
@@ -1212,7 +1209,7 @@ void SANA::insertCurrentAlignmentAndData() {
     if(needLocal)                storedLocalScoreSum[A]    = localScoreSum;
     if(needLocal)                storedLocalScoreSumMap[A] = localScoreSumMap;
     if(needWec)                  storedWecSum[A]           = wecSum;
-    if(jsSum)                    storedJsSum[A]            = jsSum;
+    if(needJs)                    storedJsSum[A]            = jsSum;
     if(needEwec)                 storedEwecSum[A]          = ewecSum;
     if(needNC)                   storedNcSum[A]            = ncSum;
     /*------------------------>*/storedCurrentScore[A]     = currentScore;
@@ -1245,6 +1242,7 @@ void SANA::removeAlignmentData(vector<uint>* toRemove) {
     if(needInducedEdges)         storedInducedEdges.erase(toRemove);
     if(needTC)                   storedTCSum.erase(toRemove);
     if(needEd)                   storedEdSum.erase(toRemove);
+    if(needJs)                   storedJsSum.erase(toRemove);
     if(needLocal)                storedLocalScoreSum.erase(toRemove);
     if(needLocal)                storedLocalScoreSumMap.erase(toRemove);
     if(needWec)                  storedWecSum.erase(toRemove);
@@ -1659,7 +1657,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-                wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges))), jsWeight*(newJsSum - jsSum)));
+                max(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
@@ -1684,7 +1682,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-                wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges))), jsWeight*(newJsSum - jsSum)));
+                min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
@@ -1725,13 +1723,13 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-                wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges))), jsWeight*(newJsSum - jsSum)));
+                max(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
         double minScore = min(ncWeight*(newNcSum / trueA.back() - ncSum / trueA.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-                wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges))), jsWeight*(newJsSum - jsSum)));
+                min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
@@ -2473,6 +2471,139 @@ double SANA::localScoreSumIncChangeOp(vector<vector<float> > const & sim, uint c
 
 double SANA::localScoreSumIncSwapOp(vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2) {
     return sim[source1][target2] - sim[source1][target1] + sim[source2][target1] - sim[source2][target2];
+}
+
+double SANA::JSIncChangeOp(uint source, uint oldTarget, uint newTarget) {
+    double change = 0;
+    if (jsWeight>0){
+        //eval newJsSum here
+        //update alignedByNode with source and source neighbours using oldTarget and newTarget
+
+        // eval for source from sratch
+        uint sourceOldAlingedEdges = alignedByNode[source];
+        uint sourceAlignedEdges = 0;
+        vector<uint> sourceNeighbours = G1AdjLists[source];
+        uint sourceTotalEdges = sourceNeighbours.size();
+        for (uint j = 0; j < sourceTotalEdges; j++){
+            uint neighbour = sourceNeighbours[j];
+            uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+            sourceAlignedEdges += G2Matrix[newTarget][neighbourAlignedTo];
+        }
+        alignedByNode[source] = sourceAlignedEdges;
+        //update newJsSum here
+        change += ((sourceAlignedEdges - sourceOldAlingedEdges)/(double)sourceTotalEdges);
+
+
+        // for each source neighbour update do iterative changes to the jsAlingedByNode vector
+        // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+        // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+        //no changes other wise
+        for (uint j = 0; j < sourceTotalEdges; j++){
+            uint neighbour = sourceNeighbours[j];
+            uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+            uint neighbourOldAlignedEdges = alignedByNode[neighbour];
+            uint neighbourTotalEdges = G1AdjLists[neighbour].size();
+            alignedByNode[neighbour] -= G2Matrix[oldTarget][neighbourAlignedTo];
+            alignedByNode[neighbour] += G2Matrix[newTarget][neighbourAlignedTo];
+            //update newJsSum here
+            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+        }
+    }
+
+    return change;
+}
+
+double SANA::JSIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
+    // NOTE: eval swap as two sources and then loop neighbours
+
+    double change = 0;
+
+    uint source1OldAlingedEdges = alignedByNode[source1];
+    uint source1AlignedEdges = 0;
+    vector<uint> source1Neighbours = G1AdjLists[source1];
+    uint source1TotalEdges = source1Neighbours.size();
+
+
+    uint source2OldAlingedEdges = alignedByNode[source2];
+    uint source2AlignedEdges = 0;
+    vector<uint> source2Neighbours = G1AdjLists[source2];
+    uint source2TotalEdges = source2Neighbours.size();
+
+    // source 1 eval here
+
+    // eval for source1 from sratch
+    for (uint j = 0; j < source1TotalEdges; j++){
+        uint neighbour = source1Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        // if(G2Matrix[target2][neighbourAlignedTo] == true){
+        //     source1AlignedEdges += 1;
+        // }
+        source1AlignedEdges = G2Matrix[target2][neighbourAlignedTo];
+    }
+    alignedByNode[source1] = source1AlignedEdges;
+    //update change here
+    change += ((source1AlignedEdges - source1OldAlingedEdges)/(double)source1TotalEdges);
+
+
+    // for each source neighbour update do iterative changes to the jsAlingedByNode vector
+    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+    // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+    //no changes other wise
+    for (uint j = 0; j < source1TotalEdges; j++){
+        uint neighbour = source1Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        uint neighbourOldAlignedEdges = alignedByNode[neighbour];
+        uint neighbourTotalEdges = G1AdjLists[neighbour].size();
+        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), neighbour) == source1Neighbours.end()){
+            alignedByNode[neighbour] -= G2Matrix[target1][neighbourAlignedTo];
+            alignedByNode[neighbour] += G2Matrix[target2][neighbourAlignedTo];
+            //update newJsSum here
+            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+        }
+    }
+
+    // source 2 eval here
+
+    // eval for source2 from sratch
+    for (uint j = 0; j < source2TotalEdges; j++){
+        uint neighbour = source2Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        source2AlignedEdges += G2Matrix[target1][neighbourAlignedTo];
+    }
+    alignedByNode[source2] = source2AlignedEdges;
+    //update change here
+    change += ((source2AlignedEdges - source2OldAlingedEdges)/(double)source2TotalEdges);
+
+
+    // for each source neighbour update do iterative changes to the jsAlingedByNode vector
+    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+    // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+    //no changes other wise
+    for (uint j = 0; j < source2TotalEdges; j++){
+        uint neighbour = source2Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        uint neighbourOldAlignedEdges = alignedByNode[neighbour];
+        uint neighbourTotalEdges = G1AdjLists[neighbour].size();
+        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), neighbour) == source1Neighbours.end()){
+            alignedByNode[neighbour] -= G2Matrix[target2][neighbourAlignedTo];
+            alignedByNode[neighbour] += G2Matrix[target1][neighbourAlignedTo];
+            //update newJsSum here
+            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+        }
+    }
+
+    //eval for common neighbours here
+    vector<uint> source1source2commonneighbours(source1Neighbours.size() + source2Neighbours.size());
+
+    vector<uint>::iterator it, end;
+
+    end = set_intersection(
+        source1Neighbours.begin(), source1Neighbours.end(),
+        source2Neighbours.begin(), source2Neighbours.end(),
+        source1source2commonneighbours.begin());
+
+    return change;
+
 }
 
 double SANA::WECIncChangeOp(uint source, uint oldTarget, uint newTarget) {
@@ -3522,6 +3653,7 @@ void SANA::storeAlignment(Job &job) {
     if(needLocal)                storedLocalScoreSumMap[A] = info.localScoreSumMap;
     if(needWec)                  storedWecSum[A]           = info.wecSum;
     if(needJs)                   storedJsSum[A]            = info.jsSum;
+    // if(needAlignedByNode)        storedAlignedByNode[A]    = info.alignedByNode;
     if(needEwec)                 storedEwecSum[A]          = info.ewecSum;
     if(needNC)                   storedNcSum[A]            = info.ncSum;
     /*------------------------>*/storedCurrentScore[A]     = info.currentScore;
@@ -3770,21 +3902,21 @@ double SANA::JSIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget
         //update jsAlignedByNode with source and source neighbours using oldTarget and newTarget
 
         // eval for source from sratch
-        uint sourceOldAlingedEdges = jsAlignedByNode[source];
+        uint sourceOldAlingedEdges = alignedByNode[source];
         uint sourceAlignedEdges = 0;
         vector<uint> sourceNeighbours = G1AdjLists[source];
         uint sourceTotalEdges = sourceNeighbours.size();
         for (uint j = 0; j < sourceTotalEdges; j++){
             uint neighbour = sourceNeighbours[j];
             uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
-            if(G2Matrix[newTarget][neighbourAlignedTo] == true){
-                sourceAlignedEdges += 1;
-            }
+            // if(G2Matrix[newTarget][neighbourAlignedTo] == true){
+            //     sourceAlignedEdges += 1;
+            // }
+            sourceAlignedEdges += G2Matrix[newTarget][neighbourAlignedTo];
         }
-        jsAlignedByNode[source] = sourceAlignedEdges;
+        alignedByNode[source] = sourceAlignedEdges;
         //update newJsSum here
-        change -= (sourceOldAlingedEdges/sourceTotalEdges);
-        change += (sourceAlignedEdges/sourceTotalEdges);
+        change += ((sourceAlignedEdges - sourceOldAlingedEdges)/(double)sourceTotalEdges);
 
 
         // for each source neighbour update do iterative changes to the jsAlingedByNode vector
@@ -3794,17 +3926,18 @@ double SANA::JSIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget
         for (uint j = 0; j < sourceTotalEdges; j++){
             uint neighbour = sourceNeighbours[j];
             uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
-            uint neighbourOldAlignedEdges = jsAlignedByNode[neighbour];
+            uint neighbourOldAlignedEdges = alignedByNode[neighbour];
             uint neighbourTotalEdges = G1AdjLists[neighbour].size();
-            if (G2Matrix[oldTarget][neighbourAlignedTo] == true && G2Matrix[newTarget][neighbourAlignedTo] == false){
-                jsAlignedByNode[neighbour] -= 1;
-            }
-            if (G2Matrix[oldTarget][neighbourAlignedTo] == false && G2Matrix[newTarget][neighbourAlignedTo] == true){
-                jsAlignedByNode[neighbour] += 1;
-            }
+            // if (G2Matrix[oldTarget][neighbourAlignedTo] == true && G2Matrix[newTarget][neighbourAlignedTo] == false){
+            //     jsAlignedByNode[neighbour] -= 1;
+            // }
+            // if (G2Matrix[oldTarget][neighbourAlignedTo] == false && G2Matrix[newTarget][neighbourAlignedTo] == true){
+            //     jsAlignedByNode[neighbour] += 1;
+            // }
+            alignedByNode[neighbour] -= G2Matrix[oldTarget][neighbourAlignedTo];
+            alignedByNode[neighbour] += G2Matrix[newTarget][neighbourAlignedTo];
             //update newJsSum here
-            change -= (neighbourOldAlignedEdges/neighbourTotalEdges);
-            change += (jsAlignedByNode[neighbour]/neighbourTotalEdges);
+            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
         }
     }
 
@@ -4091,95 +4224,82 @@ double SANA::JSIncSwapOp(Job &job, uint source1, uint source2, uint target1, uin
     vector<uint> *A = job.info.A;
     double change = 0;
 
+    uint source1OldAlingedEdges = alignedByNode[source1];
+    uint source1AlignedEdges = 0;
+    vector<uint> source1Neighbours = G1AdjLists[source1];
+    uint source1TotalEdges = source1Neighbours.size();
+
+
+    uint source2OldAlingedEdges = alignedByNode[source2];
+    uint source2AlignedEdges = 0;
+    vector<uint> source2Neighbours = G1AdjLists[source2];
+    uint source2TotalEdges = source2Neighbours.size();
+
     // source 1 eval here
-    if (jsWeight>0){
-        //eval newJsSum here
-        //update jsAlignedByNode with source and source neighbours using oldTarget and newTarget
 
-        // eval for source1 from sratch
-
-        uint source1OldAlingedEdges = jsAlignedByNode[source1];
-        uint source1AlignedEdges = 0;
-        vector<uint> source1Neighbours = G1AdjLists[source1];
-        uint source1TotalEdges = source1Neighbours.size();
-        for (uint j = 0; j < source1TotalEdges; j++){
-            uint neighbour = source1Neighbours[j];
-            uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
-            if(G2Matrix[target2][neighbourAlignedTo] == true){
-                source1AlignedEdges += 1;
-            }
-        }
-        jsAlignedByNode[source1] = source1AlignedEdges;
-        //update change here
-        change -= (source1OldAlingedEdges/source1TotalEdges);
-        change += (source1AlignedEdges/source1TotalEdges);
+    // eval for source1 from sratch
+    for (uint j = 0; j < source1TotalEdges; j++){
+        uint neighbour = source1Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        // if(G2Matrix[target2][neighbourAlignedTo] == true){
+        //     source1AlignedEdges += 1;
+        // }
+        source1AlignedEdges = G2Matrix[target2][neighbourAlignedTo];
+    }
+    alignedByNode[source1] = source1AlignedEdges;
+    //update change here
+    change += ((source1AlignedEdges - source1OldAlingedEdges)/(double)source1TotalEdges);
 
 
-        // for each source neighbour update do iterative changes to the jsAlingedByNode vector
-        // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
-        // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
-        //no changes other wise
-        for (uint j = 0; j < source1TotalEdges; j++){
-            uint neighbour = source1Neighbours[j];
-            uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
-            uint neighbourOldAlignedEdges = jsAlignedByNode[neighbour];
-            uint neighbourTotalEdges = G1AdjLists[neighbour].size();
-            if (G2Matrix[target1][neighbourAlignedTo] == true && G2Matrix[target2][neighbourAlignedTo] == false){
-                jsAlignedByNode[neighbour] -= 1;
-            }
-            if (G2Matrix[target1][neighbourAlignedTo] == false && G2Matrix[target2][neighbourAlignedTo] == true){
-                jsAlignedByNode[neighbour] += 1;
-            }
+    // for each source neighbour update do iterative changes to the jsAlingedByNode vector
+    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+    // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+    //no changes other wise
+    for (uint j = 0; j < source1TotalEdges; j++){
+        uint neighbour = source1Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        uint neighbourOldAlignedEdges = alignedByNode[neighbour];
+        uint neighbourTotalEdges = G1AdjLists[neighbour].size();
+        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), neighbour) == source1Neighbours.end()){
+            alignedByNode[neighbour] -= G2Matrix[target1][neighbourAlignedTo];
+            alignedByNode[neighbour] += G2Matrix[target2][neighbourAlignedTo];
             //update newJsSum here
-            change -= (neighbourOldAlignedEdges/neighbourTotalEdges);
-            change += (jsAlignedByNode[neighbour]/neighbourTotalEdges);
+            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
         }
     }
 
     // source 2 eval here
-    if (jsWeight>0){
-        //eval newJsSum here
-        //update jsAlignedByNode with source and source neighbours using oldTarget and newTarget
 
-        // eval for source1 from sratch
-
-        uint source2OldAlingedEdges = jsAlignedByNode[source2];
-        uint source2AlignedEdges = 0;
-        vector<uint> source2Neighbours = G1AdjLists[source2];
-        uint source2TotalEdges = source2Neighbours.size();
-        for (uint j = 0; j < source2TotalEdges; j++){
-            uint neighbour = source2Neighbours[j];
-            uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
-            if(G2Matrix[target1][neighbourAlignedTo] == true){
-                source2AlignedEdges += 1;
-            }
-        }
-        jsAlignedByNode[source2] = source2AlignedEdges;
-        //update change here
-        change -= (source2OldAlingedEdges/source2TotalEdges);
-        change += (source2AlignedEdges/source2TotalEdges);
+    // eval for source2 from sratch
+    for (uint j = 0; j < source2TotalEdges; j++){
+        uint neighbour = source2Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        source2AlignedEdges += G2Matrix[target1][neighbourAlignedTo];
+    }
+    alignedByNode[source2] = source2AlignedEdges;
+    //update change here
+    change += ((source2AlignedEdges - source2OldAlingedEdges)/(double)source2TotalEdges);
 
 
-        // for each source neighbour update do iterative changes to the jsAlingedByNode vector
-        // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
-        // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
-        //no changes other wise
-        for (uint j = 0; j < source2TotalEdges; j++){
-            uint neighbour = source2Neighbours[j];
-            uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
-            uint neighbourOldAlignedEdges = jsAlignedByNode[neighbour];
-            uint neighbourTotalEdges = G1AdjLists[neighbour].size();
-            if (G2Matrix[target2][neighbourAlignedTo] == true && G2Matrix[target1][neighbourAlignedTo] == false){
-                jsAlignedByNode[neighbour] -= 1;
-            }
-            if (G2Matrix[target2][neighbourAlignedTo] == false && G2Matrix[target1][neighbourAlignedTo] == true){
-                jsAlignedByNode[neighbour] += 1;
-            }
+    // for each source neighbour update do iterative changes to the jsAlingedByNode vector
+    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+    // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+    //no changes other wise
+    for (uint j = 0; j < source2TotalEdges; j++){
+        uint neighbour = source2Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        uint neighbourOldAlignedEdges = alignedByNode[neighbour];
+        uint neighbourTotalEdges = G1AdjLists[neighbour].size();
+        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), neighbour) == source1Neighbours.end()){
+            alignedByNode[neighbour] -= G2Matrix[target2][neighbourAlignedTo];
+            alignedByNode[neighbour] += G2Matrix[target1][neighbourAlignedTo];
             //update newJsSum here
-            change -= (neighbourOldAlignedEdges/neighbourTotalEdges);
-            change += (jsAlignedByNode[neighbour]/neighbourTotalEdges);
+            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
         }
     }
+
+    // //eval for common neighbours here
+    // vector<uint> source1source2commonneighbours(source1Neighbours.size() + source2Neighbours.size());
 
     return change;
 
