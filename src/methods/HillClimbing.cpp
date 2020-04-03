@@ -20,7 +20,6 @@
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/localMeasures/GenericLocalMeasure.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
-#include "../measures/JaccardSimilarityScore.hpp"
 #include "../measures/Measure.hpp"
 #include "../utils/Timer.hpp"
 #include "../utils/randomSeed.hpp"
@@ -99,7 +98,7 @@ Alignment HillClimbing::run() {
     double g1Nodes = n1;
 
     int aligEdges = Alignment(A).numAlignedEdges(*G1, *G2);
-    bool needG2InducedEdges = (icsWeight > 0 or s3Weight > 0); // TODO: maybe remove the jsWeight, do i need it?
+    bool needG2InducedEdges = (icsWeight > 0 or s3Weight > 0);
     int g2InducedEdges;
     if (needG2InducedEdges) g2InducedEdges = G2->numNodeInducedSubgraphEdges(A);
     else g2InducedEdges = 1; //dummy value
@@ -120,16 +119,6 @@ Alignment HillClimbing::run() {
     }
     Measure* allLocals = new GenericLocalMeasure(G1, G2, "locals", localsCombined);
     double localScoreSum = allLocals->eval(Alignment(A)) * n1;
-
-    //initialize data structures for incremental evaluation of JS
-    // double jsWeight = M->getWeight("js");
-    // double jsSum = 0;
-    // vector<uint> jsAlignedByNode;
-    // if (jsWeight > 0) {
-    //     JaccardSimilarityScore* js = (JaccardSimilarityScore*) M->getMeasure("js");
-    //     jsSum = js->eval(Alignment(A));
-    //     jsAlignedByNode = js->getAlignedByNode(Alignment(A));
-    // }
 
     //initialize data structures for incremental evaluation of WEC
     double wecWeight = M->getWeight("wec");
@@ -206,56 +195,11 @@ Alignment HillClimbing::run() {
                     }
                 }
 
-                // double newJsSum = jsSum;
-                // if (jsWeight>0){
-                //     //eval newJsSum here
-                //     //update jsAlignedByNode with source and source neighbours using oldTarget and newTarget
-
-                //     // eval for source from sratch
-                //     uint sourceOldAlingedEdges = jsAlignedByNode[source];
-                //     uint sourceAlignedEdges = 0;
-                //     vector<uint> sourceNeighbours = G1AdjLists[source];
-                //     uint sourceTotalEdges = sourceNeighbours.size();
-                //     for (uint j = 0; j < sourceTotalEdges; j++){
-                //         uint neighbour = sourceNeighbours[j];
-                //         uint neighbourAlignedTo = A[neighbour]; //find the node neighbour is mapped to
-                //         if(G2Matrix[newTarget][neighbourAlignedTo] == true){
-                //             sourceAlignedEdges += 1;
-                //         }
-                //     }
-                //     jsAlignedByNode[source] = sourceAlignedEdges;
-                //     //update newJsSum here
-                //     newJsSum -= (sourceOldAlingedEdges/sourceTotalEdges);
-                //     newJsSum += (sourceAlignedEdges/sourceTotalEdges);
-
-
-                //     // for each source neighbour update do iterative changes to the jsAlingedByNode vector
-                //     // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
-                //     // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
-                //     //no changes other wise
-                //     for (uint j = 0; j < sourceTotalEdges; j++){
-                //         uint neighbour = sourceNeighbours[j];
-                //         uint neighbourAlignedTo = A[neighbour]; //find the node neighbour is mapped to
-                //         uint neighbourOldAlignedEdges = jsAlignedByNode[neighbour];
-                //         uint neighbourTotalEdges = G1AdjLists[neighbour].size();
-                //         if (G2Matrix[oldTarget][neighbourAlignedTo] == true && G2Matrix[newTarget][neighbourAlignedTo] == false){
-                //             jsAlignedByNode[neighbour] -= 1;
-                //         }
-                //         if (G2Matrix[oldTarget][neighbourAlignedTo] == false && G2Matrix[newTarget][neighbourAlignedTo] == true){
-                //             jsAlignedByNode[neighbour] += 1;
-                //         }
-                //         //update newJsSum here
-                //         newJsSum -= (neighbourOldAlignedEdges/neighbourTotalEdges);
-                //         newJsSum += (jsAlignedByNode[neighbour]/neighbourTotalEdges);
-                //     }
-
-                // }
 
                 double newCurrentScore = newLocalScoreSum / g1Nodes +
                     newAligEdges*(ecWeight/g1Edges +
                                   icsWeight/newG2InducedEdges +
                                   s3Weight/(g1Edges + newG2InducedEdges - newAligEdges)) +
-                                //   jsWeight/(newJsSum/g1Edges) + 
                     wecWeight*(newWecSum/(2*g1Edges));
 
                 if (newCurrentScore > bestNewCurrentScore) {
