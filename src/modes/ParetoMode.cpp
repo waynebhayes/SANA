@@ -56,7 +56,7 @@ void ParetoMode::createFolders(void) {
 }
 
 void ParetoMode::setArgsForParetoMode(ArgumentParser& args) {
-    args.doubles["-ec"] = args.doubles["-s3"] = args.doubles["-tc"] = args.doubles["-sec"]
+    args.doubles["-ec"] = args.doubles["-s3"] = args.doubles["-js"] = args.doubles["-tc"] = args.doubles["-sec"]
                         = args.doubles["-wec"] /*= args.doubles["-nodec"]*/ = args.doubles["local"]//= args.doubles["-noded"]
                         //= args.doubles["-edgec"] /*= args.doubles["-edged"]*/ = args.doubles["-go"]
                         //= args.doubles["-importance"] = args.doubles["-sequence"] = args.doubles["-graphlet"]

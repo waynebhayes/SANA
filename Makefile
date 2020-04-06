@@ -70,6 +70,7 @@ MEASURES_SRCS = 							\
 	src/measures/SquaredEdgeScore.cpp 				\
 	src/measures/EdgeExposure.cpp 				\
 	src/measures/WeightedEdgeConservation.cpp 			\
+	src/measures/JaccardSimilarityScore.cpp         			\
 	src/measures/MultiS3.cpp							\
 	src/measures/localMeasures/EdgeCount.cpp 			\
 	src/measures/localMeasures/EdgeDensity.cpp 			\

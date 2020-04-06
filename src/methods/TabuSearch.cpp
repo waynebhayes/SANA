@@ -79,7 +79,6 @@ TabuSearch::TabuSearch(Graph* G1, Graph* G2,
     //to evaluate S3 incrementally
     needInducedEdges = s3Weight > 0;
 
-
     //to evaluate WEC incrementally
     needWec = wecWeight > 0;
     if (needWec) {

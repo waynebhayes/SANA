@@ -24,6 +24,7 @@
 
 #include "SANA.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
+#include "../measures/JaccardSimilarityScore.hpp"
 #include "../measures/InducedConservedStructure.hpp"
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/EdgeDifference.hpp"
@@ -194,6 +195,7 @@ SANA::SANA(Graph* G1, Graph* G2,
     edWeight  = MC->getWeight("ed");
     erWeight  = MC->getWeight("er");
     s3Weight  = MC->getWeight("s3");
+    jsWeight  = MC->getWeight("js");
     icsWeight = MC->getWeight("ics");
     secWeight = MC->getWeight("sec");
     mecWeight = MC->getWeight("mec");
@@ -241,7 +243,9 @@ SANA::SANA(Graph* G1, Graph* G2,
     needSquaredAligEdges = sesWeight > 0; // to evaluate SES incrementally
     needExposedEdges	 = eeWeight > 0 || ms3Weight > 0; // to eval EE incrementally; if needMS3, might use ee as denom
     needMS3              = ms3Weight > 0; // to eval MS3 incrementally
-    needInducedEdges     = s3Weight > 0 || icsWeight > 0; //to evaluate S3 & ICS incrementally
+    needInducedEdges     = s3Weight > 0 || icsWeight > 0 ; //to evaluate S3 & ICS incrementally
+    needJs               = jsWeight > 0; //to evaluate JS incrementally
+    needAlignedByNode    = jsWeight > 0; //to evaluate JS incrementally
     needWec              = wecWeight > 0; //to evaluate WEC incrementally
     needEwec             = ewecWeight>0; //to evaluate EWEC incrementally
     needSec              = secWeight > 0; //to evaluate SEC incrementally
@@ -488,6 +492,7 @@ double secC(PARAMS) { return double(aligEdges) / (g1Edges + aligEdges) / g2Edges
 double tcC(PARAMS) { return TCSum; }
 double localC(PARAMS) { return double(localScoreSum) / n1; }
 double wecC(PARAMS) { return double(wecSum) / (2 * g1Edges); }
+double jsC(PARAMS) { return double(jsSum);}
 double ewecC(PARAMS) { return ewecSum; }
 double ncC(PARAMS) { return double(ncSum) / trueA_back; }
 #ifdef MULTI_PAIRWISE
@@ -507,6 +512,7 @@ unordered_set<vector<uint>*>* SANA::paretoRun(const string& fileName) {
     measureCalculation["tc"] = tcC;
     measureCalculation["local"] = localC;
     measureCalculation["wec"] = wecC;
+    measureCalculation["js"] = jsC;
     measureCalculation["ewec"] = ewecC;
     measureCalculation["nc"] = ncC;
 #ifdef MULTI_PAIRWISE
@@ -772,6 +778,13 @@ void SANA::initDataStructures(const Alignment& startA) {
         wecSum          = wecScore*2*g1Edges;
     }
 
+    if (needJs) {
+        Measure* js = MC->getMeasure("js");
+        // jsAlignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, startA);
+        jsSum       = js->eval(*A);
+        alignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, startA);
+    }
+
     if(needEwec){
         ewec    = (ExternalWeightedEdgeConservation*)(MC->getMeasure("ewec"));
         ewecSum = ewec->eval(*A);
@@ -1034,7 +1047,7 @@ vector<double> SANA::translateScoresToVector() {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                             ( aligEdges, g1Edges, inducedEdges,
                                                                               g2Edges, TCSum, localScoreSum, n1,
-                                                                              wecSum, ewecSum, ncSum, trueA.back(),
+                                                                              wecSum, jsSum, ewecSum, ncSum, trueA.back(),
                                                                               g1WeightedEdges, g2WeightedEdges,
                                                                               squaredAligEdges, EdgeExposure::numer, MS3Numer,
                                                                               edSum, erSum, pairsCount
@@ -1045,7 +1058,7 @@ vector<double> SANA::translateScoresToVector() {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                             ( aligEdges, g1Edges, inducedEdges,
                                                                               g2Edges, TCSum, localScoreSum, n1,
-                                                                              wecSum, ewecSum, ncSum, trueA.back(),
+                                                                              wecSum, jsSum, ewecSum, ncSum, trueA.back(),
                                                                               edSum, erSum, pairsCount
                                                                             );
     }
@@ -1069,7 +1082,7 @@ vector<double> SANA::translateScoresToVector() {
 }
 
 vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdges,
-            double newTCSum, double newLocalScoreSum, double newWecSum, double newNcSum,
+            double newTCSum, double newLocalScoreSum, double newWecSum, double newJsSum, double newNcSum,
             double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newMS3Numer,
             double newEdSum, double newErSum) {
 
@@ -1079,7 +1092,7 @@ vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdge
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                             ( newAligEdges, g1Edges, newInducedEdges,
                                                                               g2Edges, newTCSum, newLocalScoreSum, n1,
-                                                                              newWecSum, newEwecSum, newNcSum, trueA.back(),
+                                                                              newWecSum, newJsSum, newEwecSum, newNcSum, trueA.back(),
                                                                               g1WeightedEdges, g2WeightedEdges,
                                                                               newSquaredAligEdges, newExposedEdgesNumer,
 									      newMS3Numer, newEdSum, newErSum, pairsCount
@@ -1090,7 +1103,7 @@ vector<double> SANA::getMeasureScores(double newAligEdges, double newInducedEdge
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                             ( newAligEdges, g1Edges, newInducedEdges,
                                                                               g2Edges, newTCSum, newLocalScoreSum, n1,
-                                                                              newWecSum, newEwecSum, newNcSum, trueA.back(),
+                                                                              newWecSum, newJsSum, newEwecSum, newNcSum, trueA.back(),
                                                                               newEdSum, newErSum, pairsCount
                                                                             );
     }
@@ -1126,6 +1139,7 @@ void SANA::prepareMeasureDataByAlignment() {
     localScoreSum    = (needLocal) ? storedLocalScoreSum[A] : -1;
     localScoreSumMap = (needLocal) ? new map<string, double>(*storedLocalScoreSumMap[A]) : nullptr;
     wecSum           = (needWec) ?  storedWecSum[A] : -1;
+    jsSum            = (needJs) ?   storedJsSum[A] : -1;
     ewecSum          = (needEwec) ?  storedEwecSum[A] : -1;
     ncSum            = (needNC) ? storedNcSum[A] : -1;
     currentScore     = storedCurrentScore[A];
@@ -1195,6 +1209,7 @@ void SANA::insertCurrentAlignmentAndData() {
     if(needLocal)                storedLocalScoreSum[A]    = localScoreSum;
     if(needLocal)                storedLocalScoreSumMap[A] = localScoreSumMap;
     if(needWec)                  storedWecSum[A]           = wecSum;
+    if(needJs)                    storedJsSum[A]            = jsSum;
     if(needEwec)                 storedEwecSum[A]          = ewecSum;
     if(needNC)                   storedNcSum[A]            = ncSum;
     /*------------------------>*/storedCurrentScore[A]     = currentScore;
@@ -1227,6 +1242,7 @@ void SANA::removeAlignmentData(vector<uint>* toRemove) {
     if(needInducedEdges)         storedInducedEdges.erase(toRemove);
     if(needTC)                   storedTCSum.erase(toRemove);
     if(needEd)                   storedEdSum.erase(toRemove);
+    if(needJs)                   storedJsSum.erase(toRemove);
     if(needLocal)                storedLocalScoreSum.erase(toRemove);
     if(needLocal)                storedLocalScoreSumMap.erase(toRemove);
     if(needWec)                  storedWecSum.erase(toRemove);
@@ -1351,6 +1367,7 @@ void SANA::performChange(int type) {
     double newTCSum            = (needTC) ?  TCSum + TCIncChangeOp(source, oldTarget, newTarget) : -1;
     double newLocalScoreSum    = (needLocal) ? localScoreSum + localScoreSumIncChangeOp(sims, source, oldTarget, newTarget) : -1;
     double newWecSum           = (needWec) ?  wecSum + WECIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newJsSum            = (needJs) ?  jsSum + JSIncChangeOp(source, oldTarget, newTarget) : -1;
     double newEwecSum          = (needEwec) ?  ewecSum + EWECIncChangeOp(source, oldTarget, newTarget) : -1;
     double newNcSum            = (needNC) ? ncSum + ncIncChangeOp(source, oldTarget, newTarget) : -1;
 
@@ -1363,7 +1380,7 @@ void SANA::performChange(int type) {
 
     double newCurrentScore = 0;
     bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newTCSum,
-            newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum,
+            newLocalScoreSum, newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum,
             newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
 
 #ifdef CORES
@@ -1480,6 +1497,7 @@ void SANA::performSwap(int type) {
     double newExposedEdgesNumer= (needExposedEdges) ?  EdgeExposure::numer + exposedEdgesIncSwapOp(source1, source2, target1, target2) : -1;
     double newMS3Numer         = (needMS3) ?  MultiS3::numer + MS3IncSwapOp(source1, source2, target1, target2) : -1;
     double newWecSum           = (needWec) ?  wecSum + WECIncSwapOp(source1, source2, target1, target2) : -1;
+    double newJsSum            = (needJs) ?  jsSum + JSIncSwapOp(source1, source2, target1, target2) : -1;
     double newEwecSum          = (needEwec) ?  ewecSum + EWECIncSwapOp(source1, source2, target1, target2) : -1;
     double newNcSum            = (needNC) ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
     double newLocalScoreSum    = (needLocal) ? localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2) : -1;
@@ -1495,7 +1513,7 @@ void SANA::performSwap(int type) {
 
     double newCurrentScore = 0;
     bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum,
-                        newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges,
+                        newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges,
                         newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
 
 #ifdef CORES
@@ -1571,7 +1589,7 @@ void SANA::performSwap(int type) {
 }
 
 bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum,
-        double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore,
+        double newLocalScoreSum, double newWecSum, double newJsSum, double newNcSum, double& newCurrentScore,
         double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newMS3Numer,
         double newEdgeDifferenceSum, double newEdgeRatioSum) {
 
@@ -1592,6 +1610,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += TCWeight * (newTCSum);
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore += jsWeight * (newJsSum);
         newCurrentScore += ewecWeight * (newEwecSum);
         newCurrentScore += ncWeight * (newNcSum / trueA.back());
 #ifdef MULTI_PAIRWISE
@@ -1621,6 +1640,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore *= localWeight * (newLocalScoreSum / n1);
         newCurrentScore *= secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         newCurrentScore *= wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore += jsWeight * (newJsSum);
         newCurrentScore *= ncWeight * (newNcSum / trueA.back());
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -1637,7 +1657,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-                wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)))));
+                max(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
@@ -1645,6 +1665,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore += jsWeight * (newJsSum);
         newCurrentScore += ncWeight * (newNcSum / trueA.back());
 
         energyInc = newCurrentScore - currentScore;
@@ -1661,7 +1682,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-                wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)))));
+                min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
@@ -1669,6 +1690,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore += jsWeight * (newJsSum);
         newCurrentScore += ncWeight * (newNcSum / trueA.back());
 
         energyInc = newCurrentScore - currentScore; //is this even used?
@@ -1685,6 +1707,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += icsWeight / (newAligEdges / newInducedEdges);
         newCurrentScore += localWeight / (newLocalScoreSum / n1);
         newCurrentScore += wecWeight / (newWecSum / (2 * g1Edges));
+        newCurrentScore += jsWeight * (newJsSum);
         newCurrentScore += ncWeight / (newNcSum / trueA.back());
 
         energyInc = newCurrentScore - currentScore;
@@ -1700,13 +1723,13 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-                wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)))));
+                max(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
         double minScore = min(ncWeight*(newNcSum / trueA.back() - ncSum / trueA.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-                wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)))));
+                min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
@@ -1714,6 +1737,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore += jsWeight * (newJsSum);
         newCurrentScore += ncWeight * (newNcSum / trueA.back());
 
         energyInc = newCurrentScore - currentScore;
@@ -1725,7 +1749,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
     case Score::pareto:
     { //This determines whether we should update the current alignment.
         vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum,
-                    newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges,
+                    newLocalScoreSum, newWecSum, newJsSum, newNcSum, newEwecSum, newSquaredAligEdges,
                     newExposedEdgesNumer, newMS3Numer, newEdgeDifferenceSum, newEdgeRatioSum);
         if(dominates(addScores, currentScores))
         {
@@ -1741,6 +1765,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
             newCurrentScore += localWeight * (newLocalScoreSum / n1);
             newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
             newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+            newCurrentScore += jsWeight * (newJsSum);
             newCurrentScore += ncWeight * (newNcSum / trueA.back());
         }
         else
@@ -1755,6 +1780,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
             newCurrentScore += localWeight * (newLocalScoreSum / n1);
             newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
             newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+            newCurrentScore += jsWeight * (newJsSum);
             newCurrentScore += ncWeight * (newNcSum / trueA.back());
             energyInc = newCurrentScore - currentScore;
             wasBadMove = energyInc < 0;
@@ -2447,6 +2473,139 @@ double SANA::localScoreSumIncSwapOp(vector<vector<float> > const & sim, uint con
     return sim[source1][target2] - sim[source1][target1] + sim[source2][target1] - sim[source2][target2];
 }
 
+double SANA::JSIncChangeOp(uint source, uint oldTarget, uint newTarget) {
+    double change = 0;
+    if (jsWeight>0){
+        //eval newJsSum here
+        //update alignedByNode with source and source neighbours using oldTarget and newTarget
+
+        // eval for source from sratch
+        uint sourceOldAlingedEdges = alignedByNode[source];
+        uint sourceAlignedEdges = 0;
+        vector<uint> sourceNeighbours = G1AdjLists[source];
+        uint sourceTotalEdges = sourceNeighbours.size();
+        for (uint j = 0; j < sourceTotalEdges; j++){
+            uint neighbour = sourceNeighbours[j];
+            uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+            sourceAlignedEdges += G2Matrix[newTarget][neighbourAlignedTo];
+        }
+        alignedByNode[source] = sourceAlignedEdges;
+        //update newJsSum here
+        change += ((sourceAlignedEdges - sourceOldAlingedEdges)/(double)sourceTotalEdges);
+
+
+        // for each source neighbour update do iterative changes to the jsAlingedByNode vector
+        // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+        // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+        //no changes other wise
+        for (uint j = 0; j < sourceTotalEdges; j++){
+            uint neighbour = sourceNeighbours[j];
+            uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+            uint neighbourOldAlignedEdges = alignedByNode[neighbour];
+            uint neighbourTotalEdges = G1AdjLists[neighbour].size();
+            alignedByNode[neighbour] -= G2Matrix[oldTarget][neighbourAlignedTo];
+            alignedByNode[neighbour] += G2Matrix[newTarget][neighbourAlignedTo];
+            //update newJsSum here
+            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+        }
+    }
+
+    return change;
+}
+
+double SANA::JSIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
+    // NOTE: eval swap as two sources and then loop neighbours
+
+    double change = 0;
+
+    uint source1OldAlingedEdges = alignedByNode[source1];
+    uint source1AlignedEdges = 0;
+    vector<uint> source1Neighbours = G1AdjLists[source1];
+    uint source1TotalEdges = source1Neighbours.size();
+
+
+    uint source2OldAlingedEdges = alignedByNode[source2];
+    uint source2AlignedEdges = 0;
+    vector<uint> source2Neighbours = G1AdjLists[source2];
+    uint source2TotalEdges = source2Neighbours.size();
+
+    // source 1 eval here
+
+    // eval for source1 from sratch
+    for (uint j = 0; j < source1TotalEdges; j++){
+        uint neighbour = source1Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        // if(G2Matrix[target2][neighbourAlignedTo] == true){
+        //     source1AlignedEdges += 1;
+        // }
+        source1AlignedEdges = G2Matrix[target2][neighbourAlignedTo];
+    }
+    alignedByNode[source1] = source1AlignedEdges;
+    //update change here
+    change += ((source1AlignedEdges - source1OldAlingedEdges)/(double)source1TotalEdges);
+
+
+    // for each source neighbour update do iterative changes to the jsAlingedByNode vector
+    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+    // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+    //no changes other wise
+    for (uint j = 0; j < source1TotalEdges; j++){
+        uint neighbour = source1Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        uint neighbourOldAlignedEdges = alignedByNode[neighbour];
+        uint neighbourTotalEdges = G1AdjLists[neighbour].size();
+        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), neighbour) == source1Neighbours.end()){
+            alignedByNode[neighbour] -= G2Matrix[target1][neighbourAlignedTo];
+            alignedByNode[neighbour] += G2Matrix[target2][neighbourAlignedTo];
+            //update newJsSum here
+            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+        }
+    }
+
+    // source 2 eval here
+
+    // eval for source2 from sratch
+    for (uint j = 0; j < source2TotalEdges; j++){
+        uint neighbour = source2Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        source2AlignedEdges += G2Matrix[target1][neighbourAlignedTo];
+    }
+    alignedByNode[source2] = source2AlignedEdges;
+    //update change here
+    change += ((source2AlignedEdges - source2OldAlingedEdges)/(double)source2TotalEdges);
+
+
+    // for each source neighbour update do iterative changes to the jsAlingedByNode vector
+    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+    // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+    //no changes other wise
+    for (uint j = 0; j < source2TotalEdges; j++){
+        uint neighbour = source2Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        uint neighbourOldAlignedEdges = alignedByNode[neighbour];
+        uint neighbourTotalEdges = G1AdjLists[neighbour].size();
+        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), neighbour) == source1Neighbours.end()){
+            alignedByNode[neighbour] -= G2Matrix[target2][neighbourAlignedTo];
+            alignedByNode[neighbour] += G2Matrix[target1][neighbourAlignedTo];
+            //update newJsSum here
+            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+        }
+    }
+
+    //eval for common neighbours here
+    vector<uint> source1source2commonneighbours(source1Neighbours.size() + source2Neighbours.size());
+
+    vector<uint>::iterator it, end;
+
+    end = set_intersection(
+        source1Neighbours.begin(), source1Neighbours.end(),
+        source2Neighbours.begin(), source2Neighbours.end(),
+        source1source2commonneighbours.begin());
+
+    return change;
+
+}
+
 double SANA::WECIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     double res = 0;
     const uint n = G1AdjLists[source].size();
@@ -3109,6 +3268,7 @@ void SANA::performChange(Job &job, int type) {
     double newTCSum            = (needTC) ?  info.TCSum + TCIncChangeOp(job, source, oldTarget, newTarget) : -1;
     double newLocalScoreSum    = (needLocal) ? info.localScoreSum + localScoreSumIncChangeOp(job, sims, source, oldTarget, newTarget) : -1;
     double newWecSum           = (needWec) ?  info.wecSum + WECIncChangeOp(job, source, oldTarget, newTarget) : -1;
+    double newJsSum            = (needJs)  ? info.jsSum + JSIncChangeOp(job, source, oldTarget, newTarget) : -1;
     double newEwecSum          = (needEwec) ?  info.ewecSum + EWECIncChangeOp(job, source, oldTarget, newTarget) : -1;
     double newNcSum            = (needNC) ? info.ncSum + ncIncChangeOp(job, source, oldTarget, newTarget) : -1;
     double newEdSum            = (needEd) ? info.edSum + edgeDifferenceIncChangeOp(job, source, oldTarget, newTarget) : -1;
@@ -3122,7 +3282,7 @@ void SANA::performChange(Job &job, int type) {
     }
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(job, newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
+    bool makeChange = scoreComparison(job, newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
 
 #ifdef CORES
 	// Statistics on the emerging core alignment.
@@ -3162,6 +3322,7 @@ void SANA::performChange(Job &job, int type) {
        info.TCSum                                = newTCSum;
        info.localScoreSum                        = newLocalScoreSum;
        info.wecSum                               = newWecSum;
+       info.jsSum                                = newJsSum;
        info.ewecSum                              = newEwecSum;
        info.ncSum                                = newNcSum;
        info.edSum                                = newEdSum;
@@ -3200,6 +3361,7 @@ void SANA::performSwap(Job &job, int type) {
     double newExposedEdgesNumer= (needExposedEdges) ? info.exposedEdgesNumer + exposedEdgesIncSwapOp(job, source1, source2, target1, target2) : -1;
     double newMS3Numer		= (needMS3) ? info.MS3Numer + MS3IncSwapOp(job, source1, source2, target1, target2) : -1;
     double newWecSum           = (needWec) ?  info.wecSum + WECIncSwapOp(job, source1, source2, target1, target2) : -1;
+    double newJsSum            = (needJs)  ? info.jsSum + JSIncSwapOp(job, source1, source2, target1, target2) : -1;
     double newEwecSum          = (needEwec) ?  info.ewecSum + EWECIncSwapOp(job, source1, source2, target1, target2) : -1;
     double newNcSum            = (needNC) ? info.ncSum + ncIncSwapOp(job, source1, source2, target1, target2) : -1;
     double newLocalScoreSum    = (needLocal) ? info.localScoreSum + localScoreSumIncSwapOp(job, sims, source1, source2, target1, target2) : -1;
@@ -3214,7 +3376,7 @@ void SANA::performSwap(Job &job, int type) {
     }
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(job, newAligEdges, info.inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
+    bool makeChange = scoreComparison(job, newAligEdges, info.inducedEdges, newTCSum, newLocalScoreSum, newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
 #ifdef CORES
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
@@ -3244,6 +3406,7 @@ void SANA::performSwap(Job &job, int type) {
         info.localScoreSum       = newLocalScoreSum;
         info.TCSum               = newTCSum;
         info.wecSum              = newWecSum;
+        info.jsSum               = newJsSum;
         info.ewecSum             = newEwecSum;
         info.ncSum               = newNcSum;
         info.currentScore        = newCurrentScore;
@@ -3489,6 +3652,8 @@ void SANA::storeAlignment(Job &job) {
     if(needLocal)                storedLocalScoreSum[A]    = info.localScoreSum;
     if(needLocal)                storedLocalScoreSumMap[A] = info.localScoreSumMap;
     if(needWec)                  storedWecSum[A]           = info.wecSum;
+    if(needJs)                   storedJsSum[A]            = info.jsSum;
+    // if(needAlignedByNode)        storedAlignedByNode[A]    = info.alignedByNode;
     if(needEwec)                 storedEwecSum[A]          = info.ewecSum;
     if(needNC)                   storedNcSum[A]            = info.ncSum;
     /*------------------------>*/storedCurrentScore[A]     = info.currentScore;
@@ -3508,6 +3673,7 @@ void SANA::copyAlignmentFromStorage(Job &job, vector<uint> *A) {
     info.localScoreSum    = (needLocal) ? storedLocalScoreSum[A] : -1;
     info.localScoreSumMap = (needLocal) ? new map<string, double>(*storedLocalScoreSumMap[A]) : nullptr;
     info.wecSum           = (needWec) ?  storedWecSum[A] : -1;
+    info.jsSum            = (needJs) ?   storedJsSum[A] : -1;
     info.ewecSum          = (needEwec) ?  storedEwecSum[A] : -1;
     info.ncSum            = (needNC) ? storedNcSum[A] : -1;
     info.currentScore     = storedCurrentScore[A];
@@ -3539,7 +3705,7 @@ vector<double> SANA::translateScoresToVector(Job &job) {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                    ( info.aligEdges, g1Edges, info.inducedEdges,
                                                                     g2Edges, info.TCSum, info.localScoreSum, n1,
-                                                                    info.wecSum, info.ewecSum, info.ncSum, trueA.back(),
+                                                                    info.wecSum, info.jsSum, info.ewecSum, info.ncSum, trueA.back(),
                                                                     g1WeightedEdges, g2WeightedEdges,
                                                                     info.squaredAligEdges, info.exposedEdgesNumer,
 								    info.MS3Numer, info.edSum, info.erSum, pairsCount
@@ -3550,7 +3716,7 @@ vector<double> SANA::translateScoresToVector(Job &job) {
         addScores[scoreNamesToIndexes[measureNames[i]]] = measureCalculation[measureNames[i]]
                                                                   ( info.aligEdges, g1Edges, info.inducedEdges,
                                                                     g2Edges, info.TCSum, info.localScoreSum, n1,
-                                                                    info.wecSum, info.ewecSum, info.ncSum, trueA.back(),
+                                                                    info.wecSum, info.jsSum, info.ewecSum, info.ncSum, trueA.back(),
                                                                     info.edSum, info.erSum, pairsCount
                                                                   );
     }
@@ -3728,6 +3894,56 @@ double SANA::WECIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarge
     return res;
 }
 
+double SANA::JSIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
+    vector<uint> *A = job.info.A;
+    double change = 0;
+    if (jsWeight>0){
+        //eval newJsSum here
+        //update jsAlignedByNode with source and source neighbours using oldTarget and newTarget
+
+        // eval for source from sratch
+        uint sourceOldAlingedEdges = alignedByNode[source];
+        uint sourceAlignedEdges = 0;
+        vector<uint> sourceNeighbours = G1AdjLists[source];
+        uint sourceTotalEdges = sourceNeighbours.size();
+        for (uint j = 0; j < sourceTotalEdges; j++){
+            uint neighbour = sourceNeighbours[j];
+            uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+            // if(G2Matrix[newTarget][neighbourAlignedTo] == true){
+            //     sourceAlignedEdges += 1;
+            // }
+            sourceAlignedEdges += G2Matrix[newTarget][neighbourAlignedTo];
+        }
+        alignedByNode[source] = sourceAlignedEdges;
+        //update newJsSum here
+        change += ((sourceAlignedEdges - sourceOldAlingedEdges)/(double)sourceTotalEdges);
+
+
+        // for each source neighbour update do iterative changes to the jsAlingedByNode vector
+        // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+        // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+        //no changes other wise
+        for (uint j = 0; j < sourceTotalEdges; j++){
+            uint neighbour = sourceNeighbours[j];
+            uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+            uint neighbourOldAlignedEdges = alignedByNode[neighbour];
+            uint neighbourTotalEdges = G1AdjLists[neighbour].size();
+            // if (G2Matrix[oldTarget][neighbourAlignedTo] == true && G2Matrix[newTarget][neighbourAlignedTo] == false){
+            //     jsAlignedByNode[neighbour] -= 1;
+            // }
+            // if (G2Matrix[oldTarget][neighbourAlignedTo] == false && G2Matrix[newTarget][neighbourAlignedTo] == true){
+            //     jsAlignedByNode[neighbour] += 1;
+            // }
+            alignedByNode[neighbour] -= G2Matrix[oldTarget][neighbourAlignedTo];
+            alignedByNode[neighbour] += G2Matrix[newTarget][neighbourAlignedTo];
+            //update newJsSum here
+            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+        }
+    }
+
+    return change;
+}
+
 double SANA::EWECIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
     double score = 0;
     score = (EWECSimCombo(job, source, newTarget)) - (EWECSimCombo(job, source, oldTarget));
@@ -3758,7 +3974,7 @@ int SANA::ncIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) {
 }
 
 bool SANA::scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum,
-                         double newLocalScoreSum, double newWecSum, double newNcSum, double& newCurrentScore,
+                         double newLocalScoreSum, double newWecSum, double newJsSum, double newNcSum, double& newCurrentScore,
                          double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newMS3Numer,
 			 double newEdgeDifferenceSum, double newEdgeRatioSum) {
     bool makeChange = false;
@@ -3767,7 +3983,7 @@ bool SANA::scoreComparison(Job &job, double newAligEdges, double newInducedEdges
 
     AlignmentInfo &info = job.info;
 
-    vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newNcSum, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdgeDifferenceSum, newEdgeRatioSum);
+    vector<double> addScores = getMeasureScores(newAligEdges, newInducedEdges, newTCSum, newLocalScoreSum, newWecSum, newJsSum, newNcSum, newEwecSum, newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdgeDifferenceSum, newEdgeRatioSum);
     if(dominates(addScores, info.currentScores)) {
         info.currentScores = addScores;
         makeChange = true;
@@ -3781,6 +3997,7 @@ bool SANA::scoreComparison(Job &job, double newAligEdges, double newInducedEdges
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore += jsWeight * (newJsSum);
         newCurrentScore += ncWeight * (newNcSum / trueA.back());
     } else {
         newCurrentScore = 0;
@@ -3793,6 +4010,7 @@ bool SANA::scoreComparison(Job &job, double newAligEdges, double newInducedEdges
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
+        newCurrentScore += jsWeight * (newJsSum);
         newCurrentScore += ncWeight * (newNcSum / trueA.back());
         job.energyInc = newCurrentScore - info.currentScore;
         wasBadMove = job.energyInc < 0;
@@ -3998,6 +4216,93 @@ double SANA::WECIncSwapOp(Job &job, uint source1, uint source2, uint target1, ui
         res += 2*wecSims[source2][target2];
     }
     return res;
+}
+
+double SANA::JSIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2) {
+    // NOTE: eval swap as two sources and then loop neighbours
+
+    vector<uint> *A = job.info.A;
+    double change = 0;
+
+    uint source1OldAlingedEdges = alignedByNode[source1];
+    uint source1AlignedEdges = 0;
+    vector<uint> source1Neighbours = G1AdjLists[source1];
+    uint source1TotalEdges = source1Neighbours.size();
+
+
+    uint source2OldAlingedEdges = alignedByNode[source2];
+    uint source2AlignedEdges = 0;
+    vector<uint> source2Neighbours = G1AdjLists[source2];
+    uint source2TotalEdges = source2Neighbours.size();
+
+    // source 1 eval here
+
+    // eval for source1 from sratch
+    for (uint j = 0; j < source1TotalEdges; j++){
+        uint neighbour = source1Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        // if(G2Matrix[target2][neighbourAlignedTo] == true){
+        //     source1AlignedEdges += 1;
+        // }
+        source1AlignedEdges = G2Matrix[target2][neighbourAlignedTo];
+    }
+    alignedByNode[source1] = source1AlignedEdges;
+    //update change here
+    change += ((source1AlignedEdges - source1OldAlingedEdges)/(double)source1TotalEdges);
+
+
+    // for each source neighbour update do iterative changes to the jsAlingedByNode vector
+    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+    // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+    //no changes other wise
+    for (uint j = 0; j < source1TotalEdges; j++){
+        uint neighbour = source1Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        uint neighbourOldAlignedEdges = alignedByNode[neighbour];
+        uint neighbourTotalEdges = G1AdjLists[neighbour].size();
+        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), neighbour) == source1Neighbours.end()){
+            alignedByNode[neighbour] -= G2Matrix[target1][neighbourAlignedTo];
+            alignedByNode[neighbour] += G2Matrix[target2][neighbourAlignedTo];
+            //update newJsSum here
+            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+        }
+    }
+
+    // source 2 eval here
+
+    // eval for source2 from sratch
+    for (uint j = 0; j < source2TotalEdges; j++){
+        uint neighbour = source2Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        source2AlignedEdges += G2Matrix[target1][neighbourAlignedTo];
+    }
+    alignedByNode[source2] = source2AlignedEdges;
+    //update change here
+    change += ((source2AlignedEdges - source2OldAlingedEdges)/(double)source2TotalEdges);
+
+
+    // for each source neighbour update do iterative changes to the jsAlingedByNode vector
+    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+    // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+    //no changes other wise
+    for (uint j = 0; j < source2TotalEdges; j++){
+        uint neighbour = source2Neighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        uint neighbourOldAlignedEdges = alignedByNode[neighbour];
+        uint neighbourTotalEdges = G1AdjLists[neighbour].size();
+        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), neighbour) == source1Neighbours.end()){
+            alignedByNode[neighbour] -= G2Matrix[target2][neighbourAlignedTo];
+            alignedByNode[neighbour] += G2Matrix[target1][neighbourAlignedTo];
+            //update newJsSum here
+            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+        }
+    }
+
+    // //eval for common neighbours here
+    // vector<uint> source1source2commonneighbours(source1Neighbours.size() + source2Neighbours.size());
+
+    return change;
+
 }
 
 double SANA::EWECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2) {

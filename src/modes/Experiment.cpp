@@ -5,6 +5,7 @@
 #include "../utils/utils.hpp"
 #include "../utils/Timer.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
+#include "../measures/JaccardSimilarityScore.hpp"
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/LargestCommonConnectedSubgraph.hpp"
 #include "../measures/NodeCorrectness.hpp"
