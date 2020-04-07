@@ -1,17 +1,14 @@
 import argparse
-#from research_for_graph import *
-#from graph_research import *
 import recalignment
 import recalignment_nosim
 import seeding
 import builder
 import lzma
-
-
 import time
 import os.path
 import time
 import uuid
+import multiprocessing
 from collections import defaultdict
 
 def initParser():
@@ -34,6 +31,7 @@ def initParser():
     parser.add_argument("-ed", "--edbound", required=False, default = "0.0", help = "edge density lower bound")
     parser.add_argument("-pk", "--pickle", required=False, default = "", help = "location of existing pickle file")
     parser.add_argument("-t", "--timestop", required=False, default = "-1.0", help = "Stop program after specified time, units in hours")
+    parser.add_argument("-at", "--alignstop", required=False, default = -1, help = "Stop program after speciefied number of alignments generated")
     parser.add_argument("-sn", "--seednum", required=False, default = "", help = "seed num")
     parser.add_argument("-od", "--outputdir", required=False, default = "", help = "outputdir")
     parser.add_argument('-debug', "--debugval",action='store_true', help="adding debug will set to True, no entry is False")
@@ -81,9 +79,25 @@ if __name__ == '__main__':
         timestop_arg = ntimestop
 
     if simbound > 0:
+        print("Building sim..")
         sims = builder.get_sim(args.sim, graph1, graph2, args.pickle)
-        recalignment.rec_align(graph1, graph2, seed, sims, ec_mode, ed, e1, simbound, delta, alpha, seednum, args.outputdir, timestop=timestop_arg, debug=args.debugval)   
+        print("sim built")
+        #recalignment.rec_align(graph1, graph2, seed, sims, ec_mode, ed, e1, simbound, delta, alpha, seednum, args.outputdir, timestop=timestop_arg, debug=args.debugval)   
+        p = multiprocessing.Process(target=recalignment.rec_align, name = "alignfunc", args=((graph1, graph2, seed, sims, ec_mode, ed, e1, simbound, delta, alpha, seednum, args.outputdir, args.alignstop,timestop_arg, args.debugval)))
+        p.start()
+        p.join(timestop_arg)
+        #time.sleep(timestop_arg)
+        if p.is_alive():
+            p.terminate()
+            p.join()
+
     else:
-        recalignment_nosim.rec_align(graph1, graph2, seed, ec_mode, ed, e1, delta, alpha, seednum, args.outputdir, timestop=timestop_arg, debug=args.debugval)    
+        p = multiprocessing.Process(target=recalignment_nosim.rec_align, name = "alignfunc", args=((graph1, graph2, seed, ec_mode, ed, e1, delta, alpha, seednum, args.outputdir, timestop_arg, args.debugval)))
+        p.start()
+        time.sleep(timestop_arg)
+        if p.is_alive():
+            p.terminate()
+            
+        #recalignment_nosim.rec_align(graph1, graph2, seed, ec_mode, ed, e1, delta, alpha, seednum, args.outputdir, timestop=timestop_arg, debug=args.debugval)    
 
 

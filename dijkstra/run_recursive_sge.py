@@ -32,8 +32,9 @@ def initParser():
     parser.add_argument("-ed", "--edbound", required=False, default = "0.0", help = "edge density lower bound")
     parser.add_argument("-pk", "--pickle", required=False, default = "", help = "location of existing pickle file")
     parser.add_argument("-t", "--timestop", required=False, default = "-1.0", help = "Stop program after specified time, units in hours")
+    parser.add_argument("-at", "--alignstop", required=False, default = -1, help = "Stop program after speciefied number of alignments generated")
+    parser.add_argument("-od", "--outputdir", required=False, default = "", help = "outputdir")
     parser.add_argument('-debug', "--debugval",action='store_true', help="adding debug will set to True, no entry is False")
-
     return parser
 
 
@@ -59,16 +60,21 @@ if __name__ == '__main__':
         ntimestop = timestop_arg * 3600  
         timestop_arg = ntimestop
 
+    
 
     seednum = 0
     for g1linenum, g2linenum in seeding.generate_seedinfo(g1_seed_file, g2_seed_file):
         seednum += 1 
+        if args.outputdir != "":
+            pod = "-od " + args.outputdir + " "
+        else:
+            pod = ""
         pgraph1 =  "-g1 "+ args.graph1+ " "
         pgraph2 =  "-g2 "+ args.graph2+ " " 
         pg1s = "-g1s "+ g1_seed_file+ " " 
         pg2s = "-g2s "+ g2_seed_file+ " " 
         pg1linenum = "-g1sline "+ str(g1linenum)+ " " 
-        pg2linenum = "-g2sline "+ str(g2linenum)+ " "
+        pg2linenum = "-g2sline "+ str(g2linenum)+ " " 
         psim = "-s " + args.sim+ " " if args.sim else ""
         pdelta = " -d 0.0 " 
         pec1 = "-ec1 "+ str(ec_mode[1])
@@ -76,7 +82,9 @@ if __name__ == '__main__':
         ped = "-ed "+ str(ed)+ " "
         psb = "-sb "+ str(simbound)+ " "
         psn = "-sn " + str(seednum) + " " 
+        pt = "-t " + args.timestop + " "
+        pat = "-at " + args.alignstop + " "
         ppk = " -pk "+ args.pickle+ " " if args.pickle else ""
         path = subprocess.run(['pwd'], stdout=subprocess.PIPE).stdout.decode('utf-8')
         prog = "python3.7 " + path.strip() + "/run_recursive_seed.py "
-        print(prog, pgraph1, pgraph2, pg1s, pg2s, pg1linenum, pg2linenum, psim, pdelta, pec1, pec2, ped, psb, psn, ppk) 
+        print(prog, pgraph1, pgraph2, pg1s, pg2s, pg1linenum, pg2linenum, psim, pdelta, pec1, pec2, ped, psb, pt, pat, pod, psn, ppk) 
