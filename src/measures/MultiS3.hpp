@@ -11,7 +11,7 @@ extern unsigned NUM_GRAPHS;
 
 class MultiS3 : public Measure {
 public:
-    MultiS3(Graph* G1, Graph* G2, int type);
+    MultiS3(Graph* G1, Graph* G2, int _numerator_type, int _denominator_type);
     virtual ~MultiS3();
     double eval(const Alignment& A);
     static vector<uint> totalDegrees; // sum of neighboring edge weights including G1

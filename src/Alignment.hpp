@@ -55,6 +55,7 @@ public:
 #if MULTI_PAIRWISE
     int numExposedEdges(const Graph& G1, const Graph& G2) const;
     unsigned multiS3Numerator(const Graph& G1, const Graph& G2) const;
+    unsigned multiS3Denominator(const Graph& G1, const Graph& G2) const;
 #endif
 
     //common subgraph: graph with same nodes as G1, but with only the edges preserved by A
