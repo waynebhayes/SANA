@@ -214,7 +214,30 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 	m = new EdgeExposure(&G1, &G2);
     M.addMeasure(m, getWeight("ee", G1, G2, args));
     
-    m = new MultiS3(&G1, &G2, getWeight("ms3_type",G1,G2,args));
+    int _numerator_type,_denominator_type;
+    if (args.strings["-ms3_numer"] == "default"){
+        _numerator_type = 0;}
+    else if (args.strings["-ms3_numer"] == "ra_i"){
+        _numerator_type = 1;}
+    else if (args.strings["-ms3_numer"] == "la_i"){
+        _numerator_type = 2;}
+    else if (args.strings["-ms3_numer"] == "la_global"){
+        _numerator_type = 3;}
+    else if (args.strings["-ms3_numer"] == "ra_global"){
+        _numerator_type = 4;}
+
+    if (args.strings["-ms3_denom"] == "default"){
+        _denominator_type = 0;}
+    else if (args.strings["-ms3_denom"] == "rt_i"){
+        _denominator_type = 1;}
+    else if (args.strings["-ms3_denom"] == "ee_i"){
+        _denominator_type = 2;}
+    else if (args.strings["-ms3_denom"] == "ee_global"){
+        _denominator_type = 3;}
+    else if (args.strings["-ms3_denom"] == "rt_global"){
+        _denominator_type = 4;}
+    
+    m = new MultiS3(&G1, &G2, _numerator_type, _denominator_type);
     M.addMeasure(m, getWeight("ms3", G1, G2, args));
 
     m = new InducedConservedStructure(&G1, &G2);

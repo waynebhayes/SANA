@@ -46,38 +46,38 @@ MultiS3::MultiS3(Graph* G1, Graph* G2, int _numerator_type, int _denominator_typ
 //    }    
     numerator_type   = _numerator_type  ;
     denominator_type = _denominator_type;
-    cout<<"Multi S3: numer = "
+    cout<<"Multi S3: numer = ";
     switch(numerator_type){
-        case ra_i:
+        case 1:
             cout<<"ra_i"<<endl;
             break; 
-        case la_i:
+        case 2:
             cout<<"la_i"<<endl;
             break;
-        case la_global:
+        case 3:
             cout<<"la_global"<<endl;
             break;
-        case ra_global:
+        case 4:
             cout<<"ra_global"<<endl;
             break;
-        finally:
+        default:
             cout<<"default"<<endl;
     }
     cout<<"Multi S3: denom = ";
     switch(denominator_type){
-        case rt_i:
+        case 1:
             cout<<"rt_i"<<endl;
             break;
-        case ee_i:
+        case 2:
             cout<<"ee_i"<<endl;
             break;
-        case ee_global:
+        case 3:
             cout<<"ee_global"<<endl;
             break;
-        case rt_global:
+        case 4:
             cout<<"rt_global"<<endl;
             break;
-        finally:
+        default:
             cout<<"default"<<endl;
     }
 

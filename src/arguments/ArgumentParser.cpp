@@ -121,6 +121,7 @@ void ArgumentParser::initParsedValues(vector<string> vArg) {
     int i = 0;
     while (i < n) {
         arg = vArg[i];
+        std::cout << arg << std::endl;
         if(strings.count(arg)) {
             strings[arg]=vArg[i+1];
             i++;
