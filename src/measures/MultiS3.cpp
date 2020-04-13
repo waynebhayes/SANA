@@ -37,7 +37,7 @@ MultiS3::MultiS3(Graph* G1, Graph* G2, int _numerator_type, int _denominator_typ
         cerr << "Warning: NUM_GRAPHS should be an environment variable; setting to 2 for now\n";
         NUM_GRAPHS = 2;
     }
-//    _type=0;//default
+      _type=1;//default
 //    _type = type;
 //    if (type==1){
 //        cout<<"Multi S3: denom = ee"<<endl;

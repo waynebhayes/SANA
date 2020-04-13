@@ -429,7 +429,8 @@ unsigned Alignment::multiS3Numerator(const Graph& G1, const Graph& G2) const {
             }
         }
     }else{
-        cerr << "numerator_type not specified, check your command argument" << endl;
+	ret += G2Matrix[A[node1]][A[node2]] + 1;
+        cerr << "numerator_type not specified, Using default numerator." << endl;
     }
     
     return ret;
