@@ -1598,7 +1598,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double n
         newCurrentScore += mecWeight * (newAligEdges / (g1WeightedEdges + g2WeightedEdges));
         newCurrentScore += sesWeight * newSquaredAligEdges / (double)SquaredEdgeScore::getDenom();
 	newCurrentScore += eeWeight * (1 - (newExposedEdgesNumer / (double)EdgeExposure::getDenom()));
-        if (MultiS3::_type==1){
+        if (MultiS3::denominator_type==MultiS3::ee_global){
 	    MultiS3::denom = newExposedEdgesNumer;
 	}
 	newCurrentScore += ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)NUM_GRAPHS;
@@ -2246,7 +2246,23 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
             res += (diff==1?0:diff) ;
             }
         return res;
+    }else if (MultiS3::numerator_type==MultiS3::la_i){
+        int res = 0, diff; 
+        uint neighbor;
+        const uint n = G1AdjLists[source].size();
+        bool ladder = false;
+        for (uint i = 0; i < n; ++i) {
+            neighbor = G1AdjLists[source][i];
+            diff = G2Matrix[oldTarget][(*A)[neighbor]] + 1;
+            ladder = (diff>1?true;false);
+            if (ladder):{res -= 1;}
+            diff = G2Matrix[newTarget][(*A)[neighbor]] + 1;
+            ladder = (diff>1?true;false);
+            if (ladder):{res += 1;}
+        return res;
     }
+
+
     int ret = 0;
     unsigned oldOldTargetDeg = MultiS3::totalDegrees[oldTarget];
     unsigned oldNewTargetDeg = MultiS3::totalDegrees[newTarget];
@@ -2306,7 +2322,7 @@ int SANA::MS3IncSwapOp(Job &job, uint source1, uint source2, uint target1, uint 
 }
 // Return change in NUMERATOR only
 int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    if (MultiS3::_type==1){
+    if (MultiS3::numerator_type==MultiS3::ra_i){
         //denom is ee
         int res = 0, diff;
         uint neighbor;
@@ -2339,8 +2355,51 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
             res += 2*(diff==1?0:diff);
         }
         return res;
+    }else if (MultiS3::numerator_type==MultiS3::la_i){
+        int res = 0, diff;
+        uint neighbor;
+        const uint n = G1AdjLists[source1].size();
+        uint i = 0;
+        bool ladder = false;
+        for (; i < n; ++i) {
+            neighbor = G1AdjLists[source1][i];
+            diff = G2Matrix[target1][(*A)[neighbor]] + 1;
+            ladder = (diff>1?true:false);
+            diff = G2Matrix[target2][(*A)[neighbor]] + 1;
+            if (target2==(*A)[neighbor]){
+                diff=0;
+            }
+            if (ladder and diff<=1){
+                res--;
+            }else if (not ladder and diff>1){
+                res++;
+            }
+        }
+        const uint m = G1AdjLists[source2].size();
+        for (i = 0; i < m; ++i) {
+            neighbor = G1AdjLists[source2][i];
+            diff = G2Matrix[target2][(*A)[neighbor]] + 1;
+            ladder = (diff>1?true:false);
+            diff = G2Matrix[target1][(*A)[neighbor]] + 1;
+            if (target1==(*A)[neighbor]){
+                diff=0;
+            }
+            if (ladder and diff<=1){
+                res--;
+            }else if (not ladder and diff>1){
+                res++;
+            }
+        }
+        if(G2Matrix[target1][target2] and  G1Matrix[source1][source2])
+        {
+            diff = ( G2Matrix[target1][(*A)[source2]] + 1);
+            res += 2*(diff>1?1:0);
+        }
+        return res;
     }
-    
+
+
+
     int ret = 0;
     unsigned oldTarget1Deg = MultiS3::totalDegrees[target1];
     unsigned oldTarget2Deg = MultiS3::totalDegrees[target2];
