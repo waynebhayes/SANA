@@ -198,7 +198,9 @@ double MultiS3::eval(const Alignment& A)
     }
     unsigned newNumer = A.multiS3Numerator(*G1, *G2);
     if(newNumer != numer) cerr << "inc eval MS3numer wrong: should be "<<newNumer<<" but is "<<numer << '\n';
+    //cout << "numer: " << numer << "newNumer: " << newNumer << endl;
     numer = newNumer;
+    //cout << "denom: " << denom << endl;
     if (   (   (numerator_type==ra_i   or numerator_type==ra_global)
            and (denominator_type==ee_i or denominator_type==ee_global))
         or (numerator_type==_default and denominator_type==_default)  ){

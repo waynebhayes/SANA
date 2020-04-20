@@ -297,6 +297,10 @@ int Alignment::numExposedEdges(const Graph& G1, const Graph& G2) const {
     Matrix<MATRIX_UNIT> G2Matrix;
     G1.getMatrix(G1Matrix);
     G2.getMatrix(G2Matrix);
+    
+    vector<vector<uint>> G2EdgeList;
+    G2.getEdgeList(G2EdgeList);
+    
 	
 	vector<uint> whichPeg(n2, n1); // value of n1 represents not used
 	for (uint i = 0; i < n1; ++i)
@@ -304,10 +308,10 @@ int Alignment::numExposedEdges(const Graph& G1, const Graph& G2) const {
 		//assert(0 <= A[i] && A[i] < n2);
 		whichPeg[A[i]] = i; // inverse of the alignment
 	}
-
+        
 	for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j)
-	{
-		bool exposed = (G2Matrix[i][j] > 0);
+        {
+                bool exposed = (G2Matrix[i][j] > 0);
 		if(!exposed && whichPeg[i] < n1 && whichPeg[j] < n1)
 		{
 			if(G1Matrix[whichPeg[i]][whichPeg[j]])
@@ -319,6 +323,7 @@ int Alignment::numExposedEdges(const Graph& G1, const Graph& G2) const {
 		}
 		if(exposed) ret++;
 	}
+        //cout << "G2------------" << count << endl;
 		
 #if 0
 	unordered_set<uint> holes(n2);
@@ -409,25 +414,29 @@ unsigned Alignment::multiS3Numerator(const Graph& G1, const Graph& G2) const {
     }else if ( (MultiS3::numerator_type == MultiS3::ra_global) or (MultiS3::numerator_type == MultiS3::la_global)){
         const uint n1 = G1.getNumNodes();
         const uint n2 = G2.getNumNodes();
-
+        //std::cout << "123-----------123--------------123------------" << std::endl;
         vector<uint> reverse_A = vector<uint> (n2,n1);// value of n1 represents not used
-        for(uint i=0; i< A.size();i++){
+        for(uint i=0; i< n1; i++){
             reverse_A[A[i]] = i; 
         } 
 
         for (const auto& edge: G2EdgeList){
+            //std::cout << "456-----------456--------------456------------" << std::endl;
             node1 = edge[0], node2 = edge[1];
             if (MultiS3::numerator_type == MultiS3::ra_global){
                 ret += G2Matrix[node1][node2];
-                if (G1Matrix[reverse_A[node1]][reverse_A[node2]]==1){
-                    ret += 1; // +1 because G1 was pruned out of G2
+                if (reverse_A[node1] < n1 and reverse_A[node2] < n1 and G1Matrix[reverse_A[node1]][reverse_A[node2]]==1){
+                    //std::cout << "reverse------------reverse--------reverse" << std::endl;
+                    ret += G2Matrix[node1][node2] + 1;
+                    // +1 because G1 was pruned out of G2
                 }
             }else if (MultiS3::numerator_type == MultiS3::la_global){
-                if (G2Matrix[node1][node2] + G1Matrix[reverse_A[node1]][reverse_A[node2]] > 1){
+                if (reverse_A[node1] < n1 and reverse_A[node2] < n1 and G2Matrix[node1][node2] + G1Matrix[reverse_A[node1]][reverse_A[node2]] > 1){
                     ret += 1; // +1 because G1 was pruned out of G2
                 }
             }
         }
+        //std::cout << "789-----------------789-----------789-------------789" << std::endl;
     }else{
 	ret += G2Matrix[A[node1]][A[node2]] + 1;
         cerr << "numerator_type not specified, Using default numerator." << endl;

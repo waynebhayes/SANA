@@ -49,7 +49,7 @@ unsigned EdgeExposure::getMaxEdge()
 double EdgeExposure::eval(const Alignment& A) {
 #if MULTI_PAIRWISE
     uint ne = A.numExposedEdges(*G1, *G2);
-    if(ne != numer) cerr << "EdgeExposure::numer should be "<<ne<<" but is "<<ne <<'\n';
+    if(int(ne) != int(numer)) cerr << "EdgeExposure::numer should be "<< numer <<" but is "<< ne <<'\n';
     numer = ne;
     assert(ne >= MAX_EDGE);
     assert(ne <= EDGE_SUM);
