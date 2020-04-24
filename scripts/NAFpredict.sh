@@ -28,8 +28,8 @@ esac
 seqSim="$1"
 go1="$2"
 go2="$3"
-t1=$4
-t2=$5
+tax1=$4
+tax2=$5
 NAFthresh=$6
 c1=$7
 c2=$8
@@ -41,51 +41,60 @@ TMPDIR=/tmp/GOpredict.$$
 trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
 dataDir=`echo "$@" | newlines | sed 's,/[^/]*$,,' | sort -u`
-sort "$@" | uniq -c | sort -nr | awk 'BEGIN{t1='$t1';t2='$t2';
+sort "$@" | uniq -c | sort -nr | awk 'BEGIN{tax1='$tax1';tax2='$tax2';
 	c1=1+'$c1';c2=1+'$c2'; # increment column since "uniq -c" above prepends NAF to the line
+	NAFthresh='$NAFthresh';
     }
-    ARGIND==1{seq[$1][$2]=1} # sequence similar pairs
-    ARGIND==2&&$1>='$NAFthresh'{u=$c1;;v=$c2;
+    ARGIND==1{seq[$1][$2]=1;next} # sequence similar pairs
+    ARGIND==2{u=$c1;;v=$c2;
 	if(u in seq && v in seq[u])next; # ignore if sequence similar
-	NAF[u][v]=$1
+	NAF[u][v]=$1; # store ALL NAFs for now, not just those above the threshold
+	next
     }
     ARGIND==3{FS="	"; if(/	NOT	/)next} # make FS a tab, and ignore "NOT" lines
-    ARGIND==3&&($1==t1||$1==t2){++pGO[$1][$2][$3][$4]; # species, protein, GO, evidence code
+    ARGIND==3&&($1==tax1||$1==tax2){++pGO[$1][$2][$3][$4]; # species, protein, GO, evidence code
 	H[$3]=$NF; # hierarchy (BP,MF,CC)
     }
-    END{for(p1 in pGO[t1]) # loop over all proteins in species1 that have any GO terms
-	if(p1 in NAF) # if we have a predictive NAF value for that protein...
-	    for(p2 in NAF[p1]) # loop over all the species2 proteins aligned to p1
-		for(g in pGO[t1][p1]) # loop over all the GO terms from protein p1
-		    # if protein p2 is not listed at all in the gene2go file...
-		    #... or if it is but does not have this particular GO term...
-		    if(!(p2 in pGO[t2]) ||!(g in pGO[t2][p2]))
-		    # it is a prediction!!! Print out the expected line to find in the later gene2go file:
-			for(ec in pGO[t1][p1][g]) # print the evidence codes from p1
-			    printf "%d\t%s\t%s\t%s\t%s\n",t2,p2,g,ec,H[g]
-    }' "$seqSim" - "$go1" | sort -u | tee $TMPDIR/predictions.allCol |
-	cut -f1-3 | # remove evidence code &hier from prediction before search
+    END{
+	for(p1 in pGO[tax1]) # loop over all proteins in species1 that have any GO terms
+	    if(p1 in NAF) # if we have a predictive NAF value for that protein...
+		for(p2 in NAF[p1]) # loop over all the species2 proteins aligned to p1
+		    for(g in pGO[tax1][p1]) # loop over all the GO terms from protein p1
+			# if protein p2 is not listed at all in the gene2go file...
+			#... or if it is but does not have this particular GO term...
+			if(!(p2 in pGO[tax2]) ||!(g in pGO[tax2][p2]))
+			    # it is a prediction!!! Print out the expected line to find in the later gene2go file:
+			    for(evc in pGO[tax1][p1][g])
+				NAFpredict[tax2][p2][g][evc]+=NAF[p1][p2]
+	# Now that we have accumulated all the possible predictions and evidences, print out only those that meet NAFthresh
+	for(p2 in NAFpredict[tax2])for(g in NAFpredict[tax2][p2])for(evc in NAFpredict[tax2][p2][g])
+	    if(NAFpredict[tax2][p2][g][evc] >= NAFthresh) # do we want EACH evidence above NAFthresh, or just the total?
+		printf "%d\t%d\t%s\t%s\t%s\t%s\n",NAFpredict[tax2][p2][g][evc],tax2,p2,g,evc,H[g]
+    }' "$seqSim" - "$go1" |
+	sort -nr | # sort highest first but do NOT remove duplicates: the same p2 predicted from different p1s means something
+	tee $TMPDIR/predictions.allCol |
+	cut -f2-4 | # remove NAF, evidence code &hier from prediction before search
 	sort -u | fgrep -f - "$go2" | fgrep -v '	NOT	' | sort -u > $TMPDIR/validated.allCol
-if $LIST_PRED; then cat $TMPDIR/predictions.allCol
+if $LIST_PRED; then cat $TMPDIR/predictions.allCol # includes leading NAF+duplicates, each should be from a different p1 in tax1
 elif $LIST_VAL; then cat $TMPDIR/validated.allCol
 else
-    evCodesPred=`cut -f4 $TMPDIR/predictions.allCol | sort -u`
+    evCodesPred=`cut -f5 $TMPDIR/predictions.allCol | sort -u` # col5 because of leading NAF
     evCodesVal=`cut -f4 $TMPDIR/validated.allCol | sort -u`
-    hierVal=`cut -f8 $TMPDIR/validated.allCol | sort -u`
-    # Shorten GO names for output
+    Categories=`cut -f8 $TMPDIR/validated.allCol | sort -u`
+    # Shorten GO fileNames for output
     GO1=`echo $go1|sed 's,^.*/go/,,'`
     GO2=`echo $go2|sed 's,^.*/go/,,'`
-    for ec in $evCodesPred; do
-	pred=`fgrep "	$ec" $TMPDIR/predictions.allCol | cut -f1-3 | sort -u | tee $TMPDIR/pred$ec | wc -l`
-	val=`fgrep -f $TMPDIR/pred$ec $TMPDIR/validated.allCol | cut -f1-3 | sort -u | tee $TMPDIR/val$ec | wc -l`
-	echo "$ec $pred $val" |
+    for evc in $evCodesPred; do
+	pred=`fgrep "	$evc	" $TMPDIR/predictions.allCol | cut -f2-4 | sort -u | tee $TMPDIR/pred$evc | wc -l`
+	val=`fgrep -f $TMPDIR/pred$evc $TMPDIR/validated.allCol | cut -f1-3 | sort -u | tee $TMPDIR/val$evc | wc -l`
+	echo "$evc $pred $val" |
 	    awk '$2>0{printf "%10s %3s NAF %3d : %6d pred %5d val prec %5.1f%%\n",
 		"'$dataDir'",$1,'$NAFthresh',$2,$3,100*$3/$2}'
     done > $TMPDIR/predECSummary
-    for h in $hierVal; do
-	pred=`fgrep "	$h" $TMPDIR/predictions.allCol | cut -f1-3 | sort -u | tee $TMPDIR/pred$h | wc -l`
-	val=`fgrep -f $TMPDIR/pred$h $TMPDIR/validated.allCol | cut -f1-3 | sort -u | tee $TMPDIR/val$h | wc -l`
-	echo "$h $pred $val" |
+    for c in $Categories; do
+	pred=`fgrep "	$c" $TMPDIR/predictions.allCol | cut -f2-4 | sort -u | tee $TMPDIR/pred$c | wc -l`
+	val=`fgrep -f $TMPDIR/pred$c $TMPDIR/validated.allCol | cut -f1-3 | sort -u | tee $TMPDIR/val$c | wc -l`
+	echo "$c $pred $val" |
 	    awk '$2>0{printf "%10s %9s NAF %3d : %6d pred %5d val prec %5.1f%%\n",
 		"'$dataDir'",$1,'$NAFthresh',$2,$3,100*$3/$2}'
     done > $TMPDIR/predHierSummary
