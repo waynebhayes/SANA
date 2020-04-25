@@ -26,6 +26,7 @@ MultiS3::MultiS3(Graph* G1, Graph* G2, int _numerator_type, int _denominator_typ
 {
 #if MULTI_PAIRWISE
     
+    cout << "EEEEEEEEEEEEEEEEnter MultiS3......" << endl;
     extern char *getetv(char*);
     char *s = getenv((char*)"NUM_GRAPHS");
     if (s)
@@ -179,6 +180,7 @@ unsigned MultiS3::computeDenom(const Alignment& A, const Graph& G1, const Graph&
 double MultiS3::eval(const Alignment& A)
 {
 #if MULTI_PAIRWISE
+    cout << "Incdenom: " << denom << endl;
     if (!degreesInit)
     {
         initDegrees(A, *G1, *G2);
@@ -198,9 +200,9 @@ double MultiS3::eval(const Alignment& A)
     }
     unsigned newNumer = A.multiS3Numerator(*G1, *G2);
     if(newNumer != numer) cerr << "inc eval MS3numer wrong: should be "<<newNumer<<" but is "<<numer << '\n';
-    //cout << "numer: " << numer << "newNumer: " << newNumer << endl;
+    cout << "numer: " << numer << "newNumer: " << newNumer << endl;
     numer = newNumer;
-    //cout << "denom: " << denom << endl;
+    cout << "Evaldenom: " << denom << endl;
     if (   (   (numerator_type==ra_i   or numerator_type==ra_global)
            and (denominator_type==ee_i or denominator_type==ee_global))
         or (numerator_type==_default and denominator_type==_default)  ){
@@ -209,7 +211,7 @@ double MultiS3::eval(const Alignment& A)
         // or using default ms3
         return double(newNumer) / denom / NUM_GRAPHS;
     }else{
-        return double(newNumer) / denom ;
+        return double(newNumer) / denom / NUM_GRAPHS;
     }
 #else
     return 0.0;

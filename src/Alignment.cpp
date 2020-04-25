@@ -424,10 +424,10 @@ unsigned Alignment::multiS3Numerator(const Graph& G1, const Graph& G2) const {
             //std::cout << "456-----------456--------------456------------" << std::endl;
             node1 = edge[0], node2 = edge[1];
             if (MultiS3::numerator_type == MultiS3::ra_global){
-                ret += G2Matrix[node1][node2];
-                if (reverse_A[node1] < n1 and reverse_A[node2] < n1 and G1Matrix[reverse_A[node1]][reverse_A[node2]]==1){
+                ret += G2Matrix[node1][node2]>1 ? G2Matrix[node1][node2]:0;
+                if (reverse_A[node1] < n1 and reverse_A[node2] < n1 and G2Matrix[node1][node2]>0 and G1Matrix[reverse_A[node1]][reverse_A[node2]]==1){
                     //std::cout << "reverse------------reverse--------reverse" << std::endl;
-                    ret += G2Matrix[node1][node2] + 1;
+                    ret += G2Matrix[node1][node2]>1 ? 1:2;
                     // +1 because G1 was pruned out of G2
                 }
             }else if (MultiS3::numerator_type == MultiS3::la_global){
@@ -471,17 +471,30 @@ unsigned Alignment::multiS3Denominator(const Graph& G1, const Graph& G2) const {
                 exposed = true;
             }
             if(exposed and MultiS3::denominator_type == MultiS3::ee_global) ret++;
-            if(exposed and MultiS3::denominator_type == MultiS3::rt_global) ret += G1Matrix[whichPeg[i]][whichPeg[j]] + G2Matrix[i][j];
+            if(exposed and MultiS3::denominator_type == MultiS3::rt_global){
+                if (whichPeg[i] < n1 && whichPeg[j] < n1){
+                    ret += G1Matrix[whichPeg[i]][whichPeg[j]] + G2Matrix[i][j];
+                }else{
+                    ret +=  G2Matrix[i][j];
+                }
+            }        
         }
     }else if (MultiS3::denominator_type == MultiS3::ee_i or MultiS3::denominator_type == MultiS3::rt_i){
         for (uint i = 0; i < n1; ++i) for (uint j = 0; j < i; ++j){
-            bool exposed = (G1Matrix[whichPeg[i]][whichPeg[j]] > 0);
-            if(!exposed && whichPeg[i] < n1 && whichPeg[j] < n1 && G2Matrix[i][j] > 0){
+            bool exposed = (whichPeg[i] < n1 && whichPeg[j] < n1 && G1Matrix[whichPeg[i]][whichPeg[j]] > 0);
+            if(!exposed && G2Matrix[i][j]> 0){
                 exposed = true;
             }
             if(exposed and MultiS3::denominator_type == MultiS3::ee_i) ret++;
-            if(exposed and MultiS3::denominator_type == MultiS3::rt_i) ret += G1Matrix[whichPeg[i]][whichPeg[j]] + G2Matrix[i][j];;
-        }
+            if(exposed and MultiS3::denominator_type == MultiS3::rt_i){
+                if(whichPeg[i] < n1 && whichPeg[j] < n1){
+                    ret += G1Matrix[whichPeg[i]][whichPeg[j]] + G2Matrix[i][j];
+                }
+                else{
+                    ret += G2Matrix[i][j];
+                }
+            }
+        } 
     }else{
         cerr << "denominator_type not specified, check your command argument" << endl;
     }
