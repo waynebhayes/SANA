@@ -480,7 +480,7 @@ unsigned Alignment::multiS3Denominator(const Graph& G1, const Graph& G2) const {
             }        
         }
     }else if (MultiS3::denominator_type == MultiS3::ee_i or MultiS3::denominator_type == MultiS3::rt_i){
-        for (uint i = 0; i < n1; ++i) for (uint j = 0; j < i; ++j){
+        for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j){
             bool exposed = (whichPeg[i] < n1 && whichPeg[j] < n1 && G1Matrix[whichPeg[i]][whichPeg[j]] > 0);
             if(!exposed && G2Matrix[i][j]> 0){
                 exposed = true;
