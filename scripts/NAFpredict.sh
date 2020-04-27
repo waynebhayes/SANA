@@ -16,6 +16,11 @@ files contain at laest 2 columns with aligned protein pairs, including duplicate
 die(){ echo "$USAGE">&2; echo "$@" >&2; exit 1
 }
 
+# Evidence codes: all, NOSEQ, and SEQ
+EVC_ALL="EXP HDA HEP HGI HMP IBA IC IDA IEA IEP IGC IGI IKR IMP IMR IPI IRD ISA ISM ISO ISS NAS ND RCA TAS"
+EVC_NOS="EXP HDA HEP HGI HMP IC IDA IEP IGI IKR IMP IMR IPI IRD NAS ND TAS"
+EVC_SEQ="IBA IEA IGC ISA ISM ISO ISS RCA"
+
 LIST_PRED=false
 LIST_VAL=false
 case "$1" in
