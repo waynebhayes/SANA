@@ -1,5 +1,5 @@
 #include "WAVEWrapper.hpp"
-
+#include "../../arguments/GraphLoader.hpp"
 using namespace std;
 
 const string PROGRAM = "./run-WAVE.sh";
@@ -14,9 +14,10 @@ void WAVEWrapper::loadDefaultParameters() {
     parameters = "";
 }
 
-string WAVEWrapper::convertAndSaveGraph(Graph* graph, string name) {
-    graph->saveInGWFormatWithNames(name + ".gw");
-    return name+".gw";
+string WAVEWrapper::convertAndSaveGraph(const Graph* graph, string name) {
+    string gwFile = name+".gw";
+    GraphLoader::saveInGWFormat(*graph, gwFile);
+    return gwFile;
 }
 
 string WAVEWrapper::generateAlignment() {

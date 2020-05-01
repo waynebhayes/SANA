@@ -27,13 +27,13 @@ void EdgeCount::initSimMatrix() {
     vector<vector<uint> > densities1 (n1, vector<uint> (k+1));
     vector<vector<uint> > densities2 (n2, vector<uint> (k+1));
     for (uint i = 0; i < n1; i++) {
-        densities1[i] = G1->numEdgesAround(i, k);
+        densities1[i] = G1->numEdgesAroundByLayers(i, k);
         for (uint j = 1; j < k; j++) {
             densities1[i][j] += densities1[i][j-1];
         } 
     }
     for (uint i = 0; i < n2; i++) {
-        densities2[i] = G2->numEdgesAround(i, k);
+        densities2[i] = G2->numEdgesAroundByLayers(i, k);
         for (uint j = 1; j < k; j++) {
             densities2[i][j] += densities2[i][j-1];
         }

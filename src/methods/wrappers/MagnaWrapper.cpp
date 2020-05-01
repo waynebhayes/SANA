@@ -1,5 +1,5 @@
 #include "MagnaWrapper.hpp"
-
+#include "../../arguments/GraphLoader.hpp"
 using namespace std;
 
 const string MAGNADIR     = "wrappedAlgorithms/MAGNA++";
@@ -15,9 +15,10 @@ void MagnaWrapper::loadDefaultParameters() {
     parameters = "";
 }
 
-string MagnaWrapper::convertAndSaveGraph(Graph* graph, string name) {
-    graph->saveInGWFormatWithNames(name + ".gw");
-    return name + ".gw";
+string MagnaWrapper::convertAndSaveGraph(const Graph* graph, string name) {
+    string gwFile = name + ".gw";
+    GraphLoader::saveInGWFormat(*graph, gwFile);
+    return gwFile;
 }
 
 string MagnaWrapper::generateAlignment() {
@@ -32,14 +33,14 @@ string MagnaWrapper::generateAlignment() {
 Alignment MagnaWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     vector<string> words = fileToStrings(MAGNADIR + "/" + fileName, false);
     vector<uint> mapping(G1->getNumNodes(), G2->getNumNodes());
-    unordered_map<string,uint> node1Map = G1->getNodeNameToIndexMap();
-    unordered_map<string,uint> node2Map = G2->getNodeNameToIndexMap();
+    const unordered_map<string,uint>* node1Map = G1->getNodeNameToIndexMap();
+    const unordered_map<string,uint>* node2Map = G2->getNodeNameToIndexMap();
 
     for (uint i = 0; i < words.size(); i+=2) {
         string node1 = words[i];
         string node2 = words[i+1];
         cout << node1 << " " << node2 << endl;
-        mapping[node1Map[node1]] = node2Map[node2];
+        mapping[node1Map->at(node1)] = node2Map->at(node2);
     }
     return Alignment(mapping);
 }

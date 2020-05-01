@@ -7,7 +7,7 @@ SANAPISWAPWrapper::SANAPISWAPWrapper(Graph* G1, Graph* G2, ArgumentParser args, 
     Graph1 = G1;
     Graph2 = G2;
     this->M = M;
-    sanaMethod = (SANA*)(initSANA(*G1, *G2, args, this->M));
+    sanaMethod = (SANA*)(methodSelector::initSANA(*G1, *G2, args, this->M));
     
     string outfile = args.strings["-o"];
     int location = outfile.find_last_of("/");
@@ -24,8 +24,7 @@ Alignment SANAPISWAPWrapper::run(){
     Alignment A = sanaMethod->runAndPrintTime();
     A.printDefinitionErrors(*Graph1, *Graph2);
     assert(A.isCorrectlyDefined(*Graph1, *Graph2) and "Resulting alignment is not correctly defined");
-    saveReport(*Graph1, *Graph2, A, M, sanaMethod, intermediateAlignment);
-
+    report::saveReport(*Graph1, *Graph2, A, M, sanaMethod, intermediateAlignment);
     Alignment B = piswapMethod->runAndPrintTime();
     return B;
 }
@@ -34,7 +33,7 @@ void SANAPISWAPWrapper::loadDefaultParameters(){
 
 }
 
-string SANAPISWAPWrapper::convertAndSaveGraph(Graph* graph, string name){
+string SANAPISWAPWrapper::convertAndSaveGraph(const Graph* graph, string name){
     return "";
 }
 

@@ -62,20 +62,17 @@ double HillClimbing::getExecutionTime() const {
 }
 
 Alignment HillClimbing::run() {
-    int numSame = 0;
-    uint n1 = G1->getNumNodes();
-    uint n2 = G2->getNumNodes();
+#ifdef FLOAT_WEIGHTS
+    throw runtime_error("Hill climb only supports ec/ics/s3");
+#else
+    uint n1 = G1->getNumNodes(), n2 = G2->getNumNodes();
+    vector<uint> A(startA.asVector());
 
-    vector<uint> A(startA.getMapping());
-    Matrix<MATRIX_UNIT> G1Matrix;
-    Matrix<MATRIX_UNIT> G2Matrix;
-
-    G1->getMatrix(G1Matrix);
-    G2->getMatrix(G2Matrix);
-    vector<vector<uint> > G1AdjLists;
-    G1->getAdjLists(G1AdjLists);
-    vector<vector<uint> > G2AdjLists;
-    G2->getAdjLists(G2AdjLists);
+    //todo: avoid the copies
+    Matrix<EDGE_T> G1Matrix = *(G1->getAdjMatrix());
+    Matrix<EDGE_T> G2Matrix = *(G2->getAdjMatrix());
+    vector<vector<uint> > G1AdjLists = *(G1->getAdjLists());
+    vector<vector<uint> > G2AdjLists = *(G2->getAdjLists());
 
     vector<bool> assignedNodesG2(n2, false);
     for (uint i = 0; i < n1; i++) {
@@ -100,7 +97,7 @@ Alignment HillClimbing::run() {
     int aligEdges = Alignment(A).numAlignedEdges(*G1, *G2);
     bool needG2InducedEdges = (icsWeight > 0 or s3Weight > 0);
     int g2InducedEdges;
-    if (needG2InducedEdges) g2InducedEdges = G2->numNodeInducedSubgraphEdges(A);
+    if (needG2InducedEdges) g2InducedEdges = G2->numEdgesInNodeInducedSubgraph(A);
     else g2InducedEdges = 1; //dummy value
 
     //initialize data structures for incremental evaluation of local measures
@@ -194,7 +191,6 @@ Alignment HillClimbing::run() {
                         }
                     }
                 }
-
 
                 double newCurrentScore = newLocalScoreSum / g1Nodes +
                     newAligEdges*(ecWeight/g1Edges +
@@ -297,12 +293,11 @@ Alignment HillClimbing::run() {
             }
         }
 
-        if (bestNewCurrentScore == currentScore && ++numSame >= 10 ) {
+        if (bestNewCurrentScore == currentScore) {
             executionTime = timer.elapsed();
             return A;
         }
-    numSame = 0;
-
+        
         currentScore = bestNewCurrentScore;
         aligEdges = bestNewAligEdges;
         localScoreSum = bestNewLocalScoreSum;
@@ -323,6 +318,8 @@ Alignment HillClimbing::run() {
             A[bestSource2] = target1;
         }
     }
+#endif // FLOAT_WEIGHTS
+    return A;
 }
 
 string HillClimbing::fileNameSuffix(const Alignment& A) {

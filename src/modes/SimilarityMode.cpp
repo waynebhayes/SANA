@@ -1,20 +1,22 @@
 #include <cassert>
+#include <utility>
 #include "SimilarityMode.hpp"
 
 #include "../utils/utils.hpp"
 
 #include "../arguments/measureSelector.hpp"
 #include "../arguments/methodSelector.hpp"
-#include "../arguments/graphLoader.hpp"
+#include "../arguments/GraphLoader.hpp"
 
 #include "../report.hpp"
 
 void SimilarityMode::run(ArgumentParser& args) {
-    Graph G1, G2;
-    initGraphs(G1, G2, args);
-
+    pair<Graph, Graph> graphs = GraphLoader::initGraphs(args);
+    Graph G1 = graphs.first;
+    Graph G2 = graphs.second;
+    
     MeasureCombination M;
-    initMeasures(M, G1, G2, args);
+    measureSelector::initMeasures(M, G1, G2, args);
     if(M.getNumberOfLocalMeasures() == 0) {
         cout << "ERROR: need at least one local measure to produce similarity matrix." << endl;
         exit(-1);
@@ -46,11 +48,11 @@ void SimilarityMode::saveSimilarityMatrix(vector<vector <float> > sim, Graph &G1
             }
         break;
         case 1:
-            unordered_map<uint,string> g1Map = G1.getIndexToNodeNameMap();
-            unordered_map<uint,string>  g2Map = G2.getIndexToNodeNameMap();
+            const vector<string>* g1Map = G1.getNodeNames();
+            const vector<string>* g2Map = G2.getNodeNames();
             for(uint i = 0; i < sim.size(); ++i) {
                 for(uint j = 0; j < sim[i].size(); ++j) if(sim[i][j]) {
-                    outfile << g1Map[i] << " " << g2Map[j] << " " << sim[i][j] << endl;
+                    outfile << (*g1Map)[i] << " " << (*g2Map)[j] << " " << sim[i][j] << endl;
                 }
             }
         break;

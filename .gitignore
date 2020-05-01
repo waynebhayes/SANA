@@ -44,7 +44,9 @@ wrappedAlgorithms/PISWAP/networkx/*/*/*.pyc
 
 sana.out
 *.localscores
-
+sana.multi
+parallel
+createShadow
 regression_test_baseline.txt
 /test/googletest/
 run_output.txt

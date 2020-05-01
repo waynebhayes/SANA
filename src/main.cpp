@@ -1,6 +1,4 @@
 #include "arguments/ArgumentParser.hpp"
-#include "arguments/supportedArguments.hpp"
-#include "arguments/defaultArguments.hpp"
 #include "arguments/modeSelector.hpp"
 #include "utils/randomSeed.hpp"
 #include "utils/utils.hpp"
@@ -8,39 +6,24 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-bool scheduleOnly;
-
 using namespace std;
 
 int main(int argc, char* argv[]) {
-    if(argc == 1) {
-        cout << "Usage: ./sana [OPTION] [ARG(S)] [OPTION] [ARG(S)]...\n"
-       << "Try \'./sana --help\' or \'./sana -h\' for more information."
-       << endl;
-        exit(0);
-    }
-    cout << unitbuf;
-    validateAndAddArguments();
+    cout << unitbuf; //set cout to flush after each insertion
 
-    ArgumentParser args(stringArgs, doubleArgs, boolArgs, doubleVectorArgs, stringVectorArgs);
-    args.parseArgs(argc, argv, defaultArguments, true);
+    ArgumentParser args(argc, argv);
 
-    // Assign scheduleOnly, only to shut the fucking compiler up about igoring return value from system
-    scheduleOnly = (bool)system("hostname -f; date");
+    // Assign to unused_ret to shut the compiler warning about igoring return value
+    int sysRet = system("hostname -f; date");
+    if (sysRet != 0) cerr<<"'hostname -f; date' returned error code "<<sysRet<<endl;
 
     args.writeArguments();
 
-    if(args.doubles["-seed"] != 0) {
-        setSeed(args.doubles["-seed"]);
-    }
-    if(args.bools["-scheduleOnly"]){
-        scheduleOnly = true;
-    }else{
-        scheduleOnly = false;
-    }
-    cout << "Seed: " << getRandomSeed() << endl;
-    Mode* mode = selectMode(args);
+    if(args.doubles["-seed"] != 0) setSeed(args.doubles["-seed"]);
+    else setRandomSeed();
+    cout<<"Seed: "<<getRandomSeed()<<endl;
+
+    Mode* mode = modeSelector::selectMode(args);
     mode->run(args);
     delete mode;
-    return 0;
 }

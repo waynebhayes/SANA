@@ -8,5 +8,5 @@ InducedConservedStructure::~InducedConservedStructure() {
 }
 
 double InducedConservedStructure::eval(const Alignment& A) {
-    return (double) A.numAlignedEdges(*G1, *G2)/G2->numNodeInducedSubgraphEdges(A.getMapping());
+    return (double) A.numAlignedEdges(*G1, *G2)/G2->numEdgesInNodeInducedSubgraph(A.asVector());
 }

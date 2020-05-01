@@ -1,5 +1,5 @@
 #include "OptNetAlignWrapper.hpp"
-
+#include "../../arguments/GraphLoader.hpp"
 using namespace std;
 
 const string PROGRAM   = "./optnetalign";
@@ -13,9 +13,9 @@ void OptNetAlignWrapper::loadDefaultParameters() {
     parameters = "";
 }
 
-string OptNetAlignWrapper::convertAndSaveGraph(Graph* graph, string name) {
+string OptNetAlignWrapper::convertAndSaveGraph(const Graph* graph, string name) {
     string txtFile = name + ".txt";
-    graph->writeGraphEdgeListFormat(txtFile);
+    GraphLoader::saveInEdgeListFormat(*graph, txtFile, false, false, "", " ");
     return txtFile;
 }
 

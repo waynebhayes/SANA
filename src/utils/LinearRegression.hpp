@@ -1,9 +1,9 @@
-#ifndef LINEARREGRESSION_HPP
-#define LINEARREGRESSION_HPP
+#ifndef LINEARREGRESSION_HPP_
+#define LINEARREGRESSION_HPP_
 //
 // Created by Hudson Hughes on 8/2/16.
 #include "../arguments/ArgumentParser.hpp"
-#include "../arguments/supportedArguments.hpp"
+#include "../arguments/SupportedArguments.hpp"
 #include "../arguments/defaultArguments.hpp"
 #include "../arguments/modeSelector.hpp"
 #include "randomSeed.hpp"
@@ -16,23 +16,16 @@
 #include "utils.hpp"
 using namespace std;
 
-
 class LinearRegression {
-
 public:
-
     struct Sample {
-        const double temp;
-        const double pBad;
-
+        const double temp, pBad;
         Sample(double temp, double pBad);
         void print() const;
     };
-
     struct Model {
         Sample minGLSample, maxGLSample;
         vector<Sample> sortedSamples;//sorted by temp
-
         Model(Sample minGLSample, Sample maxGLSample, const vector<Sample>& sortedSamples);
 
         //assuming pBad is between goldilocks minPBad and maxPBad
@@ -46,7 +39,6 @@ public:
         int numSamplesAbove() const;
         void print() const;
     };
-
     struct Line {
         double slope, intercept;
         Line(double slope, double intercept);
@@ -55,16 +47,12 @@ public:
 
     static Model bestFit(const multimap<double, double>& tempToPBad,
                                 bool fitTempInLogSpace = true, bool fixLineHeights = false);
-
 private:
-
     static double rangeSum(const vector<double> &v, int index1, int index2);
     static Line linearLeastSquares(double xSum, double ySum, double xySum, double xxSum, int n);
     static double flatLineLeastSquaresError(const vector<double> &pBads, int index1, int index2, double lineHeight);
     static double leastSquaresError(const vector<double> &temps, const vector<double> &pBads, 
-        int index1, int index2, const Line& line2);
-
+                                int index1, int index2, const Line& line2);
 };
 
-
-#endif
+#endif /* LINEARREGRESSION_HPP_ */

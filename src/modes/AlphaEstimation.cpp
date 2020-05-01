@@ -58,13 +58,11 @@ void AlphaEstimation::init(string alphaFile) {
     Timer T;
     T.start();
     for (auto pair : networkPairs) {
-        string g1Name = pair[0];
-        string g2Name = pair[1];
-        if (graphs.count(g1Name) == 0) {
-            Graph::loadGraph(g1Name, graphs[g1Name]);
-        }
-        if (graphs.count(g2Name) == 0) {
-            Graph::loadGraph(g2Name, graphs[g2Name]);
+        for (string gName : pair) {
+            if (not graphs.count(gName)) {
+                string gFile = "networks/"+gName+"/"+gName+".gw";
+                graphs.insert({gName, GraphLoader::loadGraphFromFile(gName, gFile, "", false)});
+            }
         }
     }
     cout << "graph loading done ("+T.elapsedString()+")" << endl;
@@ -149,18 +147,18 @@ void AlphaEstimation::computeAlphas() {
             string g2Name = networkPairs[j][1];
 
             if (methodName == "LGRAAL") {
-                LocalMeasure* m = new GraphletLGraal(&graphs[g1Name], &graphs[g2Name]);
-                topMeasure = new WeightedEdgeConservation(&graphs[g1Name], &graphs[g2Name], m);
+                LocalMeasure* m = new GraphletLGraal(&graphs.at(g1Name), &graphs.at(g2Name), 5);
+                topMeasure = new WeightedEdgeConservation(&graphs.at(g1Name), &graphs.at(g2Name), m);
             }
-            else if (methodName == "HubAlign") topMeasure = new Importance(&graphs[g1Name], &graphs[g2Name]);
-            else if (methodName == "SANA_EC") topMeasure = new EdgeCorrectness(&graphs[g1Name], &graphs[g2Name]);
-            else /*if (methodName == "sanas3")*/ topMeasure = new SymmetricSubstructureScore(&graphs[g1Name], &graphs[g2Name]);
+            else if (methodName == "HubAlign") topMeasure = new Importance(&graphs.at(g1Name), &graphs.at(g2Name));
+            else if (methodName == "SANA_EC") topMeasure = new EdgeCorrectness(&graphs.at(g1Name), &graphs.at(g2Name));
+            else /*if (methodName == "sanas3")*/ topMeasure = new SymmetricSubstructureScore(&graphs.at(g1Name), &graphs.at(g2Name));
 
             if (methodName.substr(0,4) == "SANA") {
-                alphas[i][j] = computeAlphaSANA(graphs[g1Name], graphs[g2Name], topMeasure);
+                alphas[i][j] = computeAlphaSANA(graphs.at(g1Name), graphs.at(g2Name), topMeasure);
             }
             else {
-                alphas[i][j] = computeAlpha(graphs[g1Name], graphs[g2Name], methodName, topMeasure);
+                alphas[i][j] = computeAlpha(graphs.at(g1Name), graphs.at(g2Name), methodName, topMeasure);
             }
             delete topMeasure;
         }

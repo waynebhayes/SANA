@@ -1,5 +1,5 @@
 #include "MIGRAALWrapper.hpp"
-
+#include "../../arguments/GraphLoader.hpp"
 using namespace std;
 
 const string MIGRAALDIR     = "wrappedAlgorithms/MI-GRAAL";
@@ -15,8 +15,9 @@ void MIGRAALWrapper::loadDefaultParameters() {
     parameters = "-p 3";
 }
 
-string MIGRAALWrapper::convertAndSaveGraph(Graph* graph, string name) {
-    graph->saveInGWFormatWithNames(name);
+string MIGRAALWrapper::convertAndSaveGraph(const Graph* graph, string name) {
+    //note: this function does not add the ".gw" extension to "name" like other wrappers do -Nil
+    GraphLoader::saveInGWFormat(*graph, name);
     return name;
 }
 
@@ -34,14 +35,14 @@ string MIGRAALWrapper::generateAlignment() {
 Alignment MIGRAALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
     vector<string> words = fileToStrings(fileName);
     vector<uint> mapping(G1->getNumNodes(), G2->getNumNodes());
-    unordered_map<string, uint> g1nodeMap = G1->getNodeNameToIndexMap();
-    unordered_map<string, uint> g2nodeMap = G2->getNodeNameToIndexMap();
+    const unordered_map<string, uint>* g1nodeMap = G1->getNodeNameToIndexMap();
+    const unordered_map<string, uint>* g2nodeMap = G2->getNodeNameToIndexMap();
 
     for (uint i = 0; i < words.size(); i+=2) {
         string node1 = words[i];
         string node2 = words[i+1];
         cout << node1 << " " << node2 << endl;
-        mapping[g1nodeMap[node1]] = g2nodeMap[node2];
+        mapping[g1nodeMap->at(node1)] = g2nodeMap->at(node2);
     }
     return Alignment(mapping);
 }

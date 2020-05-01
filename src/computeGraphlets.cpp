@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "computeGraphlets.hpp"
 using namespace std;
 
+namespace computeGraphletsSource {
 
 typedef long long int64;
 typedef pair<int,int> PII;
@@ -777,3 +778,5 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 #endif
+
+} //namespace computeGraphletsSource

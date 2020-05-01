@@ -1,5 +1,5 @@
 #include "SPINALWrapper.hpp"
-
+#include "../../arguments/GraphLoader.hpp"
 using namespace std;
 
 const string CONVERTER = "python converter_to_gml.py";
@@ -15,11 +15,11 @@ void SPINALWrapper::loadDefaultParameters() {
     parameters = "-I -n";
 }
 
-string SPINALWrapper::convertAndSaveGraph(Graph* graph, string name) {
+string SPINALWrapper::convertAndSaveGraph(const Graph* graph, string name) {
     string gwFile  = name + ".gw";
     string gmlFile = name + ".gml";
 
-    graph->saveInGWFormatWithNames(gwFile);
+    GraphLoader::saveInGWFormat(*graph, gwFile);
 
     exec("mv " + gwFile + " " + wrappedDir);
     //cout << "wrappedDir inside of SPINALWRAPPER: " << wrappedDir << endl;

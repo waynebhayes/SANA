@@ -14,14 +14,11 @@ LocalMeasure* WeightedEdgeConservation::getNodeSimMeasure() {
 
 double WeightedEdgeConservation::eval(const Alignment& A) {
     vector<vector<float> >* simMatrix = nodeSim->getSimMatrix();
-    vector<vector<uint> > edgeListG1;
-    G1->getEdgeList(edgeListG1);
-    Matrix<MATRIX_UNIT> matrixG2;
-    G2->getMatrix(matrixG2);
+    const Matrix<EDGE_T>* matrixG2 = G2->getAdjMatrix();
     double score = 0;
-    for (const auto& edge: edgeListG1) {
+    for (const auto& edge: *(G1->getEdgeList())) {
         uint node1 = edge[0], node2 = edge[1];
-        if (matrixG2[A[node1]][A[node2]]) {
+        if (matrixG2->get(A[node1],A[node2])) {
             score += (*simMatrix)[node1][A[node1]];
             score += (*simMatrix)[node2][A[node2]];
         }

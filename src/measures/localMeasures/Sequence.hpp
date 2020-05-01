@@ -2,7 +2,7 @@
 #define SEQUENCE_HPP
 #include "LocalMeasure.hpp"
 #include <unordered_map>
-#include "../../arguments/graphLoader.hpp"
+#include "../../arguments/GraphLoader.hpp"
 
 extern bool _graphsSwitched;
 

@@ -1,6 +1,6 @@
 CC = g++
 
-CXXFLAGS = -I "../../src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-static
+CXXFLAGS = -I "../../scripts/createShadowCpp" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 #-static
 INCLUDES =
 LFLAGS =
 LIBS =

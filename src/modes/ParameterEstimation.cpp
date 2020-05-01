@@ -1,7 +1,7 @@
+#include "ParameterEstimation.hpp"
 #include <cassert>
 #include <sstream>
 #include <map>
-#include "ParameterEstimation.hpp"
 #include "Experiment.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
 #include "../measures/JaccardSimilarityScore.hpp"
@@ -9,11 +9,11 @@
 #include "../measures/LargestCommonConnectedSubgraph.hpp"
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/NetGO.hpp"
-#include "../measures/ShortestPathConservation.hpp"
 #include "../measures/InvalidMeasure.hpp"
 #include "../measures/localMeasures/GoSimilarity.hpp"
 #include "../Alignment.hpp"
 #include "../utils/Timer.hpp"
+#include "../arguments/GraphLoader.hpp"
 
 const int ParameterEstimation::PRECISION_DECIMALS = 6;
 const double ParameterEstimation::minutes = 60;
@@ -37,18 +37,33 @@ void ParameterEstimation::run(ArgumentParser& args) {
     exit(0);
 }
 
-ParameterEstimation::ParameterEstimation(){}
+ParameterEstimation::ParameterEstimation(): hasInit(false) {}
+ParameterEstimation::~ParameterEstimation() {
+    if (hasInit) {
+        delete G1;
+        delete G2;
+        delete measure;
+    }
+}
 
-ParameterEstimation::ParameterEstimation(string parameterEstimationFile) {
+ParameterEstimation::ParameterEstimation(string parameterEstimationFile): hasInit(false) {
     init(parameterEstimationFile);
 }
 
 void ParameterEstimation::init(string parameterEstimationFile) {
+
+    //calling init again would leak memory (G1, G2, and measure)
+    if (hasInit) throw runtime_error("ParameterEstimation already initialized");
+
     vector<vector<string> > content = fileToStringsByLines(parameterEstimationFile);
-    Graph::loadGraph(content[0][0], G1);
-    Graph::loadGraph(content[0][1], G2);
+    string g1Name = content[0][0], g2Name = content[0][1];
+    string g1File = "networks/"+g1Name+"/"+g1Name+".gw";
+    string g2File = "networks/"+g2Name+"/"+g2Name+".gw";
+    G1 = new Graph(GraphLoader::loadGraphFromFile(g1Name, g1File, "", false));
+    G2 = new Graph(GraphLoader::loadGraphFromFile(g2Name, g2File, "", false));
+
     measureName = content[1][0];
-    measure = Experiment::loadMeasure(&G1, &G2, measureName);
+    measure = Experiment::loadMeasure(G1, G2, measureName);
 
     kValues = vector<double> (content[2].size());
     for (uint i = 0; i < kValues.size(); i++) {
@@ -77,7 +92,7 @@ void ParameterEstimation::makeScript(double k, double l) {
     ofstream fout(scriptName.c_str());
     fout << "#!/bin/bash" << endl;
     fout << "cd " << projectFolder << endl;
-    fout << "./simanneal -g1 " << G1.getName() << " -g2 " << G2.getName();
+    fout << "./simanneal -g1 " << G1->getName() << " -g2 " << G2->getName();
     fout << " -method " << method << " -restart 60";
     if (measureName == "ec") fout << " -ec 1 -s3 0";
     else if (measureName == "s3") fout << " -ec 0 -s3 1";

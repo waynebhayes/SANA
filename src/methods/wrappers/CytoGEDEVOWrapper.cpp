@@ -1,5 +1,5 @@
 #include "CytoGEDEVOWrapper.hpp"
-
+#include "../../arguments/GraphLoader.hpp" 
 using namespace std;
 
 const string CONVERTER = "";
@@ -17,17 +17,14 @@ void CytoGEDEVOWrapper::loadDefaultParameters() {
     parameters = "--maxsame 3000"; // maxsame 3000 is what they recommend, runtime many hours
 }
 
-string CytoGEDEVOWrapper::convertAndSaveGraph(Graph* graph, string name) {
-    graph->writeGraphEdgeListFormatPISWAP(name + ".txt" );
-    return name + ".txt";
+string CytoGEDEVOWrapper::convertAndSaveGraph(const Graph* graph, string name) {
+    string elFile = name+".txt";
+    GraphLoader::saveInEdgeListFormat(*graph, elFile, false, true, "INTERACTOR_A INTERACTOR_B", " ");
+    return elFile;
 }
 
 string CytoGEDEVOWrapper::generateAlignment() {
-    /*string g1Sigs = g1TmpName + ".sigs";
-    string g2Sigs = g2TmpName + ".sigs";
-    G1->saveGraphletsAsSigs(wrappedDir + "/" + g1Sigs);
-    G2->saveGraphletsAsSigs(wrappedDir + "/" + g2Sigs);
-    */
+
     string cmd = GLOBAL_PARAMETERS + " --save " + alignmentTmpName +
             ".gedevo --edgelisth " + g1File +
             " --edgelisth " + g2File +
@@ -35,14 +32,8 @@ string CytoGEDEVOWrapper::generateAlignment() {
 
     cout << "\n\n\nrunning with: \"" + cmd + "\"" << endl << flush;
 
-    // exec("cd " + wrappedDir + "; chmod +x " + PROGRAM);
     execPrintOutput("cd " + wrappedDir + "; " + "./" + PROGRAM + " " + cmd);
-
     exec("cd " + wrappedDir + ";" + OUTPUT_CONVERTER + " " + alignmentTmpName + ".gedevo " + alignmentTmpName);
-
-    //exec("cd " + wrappedDir + "; rm " + g1Sigs + " " + g2Sigs);
-    //exec("cd " + wrappedDir + "; rm " + alignmentTmpName + ".matching");
-
     return wrappedDir + "/" + alignmentTmpName;
 }
 

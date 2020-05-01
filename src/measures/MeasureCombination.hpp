@@ -66,7 +66,7 @@ public:
     unsigned int getParetoThreads() {return paretoThreads;}
 
 private:
-    typedef vector<vector<float> > SimMatrix;
+    typedef vector<vector<float>> SimMatrix;
     typedef function<void(SimMatrix &, uint const &, uint const &)> SimMatrixRecipe;
     vector<Measure*> measures;
     vector<double> weights;
@@ -79,7 +79,7 @@ private:
     //functions producing possibly different implementations of similarity matrices,
     //a common type of similarity matrix is produced in initSim and populated
     //by a Recipe function.
-    vector<vector<float> > initSim(SimMatrixRecipe Recipe) const;
+    vector<vector<float>> initSim(SimMatrixRecipe Recipe) const;
 
     void clearWeights();
     void setWeight(const string& measureName, double weight);

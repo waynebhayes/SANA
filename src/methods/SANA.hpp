@@ -9,6 +9,7 @@
 #include <random>
 #include <list>
 #include <utility>
+#include <unordered_set>
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
@@ -16,31 +17,28 @@
 #include "../utils/ParetoFront.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 
-#define UNWEIGHTED_CORES 1
+using namespace std;
+
+//can this be a static constexpr SANA variable?
+#define UNWEIGHTED_CORES
+
 #ifdef MULTI_PAIRWISE
-#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double jsSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdgesNumer, int MS3Numer, double edSum, double erSum, uint pairsCount
+#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, int localScoreSum, int n1, double wecSum, double jsSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdgesNumer, int MS3Numer, double edSum, double erSum, uint pairsCount
 #else
-#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, double TCSum, int localScoreSum, int n1, double wecSum, double jsSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, double erSum, uint pairsCount
+#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, int localScoreSum, int n1, double wecSum, double jsSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, double erSum, uint pairsCount
 #endif
 
 class SANA: public Method {
 
 public:
-    SANA(Graph* G1, Graph* G2,
-      double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing, MeasureCombination* MC, string& objectiveScore
-#ifdef MULTI_PAIRWISE
-	, string& startAligName
-#endif
-    );
+    SANA(Graph* G1, Graph* G2, double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing,
+      MeasureCombination* MC, const string& objectiveScore, const string& startAligName);
     ~SANA();
 
     Alignment run();
     unordered_set<vector<uint>*>* paretoRun(const string &fileName);
     void describeParameters(ostream& stream);
     string fileNameSuffix(const Alignment& A);
-
-    void enableRestartScheme(double minutesNewAlignments, uint iterationsPerStep,
-        uint numCandidates, double minutesPerCandidate, double minutesFinalist);
     
     //set temperature decay dynamically
     void setDynamicTDecay();
@@ -53,11 +51,10 @@ public:
     Alignment hillClimbingAlignment(Alignment startAlignment, long long int idleCountTarget);
     Alignment hillClimbingAlignment(long long int idleCountTarget);
 
-    //returns an approximation of the the logarithm in base e of the size of the search space
+    //returns an approximation of the logarithm in base e of the size of the search space
     double logOfSearchSpaceSize();
     
     string startAligName = "";
-    void prune(string& startAligName);
 
     //set the file names passed in args in case we want to store the alignment on the fly
     void setOutputFilenames(string outputFileName, string localMeasuresFileName);
@@ -70,13 +67,16 @@ public:
 
     double getPBad(double temp, double maxTime = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
     list<pair<double, double>> ipsList;
+
+    //interrupt handling stuff
+    static bool interrupt;
+    static bool saveAlignment;
+
 private:
     friend class Ameur; //it needs to read the PBad buffer
     friend class StatisticalTest;
     //temperature schedule
-    double TInitial;
-    double TFinal;
-    double TDecay;
+    double TInitial, TFinal, TDecay;
 
     //circular pBad buffer
     const int PBAD_CIRCULAR_BUFFER_SIZE = 10000;
@@ -87,51 +87,22 @@ private:
     double trueAcceptingProbability();
     double slowTrueAcceptingProbability();
 
-
-    int maxTriangles = 0;
-
     //store whether or not most recent move was bad
     bool wasBadMove = false;
 
     //data structures for the networks
-    uint n1;
-    uint n2;
-    double g1Edges; //stored as double because it appears in division
+    uint n1, n2;
+    double g1Edges, g2Edges; //stored as double because they appear in division
     uint pairsCount; // number of combinations of (g1_node_x, g1_node_y) including
                      // a pair that includes the same node (g1_node_x, g1_node_x)
-#ifdef MULTI_PAIRWISE
-    double g1WeightedEdges;
-    double g2WeightedEdges;
-#endif
-    double g2Edges; //stored as double because it appears in division
-    Matrix<MATRIX_UNIT> G1Matrix;
-    Matrix<MATRIX_UNIT> G2Matrix;
-    vector<vector<uint> > G1AdjLists;
-    vector<vector<uint> > G2AdjLists;
-
-    Matrix<float>& G1FloatWeights;
-    Matrix<float>& G2FloatWeights;
+    double g1WeightedEdges, g2WeightedEdges;
 
     void initTau(void);
-    vector<uint> unLockedNodesG1;
-    int multipartite;
+
     //random number generation
     mt19937 gen;
     uniform_int_distribution<> G1RandomNode;
-    uniform_int_distribution<> G1RandomUnlockedNodeDist;
-    uniform_int_distribution<> G2RandomUnassignedNode;
     uniform_real_distribution<> randomReal;
-    uniform_int_distribution<> G1RandomUnlockedGeneDist;
-    uniform_int_distribution<> G1RandomUnlockedmiRNADist;
-    uniform_int_distribution<> G2RandomUnassignedGeneDist;
-    uniform_int_distribution<> G2RandomUnassignedmiRNADist;
-
-
-    uint G1RandomUnlockedNode();
-    uint G1RandomUnlockedNode(uint source1); // used in nodes-have-type because
-    uint G1RandomUnlockedNode_Fast();
-    uint G2RandomUnlockedNode(uint target1);
-    uint G2RandomUnlockedNode_Fast();
 
     double minutes = 0;
     bool usingIterations;
@@ -142,7 +113,7 @@ private:
 
     //to compute TDecay dynamically
     //vector holds "ideal" temperature values at certain execution times
-    bool dynamic_tdecay;
+    bool dynamicTDecay;
     vector<double> tau;
     double SANAtime;
 
@@ -158,17 +129,13 @@ private:
     double getIterPerSecond();
     void initIterPerSecond();
 
-    //data structures for the solution space search
-    double changeProbability[2];
+    //data structures allocated in constructor and initialized in initDataStructures,
+    //so do not allocate them again in initDataStructures
     vector<bool> *assignedNodesG2;
-    vector<uint> *unassignedNodesG2;
-    vector<uint> *unassignedmiRNAsG2;
-    vector<uint> *unassignedgenesG2;
-    
-    vector<vector<uint>>* unassignedMultipartiteNodes;
-    
-    vector<uint>* A;
-    //initializes all the necessary data structures for a new run
+    vector<vector<uint> > *unassignedG2NodesByColor;
+    vector<uint> *A;
+        
+    //initializes the data structures specific to a starting alignment
     void initDataStructures(const Alignment& startA);
 
     bool addHillClimbing; //for post-run hill climbing
@@ -176,49 +143,23 @@ private:
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A);
-    bool scoreComparison(double newAligEdges, double newInducedEdges, double newTCSum, double newLocalScoreSum, double newWecSum, double newJsSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newMS3Numer, double newEdgeDifferenceSum, double newEdgeRatioSum);
-    double ecWeight;
-    double edWeight, erWeight;
-    double s3Weight;
-    double icsWeight;
-    double wecWeight;
-    double jsWeight;
-    double secWeight;
-    double ncWeight;
-    double localWeight;
-    double mecWeight;
-    double sesWeight;
-    double eeWeight;
-    double ms3Weight;
-    double ewecWeight;
-    double TCWeight;
+    double ecWeight, edWeight, erWeight, s3Weight, icsWeight, wecWeight, jsWeight, secWeight,
+           ncWeight, localWeight, mecWeight, sesWeight, eeWeight, ms3Weight, ewecWeight;
+
+
+    //this should be refactored so that the return parameter is not the 9th one out of 15
+    bool scoreComparison(double newAligEdges, double newInducedEdges,
+        double newLocalScoreSum, double newWecSum, 
+        double newJsSum, double newNcSum, double& newCurrentScore, 
+        double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, 
+        double newMS3Numer, double newEdgeDifferenceSum, double newEdgeRatioSum);
 
     enum class Score{sum, product, inverse, max, min, maxFactor, pareto};
     Score score;
 
     //For pareto mode
-    unsigned int paretoInitial;
-    unsigned int paretoCapacity;
-    unsigned int paretoIterations;
-    unsigned int paretoThreads;
-
-    //restart scheme
-    bool restart;
-    //parameters
-    double minutesNewAlignments;
+    uint paretoInitial, paretoCapacity, paretoIterations, paretoThreads;
     uint iterationsPerStep;
-    uint numCandidates;
-    double minutesPerCandidate;
-    double minutesFinalist;
-    //data structures
-    uint newAlignmentsCount;
-    vector<Alignment> candidates;
-    vector<double> candidatesScores;
-    //functions
-    Alignment runRestartPhases();
-    uint getLowestIndex() const;
-    uint getHighestIndex() const;
-
 
     //to evaluate EC incrementally
     bool needAligEdges;
@@ -251,21 +192,16 @@ private:
     int MS3IncChangeOp(uint source, uint oldTarget, uint newTarget);
     int MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
-    //to evaluate EC incrementally
+    //to evaluate SEC incrementally
     bool needSec;
     double secSum;
 
     //to evaluate S3 incrementally
     bool needInducedEdges;
-    int inducedEdges = -1;    // This variable must be initialized as non-zero since it's passed
-                              // to scoreComparison in performSwap as "newInducedEdges" which could
-                              // make computation go wrong.
+    int inducedEdges = -1; // This variable must be initialized as non-zero since it's passed
+                           // to scoreComparison in performSwap as "newInducedEdges" which could
+                           // make computation go wrong.
     int inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
-
-    bool needTC;
-    double TCSum;
-    double TCIncChangeOp(uint source, uint oldTarget, uint newTarget);
-    double TCIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
     //to evaluate nc incrementally
     bool needNC;
@@ -283,7 +219,6 @@ private:
 
     //to evaluate js incrementally
     bool needJs;
-    bool needAlignedByNode;
     double jsSum;
     vector<uint> alignedByNode;
     double JSIncChangeOp(uint source, uint oldTarget, uint newTarget);
@@ -302,8 +237,9 @@ private:
     double localScoreSum;
     map<string, double>* localScoreSumMap;
     vector<vector<float> > sims;
+
 #ifdef CORES
-#if UNWEIGHTED_CORES
+#ifdef UNWEIGHTED_CORES
     Matrix<unsigned long> pegHoleFreq;
     vector<unsigned long> numPegSamples; // number of times this node in g1 was sampled.
 #endif
@@ -312,11 +248,10 @@ private:
     Matrix<double> weightedPegHoleFreq_1mpBad; // weighted by 1-pBad
     vector<double> totalWeightedPegWeight_1mpBad;
 #endif
+
     map<string, vector<vector<float> > > localSimMatrixMap;
     double localScoreSumIncChangeOp(vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
     double localScoreSumIncSwapOp(vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
-
-
 
     //other execution options
     bool constantTemp; //tempertare does not decrease as a function of iteration
@@ -324,8 +259,8 @@ private:
     void trackProgress(long long int i, bool end = false);
     double avgEnergyInc;
 
+    static long long _maxExecutionIterations;
 
-    //algorithm
     Alignment simpleRun(const Alignment& A, double maxExecutionSeconds,
         long long int& iter);
     Alignment simpleRun(const Alignment& A, long long int maxExecutionIterations,
@@ -341,26 +276,25 @@ private:
     double previousScore;
     double energyInc;
     void SANAIteration();
-    void performChange(int type);
-    void performSwap(int type);
+    void performChange(uint colorId);
+    void performSwap(uint colorId);
 
-
-    //others
     Timer timer;
-    void setInterruptSignal(); //allows the execution to be paused with Control+C
+
+    //Control+C during execution offers options
+    //exit, save alignment and exit, save alignment and continue
+    static void setInterruptSignal(); 
+
     void printReport(); //print out reports from inside SANA
     string outputFileName = "sana";
     string localScoresFileName = "sana";
 
-    // Used to support locking
     Alignment getStartingAlignment();
-    bool implementsLocking(){ return true; }
 
     string getFolder();
     string haveFolder();
     string mkdir(const std::string& file);
     tuple<int, double, int, double, double, double> regress(double start, double end, int amount);
-
 
     //Mostly for pareto front, to hold multiple alignments and scores
     unordered_map<string, int> mapScoresToIndexes();
@@ -370,10 +304,10 @@ private:
     void insertCurrentAlignmentAndData();
     void removeAlignmentData(vector<uint>* toRemove);
     void initializeParetoFront();
-    vector<double> getMeasureScores(double newAligEdges, double newInducedEdges, double newTCSum,
-                                     double newLocalScoreSum, double newWecSum, double newJsSum, double newNcSum,
-                                     double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer,
-				     double newMS3Numer, double newEdSum, double newErSum);
+    vector<double> getMeasureScores(double newAligEdges, double newInducedEdges,
+         double newLocalScoreSum, double newWecSum, double newJsSum, double newNcSum,
+         double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer,
+	     double newMS3Numer, double newEdSum, double newErSum);
     bool dominates(vector<double> &left, vector<double> &right);
     void printParetoFront(const string &fileName);
     void deallocateParetoData();
@@ -382,16 +316,11 @@ private:
     int currentMeasure;
     vector<double> currentScores;
     ParetoFront paretoFront;
-    //vector<bool>* newAN = new vector<bool>(0);
-    //vector<uint>* newUAN = new vector<uint>(0);
-    //vector<uint>* newUmiRNA = new vector<uint>(0);
-    //vector<uint>* newUG = new vector<uint>(0);
     unordered_map<string, int> scoreNamesToIndexes;
-    unordered_set<vector<uint>*>* storedAlignments = new unordered_set<vector<uint>*>;
+    unordered_set<vector<uint>*>* storedAlignments;
     unordered_map<vector<uint>*, vector<bool>*> storedAssignedNodesG2;
-    unordered_map<vector<uint>*, vector<uint>*> storedUnassignedNodesG2;
-    unordered_map<vector<uint>*, vector<uint>*> storedUnassignedmiRNAsG2;
-    unordered_map<vector<uint>*, vector<uint>*> storedUnassignedgenesG2;
+    unordered_map<vector<uint>*, vector<vector<uint> >*> storedUnassignedG2NodesByColor;
+    unordered_map<vector<uint>*, map<string, double>*> storedLocalScoreSumMap;
     unordered_map<vector<uint>*, int> storedAligEdges;
     unordered_map<vector<uint>*, int> storedSquaredAligEdges;
     unordered_map<vector<uint>*, int> storedExposedEdgesNumer;
@@ -402,16 +331,15 @@ private:
     unordered_map<vector<uint>*, double> storedJsSum;
     unordered_map<vector<uint>*, double> storedEwecSum;
     unordered_map<vector<uint>*, int> storedNcSum;
-    unordered_map<vector<uint>*, double> storedTCSum;
     unordered_map<vector<uint>*, double> storedEdSum;
     unordered_map<vector<uint>*, double> storedErSum;
     unordered_map<vector<uint>*, double> storedCurrentScore;
-    unordered_map<vector<uint>*, map<string, double>*> storedLocalScoreSumMap;
     typedef double (*calc)(PARAMS);
     unordered_map<string, calc> measureCalculation;
-    unordered_set<string> localScoreNames = { "edgec", "edged", "esim", "go", "graphlet",
-                                              "graphletcosine", "graphletlgraal", "importance",
-                                              "nodec", "noded", "sequence", "graphletnorm" };
+    unordered_set<string> localScoreNames = {
+        "edgec", "edged", "esim", "go", "graphlet",
+        "graphletcosine", "graphletlgraal", "importance",
+        "nodec", "noded", "sequence", "graphletnorm" };
 
 
     // Code related with parallel pareto run, these code will be later refactored along with the
@@ -421,9 +349,7 @@ private:
     struct AlignmentInfo {
         vector<uint> *A;
         vector<bool> *assignedNodesG2;
-        vector<uint> *unassignedNodesG2;
-        vector<uint> *unassignedmiRNAsG2;
-        vector<uint> *unassignedgenesG2;
+        vector<vector<uint> > *unassignedG2NodesByColor;
         map<string, double> *localScoreSumMap;
         int aligEdges;
         int squaredAligEdges;
@@ -434,7 +360,6 @@ private:
         double jsSum;
         double ewecSum;
         double ncSum;
-        double TCSum;
         double edSum, erSum;
         int localScoreSum;
         double currentScore;
@@ -461,11 +386,12 @@ private:
 
     const uint insertionsPerStepOfEachThread = 5;
 
-    // There is no need to pass a iter to this function. And perhaps to other functions like simpleRun, simpleParetoRun.
-    unordered_set<vector<uint>*>* parallelParetoRun(const Alignment& A, long long int maxExecutionIterations,
-                                                    const string &fileName);
-    unordered_set<vector<uint>*>* parallelParetoRun(const Alignment& A, double maxExecutionSeconds,
-                                                    const string &fileName);
+    // There is no need to pass a iter to this function.
+    //And perhaps to other functions like simpleRun, simpleParetoRun.
+    unordered_set<vector<uint>*>* parallelParetoRun(const Alignment& A,
+        long long int maxExecutionIterations, const string &fileName);
+    unordered_set<vector<uint>*>* parallelParetoRun(const Alignment& A,
+        double maxExecutionSeconds, const string &fileName);
     void startParallelParetoRunByIteration(Job &job, long long int maxExecutionIterations);
     void startParallelParetoRunByTime(Job &job, double maxExecutionSeconds);
     void trackProgress(Job &job);
@@ -477,22 +403,21 @@ private:
     void releaseAlignment(Job &job);
     void releaseAlignment();
 
-    void performSwap(Job &job, int type);
-    void performChange(Job &job, int type);
+    void performSwap(Job &job, uint colorId);
+    void performChange(Job &job, uint colorId);
     int MS3IncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     int MS3IncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
 
-    uint G1RandomUnlockedNode(Job &job);
-    uint G1RandomUnlockedNode(Job &job, uint source1);
-    uint G1RandomUnlockedNode_Fast(Job &job);
-    uint G2RandomUnlockedNode(Job &job, uint target1);
-    uint G2RandomUnlockedNode_Fast(Job &job);
+    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges,
+        double newLocalScoreSum, double newWecSum,
+        double newJssum, double newNcSum, double& newCurrentScore,
+        double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer,
+        double newMS3Numer, double newEdgeDifferenceSum, double newEdgeRatioSum);
 
     int aligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     int squaredAligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
 	int exposedEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     int inducedEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-    double TCIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     double localScoreSumIncChangeOp(Job &job, vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
     double WECIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
     double JSIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
@@ -505,7 +430,6 @@ private:
     double edgeRatioIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
 
     int aligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
-    double TCIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     int squaredAligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
 	int exposedEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double WECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
@@ -514,11 +438,6 @@ private:
     int ncIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
     double localScoreSumIncSwapOp(Job &job, vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
 
-    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges, double newTCSum,
-                         double newLocalScoreSum, double newWecSum, double newJssum, double newNcSum, double& newCurrentScore,
-                         double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newMS3Numer,
-			 double newEdgeDifferenceSum, double newEdgeRatioSum);
-
     vector<double> translateScoresToVector(Job &job);
     double trueAcceptingProbability(Job &job);
 
@@ -526,9 +445,48 @@ private:
     long long int iterOfLastTrackProgress = 0;
     mutex getJobMutex;
 
-
     chrono::steady_clock::time_point startTime;
     double getElapsedTime();
+
+
+    // ***************************************************
+    // NODE COLOR SYSTEM
+    // ***************************************************
+    /*mechanism for choosing a neighbor of an alignment uniformly at random
+    this is done in steps:
+    1. an "active" color is chosen randomly weighted by their "ramification"
+    (number of change and swap neighbors using only nodes of that color)
+    we say a color is "active" if it has at least one neighbor
+    that is: it appears at least once in G1 and at least twice in G2
+    in particular, "locked" pairs of nodes have inactive colors
+    non-active colors do not need to be considered for choosing neighbors
+    2. an operation between change and swap is chosen randomly weighted by their "ramification"
+    (number of neighbors of that kind using only nodes of the chosen color)
+    3. the source node(s) is (are) chosen randomly from G1 among the nodes of the chosen color  
+    4. same with target node(s) */
+ 
+    //ids *in G1* of the active colors
+    vector<uint> activeColorIds;
+
+    //position i contains the change probability for color with id activeColorIds[i]
+    //a number between 0 and 1, depending on the number of swap and change neighbors
+    //of that color
+    vector<double> changeProbByColor;
+
+    //position i contains the probability of choosing any of the colors with ids
+    //activeColorIds[0]..activeColorIds[i]
+    //storing the probs like this breaks the range [0,1] into segments for each
+    //active color s.t. the length of each segment equals the probability of
+    //chosing that color
+    vector<double> colorAccumProbCutpoints; 
+
+    //this allows us to implement the following efficiently:
+    uint randColorWeightedByNumNbrs();
+
+    //data structure used to initialize unassignedG2NodesByColor
+    vector<uint> g2NodeToActiveColorId;
+    static uint INVALID_ACTIVE_ID; //arbitrary value bigger than any valid G1 color id
+
 };
 
-#endif
+#endif /* SANA_HPP */

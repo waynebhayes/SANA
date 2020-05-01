@@ -6,18 +6,18 @@
 
 using namespace std;
 
-NodeDensity::NodeDensity(Graph* G1, Graph* G2, uint maxDist) : LocalMeasure(G1, G2, "noded") {
+NodeDensity::NodeDensity(const Graph* G1, const Graph* G2, uint maxDist) : LocalMeasure(G1, G2, "noded") {
     string subfolder = autogenMatricesFolder+getName()+"/";
     createFolder(subfolder);
-    string fileName = subfolder+G1->getName()+"_"+
-        G2->getName()+"_noded";
-    fileName += ".bin";
+    string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_noded.bin";
     this->maxDist = maxDist;
-
     loadBinSimMatrix(fileName);
 }
+NodeDensity::~NodeDensity() {}
 
-double NodeDensity::calcNodeDensity (vector<vector<uint> > adjList, uint originNode, uint numNodes, uint maxDist) {
+double NodeDensity::calcNodeDensity (const Graph* G, uint originNode, uint maxDist) const {
+    uint numNodes = G->getNumNodes();
+    const vector<vector<uint>>* adjLists = G->getAdjLists();
     uint UNINTIALIZED_DISTANCE = numNodes;
     vector<uint> distanceFromOrigin(numNodes,UNINTIALIZED_DISTANCE);
     queue <uint> Q;
@@ -32,36 +32,28 @@ double NodeDensity::calcNodeDensity (vector<vector<uint> > adjList, uint originN
         uint dist = distanceFromOrigin[currentNode];
         if(dist == maxDist) break;
         numNodesWithinMaxDistance++;
-
-        for(uint neighbor : adjList[currentNode]) {
+        for(uint neighbor : (*adjLists)[currentNode]) {
             if(distanceFromOrigin[neighbor] == UNINTIALIZED_DISTANCE) {
                 distanceFromOrigin[neighbor] = dist + 1;
                 Q.push(neighbor);
             }
         }
     }
-
     return numNodesWithinMaxDistance/(double)numNodes;
 }
 
-vector<double> NodeDensity::generateVector(Graph* g, uint maxDist) {
-    vector<vector<uint> > adjList;
-    g->getAdjLists(adjList);
-    vector<double> noded(g->getNumNodes());
-    for(uint i = 0; i < g->getNumNodes(); ++i) {
-        noded[i] = calcNodeDensity(adjList, i, g->getNumNodes(), maxDist);
-    }
+vector<double> NodeDensity::generateVector(const Graph* G, uint maxDist) const {
+    uint n = G->getNumNodes();
+    vector<double> noded;
+    noded.reserve(n);
+    for(uint i = 0; i < n; ++i) noded.push_back(calcNodeDensity(G, i, maxDist));
     return noded;
 }
 
 float NodeDensity::compare(double n1, double n2) {
-    if(n1 == 0 && n2 == 0)
-        return 1.0;
-    if (n1 > n2) {
-        return (n2 / n1);
-    } else {
-        return (n1 / n2);
-    }
+    if(n1 == 0 && n2 == 0) return 1.0;
+    if (n1 > n2) return (n2 / n1);
+    return (n1 / n2);
 }
 
 void NodeDensity::initSimMatrix() {
@@ -76,7 +68,4 @@ void NodeDensity::initSimMatrix() {
             sims[i][j] = compare(noded1[i], noded2[j]);
         }
     }
-}
-
-NodeDensity::~NodeDensity() {
 }

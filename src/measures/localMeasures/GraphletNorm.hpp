@@ -4,10 +4,11 @@
 
 class GraphletNorm: public LocalMeasure {
 public:
-    GraphletNorm(Graph* G1, Graph* G2);
+    GraphletNorm(Graph* G1, Graph* G2, uint maxGraphletSize);
     virtual ~GraphletNorm();
 
 private:
+    uint maxGraphletSize;
     void initSimMatrix();
     double magnitude(vector<uint> &vector);
     const uint NUM_ORBITS = 73;

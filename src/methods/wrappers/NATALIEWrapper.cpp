@@ -1,5 +1,5 @@
 #include "NATALIEWrapper.hpp"
-
+#include "../../arguments/GraphLoader.hpp"
 using namespace std;
 
 const string CONVERTER = "";
@@ -14,10 +14,10 @@ void NATALIEWrapper::loadDefaultParameters() {
     parameters = ""; // default to 10 minutes
 }
 
-string NATALIEWrapper::convertAndSaveGraph(Graph* graph, string name) {
-    name = name + ".gw";
-    graph->saveInGWFormatWithNames(name);
-    return name;
+string NATALIEWrapper::convertAndSaveGraph(const Graph* graph, string name) {
+    string gwFile = name + ".gw";
+    GraphLoader::saveInGWFormat(*graph, gwFile);
+    return gwFile;
 }
 
 string NATALIEWrapper::generateAlignment() {

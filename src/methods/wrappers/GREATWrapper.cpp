@@ -1,5 +1,5 @@
 #include "GREATWrapper.hpp"
-
+#include "../../arguments/GraphLoader.hpp"
 using namespace std;
 
 const string CONVERTER = "bio-graph";
@@ -18,9 +18,10 @@ void GREATWrapper::loadDefaultParameters() {
     parameters = "0 10";
 }
 
-string GREATWrapper::convertAndSaveGraph(Graph* graph, string name) {
-    graph->saveInGWFormatWithNames(name + ".gw");
-    return name + ".gw";
+string GREATWrapper::convertAndSaveGraph(const Graph* graph, string name) {
+    string gwFile = name+".gw";
+    GraphLoader::saveInGWFormat(*graph, gwFile);
+    return gwFile;
 }
 
 string GREATWrapper::generateAlignment() {

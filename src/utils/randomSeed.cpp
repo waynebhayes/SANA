@@ -4,20 +4,23 @@
 
 using namespace std;
 
-random_device rd;
-unsigned int currentSeed; // = rd() + gethostid() + time(0) + getpid();
-static char doneInit = 0;
+//this should be refactored without global variables -Nil
+unsigned int currentSeed;
+static bool doneInit = false;
 
 void setSeed(unsigned int seed) {
-    currentSeed = seed;
-    doneInit = 1;
+	currentSeed = seed;
+	doneInit = true;
+}
+
+void setRandomSeed() {
+	currentSeed = gethostid() + time(0) + getpid();
+	// random_device rd;
+	// currentSeed += rd(); //rd() fails on Jenkins.
+	doneInit = true;
 }
 
 unsigned int getRandomSeed() {
-    if(!doneInit) {
-    currentSeed = /*rd() +*/ gethostid() + time(0) + getpid(); // rd() fails on Jenkins.
-    doneInit=1;
-    }
-    return currentSeed;
+	if (not doneInit) setRandomSeed();
+	return currentSeed;
 }
-

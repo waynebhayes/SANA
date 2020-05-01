@@ -1,4 +1,5 @@
 #include "GHOSTWrapper.hpp"
+#include "../../arguments/GraphLoader.hpp"
 
 using namespace std;
 
@@ -15,11 +16,11 @@ GHOSTWrapper::GHOSTWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1,
 void GHOSTWrapper::loadDefaultParameters() {
 }
 
-string GHOSTWrapper::convertAndSaveGraph(Graph* graph, string name) {
+string GHOSTWrapper::convertAndSaveGraph(const Graph* graph, string name) {
     string gwFile   = name + ".gw";
     string gexfFile = name + ".gexf";
 
-    graph->saveInGWFormatWithNames(gwFile);
+    GraphLoader::saveInGWFormat(*graph, gwFile);
 
     exec("mv " + gwFile + " " + wrappedDir);
     exec("cd " + wrappedDir + " && chmod +x " + CONVERTER);

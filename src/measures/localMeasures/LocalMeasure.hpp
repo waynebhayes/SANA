@@ -4,7 +4,7 @@
 
 class LocalMeasure: public Measure {
 public:
-    LocalMeasure(Graph* G1, Graph* G2, string name);
+    LocalMeasure(const Graph* G1, const Graph* G2, const string& name);
     virtual ~LocalMeasure() =0;
     virtual double eval(const Alignment& A);
     bool isLocal();

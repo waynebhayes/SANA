@@ -12,12 +12,14 @@ HubAlignWrapper::HubAlignWrapper(Graph* G1, Graph* G2, double alpha): Method(G1,
     createFolder("sequence");
     createFolder("sequence/bitscores");
     similarityFile = "sequence/bitscores/" + g1Name + "_" + g2Name + ".bitscores";
-#if 1 // TEMPORRAY CODE UNTIL WE INHERIT FROM WrappedMethod
+
+    // TEMPORRAY CODE UNTIL WE INHERIT FROM WrappedMethod
     string TMP = "_tmp" + intToString(randInt(0, 2100000000)) + "_";
     string g1TmpName = "HubAlign" + TMP + g1Name;
     string g2TmpName = "HubAlign" + TMP + g2Name;
     string alignmentTmpName = g1TmpName+"-"+g2TmpName;
-#endif
+    // End temporary code
+
     //rand int used to avoid collision between parallel runs
     //these files cannot be moved to the tmp/ folder
     g1EdgeListFile = g1TmpName;
@@ -31,14 +33,12 @@ void HubAlignWrapper::generateEdgeListFile(int graphNum) {
     if (graphNum == 1) G = G1;
     else G = G2;
 
-    vector<vector<uint> > edgeList;
-    G->getEdgeList(edgeList);
-    unordered_map<uint,string> names = G->getIndexToNodeNameMap();
+    const vector<array<uint, 2>>* edgeList = G->getEdgeList();
     uint m = G->getNumEdges();
     vector<vector<string> > edgeListNames(m, vector<string> (2));
     for (uint i = 0; i < m; i++) {
-        edgeListNames[i][0] = names[edgeList[i][0]];
-        edgeListNames[i][1] = names[edgeList[i][1]];
+        edgeListNames[i][0] = G->getNodeName((*edgeList)[i][0]);
+        edgeListNames[i][1] = G->getNodeName((*edgeList)[i][1]);
     }
 
     //to avoid the case where aligning a network to itself

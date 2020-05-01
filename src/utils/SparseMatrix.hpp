@@ -12,21 +12,11 @@ using namespace std;
 template <typename T>
 class SparseMatrix {
 public:
-    SparseMatrix() {
-        n = 0;
-    }
-
-    SparseMatrix(uint n): 
-        v(n) {
-        this->n = n; 
-    }
+    SparseMatrix(): v(0) {}
+    SparseMatrix(uint n): v(n) {}
 
     SparseMatrix<T> & operator = (const SparseMatrix<T>& matrix) {
-        if (&matrix != this) {
-            n = matrix.n;
-            v = matrix.v;            
-        }
-
+        if (&matrix != this) v = matrix.v;            
         return *this;
     }
 
@@ -34,43 +24,28 @@ public:
         return v[node1];
     }
 
-    uint size() const {
-        return n;
-    }
+    uint size() const { return v.size(); }
 
     T get(uint node1, uint node2) const {
         auto got = v[node1].find(node2);
-        if (got == v[node1].end()) {
-            return T(0);
-        } else {
-            return got->second;
-        }
+        if (got == v[node1].end()) return T(0);
+        else return got->second;
     }
 
     void set(T value, uint node1, uint node2) {
         v[node1][node2] = value;
     }
 
-    template <class Archive>
-    void serialize(Archive & archive) {
-        archive(v, n);
-    }
-    
-   /**
-    * This function is part of the SparseMatrix library implemented by Petr Kessler
-    *
+   /** This function is part of the SparseMatrix library implemented by Petr Kessler
     * Copyright (c) 2014 Petr Kessler (http://kesspess.1991.cz)
-    *
     * @license  MIT
-    * @link     https://github.com/uestla/Sparse-Matrix
-    */
+    * @link     https://github.com/uestla/Sparse-Matrix */
     SparseMatrix<T> multiply(const SparseMatrix<T> & m) const {
         if (size() != m.size()) {
             throw "Cannot multiply: Left matrix column count and right matrix row count don't match.";
         }
 
         SparseMatrix<T> result(size());
-
         T a;
         for (uint j = 0; j < size(); j++){
             for (uint k = 0; k < m.size(); k++){
@@ -89,7 +64,6 @@ public:
     }
 
 private:
-    uint n;
     vector<unordered_map<uint, T>> v;
 };
 

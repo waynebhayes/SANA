@@ -6,18 +6,18 @@
 
 using namespace std;
 
-EdgeDensity::EdgeDensity(Graph* G1, Graph* G2, uint maxDist) : LocalMeasure(G1, G2, "edged") {
+EdgeDensity::EdgeDensity(const Graph* G1, const Graph* G2, uint maxDist) : LocalMeasure(G1, G2, "edged") {
     string subfolder = autogenMatricesFolder+getName()+"/";
     createFolder(subfolder);
-    string fileName = subfolder+G1->getName()+"_"+
-        G2->getName()+"_edged";
-    fileName += ".bin";
+    string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_edged.bin";
     this->maxDist = maxDist;
-
     loadBinSimMatrix(fileName);
 }
 
-double EdgeDensity::calcEdgeDensity (vector<vector<uint> > adjList, uint originNode, uint numNodes, uint maxDist) {
+double EdgeDensity::calcEdgeDensity(const Graph* G, uint originNode, uint maxDist) const {
+    const vector<vector<uint>>* adjLists = G->getAdjLists();
+    uint numNodes = G->getNumNodes();
+
     uint UNINTIALIZED_DISTANCE = numNodes;
     vector<uint> distanceFromOrigin(numNodes,UNINTIALIZED_DISTANCE);
     vector<bool> visited(numNodes, false);
@@ -32,15 +32,15 @@ double EdgeDensity::calcEdgeDensity (vector<vector<uint> > adjList, uint originN
         uint currentNode = Q.front();
         Q.pop();
         uint dist = distanceFromOrigin[currentNode];
-        if(dist == maxDist) break;
+        if (dist == maxDist) break;
         numNodesWithinMaxDistance++;
 
-        for(uint neighbor : adjList[currentNode]) {
-            if(distanceFromOrigin[neighbor] == UNINTIALIZED_DISTANCE) {
+        for(uint neighbor : (*adjLists)[currentNode]) {
+            if (distanceFromOrigin[neighbor] == UNINTIALIZED_DISTANCE) {
                 distanceFromOrigin[neighbor] = dist + 1;
                 Q.push(neighbor);
             }
-            if(not visited[neighbor] && distanceFromOrigin[neighbor] < maxDist){
+            if (not visited[neighbor] and distanceFromOrigin[neighbor] < maxDist) {
                 numEdgesWithinMaxDistance++;
             }
         }
@@ -50,22 +50,17 @@ double EdgeDensity::calcEdgeDensity (vector<vector<uint> > adjList, uint originN
     return numEdgesWithinMaxDistance/(double)totalEdges;
 }
 
-vector<double> EdgeDensity::generateVector(Graph* g, uint maxDist) {
-    vector<vector<uint> > adjList;
-    g->getAdjLists(adjList);
-    vector<double> edged(g->getNumNodes());
-    for(uint i = 0; i < g->getNumNodes(); ++i) {
-        edged[i] = calcEdgeDensity(adjList, i, g->getNumNodes(), maxDist);
-    }
+vector<double> EdgeDensity::generateVector(const Graph* G, uint maxDist) const {
+    uint n = G->getNumNodes();
+    vector<double> edged;
+    edged.reserve(n);
+    for(uint i = 0; i < n; ++i) edged.push_back(calcEdgeDensity(G, i, maxDist));
     return edged;
 }
 
 float EdgeDensity::compare(double n1, double n2) {
-    if (n1 > n2) {
-        return (n2 / n1);
-    } else {
-        return (n1 / n2);
-    }
+    if (n1 > n2) return (n2 / n1);
+    return (n1 / n2);
 }
 
 void EdgeDensity::initSimMatrix() {
@@ -74,7 +69,7 @@ void EdgeDensity::initSimMatrix() {
     uint size1 = edged1.size();
     uint size2 = edged2.size();
 
-    sims = vector<vector<float> > (size1, vector<float> (size2, 0));
+    sims = vector<vector<float>> (size1, vector<float> (size2, 0));
 
     for(uint i = 0; i < size1;  ++i) {
         for(uint j = 0; j < size2;  ++j) {

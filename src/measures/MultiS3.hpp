@@ -7,19 +7,23 @@
 #include "localMeasures/LocalMeasure.hpp"
 #include "../Graph.hpp"
 
-extern unsigned NUM_GRAPHS;
+extern uint NUM_GRAPHS;
 
 class MultiS3 : public Measure {
 public:
-    MultiS3(Graph* G1, Graph* G2, int type);
+    MultiS3(const Graph* G1, const Graph* G2, int type);
     virtual ~MultiS3();
     double eval(const Alignment& A);
     static vector<uint> totalDegrees; // sum of neighboring edge weights including G1
-    unsigned computeDenom(const Alignment& A, const Graph& G1, const Graph& G2);
+
+    //denom is the number of ladders under G1
+    void setDenom(const Alignment& A);
+    uint computeNumer(const Alignment& A) const;
     
-    static unsigned numer, denom; // used for inc eval
-    static double _type; //0 default ; 1 ee
-    unsigned LaddersUnderG1;
+    //these don't belong here, they should be private members in SANA: -Nil
+    static uint numer, denom; // used for inc eval
+
+    static double _type; //0 default ; 1 ee  (what is ee? -Nil)
 private:
     void initDegrees(const Alignment& A, const Graph& G1, const Graph& G2);
     bool degreesInit;

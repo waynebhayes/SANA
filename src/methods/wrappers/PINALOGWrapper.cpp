@@ -1,5 +1,5 @@
 #include "PINALOGWrapper.hpp"
-
+#include "../../arguments/GraphLoader.hpp"
 
 const string PROGRAM = "./pinalog1.0";
 
@@ -11,13 +11,11 @@ void PINALOGWrapper::loadDefaultParameters(){
     parameters = "";
 }
 
-
-string PINALOGWrapper::convertAndSaveGraph(Graph* graph, string name){
-    name = name + ".pin";
-    graph->writeGraphEdgeListFormatPINALOG(name);
-    return name;
+string PINALOGWrapper::convertAndSaveGraph(const Graph* graph, string name){
+    string pinFile = name + ".pin";
+    GraphLoader::saveInEdgeListFormat(*graph, pinFile, false, true, "", " ");
+    return pinFile;
 }
-
 
 // Two ways of running PINALOG
 // [this one is used] ./pinalog1.0 network1 network2 blastdata
@@ -29,9 +27,7 @@ string PINALOGWrapper::generateAlignment(){
 //    string outFile = g1Name + "_" + g2Name + ".pinalog.nodes_algn";
     string outFile = "net1_net2.pinalog.nodes_algn";
     string cmd = g1File + " " + g2File + " " + parameters;
-
     execPrintOutput("cd " + wrappedDir + "; " + PROGRAM + " " + cmd);
-
     return wrappedDir + "/" + outFile;
 }
 

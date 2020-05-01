@@ -10,7 +10,6 @@
 #include "../measures/LargestCommonConnectedSubgraph.hpp"
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/NetGO.hpp"
-#include "../measures/ShortestPathConservation.hpp"
 #include "../measures/InvalidMeasure.hpp"
 #include "../measures/InducedConservedStructure.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
@@ -23,11 +22,9 @@
 #include "../measures/localMeasures/GraphletLGraal.hpp"
 #include "../measures/localMeasures/GraphletCosine.hpp"
 #include "../measures/localMeasures/GraphletNorm.hpp"
-
 #include "../Alignment.hpp"
-#include "../utils/Timer.hpp"
+#include "../arguments/GraphLoader.hpp"
 #include "ClusterMode.hpp"
-
 
 const string Experiment::methodArgsFile = "experiments/methods.cnf";
 const string Experiment::datasetsFile = "experiments/datasets.cnf";
@@ -193,9 +190,10 @@ void Experiment::loadGraphs(map<string, Graph>& graphs) {
     T.start();
 
     for (auto pair : networkPairs) {
-        for (string graphName : pair) {
-            if (graphs.count(graphName) == 0) {
-                Graph::loadGraph(graphName, graphs[graphName]);
+        for (string gName : pair) {
+            if (not graphs.count(gName)) {
+                string gFile = "networks/"+gName+"/"+gName+".gw";
+                graphs.insert({gName, GraphLoader::loadGraphFromFile(gName, gFile, "", false)});
             }
         }
     }
@@ -260,8 +258,8 @@ void Experiment::collectResults() {
     for (auto pair : networkPairs) {
         string G1Name = pair[0];
         string G2Name = pair[1];
-        Graph* G1 = &graphs[G1Name];
-        Graph* G2 = &graphs[G2Name];
+        Graph* G1 = &graphs.at(G1Name);
+        Graph* G2 = &graphs.at(G2Name);
         Timer T;
         T.start();
         cout << "("+G1Name+", "+G2Name+") ";
@@ -531,20 +529,21 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
         cout << "different than the ones used in the experiment" << endl;
         return new EdgeCount(G1, G2, {0.1, 0.25, 0.5, 0.15});
     }
+    uint maxGraphletSize = 5;
     if (name == "graphlet") {
-        return new Graphlet(G1, G2);
+        return new Graphlet(G1, G2, maxGraphletSize);
     }
     if (name == "graphletlgraal") {
-        return new GraphletLGraal(G1, G2);
+        return new GraphletLGraal(G1, G2, maxGraphletSize);
     }
     if (name == "graphletcosine") {
-        return new GraphletCosine(G1, G2);
+        return new GraphletCosine(G1, G2, maxGraphletSize);
     }
     if (name == "graphletnorm") {
-        return new GraphletNorm(G1, G2);
+        return new GraphletNorm(G1, G2, maxGraphletSize);
     }
     if (name == "wecgraphletlgraal") {
-        LocalMeasure* wecNodeSim = new GraphletLGraal(G1, G2);
+        LocalMeasure* wecNodeSim = new GraphletLGraal(G1, G2, maxGraphletSize);
         return new WeightedEdgeConservation(G1, G2, wecNodeSim);
     }
     if (name == "wecnodec") {
@@ -572,9 +571,6 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
         } else {
             return new InvalidMeasure();
         }
-    }
-    if (name == "shortestpath") {
-        return new ShortestPathConservation(G1, G2);
     }
     if (name == "nc") {
         if (NodeCorrectness::fulfillsPrereqs(G1, G2)) {

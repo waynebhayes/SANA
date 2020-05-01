@@ -30,7 +30,7 @@ double GoAverage::eval(const Alignment& A) {
 
     string alignmentFile = G1Name+"_"+G2Name+"GoAverageAlignment.aln";
     ofstream outfile(alignmentFile);
-    A.writeEdgeList(G1, G2, outfile);
+    A.writeEdgeList(*G1, *G2, outfile); //why is there I/O inside the eval function?? -Nil
     outfile.close();
 
     string pairwiseScript = "go/pairwise.py";

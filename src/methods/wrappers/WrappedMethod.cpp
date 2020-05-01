@@ -19,19 +19,12 @@ void WrappedMethod::moveFilesToWrappedDir() {
 }
 
 Alignment WrappedMethod::run() {
-    if(parameters == "") {
-    loadDefaultParameters();
-    }
-
+    if(parameters == "") loadDefaultParameters();
     g1File = convertAndSaveGraph(G1, g1TmpName);
     g2File = convertAndSaveGraph(G2, g2TmpName);
-
     moveFilesToWrappedDir();
-
     alignmentFile = generateAlignment();
-
     Alignment A = loadAlignment(G1, G2, alignmentFile);
-
     deleteAuxFiles();
     return A;
 }

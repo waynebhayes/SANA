@@ -15,7 +15,6 @@ For more specialized help, Use the following commands:
 ./sana -h general                   for General Options
 ./sana -h methods                   for Method Options
 ./sana -h method-sana               for additional Options when Method is SANA
-./sana -h method-tabu               for additional Options when Method is TABU
 ./sana -h method-djikstra           for additional Options when Method is Djikstra
 ./sana -h method-lgraal             for additional Options when Method is lgraal
 ./sana -h objectives-type           for Objective Function Types

@@ -21,13 +21,13 @@ void Sequence::generateBitscoresFile(string bitscoresFile) {
     cout << "Generating " << bitscoresFile << " ... ";
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
-    unordered_map<uint,string> g1IndexToNodeMap = G1->getIndexToNodeNameMap();
-    unordered_map<uint,string> g2IndexToNodeMap = G2->getIndexToNodeNameMap();
+    const vector<string>* g1Names = G1->getNodeNames();
+    const vector<string>* g2Names = G2->getNodeNames();
     ofstream outfile(bitscoresFile);
     for (uint i = 0; i < n1; i++) {
         for (uint j = 0; j < n2; j++) {
             if (sims[i][j] > 0) {
-                outfile << g1IndexToNodeMap[i] << "\t" << g2IndexToNodeMap[j] << "\t" << sims[i][j] << endl;
+                outfile << (*g1Names)[i] << "\t" << (*g2Names)[j] << "\t" << sims[i][j] << endl;
             }
         }
     }
@@ -72,11 +72,7 @@ void Sequence::initSimMatrix() {
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
 
-    unordered_map<string,uint> g1NodeToIndexMap = G1->getNodeNameToIndexMap();
-    unordered_map<string,uint> g2NodeToIndexMap = G2->getNodeNameToIndexMap();
-
     string blastFile = "sequence/scores/"+g1Name+"_"+g2Name+"_blast.out";
-
 	if (_graphsSwitched){
     	blastFile = "sequence/scores/"+g2Name+"_"+g1Name+"_blast.out";
 	}
@@ -96,9 +92,9 @@ void Sequence::initSimMatrix() {
         if (g2NeedNameMap) node2 = g2NameMap[node2];
 
 		//check to see if the nodes are in the graphs first, if not then just read the rest of the line and continue...
-		if (g1NodeToIndexMap.find(node1) != g1NodeToIndexMap.end() && g2NodeToIndexMap.find(node2) != g2NodeToIndexMap.end()){
-			uint index1 = g1NodeToIndexMap.at(node1);
-       		uint index2 = g2NodeToIndexMap.at(node2);
+		if (G1->getNodeNameToIndexMap()->count(node1) && G2->getNodeNameToIndexMap()->count(node2)){
+			uint index1 = G1->getNodeNameToIndexMap()->at(node1);
+       		uint index2 = G2->getNodeNameToIndexMap()->at(node2);
        		//uses bitscores, which is the last column
         	//there are other possibilities, such as
         	//-log of e-values (second-to-last value), also used in l-graal

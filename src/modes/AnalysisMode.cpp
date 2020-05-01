@@ -1,59 +1,38 @@
 #include <cassert>
+#include <utility>
 #include "AnalysisMode.hpp"
-
 #include "../utils/utils.hpp"
-
 #include "../arguments/measureSelector.hpp"
 #include "../arguments/methodSelector.hpp"
-#include "../arguments/graphLoader.hpp"
-
+#include "../arguments/GraphLoader.hpp"
 #include "../report.hpp"
 
 Alignment loadAlignment(int format, string file, Graph &G1, Graph &G2) {
-    if(format == 0 || file == "") {
-        cout << "When using analysis mode specify you must specify both -alignFile and -alignFormat." << endl;
-        cout << " The following are supported" << endl
-             << "1: sana.out format" << endl
-             << "2: edge list format" << endl
-             << "3: partial edge list format" << endl
-             << "4: partial edge list format using numbers instead of names" << endl;;
-        exit(-1);
-    }
+    string errorHelpMsg = "The following are supported\n1: sana.out format\n2: edge list format\n";
+    errorHelpMsg += "3: partial edge list format\n4: partial edge list format using numbers instead of names\n";
+
+    if(format == 0 or file == "")
+        throw runtime_error("When using analysis mode you must specify both -alignFile and -alignFormat. "+errorHelpMsg);
 
     switch (format) {
-    case 1:
-        return Alignment::loadMapping(file);
-    case 2:
-        return Alignment::loadEdgeList(&G1, &G2, file);
-    case 3:
-        return Alignment::loadPartialEdgeList(&G1, &G2, file, true);
-    case 4:
-        return Alignment::loadPartialEdgeList(&G1, &G2, file, false);
-    default:
-        cout << "Unsupported alignment format. The following are supported" << endl
-             << "1: sana.out format" << endl
-             << "2: edge list format" << endl
-             << "3: partial edge list format" << endl
-             << "4: partial edge list format using numbers instead of names" << endl;;
-        exit(-1);
+    case 1: return Alignment::loadMapping(file);
+    case 2: return Alignment::loadEdgeList(&G1, &G2, file);
+    case 3: return Alignment::loadPartialEdgeList(&G1, &G2, file, true);
+    case 4: return Alignment::loadPartialEdgeList(&G1, &G2, file, false);
+    default: throw runtime_error("Unsupported alignment format. "+errorHelpMsg);
     }
 }
 
 void AnalysisMode::run(ArgumentParser& args) {
-    Graph G1, G2;
-    initGraphs(G1, G2, args);
-
+    pair<Graph, Graph> graphs = GraphLoader::initGraphs(args);
+    Graph G1 = graphs.first;
+    Graph G2 = graphs.second;
     MeasureCombination M;
-    initMeasures(M, G1, G2, args);
-
+    measureSelector::initMeasures(M, G1, G2, args);
     Alignment A = loadAlignment(args.doubles["-alignFormat"], args.strings["-alignFile"], G1, G2);
-
     A.printDefinitionErrors(G1,G2);
     assert(A.isCorrectlyDefined(G1, G2) and "Resulting alignment is not correctly defined");
-
-    saveReport(G1, G2, A, M, NULL, args.strings["-o"]);
+    report::saveReport(G1, G2, A, M, NULL, args.strings["-o"]);
 }
 
-string AnalysisMode::getName(void) {
-    return "AnalysisMode";
-}
+string AnalysisMode::getName(void) { return "AnalysisMode"; }

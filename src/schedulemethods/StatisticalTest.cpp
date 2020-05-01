@@ -25,7 +25,7 @@ void StatisticalTest::vComputeTInitial(Resources maxRes) {
     cout << "Computing distribution of scores of random alignments ";
     vector<double> upperBoundKScores(NUM_RANDOM_SAMPLES);
     for (uint i = 0; i < NUM_RANDOM_SAMPLES; ++i) {
-        upperBoundKScores[i] = sana->eval(Alignment::randomAlignmentWithLocking(sana->G1,sana->G2));
+        upperBoundKScores[i] = sana->eval(Alignment::randomColorRestrictedAlignment(*(sana->G1),*(sana->G2)));
     }
     cout << "(" <<  Timer.elapsedString() << ")" << endl;
     NormalDistribution dist(upperBoundKScores);

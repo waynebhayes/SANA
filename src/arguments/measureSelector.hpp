@@ -5,8 +5,12 @@
 #include "../Graph.hpp"
 #include "../measures/MeasureCombination.hpp"
 
+namespace measureSelector {
+
 double betaDerivedAlpha(string methodName, string G1Name, string G2Name, double beta);
 
 void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& args);
+
+} //namespace measureSelector
 
 #endif /* MEASURESELECTOR_H_ */

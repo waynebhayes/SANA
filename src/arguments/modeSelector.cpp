@@ -12,44 +12,25 @@
 
 #include "../utils/utils.hpp"
 
-bool validMode(string name) {
+bool modeSelector::validMode(string name) {
     vector<string> validModes = {
         "cluster", "exp", "param", "alpha", "dbg",
         "normal", "analysis", "similarity", "pareto",
     };
-    for (string s : validModes) {
-        if (s == name) return true;
-    }
+    for (string s : validModes) if (s == name) return true;
     return false;
 }
 
-
-Mode* selectMode(ArgumentParser& args) {
-    Mode* mode;
-
+Mode* modeSelector::selectMode(ArgumentParser& args) {
     string name = args.strings["-mode"];
-    //std::cout<<"PRINTING MODE TO CHOOSE FROM"<<name<<"\n"<<endl;
-    if (name == "cluster") {
-        mode = new ClusterMode();
-    } else if (name == "exp") {
-        mode = new Experiment();
-    } else if (name == "param") {
-        mode = new ParameterEstimation();
-    } else if (name == "alpha") {
-        mode = new AlphaEstimation();
-    } else if (name == "dbg") {
-        mode = new DebugMode();
-    } else if (name == "analysis") {
-        mode = new AnalysisMode();
-    } else if (name == "similarity") {
-        mode = new SimilarityMode();
-    } else if (name == "normal") {
-        mode = new NormalMode();
-    } else if(name == "pareto") {
-        mode = new ParetoMode();
-    } else {
-        throw runtime_error("Error: unknown mode: " + name);
-    }
-
-    return mode;
+    if      (name == "cluster")    return new ClusterMode();
+    else if (name == "exp")        return new Experiment();
+    else if (name == "param")      return new ParameterEstimation(args.strings["-paramestimation"]);
+    else if (name == "alpha")      return new AlphaEstimation();
+    else if (name == "dbg")        return new DebugMode();
+    else if (name == "analysis")   return new AnalysisMode();
+    else if (name == "similarity") return new SimilarityMode();
+    else if (name == "normal")     return new NormalMode();
+    else if (name == "pareto")     return new ParetoMode();
+    throw runtime_error("Error: unknown mode: " + name);
 }

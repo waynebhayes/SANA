@@ -2,9 +2,11 @@
 #include <iostream>
 #include <cmath>
 #include "GraphletNorm.hpp"
+#include "../../computeGraphletsWrapper.hpp"
 using namespace std;
 
-GraphletNorm::GraphletNorm(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "graphletnorm") {
+GraphletNorm::GraphletNorm(Graph* G1, Graph* G2, uint maxGraphletSize):
+        LocalMeasure(G1, G2, "graphletnorm"), maxGraphletSize(maxGraphletSize) {
     string subfolder = autogenMatricesFolder+getName()+"/";
     createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_graphletnorm.bin";
@@ -22,15 +24,13 @@ double GraphletNorm::magnitude(vector<uint> &vector) {
 
 //return the unit vector of v
 vector<double> GraphletNorm::NODV(vector<uint> &v){
-    vector<double> res(v.size());
     double mag = magnitude(v);
-    if(mag == 0){
+    if (mag == 0) {
         vector<double> empty(v.size());
         return empty;
     }
-    for(uint i = 0; i < v.size(); i++){
-        res[i] = v[i] / mag; // don't EVER use push_back!!! It's a piece of fucking donkey shit.
-    }
+    vector<double> res(v.size());
+    for(uint i = 0; i < v.size(); i++) res[i] = v[i]/mag;
     return res;
 }
 
@@ -43,10 +43,8 @@ double GraphletNorm::ODVratio(vector<double> &u, vector<double> &v, uint i){
 double GraphletNorm::RMS_ODVdiff1(vector<uint> &u, vector<uint> &v){
     vector<double> nU = NODV(u);
     vector<double> nV = NODV(v);
-
     double sum2 = 0;
-    for(uint i = 0; i < v.size(); i++)
-    {
+    for(uint i = 0; i < v.size(); i++) {
         double ratio_1 = ODVratio(nU, nV, i) - 1;
         sum2 += ratio_1*ratio_1;
     }
@@ -70,27 +68,22 @@ vector<uint> GraphletNorm::reduce(vector<uint> &v) {
     res[8] = v[9];
     res[9] = v[10];
     res[10] = v[11];
-
     return res;
 }
-
-static bool shouldReduce = false;
 
 void GraphletNorm::initSimMatrix() {
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
-    vector<vector<uint> > gdvs1 = G1->loadGraphletDegreeVectors();
-    vector<vector<uint> > gdvs2 = G2->loadGraphletDegreeVectors();
+    vector<vector<uint> > gdvs1 = computeGraphletsWrapper::loadGraphletDegreeVectors(*G1, maxGraphletSize);
+    vector<vector<uint> > gdvs2 = computeGraphletsWrapper::loadGraphletDegreeVectors(*G2, maxGraphletSize);
 
+    bool shouldReduce = false;
     for (uint i = 0; i < n1; i++) {
         for (uint j = 0; j < n2; j++) {
-
-
             if (shouldReduce) {
                 vector<uint> v1 = reduce(gdvs1[i]);
                 vector<uint> v2 = reduce(gdvs2[j]);
-
                 sims[i][j] = ODVsim(v1, v2);
             } else {
                 sims[i][j] = ODVsim(gdvs1[i], gdvs2[j]);

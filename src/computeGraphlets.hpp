@@ -13,6 +13,10 @@
 #include <algorithm>
 #include <vector>
 
+namespace computeGraphletsSource {
+
 std::vector<std::vector<uint> > computeGraphlets(int maxGraphletSize, FILE *fp);
 
-#endif
+}
+
+#endif /* COMPUTEGRAPHLETS_HPP */

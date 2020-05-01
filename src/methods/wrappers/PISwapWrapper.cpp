@@ -1,5 +1,5 @@
 #include "PISwapWrapper.hpp"
-
+#include "../../arguments/GraphLoader.hpp"
 using namespace std;
 
 const string CONVERTER = "";
@@ -16,15 +16,13 @@ PISwapWrapper::PISwapWrapper(Graph* G1, Graph* G2, double alpha, string starting
 }
 
 void PISwapWrapper::loadDefaultParameters() {
-    cout << "ERROR: PISWAP needs a similarity file (using sequence) whether or not you are optimizing using sequence or using the Hungarian algorithm. Use -wrappedArgs \"similarityFile\" to specify the similarity file. An additional starting alignment file can be specified with -startalignment \".align file\" to simply improve an alignment and not use the Hungarian algorithm. Also make sure to specify alpha, 1 is all topology and 0 is all sequence." << endl;
-    exit(-1);
-    parameters = "";
-    
+    throw runtime_error("PISWAP needs a similarity file (using sequence) whether or not you are optimizing using sequence or using the Hungarian algorithm. Use -wrappedArgs \"similarityFile\" to specify the similarity file. An additional starting alignment file can be specified with -startalignment \".align file\" to simply improve an alignment and not use the Hungarian algorithm. Also make sure to specify alpha, 1 is all topology and 0 is all sequence.");
 }
 
-string PISwapWrapper::convertAndSaveGraph(Graph* graph, string name) {
-    graph->writeGraphEdgeListFormatPISWAP(name + ".tab");
-    return name + ".tab";
+string PISwapWrapper::convertAndSaveGraph(const Graph* graph, string name) {
+    string tabFile = name+".tab";
+    GraphLoader::saveInEdgeListFormat(*graph, tabFile, false, true, "INTERACTOR_A INTERACTOR_B", " ");
+    return tabFile;
 }
 
 string PISwapWrapper::generateAlignment() {
@@ -46,3 +44,6 @@ Alignment PISwapWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
 void PISwapWrapper::deleteAuxFiles() {
     exec("cd " + wrappedDir + "; rm -f " + g1File + " " + g2File + " " + usingAlignmentPyName + TMP + ".py " + usingAlignmentPyName + TMP + ".pyc");
 }//probably the plan is to create a new piswap.py based on inputs no matter what.
+
+//it is good practice to sign comments like the one above so that people know who
+//they can reach to when trying to decrypt it -Nil

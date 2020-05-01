@@ -6,7 +6,7 @@ using namespace std;
 
 ExternalSimMatrix::ExternalSimMatrix(Graph* G1, Graph* G2, string file, int format): LocalMeasure(G1, G2, "esim") {
     this->file = file;
-    this->format =format;
+    this->format = format;
     string subfolder = autogenMatricesFolder+getName()+"/";
     createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+
@@ -26,8 +26,8 @@ void ExternalSimMatrix::initSimMatrix() {
     }
 
     switch(format) {
-    case 0:     loadFormat0(fp);    break;
-    case 1:     loadFormat1(fp);    break;
+    case 0: loadFormat0(fp);    break;
+    case 1: loadFormat1(fp);    break;
     case 2: loadFormat2(fp);    break;
     default:                    break;
     }
@@ -52,8 +52,7 @@ void ExternalSimMatrix::initSimMatrix() {
 
 void ExternalSimMatrix::loadFormat0(FILE* infile) {
     uint lineCount = 0;
-    uint i;
-    uint j;
+    uint i, j;
     float value;
 
     while (fscanf(infile, "%ud %ud %f", &i, &j, &value) == 3) {
@@ -71,12 +70,12 @@ void ExternalSimMatrix::loadFormat1(FILE* infile) {
     char buf2[1024];
     float value;
 
-    unordered_map<string,uint> g1Map = G1->getNodeNameToIndexMap();
-    unordered_map<string,uint> g2Map = G2->getNodeNameToIndexMap();
+    const unordered_map<string,uint>* g1Map = G1->getNodeNameToIndexMap();
+    const unordered_map<string,uint>* g2Map = G2->getNodeNameToIndexMap();
 
     while (fscanf(infile, "%s %s %f", buf1, buf2, &value) == 3) {
-        uint i = g1Map[string(buf1)];
-        uint j = g2Map[string(buf2)];
+        uint i = g1Map->at(string(buf1));
+        uint j = g2Map->at(string(buf2));
         sims[i][j] = value;
         ++lineCount;
     }

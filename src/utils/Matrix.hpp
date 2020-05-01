@@ -1,18 +1,11 @@
-#ifndef MATRIX_HPP
-#define MATRIX_HPP
+#ifndef MATRIX_HPP_
+#define MATRIX_HPP_
 
 #include "utils.hpp"
 #include "SparseMatrix.hpp"
 #include <vector>
 
 using namespace std;
-typedef unsigned char uchar;
-
-#ifdef MULTI_PAIRWISE
-    #define MATRIX_UNIT uchar // uchar allows 255 networks, ushort allows up to 65535 of them
-#else
-    #define MATRIX_UNIT bool
-#endif
 
 #ifdef SPARSE
     #define INNER_CONTAINER unordered_map<uint, T>
@@ -35,16 +28,9 @@ public:
 
     const T get(uint node1, uint node2) const;
     uint size() const;
-
-    template <class Archive>
-    void serialize(Archive & archive) {
-        archive(CEREAL_NVP(data));
-    }
-
 private:
    MATRIX_DATA_STRUCTURE data;
 };
-
 
 template <typename T>
 inline INNER_CONTAINER & Matrix<T>::operator [] (uint node1) {
@@ -99,4 +85,5 @@ template <typename T>
 uint Matrix<T>::size() const {
     return data.size();
 }
-#endif
+
+#endif /* MATRIX_HPP_ */

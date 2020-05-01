@@ -5,6 +5,7 @@
 #include <tuple>
 #include <vector>
 #include <cmath>
+#include <limits>
 #include <assert.h>
 #include "LinearRegression.hpp"
 using namespace std;

@@ -4,10 +4,11 @@
 
 class GraphletCosine: public LocalMeasure {
 public:
-    GraphletCosine(Graph* G1, Graph* G2);
+    GraphletCosine(Graph* G1, Graph* G2, uint maxGraphletSize);
     virtual ~GraphletCosine();
 
 private:
+	uint maxGraphletSize;
     void initSimMatrix();
     vector<uint> reduce(vector<uint> &v);
     const uint NUM_ORBITS = 73;

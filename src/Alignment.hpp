@@ -7,26 +7,40 @@
 #include <iostream>
 #include <cassert>
 #include <algorithm>
-#include "arguments/graphLoader.hpp"
+// #include "arguments/GraphLoader.hpp"
 #include "Graph.hpp"
 #include "utils/utils.hpp"
-class MeasureCombination;
+
 using namespace std;
 
-extern bool _graphsSwitched;
+// class MeasureCombination; //what was this doing here? -Nil
 
+/* Please make it a priority not to modify this class. This is a very general/abstract/core class
+   that should not know anything about any of the measures/methods/modes that use it.
+   Do not add anything specific to, or used only by, a particular measure/method/mode.
+   Instead of adding a function here, add it to the would-be-caller class with an alignment as parameter. */
 class Alignment {
 public:
+    Alignment();
+    Alignment(const Alignment& alig);
+    Alignment &operator=(Alignment);
+    Alignment(const vector<uint>& mapping);
+    Alignment(Graph* G1, Graph* G2, const vector<vector<string> >& mapList);
+
     static Alignment loadEdgeList(Graph* G1, Graph* G2, string fileName);
     static Alignment loadEdgeListUnordered(Graph* G1, Graph* G2, string fileName);
     static Alignment loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, bool byName);
     static Alignment loadMapping(string fileName);
-    //returns a random alignment from a graph with
-    //nodes 0..n1-1 to a graph with nodes 0..n2-1,
-    //assuming n1 <= n2
+    static Alignment randomColorRestrictedAlignment(const Graph& G1, const Graph& G2);
+    
+    //returns a random alignment from a graph with n1 nodes to a graph with nodes n2 >= n1 nodes
     static Alignment random(uint n1, uint n2);
     static Alignment empty();
     static Alignment identity(uint n);
+
+    //returns an alignment of size n2 that is the inverse of this
+    //value 'n1' is used as invalid mapping
+    Alignment reverse(uint n2) const;
 
     //returns the correct alignment between G1 and G2 by looking at
     //their node names. it assumes that they have the same node names
@@ -34,54 +48,22 @@ public:
     //shuffled node order
     static Alignment correctMapping(const Graph& G1, const Graph& G2);
 
-    Alignment();
-    Alignment(const Alignment& alig);
-    Alignment(const vector<uint>& mapping);
-    Alignment(Graph* G1, Graph* G2, const vector<vector<string> >& mapList);
-
-    vector<uint> getMapping() const;
+    vector<uint> asVector() const;
+    const vector<uint>* getVector() const; //preferred option if just reading
 
     uint& operator[](uint node);
     const uint& operator[](const uint node) const;
-    Alignment &operator=(Alignment);
     uint size() const;
-
-    void write(ostream& stream) const;
-
-    void writeEdgeList(Graph const * G1, Graph const * G2, ostream& edgeListStream) const;
-
-    uint numAlignedEdges(const Graph& G1, const Graph& G2) const;
-    int numSquaredAlignedEdges(const Graph& G1, const Graph& G2) const;
-#if MULTI_PAIRWISE
-    int numExposedEdges(const Graph& G1, const Graph& G2) const;
-    unsigned multiS3Numerator(const Graph& G1, const Graph& G2) const;
-#endif
-
-    //common subgraph: graph with same nodes as G1, but with only the edges preserved by A
-    Graph commonSubgraph(const Graph& G1, const Graph& G2) const;
-
+    uint& back();
     void compose(const Alignment& other);
 
-    void completeWithArbitraryEdges(const Graph& G1, const Graph& G2);
+    uint numAlignedEdges(const Graph& G1, const Graph& G2) const;
 
     bool isCorrectlyDefined(const Graph& G1, const Graph& G2);
-
     void printDefinitionErrors(const Graph& G1, const Graph& G2);
 
-    static Alignment randomAlignmentWithLocking(Graph* G1, Graph* G2);
-    static Alignment randomAlignmentWithNodeType(Graph *G1, Graph *G2);
-    static Alignment startingMultipartiteAlignment(Graph* G1, Graph* G2);
-
-    // These two reIndex the alignment based on the reIndex Map from G1
-    void reIndexBefore_Iterations(unordered_map<uint, uint> reIndexMap);
-    void reIndexAfter_Iterations(unordered_map<uint, uint> reverseReIndexMap);
-
-    uint& getBack() { return A.back(); }
 private:
-
     vector<uint> A;
-
 };
 
-
-#endif
+#endif /* ALIGNMENT_HPP */

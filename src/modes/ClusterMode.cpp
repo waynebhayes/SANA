@@ -126,7 +126,7 @@ string ClusterMode::getQModeArgValue(const vector<string>& argv) {
   if (not found) {
     throw runtime_error("mandatory parameter -qmode in cluster mode missing");
   }
-  if (not validMode(qmode)) {
+  if (not modeSelector::validMode(qmode)) {
     throw runtime_error("invalid -qmode value: " + qmode);
   }
   if (qmode == "cluster") {

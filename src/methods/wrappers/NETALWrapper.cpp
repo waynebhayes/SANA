@@ -1,5 +1,5 @@
 #include "NETALWrapper.hpp"
-
+#include "../../arguments/GraphLoader.hpp"
 using namespace std;
 
 const string NETALProgram = "./NETAL";
@@ -8,16 +8,13 @@ NETALWrapper::NETALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1,
     wrappedDir = "wrappedAlgorithms/NETAL";
 }
 
-// a: Alpha 0.0001
-// b:
-// c:
-// i: Iterations 2
+// a: Alpha. i: Iterations
 void NETALWrapper::loadDefaultParameters() {
     parameters = "-a 0.0001 -b 0 -c 1 -i 2";
 }
 
-string NETALWrapper::convertAndSaveGraph(Graph* graph, string name) {
-    graph->writeGraphEdgeListFormatNETAL(name);
+string NETALWrapper::convertAndSaveGraph(const Graph* graph, string name) {
+    GraphLoader::saveInEdgeListFormat(*graph, name, false, false, "", "\t");
     return name;
 }
 

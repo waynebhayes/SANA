@@ -8,22 +8,17 @@
 
 class Measure {
 public:
-
-    Measure(Graph* G1, Graph* G2, string name);
+    Measure(const Graph* G1, const Graph* G2, const string& name);
     virtual ~Measure();
     virtual double eval(const Alignment& A) =0;
     string getName();
     virtual bool isLocal();
-    virtual double balanceWeight() {return 0;};
-    
-    virtual vector<uint> getMappingforNC() const {return vector<uint>{0};}
+    virtual double balanceWeight();
 protected:
-    Graph* G1;
-    Graph* G2;
-
+    const Graph* G1;
+    const Graph* G2;
 private:
     string name;
-
 };
 
 #endif

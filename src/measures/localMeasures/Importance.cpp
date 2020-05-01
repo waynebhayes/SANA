@@ -25,11 +25,10 @@ vector<vector<double> > Importance::initEdgeWeights(const Graph& G) {
 #ifdef MULTI_PAIRWISE
     throw runtime_error("Importance not implemented for weighted Graphs");
 #endif
-    Matrix<MATRIX_UNIT> matrix(n);
-    G.getMatrix(matrix);
+    const Matrix<EDGE_T>* adjMat = G.getAdjMatrix();
     for (uint i = 0; i < n; i++) {
         for (uint j = 0; j < n; j++) {
-            if (matrix[i][j]) edgeWeights[i][j] = 1;
+            if (adjMat->get(i,j)) edgeWeights[i][j] = 1;
         }
     }
     return edgeWeights;
@@ -51,9 +50,9 @@ struct DegreeComp {
     bool operator() (uint i, uint j) {
         int size1 = (*adjLists)[i].size(), size2 = (*adjLists)[j].size();
         if (size1 == size2)
-	    return 0;
-	else
-	    return (size1 < size2);
+        return 0;
+    else
+        return (size1 < size2);
     }
 
     vector<vector<uint> > const *adjLists;
@@ -84,7 +83,7 @@ void Importance::removeFromAdjList(vector<uint>& list, uint u) {
 void Importance::normalizeImportances(vector<double>& v) {
     double maxim = 0;
     for (double val : v) {
-	assert(val >= 0);
+    assert(val >= 0);
         if (val > maxim) maxim = val;
     }
     for (uint i = 0; i < v.size(); i++) {
@@ -99,8 +98,7 @@ vector<double> Importance::getImportances(const Graph& G) {
     vector<vector<double> > edgeWeights = initEdgeWeights(G);
 
     //adjLists will change as we remove nodes from G
-    vector<vector<uint> > adjLists(n);
-    G.getAdjLists(adjLists);
+    vector<vector<uint> > adjLists(G.getAdjLists()->begin(), G.getAdjLists()->end());
 
     //as opposed to adjLists, degrees remain true to the original graph
     vector<uint> degrees(n);
@@ -155,63 +153,50 @@ vector<double> Importance::getImportances(const Graph& G) {
     }
 
     //compute importances
-    G.getAdjLists(adjLists); //restore original adjLists
+    const vector<vector<uint> > * originalAdjLists = G.getAdjLists();
     vector<double> res(n);
     for (uint u = 0; u < n; u++) {
         double edgeWeightSum = 0;
-        for (uint v : adjLists[u]) {
+        for (uint v : (*originalAdjLists)[u]) {
             edgeWeightSum += edgeWeights[u][v];
         }
         res[u] = nodeWeights[u] + edgeWeightSum;
     }
-
     normalizeImportances(res);
     return res;
 }
 
 void Importance::initSimMatrix() {
-    uint n1 = G1->getNumNodes();
-    uint n2 = G2->getNumNodes();
+    uint n1 = G1->getNumNodes(), n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
 
-    vector<vector<uint> > adjListsG1(n1), adjListG1Shuf(n1);
-    vector<vector<uint> > adjListsG2(n2), adjListG2Shuf(n2);
-    G1->getAdjLists(adjListsG1);
-    G2->getAdjLists(adjListsG2);
-#define NUM_SHUFFLES 30
+    const uint NUM_SHUFFLES = 30;
     cout << "Creating average importances from " << NUM_SHUFFLES << " shuffles of the nodes of G1 and G2\n";
-    for(uint shuf = 0 ; shuf < NUM_SHUFFLES; shuf++)
-    {
-	vector<uint> shuffle1(n1), shuffle2(n2);
-	Graph H1 = G1->randomNodeShuffle(shuffle1);
-	Graph H2 = G2->randomNodeShuffle(shuffle2);
-	H1.getAdjLists(adjListG1Shuf);
-	H2.getAdjLists(adjListG2Shuf);
-	for(uint i=0; i<n1; i++)
-	    assert(adjListsG1[shuffle1[i]].size() == adjListG1Shuf[i].size());
-	for(uint i=0; i<n2; i++)
-	    assert(adjListsG2[shuffle2[i]].size() == adjListG2Shuf[i].size());
-	vector<double> scoresH1 = getImportances(H1);
-	vector<double> scoresH2 = getImportances(H2);
-	for (uint i = 0; i < n1; i++)
-	    for (uint j = 0; j < n2; j++)
-		sims[shuffle1[i]][shuffle2[j]] += min(scoresH1[i],scoresH2[j]);
+    for(uint shuf = 0 ; shuf < NUM_SHUFFLES; shuf++) {
+        vector<uint> H1ToG1Map, H2ToG2Map;
+        Graph H1 = G1->shuffledGraph(H1ToG1Map);
+        Graph H2 = G2->shuffledGraph(H2ToG2Map);
+        for(uint i=0; i<n1; i++) assert(G1->getNumNbrs(H1ToG1Map[i]) == H1.getNumNbrs(i));
+        for(uint i=0; i<n2; i++) assert(G2->getNumNbrs(H2ToG2Map[i]) == H2.getNumNbrs(i));
+        vector<double> scoresH1 = getImportances(H1);
+        vector<double> scoresH2 = getImportances(H2);
+        for (uint i = 0; i < n1; i++)
+            for (uint j = 0; j < n2; j++)
+              sims[H1ToG1Map[i]][H2ToG2Map[j]] += min(scoresH1[i],scoresH2[j]);
     }
     for (uint i = 0; i < n1; i++)
-	for (uint j = 0; j < n2; j++)
-	    sims[i][j] /= NUM_SHUFFLES;
+        for (uint j = 0; j < n2; j++)
+            sims[i][j] /= NUM_SHUFFLES;
 }
 
 bool Importance::hasNodesWithEnoughDegree(const Graph& G) {
     uint n = G.getNumNodes();
-    vector<vector<uint> > adjLists(n);
-    G.getAdjLists(adjLists);
     vector<uint> nodes(n);
     for (uint i = 0; i < n; i++) {
         nodes[i] = i;
     }
-    sort(nodes.begin(), nodes.end(), DegreeComp(&adjLists));
-    return adjLists[nodes[n-1]].size() > d;
+    sort(nodes.begin(), nodes.end(), DegreeComp(G.getAdjLists()));
+    return (*G.getAdjLists())[nodes[n-1]].size() > d;
 }
 
 bool Importance::fulfillsPrereqs(Graph* G1, Graph* G2) {

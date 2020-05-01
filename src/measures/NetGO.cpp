@@ -77,10 +77,7 @@ double NetGO::eval(const Alignment& A) {
     vector<vector<uint> > goTermsG2 = GoSimilarity::loadGOTerms(*G2, 1);
     unordered_map<uint,uint> goCountG1 = GoSimilarity::getGoCounts(*G1);
     unordered_map<uint,uint> goCountG2 = GoSimilarity::getGoCounts(*G2);
-#if 0
-    map<uint,string> namesG1 = G1->getIndexToNodeNameMap();
-    map<uint,string> namesG2 = G2->getIndexToNodeNameMap();
-#endif
+
     double total = 0;
     for (uint i = 0; i < n1; i++) {
         for (uint goTerm : goTermsG1[i]) {

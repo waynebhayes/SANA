@@ -1,20 +1,22 @@
-#ifndef GRAPHLET_HPP
-#define GRAPHLET_HPP
+#ifndef GRAPHLET_HPP_
+#define GRAPHLET_HPP_
 #include "LocalMeasure.hpp"
 
 class Graphlet: public LocalMeasure {
 public:
-    Graphlet(Graph* G1, Graph* G2);
+    Graphlet(const Graph* G1, const Graph* G2, uint maxGraphletSize);
     virtual ~Graphlet();
 
 private:
+	uint maxGraphletSize;
+    const uint NUM_ORBITS = 73;
+	
     void initSimMatrix();
 
-    vector<double> getNumbersOfAffectedOrbits();
-    vector<double> getOrbitWeights();
-    double getOrbitWeightSum();
+    vector<double> getNumbersOfAffectedOrbits() const;
+    vector<double> getOrbitWeights() const;
+    double getOrbitWeightSum() const;
 
-    const uint NUM_ORBITS = 73;
 };
 
-#endif
+#endif /* GRAPHLET_HPP_ */
