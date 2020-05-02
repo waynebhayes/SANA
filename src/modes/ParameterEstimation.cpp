@@ -59,8 +59,8 @@ void ParameterEstimation::init(string parameterEstimationFile) {
     string g1Name = content[0][0], g2Name = content[0][1];
     string g1File = "networks/"+g1Name+"/"+g1Name+".gw";
     string g2File = "networks/"+g2Name+"/"+g2Name+".gw";
-    G1 = new Graph(GraphLoader::loadGraphFromFile(g1Name, g1File, "", false));
-    G2 = new Graph(GraphLoader::loadGraphFromFile(g2Name, g2File, "", false));
+    G1 = new Graph(GraphLoader::loadGraphFromFile(g1Name, g1File, false));
+    G2 = new Graph(GraphLoader::loadGraphFromFile(g2Name, g2File, false));
 
     measureName = content[1][0];
     measure = Experiment::loadMeasure(G1, G2, measureName);

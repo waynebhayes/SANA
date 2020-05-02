@@ -82,8 +82,8 @@ void printComplementaryProteinCounts(const Alignment& A, bool BioGRIDNetworks) {
     string g2Name = BioGRIDNetworks ? "HSapiens" : "human";
     string g1File = "networks/"+g1Name+"/"+g1Name+".gw";
     string g2File = "networks/"+g2Name+"/"+g2Name+".gw";
-    Graph G1 = GraphLoader::loadGraphFromFile(g1Name, g1File, "", false);
-    Graph G2 = GraphLoader::loadGraphFromFile(g2Name, g2File, "", false);
+    Graph G1 = GraphLoader::loadGraphFromFile(g1Name, g1File, false);
+    Graph G2 = GraphLoader::loadGraphFromFile(g2Name, g2File, false);
     printComplementaryProteinCounts(G1, G2, A, BioGRIDNetworks);
 }
 
@@ -145,8 +145,8 @@ void printProteinPairCountInNetworks(bool BioGRIDNetworks) {
     string g2Name = BioGRIDNetworks ? "HSapiens" : "human";
     string g1File = "networks/"+g1Name+"/"+g1Name+".gw";
     string g2File = "networks/"+g2Name+"/"+g2Name+".gw";
-    Graph G1 = GraphLoader::loadGraphFromFile(g1Name, g1File, "", false);
-    Graph G2 = GraphLoader::loadGraphFromFile(g2Name, g2File, "", false);
+    Graph G1 = GraphLoader::loadGraphFromFile(g1Name, g1File, false);
+    Graph G2 = GraphLoader::loadGraphFromFile(g2Name, g2File, false);
     vector<vector<string> > complementProteins = getProteinPairs("1", BioGRIDNetworks);
     vector<vector<string> > nonComplementProteins = getProteinPairs("0", BioGRIDNetworks);
     uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();

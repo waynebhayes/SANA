@@ -67,8 +67,8 @@ vector<array<string, 6>> supportedArguments = {
     { "-schedulemethod", "string", "auto", "Method to compute temperature schedule parameters automatically", "Specify the method to use set up the initial temperature and decay rate when they are set to 'auto'", "0" },
     { "-combinedScoreAs", "string", "sum", "Score Combo Method", "If multiple objectives are specified, this specifies how to combine them. Choices are: sum, product, inverse, max, min, maxFactor.", "1" },
     { "-dynamictdecay", "bool", "0", "Dynamically control temperature decay", "Whether or not tdecay is set to auto, this Boolean specifies if we should dynamically adjust the temperature schedule as the anneal progresses. Gives potentially better results than fixed decay rate.", "1" },
-    // { "-lock", "string", "", "Node-to-Node Locking", "Specify a two column file of node pairs that are locked in the alignment.", "0" },
-    // { "-lock-same-names", "bool", "false", "Node-to-Node Locking", "Locks nodes with same name together.", "0" },
+    { "-lock", "string", "", "Node-to-Node Locking", "Specify a two column file of node pairs that are locked in the alignment.", "0" },
+    { "-lock-same-names", "bool", "false", "Node-to-Node Locking", "Locks nodes with same name together.", "0" },
     { "-seed", "double", "RANDOM", "Random Seed", "Serves as a random seed in SANA.", "0" },
     { "-multi-iteration-only", "bool", "false", "Multi-Pairwise Iteration", "Skip all analysis for a normal iteration, just do the anneal", "0"},
 

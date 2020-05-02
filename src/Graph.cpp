@@ -72,8 +72,6 @@ Graph::Graph(const string& graphName, const string& optionalFilePath,
     }
     initConnectedComponents();
     initColorDataStructs(partialNodeColorPairs);
-    // debugPrint();
-    assert(isWellDefined());
 }   
 
 //predicate for sorting CCs
@@ -107,13 +105,19 @@ void Graph::initConnectedComponents() {
 }
 
 void Graph::initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs) {
+    //data structures initialized here:
+    nodeColors.clear();
+    colorNames.clear();
+    colorNameToId.clear();
+    nodeGroupsByColor.clear();
+
     unordered_map<string, string> nodeNameToColorName;
     nodeNameToColorName.reserve(partialNodeColorPairs.size());    
     unordered_set<string> colorSet;
     for (const auto& p : partialNodeColorPairs) {
         string nodeName = p[0], colorName = p[1];
         assert(colorName != DEFAULT_COLOR_NAME);
-        if (nodeNameToColorName.count(colorName))
+        if (nodeNameToColorName.count(nodeName))
             throw runtime_error("node name '"+nodeName+"' appears twice in node-color pairs");
         if (not nodeNameToIndexMap.count(nodeName))
             throw runtime_error("unknown node name '"+nodeName+"' in node-color pairs");
@@ -427,13 +431,22 @@ vector<uint> Graph::nodesAround(uint node, uint maxDist) const {
 }
 
 bool Graph::hasSameNodeNamesAs(const Graph& other) const {
-    assert(getNumNodes() == nodeNameToIndexMap.size());
-    assert(other.getNumNodes() == other.nodeNameToIndexMap.size());
     if (getNumNodes() != other.getNumNodes()) return false;
     for (const auto& kv : nodeNameToIndexMap) {
-        if (not other.nodeNameToIndexMap.count(kv.first)) return false;
+        string name = kv.first;
+        if (not other.nodeNameToIndexMap.count(name)) return false;
     }
     return true;
+}
+vector<string> Graph::commonNodeNames(const Graph& other) const {
+    vector<string> res;
+    res.reserve(min(getNumNodes(), other.getNumNodes()));
+    for (const auto& kv : nodeNameToIndexMap) {
+        string name = kv.first;
+        if (other.nodeNameToIndexMap.count(name)) res.push_back(name);
+    }
+    res.shrink_to_fit();
+    return res;
 }
 
 // NODE COLOR SYSTEM

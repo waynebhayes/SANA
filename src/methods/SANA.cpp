@@ -223,8 +223,8 @@ SANA::SANA(Graph* G1, Graph* G2,
     for (uint id = 0; id < G1->numColors(); id++) {
         uint numNbrs = numSwapNeighborsByColor[id] + numChangeNeighborsByColor[id];
         if (numNbrs == 0) { 
-            cerr<<"color "<<id<<" ("<<G1->getColorName(id)<<") is inactive"<<endl;
-            continue; //inactive color
+            // cerr<<"color "<<id<<" ("<<G1->getColorName(id)<<") is inactive"<<endl;
+            continue; //inactive color (e.g., a locked pair)
         }
         activeColorIds.push_back(id);
         changeProbByColor.push_back(numChangeNeighborsByColor[id]/ (double) numNbrs);
@@ -232,8 +232,9 @@ SANA::SANA(Graph* G1, Graph* G2,
         double accumProb = colorProb +
                 (colorAccumProbCutpoints.empty() ? 0 : colorAccumProbCutpoints.back());
         colorAccumProbCutpoints.push_back(accumProb);
-        cerr<<"color "<<G1->getColorName(id)<<" (id "<<id<<") has prob "<<colorProb
-            <<" (accumulated prob is now up to "<<accumProb<<")"<<endl;
+        //debug info:
+        // cerr<<"color "<<G1->getColorName(id)<<" (id "<<id<<") has prob "<<colorProb
+        //     <<" (accumulated prob is now up to "<<accumProb<<")"<<endl;
     }
     //due to rounding errors, the last number may not be exactly 1, so we correct it
     colorAccumProbCutpoints.back() = 1;

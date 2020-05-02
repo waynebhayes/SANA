@@ -18,8 +18,6 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     cout << "Initializing graphs..." << endl;
     Timer T;
     T.start();
-    createFolder("networks");
-    createFolder(AUTOGENEREATED_FILES_FOLDER);
     string fg1 = args.strings["-fg1"], fg2 = args.strings["-fg2"];
     string g1Name, g2Name, g1File, g2File;
     if (fg1 != "") {
@@ -36,7 +34,6 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
         g2Name = args.strings["-g2"];
         g2File = "networks/"+g2Name+"/"+g2Name+".gw";
     }
-    string fcolors1 = args.strings["-fcolor1"], fcolors2 = args.strings["-fcolor2"];
 
     bool g1HasWeights, g2HasWeights;
 #ifdef MULTI_PAIRWISE
@@ -51,21 +48,40 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     g1HasWeights = false, g2HasWeights = false; //unweighted
 #endif
 
-    Timer tLoad;
-    tLoad.start();
-    auto futureG1 = async(&loadGraphFromFile, g1Name, g1File, fcolors1, g1HasWeights);
-    auto futureG2 = async(&loadGraphFromFile, g2Name, g2File, fcolors2, g2HasWeights);
+    auto futureG1 = async(&loadGraphFromFile, g1Name, g1File, g1HasWeights);
+    auto futureG2 = async(&loadGraphFromFile, g2Name, g2File, g2HasWeights);
     Graph G1 = futureG1.get();
     Graph G2 = futureG2.get();
-    cout << "Graph loading completed in " << tLoad.elapsedString() << endl;
+    cout << "Graph loading completed in " << T.elapsedString() << endl;
 
-    if (G1.getNumNodes() > G2.getNumNodes()) {
-        //note: this does not guarantee that a color-restricted alignment exists,
-        //so the program might still crash when initializing SANA
-        swap(G1, G2);
-        cout << "Switching G1 and G2 because G1 has more nodes than G2" << endl;
-        _graphsSwitched = true;
+    //colors or locking
+    string fcolors1 = args.strings["-fcolor1"], fcolors2 = args.strings["-fcolor2"];
+    string lockFile = args.strings["-lock"];
+    bool g1HasColorFile = fcolors1 != "", g2HasColorFile = fcolors2 != "";
+    bool lockPairs = lockFile != "";
+    bool lockSameNames = args.bools["-lock-same-names"];
+    //At most one option can be used:
+    if (lockPairs and lockSameNames) throw runtime_error("\"-lock\" and \"-lock-same-names\" are incompatible. Use only one");
+    if (lockPairs and (g1HasColorFile or g2HasColorFile)) throw runtime_error("\"-lock\" and color files are incompatible. Use only one");
+    if (lockSameNames and (g1HasColorFile or g2HasColorFile)) throw runtime_error("\"-lock-same-names\" and color files are incompatible. Use only one");
+
+    vector<array<string, 2>> g1Colors, g2Colors;
+    if (lockPairs) {
+        cout<<"Locking node pairs in file "<<lockFile<<endl;
+        array<vector<array<string, 2>>, 2> nodeColorLists =
+            nodeColorListsFromLockFile(lockFile);
+        g1Colors = nodeColorLists[0], g2Colors = nodeColorLists[1];
+    } else if (lockSameNames) {
+        cout<<"Locking nodes with the same name"<<endl;
+        array<vector<array<string, 2>>, 2> nodeColorLists =
+            nodeColorListsFromCommonNames(G1.commonNodeNames(G2));
+        g1Colors = nodeColorLists[0], g2Colors = nodeColorLists[1];
+    } else {
+        if (g1HasColorFile) g1Colors = RawColorFileData(fcolors1).nodeColorList;
+        if (g2HasColorFile) g2Colors = RawColorFileData(fcolors2).nodeColorList;
     }
+    G1.initColorDataStructs(g1Colors);
+    G2.initColorDataStructs(g2Colors);
 
     string path1 = args.strings["-pathmap1"], path2 = args.strings["-pathmap2"];
     if (path1 != "") {
@@ -110,29 +126,78 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
             throw runtime_error("Cannot rewire more than 100% of G2 edges");
         G2 = G2.graphWithRewiredRandomEdges(rewiredFraction2);
     }
-
     if (G1.getNumEdges() == 0) throw runtime_error("G1 has 0 edges");
     if (G2.getNumEdges() == 0) throw runtime_error("G2 has 0 edges");
+
+    assert(G1.isWellDefined());
+    assert(G2.isWellDefined());
+    // G1.debugPrint();
+    // G2.debugPrint();
+
     cout << "Total time for loading graphs (" << T.elapsedString() << ")" << endl;
+    
+    if (G1.getNumNodes() > G2.getNumNodes()) {
+        //note: this does not guarantee that a color-restricted alignment exists,
+        //so the program might still crash when initializing SANA
+        cout << "Switching G1 and G2 because G1 has more nodes than G2" << endl;
+        _graphsSwitched = true;
+        return {G2, G1};
+    }
     return {G1, G2};
 }
 
+void GraphLoader::saveInGWFormat(const Graph& G, string outFile,
+    bool saveWeights) {
+    ofstream outfile;
+    string saveIn = "/tmp/saveInGWFormat", pid = to_string(getpid());
+    string tempFile = saveIn+pid; //a comment explaining why tempFile is necessary would be nice  -Nil
+    outfile.open(tempFile.c_str());
+    outfile <<"LEDA.GRAPH"<<endl<<"string"<<endl<<"short"<<endl<<"-2"<<endl; //header
+    outfile << G.getNumNodes() << endl;
+    const vector<string>* names = G.getNodeNames();
+    for (const auto& name : *names) {
+        outfile << "|{" << name << "}|" << endl;
+    }
+    outfile << G.getNumEdges() << endl;
+    const vector<array<uint, 2>>* edges = G.getEdgeList();
+
+    for (const auto& edge : *edges) {
+        outfile << edge[0]+1 << " " << edge[1]+1 << " 0 |{"; //re-indexing to 1-based
+        if (saveWeights) outfile << G.edgeWeight(edge[0], edge[1]) << endl;
+        outfile << "}|" << endl;
+    }
+    outfile.close();
+    exec("mv "+tempFile+" "+outFile);
+}
+
+void GraphLoader::saveInEdgeListFormat(const Graph& G, string outFile, bool weightColumn, bool namedEdges, 
+                                       const string& headerLine, const string& sep) {
+    ofstream ofs;
+    ofs.open(outFile.c_str());
+    if (headerLine.size() != 0) ofs<<headerLine<<endl;
+    const vector<array<uint, 2>>* edges = G.getEdgeList();
+    for (const auto& edge : *edges) {
+        if (namedEdges) ofs<<G.getNodeName(edge[0])<<sep<<G.getNodeName(edge[1]);
+        else ofs<<edge[0]<<sep<<edge[1];
+        if (weightColumn) ofs<<sep<<G.edgeWeight(edge[0], edge[1]);
+        ofs<<endl;
+    }
+    ofs.close();
+}
+
 //dispatches to one of the format-specific functions based on the file extension
-Graph GraphLoader::loadGraphFromFile(const string& graphName, const string& filePath,
-                                     const string& optionalColorFile, bool loadWeights) {
-    if (not fileExists(filePath)) throw runtime_error("File not found: " + filePath);
-    if (optionalColorFile != "" and not fileExists(optionalColorFile))
-        throw runtime_error("File not found: " + optionalColorFile);
+Graph GraphLoader::loadGraphFromFile(const string& graphName, const string& fileName,
+                                     bool loadWeights) {
+    string format = fileName.substr(fileName.find_last_of('.')+1);
+    string uncompressedFileExt = getUncompressedFileExtension(fileName);
 
-    string format = filePath.substr(filePath.find_last_of('.')+1);
-    string uncompressedFileExt = getUncompressedFileExtension(filePath);
-
-    //dbg cerr<<graphName<<" "<<filePath<<" "<<optionalColorFile<<" "<<loadWeights<<endl<<format<<" "<<uncompressedFileExt;
+    //for dbg:
+    //cerr<<graphName<<" "<<fileName<<" "<<loadWeights<<endl<<format<<" "<<uncompressedFileExt;
 
     if (format == "gw" || uncompressedFileExt == "gw")
-        return loadGraphFromGWFile(graphName, filePath, optionalColorFile, loadWeights);
+        return loadGraphFromGWFile(graphName, fileName, loadWeights);
     if (format == "el" || uncompressedFileExt == "el" || format == "elw" || uncompressedFileExt == "elw")
-        return loadGraphFromEdgeListFile(graphName, filePath, optionalColorFile, loadWeights);
+        return loadGraphFromEdgeListFile(graphName, fileName, loadWeights);
     if (format == "mpel")
         throw runtime_error("Multipartite edge list format (MPEL) no longer supported. Use coloring feature instead");
     if (format == "lgf" || format == "xml" || format == "csv" || format == "gml") {
@@ -146,21 +211,17 @@ Graph GraphLoader::loadGraphFromFile(const string& graphName, const string& file
     throw runtime_error("Unsupported graph format: " + format);
 }
 
-Graph GraphLoader::loadGraphFromGWFile(const string& graphName, const string& filePath, 
-                                       const string& optionalColorFile, bool loadWeights) {
-    RawGWFileData gwData(filePath, loadWeights);
+Graph GraphLoader::loadGraphFromGWFile(const string& graphName, const string& fileName, 
+                                       bool loadWeights) {
+    RawGWFileData gwData(fileName, loadWeights);
     //reindex 1-based edges to 0-based edges
     for (uint i = 0; i < gwData.edgeList.size(); i++) {
         gwData.edgeList[i][0]--;
         gwData.edgeList[i][1]--;
     }
 
-    RawColorFileData colorData;
-    if (optionalColorFile != "") colorData = RawColorFileData(optionalColorFile);
-
     if (!loadWeights)
-        return Graph(graphName, filePath, gwData.edgeList,
-                     gwData.nodeNames, {}, colorData.nodeColorList);
+        return Graph(graphName, fileName, gwData.edgeList, gwData.nodeNames, {}, {});
 #ifdef BOOL_EDGE_T
     throw runtime_error("cannot load weights for unweighted graph");
 #elif FLOAT_WEIGHTS
@@ -173,13 +234,12 @@ Graph GraphLoader::loadGraphFromGWFile(const string& graphName, const string& fi
         assert(w < (1L << 8*sizeof(EDGE_T)) -1 and "EDGE_T type is not wide enough for these weights");
         edgeWeights.push_back((EDGE_T) w);
     }
-    return Graph(graphName, filePath, gwData.edgeList, gwData.nodeNames,
-                    edgeWeights, colorData.nodeColorList);
+    return Graph(graphName, fileName, gwData.edgeList, gwData.nodeNames, edgeWeights, {});
 #endif
 }
 
-Graph GraphLoader::loadGraphFromEdgeListFile(const string& graphName, const string& filePath, 
-                                const string& optionalColorFile, bool loadWeights) {
+Graph GraphLoader::loadGraphFromEdgeListFile(const string& graphName, const string& fileName, 
+                                             bool loadWeights) {
     string weightType;
     if (!loadWeights) weightType = "";
     else {
@@ -192,22 +252,19 @@ Graph GraphLoader::loadGraphFromEdgeListFile(const string& graphName, const stri
 #endif
     }
 
-    RawEdgeListFileData edgeListData(filePath, weightType);
+    RawEdgeListFileData edgeListData(fileName, weightType);
     pair<vector<array<uint, 2>>, vector<string>> edgeAndNodeNameLists =
         namedEdgeListToEdgeListAndNodeNameList(edgeListData.namedEdgeList);
 
-    RawColorFileData colorData;
-    if (optionalColorFile != "") colorData = RawColorFileData(optionalColorFile);
-
     if (not loadWeights)
-        return Graph(graphName, filePath, edgeAndNodeNameLists.first,
-                     edgeAndNodeNameLists.second, {}, colorData.nodeColorList);
+        return Graph(graphName, fileName, edgeAndNodeNameLists.first,
+                     edgeAndNodeNameLists.second, {}, {});
 
 #ifdef BOOL_EDGE_T
     throw runtime_error("cannot load weights for unweighted graph");
 #elif FLOAT_WEIGHTS
-    return Graph(graphName, filePath, edgeAndNodeNameLists.first, edgeAndNodeNameLists.second, 
-                 edgeListData.floatWeights, colorData.nodeColorList);
+    return Graph(graphName, fileName, edgeAndNodeNameLists.first, edgeAndNodeNameLists.second, 
+                 edgeListData.floatWeights, {});
 #else
     vector<EDGE_T> edgeWeights;
     edgeWeights.reserve(edgeListData.intWeights.size());
@@ -216,13 +273,14 @@ Graph GraphLoader::loadGraphFromEdgeListFile(const string& graphName, const stri
         assert(w < (1L << 8*sizeof(EDGE_T)) -1 and "EDGE_T type is not wide enough for these weights");
         edgeWeights.push_back((EDGE_T) w);
     }
-    return Graph(graphName, filePath, edgeAndNodeNameLists.first, edgeAndNodeNameLists.second, 
-                 edgeWeights, colorData.nodeColorList);
+    return Graph(graphName, fileName, edgeAndNodeNameLists.first, edgeAndNodeNameLists.second, 
+                 edgeWeights, {});
 #endif
 }
 
-GraphLoader::RawGWFileData::RawGWFileData(const string& filePath, bool containsEdgeWeights) {
-    stdiobuf sbuf = readFileAsStreamBuffer(filePath);
+GraphLoader::RawGWFileData::RawGWFileData(const string& fileName, bool containsEdgeWeights) {
+    if (not fileExists(fileName)) throw runtime_error("File not found: " + fileName);
+    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
     istream ifs(&sbuf);
     string line;
     //ignore header
@@ -273,17 +331,15 @@ GraphLoader::RawGWFileData::RawGWFileData(const string& filePath, bool containsE
 }
 
 GraphLoader::RawEdgeListFileData::RawEdgeListFileData(
-            const string& filePath, const string& weightType) {
-
-    //using reserve as an optimization to try to avoid reallocations. Would be
-    //interesting to benchmark to see if it makes a difference
-    uint estimatedUpperBound = 10000;
-    namedEdgeList.reserve(estimatedUpperBound);                                       
-    if (weightType == "int") intWeights.reserve(estimatedUpperBound);
-    else if (weightType == "float") floatWeights.reserve(estimatedUpperBound);
+            const string& fileName, const string& weightType) {
+    if (not fileExists(fileName)) throw runtime_error("File not found: " + fileName);
+    uint numLines = numLinesInFile(fileName);
+    namedEdgeList.reserve(numLines);                                       
+    if (weightType == "int") intWeights.reserve(numLines);
+    else if (weightType == "float") floatWeights.reserve(numLines);
     else if (weightType != "") throw runtime_error("weightType cannot be "+weightType);
 
-    stdiobuf sbuf = readFileAsStreamBuffer(filePath);
+    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
     istream infile(&sbuf);
     for (string line; getline(infile, line); ) {
         string name1, name2;
@@ -305,25 +361,32 @@ GraphLoader::RawEdgeListFileData::RawEdgeListFileData(
     else if (weightType == "float") floatWeights.shrink_to_fit();
 }
 
-GraphLoader::RawColorFileData::RawColorFileData() {}
-GraphLoader::RawColorFileData::RawColorFileData(const string& filePath) {
-    uint estimatedUpperBound = 10000;
-    nodeColorList.reserve(estimatedUpperBound);
-    stdiobuf sbuf = readFileAsStreamBuffer(filePath);
+GraphLoader::RawColorFileData::RawColorFileData(const string& fileName) {
+    nodeColorList = rawTwoColumnFileData(fileName);
+}
+GraphLoader::RawLockFileData::RawLockFileData(const string& fileName) {
+    nodePairList = rawTwoColumnFileData(fileName);
+}
+
+vector<array<string, 2>> GraphLoader::rawTwoColumnFileData(const string& fileName) {
+    if (not fileExists(fileName)) throw runtime_error("File not found: " + fileName);
+    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
     istream ifs(&sbuf);
+    vector<array<string, 2>> res;
+    res.reserve(numLinesInFile(fileName));
     for (string line; getline(ifs, line); ) {
         if (line.size() == 0) continue;
-        string nodeName, colorName;
+        string col1, col2;
         istringstream iss(line);
-        if (iss >> nodeName >> colorName)
-            nodeColorList.push_back({nodeName, colorName});
-        else throw runtime_error("failed to read node color pair from line: "+line);
+        if (iss >> col1 >> col2)
+            res.push_back({col1, col2});
+        else throw runtime_error("failed to read column pair from line: "+line+" in file: "+fileName);
     }
-    nodeColorList.shrink_to_fit();
+    return res;
 }
 
 pair<vector<array<uint, 2>>, vector<string>> GraphLoader::namedEdgeListToEdgeListAndNodeNameList(
-        const vector<array<string, 2>> namedEdgeList) {
+        const vector<array<string, 2>>& namedEdgeList) {
     vector<array<uint, 2>> edgeList;
     edgeList.reserve(namedEdgeList.size());
     vector<string> nodeNames;
@@ -353,41 +416,32 @@ pair<vector<array<uint, 2>>, vector<string>> GraphLoader::namedEdgeListToEdgeLis
     return {edgeList, nodeNames};
 }
 
-void GraphLoader::saveInGWFormat(const Graph& G, string outFile,
-    bool saveWeights) {
-    ofstream outfile;
-    string saveIn = "/tmp/saveInGWFormat", pid = to_string(getpid());
-    string tempFile = saveIn+pid; //a comment explaining why tempFile is necessary would be nice  -Nil
-    outfile.open(tempFile.c_str());
-    outfile <<"LEDA.GRAPH"<<endl<<"string"<<endl<<"short"<<endl<<"-2"<<endl; //header
-    outfile << G.getNumNodes() << endl;
-    const vector<string>* names = G.getNodeNames();
-    for (const auto& name : *names) {
-        outfile << "|{" << name << "}|" << endl;
+array<vector<array<string, 2>>, 2> GraphLoader::nodeColorListsFromLockFile(
+        const string& lockFile) {
+    vector<array<string, 2>> lockedPairs = RawLockFileData(lockFile).nodePairList;
+    array<vector<array<string, 2>>, 2> res;
+    res[0].reserve(lockedPairs.size());
+    res[1].reserve(lockedPairs.size());
+    for (uint i = 0; i < lockedPairs.size(); i++) {
+        //give color "i" to the i-th locked pair
+        string g1Node = lockedPairs[i][0], g2Node = lockedPairs[i][1];
+        string color_i = to_string(i);
+        res[0].push_back({g1Node, color_i});
+        res[1].push_back({g2Node, color_i});
     }
-    outfile << G.getNumEdges() << endl;
-    const vector<array<uint, 2>>* edges = G.getEdgeList();
-
-    for (const auto& edge : *edges) {
-        outfile << edge[0]+1 << " " << edge[1]+1 << " 0 |{"; //re-indexing to 1-based
-        if (saveWeights) outfile << G.edgeWeight(edge[0], edge[1]) << endl;
-        outfile << "}|" << endl;
-    }
-    outfile.close();
-    exec("mv "+tempFile+" "+outFile);
+    return res;
 }
 
-void GraphLoader::saveInEdgeListFormat(const Graph& G, string outFile, bool weightColumn, bool namedEdges, 
-                                       const string& headerLine, const string& sep) {
-    ofstream ofs;
-    ofs.open(outFile.c_str());
-    if (headerLine.size() != 0) ofs<<headerLine<<endl;
-    const vector<array<uint, 2>>* edges = G.getEdgeList();
-    for (const auto& edge : *edges) {
-        if (namedEdges) ofs<<G.getNodeName(edge[0])<<sep<<G.getNodeName(edge[1]);
-        else ofs<<edge[0]<<sep<<edge[1];
-        if (weightColumn) ofs<<sep<<G.edgeWeight(edge[0], edge[1]);
-        ofs<<endl;
+array<vector<array<string, 2>>, 2> GraphLoader::nodeColorListsFromCommonNames(
+        const vector<string>& commonNames) {
+    array<vector<array<string, 2>>, 2> res;
+    res[0].reserve(commonNames.size());
+    res[1].reserve(commonNames.size());
+    for (uint i = 0; i < commonNames.size(); i++) {
+        //give color "i" to the i-th name
+        string color_i = to_string(i);
+        res[0].push_back({commonNames[i], color_i});
+        res[1].push_back({commonNames[i], color_i});
     }
-    ofs.close();
+    return res;
 }

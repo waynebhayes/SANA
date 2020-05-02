@@ -71,6 +71,9 @@ void deleteFile(string name);
 
 void writeDataToFile(const vector<vector<string> >& data, string fileName, bool useTabs = false);
 
+//if the file ends in '\n', it counts as a new line
+uint numLinesInFile(const string& fileName);
+
 uint factorial(uint n);
 uint binomialCoefficient(uint n, uint k);
 double binomialCoefficientFloat(uint n, uint k);

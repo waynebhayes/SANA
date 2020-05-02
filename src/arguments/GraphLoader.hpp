@@ -38,18 +38,19 @@ public:
                               const string& headerLine, const string& sep);
 
     //loads graph from filePath according to the file extension
-    //if optionalColorFile == "", the graph is loaded as monochromatic
+    //the graph is loaded as monochromatic
     static Graph loadGraphFromFile(
-      const string& graphName, const string& filePath, const string& optionalColorFile, bool loadWeights);
+      const string& graphName, const string& filePath, bool loadWeights);
 private:
-    //extract raw data from the file and process it as necessary to call the graph constructor
+    //functions to extract raw data from the file and process it as necessary
+    //to call the graph constructor (without colors)
     static Graph loadGraphFromGWFile(
-      const string& graphName, const string& filePath, const string& optionalColorFile, bool loadWeights);
+      const string& graphName, const string& filePath, bool loadWeights);
     static Graph loadGraphFromEdgeListFile(
-      const string& graphName, const string& filePath, const string& optionalColorFile, bool loadWeights);
+      const string& graphName, const string& filePath, bool loadWeights);
 
     //for each supported file format, define a struct with the raw data that can be extracted from that file
-    //(without any processing) and a constructor that extracts the raw data without doing any processing
+    //(without any processing), and a constructor that extracts the raw data without doing any processing
     
     //GW format description: http://www.algorithmic-solutions.info/leda_guide/graphs/leda_native_graph_fileformat.html
     struct RawGWFileData {
@@ -68,12 +69,21 @@ private:
     };
     struct RawColorFileData {
         vector<array<string, 2>> nodeColorList;
-        RawColorFileData(); //convenient to have a do-nothing constructor, since the color file is optional
         RawColorFileData(const string& filePath);
     };
+    struct RawLockFileData {
+        vector<array<string, 2>> nodePairList;
+        RawLockFileData(const string& filePath);
+    };
 
+    //functions to initialize the node-color lists
+    static array<vector<array<string, 2>>, 2> nodeColorListsFromLockFile(const string& lockFile);
+    static array<vector<array<string, 2>>, 2> nodeColorListsFromCommonNames(const vector<string>& commonNames);
+
+    //utility functions -- changing data formats
+    static vector<array<string, 2>> rawTwoColumnFileData(const string& filePath);
     static pair<vector<array<uint, 2>>, vector<string>> namedEdgeListToEdgeListAndNodeNameList(
-                                    const vector<array<string, 2>> namedEdgeList);
+                                    const vector<array<string, 2>>& namedEdgeList);
 };
 
 #endif /* GRAPHLOADER_H_ */

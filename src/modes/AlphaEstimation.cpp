@@ -61,7 +61,7 @@ void AlphaEstimation::init(string alphaFile) {
         for (string gName : pair) {
             if (not graphs.count(gName)) {
                 string gFile = "networks/"+gName+"/"+gName+".gw";
-                graphs.insert({gName, GraphLoader::loadGraphFromFile(gName, gFile, "", false)});
+                graphs.insert({gName, GraphLoader::loadGraphFromFile(gName, gFile, false)});
             }
         }
     }

@@ -60,7 +60,7 @@ public:
     //there is no default constructor intentionally to disable the option of
     //creating empty graphs and populating the data structures directly.
 
-    //derived graphs: they all call the same constructor above, ensuring internal consistency
+    //derived graphs: they all call the same constructor above, ensuring internal consistency.
     //prefer this "functional" way of creating new graphs rather than modifying the current graph
     //do not add I/O functions to the Graph class. Use GraphLoader.
     Graph nodeInducedSubgraph(const vector<uint>& nodes) const;
@@ -74,8 +74,16 @@ public:
     Graph graphIntersection(const Graph& other, const vector<uint>& thisToOtherNodeMap) const;
     //return a graph with the edge weights in 'this' minus the weights in 'other'.
     //Crashes if any edge weight would be negative 
-    //it does *not* modify 'this' graph. It is not marked const for technical reasons only
+    //it does *not* modify 'this' graph. It is not marked const solely for technical reasons
     Graph subtractGraph(const Graph& other, const vector<uint>& otherToThisNodeMap); 
+
+    //functions that *modify* this graph
+
+    //calling this function is the same as passing the parameter directly to the constructor
+    //(which is recommended). This function only exists in case you need to construct
+    //the (rest of the) graph before you can compute the colors
+    //(e.g., if the colors depend on the node names, like with -lock-same-names)
+    void initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs);
 
     //O(1) getters
     string getName() const;
@@ -108,6 +116,7 @@ public:
     vector<uint> numNodesAroundByLayers(uint node, uint maxDist) const;
     vector<uint> nodesAround(uint node, uint maxDist) const;
     bool hasSameNodeNamesAs(const Graph& other) const;
+    vector<string> commonNodeNames(const Graph& other) const;
         
     // COLOR SYSTEM
     //colors have arbitrary strings as names. internally, they also have a numeric
@@ -132,6 +141,11 @@ public:
     //same name (or to the special value INVALID_COLOR_ID if the other graph has no color with that name)
     vector<uint> myColorIdsToOtherGraphColorIds(const Graph& other) const;
     static const uint INVALID_COLOR_ID;
+
+    //check for internal consistency. good practice to keep it in an "assert"
+    //after constructing or modifying a graph
+    bool isWellDefined() const;
+    void debugPrint() const; //print info about the internal state of graph
 
 private:
     string name, filePath;
@@ -158,14 +172,9 @@ private:
     //creates the vector of pairs that the constructor needs
     vector<array<string, 2>> colorsAsNodeColorNamePairs() const;
     
-    //parts of the constructor, not meant to be called in isolation
+    //part of the constructor, not meant to be called by itself
     void initConnectedComponents();
-    void initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs);
 
-    //check for internal consistency. keep it in an "assert" at the end of constructors and
-    //any function that modifies the graph (currently, there are none, and it's best kept that way)
-    bool isWellDefined() const;
-    void debugPrint() const; //print info about the internal state of graph on the terminal
 
     //for convenience and speed(maybe?)
     friend class SANA;

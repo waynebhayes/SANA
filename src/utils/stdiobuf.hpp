@@ -1,14 +1,13 @@
-// This class is needed to convert a C-style FILE* to a C++-style stream to make
-// popen compatible with the large portions of SANA that use C++ to read files
-#include <streambuf>
-
 #ifndef STDIOBUF_HPP
 #define STDIOBUF_HPP
 
+#include <streambuf>
+
 #define BUFFER_SIZE 10240
 
-class stdiobuf : public std::streambuf
-{
+// This class is needed to convert a C-style FILE* to a C++-style stream to make
+// popen compatible with the large portions of SANA that use C++ to read files
+class stdiobuf : public std::streambuf {
 private:
     FILE* file;
     char buffer[BUFFER_SIZE];
@@ -16,13 +15,13 @@ private:
 public:
     stdiobuf(FILE* file, bool piped): file(file), isPiped(piped) {}
     ~stdiobuf() {
-        if (this->file) {
-            if(isPiped) pclose(file);
-            else fclose(this->file); 
+        if (file) {
+            if (isPiped) pclose(file);
+            else fclose(file); 
         }
     }
     stdiobuf(const stdiobuf& other) {
-        if(&other != this) {
+        if (&other != this) {
             this->file = other.file;
             this->isPiped = other.isPiped;
             for(int i = 0; i < BUFFER_SIZE; i++)
@@ -31,15 +30,13 @@ public:
     }
 
     int underflow() {
-        if (this->gptr() == this->egptr() && this->file) {
-            size_t size = fread(this->buffer, 1, BUFFER_SIZE, this->file);
-            if(0 < size)
-                this->setg(this->buffer, this->buffer, this->buffer + size);
+        if (gptr() == egptr() and file) {
+            size_t size = fread(buffer, 1, BUFFER_SIZE, file);
+            if (0 < size) setg(buffer, buffer, buffer + size);
         }
-        return this->gptr() == this->egptr()
-            ? traits_type::eof()
-            : traits_type::to_int_type(*this->gptr());
+        return (gptr() == egptr() ? traits_type::eof()
+                                  : traits_type::to_int_type(*gptr()));
     }
-    
 };
-#endif
+
+#endif /* STDIOBUF_HPP */

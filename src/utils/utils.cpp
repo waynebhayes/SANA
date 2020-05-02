@@ -132,9 +132,9 @@ void addUniquePostfixToFilename(string& name, const string& fileExtension) {
 }
 
 const string currentDateTime() {
-    time_t     now = time(0);
-    struct tm  tstruct;
-    char       buf[80];
+    time_t now = time(0);
+    struct tm tstruct;
+    char buf[80];
     tstruct = *localtime(&now);
     strftime(buf, sizeof(buf), "%Y-%m-%d %X", &tstruct);
     return buf;
@@ -326,6 +326,12 @@ void writeDataToFile(const vector<vector<string> >& data, string fileName, bool 
         outfile << endl;
     }
     outfile.close();
+}
+
+uint numLinesInFile(const string& fileName) {
+    ifstream ifs(fileName); 
+    return 1 + count(istreambuf_iterator<char>(ifs), 
+                     istreambuf_iterator<char>(), '\n') ;
 }
 
 uint factorial(uint n) {
