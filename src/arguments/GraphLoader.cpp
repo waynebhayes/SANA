@@ -12,7 +12,6 @@
 #include "../utils/Timer.hpp"
 
 using namespace std;
-bool _graphsSwitched = false;
 
 pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     cout << "Initializing graphs..." << endl;
@@ -135,14 +134,6 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     // G2.debugPrint();
 
     cout << "Total time for loading graphs (" << T.elapsedString() << ")" << endl;
-    
-    if (G1.getNumNodes() > G2.getNumNodes()) {
-        //note: this does not guarantee that a color-restricted alignment exists,
-        //so the program might still crash when initializing SANA
-        cout << "Switching G1 and G2 because G1 has more nodes than G2" << endl;
-        _graphsSwitched = true;
-        return {G2, G1};
-    }
     return {G1, G2};
 }
 

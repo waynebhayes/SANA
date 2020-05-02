@@ -14,9 +14,9 @@ public:
     Alignment runAndPrintTime();
     virtual Alignment run() =0;
     virtual void describeParameters(ostream& stream) =0;
-    virtual string fileNameSuffix(const Alignment& A) =0;
+    virtual string fileNameSuffix(const Alignment& A) const =0;
 
-    string getName();
+    string getName() const;
     double getExecTime();
 
 protected:

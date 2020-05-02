@@ -38,7 +38,7 @@ public:
     Alignment run();
     unordered_set<vector<uint>*>* paretoRun(const string &fileName);
     void describeParameters(ostream& stream);
-    string fileNameSuffix(const Alignment& A);
+    string fileNameSuffix(const Alignment& A) const;
     
     //set temperature decay dynamically
     void setDynamicTDecay();
@@ -142,7 +142,7 @@ private:
 
     //objective function
     MeasureCombination* MC;
-    double eval(const Alignment& A);
+    double eval(const Alignment& A) const;
     double ecWeight, edWeight, erWeight, s3Weight, icsWeight, wecWeight, jsWeight, secWeight,
            ncWeight, localWeight, mecWeight, sesWeight, eeWeight, ms3Weight, ewecWeight;
 

@@ -6,7 +6,7 @@ Method::Method(Graph* G1, Graph* G2, string name): G1(G1), G2(G2), name(name) {}
 Method::~Method() {
     // cerr<<"in Method base destructor"<<endl;
 }
-string Method::getName() { return name; }
+string Method::getName() const { return name; }
 double Method::getExecTime() { return execTime; }
 
 Alignment Method::runAndPrintTime() {

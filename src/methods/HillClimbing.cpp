@@ -322,7 +322,7 @@ Alignment HillClimbing::run() {
     return A;
 }
 
-string HillClimbing::fileNameSuffix(const Alignment& A) {
+string HillClimbing::fileNameSuffix(const Alignment& A) const {
     return "_" + M->toString() + "_" + extractDecimals(M->eval(A),3);
 }
 

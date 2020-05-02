@@ -4,8 +4,6 @@
 #include <unordered_map>
 #include "../../arguments/GraphLoader.hpp"
 
-extern bool _graphsSwitched;
-
 class Sequence: public LocalMeasure {
 public:
     Sequence(Graph* G1, Graph* G2);

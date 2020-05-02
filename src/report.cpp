@@ -8,7 +8,6 @@
 #include "utils/utils.hpp"
 #include "utils/randomSeed.hpp"
 
-extern bool _graphsSwitched;
 bool multiPairwiseIteration; //todo: refactor without this out here -Nil
 
 void report::makeReport(const Graph& G1, Graph& G2, const Alignment& A,
@@ -130,33 +129,28 @@ void report::saveReport(const Graph& G1, Graph& G2, const Alignment& A,
                         string reportFileName, bool multiPairwiseIteration) {
     Timer T;
     T.start();
-    ofstream outfile, alignfile;
+    ofstream outfile;
     reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, outfile,
                                                     G1.getName(), G2.getName(), method, A);
-
+    cout<<"Saving report as \""<<reportFileName<<"\""<<endl;
     if (reportFileName.find("_pareto_") == string::npos) {
-        alignfile.open((reportFileName.substr(0,reportFileName.length()-4) + ".align").c_str());
-        
-        //outfile ignores "_graphsSwitched" and alignfile does not. Looks inconsistent, may be a bug? -Nil
-
-        //write alignment inline
         for (uint i = 0; i < A.size(); i++) outfile<<A[i]<<" ";
         outfile<<endl;
 
-        //write alignment in edge list format
-        for (uint i = 0; i < A.size(); i++) {
-            if (_graphsSwitched) alignfile<<G2.getNodeName(A[i])<<"\t"<<G1.getNodeName(i)<<endl;
-            else                 alignfile<<G1.getNodeName(i)<<"\t"<<G2.getNodeName(A[i])<<endl;
-        }
+        string elAligFile = reportFileName.substr(0,reportFileName.length()-4)+".align";
+        ofstream ofs;
+        ofs.open(elAligFile.c_str());
+        for (uint i = 0; i < A.size(); i++)
+            ofs<<G1.getNodeName(i)<<"\t"<<G2.getNodeName(A[i])<<endl;
+        ofs.close();
     }
     makeReport(G1, G2, A, M, method, outfile, multiPairwiseIteration);
     outfile.close();
-    if (reportFileName.find("_pareto_") == string::npos) alignfile.close();
-    cout << "Took " << T.elapsed() << " seconds to save the alignment and scores." << endl;
+    cout<<"Took "<<T.elapsed()<<" seconds to save the alignment and scores."<<endl;
 }
 
-void report::saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment const & A,
-    MeasureCombination const & M, Method * const method, string & localMeasureFileName) {
+void report::saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A,
+    const MeasureCombination& M, const Method* method, string& localMeasureFileName) {
     Timer T;
     T.start();
     if (M.getSumLocalWeight() <= 0) { //This is how needLocal is calculated in SANA.cpp
@@ -164,7 +158,9 @@ void report::saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment con
         return;
     }
     ofstream outfile;
-    ensureFileNameExistsAndOpenOutFile("local measure", localMeasureFileName, outfile, G1.getName(), G2.getName(), method, A);
+    ensureFileNameExistsAndOpenOutFile("local measure", localMeasureFileName, outfile, 
+                                       G1.getName(), G2.getName(), method, A);
+    cout << "Saving local measure as \"" << localMeasureFileName << "\"" << endl;
     M.writeLocalScores(outfile, G1, G2, A);
     outfile.close();
     cout << "Took " << T.elapsed() << " seconds to save the alignment and scores." << endl;
@@ -173,14 +169,11 @@ void report::saveLocalMeasures(Graph const & G1, Graph const & G2, Alignment con
 /*"Ensure" here means ensure that there is a valid file to output to.
 NOTE: the && is a move semantic, which moves the internal pointers of one object
 to another and then destructs the original, instead of destructing all of the
-internal data of the original.
-It is assumed that the graph names are passed as r-values, thus this function will likely
-fail compilation if l-value graph names are passed.*/
-string report::ensureFileNameExistsAndOpenOutFile(string const & fileType, string outFileName, 
-                    ofstream & outfile, const string& G1Name, const string& G2Name, 
-                    Method * const & method, Alignment const & A) {     
-    string extension = fileType == "local measure" ? ".localscores" :
-                                                     ".out";
+internal data of the original. */
+string report::ensureFileNameExistsAndOpenOutFile(const string& fileType, string outFileName, 
+                    ofstream& outfile, const string& G1Name, const string& G2Name, 
+                    const Method* method, Alignment const & A) {     
+    string extension = fileType == "local measure" ? ".localscores" : ".out";
     if (outFileName == "") {
         outFileName = "alignments/" + G1Name + "_" + G2Name + "/"
         + G1Name + "_" + G2Name + "_" + method->getName() + method->fileNameSuffix(A);
@@ -198,13 +191,11 @@ string report::ensureFileNameExistsAndOpenOutFile(string const & fileType, strin
     }
     outFileName += extension;
     outfile.open(outFileName.c_str());
-
     if (not outfile.is_open()) {
         cout << "Problem saving " << fileType << " file to specified location. Saving to sana program file." << endl;
         outFileName = outFileName.substr(outFileName.find_last_of("/")+1);
         outfile.open(outFileName.c_str());
     }
-    cout << "Saving " << fileType << " as \"" << outFileName << "\"" << endl;
     return outFileName;
 }
 

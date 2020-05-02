@@ -33,7 +33,7 @@ void WrappedMethod::describeParameters(ostream& stream) {
     stream << parameters;
 }
 
-string WrappedMethod::fileNameSuffix(const Alignment& A) {
+string WrappedMethod::fileNameSuffix(const Alignment& A) const {
     return "";
 }
 

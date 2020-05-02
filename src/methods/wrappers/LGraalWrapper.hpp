@@ -16,7 +16,7 @@ public:
     LGraalWrapper(Graph* G1, Graph* G2, double alpha, uint iterlimit, uint timelimit);
     Alignment run();
     void describeParameters(ostream& stream);
-    string fileNameSuffix(const Alignment& A);
+    string fileNameSuffix(const Alignment& A) const;
     
 private:
     static const string GDVCounterProgram;

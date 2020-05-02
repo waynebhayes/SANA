@@ -535,7 +535,7 @@ void SANA::describeParameters(ostream& sout) {
     else sout << "Iterations Run: " << maxIterations << "00,000,000" << endl; //it's in hundred millions
 }
 
-string SANA::fileNameSuffix(const Alignment& A) {
+string SANA::fileNameSuffix(const Alignment& A) const {
     return "_" + extractDecimals(eval(A),3);
 }
 
@@ -563,7 +563,7 @@ double SANA::slowTrueAcceptingProbability() {
     return sum/(double) numPBadsInBuffer;
 }
 
-double SANA::eval(const Alignment& Al) { return MC->eval(Al); }
+double SANA::eval(const Alignment& Al) const { return MC->eval(Al); }
 
 void sigIntHandler(int s) {
     string line;

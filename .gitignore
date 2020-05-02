@@ -69,6 +69,10 @@ cache-pbad/
 .vscode/
 sana\.weighted
 
+regression-tests/CompressedFiles/
+regression-test.result
+regression-out
+
 # Macbook files
 *.DS_Store
 src/*.DS_Store

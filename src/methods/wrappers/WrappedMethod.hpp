@@ -14,7 +14,7 @@ public:
     WrappedMethod(Graph* G1, Graph* G2, string name, string args);
     Alignment run();
     void describeParameters(ostream& stream);
-    string fileNameSuffix(const Alignment& A);
+    string fileNameSuffix(const Alignment& A) const;
 
 protected:
     string parameters;

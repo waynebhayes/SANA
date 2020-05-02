@@ -6,8 +6,6 @@
 #include <cassert>
 #include "Sequence.hpp"
 
-extern bool _graphsSwitched;
-
 using namespace std;
 
 Sequence::Sequence(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "sequence") {
@@ -73,10 +71,6 @@ void Sequence::initSimMatrix() {
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
 
     string blastFile = "sequence/scores/"+g1Name+"_"+g2Name+"_blast.out";
-	if (_graphsSwitched){
-    	blastFile = "sequence/scores/"+g2Name+"_"+g1Name+"_blast.out";
-	}
-
     if (not fileExists(blastFile)) {
         throw runtime_error("Cannot find sequence scores for "+g1Name+"-"+g2Name);
     }
@@ -122,13 +116,10 @@ void Sequence::initSimMatrix() {
     }
 }
 
-Sequence::~Sequence() {
-}
-
+Sequence::~Sequence() {}
 string Sequence::blastScoreFile(const string& G1Name, const string& G2Name) {
-    return _graphsSwitched ? "sequence/scores/"+G2Name+"_"+G1Name+"_blast.out" : "sequence/scores/"+G1Name+"_"+G2Name+"_blast.out"; 
+    return "sequence/scores/"+G1Name+"_"+G2Name+"_blast.out"; 
 }
-
 bool Sequence::fulfillsPrereqs(Graph* G1, Graph* G2) {
     return fileExists(blastScoreFile(G1->getName(), G2->getName()));
 }

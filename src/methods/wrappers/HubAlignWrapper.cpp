@@ -99,7 +99,7 @@ void HubAlignWrapper::describeParameters(ostream& stream) {
     }
 }
 
-string HubAlignWrapper::fileNameSuffix(const Alignment& A) {
+string HubAlignWrapper::fileNameSuffix(const Alignment& A) const {
     if (alpha == 1) return "_alpha_1";
     else return "_alpha_0" + extractDecimals(alpha,1);
 }

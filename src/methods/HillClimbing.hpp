@@ -12,7 +12,7 @@ public:
 
     Alignment run();
     void describeParameters(ostream& stream);
-    string fileNameSuffix(const Alignment& A);
+    string fileNameSuffix(const Alignment& A) const;
     double getExecutionTime() const;
 
 

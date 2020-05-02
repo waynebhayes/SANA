@@ -7,7 +7,6 @@
 #include <string>
 #include "ArgumentParser.hpp"
 #include "../Graph.hpp"
-extern bool _graphsSwitched;
 
 //static-method only class. It is a class instead of a namespace to differenciate
 //between public/private methods. Do not add state to this class
