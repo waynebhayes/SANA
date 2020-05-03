@@ -28,7 +28,7 @@ string WAVEWrapper::generateAlignment() {
 }
 
 Alignment WAVEWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
-    return Alignment::loadPartialEdgeList(G1, G2, fileName, true);
+    return Alignment::loadPartialEdgeList(*G1, *G2, fileName, true);
 }
 
 void WAVEWrapper::deleteAuxFiles() {

@@ -16,7 +16,7 @@ public:
     static uint getMaxEdge();
     static uint numer, denom;
 
-    int numExposedEdges(const Alignment& A) const;
+    static int numExposedEdges(const Alignment& A, const Graph& G1, const Graph& G2);
 private:
 	static uint EDGE_SUM, MAX_EDGE;
 };

@@ -35,7 +35,7 @@ uint EdgeExposure::getMaxEdge() { return MAX_EDGE; }
 
 double EdgeExposure::eval(const Alignment& A) {
 #if MULTI_PAIRWISE
-    uint ne = numExposedEdges(A);
+    uint ne = numExposedEdges(A, *G1, *G2);
     if(ne != numer) cerr << "EdgeExposure::numer should be "<<ne<<" but is "<<ne <<'\n';
     numer = ne;
     assert(ne >= MAX_EDGE and ne <= EDGE_SUM);
@@ -45,15 +45,15 @@ double EdgeExposure::eval(const Alignment& A) {
 #endif
 }
 
-int EdgeExposure::numExposedEdges(const Alignment& A) const {
+int EdgeExposure::numExposedEdges(const Alignment& A, const Graph& G1, const Graph& G2) {
 #if MULTI_PAIRWISE
-    int res = G2->getNumEdges(); //every edge in G2 counts (edge list don't store any 0-weight edges)
+    int res = G2.getNumEdges(); //every edge in G2 counts (edge lists don't store any 0-weight edges)
     //we also need to take into account the edges in G1 not mapped to any edge in G2:
-    for (const auto& edge: *(G1->getEdgeList())) {
+    for (const auto& edge: *(G1.getEdgeList())) {
         uint g1Node1 = edge[0], g1Node2 = edge[1];
         uint g2Node1 = A[g1Node1], g2Node2 = A[g1Node2];
-        if (!G2->hasEdge(g2Node1, g2Node2)) res++;
-        assert(G1->edgeWeight(g1Node1, g1Node2) == 1); //sanity check
+        if (!G2.hasEdge(g2Node1, g2Node2)) res++;
+        assert(G1.edgeWeight(g1Node1, g1Node2) == 1); //sanity check
     }
     return res;
 #else

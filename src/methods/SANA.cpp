@@ -267,7 +267,7 @@ SANA::~SANA() {
 }
 
 Alignment SANA::getStartingAlignment() {
-    if (startAligName != "") return Alignment::loadEdgeList(G1, G2, startAligName);
+    if (startAligName != "") return Alignment::loadEdgeList(*G1, *G2, startAligName);
     return Alignment::randomColorRestrictedAlignment(*G1, *G2);
 }
 
@@ -302,7 +302,7 @@ void SANA::initDataStructures(const Alignment& startA) {
     if (needSquaredAligEdges) squaredAligEdges =
             ((SquaredEdgeScore*) MC->getMeasure("ses"))->numSquaredAlignedEdges(startA);
     if (needExposedEdges) EdgeExposure::numer = 
-            ((EdgeExposure*) MC->getMeasure("ee"))->numExposedEdges(startA) - EdgeExposure::getMaxEdge();
+            EdgeExposure::numExposedEdges(startA, *G1, *G2) - EdgeExposure::getMaxEdge();
     if (needMS3) MultiS3::numer =
             ((MultiS3*) MC->getMeasure("ms3"))->computeNumer(startA);
     if (needInducedEdges) inducedEdges = G2->numEdgesInNodeInducedSubgraph(*A);

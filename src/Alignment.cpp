@@ -7,17 +7,17 @@ using namespace std;
 Alignment::Alignment() {}
 Alignment::Alignment(const vector<uint>& mapping): A(mapping) {}
 Alignment::Alignment(const Alignment& alig): A(alig.A) {}
-Alignment::Alignment(Graph* G1, Graph* G2, const vector<vector<string> >& mapList) {
+Alignment::Alignment(const Graph& G1, const Graph& G2, const vector<vector<string>>& mapList) {
     uint n1 = mapList.size();
-    uint n2 = G2->getNumNodes();
-    A = vector<uint>(G1->getNumNodes(), n2); //n2 used to note invalid value
+    uint n2 = G2.getNumNodes();
+    A = vector<uint>(G1.getNumNodes(), n2); //n2 used to note invalid value
     for (uint i = 0; i < n1; i++) {
         string nodeG1 = mapList[i][0];
         string nodeG2 = mapList[i][1];
-        A[G1->nodeNameToIndexMap[nodeG1]] = G2->nodeNameToIndexMap[nodeG2];
+        A[G1.nodeNameToIndexMap.at(nodeG1)] = G2.nodeNameToIndexMap.at(nodeG2);
     }
-    printDefinitionErrors(*G1,*G2);
-    assert(isCorrectlyDefined(*G1, *G2));
+    printDefinitionErrors(G1,G2);
+    assert(isCorrectlyDefined(G1, G2));
 }
 
 uint Alignment::size() const { return A.size(); }
@@ -27,9 +27,9 @@ uint& Alignment::back() { return A.back(); }
 uint& Alignment::operator[] (uint node) { return A[node]; }
 const uint& Alignment::operator[](const uint node) const { return A[node]; }
 
-Alignment Alignment::loadEdgeList(Graph* G1, Graph* G2, string fileName) {
+Alignment Alignment::loadEdgeList(const Graph& G1, const Graph& G2, const string& fileName) {
     vector<string> edges = fileToStrings(fileName);
-    vector<vector<string> > edgeList(edges.size()/2, vector<string> (2));
+    vector<vector<string>> edgeList(edges.size()/2, vector<string> (2));
     for (uint i = 0; i < edges.size()/2; i++) {
         edgeList[i][0] = edges[2*i];
         edgeList[i][1] = edges[2*i+1];
@@ -37,17 +37,17 @@ Alignment Alignment::loadEdgeList(Graph* G1, Graph* G2, string fileName) {
     return Alignment(G1, G2, edgeList);
 }
 
-Alignment Alignment::loadEdgeListUnordered(Graph* G1, Graph* G2, string fileName) {
+Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, const string& fileName) {
     vector<string> edges = fileToStrings(fileName);
-    vector<vector<string> > edgeList(edges.size()/2, vector<string> (2));
-    for (uint i = 0; i < edges.size()/2; i++){ //G1 is always edgeList[i][0], not 1.
+    vector<vector<string>> edgeList(edges.size()/2, vector<string> (2));
+    for (uint i = 0; i < edges.size()/2; i++) { //G1 is always edgeList[i][0], not 1.
 
         //check if G1 contains the nodename edges[2*i]. If this is false, G2 must contain
         //it and edges[2*i+1] must be in G1.
-        if(find(G1->nodeNames.begin(), G1->nodeNames.end(), edges[2*i]) != G1->nodeNames.end()){
+        if (find(G1.nodeNames.begin(), G1.nodeNames.end(), edges[2*i]) != G1.nodeNames.end()) {
             edgeList[i][0] = edges[2*i];
             edgeList[i][1] = edges[2*i+1];
-        }else{
+        } else {
             edgeList[i][0] = edges[2*i+1];
             edgeList[i][1] = edges[2*i];
         }
@@ -55,17 +55,18 @@ Alignment Alignment::loadEdgeListUnordered(Graph* G1, Graph* G2, string fileName
     return Alignment(G1, G2, edgeList);
 }
 
-Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, bool byName) {
+Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
+                                    const string& fileName, bool byName) {
     vector<string> edges = fileToStrings(fileName);
     vector<vector<string> > mapList(edges.size()/2, vector<string> (2));
     for (uint i = 0; i < edges.size()/2; i++) {
         mapList[i][0] = edges[2*i];
         mapList[i][1] = edges[2*i+1];
     }
-    const unordered_map<string,uint>* mapG1 = G1->getNodeNameToIndexMap();
-    const unordered_map<string,uint>* mapG2 = G2->getNodeNameToIndexMap();
-    uint n1 = G1->getNumNodes();
-    uint n2 = G2->getNumNodes();
+    const unordered_map<string,uint>* mapG1 = G1.getNodeNameToIndexMap();
+    const unordered_map<string,uint>* mapG2 = G2.getNodeNameToIndexMap();
+    uint n1 = G1.getNumNodes();
+    uint n2 = G2.getNumNodes();
     vector<uint> A(n1, n2); //n2 used to note invalid value
     for (uint i = 0; i < mapList.size(); i++) {
         string nodeG1 = mapList[i][0];
@@ -75,7 +76,7 @@ Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, 
             bool nodeG1Misplaced = false;
             bool nodeG2Misplaced = false;
             if (not mapG1->count(nodeG1)) {
-                cout << nodeG1 << " not in G1 " << G1->getName();
+                cout << nodeG1 << " not in G1 " << G1.getName();
                 if (mapG2->count(nodeG1)) {
                     cout << ", but it is in G2. Will switch if appropriate." << endl;
                     nodeG1Misplaced = true;
@@ -85,7 +86,7 @@ Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, 
                 }
             }
             if (not mapG2->count(nodeG2)) {
-                cout << nodeG2 << " not in G2 " << G2->getName();
+                cout << nodeG2 << " not in G2 " << G2.getName();
                 if (mapG1->count(nodeG2)){
                     cout << ", but it is in G1. Will switch if appropriate." << endl;
                     nodeG2Misplaced = true;
@@ -118,12 +119,12 @@ Alignment Alignment::loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, 
         }
     }
     Alignment alig(A);
-    alig.printDefinitionErrors(*G1, *G2);
-    assert(alig.isCorrectlyDefined(*G1, *G2));
+    alig.printDefinitionErrors(G1, G2);
+    assert(alig.isCorrectlyDefined(G1, G2));
     return alig;
 }
 
-Alignment Alignment::loadMapping(string fileName) {
+Alignment Alignment::loadMapping(const string& fileName) {
     if (not fileExists(fileName)) {
         throw runtime_error("Starting alignment file "+fileName+" not found");
     }
@@ -143,9 +144,8 @@ Alignment Alignment::random(uint n1, uint n2) {
     vector<uint> alignment(n1);
     uint t = 0; // total input records dealt with
     uint m = 0; // number of items selected so far
-    double u;
     while (m < n1) {
-        u = randDouble();
+        double u = randDouble();
         if ((n2 - t)*u >= n1 - m) {
             t++;
         }

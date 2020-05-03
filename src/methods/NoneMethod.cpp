@@ -12,7 +12,7 @@ NoneMethod::NoneMethod(Graph* G1, Graph* G2, string startAName):
     } else {
         A = Alignment(Alignment::loadMapping(startAName));
     }
-    A = Alignment::loadEdgeList(G1, G2, startAName);
+    A = Alignment::loadEdgeList(*G1, *G2, startAName);
 }
 NoneMethod::~NoneMethod() {}
 

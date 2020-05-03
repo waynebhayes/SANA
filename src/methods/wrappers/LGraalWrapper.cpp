@@ -113,7 +113,7 @@ Alignment LGraalWrapper::run() {
         generateGDVFile(2);
     }
     generateAlignment();
-    Alignment result = Alignment::loadPartialEdgeList(G1, G2, lgraalOutputFile, true);
+    Alignment result = Alignment::loadPartialEdgeList(*G1, *G2, lgraalOutputFile, true);
     deleteAuxFiles();
     return result;
 }

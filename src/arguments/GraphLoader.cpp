@@ -10,6 +10,7 @@
 #include <future>
 #include "GraphLoader.hpp"
 #include "../utils/Timer.hpp"
+#include "../Alignment.hpp"
 
 using namespace std;
 
@@ -107,6 +108,7 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     if (format != ".align") throw runtime_error("only edge list format is supported for start alignment");
     Alignment A = Alignment::loadEdgeList(G1, G2, nodeMapFile);
     const vector<uint>* G1ToG2Map = A.getVector();
+    uint n1 = G1.getNumNodes();
     if (G1ToG2Map->size() != n1)
         throw runtime_error("G1ToG2Map size ("+to_string(G1ToG2Map->size())+
                             ") less than number of nodes ("+to_string(n1)+")");
@@ -141,7 +143,7 @@ void GraphLoader::saveInGWFormat(const Graph& G, string outFile,
     bool saveWeights) {
     ofstream outfile;
     string saveIn = "/tmp/saveInGWFormat", pid = to_string(getpid());
-    string tempFile = saveIn+pid; //a comment explaining why tempFile is necessary would be nice  -Nil
+    string tempFile = saveIn+pid; //a comment explaining why tempFile is necessary would be nice -Nil
     outfile.open(tempFile.c_str());
     outfile <<"LEDA.GRAPH"<<endl<<"string"<<endl<<"short"<<endl<<"-2"<<endl; //header
     outfile << G.getNumNodes() << endl;
@@ -219,8 +221,8 @@ Graph GraphLoader::loadGraphFromGWFile(const string& graphName, const string& fi
     throw runtime_error("cannot load float weights from GW file");
 #else
     vector<EDGE_T> edgeWeights;
-    edgeWeights.reserve(edgeListData.intWeights.size());
-    for (int w : edgeListData.intWeights) {
+    edgeWeights.reserve(gwData.edgeWeights.size());
+    for (int w : gwData.edgeWeights) {
         assert(w > 0 and "graph cannot have negative weights");
         assert(w < (1L << 8*sizeof(EDGE_T)) -1 and "EDGE_T type is not wide enough for these weights");
         edgeWeights.push_back((EDGE_T) w);

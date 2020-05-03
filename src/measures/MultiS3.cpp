@@ -6,6 +6,7 @@ uint NUM_GRAPHS;
 uint MultiS3::denom = 1;
 uint MultiS3::numer = 1;
 double MultiS3::_type = 0;
+bool MultiS3::degreesInit = false;
 vector<uint> MultiS3::totalDegrees;
 
 MultiS3::MultiS3(const Graph* G1, const Graph* G2, int type) : Measure(G1, G2, "ms3") {
@@ -32,11 +33,9 @@ MultiS3::~MultiS3() {}
 
 void MultiS3::setDenom(const Alignment& A) {
     denom = 0;
-    const uint n = G1->getNumNodes();
-    for (uint i = 0; i < n; i++) {
-        for (uint j = i+1; j < n; j++) {
-            if (totalDegrees[i] > 0) denom++;
-        }
+    const uint n1 = G1->getNumNodes();
+    for (uint i = 0; i < n1; i++) {
+        if (totalDegrees[i] > 0) denom += n1-1-i;
     }
     denom /= 2;
 }
@@ -44,8 +43,7 @@ void MultiS3::setDenom(const Alignment& A) {
 uint MultiS3::computeNumer(const Alignment& A) const {
 #ifdef MULTI_PAIRWISE
     uint res = 0;
-    const vector<array<uint, 2>> G1Edges = G1->getEdgeList();
-    for (const auto& edge: *G1Edges) {
+    for (const auto& edge: *(G1->getEdgeList())) {
         uint node1 = edge[0], node2 = edge[1];
         auto weight = G2->edgeWeight(A[node1], A[node2]);
         if (MultiS3::_type==1) {
@@ -62,18 +60,17 @@ uint MultiS3::computeNumer(const Alignment& A) const {
 
 double MultiS3::eval(const Alignment& A) {
 #if MULTI_PAIRWISE
-    if (!degreesInit) initDegrees(A, *G1, *G2);
+    if (not degreesInit) initDegrees(A, *G1, *G2);
 
-    if (_type==1) denom = EdgeExposure::numExposedEdges(A);
+    if (_type==1) denom = EdgeExposure::numExposedEdges(A, *G1, *G2);
     else if (_type==0) setDenom(A);
 
-    uint newNumer = computeNumer();
-    if(newNumer != numer) cerr << "inc eval MS3numer wrong: should be "<<newNumer<<" but is "<<numer << '\n';
-
-    //eval shouldn't have side-effects! -Nil
-    numer = newNumer;
-
-    return ((double) newNumer) / denom / NUM_GRAPHS;
+    uint correctNumer = computeNumer(A);
+    if(correctNumer != numer) {
+        cerr<<"inc eval MS3numer wrong: should be "<<correctNumer<<" but is "<<numer<<endl;
+        numer = correctNumer;
+    }
+    return ((double) numer) / denom / NUM_GRAPHS;
 #else
     return 0.0;
 #endif
@@ -81,13 +78,12 @@ double MultiS3::eval(const Alignment& A) {
 
 void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2) {
     totalDegrees = vector<uint>(G2.getNumNodes(), 0);
-    for (uint i = 0; i < G1.getNumNodes(); ++i) totalDegrees[A[i]] += 1;
-    const Matrix<EDGE_T>* G2Matrix = G2.getAdjMatrix();
-    uint n2 = G2.getNumNodes();
-    for (uint i = 0; i < n2; ++i) {
-        for (uint j = 0; j < n2; ++j) {
-            totalDegrees[i] += G2Matrix->get(i,j);
-        }
+    for (uint i = 0; i < G2.getNumNodes(); i++) totalDegrees[i] = G2.getNumNbrs(i);
+    for (const auto& edge : *(G2.getEdgeList())) {
+        EDGE_T w = G2.edgeWeight(edge[0],edge[1]);
+        totalDegrees[edge[0]] += w;
+        if (edge[0] != edge[1]) totalDegrees[edge[1]] += w; //avoid double-counting for self-lopos
     }
+    for (uint i = 0; i < G1.getNumNodes(); ++i) totalDegrees[A[i]] += 1;
     degreesInit = true;
 }

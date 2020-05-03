@@ -25,12 +25,12 @@ public:
     Alignment(const Alignment& alig);
     Alignment &operator=(Alignment);
     Alignment(const vector<uint>& mapping);
-    Alignment(Graph* G1, Graph* G2, const vector<vector<string> >& mapList);
+    Alignment(const Graph& G1, const Graph& G2, const vector<vector<string>>& mapList);
 
-    static Alignment loadEdgeList(Graph* G1, Graph* G2, string fileName);
-    static Alignment loadEdgeListUnordered(Graph* G1, Graph* G2, string fileName);
-    static Alignment loadPartialEdgeList(Graph* G1, Graph* G2, string fileName, bool byName);
-    static Alignment loadMapping(string fileName);
+    static Alignment loadEdgeList(const Graph& G1, const Graph& G2, const string& fileName);
+    static Alignment loadEdgeListUnordered(const Graph& G1, const Graph& G2, const string& fileName);
+    static Alignment loadPartialEdgeList(const Graph& G1, const Graph& G2, const string& fileName, bool byName);
+    static Alignment loadMapping(const string& fileName);
     static Alignment randomColorRestrictedAlignment(const Graph& G1, const Graph& G2);
     
     //returns a random alignment from a graph with n1 nodes to a graph with nodes n2 >= n1 nodes

@@ -20,13 +20,12 @@ public:
     void setDenom(const Alignment& A);
     uint computeNumer(const Alignment& A) const;
     
-    //these don't belong here, they should be private members in SANA: -Nil
+    //these don't belong here, they should be members in SANA -Nil
     static uint numer, denom; // used for inc eval
-
-    static double _type; //0 default ; 1 ee  (what is ee? -Nil)
+    static double _type; //0 default ; 1 ee
 private:
-    void initDegrees(const Alignment& A, const Graph& G1, const Graph& G2);
-    bool degreesInit;
+    static void initDegrees(const Alignment& A, const Graph& G1, const Graph& G2);
+    static bool degreesInit;
 };
 #endif
 

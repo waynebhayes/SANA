@@ -19,24 +19,22 @@ SquaredEdgeScore::SquaredEdgeScore(const Graph* G1, const Graph* G2) : Measure(G
 int SquaredEdgeScore::numSquaredAlignedEdges(const Alignment& A) const {
 #ifdef MULTI_PAIRWISE
     Alignment revA = A.reverse(G2->getNumNodes());
-    const vector<array<uint, 2>> G1Edges = G1->getEdgeList();
-    const vector<array<uint, 2>> G2Edges = G2->getEdgeList();
-    const Matrix<EDGE_T>* G1Mat = G1->getAdjMatrix();
-    const Matrix<EDGE_T>* G2Mat = G2->getAdjMatrix();
+    const vector<array<uint, 2>>* G1Edges = G1->getEdgeList();
+    const vector<array<uint, 2>>* G2Edges = G2->getEdgeList();
     uint n1 = G1->getNumNodes();
 
     int count = 0;
     for (const auto& edge: *G2Edges) {
         uint g2Node1 = edge[0], g2Node2 = edge[1];
-        int rungs = G2Mat->get(g2Node1, g2Node2);
+        int rungs = G2->edgeWeight(g2Node1, g2Node2);
         assert(rungs > 0);
 
         //if an edge in G1 maps to this edge in G2, add the weight of that edge
         //(which should be 1, because G1 is unweighted) to the number of rungs for this edge
         uint g1Node1 = revA[g2Node1], g1Node2 = revA[g2Node2];
         if (g1Node1 != n1 and g1Node2 != n1 and G2->hasEdge(g1Node1, g1Node2)) {
-            assert (G1Mat->get(g1Node1, g1Node2) == 1)
-            rungs += G1Mat->get(g1Node1, g1Node2);
+            assert (G1->edgeWeight(g1Node1, g1Node2) == 1);
+            rungs += 1;
         }
         count += rungs * rungs;
         assert(count > 0); // guard against overflow
@@ -45,9 +43,9 @@ int SquaredEdgeScore::numSquaredAlignedEdges(const Alignment& A) const {
     for (const auto& edge: *G1Edges) {
         uint g1Node1 = edge[0], g1Node2 = edge[1];
         uint g2Node1 = A[g1Node1], g2Node2 = A[g1Node2];
-        if (!G2->hasEdge(g2Node1, g2Node2)) {
-            assert(G1Mat->get(g1Node1, g1Node2) == 1);
-            count += 1*1; //explicit squaring for single-rung edge  
+        if (not G2->hasEdge(g2Node1, g2Node2)) {
+            assert(G1->edgeWeight(g1Node1, g1Node2) == 1);
+            count += 1; //1 comes from 1*1 (squaring single-rung edge)  
         }
     }
     assert(count > 0); // guard against overflow

@@ -7,7 +7,7 @@
 #include "../arguments/GraphLoader.hpp"
 #include "../report.hpp"
 
-Alignment loadAlignment(int format, string file, Graph &G1, Graph &G2) {
+Alignment loadAlignment(int format, const string& file, const Graph& G1, const Graph& G2) {
     string errorHelpMsg = "The following are supported\n1: sana.out format\n2: edge list format\n";
     errorHelpMsg += "3: partial edge list format\n4: partial edge list format using numbers instead of names\n";
 
@@ -16,9 +16,9 @@ Alignment loadAlignment(int format, string file, Graph &G1, Graph &G2) {
 
     switch (format) {
     case 1: return Alignment::loadMapping(file);
-    case 2: return Alignment::loadEdgeList(&G1, &G2, file);
-    case 3: return Alignment::loadPartialEdgeList(&G1, &G2, file, true);
-    case 4: return Alignment::loadPartialEdgeList(&G1, &G2, file, false);
+    case 2: return Alignment::loadEdgeList(G1, G2, file);
+    case 3: return Alignment::loadPartialEdgeList(G1, G2, file, true);
+    case 4: return Alignment::loadPartialEdgeList(G1, G2, file, false);
     default: throw runtime_error("Unsupported alignment format. "+errorHelpMsg);
     }
 }

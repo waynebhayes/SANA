@@ -87,7 +87,7 @@ Alignment HubAlignWrapper::run() {
     generateEdgeListFile(2);
 
     generateAlignment();
-    Alignment A = Alignment::loadEdgeList(G1, G2, wrappedDir+alignmentFile);
+    Alignment A = Alignment::loadEdgeList(*G1, *G2, wrappedDir+alignmentFile);
     deleteAuxFiles();
     return A;
 }
