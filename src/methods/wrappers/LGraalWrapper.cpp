@@ -13,7 +13,7 @@ LGraalWrapper::LGraalWrapper(Graph* G1, Graph* G2, double alpha, uint iterlimit,
     g2Folder = "networks/" + g2Name + "/";
     
     // TEMPORRAY CODE UNTIL WE INHERIT FROM WrappedMethod
-    string TMP = "_tmp" + intToString(randInt(0, 2100000000)) + "_";
+    string TMP = "_tmp" + to_string(randInt(0, 2100000000)) + "_";
     string g1TmpName = "LGRAAL" + TMP + g1Name;
     string g2TmpName = "LGRAAL" + TMP + g2Name;
     string alignmentTmpName = "LGRAAL" + TMP + "align_" + g1Name + "_" + g2Name + "_";
@@ -62,10 +62,10 @@ void LGraalWrapper::generateGDVFile(int graphNum) {
     deleteFile(rawGDVFileName);
     deleteFile(rawGDVFileName+".gr_freq");
     for (int i = 0; i < 10; i++) {
-        deleteFile(rawGDVFileName+".cl_0"+intToString(i)+"_freq");
+        deleteFile(rawGDVFileName+".cl_0"+to_string(i)+"_freq");
     }
     for (int i = 10; i < 73; i++) {
-        deleteFile(rawGDVFileName+".cl_"+intToString(i)+"_freq");
+        deleteFile(rawGDVFileName+".cl_"+to_string(i)+"_freq");
     }
 }
 
@@ -83,7 +83,7 @@ void LGraalWrapper::generateAlignment() {
     string cmd = lgraalProgram + " -Q " + (swap?g2NetworkFile:g1NetworkFile) + " -T " + (swap?g1NetworkFile:g2NetworkFile);
     cmd += " -q " + (swap?g2GDVFile:g1GDVFile) + " -t " + (swap?g1GDVFile:g2GDVFile);
     cmd += " -B " + similarityFile + " -o " + lgraalOutputFile;
-    cmd += " -I " + intToString(iterlimit) + " -L " + to_string(timelimit);
+    cmd += " -I " + to_string(iterlimit) + " -L " + to_string(timelimit);
     cmd += " -a " + to_string(alpha);
     cout << "Executing " << cmd << endl;
     execPrintOutput(cmd);

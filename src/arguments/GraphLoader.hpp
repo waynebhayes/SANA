@@ -43,11 +43,12 @@ public:
 private:
     //functions to extract raw data from the file and process it as necessary
     //to call the graph constructor (without colors)
-    static Graph loadGraphFromGWFile(
-      const string& graphName, const string& filePath, bool loadWeights);
-    static Graph loadGraphFromEdgeListFile(
-      const string& graphName, const string& filePath, bool loadWeights);
-
+    static Graph loadGraphFromGWFile(const string& graphName, const string& filePath, bool loadWeights);
+    static Graph loadGraphFromEdgeListFile(const string& graphName, const string& filePath, bool loadWeights);
+    static Graph loadGraphFromGmlFile(const string& graphName, const string& filePath);
+    static Graph loadGraphFromLgfFile(const string& graphName, const string& filePath);
+    static Graph loadGraphFromXmlFile(const string& graphName, const string& filePath);
+    static Graph loadGraphFromCsvFile(const string& graphName, const string& filePath);
     //for each supported file format, define a struct with the raw data that can be extracted from that file
     //(without any processing), and a constructor that extracts the raw data without doing any processing
     
@@ -65,6 +66,22 @@ private:
         vector<float> floatWeights;
         //weight parameter type can be "", "int", "float"
         RawEdgeListFileData(const string& filePath, const string& weightType);
+    };
+    struct RawGmlFileData {
+        vector<array<string, 2>> namedEdgeList;
+        RawGmlFileData(const string& filePath);
+    };
+    struct RawLgfFileData {
+        vector<array<string, 2>> namedEdgeList;
+        RawLgfFileData(const string& filePath);
+    };
+    struct RawXmlFileData {
+        vector<array<string, 2>> namedEdgeList;
+        RawXmlFileData(const string& filePath);
+    };
+    struct RawCsvFileData {
+        vector<array<string, 2>> namedEdgeList;
+        RawCsvFileData(const string& filePath);
     };
     struct RawColorFileData {
         vector<array<string, 2>> nodeColorList;

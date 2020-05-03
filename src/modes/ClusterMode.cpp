@@ -51,7 +51,7 @@ void ClusterMode::run(ArgumentParser& args) {
     int outFileIndex = getOArgValueIndex(args.originalArgv);
     for (int i = 0; i < submitCount; i++) {
       vector<string> vargs(args.originalArgv);
-      vargs[outFileIndex] += "_"+intToString(i+1);
+      vargs[outFileIndex] += "_"+to_string(i+1);
       submitToCluster(vargs, args.strings["-outfolder"]);
     }
   }

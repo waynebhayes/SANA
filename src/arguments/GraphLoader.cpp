@@ -184,23 +184,19 @@ Graph GraphLoader::loadGraphFromFile(const string& graphName, const string& file
     string format = fileName.substr(fileName.find_last_of('.')+1);
     string uncompressedFileExt = getUncompressedFileExtension(fileName);
 
+    if (loadWeights and (format == "gml" or format == "lgf" or format == "xml" or format == "csv"))
+        throw runtime_error("GraphLoader does not support weights for format '"+format+"'");
     //for dbg:
     //cerr<<graphName<<" "<<fileName<<" "<<loadWeights<<endl<<format<<" "<<uncompressedFileExt;
-
     if (format == "gw" || uncompressedFileExt == "gw")
         return loadGraphFromGWFile(graphName, fileName, loadWeights);
     if (format == "el" || uncompressedFileExt == "el" || format == "elw" || uncompressedFileExt == "elw")
         return loadGraphFromEdgeListFile(graphName, fileName, loadWeights);
-    if (format == "mpel")
-        throw runtime_error("Multipartite edge list format (MPEL) no longer supported. Use coloring feature instead");
-    if (format == "lgf" || format == "xml" || format == "csv" || format == "gml") {
-        cerr<<"Sorry, this format has been deprecated and needs to be reimplemented following the new style."<<endl
-            <<"To do so, follow the guidelines and already existing examples in GraphLoader.hpp."<<endl
-            <<"*** You should not modify the Graph class, only GraphLoader ***"<<endl
-            <<"If you want 'inspiration' for how to parse this file type, you can see the deprecated graph constructors here:"<<endl
-            <<"https://github.com/waynebhayes/SANA/blob/b10802ed8683af7d3b238a2c4b729717b00e9e65/src/Graph.cpp"<<endl; 
-        throw runtime_error("Unsuported graph format: " + format);
-    }
+    if (format == "gml") return loadGraphFromGmlFile(graphName, fileName);
+    if (format == "lgf") return loadGraphFromLgfFile(graphName, fileName);
+    if (format == "xml") return loadGraphFromXmlFile(graphName, fileName);
+    if (format == "csv") return loadGraphFromCsvFile(graphName, fileName);
+    if (format == "mpel") throw runtime_error("Multipartite edge list format (MPEL) no longer supported. Use coloring feature instead");
     throw runtime_error("Unsupported graph format: " + format);
 }
 
@@ -246,7 +242,7 @@ Graph GraphLoader::loadGraphFromEdgeListFile(const string& graphName, const stri
     }
 
     RawEdgeListFileData edgeListData(fileName, weightType);
-    pair<vector<array<uint, 2>>, vector<string>> edgeAndNodeNameLists =
+    auto edgeAndNodeNameLists =
         namedEdgeListToEdgeListAndNodeNameList(edgeListData.namedEdgeList);
 
     if (not loadWeights)
@@ -269,6 +265,27 @@ Graph GraphLoader::loadGraphFromEdgeListFile(const string& graphName, const stri
     return Graph(graphName, fileName, edgeAndNodeNameLists.first, edgeAndNodeNameLists.second, 
                  edgeWeights, {});
 #endif
+}
+
+Graph GraphLoader::loadGraphFromGmlFile(const string& gName, const string& file) {
+    RawGmlFileData gmlData(file);
+    auto edgesAndNames = namedEdgeListToEdgeListAndNodeNameList(gmlData.namedEdgeList);
+    return Graph(gName, file, edgesAndNames.first, edgesAndNames.second, {}, {});
+}
+Graph GraphLoader::loadGraphFromLgfFile(const string& gName, const string& file) {
+    RawLgfFileData lgfData(file);
+    auto edgesAndNames = namedEdgeListToEdgeListAndNodeNameList(lgfData.namedEdgeList);
+    return Graph(gName, file, edgesAndNames.first, edgesAndNames.second, {}, {});
+}
+Graph GraphLoader::loadGraphFromXmlFile(const string& gName, const string& file) {
+    RawLgfFileData xmlData(file);
+    auto edgesAndNames = namedEdgeListToEdgeListAndNodeNameList(xmlData.namedEdgeList);
+    return Graph(gName, file, edgesAndNames.first, edgesAndNames.second, {}, {});
+}
+Graph GraphLoader::loadGraphFromCsvFile(const string& gName, const string& file) {
+    RawLgfFileData csvData(file);
+    auto edgesAndNames = namedEdgeListToEdgeListAndNodeNameList(csvData.namedEdgeList);
+    return Graph(gName, file, edgesAndNames.first, edgesAndNames.second, {}, {});
 }
 
 GraphLoader::RawGWFileData::RawGWFileData(const string& fileName, bool containsEdgeWeights) {
@@ -333,8 +350,8 @@ GraphLoader::RawEdgeListFileData::RawEdgeListFileData(
     else if (weightType != "") throw runtime_error("weightType cannot be "+weightType);
 
     stdiobuf sbuf = readFileAsStreamBuffer(fileName);
-    istream infile(&sbuf);
-    for (string line; getline(infile, line); ) {
+    istream ifs(&sbuf);
+    for (string line; getline(ifs, line); ) {
         string name1, name2;
         istringstream iss(line);
         if (iss >> name1 >> name2) namedEdgeList.push_back({name1, name2});
@@ -352,6 +369,56 @@ GraphLoader::RawEdgeListFileData::RawEdgeListFileData(
     namedEdgeList.shrink_to_fit();
     if (weightType == "int") intWeights.shrink_to_fit();
     else if (weightType == "float") floatWeights.shrink_to_fit();
+}
+
+GraphLoader::RawGmlFileData::RawGmlFileData(const string& fileName) {
+    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    istream ifs(&sbuf);
+    skipWordInStream(ifs, "graph");
+    skipWordInStream(ifs, "[");
+    while (canSkipWordInStream(ifs, "edge")) {
+        string name1, name2;
+        skipWordInStream(ifs, "[");
+        skipWordInStream(ifs, "source");
+        ifs >> name1;
+        skipWordInStream(ifs, "target");
+        ifs >> name2;
+        skipWordInStream(ifs, "]");
+        namedEdgeList.push_back({name1, name2});
+    }
+    //does not check for closing bracket for "graph [ ... ]"
+}
+
+GraphLoader::RawLgfFileData::RawLgfFileData(const string& fileName) {
+    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    istream ifs(&sbuf);
+    skipWordInStream(ifs, "@edges");
+    skipWordInStream(ifs, "label");
+    skipWordInStream(ifs, "weight");
+    string name1, name2;
+    int waste1, waste2;
+    while (ifs >> name1) {
+        ifs >> name2 >> waste1 >> waste2;
+        namedEdgeList.push_back({name1, name2});
+    }
+}
+
+GraphLoader::RawXmlFileData::RawXmlFileData(const string& fileName) {
+    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    istream ifs(&sbuf);
+    string line;
+    for (uint i = 0; i < 5; i++) getline(ifs, line); //skip headers
+    while (canSkipWordInStream(ifs, "<edge")) {
+        string waste, source, target;
+        ifs >> waste >> source >> target;
+        string srcPrefix = "source=\"", trgPrefix = "target=\"";
+        source = source.substr(srcPrefix.size());
+        target = target.substr(trgPrefix.size());
+        source.pop_back(); //remove closing '"'
+        target.pop_back(); target.pop_back(); target.pop_back(); //remove closing '"/>'
+        namedEdgeList.push_back({source, target});
+    }
+    //does not check for closing of the graph tag
 }
 
 GraphLoader::RawColorFileData::RawColorFileData(const string& fileName) {

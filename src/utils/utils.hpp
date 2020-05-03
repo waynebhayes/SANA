@@ -34,7 +34,7 @@ double vectorSum(const vector<double>& v);
 void randomShuffle(vector<uint>& v);
 void randomShuffle(vector<vector<string>>& v);
 
-void printTable(const vector<vector<string> >& table, int colSeparation, ostream& stream);
+void printTable(const vector<vector<string>>& table, int colSeparation, ostream& stream);
 
 const string currentDateTime();
 
@@ -48,8 +48,6 @@ void memExactFileParseByLine(vector<vector<string> >& result, const string& file
 
 string extractDecimals(double value, int count);
 
-string intToString(int n);
-
 bool fileExists(const string& filename);
 void checkFileExists(const string& filename);
 void addUniquePostfixToFilename(string& name, const string& extension);
@@ -60,6 +58,9 @@ void closeFile(FILE* fp, const bool& isPiped);
 string getDecompressionProgram(const string& fileName);
 string getUncompressedFileExtension(const string& fileName);
 
+void skipWordInStream(istream& is, const string& str);
+bool canSkipWordInStream(istream& is, const string& str);
+
 bool folderExists(string folderName);
 void createFolder(string folderName);
 
@@ -69,7 +70,7 @@ void execPrintOutput(string cmd);
 
 void deleteFile(string name);
 
-void writeDataToFile(const vector<vector<string> >& data, string fileName, bool useTabs = false);
+void writeDataToFile(const vector<vector<string>>& data, string fileName, bool useTabs = false);
 
 //if the file ends in '\n', it counts as a new line
 uint numLinesInFile(const string& fileName);

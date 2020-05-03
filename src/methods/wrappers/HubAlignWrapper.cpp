@@ -14,7 +14,7 @@ HubAlignWrapper::HubAlignWrapper(Graph* G1, Graph* G2, double alpha): Method(G1,
     similarityFile = "sequence/bitscores/" + g1Name + "_" + g2Name + ".bitscores";
 
     // TEMPORRAY CODE UNTIL WE INHERIT FROM WrappedMethod
-    string TMP = "_tmp" + intToString(randInt(0, 2100000000)) + "_";
+    string TMP = "_tmp" + to_string(randInt(0, 2100000000)) + "_";
     string g1TmpName = "HubAlign" + TMP + g1Name;
     string g2TmpName = "HubAlign" + TMP + g2Name;
     string alignmentTmpName = g1TmpName+"-"+g2TmpName;

@@ -156,7 +156,7 @@ bool Experiment::allRunsFinished() {
 
 
 string Experiment::getSubId(string method, string G1Name, string G2Name, uint numSub) {
-    return method+"_"+G1Name+"_"+G2Name+"_"+intToString(numSub);
+    return method+"_"+G1Name+"_"+G2Name+"_"+to_string(numSub);
 }
 
 string Experiment::createCommand(string method, string G1Name, string G2Name, uint numSub, bool shouldSubmitToCluster) {
@@ -212,7 +212,7 @@ double Experiment::getScore(string method, string G1Name, string G2Name,
     string key = getResultId(method, G1Name, G2Name, numSub, measure);
     if (resultMap.count(key) == 0) {
         throw runtime_error("Score not found for "+method+" "+
-            G1Name+" "+G2Name+" "+intToString(numSub)+" "+measure);
+            G1Name+" "+G2Name+" "+to_string(numSub)+" "+measure);
     }
     return resultMap[key];
 }
@@ -368,7 +368,7 @@ void scoresToRankings(vector<string>& row) {
             scores[indices[i]] != scores[indices[i-1]]) {
             nextRank = i+1;
         }
-        row[indices[i]+2] = intToString(nextRank);
+        row[indices[i]+2] = to_string(nextRank);
     }
 }
 

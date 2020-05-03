@@ -126,7 +126,7 @@ void addUniquePostfixToFilename(string& name, const string& fileExtension) {
     string origName = name;
     int i = 2;
     while (fileExists(name + fileExtension)) {
-        name = origName + "_" + intToString(i);
+        name = origName + "_" + to_string(i);
         i++;
     }
 }
@@ -201,6 +201,20 @@ string getUncompressedFileExtension(const string& fileName) {
     return "";
 }
 
+void skipWordInStream(istream& is, const string& word) {
+    string s;
+    if (is >> s) {
+        if (s != word) throw runtime_error("expected word '"+word+"'' but got '"+s+"'");
+    } else {
+        throw runtime_error("expected word '"+word+"' but couldn't read from stream");
+    }
+}
+bool canSkipWordInStream(istream& is, const string& str) {
+    string s;
+    if (is >> s) return str == s;
+    return false;
+}
+
 FILE* decompressFile(const string& decompProg, const string& fileName) {
     stringstream stream;
     string command;
@@ -254,10 +268,6 @@ string extractDecimals(double value, int count) {
     }
     while (result.size() < (uint) count) result += "0";
     return result;
-}
-
-string intToString(int n) {
-	return to_string(n);
 }
 
 bool folderExists(string folderName) {
