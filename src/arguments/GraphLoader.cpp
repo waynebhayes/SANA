@@ -278,12 +278,12 @@ Graph GraphLoader::loadGraphFromLgfFile(const string& gName, const string& file)
     return Graph(gName, file, edgesAndNames.first, edgesAndNames.second, {}, {});
 }
 Graph GraphLoader::loadGraphFromXmlFile(const string& gName, const string& file) {
-    RawLgfFileData xmlData(file);
+    RawXmlFileData xmlData(file);
     auto edgesAndNames = namedEdgeListToEdgeListAndNodeNameList(xmlData.namedEdgeList);
     return Graph(gName, file, edgesAndNames.first, edgesAndNames.second, {}, {});
 }
 Graph GraphLoader::loadGraphFromCsvFile(const string& gName, const string& file) {
-    RawLgfFileData csvData(file);
+    RawCsvFileData csvData(file);
     auto edgesAndNames = namedEdgeListToEdgeListAndNodeNameList(csvData.namedEdgeList);
     return Graph(gName, file, edgesAndNames.first, edgesAndNames.second, {}, {});
 }
@@ -407,18 +407,32 @@ GraphLoader::RawXmlFileData::RawXmlFileData(const string& fileName) {
     stdiobuf sbuf = readFileAsStreamBuffer(fileName);
     istream ifs(&sbuf);
     string line;
+    string srcPrefix = "source=\"", trgPrefix = "target=\"";
     for (uint i = 0; i < 5; i++) getline(ifs, line); //skip headers
     while (canSkipWordInStream(ifs, "<edge")) {
         string waste, source, target;
         ifs >> waste >> source >> target;
-        string srcPrefix = "source=\"", trgPrefix = "target=\"";
-        source = source.substr(srcPrefix.size());
-        target = target.substr(trgPrefix.size());
+        source = source.substr(srcPrefix.size()); //remove 'source="'
+        target = target.substr(trgPrefix.size()); //remove 'target="'
         source.pop_back(); //remove closing '"'
         target.pop_back(); target.pop_back(); target.pop_back(); //remove closing '"/>'
         namedEdgeList.push_back({source, target});
     }
     //does not check for closing of the graph tag
+}
+
+GraphLoader::RawCsvFileData::RawCsvFileData(const string& fileName) {
+    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    istream ifs(&sbuf);
+    string line;
+    while(getline(ifs, line)) {
+        string source, target;
+        size_t sep = line.find(";");
+        if (sep == string::npos) continue;
+        start = line.substr(0,sep);
+        target = line.substr(sep+1);
+        namedEdgeList.push_back({source, target});
+    }
 }
 
 GraphLoader::RawColorFileData::RawColorFileData(const string& fileName) {
