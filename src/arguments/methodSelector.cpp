@@ -76,7 +76,10 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     //this is a special argument value that does a comparison between all temperature schedule methods
     //made for the purpose of running the experiments for the paper on the tempertaure schedule
     if (scheduleMethodName == "comparison") {
-        SANA sana(&G1, &G2, 0, 0, 0, args.bools["-usingIterations"], 0, &M, args.strings["-combinedScoreAs"], startAligName);
+        Alignment startAlig;
+        if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
+        SANA sana(&G1, &G2, 0, 0, 0, args.bools["-usingIterations"], 0, &M, 
+                  args.strings["-combinedScoreAs"], startAlig, "", "");
         scheduleMethodComparison(&sana);
         exit(0);
     }
@@ -97,9 +100,11 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
 
     SANA* sana;
     double time = args.doubles["-t"];
+    Alignment startAlig;
+    if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
     sana = new SANA(&G1, &G2, TInitial, TDecay, time, args.bools["-usingIterations"],
-        args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"], startAligName);
-    sana->setOutputFilenames(args.strings["-o"], args.strings["-localScoresFile"]);
+        args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"],
+        startAlig, args.strings["-o"], args.strings["-localScoresFile"]);
 
     if (useMethodForTIni or useMethodForTDecay) {
         if (scheduleMethodName == "auto" ) { //if user uses 'auto', choose for them

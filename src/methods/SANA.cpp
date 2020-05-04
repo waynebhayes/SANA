@@ -56,40 +56,42 @@ uint SANA::INVALID_ACTIVE_ID;
 
 SANA::SANA(Graph* G1, Graph* G2,
         double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing,
-        MeasureCombination* MC, const string& objectiveScore, const string& startAligName):
-                Method(G1, G2, "SANA_"+MC->toString()) {
+        MeasureCombination* MC, const string& scoreAggrStr, const Alignment& startA,
+        const string& outputFileName, const string& localScoresFileName):
+                Method(G1, G2, "SANA_"+MC->toString()),
+                startA(startA),
+                addHillClimbing(addHillClimbing),
+                TInitial(TInitial), TDecay(TDecay),
+                wasBadMove(false),
+                usingIterations(usingIterations),
+                MC(MC),
+                outputFileName(outputFileName),
+                localScoresFileName(localScoresFileName) {
     initTau();
     n1 = G1->getNumNodes(), n2 = G2->getNumNodes();
     g1Edges = G1->getNumEdges(), g2Edges = G2->getNumEdges();
     g1WeightedEdges = G1->getTotalEdgeWeight(), g2WeightedEdges = G2->getTotalEdgeWeight();
     pairsCount = n1 * (n1 + 1) / 2;
 
-    if      (objectiveScore == "sum")       score = Score::sum;
-    else if (objectiveScore == "product")   score = Score::product;
-    else if (objectiveScore == "inverse")   score = Score::inverse;
-    else if (objectiveScore == "max")       score = Score::max;
-    else if (objectiveScore == "min")       score = Score::min;
-    else if (objectiveScore == "maxFactor") score = Score::maxFactor;
-    else throw runtime_error("unknown objective score: "+objectiveScore);
-
-    this->startAligName = startAligName;
+    if      (scoreAggrStr == "sum")       scoreAggr = ScoreAggregation::sum;
+    else if (scoreAggrStr == "product")   scoreAggr = ScoreAggregation::product;
+    else if (scoreAggrStr == "inverse")   scoreAggr = ScoreAggregation::inverse;
+    else if (scoreAggrStr == "max")       scoreAggr = ScoreAggregation::max;
+    else if (scoreAggrStr == "min")       scoreAggr = ScoreAggregation::min;
+    else if (scoreAggrStr == "maxFactor") scoreAggr = ScoreAggregation::maxFactor;
+    else throw runtime_error("unknown score aggregation: "+scoreAggrStr);
 
     //random number generation
-    random_device rd;
-    gen                   = mt19937(getRandomSeed());
-    randomReal            = uniform_real_distribution<>(0, 1);
+    gen = mt19937(getRandomSeed());
+    randomReal = uniform_real_distribution<>(0, 1);
 
     //temperature schedule
-    this->TInitial        = TInitial;
-    this->TDecay          = TDecay;
-    this->usingIterations = usingIterations;
-    if (this->usingIterations) maxIterations = (uint)(t);
+    if (usingIterations) maxIterations = (uint)(t);
     else minutes = t;
     initializedIterPerSecond = false;
     pBadBuffer = vector<double> (PBAD_CIRCULAR_BUFFER_SIZE, 0);
 
     //objective function
-    this->MC  = MC;
     ecWeight  = MC->getWeight("ec");
     edWeight  = MC->getWeight("ed");
     erWeight  = MC->getWeight("er");
@@ -118,13 +120,13 @@ SANA::SANA(Graph* G1, Graph* G2,
     localWeight = MC->getSumLocalWeight();
 
     //indicate which variables need to be maintained incrementally
-    needAligEdges        = icsWeight > 0 || ecWeight > 0 || s3Weight > 0 || wecWeight > 0 || secWeight > 0 || mecWeight > 0;
+    needAligEdges        = icsWeight > 0 or ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0 or mecWeight > 0;
     needEd               = edWeight > 0; //edge difference
     needEr               = erWeight > 0; //edge ratio
     needSquaredAligEdges = sesWeight > 0; //SES
-    needExposedEdges     = eeWeight > 0 || ms3Weight > 0; //EE; if needMS3, might use EE as denom
+    needExposedEdges     = eeWeight > 0 or ms3Weight > 0; //EE; if needMS3, might use EE as denom
     needMS3              = ms3Weight > 0;
-    needInducedEdges     = s3Weight > 0 || icsWeight > 0;
+    needInducedEdges     = s3Weight > 0 or icsWeight > 0;
     needJs               = jsWeight > 0;
     needWec              = wecWeight > 0;
     needEwec             = ewecWeight>0;
@@ -165,16 +167,12 @@ SANA::SANA(Graph* G1, Graph* G2,
     constantTemp          = false;
     enableTrackProgress   = true;
     iterationsPerStep     = 10000000;
-    this->addHillClimbing = addHillClimbing;
     avgEnergyInc          = -0.00001; //to track progress
 
-    //pointers should be allocated ONLY HERE IN THE CONSTRUCTOR
-    //but they are initialized in initDataStructures
-    //any use of "new" outside this constructor is a red flag/potential memory leak  -Nil
-    assignedNodesG2 = new vector<bool> (n2);
-    unassignedG2NodesByColor  = new vector<vector<uint> > (G1->numColors());
-    A = new vector<uint> (n1);
-    localScoreSumMap = new map<string, double>;
+    //things initialized in initDataStructures
+    //they have the same size for every run, so we can allocate the size here
+    assignedNodesG2 = vector<bool> (n2);
+    unassignedG2NodesByColor  = vector<vector<uint> > (G1->numColors());
 
     // NODE COLOR SYSTEM initlialization
     if (G1->numColors() > G2->numColors())
@@ -246,81 +244,70 @@ SANA::SANA(Graph* G1, Graph* G2,
         }
     }
 }
-
-SANA::~SANA() {
-    delete assignedNodesG2;
-    delete unassignedG2NodesByColor;
-    delete A;
-    delete localScoreSumMap;
-}
-
-Alignment SANA::getStartingAlignment() {
-    if (startAligName != "") return Alignment::loadEdgeList(*G1, *G2, startAligName);
-    return Alignment::randomColorRestrictedAlignment(*G1, *G2);
-}
+SANA::~SANA() {}
 
 //initialize data structures specific to the starting alignment
 //everything that is alignment-independent should be initialized in the
 //constructor instead
 //even for data structures initialized here, any space allocation for them
 //should be done in the constructor, not here, to avoid memory leaks
-void SANA::initDataStructures(const Alignment& startA) {
+void SANA::initDataStructures() {
     iterationsPerformed = 0;
     numPBadsInBuffer = pBadBufferSum = pBadBufferIndex = 0;
 
-    //initialize A (the space was already allocated in the constructor)
-    for (uint i = 0; i < n1; i++) (*A)[i] = startA[i];
+    Alignment alig;
+    if (startA.size() != 0) alig = startA;
+    else alig = Alignment::randomColorRestrictedAlignment(*G1, *G2);
+
     //initialize assignedNodesG2 (the space was already allocated in the constructor)
-    for (uint i = 0; i < n2; i++) (*assignedNodesG2)[i] = false;
-    for (uint i = 0; i < n1; i++) (*assignedNodesG2)[startA[i]] = true;
+    for (uint i = 0; i < n2; i++) assignedNodesG2[i] = false;
+    for (uint i = 0; i < n1; i++) assignedNodesG2[alig[i]] = true;
     //initialize unassignedG2NodesByColor (the space was already allocated in the constructor)
-    for (uint i = 0; i <  unassignedG2NodesByColor->size(); i++)
-        (*unassignedG2NodesByColor)[i].clear();
+    for (uint i = 0; i <  unassignedG2NodesByColor.size(); i++)
+        unassignedG2NodesByColor[i].clear();
     for (uint g2Node = 0; g2Node < n2; g2Node++) {
-        if ((*assignedNodesG2)[g2Node]) continue;
+        if (assignedNodesG2[g2Node]) continue;
         uint actInd = g2NodeToActiveColorId[g2Node];
         if (actInd != INVALID_ACTIVE_ID) {
-            (*unassignedG2NodesByColor)[actInd].push_back(g2Node);
+            unassignedG2NodesByColor[actInd].push_back(g2Node);
         }
     }
 
-    if (needAligEdges or needSec) aligEdges = startA.numAlignedEdges(*G1, *G2);
-    if (needEd) edSum = EdgeDifference::getEdgeDifferenceSum(G1, G2, startA);
-    if (needEr) erSum = EdgeRatio::getEdgeRatioSum(G1, G2, startA);
+    if (needAligEdges or needSec) aligEdges = alig.numAlignedEdges(*G1, *G2);
+    if (needEd) edSum = EdgeDifference::getEdgeDifferenceSum(G1, G2, alig);
+    if (needEr) erSum = EdgeRatio::getEdgeRatioSum(G1, G2, alig);
     if (needSquaredAligEdges) squaredAligEdges =
-            ((SquaredEdgeScore*) MC->getMeasure("ses"))->numSquaredAlignedEdges(startA);
+            ((SquaredEdgeScore*) MC->getMeasure("ses"))->numSquaredAlignedEdges(alig);
     if (needExposedEdges) EdgeExposure::numer = 
-            EdgeExposure::numExposedEdges(startA, *G1, *G2) - EdgeExposure::getMaxEdge();
+            EdgeExposure::numExposedEdges(A, *G1, *G2) - EdgeExposure::getMaxEdge();
     if (needMS3) MultiS3::numer =
-            ((MultiS3*) MC->getMeasure("ms3"))->computeNumer(startA);
-    if (needInducedEdges) inducedEdges = G2->numEdgesInNodeInducedSubgraph(*A);
+            ((MultiS3*) MC->getMeasure("ms3"))->computeNumer(alig);
+    if (needInducedEdges) inducedEdges = G2->numEdgesInNodeInducedSubgraph(alig.asVector());
     if (needLocal) {
         localScoreSum = 0;
-        for (uint i = 0; i < n1; i++) {
-            localScoreSum += sims[i][(*A)[i]];
-        }
-        localScoreSumMap->clear();
+        for (uint i = 0; i < n1; i++) localScoreSum += sims[i][alig[i]];
+        localScoreSumMap.clear();
     }
     if (needWec) {
         Measure* wec    = MC->getMeasure("wec");
-        double wecScore = wec->eval(*A);
+        double wecScore = wec->eval(alig);
         wecSum          = wecScore*2*g1Edges;
     }
     if (needJs) {
         Measure* js = MC->getMeasure("js");
-        // jsAlignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, startA);
-        jsSum       = js->eval(*A);
-        alignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, startA);
+        jsSum       = js->eval(alig);
+        alignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, alig);
     }
     if (needEwec) {
         ewec    = (ExternalWeightedEdgeConservation*)(MC->getMeasure("ewec"));
-        ewecSum = ewec->eval(*A);
+        ewecSum = ewec->eval(alig);
     }
     if (needNC) {
         Measure* nc = MC->getMeasure("nc");
-        ncSum       = (nc->eval(*A))*trueA.back();
+        ncSum       = (nc->eval(alig))*trueA.back();
     }
-    currentScore = eval(startA);
+    currentScore = eval(alig);
+    A = alig.asVector();
     timer.start();
 }
 
@@ -364,7 +351,6 @@ double SANA::TrimCoreScores(Matrix<unsigned long>& Freq, vector<unsigned long>& 
     for (uint j=0;j<n2;j++) if (high2[j] < Smin) Smin = high2[j];
     return Smin;
 }
-
 double SANA::TrimCoreScores(Matrix<double>& Freq, vector<double>& totalPegWeight) {
     uint n1 = Freq.size(), n2 = Freq[0].size();
     vector<double> high1(n1,0.0);
@@ -384,8 +370,7 @@ double SANA::TrimCoreScores(Matrix<double>& Freq, vector<double>& totalPegWeight
 }
 
 Alignment SANA::run() {
-    Alignment A = getStartingAlignment();
-    initDataStructures(A);
+    initDataStructures();
     setInterruptSignal();
 
     cerr<<"usingIterations = "<<usingIterations<<endl;
@@ -409,12 +394,7 @@ Alignment SANA::run() {
     trackProgress(iter, maxIters);
     cout<<"Performed "<<iter<<" total iterations\n";
 
-    if (addHillClimbing) {
-        Timer hillTimer;
-        hillTimer.start();
-        A = hillClimbingAlignment(A, (long long int)(10000000)); //arbitrarily chosen, probably too big.
-        cout<<"Hill climbing took "<<hillTimer.elapsedString()<<endl;
-    }
+    if (addHillClimbing) performHillClimbing(10000000LL); //arbitrarily chosen, probably too big.
 
 #ifdef CORES
     const bool PRINT_CORES = false;
@@ -465,6 +445,27 @@ Alignment SANA::run() {
     return A;
 }
 
+void SANA::performHillClimbing(long long int idleCountTarget) {
+    long long int iter = 0;
+    Temperature = 0;
+    numPBadsInBuffer = pBadBufferSum = pBadBufferIndex = 0; 
+
+    cout << "Beginning Final Pure Hill Climbing Stage" << endl;
+    Timer hillTimer;
+    hillTimer.start();
+    uint idleCount = 0;
+    while(idleCount < idleCountTarget) {
+        if (iter%iterationsPerStep == 0) trackProgress(iter);
+        double oldScore = currentScore;
+        SANAIteration();
+        if (abs(oldScore-currentScore) < 0.00001) ++idleCount;
+        else idleCount = 0;
+        ++iter;
+    }
+    trackProgress(iter);
+    cout<<"Hill climbing took "<<hillTimer.elapsedString()<<endl;
+}
+
 void SANA::describeParameters(ostream& sout) {
     sout << "Temperature schedule:" << endl;
     sout << "T_initial: " << TInitial << endl;
@@ -475,8 +476,8 @@ void SANA::describeParameters(ostream& sout) {
     else sout << "Iterations Run: " << maxIterations << "00,000,000" << endl; //it's in hundred millions
 }
 
-string SANA::fileNameSuffix(const Alignment& A) const {
-    return "_" + extractDecimals(eval(A),3);
+string SANA::fileNameSuffix(const Alignment& Al) const {
+    return "_" + extractDecimals(eval(Al),3);
 }
 
 double SANA::temperatureFunction(long long int iter, double TInitial, double TDecay) {
@@ -509,7 +510,8 @@ void sigIntHandler(int s) {
     string line;
     int c = -1;
     do {
-        cerr << "Select an option (0 - 3):\n  (0) Do nothing and continue\n  (1) Exit\n  (2) Save Alignment and Exit\n  (3) Save Alignment and Continue\n>> ";
+        cerr<<"Select an option (0 - 3):"<<endl<<"  (0) Do nothing and continue"<<endl<<"  (1) Exit"<<endl
+            <<"  (2) Save Alignment and Exit"<<endl<<"  (3) Save Alignment and Continue"<<endl<<">> ";
         cin >> c;
         if (cin.eof()) exit(0);
         if (cin.fail()) {
@@ -538,14 +540,9 @@ void SANA::printReport() {
     std::replace(timestamp.begin(), timestamp.end(), ' ', '_');
     string out = outputFileName+"_"+timestamp;
     string local = localScoresFileName+"_"+timestamp;
-    report::saveReport(*G1, *G2, Alignment(*A), *MC, this, out, false);
-    report::saveLocalMeasures(*G1, *G2, Alignment(*A), *MC, this, local);
+    report::saveReport(*G1, *G2, A, *MC, this, out, false);
+    report::saveLocalMeasures(*G1, *G2, A, *MC, this, local);
     cout << "Alignment saved. SANA will now continue." << endl;
-}
-
-void SANA::setOutputFilenames(string outputFileName, string localScoresFileName) {
-    this->outputFileName = outputFileName;
-    this->localScoresFileName =  localScoresFileName;
 }
 
 void SANA::SANAIteration() {
@@ -560,9 +557,9 @@ void SANA::performChange(uint colorId) {
     assert(G2->numNodesWithColor(colorId) > 1);
     
     uint source = G1->getRandomNodeWithColor(colorId);
-    uint oldTarget = (*A)[source];
-    uint unassignedVecIndex = randInt(0, (*unassignedG2NodesByColor)[colorId].size()-1);
-    uint newTarget = (*unassignedG2NodesByColor)[colorId][unassignedVecIndex];
+    uint oldTarget = A[source];
+    uint unassignedVecIndex = randInt(0, unassignedG2NodesByColor[colorId].size()-1);
+    uint newTarget = unassignedG2NodesByColor[colorId][unassignedVecIndex];
 
     //added this dummy initialization to shut compiler warning -Nil
     unsigned oldOldTargetDeg = 0, oldNewTargetDeg = 0, oldMs3Denom = 0;
@@ -587,7 +584,7 @@ void SANA::performChange(uint colorId) {
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
-        newLocalScoreSumMap = map<string, double>(*localScoreSumMap);
+        newLocalScoreSumMap = map<string, double>(localScoreSumMap);
         for (auto &item : newLocalScoreSumMap)
             item.second += localScoreSumIncChangeOp(localSimMatrixMap[item.first], source, oldTarget, newTarget);
     }
@@ -615,10 +612,10 @@ void SANA::performChange(uint colorId) {
 #endif
 
     if (makeChange) {
-        (*A)[source] = newTarget;
-        (*unassignedG2NodesByColor)[colorId][unassignedVecIndex] = oldTarget;
-        (*assignedNodesG2)[oldTarget] = false;
-        (*assignedNodesG2)[newTarget] = true;
+        A[source] = newTarget;
+        unassignedG2NodesByColor[colorId][unassignedVecIndex] = oldTarget;
+        assignedNodesG2[oldTarget] = false;
+        assignedNodesG2[newTarget] = true;
         aligEdges                     = newAligEdges;
         edSum                         = newEdSum;
         erSum                         = newErSum;
@@ -627,7 +624,7 @@ void SANA::performChange(uint colorId) {
         wecSum                        = newWecSum;
         ewecSum                       = newEwecSum;
         ncSum                         = newNcSum;
-        if (needLocal) (*localScoreSumMap) = newLocalScoreSumMap;
+        if (needLocal) localScoreSumMap = newLocalScoreSumMap;
         currentScore                  = newCurrentScore;
         EdgeExposure::numer           = newExposedEdgesNumer;
         squaredAligEdges              = newSquaredAligEdges;
@@ -650,7 +647,7 @@ void SANA::performSwap(uint colorId) {
         if (source1 != source2) break;
     }
     assert(source1 != source2);
-    uint target1 = (*A)[source1], target2 = (*A)[source2];
+    uint target1 = A[source1], target2 = A[source2];
     
     //added this dummy initialization to shut compiler warning -Nil
     unsigned oldTarget1Deg = 0, oldTarget2Deg = 0, oldMs3Denom = 0;
@@ -675,7 +672,7 @@ void SANA::performSwap(uint colorId) {
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
-        newLocalScoreSumMap = map<string, double>(*localScoreSumMap);
+        newLocalScoreSumMap = map<string, double>(localScoreSumMap);
         for (auto &item : newLocalScoreSumMap)
             item.second += localScoreSumIncSwapOp(localSimMatrixMap[item.first], source1, source2, target1, target2);
     }
@@ -709,8 +706,8 @@ void SANA::performSwap(uint colorId) {
 #endif
 
     if (makeChange) {
-        (*A)[source1]       = target2;
-        (*A)[source2]       = target1;
+        A[source1]          = target2;
+        A[source2]          = target1;
         aligEdges           = newAligEdges;
         edSum               = newEdSum;
         erSum               = newErSum;
@@ -722,7 +719,7 @@ void SANA::performSwap(uint colorId) {
         squaredAligEdges    = newSquaredAligEdges;
         EdgeExposure::numer = newExposedEdgesNumer;
         MultiS3::numer      = newMS3Numer;
-        if (needLocal) (*localScoreSumMap) = newLocalScoreSumMap;
+        if (needLocal) localScoreSumMap = newLocalScoreSumMap;
     } else if (needMS3) {
         MultiS3::totalDegrees[target1] = oldTarget1Deg;
         MultiS3::totalDegrees[target2] = oldTarget2Deg;
@@ -738,8 +735,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
     wasBadMove = false;
     double badProbability = 0;
 
-    switch (score) {
-    case Score::sum:
+    switch (scoreAggr) {
+    case ScoreAggregation::sum:
     {
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += edWeight * EdgeDifference::adjustSumToTargetScore(newEdgeDifferenceSum, pairsCount);
@@ -762,12 +759,12 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
         //using max and min here because with extremely low temps I was seeing invalid probabilities
-        //note: I did not make this change for the other types of Score::  -Nil
+        //note: I did not make this change for the other types of ScoreAggregation::  -Nil
         badProbability = max(0.0, min(1.0, exp(energyInc / Temperature)));
         makeChange = (energyInc >= 0 or randomReal(gen) <= badProbability);
         break;
     }
-    case Score::product:
+    case ScoreAggregation::product:
     {
         newCurrentScore = 1;
         newCurrentScore *= ecWeight * (newAligEdges / g1Edges);
@@ -784,7 +781,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / Temperature));
         break;
     }
-    case Score::max:
+    case ScoreAggregation::max:
     {
         // this is a terrible way to compute the max; we should loop through all of them and figure out which is the biggest
         // and in fact we haven't yet integrated icsWeight here yet, so assert so
@@ -810,7 +807,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc / Temperature);
         break;
     }
-    case Score::min:
+    case ScoreAggregation::min:
     {
         // see comment above in max
         assert(icsWeight == 0.0);
@@ -835,7 +832,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(newCurrentScore / Temperature);
         break;
     }
-    case Score::inverse:
+    case ScoreAggregation::inverse:
     {
         newCurrentScore += ecWeight / (newAligEdges / g1Edges);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
@@ -852,7 +849,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / Temperature));
         break;
     }
-    case Score::maxFactor:
+    case ScoreAggregation::maxFactor:
     {
         assert(icsWeight == 0.0);
         double maxScore = max(ncWeight*(newNcSum / trueA.back() - ncSum / trueA.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
@@ -914,8 +911,8 @@ int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
         if (selfLoopAtNewTarget) res++;
     }
     for (uint neighbor : v) if (neighbor != source) {
-        res -= G2->adjMatrix[oldTarget][(*A)[neighbor]];
-        res += G2->adjMatrix[newTarget][(*A)[neighbor]];
+        res -= G2->adjMatrix[oldTarget][A[neighbor]];
+        res += G2->adjMatrix[newTarget][A[neighbor]];
     }
     return res;
 }
@@ -925,30 +922,24 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
     return 0; //not applicable
 #else
     int res = 0;
-    bool selfLoopAtSource1, selfLoopAtSource2, selfLoopAtTarget1, selfLoopAtTarget2;
-    selfLoopAtSource1 = G1->hasSelfLoop(source1);
-    selfLoopAtSource2 = G1->hasSelfLoop(source2);
-    selfLoopAtTarget1 = G2->hasSelfLoop(target1);
-    selfLoopAtTarget2 = G2->hasSelfLoop(target2);
-    const vector<uint>& v1 = G1->adjLists[source1];
-    if (selfLoopAtSource1) {
-        if (selfLoopAtTarget1) res--;
-        if (selfLoopAtTarget2) res++;
+    if (G1->hasSelfLoop(source1)) {
+        if (G2->hasSelfLoop(target1)) res--;
+        if (G2->hasSelfLoop(target2)) res++;
     }
-    for (uint neighbor : v1) if (neighbor != source1) {
-        res -= G2->adjMatrix[target1][(*A)[neighbor]];
-        res += G2->adjMatrix[target2][(*A)[neighbor]];
+    for (uint nbr : G1->adjLists[source1]) {
+        if (nbr != source1) {
+            res -= G2->adjMatrix[target1][A[nbr]];
+            res += G2->adjMatrix[target2][A[nbr]];
+        }
     }
-
-    const vector<uint>& v2 = G1->adjLists[source2];
-    if (selfLoopAtSource2) {
-        if (selfLoopAtTarget2) res--;
-        if (selfLoopAtTarget1) res++;
+    if (G1->hasSelfLoop(source2)) {
+        if (G2->hasSelfLoop(target2)) res--;
+        if (G2->hasSelfLoop(target1)) res++;
     }
-    for (uint neighbor : v2) {
-        if (neighbor != source2) {
-            res -= G2->adjMatrix[target2][(*A)[neighbor]];
-            res += G2->adjMatrix[target1][(*A)[neighbor]];
+    for (uint nbr : G1->adjLists[source2]) {
+        if (nbr != source2) {
+            res -= G2->adjMatrix[target2][A[nbr]];
+            res += G2->adjMatrix[target1][A[nbr]];
         }
     }
 
@@ -959,8 +950,7 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
     res += (-1 << 1) & (G1->adjMatrix[source1][source2] +
                         G2->adjMatrix[target1][target2]);
 #else
-    if (G1->adjMatrix[source1][source2] != 0 and G2->adjMatrix[target1][target2] != 0)
-        res += 2;
+    if (G1->hasEdge(source1, source2) and G2->hasEdge(target1, target2)) res += 2;
 #endif
 
     return res;
@@ -978,21 +968,17 @@ static double getRatio(double w1, double w2) {
     return r;
 }
 
-/*
- * We swap the mapping of two nodes source1 and source2
+/* We swap the mapping of two nodes source1 and source2
  * We can first handle source1, then do the same with source2
  * Subtract old edge difference with edge (source1, target1)
- * Add new edge difference with edge (source1, target2)
- */
+ * Add new edge difference with edge (source1, target2) */
 double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     if (source1 == source2) return 0;
     // Handle source1
     double edgeDifferenceIncDiff = 0;
     double c = 0;
-    vector<uint> &adjList = G1->adjLists[source1];
-    for (uint i = 0; i < adjList.size(); ++i) {
-        uint node2 = adjList[i];
-        double y = -abs(G1->adjMatrix[source1][node2] - G2->adjMatrix[target1][(*A)[node2]]) - c;
+    for (uint node2 : G1->adjLists[source1]) {
+        double y = -abs(G1->adjMatrix[source1][node2] - G2->adjMatrix[target1][A[node2]]) - c;
         double t = edgeDifferenceIncDiff + y;
         c = (t - edgeDifferenceIncDiff) - y;
         edgeDifferenceIncDiff = t;
@@ -1001,7 +987,7 @@ double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, u
         uint node2Target = 0;
         if (node2 == source1) node2Target = target2;
         else if (node2 == source2) node2Target = target1;
-        else node2Target = (*A)[node2];
+        else node2Target = A[node2];
 
         y = +abs(G1->adjMatrix[source1][node2] - G2->adjMatrix[target2][node2Target]) - c;
         t = edgeDifferenceIncDiff + y;
@@ -1009,20 +995,14 @@ double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, u
         edgeDifferenceIncDiff = t;
     }
     // Handle source2
-    vector<uint> &adjList2 = G1->adjLists[source2];
-    for (uint i = 0; i < adjList2.size(); ++i) {
-        uint node2 = adjList2[i];
+    for (uint node2 : G1->adjLists[source2]) {
         if (node2 == source1) continue;
-
-        double y = -abs(G1->adjMatrix[source2][node2] - G2->adjMatrix[target2][(*A)[node2]]) - c;
+        double y = -abs(G1->adjMatrix[source2][node2] - G2->adjMatrix[target2][A[node2]]) - c;
         double t = edgeDifferenceIncDiff + y;
         c = (t - edgeDifferenceIncDiff) - y;
         edgeDifferenceIncDiff = t;
 
-        uint node2Target = 0;
-        if (node2 == source2) node2Target = target1;
-        else node2Target = (*A)[node2];
-
+        uint node2Target = (node2 == source2 ? target1 : A[node2]);
         y = +abs(G1->adjMatrix[source2][node2] - G2->adjMatrix[target1][node2Target]) - c;
         t = edgeDifferenceIncDiff + y;
         c = (t - edgeDifferenceIncDiff) - y;
@@ -1031,20 +1011,13 @@ double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, u
     return edgeDifferenceIncDiff;
 }
 
-
+// Subtract source1-target1, Add source1-target2
 double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     if (source1 == source2) return 0;
-
-    // Subtract source1-target1
-    // Add source1-target2
     double edgeRatioIncDiff = 0;
     double c = 0;
-  
-    vector<uint> &adjList = G1->adjLists[source1];
-    for (uint i = 0; i < adjList.size(); ++i) {
-        uint node2 = adjList[i];
-
-        double r = getRatio(G1->adjMatrix[source1][node2], G2->adjMatrix[target1][(*A)[node2]]);
+    for (uint node2 : G1->adjLists[source1]) {
+        double r = getRatio(G1->adjMatrix[source1][node2], G2->adjMatrix[target1][A[node2]]);
         double y = -r - c;
         double t = edgeRatioIncDiff + y;
         c = (t - edgeRatioIncDiff) - y;
@@ -1053,10 +1026,10 @@ double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint t
         uint node2Target = 0;
         if (node2 == source1) node2Target = target2;
         else if (node2 == source2) node2Target = target1;
-        else node2Target = (*A)[node2];
+        else node2Target = A[node2];
 
-        r = +getRatio(G1->adjMatrix[source1][node2], G2->adjMatrix[target2][node2Target]);
-        y = +r - c;
+        r = getRatio(G1->adjMatrix[source1][node2], G2->adjMatrix[target2][node2Target]);
+        y = r - c;
         t = edgeRatioIncDiff + y;
         c = (t - edgeRatioIncDiff) - y;
         edgeRatioIncDiff = t;
@@ -1064,23 +1037,17 @@ double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint t
 
    // Subtract source2-target2
    // Add source2-target1
-   vector<uint> &adjList2 = G1->adjLists[source2];
-   for (uint i = 0; i < adjList2.size(); ++i) {
-        uint node2 = adjList2[i];
+   for (uint node2 : G1->adjLists[source2]) {
         if (node2 == source1) continue;
-
-        double r = getRatio(G1->adjMatrix[source2][node2], G2->adjMatrix[target2][(*A)[node2]]);
+        double r = getRatio(G1->adjMatrix[source2][node2], G2->adjMatrix[target2][A[node2]]);
         double y = -r - c;
         double t = edgeRatioIncDiff + y;
         c = (t - edgeRatioIncDiff) - y;
         edgeRatioIncDiff = t;
 
-        uint node2Target = 0;
-        if (node2 == source2) node2Target = target1;
-        else node2Target = (*A)[node2];
-
+        uint node2Target = (node2 == source2 ? target1 : A[node2]);
         r = getRatio(G1->adjMatrix[source2][node2], G2->adjMatrix[target1][node2Target]);
-        y = +r - c;
+        y = r - c;
         t = edgeRatioIncDiff + y;
         c = (t - edgeRatioIncDiff) - y;
         edgeRatioIncDiff = t;
@@ -1092,17 +1059,13 @@ double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint t
 double SANA::edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     double edgeDifferenceIncDiff = 0;
     double c = 0;
-
-    vector<uint> &adjList = G1->adjLists[source];
-    for (uint i = 0; i < adjList.size(); ++i) {
-        uint node2 = adjList[i];
-
-        double y = -abs(G1->adjMatrix[source][node2] - G2->adjMatrix[oldTarget][(*A)[node2]]) - c;
+    for (uint node2 : G1->adjLists[source]) {
+        double y = -abs(G1->adjMatrix[source][node2] - G2->adjMatrix[oldTarget][A[node2]]) - c;
         double t = edgeDifferenceIncDiff + y;
         c = (t - edgeDifferenceIncDiff) - y;
         edgeDifferenceIncDiff = t;
 
-        uint node2Target = node2 == source ? newTarget : (*A)[node2];
+        uint node2Target = node2 == source ? newTarget : A[node2];
         y = +abs(G1->adjMatrix[source][node2] - G2->adjMatrix[newTarget][node2Target]) - c;
         t = edgeDifferenceIncDiff + y;
         c = (t - edgeDifferenceIncDiff) - y;
@@ -1111,21 +1074,17 @@ double SANA::edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarg
     return edgeDifferenceIncDiff;
 }
 
-
 double SANA::edgeRatioIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     double edgeRatioIncDiff = 0;
     double c = 0;
-    vector<uint> &adjList = G1->adjLists[source];
-    for (uint i = 0; i < adjList.size(); ++i) {
-        uint node2 = adjList[i];
-
-        double r = getRatio(G1->adjMatrix[source][node2], G2->adjMatrix[oldTarget][(*A)[node2]]);
+    for (uint node2 : G1->adjLists[source]) {
+        double r = getRatio(G1->adjMatrix[source][node2], G2->adjMatrix[oldTarget][A[node2]]);
         double y = -r - c;
         double t = edgeRatioIncDiff + y;
         c = (t - edgeRatioIncDiff) - y;
         edgeRatioIncDiff = t;
 
-        uint node2Target = node2 == source ? newTarget : (*A)[node2];
+        uint node2Target = node2 == source ? newTarget : A[node2];
         r = getRatio(G1->adjMatrix[source][node2], G2->adjMatrix[newTarget][node2Target]);
         y = +r - c;
         t = edgeRatioIncDiff + y;
@@ -1136,7 +1095,6 @@ double SANA::edgeRatioIncChangeOp(uint source, uint oldTarget, uint newTarget) {
 }
 
 
-static int _edgeVal;
 // UGLY GORY HACK BELOW!! Sometimes the edgeVal is crazily wrong, like way above 1,000, when it
 // cannot possibly be greater than the number of networks we're aligning when MULTI_PAIRWISE is on.
 // It happens only rarely, so here I ask if the edgeVal is less than 1,000; if it's less than 1,000
@@ -1145,18 +1103,16 @@ static int _edgeVal;
 // between the value of this ladder and the ladder with one edge added or removed.  Mathematically
 // it should be edgeVal^2 - (edgeVal+1)^2 which is (2e + 1), but for some reason I had to make
 // it 2*(e+1).  That seemed to work better.  So yeah... big ugly hack.
-#define SQRDIFF(i,j) ((_edgeVal=G2->adjMatrix[i][(*A)[j]]), 2*_edgeVal + 1)
+static int _edgeVal;
+#define SQRDIFF(i,j) ((_edgeVal=G2->adjMatrix[i][A[j]]), 2*_edgeVal + 1)
 int SANA::squaredAligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    int res = 0, diff;
-    uint neighbor;
-    const uint n = G1->adjLists[source].size();
-    for (uint i = 0; i < n; ++i) {
-        neighbor = G1->adjLists[source][i];
+    int res = 0;
+    for (uint nbr : G1->adjLists[source]) {
         // Account for uint edges? Or assume smaller graph is edge value 1?
-        diff = SQRDIFF(oldTarget, neighbor);
+        int diff = SQRDIFF(oldTarget, nbr);
         // assert(fabs(diff)<1100);
         res -= diff;// >0?diff:0;
-        diff = SQRDIFF(newTarget, neighbor);
+        diff = SQRDIFF(newTarget, nbr);
         // assert(fabs(diff)<1100);
         res += diff;// >0?diff:0;
     }
@@ -1164,238 +1120,150 @@ int SANA::squaredAligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarge
 }
 
 int SANA::squaredAligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    int res = 0, diff;
-    uint neighbor;
-    const uint n = G1->adjLists[source1].size();
-    uint i = 0;
-    for (; i < n; ++i) {
-        neighbor = G1->adjLists[source1][i];
-        diff = SQRDIFF(target1, neighbor);
+    int res = 0;
+    for (uint nbr : G1->adjLists[source1]) {
+        int diff = SQRDIFF(target1, nbr);
         // assert(fabs(diff)<1100);
         res -= diff;// >0?diff:0;
-        diff = SQRDIFF(target2, neighbor);
-        if (target2==(*A)[neighbor]) {
-                diff=0;
-        }// assert(fabs(diff)<1100);
+        diff = SQRDIFF(target2, nbr);
+        if (target2 == A[nbr]) diff = 0;
+        // assert(fabs(diff)<1100);
         res += diff;// >0?diff:0;
     }
-    const uint m = G1->adjLists[source2].size();
-    for (i = 0; i < m; ++i) {
-        neighbor = G1->adjLists[source2][i];
-        diff = SQRDIFF(target2, neighbor);
+    for (uint nbr : G1->adjLists[source2]) {
+        int diff = SQRDIFF(target2, nbr);
         // assert(fabs(diff)<1100);
         res -= diff;// >0?diff:0;
-        diff = SQRDIFF(target1, neighbor);
-        if (target1==(*A)[neighbor]) {
-                diff=0;
-        }// assert(fabs(diff)<1100);
+        diff = SQRDIFF(target1, nbr);
+        if (target1 == A[nbr]) diff = 0;
+        // assert(fabs(diff)<1100);
         res += diff;// >0?diff:0;
     }
     // How to do for squared?
     // address case swapping between adjacent nodes with adjacent images:
-    if (G1->adjMatrix[source1][source2] and G2->adjMatrix[target1][target2]) {
+    if (G1->hasEdge(source1, source2) and G2->hasEdge(target1, target2))
         res += 2 * SQRDIFF(target1,source2);
-    }
     return res;
 }
 
 int SANA::exposedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    int ret = 0;
-    uint neighbor;
-    const uint n = G1->adjLists[source].size();
-    for (uint i = 0; i < n; ++i) {
-        neighbor = G1->adjLists[source][i];
-        if (G2->adjMatrix[oldTarget][(*A)[neighbor]] == 0) {
-            --ret;
-        }
-        if (!G2->adjMatrix[newTarget][(*A)[neighbor]]) {
-            ++ret;
-        }
+    int res = 0;
+    for (uint nbr : G1->adjLists[source]) {
+        if (not G2->hasEdge(oldTarget, A[nbr])) --res;
+        if (not G2->hasEdge(newTarget, A[nbr])) ++res;
     }
-    return ret;
+    return res;
 }
 
 int SANA::exposedEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    int ret = 0;
-    uint neighbor;
-    const uint n = G1->adjLists[source1].size();
-    uint i = 0;
-    for (; i < n; ++i) {
-        neighbor = G1->adjLists[source1][i];
-        if (G2->adjMatrix[target1][(*A)[neighbor]] == 0) {
-            --ret;
-        }
-        if (!G2->adjMatrix[target2][(*A)[neighbor]]) {
-            ++ret;
-        }
+    int res = 0;
+    for (uint nbr : G1->adjLists[source1]) {
+        if (not G2->hasEdge(target1, A[nbr])) --res;
+        if (not G2->hasEdge(target2, A[nbr])) ++res;
     }
-    const uint m = G1->adjLists[source2].size();
-    for (i = 0; i < m; ++i) {
-        neighbor = G1->adjLists[source2][i];
-        if (G2->adjMatrix[target2][(*A)[neighbor]] == 0) {
-            --ret;
-        }
-        if (!G2->adjMatrix[target1][(*A)[neighbor]]) {
-            ++ret;
-        }
+    for (uint nbr : G1->adjLists[source2]) {
+        if (not G2->hasEdge(target2, A[nbr])) --res;
+        if (not G2->hasEdge(target1, A[nbr])) ++res;
     }
-    return ret;
+    return res;
 }
 
 // Return the change in NUMERATOR of MS3
 int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
     if (MultiS3::_type==1) {
         //denom is ee, computed elsewhere
-        int res = 0, diff;
-        uint neighbor;
-        const uint n = G1->adjLists[source].size();
-        for (uint i = 0; i < n; ++i) {
-            neighbor = G1->adjLists[source][i];
-            diff = G2->adjMatrix[oldTarget][(*A)[neighbor]] + 1;
+        int res = 0;
+        for (uint nbr : G1->adjLists[source]) {
+            int diff = G2->adjMatrix[oldTarget][A[nbr]] + 1;
             res -= (diff==1?0:diff);
-            diff = G2->adjMatrix[newTarget][(*A)[neighbor]] + 1;
+            diff = G2->adjMatrix[newTarget][A[nbr]] + 1;
             res += (diff==1?0:diff) ;
-            }
+        }
         return res;
     }
-    int ret = 0;
+    int res = 0;
     unsigned oldOldTargetDeg = MultiS3::totalDegrees[oldTarget];
     unsigned oldNewTargetDeg = MultiS3::totalDegrees[newTarget];
-    bool selfLoopAtSource, selfLoopAtOldTarget, selfLoopAtNewTarget;
 
-    selfLoopAtSource = G1->hasSelfLoop(source);
-    selfLoopAtOldTarget = G2->hasSelfLoop(oldTarget);
-    selfLoopAtNewTarget = G2->hasSelfLoop(newTarget);
-
-    const vector<uint>& neighbors = G1->adjLists[source];
-    
-    if (selfLoopAtSource) {
-        if (selfLoopAtOldTarget) --ret;
-        if (selfLoopAtNewTarget) ++ret;
+    if (G1->hasSelfLoop(source)) {
+        if (G2->hasSelfLoop(oldTarget)) --res;
+        if (G2->hasSelfLoop(newTarget)) ++res;
     }
-    
-    for (auto neighbor : neighbors) {
-        if (neighbor != source) {
+    for (uint nbr : G1->adjLists[source]) {
+        if (nbr != source) {
             --MultiS3::totalDegrees[oldTarget];
             ++MultiS3::totalDegrees[newTarget];
-            ret -= G2->adjMatrix[oldTarget][(*A)[neighbor]];
-            ret += G2->adjMatrix[newTarget][(*A)[neighbor]];
+            res -= G2->adjMatrix[oldTarget][A[nbr]];
+            res += G2->adjMatrix[newTarget][A[nbr]];
         }
     }
-    
-    if (oldOldTargetDeg > 0 && !MultiS3::totalDegrees[oldTarget]) {
-        MultiS3::denom -= 1;
-    }
-    if (oldNewTargetDeg > 0 && !MultiS3::totalDegrees[newTarget]) {
-        MultiS3::denom += 1;
-    }
-    
-    return ret;
+    if (oldOldTargetDeg > 0 and !MultiS3::totalDegrees[oldTarget]) MultiS3::denom -= 1;
+    if (oldNewTargetDeg > 0 and !MultiS3::totalDegrees[newTarget]) MultiS3::denom += 1;
+    return res;
 }
 
 // Return change in NUMERATOR only
 int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    if (MultiS3::_type==1) {
-        //denom is ee
-        int res = 0, diff;
-        uint neighbor;
-        const uint n = G1->adjLists[source1].size();
-        uint i = 0;
-        for (; i < n; ++i) {
-            neighbor = G1->adjLists[source1][i];
-            diff = G2->adjMatrix[target1][(*A)[neighbor]] + 1;//SQRDIFF(target1, neighbor);
-            res -= (diff==1?0:diff);
-            diff = G2->adjMatrix[target2][(*A)[neighbor]] + 1;//SQRDIFF(target2, neighbor);
-            if (target2==(*A)[neighbor]) {
-                diff=0;
-            }
-            res += (diff==1?0:diff);
+    if (MultiS3::_type==1) { //denom is ee
+        int res = 0;
+        for (uint nbr : G1->adjLists[source1]) {
+            int diff = G2->adjMatrix[target1][A[nbr]] + 1;//SQRDIFF(target1, nbr);
+            res -= (diff == 1 ? 0 : diff);
+            diff = G2->adjMatrix[target2][A[nbr]] + 1;//SQRDIFF(target2, nbr);
+            if (target2 == A[nbr]) diff = 0;
+            res += (diff == 1 ? 0 : diff);
         }
-        const uint m = G1->adjLists[source2].size();
-        for (i = 0; i < m; ++i) {
-            neighbor = G1->adjLists[source2][i];
-            diff = G2->adjMatrix[target2][(*A)[neighbor]] + 1;//SQRDIFF(target2, neighbor);
-            res -= (diff==1?0:diff);
-            diff = G2->adjMatrix[target1][(*A)[neighbor]] + 1;//SQRDIFF(target1, neighbor);
-            if (target1==(*A)[neighbor]) {
-                diff=0;
-            }
-            res += (diff==1?0:diff);
+        for (uint nbr : G1->adjLists[source2]) {
+            int diff = G2->adjMatrix[target2][A[nbr]] + 1;//SQRDIFF(target2, nbr);
+            res -= (diff == 1 ? 0 : diff);
+            diff = G2->adjMatrix[target1][A[nbr]] + 1;//SQRDIFF(target1, nbr);
+            if (target1 == A[nbr]) diff = 0;
+            res += (diff == 1 ? 0 : diff);
         }
-        if (G2->adjMatrix[target1][target2] and  G1->adjMatrix[source1][source2]) {
-            diff = ( G2->adjMatrix[target1][(*A)[source2]] + 1);
-            res += 2*(diff==1?0:diff);
+        if (G2->hasEdge(target1, target2) and  G1->hasEdge(source1, source2)) {
+            int diff = G2->adjMatrix[target1][A[source2]] + 1;
+            res += 2*(diff == 1 ? 0 : diff);
         }
         return res;
     }
-    
-    int ret = 0;
-    unsigned oldTarget1Deg = MultiS3::totalDegrees[target1];
-    unsigned oldTarget2Deg = MultiS3::totalDegrees[target2];
-    
-    bool selfLoopAtSource1, selfLoopAtSource2, selfLoopAtTarget1, selfLoopAtTarget2;
 
-    selfLoopAtSource1 = G1->hasSelfLoop(source1);
-    selfLoopAtSource2 = G1->hasSelfLoop(source2);
-    selfLoopAtTarget1 = G2->hasSelfLoop(target1);
-    selfLoopAtTarget2 = G2->hasSelfLoop(target2);
-
-    const vector<uint>& neighbors1 = G1->adjLists[source1];
-    const vector<uint>& neighbors2 = G1->adjLists[source2];
-    
-    if (selfLoopAtSource1) {
-        if (selfLoopAtTarget1) --ret;
-        if (selfLoopAtTarget2) ++ret;
+    int res = 0;
+    uint oldTarget1Deg = MultiS3::totalDegrees[target1];
+    uint oldTarget2Deg = MultiS3::totalDegrees[target2];
+    if (G1->hasSelfLoop(source1)) {
+        if (G2->hasSelfLoop(target1)) --res;
+        if (G2->hasSelfLoop(target2)) ++res;
     }
-    if (selfLoopAtSource2) {
-        if (selfLoopAtTarget1) --ret;
-        if (selfLoopAtTarget2) ++ret;
+    if (G1->hasSelfLoop(source2)) {
+        if (G2->hasSelfLoop(target1)) --res;
+        if (G2->hasSelfLoop(target2)) ++res;
     }
-    
-    for (auto neighbor : neighbors1) {
-        if (neighbor != source1) {
+    for (uint nbr : G1->adjLists[source1]) {
+        if (nbr != source1) {
             --MultiS3::totalDegrees[target1];
             ++MultiS3::totalDegrees[target2];
-            ret -= G2->adjMatrix[target1][(*A)[neighbor]];
-            ret += G2->adjMatrix[target2][(*A)[neighbor]];
+            res -= G2->adjMatrix[target1][A[nbr]];
+            res += G2->adjMatrix[target2][A[nbr]];
         }
     }
-    
-    for (auto neighbor : neighbors2) {
-        if (neighbor != source1) {
+    for (uint nbr : G1->adjLists[source2]) {
+        if (nbr != source1) {
             --MultiS3::totalDegrees[target2];
             ++MultiS3::totalDegrees[target1];
-            ret -= G2->adjMatrix[target2][(*A)[neighbor]];
-            ret += G2->adjMatrix[target1][(*A)[neighbor]];
+            res -= G2->adjMatrix[target2][A[nbr]];
+            res += G2->adjMatrix[target1][A[nbr]];
         }
     }
-    
-    if (oldTarget1Deg > 0 && !MultiS3::totalDegrees[target1]) {
-        MultiS3::denom -= 1;
-    }
-    if (oldTarget2Deg > 0 && !MultiS3::totalDegrees[target2]) {
-        MultiS3::denom += 1;
-    }
-
-    return ret;
+    if (oldTarget1Deg > 0 && !MultiS3::totalDegrees[target1]) MultiS3::denom -= 1;
+    if (oldTarget2Deg > 0 && !MultiS3::totalDegrees[target2]) MultiS3::denom += 1;
+    return res;
 }
 
 int SANA::inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int res = 0;
-    const uint n = G2->adjLists[oldTarget].size();
-    uint neighbor;
-    uint i = 0;
-    for (; i < n; ++i) {
-        neighbor = G2->adjLists[oldTarget][i];
-        res -= (*assignedNodesG2)[neighbor];
-    }
-    const uint m = G2->adjLists[newTarget].size();
-    for (i = 0; i < m; ++i) {
-        neighbor = G2->adjLists[newTarget][i];
-        res += (*assignedNodesG2)[neighbor];
-    }
-    //address case changing between adjacent nodes:
-    res -= G2->adjMatrix[oldTarget][newTarget];
+    for (uint nbr : G2->adjLists[oldTarget]) res -= assignedNodesG2[nbr];
+    for (uint nbr : G2->adjLists[newTarget]) res += assignedNodesG2[nbr];
+    res -= G2->edgeWeight(oldTarget, newTarget); //address case changing between adjacent nodes:
     return res;
 }
 
@@ -1417,29 +1285,27 @@ double SANA::JSIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     uint sourceOldAlingedEdges = alignedByNode[source];
     uint sourceAlignedEdges = 0;
     vector<uint> sourceNeighbours = G1->adjLists[source];
-    uint sourceTotalEdges = sourceNeighbours.size();
-    for (uint j = 0; j < sourceTotalEdges; j++) {
-        uint neighbour = sourceNeighbours[j];
-        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+    for (uint nbr : sourceNeighbours) {
+        uint neighbourAlignedTo = A[nbr]; 
         sourceAlignedEdges += G2->adjMatrix[newTarget][neighbourAlignedTo];
     }
     alignedByNode[source] = sourceAlignedEdges;
     //update newJsSum
+    uint sourceTotalEdges = sourceNeighbours.size();
     double change = ((sourceAlignedEdges - sourceOldAlingedEdges)/(double)sourceTotalEdges);
 
     // for each source neighbour update do iterative changes to the jsAlingedByNode vector
     // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
     // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
     //no changes other wise
-    for (uint j = 0; j < sourceTotalEdges; j++) {
-        uint neighbour = sourceNeighbours[j];
-        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
-        uint neighbourOldAlignedEdges = alignedByNode[neighbour];
-        uint neighbourTotalEdges = G1->adjLists[neighbour].size();
-        alignedByNode[neighbour] -= G2->adjMatrix[oldTarget][neighbourAlignedTo];
-        alignedByNode[neighbour] += G2->adjMatrix[newTarget][neighbourAlignedTo];
+    for (uint nbr : sourceNeighbours) {
+        uint neighbourAlignedTo = A[nbr];
+        uint neighbourOldAlignedEdges = alignedByNode[nbr];
+        uint neighbourTotalEdges = G1->adjLists[nbr].size();
+        alignedByNode[nbr] -= G2->adjMatrix[oldTarget][neighbourAlignedTo];
+        alignedByNode[nbr] += G2->adjMatrix[newTarget][neighbourAlignedTo];
         //update newJsSum
-        change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+        change += ((alignedByNode[nbr] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
     }
     return change;
 }
@@ -1460,9 +1326,8 @@ double SANA::JSIncSwapOp(uint source1, uint source2, uint target1, uint target2)
     uint source2TotalEdges = source2Neighbours.size();
 
     // eval for source1 from sratch
-    for (uint j = 0; j < source1TotalEdges; j++) {
-        uint neighbour = source1Neighbours[j];
-        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+    for (uint nbr : source1Neighbours) {
+        uint neighbourAlignedTo = A[nbr];
         // if (G2->adjMatrix[target2][neighbourAlignedTo] == true) {
         //     source1AlignedEdges += 1;
         // }
@@ -1472,29 +1337,26 @@ double SANA::JSIncSwapOp(uint source1, uint source2, uint target1, uint target2)
 
     double change = ((source1AlignedEdges - source1OldAlingedEdges)/(double)source1TotalEdges);
 
-
     //for each source neighbour update do iterative changes to the jsAlingedByNode vector
     //in each update get the G2mapping of neighbour and then check if edge was aligned by
     //oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
     //increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
     //no changes other wise
-    for (uint j = 0; j < source1TotalEdges; j++) {
-        uint neighbour = source1Neighbours[j];
-        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
-        uint neighbourOldAlignedEdges = alignedByNode[neighbour];
-        uint neighbourTotalEdges = G1->adjLists[neighbour].size();
-        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), neighbour) == source1Neighbours.end()) {
-            alignedByNode[neighbour] -= G2->adjMatrix[target1][neighbourAlignedTo];
-            alignedByNode[neighbour] += G2->adjMatrix[target2][neighbourAlignedTo];
+    for (uint nbr : source1Neighbours) {
+        uint neighbourAlignedTo = A[nbr];
+        uint neighbourOldAlignedEdges = alignedByNode[nbr];
+        uint neighbourTotalEdges = G1->adjLists[nbr].size();
+        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), nbr) == source1Neighbours.end()) {
+            alignedByNode[nbr] -= G2->adjMatrix[target1][neighbourAlignedTo];
+            alignedByNode[nbr] += G2->adjMatrix[target2][neighbourAlignedTo];
             //update newJsSum
-            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+            change += ((alignedByNode[nbr] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
         }
     }
 
     // eval for source2 from scratch
-    for (uint j = 0; j < source2TotalEdges; j++) {
-        uint neighbour = source2Neighbours[j];
-        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+    for (uint nbr : source2Neighbours) {
+        uint neighbourAlignedTo = A[nbr];
         source2AlignedEdges += G2->adjMatrix[target1][neighbourAlignedTo];
     }
     alignedByNode[source2] = source2AlignedEdges;
@@ -1504,16 +1366,15 @@ double SANA::JSIncSwapOp(uint source1, uint source2, uint target1, uint target2)
     // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
     // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
     //no changes other wise
-    for (uint j = 0; j < source2TotalEdges; j++) {
-        uint neighbour = source2Neighbours[j];
-        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
-        uint neighbourOldAlignedEdges = alignedByNode[neighbour];
-        uint neighbourTotalEdges = G1->adjLists[neighbour].size();
-        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), neighbour) == source1Neighbours.end()) {
-            alignedByNode[neighbour] -= G2->adjMatrix[target2][neighbourAlignedTo];
-            alignedByNode[neighbour] += G2->adjMatrix[target1][neighbourAlignedTo];
+    for (uint nbr : source2Neighbours) {
+        uint neighbourAlignedTo = A[nbr];
+        uint neighbourOldAlignedEdges = alignedByNode[nbr];
+        uint neighbourTotalEdges = G1->adjLists[nbr].size();
+        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), nbr) == source1Neighbours.end()) {
+            alignedByNode[nbr] -= G2->adjMatrix[target2][neighbourAlignedTo];
+            alignedByNode[nbr] += G2->adjMatrix[target1][neighbourAlignedTo];
             //update newJsSum
-            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+            change += ((alignedByNode[nbr] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
         }
     }
 
@@ -1527,17 +1388,14 @@ double SANA::JSIncSwapOp(uint source1, uint source2, uint target1, uint target2)
 
 double SANA::WECIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     double res = 0;
-    const uint n = G1->adjLists[source].size();
-    uint neighbor;
-    for (uint j = 0; j < n; ++j) {
-        neighbor = G1->adjLists[source][j];
-        if (G2->adjMatrix[oldTarget][(*A)[neighbor]]) {
+    for (uint nbr : G1->adjLists[source]) {
+        if (G2->adjMatrix[oldTarget][A[nbr]]) {
             res -= wecSims[source][oldTarget];
-            res -= wecSims[neighbor][(*A)[neighbor]];
+            res -= wecSims[nbr][A[nbr]];
         }
-        if (G2->adjMatrix[newTarget][(*A)[neighbor]]) {
+        if (G2->adjMatrix[newTarget][A[nbr]]) {
             res += wecSims[source][newTarget];
-            res += wecSims[neighbor][(*A)[neighbor]];
+            res += wecSims[nbr][A[nbr]];
         }
     }
     return res;
@@ -1545,37 +1403,27 @@ double SANA::WECIncChangeOp(uint source, uint oldTarget, uint newTarget) {
 
 double SANA::WECIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     double res = 0;
-    const uint n = G1->adjLists[source1].size();
-    uint neighbor;
-    for (uint j = 0; j < n; ++j) {
-        neighbor = G1->adjLists[source1][j];
-        if (G2->adjMatrix[target1][(*A)[neighbor]]) {
+    for (uint nbr : G1->adjLists[source1]) {
+        if (G2->adjMatrix[target1][A[nbr]]) {
             res -= wecSims[source1][target1];
-            res -= wecSims[neighbor][(*A)[neighbor]];
+            res -= wecSims[nbr][A[nbr]];
         }
-        if (G2->adjMatrix[target2][(*A)[neighbor]]) {
+        if (G2->adjMatrix[target2][A[nbr]]) {
             res += wecSims[source1][target2];
-            res += wecSims[neighbor][(*A)[neighbor]];
+            res += wecSims[nbr][A[nbr]];
         }
     }
-    const uint m = G1->adjLists[source2].size();
-    for (uint j = 0; j < m; ++j) {
-        neighbor = G1->adjLists[source2][j];
-        if (G2->adjMatrix[target2][(*A)[neighbor]]) {
+    for (uint nbr : G1->adjLists[source2]) {
+        if (G2->adjMatrix[target2][A[nbr]]) {
             res -= wecSims[source2][target2];
-            res -= wecSims[neighbor][(*A)[neighbor]];
+            res -= wecSims[nbr][A[nbr]];
         }
-        if (G2->adjMatrix[target1][(*A)[neighbor]]) {
+        if (G2->adjMatrix[target1][A[nbr]]) {
             res += wecSims[source2][target1];
-            res += wecSims[neighbor][(*A)[neighbor]];
+            res += wecSims[nbr][A[nbr]];
         }
     }
-    //address case swapping between adjacent nodes with adjacent images:
-#ifdef MULTI_PAIRWISE
-    if (G1->adjMatrix[source1][source2] > 0 and G2->adjMatrix[target1][target2] > 0) {
-#else
-    if (G1->adjMatrix[source1][source2] and G2->adjMatrix[target1][target2]) {
-#endif
+    if (G1->hasEdge(source1, source2) and G2->hasEdge(target1, target2)) {
         res += 2*wecSims[source1][target1];
         res += 2*wecSims[source2][target2];
     }
@@ -1583,29 +1431,25 @@ double SANA::WECIncSwapOp(uint source1, uint source2, uint target1, uint target2
 }
 
 double SANA::EWECIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    double score = 0;
-    score = (EWECSimCombo(source, newTarget)) - (EWECSimCombo(source, oldTarget));
-    return score;
+    return EWECSimCombo(source, newTarget) - EWECSimCombo(source, oldTarget);
 }
 
 double SANA::EWECIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    double score = 0;
-    score = (EWECSimCombo(source1, target2)) + (EWECSimCombo(source2, target1)) - (EWECSimCombo(source1, target1)) - (EWECSimCombo(source2, target2));
-    if (G1->adjMatrix[source1][source2] and G2->adjMatrix[target1][target2]) {
-        score += ewec->getScore(ewec->getColIndex(target1, target2), ewec->getRowIndex(source1, source2))/(g1Edges); //correcting for missed edges when swapping 2 adjacent pairs
+    double score = EWECSimCombo(source1, target2) + EWECSimCombo(source2, target1) 
+                 - EWECSimCombo(source1, target1) - EWECSimCombo(source2, target2);
+    if (G1->hasEdge(source1, source2) and G2->hasEdge(target1, target2)) {
+        score += ewec->getScore(ewec->getColIndex(target1, target2), 
+                                ewec->getRowIndex(source1, source2))/(g1Edges); //correcting for missed edges when swapping 2 adjacent pairs
     }
     return score;
 }
 
 double SANA::EWECSimCombo(uint source, uint target) {
     double score = 0;
-    const uint n = G1->adjLists[source].size();
-    uint neighbor;
-    for (uint i = 0; i < n; ++i) {
-        neighbor = G1->adjLists[source][i];
-        if (G2->adjMatrix[target][(*A)[neighbor]]) {
-            int e1 = ewec->getRowIndex(source, neighbor);
-            int e2 = ewec->getColIndex(target, (*A)[neighbor]);
+    for (uint nbr : G1->adjLists[source]) {
+        if (G2->adjMatrix[target][A[nbr]]) {
+            int e1 = ewec->getRowIndex(source, nbr);
+            int e2 = ewec->getColIndex(target, A[nbr]);
             score+=ewec->getScore(e2,e1);
         }
     }
@@ -1643,8 +1487,7 @@ void SANA::trackProgress(long long int i, long long int maxIters) {
 
     bool checkScores = true;
     if (checkScores) {
-        Alignment Al(*A);
-        double realScore = eval(Al);
+        double realScore = eval(A);
         if (fabs(realScore-currentScore) > 0.00001) {
             cerr<<"internal error: incrementally computed score ("<<currentScore;
             cerr<<") is not correct ("<<realScore<<")"<<endl;
@@ -1682,160 +1525,13 @@ void SANA::trackProgress(long long int i, long long int maxIters) {
     }
 }
 
-/******************************************
-***** Temperature schedule functions ****** 
-******************************************/
-/* when we run sana at a fixed temp, scores generally go up
-(especially if the temp is low) until a point of "thermal equilibrium".
-This function should return the avg pBad at equilibrium.
-we keep track of the score every certain number of iterations
-if the score went down at least half the time,
-this suggests that the upward trend is over and we are at equilirbium
-once we know we are at equilibrium, we use the buffer of pbads to get an average pBad
-'logLevel' can be 0 (no output) 1 (logs result in cerr) or 2 (verbose/debug mode)*/
-double SANA::getPBad(double temp, double maxTime, int logLevel) {
-    
-    //new state for the run at fixed temperature
-    constantTemp = true;
-    Temperature = temp;
-    enableTrackProgress = false;
-    
-    //note: this is a circular buffer that maintains scores sampled at intervals
-    vector<double> scoreBuffer;
-    //the larger 'numScores' is, the stronger evidence of reachign equilibrium. keep this value odd
-    const uint numScores = 11;
-    uint iter = 0;
-    uint sampleInterval = 10000;
-    bool reachedEquilibrium = false;
-    initDataStructures(getStartingAlignment()); //this initializes the timer and resets the pBad buffer
-    bool verbose = (logLevel == 2); //print everything going on, for debugging purposes
-    uint verbose_i = 0;
-    if (verbose) {
-        cerr << endl << "****************************************" << endl;
-        cerr << "starting search for pBad for temp = " << temp << endl;
-    }
-    while (not reachedEquilibrium) {
-        SANAIteration();
-        iter++;
-
-        if (iter%sampleInterval == 0) {
-            if (verbose) {
-                cerr << verbose_i << " score: " << currentScore << " (avg pBad: " << slowTrueAcceptingProbability() << ")" << endl;
-                verbose_i++;
-            }
-            //circular buffer behavior
-            //(since the buffer is tiny, the cost of shifting everything is negligible)
-            scoreBuffer.push_back(currentScore);            
-            if (scoreBuffer.size() > numScores) {
-                scoreBuffer.erase(scoreBuffer.begin());
-            }
-
-            if (scoreBuffer.size() == numScores) {
-                //check if we are at eq:
-                //if the score went down more than up, it suggests we are at eq
-                uint scoreTrend = 0;
-                for (uint i = 0; i < numScores-1; i++) {
-                    if (scoreBuffer[i+1] < scoreBuffer[i]) scoreTrend--;
-                    if (scoreBuffer[i+1] > scoreBuffer[i]) scoreTrend++;
-                }
-                reachedEquilibrium = (scoreTrend <= 0);
-
-                if (verbose) {
-                    cerr << "scoreTrend = " << scoreTrend << endl;
-                    if (reachedEquilibrium) {
-                        cerr << endl << "Reached equilibrium" << endl;
-                        cerr << "scoreBuffer:" << endl;
-                        for (uint i = 0; i < scoreBuffer.size(); i++) {
-                            cerr << scoreBuffer[i] << " ";
-                        }
-                        cerr << endl;
-                    }
-                }
-            }
-
-            if (timer.elapsed() > maxTime) {
-                if (verbose) {
-                    cerr << "ran out of time. scoreBuffer:" << endl;
-                    for (uint i = 0; i < scoreBuffer.size(); i++) {
-                        cerr<<scoreBuffer[i]<<endl;
-                    }
-                    cerr<<endl;
-                }
-                break;
-            }
-        }
-    }
-
-    double pBadAvgAtEq = slowTrueAcceptingProbability();
-    double nextIps = (double)iter / (double)timer.elapsed();
-    pair<double, double> nextPair (temp, nextIps);
-    ipsList.push_back(nextPair);
-    if (logLevel >= 1) {
-        cout << "> getPBad(" << temp << ") = " << pBadAvgAtEq << " (score: " << currentScore << ")";
-        if (reachedEquilibrium) cout << " (time: " << timer.elapsed() << "s)";
-        else cout << " (didn't detect eq. after " << maxTime << "s)";
-    cout << " iterations = " << iter << ", ips = " << nextIps;
-        cout << endl;
-        
-        if (verbose) {
-            cerr << "final result: " << pBadAvgAtEq << endl;
-            cerr << "****************************************" << endl << endl;
-        }
-    }
-    //restore normal execution state
-    constantTemp = false;
-    enableTrackProgress = true;
-    Temperature = TInitial;
-
-    return pBadAvgAtEq;
-}
-
 void SANA::setTInitial(double t) { TInitial = t; }
 void SANA::setTFinal(double t) { TFinal = t; }
 void SANA::setTDecayFromTempRange() { TDecay = -log(TFinal/TInitial); }
 void SANA::setDynamicTDecay() { dynamicTDecay = true; }
 
-double SANA::logOfSearchSpaceSize() {
-    //the search space size is (n2 choose n1) * n1!
-    //we use the stirling approximation
-    if (n1 == n2) return n1*log(n1)-n1;
-    return n2*log(n2)-(n2-n1)*log(n2-n1)-n1;
-}
-
-Alignment SANA::hillClimbingAlignment(Alignment startAlignment, long long int idleCountTarget) {
-    long long int iter = 0;
-    uint idleCount = 0;
-    Temperature = 0;
-
-    //this is redundant, but it doesn't have a large impact. Resets true probability.
-    initDataStructures(startAlignment);
-    cout << "Beginning Final Pure Hill Climbing Stage" << endl;
-    while(idleCount < idleCountTarget) {
-        if (iter%iterationsPerStep == 0) trackProgress(iter);
-        double oldScore = currentScore;
-        SANAIteration();
-        if (abs(oldScore-currentScore) < 0.00001) ++idleCount;
-        else idleCount = 0;
-        ++iter;
-    }
-    trackProgress(iter);
-    return *A;
-}
-
-void SANA::constantTempIterations(long long int iterTarget) {
-    Alignment startA = getStartingAlignment();
-    initDataStructures(startA);
-    long long int iter;
-    for (iter = 1; iter < iterTarget ; ++iter) {
-        if (iter%iterationsPerStep == 0) trackProgress(iter);
-        SANAIteration();
-    }
-    trackProgress(iter);
-}
-
 double SANA::getIterPerSecond() {
-    if (not initializedIterPerSecond)
-        initIterPerSecond();
+    if (not initializedIterPerSecond) initIterPerSecond();
     return iterPerSecond;
 }
 
@@ -1861,7 +1557,6 @@ void SANA::initIterPerSecond() {
         totalIps = res;
     }
     cout << "SANA does " << long(totalIps) << " iterations per second on average" << endl;
-
     iterPerSecond = totalIps;
 
     //what is this? can it be removed? -Nil
@@ -1871,6 +1566,103 @@ void SANA::initIterPerSecond() {
     ofstream header(file);
     header<<"time,score,avgEnergyInc,Temperature,realTemp,pBad,lower,higher,timer"<<endl;
     header.close();
+}
+
+void SANA::constantTempIterations(long long int iterTarget) {
+    initDataStructures();
+    long long int iter;
+    for (iter = 1; iter < iterTarget ; ++iter) {
+        if (iter%iterationsPerStep == 0) trackProgress(iter);
+        SANAIteration();
+    }
+    trackProgress(iter);
+}
+
+/* when we run sana at a fixed temp, scores generally go up
+(especially if the temp is low) until a point of "thermal equilibrium".
+This function should return the avg pBad at equilibrium.
+we keep track of the score every certain number of iterations
+if the score went down at least half the time,
+this suggests that the upward trend is over and we are at equilirbium
+once we know we are at equilibrium, we use the buffer of pbads to get an average pBad
+'logLevel' can be 0 (no output) 1 (logs result in cerr) or 2 (verbose/debug mode)*/
+double SANA::getPBad(double temp, double maxTime, int logLevel) {
+    //new state for the run at fixed temperature
+    constantTemp = true;
+    Temperature = temp;
+    enableTrackProgress = false;
+    
+    //note: this is a circular buffer that maintains scores sampled at intervals
+    vector<double> scoreBuffer;
+    //the larger 'numScores' is, the stronger evidence of reachign equilibrium. keep this value odd
+    const uint numScores = 11;
+    uint iter = 0;
+    uint sampleInterval = 10000;
+    bool reachedEquilibrium = false;
+    initDataStructures(); //this initializes the timer and resets the pBad buffer
+    bool verbose = (logLevel == 2); //print everything going on, for debugging purposes
+    uint verbose_i = 0;
+    if (verbose) cerr<<endl<<"****************************************"<<endl
+                     <<"starting search for pBad for temp = "<<temp<<endl;
+    while (not reachedEquilibrium) {
+        SANAIteration();
+        iter++;
+        if (iter%sampleInterval == 0) {
+            if (verbose) {
+                cerr<<verbose_i<<" score: "<<currentScore<<" (avg pBad: "
+                    <<slowTrueAcceptingProbability()<<")"<<endl;
+                verbose_i++;
+            }
+            //circular buffer behavior
+            //(since the buffer is tiny, the cost of shifting everything is negligible)
+            scoreBuffer.push_back(currentScore);            
+            if (scoreBuffer.size() > numScores) scoreBuffer.erase(scoreBuffer.begin());
+            if (scoreBuffer.size() == numScores) {
+                //check if we are at eq:
+                //if the score went down more than up, it suggests we are at eq
+                uint scoreTrend = 0;
+                for (uint i = 0; i < numScores-1; i++) {
+                    if (scoreBuffer[i+1] < scoreBuffer[i]) scoreTrend--;
+                    if (scoreBuffer[i+1] > scoreBuffer[i]) scoreTrend++;
+                }
+                reachedEquilibrium = (scoreTrend <= 0);
+                if (verbose) {
+                    cerr<<"scoreTrend = "<<scoreTrend<<endl;
+                    if (reachedEquilibrium) {
+                        cerr<<endl<<"Reached equilibrium"<<endl<<"scoreBuffer:"<<endl;
+                        for (uint i = 0; i < scoreBuffer.size(); i++) cerr<<scoreBuffer[i]<<" ";
+                        cerr<<endl;
+                    }
+                }
+            }
+            if (timer.elapsed() > maxTime) {
+                if (verbose) {
+                    cerr<<"ran out of time. scoreBuffer:"<<endl;
+                    for (uint i = 0; i < scoreBuffer.size(); i++) cerr<<scoreBuffer[i]<<endl;
+                    cerr<<endl;
+                }
+                break;
+            }
+        }
+    }
+    double pBadAvgAtEq = slowTrueAcceptingProbability();
+    double nextIps = (double)iter / (double)timer.elapsed();
+    pair<double, double> nextPair (temp, nextIps);
+    ipsList.push_back(nextPair);
+    if (logLevel >= 1) {
+        cout<<"> getPBad("<<temp<<") = "<<pBadAvgAtEq<<" (score: "<<currentScore<<")";
+        if (reachedEquilibrium) cout<<" (time: "<<timer.elapsed()<<"s)";
+        else cout<<" (didn't detect eq. after "<<maxTime<<"s)";
+        cout<<" iterations = "<<iter<<", ips = "<<nextIps<<endl;
+        if (verbose) cerr<<"final result: "<<pBadAvgAtEq<<endl
+                         <<"****************************************"<<endl<<endl;
+    }
+    //restore normal execution state
+    constantTemp = false;
+    enableTrackProgress = true;
+    Temperature = TInitial;
+
+    return pBadAvgAtEq;
 }
 
 void SANA::initTau(void) {

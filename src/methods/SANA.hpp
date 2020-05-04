@@ -24,8 +24,9 @@ using namespace std;
 class SANA: public Method {
 
 public:
-    SANA(Graph* G1, Graph* G2, double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing,
-      MeasureCombination* MC, const string& objectiveScore, const string& startAligName);
+    SANA(Graph* G1, Graph* G2, double TInitial, double TDecay, double t, bool usingIterations,
+        bool addHillClimbing, MeasureCombination* MC, const string& scoreAggrStr,
+        const Alignment& optionalStartAlig, const string& outputFileName, const string& localScoresFileName);
     ~SANA();
 
     Alignment run();
@@ -33,19 +34,7 @@ public:
     string fileNameSuffix(const Alignment& A) const;
     
     //set temperature decay dynamically
-    void setDynamicTDecay();
-
-    //returns the number of iterations until it stagnates when not using temperture
-    void constantTempIterations(long long int iterTarget);
-    Alignment hillClimbingAlignment(Alignment startAlignment, long long int idleCountTarget);
-
-    //returns an approximation of the logarithm in base e of the size of the search space
-    double logOfSearchSpaceSize();
-    
-    string startAligName = "";
-
-    //set the file names passed in args in case we want to store the alignment on the fly
-    void setOutputFilenames(string outputFileName, string localMeasuresFileName);
+    void setDynamicTDecay();    
 
     void setTInitial(double t);
     void setTFinal(double t);
@@ -61,6 +50,11 @@ public:
     static bool saveAlignment;
 
 private:
+    Alignment startA;
+
+    bool addHillClimbing; //for post-run hill climbing
+    void performHillClimbing(long long int idleCountTarget);
+
     //temperature schedule
     double TInitial, TFinal, TDecay;
 
@@ -74,7 +68,7 @@ private:
     double slowTrueAcceptingProbability();
 
     //store whether or not most recent move was bad
-    bool wasBadMove = false;
+    bool wasBadMove;
 
     //data structures for the networks
     uint n1, n2;
@@ -83,11 +77,8 @@ private:
                      // a pair that includes the same node (g1_node_x, g1_node_x)
     double g1WeightedEdges, g2WeightedEdges;
 
-    void initTau(void);
-
     //random number generation
     mt19937 gen;
-    uniform_int_distribution<> G1RandomNode;
     uniform_real_distribution<> randomReal;
 
     double minutes = 0;
@@ -99,6 +90,7 @@ private:
 
     //to compute TDecay dynamically
     //tau holds "ideal" temperature values at certain execution times
+    void initTau();
     bool dynamicTDecay;
     vector<double> tau;
     double dynamicTDecayTime;
@@ -110,28 +102,24 @@ private:
     double TrimCoreScores(Matrix<unsigned long>& Freq, vector<unsigned long>& numPegSamples);
     double TrimCoreScores(Matrix<double>& Freq, vector<double>& totalPegWeight);
 
-    bool initializedIterPerSecond;
     double iterPerSecond;
     double getIterPerSecond();
+    bool initializedIterPerSecond;
     void initIterPerSecond();
+    void constantTempIterations(long long int iterTarget);
 
-    //data structures allocated in constructor and initialized in initDataStructures,
-    //so do not allocate them again in initDataStructures
-    vector<bool> *assignedNodesG2;
-    vector<vector<uint>> *unassignedG2NodesByColor;
-    vector<uint> *A;
-        
-    //initializes the data structures specific to a starting alignment
-    void initDataStructures(const Alignment& startA);
-
-    bool addHillClimbing; //for post-run hill climbing
+    //initializes the data structures specific to the starting alignment
+    //if startA is empty, a random alignment is used
+    void initDataStructures();
+    vector<uint> A;
+    vector<bool> assignedNodesG2;
+    vector<vector<uint>> unassignedG2NodesByColor;        
 
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A) const;
     double ecWeight, edWeight, erWeight, s3Weight, icsWeight, wecWeight, jsWeight, secWeight,
            ncWeight, localWeight, mecWeight, sesWeight, eeWeight, ms3Weight, ewecWeight;
-
 
     //this should be refactored so that the return parameter is not the 9th one out of 15
     bool scoreComparison(double newAligEdges, double newInducedEdges,
@@ -140,8 +128,8 @@ private:
         double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, 
         double newMS3Numer, double newEdgeDifferenceSum, double newEdgeRatioSum);
 
-    enum class Score{sum, product, inverse, max, min, maxFactor};
-    Score score;
+    enum class ScoreAggregation{sum, product, inverse, max, min, maxFactor};
+    ScoreAggregation scoreAggr;
 
     uint iterationsPerStep;
 
@@ -219,7 +207,7 @@ private:
     //to evaluate local measures incrementally
     bool needLocal;
     double localScoreSum;
-    map<string, double>* localScoreSumMap;
+    map<string, double> localScoreSumMap;
     vector<vector<float> > sims;
 
 #ifdef CORES
@@ -257,8 +245,8 @@ private:
     static void setInterruptSignal(); 
 
     void printReport(); //print out reports from inside SANA
-    string outputFileName = "sana";
-    string localScoresFileName = "sana";
+    string outputFileName;
+    string localScoresFileName;
 
     Alignment getStartingAlignment();
 
