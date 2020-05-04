@@ -31,7 +31,6 @@ UTILS_SRC = 								\
 	src/utils/utils.cpp						\
 	src/utils/randomSeed.cpp					\
 	src/utils/LinearRegression.cpp					\
-	src/utils/ParetoFront.cpp                                       \
 	src/utils/Matrix.cpp
 
 ARGUMENTS_SRC = 							\
@@ -116,8 +115,7 @@ MODES_SRC = 								\
 	src/modes/DebugMode.cpp						\
 	src/modes/ClusterMode.cpp					\
 	src/modes/AnalysisMode.cpp					\
-	src/modes/SimilarityMode.cpp					\
-	src/modes/ParetoMode.cpp
+	src/modes/SimilarityMode.cpp					
 
 OTHER_SRC = 							\
 	src/Graph.cpp                                       	\
@@ -127,7 +125,6 @@ OTHER_SRC = 							\
 	src/complementaryProteins.cpp                       	\
 	src/main.cpp                                        	\
 	src/report.cpp
-
 
 SRCS = $(METHODS_SRC) $(OTHER_SRC) $(UTILS_SRC) $(MEASURES_SRCS) $(METHOD_WRAPPERS_SRC) $(SCHEDULEMETHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC)
 OBJDIR = _objs

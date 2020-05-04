@@ -14,7 +14,6 @@
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
 #include "../utils/randomSeed.hpp"
-#include "../utils/ParetoFront.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 
 using namespace std;
@@ -36,7 +35,6 @@ public:
     ~SANA();
 
     Alignment run();
-    unordered_set<vector<uint>*>* paretoRun(const string &fileName);
     void describeParameters(ostream& stream);
     string fileNameSuffix(const Alignment& A) const;
     
@@ -49,7 +47,6 @@ public:
     //returns the number of iterations until it stagnates when not using temperture
     void constantTempIterations(long long int iterTarget);
     Alignment hillClimbingAlignment(Alignment startAlignment, long long int idleCountTarget);
-    Alignment hillClimbingAlignment(long long int idleCountTarget);
 
     //returns an approximation of the logarithm in base e of the size of the search space
     double logOfSearchSpaceSize();
@@ -73,8 +70,6 @@ public:
     static bool saveAlignment;
 
 private:
-    friend class Ameur; //it needs to read the PBad buffer
-    friend class StatisticalTest;
     //temperature schedule
     double TInitial, TFinal, TDecay;
 
@@ -112,12 +107,12 @@ private:
     double oldTimeElapsed = 0;
 
     //to compute TDecay dynamically
-    //vector holds "ideal" temperature values at certain execution times
+    //tau holds "ideal" temperature values at certain execution times
     bool dynamicTDecay;
     vector<double> tau;
-    double SANAtime;
+    double dynamicTDecayTime;
 
-    double Temperature;
+    double Temperature; //shouldn't be capitalized
     double temperatureFunction(long long int iter, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double Temperature);
 
@@ -132,7 +127,7 @@ private:
     //data structures allocated in constructor and initialized in initDataStructures,
     //so do not allocate them again in initDataStructures
     vector<bool> *assignedNodesG2;
-    vector<vector<uint> > *unassignedG2NodesByColor;
+    vector<vector<uint>> *unassignedG2NodesByColor;
     vector<uint> *A;
         
     //initializes the data structures specific to a starting alignment
@@ -154,11 +149,9 @@ private:
         double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, 
         double newMS3Numer, double newEdgeDifferenceSum, double newEdgeRatioSum);
 
-    enum class Score{sum, product, inverse, max, min, maxFactor, pareto};
+    enum class Score{sum, product, inverse, max, min, maxFactor};
     Score score;
 
-    //For pareto mode
-    uint paretoInitial, paretoCapacity, paretoIterations, paretoThreads;
     uint iterationsPerStep;
 
     //to evaluate EC incrementally
@@ -249,9 +242,9 @@ private:
     vector<double> totalWeightedPegWeight_1mpBad;
 #endif
 
-    map<string, vector<vector<float> > > localSimMatrixMap;
-    double localScoreSumIncChangeOp(vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
-    double localScoreSumIncSwapOp(vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
+    map<string, vector<vector<float>>> localSimMatrixMap;
+    double localScoreSumIncChangeOp(vector<vector<float>> const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
+    double localScoreSumIncSwapOp(vector<vector<float>> const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
 
     //other execution options
     bool constantTemp; //tempertare does not decrease as a function of iteration
@@ -259,18 +252,8 @@ private:
     void trackProgress(long long int i, bool end = false);
     double avgEnergyInc;
 
+    //why is this static? -Nil
     static long long _maxExecutionIterations;
-
-    Alignment simpleRun(const Alignment& A, double maxExecutionSeconds,
-        long long int& iter);
-    Alignment simpleRun(const Alignment& A, long long int maxExecutionIterations,
-        long long int& iter);
-    Alignment simpleRun(const Alignment& startA, double maxExecutionSeconds, long long int maxExecutionIterations,
-        long long int& iter);
-    unordered_set<vector<uint>*>* simpleParetoRun(const Alignment& A, double maxExecutionSeconds,
-        long long int& iter, const string &fileName);
-    unordered_set<vector<uint>*>* simpleParetoRun(const Alignment& A, long long int maxExecutionIterations,
-        long long int& iter, const string &fileName);
 
     double currentScore;
     double previousScore;
@@ -290,164 +273,6 @@ private:
     string localScoresFileName = "sana";
 
     Alignment getStartingAlignment();
-
-    string getFolder();
-    string haveFolder();
-    string mkdir(const std::string& file);
-    tuple<int, double, int, double, double, double> regress(double start, double end, int amount);
-
-    //Mostly for pareto front, to hold multiple alignments and scores
-    unordered_map<string, int> mapScoresToIndexes();
-    void prepareMeasureDataByAlignment();
-    void insertCurrentAndPrepareNewMeasureDataByAlignment(vector<double> &addScores);
-    vector<double> translateScoresToVector();
-    void insertCurrentAlignmentAndData();
-    void removeAlignmentData(vector<uint>* toRemove);
-    void initializeParetoFront();
-    vector<double> getMeasureScores(double newAligEdges, double newInducedEdges,
-         double newLocalScoreSum, double newWecSum, double newJsSum, double newNcSum,
-         double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer,
-	     double newMS3Numer, double newEdSum, double newErSum);
-    bool dominates(vector<double> &left, vector<double> &right);
-    void printParetoFront(const string &fileName);
-    void deallocateParetoData();
-    uint numOfMeasures;
-    vector<string> measureNames;
-    int currentMeasure;
-    vector<double> currentScores;
-    ParetoFront paretoFront;
-    unordered_map<string, int> scoreNamesToIndexes;
-    unordered_set<vector<uint>*>* storedAlignments;
-    unordered_map<vector<uint>*, vector<bool>*> storedAssignedNodesG2;
-    unordered_map<vector<uint>*, vector<vector<uint> >*> storedUnassignedG2NodesByColor;
-    unordered_map<vector<uint>*, map<string, double>*> storedLocalScoreSumMap;
-    unordered_map<vector<uint>*, int> storedAligEdges;
-    unordered_map<vector<uint>*, int> storedSquaredAligEdges;
-    unordered_map<vector<uint>*, int> storedExposedEdgesNumer;
-    unordered_map<vector<uint>*, int> storedMS3Numer;
-    unordered_map<vector<uint>*, int> storedInducedEdges;
-    unordered_map<vector<uint>*, double> storedLocalScoreSum;
-    unordered_map<vector<uint>*, double> storedWecSum;
-    unordered_map<vector<uint>*, double> storedJsSum;
-    unordered_map<vector<uint>*, double> storedEwecSum;
-    unordered_map<vector<uint>*, int> storedNcSum;
-    unordered_map<vector<uint>*, double> storedEdSum;
-    unordered_map<vector<uint>*, double> storedErSum;
-    unordered_map<vector<uint>*, double> storedCurrentScore;
-    typedef double (*calc)(PARAMS);
-    unordered_map<string, calc> measureCalculation;
-    unordered_set<string> localScoreNames = {
-        "edgec", "edged", "esim", "go", "graphlet",
-        "graphletcosine", "graphletlgraal", "importance",
-        "nodec", "noded", "sequence", "graphletnorm" };
-
-
-    // Code related with parallel pareto run, these code will be later refactored along with the
-    // rest of SANA's code.
-
-    // This construct only contain properties that can't be shared between alignments
-    struct AlignmentInfo {
-        vector<uint> *A;
-        vector<bool> *assignedNodesG2;
-        vector<vector<uint> > *unassignedG2NodesByColor;
-        map<string, double> *localScoreSumMap;
-        int aligEdges;
-        int squaredAligEdges;
-	int exposedEdgesNumer;
-        int MS3Numer;
-        int inducedEdges;
-        double wecSum;
-        double jsSum;
-        double ewecSum;
-        double ncSum;
-        double edSum, erSum;
-        int localScoreSum;
-        double currentScore;
-        vector<double> currentScores;
-        int currentMeasure;
-    };
-
-    struct Job {
-        uint id;     // A job's ID equals to its index in the jobs vector.
-                     // Given an id, you can access a job by jobs[id].
-        AlignmentInfo info;
-
-        long long int iterationsPerformed;
-        double energyInc;
-        double Temperature;
-		vector<double> sampledProbability;
-
-        // mt19937 is a random generator that is implemented with mutex.
-        // Which means each thread should have an unique random generator.
-        mt19937 gen;
-    };
-    vector<Job> jobs;
-    void initializeJobs();
-
-    const uint insertionsPerStepOfEachThread = 5;
-
-    // There is no need to pass a iter to this function.
-    //And perhaps to other functions like simpleRun, simpleParetoRun.
-    unordered_set<vector<uint>*>* parallelParetoRun(const Alignment& A,
-        long long int maxExecutionIterations, const string &fileName);
-    unordered_set<vector<uint>*>* parallelParetoRun(const Alignment& A,
-        double maxExecutionSeconds, const string &fileName);
-    void startParallelParetoRunByIteration(Job &job, long long int maxExecutionIterations);
-    void startParallelParetoRunByTime(Job &job, double maxExecutionSeconds);
-    void trackProgress(Job &job);
-    void parallelParetoSANAIteration(Job &job);
-    void attemptInsertAlignment(Job &job);
-    void assignRandomAlignment(Job &job);
-    void copyAlignmentFromStorage(Job &job, vector<uint> *A);
-    void storeAlignment(Job &job);
-    void releaseAlignment(Job &job);
-    void releaseAlignment();
-
-    void performSwap(Job &job, uint colorId);
-    void performChange(Job &job, uint colorId);
-    int MS3IncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-    int MS3IncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
-
-    bool scoreComparison(Job &job, double newAligEdges, double newInducedEdges,
-        double newLocalScoreSum, double newWecSum,
-        double newJssum, double newNcSum, double& newCurrentScore,
-        double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer,
-        double newMS3Numer, double newEdgeDifferenceSum, double newEdgeRatioSum);
-
-    int aligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-    int squaredAligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-	int exposedEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-    int inducedEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-    double localScoreSumIncChangeOp(Job &job, vector<vector<float> > const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
-    double WECIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-    double JSIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-    double EWECSimCombo(Job &job, uint source, uint target);
-    double EWECIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-    int ncIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-    double edgeDifferenceIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-    double edgeDifferenceIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
-    double edgeRatioIncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget);
-    double edgeRatioIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
-
-    int aligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
-    int squaredAligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
-	int exposedEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
-    double WECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
-    double JSIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
-    double EWECIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
-    int ncIncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2);
-    double localScoreSumIncSwapOp(Job &job, vector<vector<float> > const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
-
-    vector<double> translateScoresToVector(Job &job);
-    double trueAcceptingProbability(Job &job);
-
-    long long int sharedIter = 0;
-    long long int iterOfLastTrackProgress = 0;
-    mutex getJobMutex;
-
-    chrono::steady_clock::time_point startTime;
-    double getElapsedTime();
-
 
     // ***************************************************
     // NODE COLOR SYSTEM
@@ -487,6 +312,10 @@ private:
     vector<uint> g2NodeToActiveColorId;
     static uint INVALID_ACTIVE_ID; //arbitrary value bigger than any valid G1 color id
 
+
+
+    friend class Ameur; //it needs to read the PBad buffer
+    friend class StatisticalTest;
 };
 
 #endif /* SANA_HPP */

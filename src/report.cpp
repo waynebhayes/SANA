@@ -133,17 +133,16 @@ void report::saveReport(const Graph& G1, Graph& G2, const Alignment& A,
     reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, outfile,
                                                     G1.getName(), G2.getName(), method, A);
     cout<<"Saving report as \""<<reportFileName<<"\""<<endl;
-    if (reportFileName.find("_pareto_") == string::npos) {
-        for (uint i = 0; i < A.size(); i++) outfile<<A[i]<<" ";
-        outfile<<endl;
 
-        string elAligFile = reportFileName.substr(0,reportFileName.length()-4)+".align";
-        ofstream ofs;
-        ofs.open(elAligFile.c_str());
-        for (uint i = 0; i < A.size(); i++)
-            ofs<<G1.getNodeName(i)<<"\t"<<G2.getNodeName(A[i])<<endl;
-        ofs.close();
-    }
+    for (uint i = 0; i < A.size(); i++) outfile<<A[i]<<" ";
+    outfile<<endl;
+
+    string elAligFile = reportFileName.substr(0,reportFileName.length()-4)+".align";
+    ofstream ofs;
+    ofs.open(elAligFile.c_str());
+    for (uint i = 0; i < A.size(); i++) ofs<<G1.getNodeName(i)<<"\t"<<G2.getNodeName(A[i])<<endl;
+    ofs.close();
+
     makeReport(G1, G2, A, M, method, outfile, multiPairwiseIteration);
     outfile.close();
     cout<<"Took "<<T.elapsed()<<" seconds to save the alignment and scores."<<endl;

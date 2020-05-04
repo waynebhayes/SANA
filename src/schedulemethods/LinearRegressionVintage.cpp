@@ -12,10 +12,6 @@ void LinearRegressionVintage::computeBoth(ScheduleMethod::Resources maxRes) {
     const double HIGH_PBAD_LIMIT = 0.99999;
     const double LOW_PBAD_LIMIT = 1e-10;
 
-    //if(score == "pareto") //Running in pareto mode makes this function really slow
-    //  return;             //and I don't know why, but sometimes I disable using this.
-    //                      //otherwise my computer is very slow.
-
     cout << "Finding Upper Bound of the Temperature ... " << endl;
     double log10HighTemp = log10(doublingMethod(HIGH_PBAD_LIMIT, false));
     cout << "Finding Lower Bound of the Temperature ... " << endl;

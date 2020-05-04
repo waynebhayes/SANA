@@ -158,13 +158,6 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 
     //detailedReport; if false, init only basic measures and any measure necessary to run SANA
     bool detRep = args.bools["-detailedreport"];
-    bool pareto = (args.strings["-mode"] == "pareto") ? true : false;
-    if(pareto) {
-        M.setParetoInitial(args.doubles["-paretoInitial"]);
-        M.setParetoCapacity(args.doubles["-paretoCapacity"]);
-        M.setParetoIterations(args.doubles["-paretoIterations"]);
-        M.setParetoThreads(args.strings["-paretoThreads"]);
-    }
 
     Measure *m;
     m = new EdgeCorrectness(&G1, &G2);

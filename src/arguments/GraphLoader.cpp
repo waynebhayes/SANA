@@ -429,7 +429,7 @@ GraphLoader::RawCsvFileData::RawCsvFileData(const string& fileName) {
         string source, target;
         size_t sep = line.find(";");
         if (sep == string::npos) continue;
-        start = line.substr(0,sep);
+        source = line.substr(0,sep);
         target = line.substr(sep+1);
         namedEdgeList.push_back({source, target});
     }

@@ -143,7 +143,7 @@ vector<array<string, 6>> supportedArguments = {
 
     //------------------------------------MODE-------------------------------------------
     { "", "mode", "banner", "", "Mode", "0" },
-    { "-mode", "string", "normal", "Mode", "Runs SANA in a specified mode. Arguments for this option are: \"cluster\", \"exp\", \"param\", \"alpha\", \"dbg\", \"normal\", \"analysis\", \"similarity\", \"pareto\".", "0" },
+    { "-mode", "string", "normal", "Mode", "Runs SANA in a specified mode. Arguments for this option are: \"cluster\", \"exp\", \"param\", \"alpha\", \"dbg\", \"normal\", \"analysis\", \"similarity\".", "0" },
     { "End Mode", "", "banner", "", "", "0" },
     //----------------------------------END MODE-----------------------------------------
 
@@ -199,15 +199,6 @@ vector<array<string, 6>> supportedArguments = {
     { "-simFormat", "int_vec", "0", "Similarity File Formats", "An integer (must be the same one used by -esim and -simFiles) followed by that many integer simFormats. Allowed values are 2=G1 doubles down by G2 doubles across matrix where node order corresponds to .gw files; 1=node names; 0=node integers numbered as in LEDA .gw format.", "0" },
     { "End More options for \"-mode similarity\"", "", "banner", "", "", "0" },
     //-------------------------------END SIMILARITY--------------------------------------
-
-    //----------------------------------PARETO-------------------------------------------
-    { "", "mode-pareto", "banner", "", "More options for \"-mode pareto\"", "0" },
-    { "-paretoInitial", "intD", "10", "Initial Pareto Size", "Used in Pareto Mode \"-mode pareto\". This argument specifies the starting number of Alignments in the Pareto Front. All of the starting alignments are the same", "0" },
-    { "-paretoCapacity", "intD", "200", "Capacity of Pareto Front", "Used in Pareto Mode \"-mode pareto\". The pareto front can potentially hold N (different scores) by X (possible values/precision of the datatype used (i.e. float or double). Therefore, if a capacity is not specified, after the billions of SANA iterations, there may be too many different alignments stored in memory.", "0" },
-    { "-paretoIterations", "intD", "10000", "Iterations per Pareto Insertion", "Used in Pareto Mode \"-mode pareto\". Pareto mode operates on a copy of an alignment (which already exists in the Pareto front). The number of changes and swaps happens -paretoIterations number of times on this copy before attempting to add this new alignment to the Pareto front.", "0"},
-    { "-paretoThreads", "string", "1", "Number of threads to run pareto mode currently.", "0"},
-    { "End More options for \"-mode pareto\"", "", "banner", "", "", "0" },
-    //--------------------------------END PARETO-----------------------------------------
 
      //---------------------------------UNDEFINED----------------------------------------
     { "-balance", "string", "", "TITLE", "DESCRIPTION", "0" },

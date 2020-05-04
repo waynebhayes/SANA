@@ -15,7 +15,7 @@
 bool modeSelector::validMode(string name) {
     vector<string> validModes = {
         "cluster", "exp", "param", "alpha", "dbg",
-        "normal", "analysis", "similarity", "pareto",
+        "normal", "analysis", "similarity"
     };
     for (string s : validModes) if (s == name) return true;
     return false;
@@ -31,6 +31,6 @@ Mode* modeSelector::selectMode(ArgumentParser& args) {
     else if (name == "analysis")   return new AnalysisMode();
     else if (name == "similarity") return new SimilarityMode();
     else if (name == "normal")     return new NormalMode();
-    else if (name == "pareto")     return new ParetoMode();
+    else if (name == "pareto")     throw runtime_error("pareto got deprecated since node_colors");
     throw runtime_error("Error: unknown mode: " + name);
 }

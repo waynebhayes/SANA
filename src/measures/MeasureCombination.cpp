@@ -218,13 +218,13 @@ map<string, SimMatrix>& MeasureCombination::getLocalSimMap() {
             }
         };
     if(!is_init) {
-      is_init = true;
-      for (uint i = 0; i < numMeasures(); ++i) {
-          m = measures[i];
-          w = weights[i];
-          if (m->isLocal() and w > 0) {
-              localScoreSimMap[m->getName()] = initSim(initFunc);
-          }
+        is_init = true;
+        for (uint i = 0; i < numMeasures(); ++i) {
+            m = measures[i];
+            w = weights[i];
+            if (m->isLocal() and w > 0) {
+                localScoreSimMap[m->getName()] = initSim(initFunc);
+            }
         }
     }
     return localScoreSimMap;
@@ -259,9 +259,7 @@ double MeasureCombination::getSumLocalWeight() const {
 }
 
 void MeasureCombination::clearWeights() {
-    for (uint i = 0; i < weights.size(); i++) {
-        weights[i] = 0;
-    }
+    for (uint i = 0; i < weights.size(); i++) weights[i] = 0;
 }
 
 void MeasureCombination::setWeight(const string& measureName, double weight) {

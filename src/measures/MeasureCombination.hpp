@@ -48,23 +48,6 @@ public:
     */
     void writeLocalScores(ostream & outfile, Graph const & G1, Graph const & G2, Alignment const & A) const;
 
-    void setParetoInitial(unsigned int pi) { paretoInitial = pi; }
-    void setParetoCapacity(unsigned int pc) { paretoCapacity = pc; }
-    void setParetoIterations(unsigned pI) { paretoIterations = pI; }
-    void setParetoThreads(string pt) {
-        if (pt == "max") {
-            unsigned int maxCores = std::thread::hardware_concurrency();
-            paretoThreads = (maxCores == 0) ? 1 : maxCores;
-        } else {
-          paretoThreads = stoi(pt, nullptr);
-        }
-    }
-        
-    unsigned int getParetoInitial() { return paretoInitial; }
-    unsigned int getParetoCapacity() { return paretoCapacity; }
-    unsigned int getParetoIterations() {return paretoIterations; }
-    unsigned int getParetoThreads() {return paretoThreads;}
-
 private:
     typedef vector<vector<float>> SimMatrix;
     typedef function<void(SimMatrix &, uint const &, uint const &)> SimMatrixRecipe;
@@ -83,11 +66,6 @@ private:
 
     void clearWeights();
     void setWeight(const string& measureName, double weight);
-
-    unsigned int paretoInitial;
-    unsigned int paretoCapacity;
-    unsigned int paretoIterations;
-    unsigned int paretoThreads;
 };
 
 #endif
