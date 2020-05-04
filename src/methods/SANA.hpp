@@ -18,14 +18,8 @@
 
 using namespace std;
 
-//can this be a static constexpr SANA variable?
+//can this be a static constexpr SANA variable? -Nil
 #define UNWEIGHTED_CORES
-
-#ifdef MULTI_PAIRWISE
-#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, int localScoreSum, int n1, double wecSum, double jsSum, double ewecSum, int ncSum, unsigned int trueA_back, double g1WeightedEdges, double g2WeightedEdges, int squaredAligEdges, int exposedEdgesNumer, int MS3Numer, double edSum, double erSum, uint pairsCount
-#else
-#define PARAMS int aligEdges, int g1Edges, int inducedEdges, int g2Edges, int localScoreSum, int n1, double wecSum, double jsSum, double ewecSum, int ncSum, unsigned int trueA_back, double edSum, double erSum, uint pairsCount
-#endif
 
 class SANA: public Method {
 
@@ -40,9 +34,6 @@ public:
     
     //set temperature decay dynamically
     void setDynamicTDecay();
-
-    double elapsedEstimate = 0;
-    int order = 0;
 
     //returns the number of iterations until it stagnates when not using temperture
     void constantTempIterations(long long int iterTarget);
@@ -249,11 +240,8 @@ private:
     //other execution options
     bool constantTemp; //tempertare does not decrease as a function of iteration
     bool enableTrackProgress; //shows output periodically
-    void trackProgress(long long int i, bool end = false);
+    void trackProgress(long long int iter, long long int maxIter = -1);
     double avgEnergyInc;
-
-    //why is this static? -Nil
-    static long long _maxExecutionIterations;
 
     double currentScore;
     double previousScore;

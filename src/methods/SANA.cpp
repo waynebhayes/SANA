@@ -52,7 +52,6 @@ static bool myNan(double x) { return !(x==x); }
 bool SANA::interrupt = false;
 bool SANA::saveAlignment = false;
 
-long long SANA::_maxExecutionIterations;
 uint SANA::INVALID_ACTIVE_ID;
 
 SANA::SANA(Graph* G1, Graph* G2,
@@ -390,9 +389,8 @@ Alignment SANA::run() {
     setInterruptSignal();
 
     cerr<<"usingIterations = "<<usingIterations<<endl;
-    uint maxIters = usingIterations ? ((long long int)(maxIterations))*10000000 
-                                    : (long long int) (getIterPerSecond()*minutes*60);
-    _maxExecutionIterations = maxIters;
+    long long int maxIters = usingIterations ? ((long long int)(maxIterations))*10000000 
+                                             : (long long int) (getIterPerSecond()*minutes*60);
     double leeway = 2;
     double maxTime = usingIterations ? -1 : minutes * 60 * leeway;
 
@@ -403,12 +401,12 @@ Alignment SANA::run() {
         if (interrupt) break; //set from interruption
         if (saveAlignment) printReport(); //set from interruption
         if (iter%iterationsPerStep == 0) {
-            trackProgress(iter);
+            trackProgress(iter, maxIters);
             if (maxTime != -1 and timer.elapsed() > maxTime and currentScore-previousScore < 0.005) break;
             previousScore = currentScore;
         }
     }
-    trackProgress(iter);
+    trackProgress(iter, maxIters);
     cout<<"Performed "<<iter<<" total iterations\n";
 
     if (addHillClimbing) {
@@ -466,25 +464,6 @@ Alignment SANA::run() {
 
     return A;
 }
-
-//these fnctions are leaking to the global namespace, should be inside SANA -Nil
-double ecC(PARAMS)    { return double(aligEdges) / g1Edges; }
-double edC(PARAMS)    { return EdgeDifference::adjustSumToTargetScore(edSum, pairsCount); }
-double erC(PARAMS)    { return EdgeRatio::adjustSumToTargetScore(erSum, pairsCount); }
-double s3C(PARAMS)    { return double(aligEdges) / (g1Edges + inducedEdges - aligEdges); }
-double icsC(PARAMS)   { return double(aligEdges) / inducedEdges; }
-double secC(PARAMS)   { return double(aligEdges) / (g1Edges + aligEdges) / g2Edges * 0.5; }
-double localC(PARAMS) { return double(localScoreSum) / n1; }
-double wecC(PARAMS)   { return double(wecSum) / (2 * g1Edges); }
-double jsC(PARAMS)    { return double(jsSum);}
-double ewecC(PARAMS)  { return ewecSum; }
-double ncC(PARAMS)    { return double(ncSum) / trueA_back; }
-#ifdef MULTI_PAIRWISE
-double mecC(PARAMS) { return double(aligEdges) / (g1WeightedEdges + g2WeightedEdges); }
-double sesC(PARAMS) { return squaredAligEdges; }
-double eeC(PARAMS)  { return 1-EdgeExposure::numer/(double)EdgeExposure::denom; }
-double ms3C(PARAMS)  { return (MultiS3::numer / (double)MultiS3::denom) / (double) NUM_GRAPHS; }
-#endif
 
 void SANA::describeParameters(ostream& sout) {
     sout << "Temperature schedule:" << endl;
@@ -1429,62 +1408,56 @@ double SANA::localScoreSumIncSwapOp(vector<vector<float>> const & sim, uint cons
 }
 
 double SANA::JSIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    double change = 0;
-    if (jsWeight>0) {
-        //eval newJsSum here
-        //update alignedByNode with source and source neighbours using oldTarget and newTarget
+    if (jsWeight == 0) return 0;
 
-        // eval for source from sratch
-        uint sourceOldAlingedEdges = alignedByNode[source];
-        uint sourceAlignedEdges = 0;
-        vector<uint> sourceNeighbours = G1->adjLists[source];
-        uint sourceTotalEdges = sourceNeighbours.size();
-        for (uint j = 0; j < sourceTotalEdges; j++) {
-            uint neighbour = sourceNeighbours[j];
-            uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
-            sourceAlignedEdges += G2->adjMatrix[newTarget][neighbourAlignedTo];
-        }
-        alignedByNode[source] = sourceAlignedEdges;
-        //update newJsSum here
-        change += ((sourceAlignedEdges - sourceOldAlingedEdges)/(double)sourceTotalEdges);
+    //eval newJsSum
+    //update alignedByNode with source and source neighbours using oldTarget and newTarget
 
-
-        // for each source neighbour update do iterative changes to the jsAlingedByNode vector
-        // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
-        // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
-        //no changes other wise
-        for (uint j = 0; j < sourceTotalEdges; j++) {
-            uint neighbour = sourceNeighbours[j];
-            uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
-            uint neighbourOldAlignedEdges = alignedByNode[neighbour];
-            uint neighbourTotalEdges = G1->adjLists[neighbour].size();
-            alignedByNode[neighbour] -= G2->adjMatrix[oldTarget][neighbourAlignedTo];
-            alignedByNode[neighbour] += G2->adjMatrix[newTarget][neighbourAlignedTo];
-            //update newJsSum here
-            change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
-        }
+    // eval for source from scratch
+    uint sourceOldAlingedEdges = alignedByNode[source];
+    uint sourceAlignedEdges = 0;
+    vector<uint> sourceNeighbours = G1->adjLists[source];
+    uint sourceTotalEdges = sourceNeighbours.size();
+    for (uint j = 0; j < sourceTotalEdges; j++) {
+        uint neighbour = sourceNeighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        sourceAlignedEdges += G2->adjMatrix[newTarget][neighbourAlignedTo];
     }
+    alignedByNode[source] = sourceAlignedEdges;
+    //update newJsSum
+    double change = ((sourceAlignedEdges - sourceOldAlingedEdges)/(double)sourceTotalEdges);
 
+    // for each source neighbour update do iterative changes to the jsAlingedByNode vector
+    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+    // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+    //no changes other wise
+    for (uint j = 0; j < sourceTotalEdges; j++) {
+        uint neighbour = sourceNeighbours[j];
+        uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
+        uint neighbourOldAlignedEdges = alignedByNode[neighbour];
+        uint neighbourTotalEdges = G1->adjLists[neighbour].size();
+        alignedByNode[neighbour] -= G2->adjMatrix[oldTarget][neighbourAlignedTo];
+        alignedByNode[neighbour] += G2->adjMatrix[newTarget][neighbourAlignedTo];
+        //update newJsSum
+        change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+    }
     return change;
 }
 
 double SANA::JSIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    // NOTE: eval swap as two sources and then loop neighbours
+    if (jsWeight == 0) return 0;
 
-    double change = 0;
+    //eval swap as two sources and then loop neighbours
 
     uint source1OldAlingedEdges = alignedByNode[source1];
     uint source1AlignedEdges = 0;
     vector<uint> source1Neighbours = G1->adjLists[source1];
     uint source1TotalEdges = source1Neighbours.size();
 
-
     uint source2OldAlingedEdges = alignedByNode[source2];
     uint source2AlignedEdges = 0;
     vector<uint> source2Neighbours = G1->adjLists[source2];
     uint source2TotalEdges = source2Neighbours.size();
-
-    // source 1 eval here
 
     // eval for source1 from sratch
     for (uint j = 0; j < source1TotalEdges; j++) {
@@ -1496,13 +1469,14 @@ double SANA::JSIncSwapOp(uint source1, uint source2, uint target1, uint target2)
         source1AlignedEdges = G2->adjMatrix[target2][neighbourAlignedTo];
     }
     alignedByNode[source1] = source1AlignedEdges;
-    //update change here
-    change += ((source1AlignedEdges - source1OldAlingedEdges)/(double)source1TotalEdges);
+
+    double change = ((source1AlignedEdges - source1OldAlingedEdges)/(double)source1TotalEdges);
 
 
-    // for each source neighbour update do iterative changes to the jsAlingedByNode vector
-    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
-    // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
+    //for each source neighbour update do iterative changes to the jsAlingedByNode vector
+    //in each update get the G2mapping of neighbour and then check if edge was aligned by
+    //oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
+    //increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
     //no changes other wise
     for (uint j = 0; j < source1TotalEdges; j++) {
         uint neighbour = source1Neighbours[j];
@@ -1512,23 +1486,19 @@ double SANA::JSIncSwapOp(uint source1, uint source2, uint target1, uint target2)
         if (std::find (source1Neighbours.begin(), source1Neighbours.end(), neighbour) == source1Neighbours.end()) {
             alignedByNode[neighbour] -= G2->adjMatrix[target1][neighbourAlignedTo];
             alignedByNode[neighbour] += G2->adjMatrix[target2][neighbourAlignedTo];
-            //update newJsSum here
+            //update newJsSum
             change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
         }
     }
 
-    // source 2 eval here
-
-    // eval for source2 from sratch
+    // eval for source2 from scratch
     for (uint j = 0; j < source2TotalEdges; j++) {
         uint neighbour = source2Neighbours[j];
         uint neighbourAlignedTo = (*A)[neighbour]; //find the node neighbour is mapped to
         source2AlignedEdges += G2->adjMatrix[target1][neighbourAlignedTo];
     }
     alignedByNode[source2] = source2AlignedEdges;
-    //update change here
     change += ((source2AlignedEdges - source2OldAlingedEdges)/(double)source2TotalEdges);
-
 
     // for each source neighbour update do iterative changes to the jsAlingedByNode vector
     // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
@@ -1542,23 +1512,17 @@ double SANA::JSIncSwapOp(uint source1, uint source2, uint target1, uint target2)
         if (std::find (source1Neighbours.begin(), source1Neighbours.end(), neighbour) == source1Neighbours.end()) {
             alignedByNode[neighbour] -= G2->adjMatrix[target2][neighbourAlignedTo];
             alignedByNode[neighbour] += G2->adjMatrix[target1][neighbourAlignedTo];
-            //update newJsSum here
+            //update newJsSum
             change += ((alignedByNode[neighbour] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
         }
     }
 
-    //eval for common neighbours here
+    //eval for common neighbours
     vector<uint> source1source2commonneighbours(source1Neighbours.size() + source2Neighbours.size());
-
-    vector<uint>::iterator it, end;
-
-    end = set_intersection(
-        source1Neighbours.begin(), source1Neighbours.end(),
-        source2Neighbours.begin(), source2Neighbours.end(),
-        source1source2commonneighbours.begin());
-
+    set_intersection(source1Neighbours.begin(), source1Neighbours.end(),
+                     source2Neighbours.begin(), source2Neighbours.end(),
+                     source1source2commonneighbours.begin());
     return change;
-
 }
 
 double SANA::WECIncChangeOp(uint source, uint oldTarget, uint newTarget) {
@@ -1664,56 +1628,41 @@ int SANA::ncIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     return change;
 }
 
-void SANA::trackProgress(long long int i, bool end) {
+void SANA::trackProgress(long long int i, long long int maxIters) {
     if (!enableTrackProgress) return;
-    bool printDetails = false;
-    bool printScores = false;
-    bool checkScores = true;
-    double fractional_time = i/(double)_maxExecutionIterations;
+    double fractionTime = maxIters == -1 ? 0 : i/(double)maxIters;
     double elapsedTime = timer.elapsed();
     uint iterationsElapsed = iterationsPerformed-oldIterationsPerformed;
     if (elapsedTime == 0) oldTimeElapsed = 0;
     double ips = (iterationsElapsed/(elapsedTime-oldTimeElapsed));
     oldTimeElapsed = elapsedTime;
     oldIterationsPerformed = iterationsPerformed;
-    cout << i/iterationsPerStep << " (" << 100*fractional_time << "%," << elapsedTime << "s): score = " << currentScore;
-    cout <<  " ips = " << ips << ", P(" << Temperature << ") = " << acceptingProbability(avgEnergyInc, Temperature);
-    cout << ", pBad = " << trueAcceptingProbability() << endl;
-    
-    if (not (printDetails or printScores or checkScores)) return;
-    Alignment Al(*A);
-    //original one is commented out for testing sec
-    //if (printDetails) cout << " (" << Al.numAlignedEdges(*G1, *G2) << ", " << G2->numEdgesInNodeInducedSubgraph(*A) << ")";
-    if (printDetails)
-        cout << "Al.numAlignedEdges = " << Al.numAlignedEdges(*G1, *G2) << ", g1Edges = " <<g1Edges<< " , g2Edges = "<<g2Edges<< endl;
-    if (printScores) {
-        SymmetricSubstructureScore S3(G1, G2);
-        EdgeCorrectness EC(G1, G2);
-        InducedConservedStructure ICS(G1, G2);
-        SymmetricEdgeCoverage SEC(G1,G2);
-        cout << "S3: " << S3.eval(Al) << "  EC: " << EC.eval(Al) << "  ICS: " << ICS.eval(Al) << "  SEC: " << SEC.eval(Al) <<endl;
-    }
+    cout<<i/iterationsPerStep<<" ("<<100*fractionTime<<"%,"<<elapsedTime<<"s): score = "<<currentScore;
+    cout<< " ips = "<<ips<<", P("<<Temperature<<") = "<<acceptingProbability(avgEnergyInc, Temperature);
+    cout<<", pBad = "<<trueAcceptingProbability()<<endl;
+
+    bool checkScores = true;
     if (checkScores) {
+        Alignment Al(*A);
         double realScore = eval(Al);
         if (fabs(realScore-currentScore) > 0.00001) {
-            cerr << "internal error: incrementally computed score (" << currentScore;
-            cerr << ") is not correct (" << realScore << ")" << endl;
+            cerr<<"internal error: incrementally computed score ("<<currentScore;
+            cerr<<") is not correct ("<<realScore<<")"<<endl;
             currentScore = realScore;
         }
     }
-    if (dynamicTDecay) { // Code for estimating dynamic TDecay
-        //The dynamic method uses linear interpolation to obtain an
-        //an "ideal" P(bad) as a basis for SANA runs. If the current P(bad)
-        //is significantly different from out "ideal" P(bad), then decay is either
-        //"sped up" or "slowed down"
+
+    //code for estimating dynamic TDecay. The dynamic method uses linear interpolation to obtain an
+    //an "ideal" P(bad) as a basis for SANA runs. If the current P(bad) is significantly different from 
+    //our "ideal" P(bad), then decay is either "sped up" or "slowed down"
+    if (dynamicTDecay) {
         int NSteps = 100;
-        double fractional_time = (timer.elapsed()/(minutes*60));
-        double lowIndex = floor(NSteps*fractional_time);
-        double highIndex = ceil(NSteps*fractional_time);
-        double betweenFraction = NSteps*fractional_time - lowIndex;
+        double fractionTime = (timer.elapsed()/(minutes*60));
+        double lowIndex = floor(NSteps*fractionTime);
+        double highIndex = ceil(NSteps*fractionTime);
+        double betweenFraction = NSteps*fractionTime - lowIndex;
         double PLow = tau[lowIndex];
         double PHigh = tau[highIndex];
-
         double PBetween = PLow + betweenFraction * (PHigh - PLow);
 
         // if the ratio if off by more than a few percent, adjust.
@@ -1725,19 +1674,16 @@ void SANA::trackProgress(long long int i, bool end) {
             double shouldBe = -log(avgEnergyInc/(TInitial*log(PBetween)))/(dynamicTDecayTime);
             if (dynamicTDecayTime == 0 or shouldBe != shouldBe or shouldBe <= 0)
                 shouldBe = TDecay * (ratio >= 0 ? ratio*ratio : 0.5);
-            cout << "TDecay " << TDecay << " too ";
-            cout << (ratio < 1 ? "fast" : "slow") << " shouldBe " << shouldBe;
+            cout<<"TDecay "<<TDecay<<" too ";
+            cout<<(ratio < 1 ? "fast" : "slow")<<" shouldBe "<<shouldBe;
             TDecay = sqrt(TDecay * shouldBe); //geometric mean
-            cout << "; try " << TDecay << endl;
+            cout<<"; try "<<TDecay<<endl;
         }
     }
 }
 
-
 /******************************************
-*******************************************
 ***** Temperature schedule functions ****** 
-*******************************************
 ******************************************/
 /* when we run sana at a fixed temp, scores generally go up
 (especially if the temp is low) until a point of "thermal equilibrium".
@@ -1878,9 +1824,9 @@ Alignment SANA::hillClimbingAlignment(Alignment startAlignment, long long int id
 
 void SANA::constantTempIterations(long long int iterTarget) {
     Alignment startA = getStartingAlignment();
-    long long int iter = 1;
     initDataStructures(startA);
-    for (; iter < iterTarget ; ++iter) {
+    long long int iter;
+    for (iter = 1; iter < iterTarget ; ++iter) {
         if (iter%iterationsPerStep == 0) trackProgress(iter);
         SANAIteration();
     }
@@ -1888,9 +1834,8 @@ void SANA::constantTempIterations(long long int iterTarget) {
 }
 
 double SANA::getIterPerSecond() {
-    if (not initializedIterPerSecond) {
+    if (not initializedIterPerSecond)
         initIterPerSecond();
-    }
     return iterPerSecond;
 }
 
@@ -1899,7 +1844,7 @@ void SANA::initIterPerSecond() {
     cout << "Determining iteration speed...." << endl;
     double totalIps = 0.0;
     int ipsListSize = 0;
-    if (ipsList.size()!=0) {
+    if (ipsList.size() != 0) {
         for (pair<double,double> ipsPair : ipsList) {
             if (TFinal <= ipsPair.first && ipsPair.first <= TInitial) {
                 totalIps+=ipsPair.second;
@@ -1928,10 +1873,8 @@ void SANA::initIterPerSecond() {
     header.close();
 }
 
-
 void SANA::initTau(void) {
-    /*
-    tau = vector<double> {
+    /* tau = {
     1.000, 0.985, 0.970, 0.960, 0.950, 0.942, 0.939, 0.934, 0.928, 0.920,
     0.918, 0.911, 0.906, 0.901, 0.896, 0.891, 0.885, 0.879, 0.873, 0.867,
     0.860, 0.853, 0.846, 0.838, 0.830, 0.822, 0.810, 0.804, 0.794, 0.784,
@@ -1941,19 +1884,15 @@ void SANA::initTau(void) {
     0.284, 0.264, 0.246, 0.228, 0.210, 0.193, 0.177, 0.161, 0.145, 0.131,
     0.116, 0.104, 0.092, 0.081, 0.070, 0.061, 0.052, 0.044, 0.0375, 0.031,
     0.026, 0.0212, 0.0172, 0.0138, 0.011, 0.008, 0.006, 0.005, 0.004, 0.003,
-    0.002, 0.001, 0.0003, 0.0001, 3e-5, 1e-6, 0, 0, 0, 0,
-    0};
-     */
-    tau = vector<double> {
-        0.996738, 0.994914, 0.993865, 0.974899, 0.977274, 0.980926, 0.97399, 0.970583, 0.967492, 0.962373,
-        0.953197, 0.954104, 0.951387, 0.953532, 0.948492, 0.939501, 0.939128, 0.932902, 0.912378, 0.896011,
-        0.89535, 0.88642, 0.874628, 0.856721, 0.855782, 0.838483, 0.820407, 0.784303, 0.771297, 0.751457,
-        0.735902, 0.676393, 0.633939, 0.604872, 0.53482, 0.456856, 0.446905, 0.377708, 0.337258, 3.04e-01,
-        0.280585, 0.240093, 1.95e-01, 1.57e-01, 1.21e-01, 1.00e-01, 8.04e-02, 5.95e-02, 4.45e-02, 3.21e-02,
-        1.81e-02, 1.82e-02, 1.12e-02, 7.95e-03, 4.82e-03, 3.73e-03, 2.11e-03, 1.41e-03, 9.69e-04, 6.96e-04,
-        5.48e-04, 4.20e-04, 4.00e-04, 3.50e-04, 3.10e-04, 2.84e-04, 2.64e-04, 1.19e-04, 8.16e-05, 7.22e-05,
-        6.16e-05, 4.46e-05, 3.36e-05, 2.66e-05, 1.01e-05, 9.11e-06, 4.09e-06, 3.96e-06, 3.43e-06, 3.12e-06,
-        2.46e-06, 2.02e-06, 1.85e-06, 1.72e-06, 1.10e-06, 9.13e-07, 8.65e-07, 8.21e-07, 7.26e-07, 6.25e-07,
-        5.99e-07, 5.42e-07, 8.12e-08, 4.16e-08, 6.56e-09, 9.124e-10, 6.1245e-10, 3.356e-10, 8.124e-11, 4.587e-11
-    };
+    0.002, 0.001, 0.0003, 0.0001, 3e-5, 1e-6, 0, 0, 0, 0, 0}; */
+    tau = {0.996738, 0.994914, 0.993865, 0.974899, 0.977274, 0.980926, 0.97399,  0.970583, 0.967492, 0.962373,
+           0.953197, 0.954104, 0.951387, 0.953532, 0.948492, 0.939501, 0.939128, 0.932902, 0.912378, 0.896011,
+           0.89535,  0.88642,  0.874628, 0.856721, 0.855782, 0.838483, 0.820407, 0.784303, 0.771297, 0.751457,
+           0.735902, 0.676393, 0.633939, 0.604872, 0.53482,  0.456856, 0.446905, 0.377708, 0.337258, 3.04e-01,
+           0.280585, 0.240093, 1.95e-01, 1.57e-01, 1.21e-01, 1.00e-01, 8.04e-02, 5.95e-02, 4.45e-02, 3.21e-02,
+           1.81e-02, 1.82e-02, 1.12e-02, 7.95e-03, 4.82e-03, 3.73e-03, 2.11e-03, 1.41e-03, 9.69e-04, 6.96e-04,
+           5.48e-04, 4.20e-04, 4.00e-04, 3.50e-04, 3.10e-04, 2.84e-04, 2.64e-04, 1.19e-04, 8.16e-05, 7.22e-05,
+           6.16e-05, 4.46e-05, 3.36e-05, 2.66e-05, 1.01e-05, 9.11e-06, 4.09e-06, 3.96e-06, 3.43e-06, 3.12e-06,
+           2.46e-06, 2.02e-06, 1.85e-06, 1.72e-06, 1.10e-06, 9.13e-07, 8.65e-07, 8.21e-07, 7.26e-07, 6.25e-07,
+           5.99e-07, 5.42e-07, 8.12e-08, 4.16e-08, 6.56e-09, 9.124e-10, 6.1245e-10, 3.356e-10, 8.124e-11, 4.587e-11};
 }
