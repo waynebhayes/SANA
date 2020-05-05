@@ -1,12 +1,12 @@
+#include "NormalMode.hpp"
 #include <cassert>
 #include <utility>
-#include "NormalMode.hpp"
+#include <iostream>
 #include "../utils/utils.hpp"
 #include "../arguments/measureSelector.hpp"
 #include "../arguments/methodSelector.hpp"
 #include "../arguments/GraphLoader.hpp"
-#include "../report.hpp"
-#include <iostream>
+#include "../Report.hpp"
 
 void NormalMode::run(ArgumentParser& args) {
     createFolders();
@@ -25,8 +25,8 @@ void NormalMode::run(ArgumentParser& args) {
     bool shortReport = false; // for multiPairwiseIteration
     if(args.bools["-multi-iteration-only"]) shortReport = true;
 
-    report::saveReport(G1, G2, A, M, method, args.strings["-o"], shortReport);
-    report::saveLocalMeasures(G1, G2, A, M, method, args.strings["-localScoresFile"]);
+    Report::saveReport(G1, G2, A, M, method, args.strings["-o"], shortReport);
+    Report::saveLocalMeasures(G1, G2, A, M, method, args.strings["-localScoresFile"]);
     delete method;
 }
 

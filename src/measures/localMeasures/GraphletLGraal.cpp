@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include "GraphletLGraal.hpp"
-#include "../../computeGraphletsWrapper.hpp"
+#include "../../utils/ComputeGraphletsWrapper.hpp"
 using namespace std;
 
 GraphletLGraal::GraphletLGraal(const Graph* G1, const Graph* G2, uint maxGraphletSize):
@@ -29,8 +29,8 @@ void GraphletLGraal::initSimMatrix() {
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
-    vector<vector<uint> > gdvs1 = computeGraphletsWrapper::loadGraphletDegreeVectors(*G1, maxGraphletSize);
-    vector<vector<uint> > gdvs2 = computeGraphletsWrapper::loadGraphletDegreeVectors(*G2, maxGraphletSize);
+    vector<vector<uint> > gdvs1 = ComputeGraphletsWrapper::loadGraphletDegreeVectors(*G1, maxGraphletSize);
+    vector<vector<uint> > gdvs2 = ComputeGraphletsWrapper::loadGraphletDegreeVectors(*G2, maxGraphletSize);
 
     for (uint i = 0; i < n1; i++) {
         for (uint j = 0; j < n2; j++) {

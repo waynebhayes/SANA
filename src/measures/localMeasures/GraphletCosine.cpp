@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include "GraphletCosine.hpp"
-#include "../../computeGraphletsWrapper.hpp"
+#include "../../utils/ComputeGraphletsWrapper.hpp"
 using namespace std;
 
 GraphletCosine::GraphletCosine(const Graph* G1, const Graph* G2, uint maxGraphletSize):
@@ -55,8 +55,8 @@ void GraphletCosine::initSimMatrix() {
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2, 0));
-    vector<vector<uint> > gdvs1 = computeGraphletsWrapper::loadGraphletDegreeVectors(*G1, maxGraphletSize);
-    vector<vector<uint> > gdvs2 = computeGraphletsWrapper::loadGraphletDegreeVectors(*G2, maxGraphletSize);
+    vector<vector<uint> > gdvs1 = ComputeGraphletsWrapper::loadGraphletDegreeVectors(*G1, maxGraphletSize);
+    vector<vector<uint> > gdvs2 = ComputeGraphletsWrapper::loadGraphletDegreeVectors(*G2, maxGraphletSize);
 
     bool shouldReduce = false;
     for (uint i = 0; i < n1; i++) {

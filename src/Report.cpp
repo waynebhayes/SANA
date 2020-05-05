@@ -1,5 +1,4 @@
-#include "report.hpp"
-
+#include "Report.hpp"
 #include "arguments/GraphLoader.hpp"
 #include "measures/EdgeCorrectness.hpp"
 #include "measures/InducedConservedStructure.hpp"
@@ -10,12 +9,12 @@
 
 bool multiPairwiseIteration; //todo: refactor without this out here -Nil
 
-void report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
+void Report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
                 const MeasureCombination& M, Method* method,
                 ofstream& stream, bool multiPairwiseIteration = false) {
     Timer T1;
     T1.start();
-    const int numCCsToPrint = 3;
+    const uint numCCsToPrint = 3;
     stream << endl << currentDateTime() << endl << endl;
     stream << "G1: " << G1.getName() << endl;
     if (!multiPairwiseIteration) {
@@ -52,7 +51,7 @@ void report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
         printStats(CS, numCCsToPrint, stream);
         stream << endl;
 
-        int tableRows = min(5, CS.getNumConnectedComponents())+2;
+        int tableRows = min((uint) 5, CS.getNumConnectedComponents())+2;
         vector<vector<string> > table(tableRows, vector<string> (9));
         table[0][0] = "Graph"; table[0][1] = "n"; table[0][2] = "m"; table[0][3] = "alig-edges";
         table[0][4] = "indu-edges"; table[0][5] = "EC";
@@ -119,12 +118,12 @@ void report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
     }
 }
 
-void report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
+void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
         const MeasureCombination& M, Method* method, string reportFileName) {
     saveReport(G1, G2, A, M, method, reportFileName, false);
 }
 
-void report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
+void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
                         const MeasureCombination& M, Method* method,
                         string reportFileName, bool multiPairwiseIteration) {
     Timer T;
@@ -148,7 +147,7 @@ void report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
     cout<<"Took "<<T.elapsed()<<" seconds to save the alignment and scores."<<endl;
 }
 
-void report::saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A,
+void Report::saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A,
     const MeasureCombination& M, const Method* method, string& localMeasureFileName) {
     Timer T;
     T.start();
@@ -169,7 +168,7 @@ void report::saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment
 NOTE: the && is a move semantic, which moves the internal pointers of one object
 to another and then destructs the original, instead of destructing all of the
 internal data of the original. */
-string report::ensureFileNameExistsAndOpenOutFile(const string& fileType, string outFileName, 
+string Report::ensureFileNameExistsAndOpenOutFile(const string& fileType, string outFileName, 
                     ofstream& outfile, const string& G1Name, const string& G2Name, 
                     const Method* method, Alignment const & A) {     
     string extension = fileType == "local measure" ? ".localscores" : ".out";
@@ -198,13 +197,13 @@ string report::ensureFileNameExistsAndOpenOutFile(const string& fileType, string
     return outFileName;
 }
 
-void report::printStats(const Graph& G, int numConnectedComponentsToPrint, ostream& stream) {
+void Report::printStats(const Graph& G, uint numCCsToPrint, ostream& stream) {
     stream << "n    = " << G.getNumNodes() << endl;
     stream << "m    = " << G.getNumEdges() << endl;
     uint numCCs = G.getNumConnectedComponents();
     stream << "#connectedComponents = " << numCCs << endl;
     stream << "Largest connectedComponents (nodes, edges) = ";
-    for (int i = 0; i < min(numConnectedComponentsToPrint, numCCs); i++) {
+    for (uint i = 0; i < min(numCCsToPrint, numCCs); i++) {
         const vector<uint>& CC = (*(G.getConnectedComponents()))[i];
         stream << "(" << CC.size() << ", " << G.numEdgesInNodeInducedSubgraph(CC) << ") ";
     }

@@ -31,6 +31,8 @@ UTILS_SRC = 								\
 	src/utils/utils.cpp						\
 	src/utils/randomSeed.cpp					\
 	src/utils/LinearRegression.cpp					\
+	src/utils/computeGraphlets.cpp                            	\
+	src/utils/ComputeGraphletsWrapper.cpp                         \
 	src/utils/Matrix.cpp
 
 ARGUMENTS_SRC = 							\
@@ -120,12 +122,10 @@ MODES_SRC = 								\
 
 OTHER_SRC = 							\
 	src/Graph.cpp                                       	\
-	src/computeGraphlets.cpp                            	\
-	src/computeGraphletsWrapper.cpp                         \
 	src/Alignment.cpp                                   	\
 	src/complementaryProteins.cpp                       	\
 	src/main.cpp                                        	\
-	src/report.cpp
+	src/Report.cpp
 
 SRCS = $(METHODS_SRC) $(OTHER_SRC) $(UTILS_SRC) $(MEASURES_SRCS) $(METHOD_WRAPPERS_SRC) $(SCHEDULEMETHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC)
 OBJDIR = _objs

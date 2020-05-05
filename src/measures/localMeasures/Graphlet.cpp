@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include "Graphlet.hpp"
-#include "../../computeGraphletsWrapper.hpp"
+#include "../../utils/ComputeGraphletsWrapper.hpp"
 
 using namespace std;
 
@@ -52,8 +52,8 @@ void Graphlet::initSimMatrix() {
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float>> (n1, vector<float> (n2, 0));
-    vector<vector<uint>> gdvs1 = computeGraphletsWrapper::loadGraphletDegreeVectors(*G1, maxGraphletSize);
-    vector<vector<uint>> gdvs2 = computeGraphletsWrapper::loadGraphletDegreeVectors(*G2, maxGraphletSize);
+    vector<vector<uint>> gdvs1 = ComputeGraphletsWrapper::loadGraphletDegreeVectors(*G1, maxGraphletSize);
+    vector<vector<uint>> gdvs2 = ComputeGraphletsWrapper::loadGraphletDegreeVectors(*G2, maxGraphletSize);
 
     vector<double> orbitWeights = getOrbitWeights();
     double weightSum = getOrbitWeightSum();

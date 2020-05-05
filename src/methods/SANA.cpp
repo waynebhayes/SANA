@@ -37,16 +37,9 @@
 #include "../measures/EdgeExposure.hpp"
 #include "../measures/MultiS3.hpp"
 #include "../utils/utils.hpp"
-#include "../report.hpp"
+#include "../Report.hpp"
 
 using namespace std;
-
-// All comparisons with nan variables are false, including self-equality.
-// Thus if it's not equal to itself, it's NAN.
-// Note you can't just do (x!=x), because that's always false, NAN or not.
-#ifdef CORES //inside macro to shut warning about unused function
-static bool myNan(double x) { return !(x==x); }
-#endif
 
 //static fields
 bool SANA::interrupt = false;
@@ -540,8 +533,8 @@ void SANA::printReport() {
     std::replace(timestamp.begin(), timestamp.end(), ' ', '_');
     string out = outputFileName+"_"+timestamp;
     string local = localScoresFileName+"_"+timestamp;
-    report::saveReport(*G1, *G2, A, *MC, this, out, false);
-    report::saveLocalMeasures(*G1, *G2, A, *MC, this, local);
+    Report::saveReport(*G1, *G2, A, *MC, this, out, false);
+    Report::saveLocalMeasures(*G1, *G2, A, *MC, this, local);
     cout << "Alignment saved. SANA will now continue." << endl;
 }
 

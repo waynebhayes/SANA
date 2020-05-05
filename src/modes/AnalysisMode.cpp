@@ -5,7 +5,7 @@
 #include "../arguments/measureSelector.hpp"
 #include "../arguments/methodSelector.hpp"
 #include "../arguments/GraphLoader.hpp"
-#include "../report.hpp"
+#include "../Report.hpp"
 
 Alignment loadAlignment(int format, const string& file, const Graph& G1, const Graph& G2) {
     string errorHelpMsg = "The following are supported\n1: sana.out format\n2: edge list format\n";
@@ -32,7 +32,7 @@ void AnalysisMode::run(ArgumentParser& args) {
     Alignment A = loadAlignment(args.doubles["-alignFormat"], args.strings["-alignFile"], G1, G2);
     A.printDefinitionErrors(G1,G2);
     assert(A.isCorrectlyDefined(G1, G2) and "Resulting alignment is not correctly defined");
-    report::saveReport(G1, G2, A, M, NULL, args.strings["-o"]);
+    Report::saveReport(G1, G2, A, M, NULL, args.strings["-o"]);
 }
 
 string AnalysisMode::getName(void) { return "AnalysisMode"; }

@@ -21,33 +21,35 @@ void CreateShadow::run(ArgumentParser& args) {
     //parse input
     stdiobuf sbuf = readFileAsStreamBuffer(args.strings["-fshadow"]);
     istream ifs(&sbuf);
-    string outFile;
-    ifs >> outFile;
-    uint numDummy, k;
-    ifs >> numDummy >> k;
-    vector<string> graphFiles(k), aligFiles(k), colorFiles(k);
+    string outFile, outColorFile;
     bool hasAlignments, hasColors;
+    uint numDummy, k;
+    ifs >> outFile >> numDummy >> k;
+    vector<string> graphFiles(k), aligFiles(k), colorFiles(k);
     for (uint i = 0; i < k; i++) ifs >> graphFiles[i]; 
     ifs >> hasAlignments;
     if (hasAlignments) for (uint i = 0; i < k; i++) ifs >> aligFiles[i];
     ifs >> hasColors;
-    if (hasColors) for (uint i = 0; i < k; i++) ifs >> colorFiles[i];
+    if (hasColors) {
+        for (uint i = 0; i < k; i++) ifs >> colorFiles[i];
+        ifs >> outColorFile;
+    }
 
     //figure out the number of nodes in the shadow graph
-    uint numShadowNodes = 0;
+    uint numShadNodes = 0;
     for (string file : graphFiles) {
         Graph G = GraphLoader::loadGraphFromFile("", file, false);
-        if(G.getNumNodes() > numShadowNodes) numShadowNodes = G.getNumNodes();
+        if (G.getNumNodes() > numShadNodes) numShadNodes = G.getNumNodes();
     }
-    numShadowNodes += numDummy;
+    numShadNodes += numDummy;
 
     //generate the shadow names, which we assume to follow the format "shad_{i}" in the alignment files
     vector<string> shadNodeNames;
-    shadNodeNames.reserve(numShadowNodes);
-    for (uint i = 0; i < numShadowNodes; i++) shadNodeNames.push_back("shad_"+to_string(i));
+    shadNodeNames.reserve(numShadNodes);
+    for (uint i = 0; i < numShadNodes; i++) shadNodeNames.push_back("shad_"+to_string(i));
 
     //shadNbrSets[i][j] is the weight of edge (i,j), assuming i<=j
-    vector<unordered_map<uint, EDGE_T>> shadNbrSets(numShadowNodes);
+    vector<unordered_map<uint, EDGE_T>> shadNbrSets(numShadNodes);
 
     //add all the edges from all the graphs to the adj matrix
     for (uint i = 0; i < k; i++) {
@@ -85,7 +87,7 @@ void CreateShadow::run(ArgumentParser& args) {
     vector<EDGE_T> shadEdgeWeights;
     shadEdgeList.reserve(numShadEdges);
     shadEdgeWeights.reserve(numShadEdges);
-    for (uint node = 0; node < numShadowNodes; node++) {
+    for (uint node = 0; node < numShadNodes; node++) {
         for (const auto& kv : shadNbrSets[node]) {
             uint nbr = kv.first;
             EDGE_T w = kv.second;

@@ -1,4 +1,5 @@
 #include "HubAlignWrapper.hpp"
+#include <algorithm>
 #include "../../measures/localMeasures/Sequence.hpp"
 
 using namespace std;
@@ -41,7 +42,7 @@ void HubAlignWrapper::generateEdgeListFile(int graphNum) {
 
     //to avoid the case where aligning a network to itself
     //the true mapping is 0,1,2,3,4,...
-    randomShuffle(edgeListNames);
+    random_shuffle(edgeListNames.begin(), edgeListNames.end(), randMod);
 
     string file = graphNum == 1 ? g1EdgeListFile : g2EdgeListFile;
     writeDataToFile(edgeListNames, wrappedDir+file, true);

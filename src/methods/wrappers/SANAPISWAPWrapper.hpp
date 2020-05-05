@@ -2,14 +2,11 @@
 #define SANAPISWAPWRAPPER_HPP
 
 #include <cassert>
-
 #include "WrappedMethod.hpp"
+#include "PISwapWrapper.hpp"
 #include "../../arguments/ArgumentParser.hpp"
 #include "../../measures/MeasureCombination.hpp"
-#include "../../arguments/methodSelector.hpp"
-#include "../../report.hpp"
 #include "../SANA.hpp"
-#include "PISwapWrapper.hpp"
 
 using namespace std;
 
@@ -21,7 +18,6 @@ public:
 private:
     SANA* sanaMethod;
     PISwapWrapper* piswapMethod;
-
     MeasureCombination M;
 
     void loadDefaultParameters();
@@ -32,4 +28,5 @@ private:
     
     string intermediateAlignment;
 };
-#endif
+
+#endif /* SANAPISWAPWRAPPER_HPP */
