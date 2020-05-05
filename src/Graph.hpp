@@ -19,7 +19,7 @@
 using namespace std;
 
 //EDGE_T: macro specifying the type of the edge weights
-#if MULTI_PAIRWISE
+#ifdef MULTI_PAIRWISE
   #ifdef FLOAT_WEIGHTS
     #define EDGE_T float
     #error currently, multi_pairwise is not designed for float edges
@@ -91,6 +91,7 @@ public:
     uint getNumNodes() const;
     uint getNumEdges() const;
     string getNodeName(uint node) const;
+    uint getNameIndex(const string& nodeName) const; //reverse of getNodeName
     uint getNumNbrs(uint node) const;
     uint getNumConnectedComponents() const;
     double getTotalEdgeWeight() const;

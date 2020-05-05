@@ -42,7 +42,7 @@ vector<vector<string>> getScoreTable() {
     return fileToStringsByLines(scoreFile);
 }
 
-vector<string> getScoreTuple(string methodName, string G1Name, string G2Name) {
+vector<string> getScoreTuple(string methodName, const string& G1Name, const string& G2Name) {
     vector<vector<string>> scoreTable = getScoreTable();
     for (vector<string> line : scoreTable) {
         if (methodName == line[0] and G1Name == line[1] and G2Name == line[2]) {
@@ -52,16 +52,16 @@ vector<string> getScoreTuple(string methodName, string G1Name, string G2Name) {
     throw runtime_error("Couldn't find entry in "+scoreFile+" for "+methodName+" "+G1Name+" "+G2Name);
 }
 
-double getTopScore(string methodName, string G1Name, string G2Name) {
+double getTopScore(string methodName, const string& G1Name, const string& G2Name) {
     vector<string> tuple = getScoreTuple(methodName, G1Name, G2Name);
     return stod(tuple[3]);
 }
-double getSeqScore(string methodName, string G1Name, string G2Name) {
+double getSeqScore(string methodName, const string& G1Name, const string& G2Name) {
     vector<string> tuple = getScoreTuple(methodName, G1Name, G2Name);
     return stod(tuple[4]);
 }
 
-double betaDerivedAlpha(string methodName, string G1Name, string G2Name, double beta) {
+double betaDerivedAlpha(const string& methodName, const string& G1Name, const string& G2Name, double beta) {
     double topScore = getTopScore(methodName, G1Name, G2Name);
     double seqScore = getSeqScore(methodName, G1Name, G2Name);
     double topFactor = beta*topScore;
@@ -79,7 +79,7 @@ string getScoreTableMethodId(ArgumentParser& args) {
     return methodName;
 }
 
-double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
+double getAlpha(const Graph& G1, const Graph& G2, ArgumentParser& args) {
     string objFunType = args.strings["-objfuntype"];
     if (objFunType == "alpha") {
         return args.doubles["-alpha"];
@@ -87,9 +87,8 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
         string methodName = getScoreTableMethodId(args);
         double beta = args.doubles["-beta"];
         return betaDerivedAlpha(methodName, G1.getName(), G2.getName(), beta);
-    } else {
-        throw runtime_error("alpha is not defined if -objfuntype is "+objFunType);
     }
+    throw runtime_error("alpha is not defined if -objfuntype is "+objFunType);
 }
 
 double totalGenericWeight(ArgumentParser& args) {
@@ -112,7 +111,7 @@ double totalGenericWeight(ArgumentParser& args) {
     return total;
 }
 
-double getWeight(string measureName, Graph& G1, Graph& G2, ArgumentParser& args, int index=0) {
+double getWeight(string measureName, const Graph& G1, const Graph& G2, ArgumentParser& args, int index=0) {
     string method = args.strings["-method"];
     if (method == "random") return 0;
     string objFunType = args.strings["-objfuntype"];
@@ -137,7 +136,7 @@ double getWeight(string measureName, Graph& G1, Graph& G2, ArgumentParser& args,
     }
 }
 
-bool shouldInit(string measureName, Graph& G1, Graph& G2, ArgumentParser& args) {
+bool shouldInit(string measureName, const Graph& G1, const Graph& G2, ArgumentParser& args) {
     bool detailedReport = args.bools["-detailedreport"];
     if (detailedReport) return true;
     if (args.doubleVectors.count("-" + measureName))
@@ -151,7 +150,7 @@ bool shouldInit(string measureName, Graph& G1, Graph& G2, ArgumentParser& args) 
     return wecWeight > 0 and wecNodeSim == measureName;
 }
 
-void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& args) {
+void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, ArgumentParser& args) {
     cout << "Initializing measures... ";
     Timer T;
     T.start();

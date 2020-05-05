@@ -80,7 +80,7 @@ void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2) 
     totalDegrees = vector<uint>(G2.getNumNodes(), 0);
     for (uint i = 0; i < G2.getNumNodes(); i++) totalDegrees[i] = G2.getNumNbrs(i);
     for (const auto& edge : *(G2.getEdgeList())) {
-        EDGE_T w = G2.edgeWeight(edge[0],edge[1]);
+        auto w = G2.edgeWeight(edge[0],edge[1]);
         totalDegrees[edge[0]] += w;
         if (edge[0] != edge[1]) totalDegrees[edge[1]] += w; //avoid double-counting for self-lopos
     }

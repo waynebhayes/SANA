@@ -7,9 +7,9 @@
 
 namespace measureSelector {
 
-double betaDerivedAlpha(string methodName, string G1Name, string G2Name, double beta);
+double betaDerivedAlpha(const string& methodName, const string& G1Name, const string& G2Name, double beta);
 
-void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& args);
+void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, ArgumentParser& args);
 
 } //namespace measureSelector
 

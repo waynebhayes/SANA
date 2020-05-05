@@ -54,6 +54,9 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     Graph G2 = futureG2.get();
     cout << "Graph loading completed in " << T.elapsedString() << endl;
 
+    if (G1.getNumNodes() > G2.getNumNodes())
+        throw runtime_error("G1 has more nodes than G2. Please swap the graphs");
+
     //colors or locking
     string fcolors1 = args.strings["-fcolor1"], fcolors2 = args.strings["-fcolor2"];
     string lockFile = args.strings["-lock"];

@@ -25,10 +25,9 @@ vector<vector<double> > Importance::initEdgeWeights(const Graph& G) {
 #ifdef MULTI_PAIRWISE
     throw runtime_error("Importance not implemented for weighted Graphs");
 #endif
-    const Matrix<EDGE_T>* adjMat = G.getAdjMatrix();
     for (uint i = 0; i < n; i++) {
         for (uint j = 0; j < n; j++) {
-            if (adjMat->get(i,j)) edgeWeights[i][j] = 1;
+            if (G.hasEdge(i,j)) edgeWeights[i][j] = 1;
         }
     }
     return edgeWeights;

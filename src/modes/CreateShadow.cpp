@@ -23,8 +23,8 @@ void CreateShadow::run(ArgumentParser& args) {
     istream ifs(&sbuf);
     string outFile, outColorFile;
     bool hasAlignments, hasColors;
-    uint numDummy, k;
-    ifs >> outFile >> numDummy >> k;
+    uint numDummyNodes, k;
+    ifs >> outFile >> numDummyNodes >> k;
     vector<string> graphFiles(k), aligFiles(k), colorFiles(k);
     for (uint i = 0; i < k; i++) ifs >> graphFiles[i]; 
     ifs >> hasAlignments;
@@ -36,19 +36,20 @@ void CreateShadow::run(ArgumentParser& args) {
     }
 
     //figure out the number of nodes in the shadow graph
-    uint numShadNodes = 0;
+    uint maxGNodes = 0;
     for (string file : graphFiles) {
         Graph G = GraphLoader::loadGraphFromFile("", file, false);
-        if (G.getNumNodes() > numShadNodes) numShadNodes = G.getNumNodes();
+        maxGNodes = max(maxGNodes, G.getNumNodes());
     }
-    numShadNodes += numDummy;
+    uint numShadNodes = maxGNodes + numDummyNodes;
 
-    //generate the shadow names, which we assume to follow the format "shad_{i}" in the alignment files
+    //generate the shadow names, which we assume follow the format "shad_{i}" in the alignment files
     vector<string> shadNodeNames;
     shadNodeNames.reserve(numShadNodes);
     for (uint i = 0; i < numShadNodes; i++) shadNodeNames.push_back("shad_"+to_string(i));
 
-    //shadNbrSets[i][j] is the weight of edge (i,j), assuming i<=j
+    //data structure to "accumulate" the edges from the graphs
+    //shadNbrSets[i][j] stores the weight of edge (i,j), assuming i<=j
     vector<unordered_map<uint, EDGE_T>> shadNbrSets(numShadNodes);
 
     //add all the edges from all the graphs to the adj matrix
@@ -69,6 +70,8 @@ void CreateShadow::run(ArgumentParser& args) {
             for (uint i = 0; i < G.getNumNodes(); i++)
                 gNameToSName[G.getNodeName(i)] = shuffledShadNames[i];
         }
+
+        //check that the colors are correct
 
         //add the edges
         for (const auto& edge : (*G.getEdgeList())) {

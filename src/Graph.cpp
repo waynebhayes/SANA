@@ -310,6 +310,7 @@ string Graph::getFilePath() const { return filePath; }
 uint Graph::getNumNodes() const { return adjLists.size(); }
 uint Graph::getNumEdges() const { return edgeList.size(); }
 string Graph::getNodeName(uint node) const { return nodeNames.at(node); }
+uint Graph::getNameIndex(const string& nodeName) const { return nodeNameToIndexMap.at(nodeName); };
 uint Graph::getNumNbrs(uint node) const { return adjLists[node].size(); }
 uint Graph::getNumConnectedComponents() const { return connectedComponents.size(); }
 double Graph::getTotalEdgeWeight() const { return totalEdgeWeight; }
