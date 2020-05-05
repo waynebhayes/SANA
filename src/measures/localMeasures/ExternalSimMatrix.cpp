@@ -69,13 +69,9 @@ void ExternalSimMatrix::loadFormat1(FILE* infile) {
     char buf1[1024];
     char buf2[1024];
     float value;
-
-    const unordered_map<string,uint>* g1Map = G1->getNodeNameToIndexMap();
-    const unordered_map<string,uint>* g2Map = G2->getNodeNameToIndexMap();
-
     while (fscanf(infile, "%s %s %f", buf1, buf2, &value) == 3) {
-        uint i = g1Map->at(string(buf1));
-        uint j = g2Map->at(string(buf2));
+        uint i = G1->getNameIndex(string(buf1));
+        uint j = G2->getNameIndex(string(buf2));
         sims[i][j] = value;
         ++lineCount;
     }

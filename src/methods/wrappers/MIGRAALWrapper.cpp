@@ -35,14 +35,11 @@ string MIGRAALWrapper::generateAlignment() {
 Alignment MIGRAALWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
     vector<string> words = fileToStrings(fileName);
     vector<uint> mapping(G1->getNumNodes(), G2->getNumNodes());
-    const unordered_map<string, uint>* g1nodeMap = G1->getNodeNameToIndexMap();
-    const unordered_map<string, uint>* g2nodeMap = G2->getNodeNameToIndexMap();
-
     for (uint i = 0; i < words.size(); i+=2) {
         string node1 = words[i];
         string node2 = words[i+1];
         cout << node1 << " " << node2 << endl;
-        mapping[g1nodeMap->at(node1)] = g2nodeMap->at(node2);
+        mapping[G1->getNameIndex(node1)] = G2->getNameIndex(node2);
     }
     return Alignment(mapping);
 }

@@ -26,15 +26,14 @@ void SimilarityMode::run(ArgumentParser& args) {
     cout << "Finished. Saved similarity file as " << (args.strings["-o"] + ".sim") << endl;
 }
 
-void SimilarityMode::saveSimilarityMatrix(vector<vector <float> > sim, Graph &G1, Graph &G2, string file, int format) {
+void SimilarityMode::saveSimilarityMatrix(const vector<vector<float>>& sim, 
+        const Graph& G1, const Graph& G2, const string& file, int format) {
     ofstream outfile;
     outfile.open(file.c_str());
-
     if (not outfile.is_open()) {
         cout << "Problem saving similarity to specified location. Saving to sana program file." << endl;
         exit(-1);
     }
-
     switch(format) {
         case 0:
             for(uint i = 0; i < sim.size(); ++i) {
@@ -44,11 +43,9 @@ void SimilarityMode::saveSimilarityMatrix(vector<vector <float> > sim, Graph &G1
             }
         break;
         case 1:
-            const vector<string>* g1Map = G1.getNodeNames();
-            const vector<string>* g2Map = G2.getNodeNames();
             for(uint i = 0; i < sim.size(); ++i) {
                 for(uint j = 0; j < sim[i].size(); ++j) if(sim[i][j]) {
-                    outfile << (*g1Map)[i] << " " << (*g2Map)[j] << " " << sim[i][j] << endl;
+                    outfile << G1.getNodeName(i) << " " << G2.getNodeName(j) << " " << sim[i][j] << endl;
                 }
             }
         break;
@@ -56,6 +53,6 @@ void SimilarityMode::saveSimilarityMatrix(vector<vector <float> > sim, Graph &G1
     outfile.close();
 }
 
-string SimilarityMode::getName(void) {
+string SimilarityMode::getName() {
     return "SimilarityMode";
 }

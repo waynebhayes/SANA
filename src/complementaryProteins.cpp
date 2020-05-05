@@ -17,10 +17,10 @@ using namespace std;
 
 namespace complementaryProteins {
 
-vector<vector<string> > getProteinPairs(string complementStatus, bool BioGRIDNetworks) {
+vector<vector<string>> getProteinPairs(string complementStatus, bool BioGRIDNetworks) {
     string complementProteinsFile = "sequence/complementProteins.txt";
-    vector<vector<string> > data = fileToStringsByLines(complementProteinsFile);
-    vector<vector<string> > res(0);
+    vector<vector<string>> data = fileToStringsByLines(complementProteinsFile);
+    vector<vector<string>> res(0);
     uint yeastNameIndex = BioGRIDNetworks ? 2 : 1;
     uint humanNameIndex = BioGRIDNetworks ? 6 : 5;
     uint complementIndex = 8;
@@ -35,8 +35,8 @@ vector<vector<string> > getProteinPairs(string complementStatus, bool BioGRIDNet
     return res;
 }
 
-vector<vector<string> > getAlignedPairs(const Graph& G1, const Graph& G2, const Alignment& A) {
-    vector<vector<string> > res(A.size(), vector<string> (2));
+vector<vector<string>> getAlignedPairs(const Graph& G1, const Graph& G2, const Alignment& A) {
+    vector<vector<string>> res(A.size(), vector<string> (2));
     for (uint i = 0; i < A.size(); i++) {
         res[i][0] = G1.getNodeName(i);
         res[i][1] = G2.getNodeName(A[i]);
@@ -45,9 +45,9 @@ vector<vector<string> > getAlignedPairs(const Graph& G1, const Graph& G2, const 
 }
 
 void printComplementaryProteinCounts(const Graph& G1, const Graph& G2, const Alignment& A, bool BioGRIDNetworks) {
-    vector<vector<string> > complementProteins = getProteinPairs("1", BioGRIDNetworks);
-    vector<vector<string> > nonComplementProteins = getProteinPairs("0", BioGRIDNetworks);
-    vector<vector<string> > alignedPairs = getAlignedPairs(G1, G2, A);
+    vector<vector<string>> complementProteins = getProteinPairs("1", BioGRIDNetworks);
+    vector<vector<string>> nonComplementProteins = getProteinPairs("0", BioGRIDNetworks);
+    vector<vector<string>> alignedPairs = getAlignedPairs(G1, G2, A);
     uint complementAlignedCount = 0;
     uint nonComplementAlignedCount = 0;
     for (uint i = 0; i < G1.getNumNodes(); i++) {
@@ -88,8 +88,8 @@ void printComplementaryProteinCounts(const Alignment& A, bool BioGRIDNetworks) {
 }
 
 vector<uint> countProteinPairsInNetworks(const Graph& G1, const Graph& G2, bool BioGRIDNetworks) {
-    vector<vector<string> > complementProteins = getProteinPairs("1", BioGRIDNetworks);
-    vector<vector<string> > nonComplementProteins = getProteinPairs("0", BioGRIDNetworks);
+    vector<vector<string>> complementProteins = getProteinPairs("1", BioGRIDNetworks);
+    vector<vector<string>> nonComplementProteins = getProteinPairs("0", BioGRIDNetworks);
     uint n1 = G1.getNumNodes();
     uint n2 = G2.getNumNodes();
 
@@ -147,8 +147,8 @@ void printProteinPairCountInNetworks(bool BioGRIDNetworks) {
     string g2File = "networks/"+g2Name+"/"+g2Name+".gw";
     Graph G1 = GraphLoader::loadGraphFromFile(g1Name, g1File, false);
     Graph G2 = GraphLoader::loadGraphFromFile(g2Name, g2File, false);
-    vector<vector<string> > complementProteins = getProteinPairs("1", BioGRIDNetworks);
-    vector<vector<string> > nonComplementProteins = getProteinPairs("0", BioGRIDNetworks);
+    vector<vector<string>> complementProteins = getProteinPairs("1", BioGRIDNetworks);
+    vector<vector<string>> nonComplementProteins = getProteinPairs("0", BioGRIDNetworks);
     uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();
 
     uint complementYeastCount = 0;
@@ -212,9 +212,9 @@ void printProteinPairCountInNetworks(bool BioGRIDNetworks) {
     cout << endl;
 }
 
-void fillTableColumn(vector<vector<string> >& table, uint col, vector<vector<float> >* simMatrix,
-    const vector<vector<uint> >& complementProteins, const vector<vector<uint> >& nonComplementProteins,
-    const vector<vector<uint> >& randomProteins) {
+void fillTableColumn(vector<vector<string>>& table, uint col, vector<vector<float>>* simMatrix,
+    const vector<vector<uint>>& complementProteins, const vector<vector<uint>>& nonComplementProteins,
+    const vector<vector<uint>>& randomProteins) {
     uint nComp = complementProteins.size();
     uint nNoComp = nonComplementProteins.size();
     uint nRand = randomProteins.size();
@@ -235,26 +235,24 @@ void fillTableColumn(vector<vector<string> >& table, uint col, vector<vector<flo
     table[3][col] = to_string(s/nRand);
 }
 
-void printLocalTopologicalSimilarities(Graph& G1, Graph& G2, bool BioGRIDNetworks) {
-    vector<vector<string> > complementProteinNames = getProteinPairs("1", BioGRIDNetworks);
-    vector<vector<string> > nonComplementProteinNames = getProteinPairs("0", BioGRIDNetworks);
+void printLocalTopologicalSimilarities(const Graph& G1, const Graph& G2, bool BioGRIDNetworks) {
+    vector<vector<string>> complementProteinNames = getProteinPairs("1", BioGRIDNetworks);
+    vector<vector<string>> nonComplementProteinNames = getProteinPairs("0", BioGRIDNetworks);
     uint nComp = complementProteinNames.size();
     uint nNoComp = nonComplementProteinNames.size();
-    const unordered_map<string,uint>* G1Indices = G1.getNodeNameToIndexMap();
-    const unordered_map<string,uint>* G2Indices = G2.getNodeNameToIndexMap();
 
-    vector<vector<uint> > complementProteins(nComp, vector<uint> (2));
+    vector<vector<uint>> complementProteins(nComp, vector<uint> (2));
     for (uint i = 0; i < nComp; i++) {
-        complementProteins[i][0] = G1Indices->at(complementProteinNames[i][0]);
-        complementProteins[i][1] = G2Indices->at(complementProteinNames[i][1]);
+        complementProteins[i][0] = G1.getNameIndex(complementProteinNames[i][0]);
+        complementProteins[i][1] = G2.getNameIndex(complementProteinNames[i][1]);
     }
-    vector<vector<uint> > nonComplementProteins(nNoComp, vector<uint> (2));
+    vector<vector<uint>> nonComplementProteins(nNoComp, vector<uint> (2));
     for (uint i = 0; i < nComp; i++) {
-        nonComplementProteins[i][0] = G1Indices->at(nonComplementProteinNames[i][0]);
-        nonComplementProteins[i][1] = G2Indices->at(nonComplementProteinNames[i][1]);
+        nonComplementProteins[i][0] = G1.getNameIndex(nonComplementProteinNames[i][0]);
+        nonComplementProteins[i][1] = G2.getNameIndex(nonComplementProteinNames[i][1]);
     }
     const uint NUM_RANDOM_PAIRS = 200;
-    vector<vector<uint> > randomProteins(NUM_RANDOM_PAIRS, vector<uint> (2));
+    vector<vector<uint>> randomProteins(NUM_RANDOM_PAIRS, vector<uint> (2));
     uint n1 = G1.getNumNodes();
     uint n2 = G2.getNumNodes();
     for (uint i = 0; i < NUM_RANDOM_PAIRS; i++) {
@@ -262,7 +260,7 @@ void printLocalTopologicalSimilarities(Graph& G1, Graph& G2, bool BioGRIDNetwork
         randomProteins[i][1] = randMod(n2);
     }
 
-    vector<vector<string> > table(4, vector<string> (8, ""));
+    vector<vector<string>> table(4, vector<string> (8, ""));
     table[0][0] = "average similarity";
     table[1][0] = "comp. homolog pairs";
     table[2][0] = "non comp. homolog pairs";
@@ -275,36 +273,36 @@ void printLocalTopologicalSimilarities(Graph& G1, Graph& G2, bool BioGRIDNetwork
 
     table[0][2] = "graphlet";
     Graphlet graphletSim(&G1, &G2, 5); //graphlet max size 5
-    vector<vector<float> >* graphletSimMatrix = graphletSim.getSimMatrix();
+    vector<vector<float>>* graphletSimMatrix = graphletSim.getSimMatrix();
     fillTableColumn(table, 2, graphletSimMatrix,
         complementProteins, nonComplementProteins, randomProteins);
     table[0][3] = "node density";
     NodeCount NodeCountSim(&G1, &G2, {0,0,1});
-    vector<vector<float> >* NodeCountSimMatrix = NodeCountSim.getSimMatrix();
+    vector<vector<float>>* NodeCountSimMatrix = NodeCountSim.getSimMatrix();
     fillTableColumn(table, 3, NodeCountSimMatrix,
         complementProteins, nonComplementProteins, randomProteins);
 
     table[0][4] = "edge density";
     EdgeCount EdgeCountSim(&G1, &G2, {0,0,1});
-    vector<vector<float> >* EdgeCountSimMatrix = EdgeCountSim.getSimMatrix();
+    vector<vector<float>>* EdgeCountSimMatrix = EdgeCountSim.getSimMatrix();
     fillTableColumn(table, 4, EdgeCountSimMatrix,
         complementProteins, nonComplementProteins, randomProteins);
 
     table[0][5] = "importance";
     Importance importance(&G1, &G2);
-    vector<vector<float> >* importanceMatrix = importance.getSimMatrix();
+    vector<vector<float>>* importanceMatrix = importance.getSimMatrix();
     fillTableColumn(table, 5, importanceMatrix,
         complementProteins, nonComplementProteins, randomProteins);
 
     table[0][6] = "sequence";
     Sequence sequence(&G1, &G2);
-    vector<vector<float> >* sequenceMatrix = sequence.getSimMatrix();
+    vector<vector<float>>* sequenceMatrix = sequence.getSimMatrix();
     fillTableColumn(table, 6, sequenceMatrix,
         complementProteins, nonComplementProteins, randomProteins);
 
     table[0][7] = "go counts";
     GoSimilarity goSim(&G1, &G2, {1}, 1);
-    vector<vector<float> >* goSimMatrix = goSim.getSimMatrix();
+    vector<vector<float>>* goSimMatrix = goSim.getSimMatrix();
     fillTableColumn(table, 7, goSimMatrix,
         complementProteins, nonComplementProteins, randomProteins);
 

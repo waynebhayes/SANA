@@ -63,10 +63,7 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
         mapList[i][0] = edges[2*i];
         mapList[i][1] = edges[2*i+1];
     }
-    const unordered_map<string,uint>* mapG1 = G1.getNodeNameToIndexMap();
-    const unordered_map<string,uint>* mapG2 = G2.getNodeNameToIndexMap();
-    uint n1 = G1.getNumNodes();
-    uint n2 = G2.getNumNodes();
+    uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();
     vector<uint> A(n1, n2); //n2 used to note invalid value
     for (uint i = 0; i < mapList.size(); i++) {
         string nodeG1 = mapList[i][0];
@@ -75,9 +72,9 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
         if (byName) {
             bool nodeG1Misplaced = false;
             bool nodeG2Misplaced = false;
-            if (not mapG1->count(nodeG1)) {
+            if (not G1.hasNodeName(nodeG1)) {
                 cout << nodeG1 << " not in G1 " << G1.getName();
-                if (mapG2->count(nodeG1)) {
+                if (G2.hasNodeName(nodeG1)) {
                     cout << ", but it is in G2. Will switch if appropriate." << endl;
                     nodeG1Misplaced = true;
                 }else{
@@ -85,9 +82,9 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
                     continue;
                 }
             }
-            if (not mapG2->count(nodeG2)) {
+            if (not G2.hasNodeName(nodeG2)) {
                 cout << nodeG2 << " not in G2 " << G2.getName();
-                if (mapG1->count(nodeG2)){
+                if (G1.hasNodeName(nodeG2)) {
                     cout << ", but it is in G1. Will switch if appropriate." << endl;
                     nodeG2Misplaced = true;
                 } else {
@@ -101,7 +98,7 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
                 nodeG2 = temp;
                 cout << nodeG1 << " and " << nodeG2 << " swapped." << endl;
             }
-            A[mapG1->at(nodeG1)] = mapG2->at(nodeG2);
+            A[G1.getNameIndex(nodeG1)] = G2.getNameIndex(nodeG2);
         } else {
             A[atoi(nodeG1.c_str())] = atoi(nodeG2.c_str());
         }
@@ -229,25 +226,21 @@ bool Alignment::isCorrectlyDefined(const Graph& G1, const Graph& G2) {
 }
 
 void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) {
-    uint n1 = G1.getNumNodes();
-    uint n2 = G2.getNumNodes();
-    const vector<string>* G1Names = G1.getNodeNames();
-    const vector<string>* G2Names = G2.getNodeNames();
+    uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();
     vector<bool> G2AssignedNodes(n2, false);
     vector<uint> colorMap = G1.myColorIdsToOtherGraphColorIds(G2);
-
     int count = 0;
     if (A.size() != n1) 
         cerr << "Incorrect size: "<<A.size()<<", should be "<<n1<<endl;
     for (uint i = 0; i < n1; i++) {
         if (A[i] < 0 or A[i] >= n2) {
-            cerr<<count<<": node "<<i<<" ("<<(*G1Names)[i]<<") maps to ";
+            cerr<<count<<": node "<<i<<" ("<<G1.getNodeName(i)<<") maps to ";
             cerr<<A[i]<<", which is not in range 0..n2 ("<<n2<<")"<<endl;
             count++;
         }
         if (G2AssignedNodes[A[i]]) {
-            cerr<<count<<": node "<<i<<" ("<<(*G1Names)[i]<<") maps to "<<A[i]<<" (";
-            cerr<<(*G2Names)[A[i]]<<"), which is also mapped to by a previous node"<<endl;
+            cerr<<count<<": node "<<i<<" ("<<G1.getNodeName(i)<<") maps to "<<A[i]<<" (";
+            cerr<<G2.getNodeName(A[i])<<"), which is also mapped to by a previous node"<<endl;
             count++;
         }
         G2AssignedNodes[A[i]] = true;
@@ -256,9 +249,9 @@ void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) {
         if (colorMap.at(g1Color) != g2Color) {
             string g1ColorName = G1.getColorName(g1Color);
             string g2ColorName = G2.getColorName(g2Color);
-            cerr<<count<<": node "<<i<<" ("<<(*G1Names)[i]<<") of color ";
+            cerr<<count<<": node "<<i<<" ("<<G1.getNodeName(i)<<") of color ";
             cerr<<G1.getColorName(g1Color)<<" maps to "<<A[i]<<" (";
-            cerr<<(*G2Names)[A[i]]<<") of color "<<G2.getColorName(g2Color)<<endl;
+            cerr<<G2.getNodeName(A[i])<<") of color "<<G2.getColorName(g2Color)<<endl;
             count++;
         }
     }

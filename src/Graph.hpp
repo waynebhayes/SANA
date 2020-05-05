@@ -91,6 +91,7 @@ public:
     uint getNumNodes() const;
     uint getNumEdges() const;
     string getNodeName(uint node) const;
+    bool hasNodeName(const string& nodeName) const;
     uint getNameIndex(const string& nodeName) const; //reverse of getNodeName
     uint getNumNbrs(uint node) const;
     uint getNumConnectedComponents() const;
@@ -99,15 +100,15 @@ public:
     EDGE_T edgeWeight(uint node1, uint node2) const; //returns 0 if there is no edge
     bool hasSelfLoop(uint node) const;
     uint randomNode() const;
+    //large data structures are returned as const pointers
+    //(pointers such that the receiver cannot modify the pointed content)
     const vector<vector<uint>>* getAdjLists() const;
     const vector<array<uint, 2>>* getEdgeList() const;
     const Matrix<EDGE_T>* getAdjMatrix() const; //recommended to use hasEdge() and edgeWeight() instead
     const vector<string>* getNodeNames() const; //recommended to use getNodeName() instead
-    const unordered_map<string,uint>* getNodeNameToIndexMap() const; //reverse of nodeNames
+    const unordered_map<string,uint>* getNodeNameToIndexMap() const; //recommended to use getNameIndex() instead
     const vector<vector<uint> >* getConnectedComponents() const; 
 
-    //large data structures are returned as const pointers
-    //(pointers such that the receiver cannot modify the pointed content)
 
     //things that are computed when called
     uint maxDegree() const;

@@ -150,8 +150,7 @@ void GraphLoader::saveInGWFormat(const Graph& G, string outFile,
     outfile.open(tempFile.c_str());
     outfile <<"LEDA.GRAPH"<<endl<<"string"<<endl<<"short"<<endl<<"-2"<<endl; //header
     outfile << G.getNumNodes() << endl;
-    const vector<string>* names = G.getNodeNames();
-    for (const auto& name : *names) {
+    for (const auto& name : *(G.getNodeNames())) {
         outfile << "|{" << name << "}|" << endl;
     }
     outfile << G.getNumEdges() << endl;

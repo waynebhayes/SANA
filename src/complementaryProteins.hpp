@@ -14,7 +14,7 @@ vector<vector<string> > getAlignedPairs(const Graph& G1, const Graph& G2, const 
 void printComplementaryProteinCounts(const Graph& G1, const Graph& G2, const Alignment& A, bool BioGRIDNetworks);
 void printComplementaryProteinCounts(const Alignment& A, bool BioGRIDNetworks = false);
 
-void printLocalTopologicalSimilarities(Graph& G1, Graph& G2, bool BioGRIDNetworks);
+void printLocalTopologicalSimilarities(const Graph& G1, const Graph& G2, bool BioGRIDNetworks);
 
 } //namespace complementaryProteins
 

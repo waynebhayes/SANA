@@ -17,15 +17,12 @@ Sequence::Sequence(const Graph* G1, const Graph* G2) : LocalMeasure(G1, G2, "seq
 
 void Sequence::generateBitscoresFile(string bitscoresFile) {
     cout << "Generating " << bitscoresFile << " ... ";
-    uint n1 = G1->getNumNodes();
-    uint n2 = G2->getNumNodes();
-    const vector<string>* g1Names = G1->getNodeNames();
-    const vector<string>* g2Names = G2->getNodeNames();
+    uint n1 = G1->getNumNodes(), n2 = G2->getNumNodes();
     ofstream outfile(bitscoresFile);
     for (uint i = 0; i < n1; i++) {
         for (uint j = 0; j < n2; j++) {
             if (sims[i][j] > 0) {
-                outfile << (*g1Names)[i] << "\t" << (*g2Names)[j] << "\t" << sims[i][j] << endl;
+                outfile << G1->getNodeName(i) << "\t" << G2->getNodeName(j) << "\t" << sims[i][j] << endl;
             }
         }
     }
@@ -86,9 +83,9 @@ void Sequence::initSimMatrix() {
         if (g2NeedNameMap) node2 = g2NameMap[node2];
 
 		//check to see if the nodes are in the graphs first, if not then just read the rest of the line and continue...
-		if (G1->getNodeNameToIndexMap()->count(node1) && G2->getNodeNameToIndexMap()->count(node2)){
-			uint index1 = G1->getNodeNameToIndexMap()->at(node1);
-       		uint index2 = G2->getNodeNameToIndexMap()->at(node2);
+		if (G1->hasNodeName(node1) && G2->hasNodeName(node2)){
+			uint index1 = G1->getNameIndex(node1);
+       		uint index2 = G2->getNameIndex(node2);
        		//uses bitscores, which is the last column
         	//there are other possibilities, such as
         	//-log of e-values (second-to-last value), also used in l-graal

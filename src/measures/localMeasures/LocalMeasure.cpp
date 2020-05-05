@@ -40,12 +40,10 @@ void LocalMeasure::loadBinSimMatrix(string simMatrixFileName) {
 }
 
 void LocalMeasure::writeSimsWithNames(string outfile) {
-    const vector<string>* mapG1 = G1->getNodeNames();
-    const vector<string>* mapG2 = G2->getNodeNames();
     ofstream fout(outfile);
     for (uint i = 0; i < G1->getNumNodes(); i++) {
         for (uint j = 0; j < G2->getNumNodes(); j++) {
-            fout << (*mapG1)[i] << " " << (*mapG2)[j] << " " << sims[i][j] << endl;
+            fout << G1->getNodeName(i) << " " << G2->getNodeName(j) << " " << sims[i][j] << endl;
         }
     }
 }

@@ -278,8 +278,6 @@ Pairwise Alignment  LocalMeasure1       LocalMeasure2       Weighted Sum
 */
 void MeasureCombination::writeLocalScores(ostream& ofs, 
         const Graph& G1, const Graph& G2, const Alignment& A) const {
-    const vector<string>* mapG1 = G1.getNodeNames();
-    const vector<string>* mapG2 = G2.getNodeNames();
     int const COL_WIDTH = 20, PRECISION = 3;
     ofs<<setw(COL_WIDTH)<<left<<"Pairwise Alignment";
     for(auto const & mapping : localScoreSimMap)
@@ -289,9 +287,9 @@ void MeasureCombination::writeLocalScores(ostream& ofs,
 
     const bool GENERATE_FULL_SIM_FILE = false;
     if (GENERATE_FULL_SIM_FILE) {
-        for (uint i = 0; i < mapG1->size(); i++) {
-            for (uint j = 0; j < mapG2->size(); j++) {
-                edgeStream<<(*mapG1)[i]<<"\t"<<(*mapG2)[j];
+        for (uint i = 0; i < G1.getNumNodes(); i++) {
+            for (uint j = 0; j < G2.getNumNodes(); j++) {
+                edgeStream<<G1.getNodeName(i)<<"\t"<<G2.getNodeName(j);
                 ofs<<setw(COL_WIDTH)<<edgeStream.str();
                 edgeStream.str("");
                 edgeStream.clear();
@@ -303,7 +301,7 @@ void MeasureCombination::writeLocalScores(ostream& ofs,
         }
     } else { // output only aligned pairs
         for(uint i = 0; i < A.size(); ++i) {
-            edgeStream<<(*mapG1)[i]<<"\t"<<(*mapG2)[A[i]];
+            edgeStream<<G1.getNodeName(i)<<"\t"<<G2.getNodeName(A[i]);
             ofs<<setw(COL_WIDTH)<<edgeStream.str();
             edgeStream.str("");
             edgeStream.clear();

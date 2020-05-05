@@ -126,32 +126,28 @@ void GoSimilarity::assertNoRepeatedEntries(const vector<vector<uint> >& goTerms)
 //of the i-th protein
 void GoSimilarity::simpleToInternalFormat(const Graph& G, string GOFileSimpleFormat, string GOFileInternalFormat) {
     string GName = G.getName();
-
-    const unordered_map<string,uint>* nodeToIndexMap = G.getNodeNameToIndexMap();
-
     ifstream infile(GOFileSimpleFormat);
     string line;
-    uint n = G.getNumNodes();
-    vector<vector<uint> > goTerms(n, vector<uint> (0));
+    vector<vector<uint>> goTerms(G.getNumNodes(), vector<uint> (0));
     while (getline(infile, line)) {
         istringstream iss(line);
         string protein, goTermString;
         iss >> protein >> goTermString;
         uint goTermNum = stoi(goTermString.substr(3)); //skip the 'GO:' prefix
-        if (nodeToIndexMap->count(protein)) { //we ignore proteins in the GO file that do not appear in the network file
-            uint index = nodeToIndexMap->at(protein);
+        if (G.hasNodeName(protein)) { //we ignore proteins in the GO file that do not appear in the network file
+            uint index = G.getNameIndex(protein);
             bool alreadyPresent = false;
             for (uint i = 0; i < goTerms[index].size(); i++) {
                 if (goTerms[index][i] == goTermNum) alreadyPresent = true;
             }
             if (not alreadyPresent) { //we ignore repeated entries
-                goTerms[nodeToIndexMap->at(protein)].push_back(goTermNum);
+                goTerms[G.getNameIndex(protein)].push_back(goTermNum);
             }
         }
     }
     assertNoRepeatedEntries(goTerms);
     ofstream outfile(GOFileInternalFormat);
-    for (uint i = 0; i < n; i++) {
+    for (uint i = 0; i < G.getNumNodes(); i++) {
         for (uint j = 0; j < goTerms[i].size(); j++) {
             outfile << goTerms[i][j] << " ";
         }
@@ -184,8 +180,7 @@ vector<vector<uint> > GoSimilarity::loadGOTerms(
         acceptedTerms = unordered_set<uint>(v.begin(), v.end());
     }
 
-    uint n = G.getNumNodes();
-    vector<vector<uint> > goTerms(n, vector<uint> (0));
+    vector<vector<uint> > goTerms(G.getNumNodes(), vector<uint> (0));
     uint i = 0;
     ifstream infile(GOFileInternalFormat);
     string line;
@@ -194,8 +189,7 @@ vector<vector<uint> > GoSimilarity::loadGOTerms(
         uint goTerm;
         while (iss >> goTerm) {
             if (occurrencesFraction == 1 or
-                acceptedTerms.count(goTerm) == 1) {
-
+                    acceptedTerms.count(goTerm) == 1) {
                 goTerms[i].push_back(goTerm);
             }
         }
