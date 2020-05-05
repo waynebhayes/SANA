@@ -15,21 +15,19 @@ using namespace std;
 
 class SANAPISWAPWrapper: public WrappedMethod {
 public:
-    SANAPISWAPWrapper(Graph* G1, Graph* G2, ArgumentParser args, MeasureCombination M);
+    SANAPISWAPWrapper(const Graph* G1, const Graph* G2, ArgumentParser args, MeasureCombination M);
     Alignment run();
 
 private:
     SANA* sanaMethod;
     PISwapWrapper* piswapMethod;
 
-    Graph* Graph1;
-    Graph* Graph2;
     MeasureCombination M;
 
     void loadDefaultParameters();
     string convertAndSaveGraph(const Graph* graph, string name);
     string generateAlignment();
-    Alignment loadAlignment(Graph* G1, Graph* G2, string fileName);
+    Alignment loadAlignment(const Graph* G1, const Graph* G2, string fileName);
     void deleteAuxFiles();
     
     string intermediateAlignment;

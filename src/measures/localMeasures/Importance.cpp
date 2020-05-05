@@ -9,7 +9,7 @@ using namespace std;
 const uint Importance::d = 10;
 const double Importance::lambda = 0.2; // best value according to the HubAlign paper.
 
-Importance::Importance(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "importance") {
+Importance::Importance(const Graph* G1, const Graph* G2) : LocalMeasure(G1, G2, "importance") {
     string subfolder = autogenMatricesFolder+getName()+"/";
     createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_importance.bin";
@@ -199,6 +199,6 @@ bool Importance::hasNodesWithEnoughDegree(const Graph& G) {
     return (*G.getAdjLists())[nodes[n-1]].size() > d;
 }
 
-bool Importance::fulfillsPrereqs(Graph* G1, Graph* G2) {
+bool Importance::fulfillsPrereqs(const Graph* G1, const Graph* G2) {
     return hasNodesWithEnoughDegree(*G1) and hasNodesWithEnoughDegree(*G2);
 }

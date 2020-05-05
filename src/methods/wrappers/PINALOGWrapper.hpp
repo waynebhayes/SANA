@@ -8,13 +8,13 @@ using namespace std;
 class PINALOGWrapper: public WrappedMethod {
 
 public:
-    PINALOGWrapper(Graph* G1, Graph* G2, string args);
+    PINALOGWrapper(const Graph* G1, const Graph* G2, string args);
 
 private:
     void loadDefaultParameters();
     string convertAndSaveGraph(const Graph* graph, string name);
     string generateAlignment();
-    Alignment loadAlignment(Graph* G1, Graph* G2, string fileName);
+    Alignment loadAlignment(const Graph* G1, const Graph* G2, string fileName);
     void deleteAuxFiles();
 };
 

@@ -3,7 +3,7 @@
 
 const string PROGRAM = "./pinalog1.0";
 
-PINALOGWrapper::PINALOGWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "PINALOG", args) {
+PINALOGWrapper::PINALOGWrapper(const Graph* G1, const Graph* G2, string args): WrappedMethod(G1, G2, "PINALOG", args) {
     wrappedDir = "wrappedAlgorithms/PINALOG";
 }
 
@@ -31,7 +31,7 @@ string PINALOGWrapper::generateAlignment(){
     return wrappedDir + "/" + outFile;
 }
 
-Alignment PINALOGWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+Alignment PINALOGWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
     return Alignment::loadPartialEdgeList(*G1, *G2, fileName, true);
 }
 

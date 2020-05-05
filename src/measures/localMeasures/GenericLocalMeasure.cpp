@@ -1,7 +1,8 @@
 #include <vector>
 #include "GenericLocalMeasure.hpp"
 
-GenericLocalMeasure::GenericLocalMeasure(Graph* G1, Graph* G2, string name, const vector<vector<float> >& simMatrix) : LocalMeasure(G1, G2, name) {
+GenericLocalMeasure::GenericLocalMeasure(const Graph* G1, const Graph* G2,
+	string name, const vector<vector<float> >& simMatrix) : LocalMeasure(G1, G2, name) {
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float> > (n1, vector<float> (n2));

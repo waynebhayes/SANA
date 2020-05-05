@@ -7,7 +7,7 @@ const string CONVERTER = "./bio-graph";
 const string GHOSTBinary = "./GHOST";
 const string GLOBAL_PARAMETERS = "linear all 1.0 8.0 10"; // do not modify these, they are hard-coded parsed below
 
-GHOSTWrapper::GHOSTWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "GHOST", args) {
+GHOSTWrapper::GHOSTWrapper(const Graph* G1, const Graph* G2, string args): WrappedMethod(G1, G2, "GHOST", args) {
     wrappedDir = "wrappedAlgorithms/GHOST";
     parameters = args;
 }
@@ -77,7 +77,7 @@ string GHOSTWrapper::generateAlignment() {
     return wrappedDir + "/" + af + ".align";
 }
 
-Alignment GHOSTWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+Alignment GHOSTWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
     return Alignment::loadPartialEdgeList(*G1, *G2, fileName, true); // true = byName
 }
 

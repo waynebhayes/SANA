@@ -2,7 +2,7 @@
 #include <cassert>
 #include <string>
 
-Method::Method(Graph* G1, Graph* G2, string name): G1(G1), G2(G2), name(name) {};
+Method::Method(const Graph* G1, const Graph* G2, string name): G1(G1), G2(G2), name(name) {};
 Method::~Method() {
     // cerr<<"in Method base destructor"<<endl;
 }

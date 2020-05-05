@@ -7,7 +7,7 @@ const string CONVERTER      = "ncount";
 const string GHOSTBinary  = "MI-GRAAL";
 const string MIGRAALProgram = "./MI-GRAALRunner.py";
 
-MIGRAALWrapper::MIGRAALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "MIGRAAL", args) {
+MIGRAALWrapper::MIGRAALWrapper(const Graph* G1, const Graph* G2, string args): WrappedMethod(G1, G2, "MIGRAAL", args) {
     wrappedDir = "wrappedAlgorithms/MI-GRAAL";
 }
 
@@ -32,7 +32,7 @@ string MIGRAALWrapper::generateAlignment() {
     return wrappedDir + "/" + alignmentTmpName + ".aln";
 }
 
-Alignment MIGRAALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+Alignment MIGRAALWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
     vector<string> words = fileToStrings(fileName);
     vector<uint> mapping(G1->getNumNodes(), G2->getNumNodes());
     const unordered_map<string, uint>* g1nodeMap = G1->getNodeNameToIndexMap();

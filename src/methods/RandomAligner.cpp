@@ -3,7 +3,7 @@
 
 using namespace std;
 
-RandomAligner::RandomAligner(Graph* G1, Graph* G2): Method(G1, G2, "random") {}
+RandomAligner::RandomAligner(const Graph* G1, const Graph* G2): Method(G1, G2, "random") {}
 
 Alignment RandomAligner::run() {
     return Alignment::random(G1->getNumNodes(), G2->getNumNodes());

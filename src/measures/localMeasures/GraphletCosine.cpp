@@ -5,7 +5,7 @@
 #include "../../computeGraphletsWrapper.hpp"
 using namespace std;
 
-GraphletCosine::GraphletCosine(Graph* G1, Graph* G2, uint maxGraphletSize):
+GraphletCosine::GraphletCosine(const Graph* G1, const Graph* G2, uint maxGraphletSize):
         LocalMeasure(G1, G2, "graphletcosine"), maxGraphletSize(maxGraphletSize) {
     string subfolder = autogenMatricesFolder+getName()+"/";
     createFolder(subfolder);

@@ -13,7 +13,7 @@ using namespace std;
 
 const string GoSimilarity::biogridGOFile = "go/gene2go";
 
-GoSimilarity::GoSimilarity(Graph* G1, Graph* G2,
+GoSimilarity::GoSimilarity(const Graph* G1, const Graph* G2,
     const vector<double>& countWeights, double occurrencesFraction) :
     LocalMeasure(G1, G2, "go"),
     occurrencesFraction(occurrencesFraction) {
@@ -346,6 +346,6 @@ bool GoSimilarity::hasGOData(const Graph& G) {
     }
 }
 
-bool GoSimilarity::fulfillsPrereqs(Graph* G1, Graph* G2) {
+bool GoSimilarity::fulfillsPrereqs(const Graph* G1, const Graph* G2) {
     return hasGOData(*G1) and hasGOData(*G2);
 }

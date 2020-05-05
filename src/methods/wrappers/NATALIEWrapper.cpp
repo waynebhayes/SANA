@@ -6,7 +6,7 @@ const string CONVERTER = "";
 const string PROGRAM = "./natalie2";
 const string GLOBAL_PARAMETERS = " -r 1 -t 600 ";
 
-NATALIEWrapper::NATALIEWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "NATALIE", args) {
+NATALIEWrapper::NATALIEWrapper(const Graph* G1, const Graph* G2, string args): WrappedMethod(G1, G2, "NATALIE", args) {
     wrappedDir = "wrappedAlgorithms/NATALIE";
 }
 
@@ -37,7 +37,7 @@ string NATALIEWrapper::generateAlignment() {
     return wrappedDir + "/" + outFile;
 }
 
-Alignment NATALIEWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+Alignment NATALIEWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
     return Alignment::loadPartialEdgeList(*G1, *G2, fileName, true);
 }
 

@@ -4,7 +4,7 @@
 
 class NodeCount: public LocalMeasure {
 public:
-    NodeCount(Graph* G1, Graph* G2, const vector<double>& distWeights);
+    NodeCount(const Graph* G1, const Graph* G2, const vector<double>& distWeights);
     virtual ~NodeCount();
 private:
     vector<double> distWeights;

@@ -10,7 +10,7 @@ const string GLOBAL_PARAMETERS = " --undirected --no-prematch --pop 400 ";
 
 //ARGUMENTS: --maxsecs <seconds> --blastpairlist [3 columns] --pop [400] --threads <N> [recommended runtime is "--maxsame 3000"]
 
-GEDEVOWrapper::GEDEVOWrapper(Graph* G1, Graph* G2, string args, uint maxGraphletSize):
+GEDEVOWrapper::GEDEVOWrapper(const Graph* G1, const Graph* G2, string args, uint maxGraphletSize):
         WrappedMethod(G1, G2, "GEDEVO", args), maxGraphletSize(maxGraphletSize) {
     wrappedDir = "wrappedAlgorithms/GEDEVO";
 }
@@ -54,7 +54,7 @@ string GEDEVOWrapper::generateAlignment() {
     return wrappedDir + "/" + alignmentTmpName;
 }
 
-Alignment GEDEVOWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+Alignment GEDEVOWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
     return Alignment::loadPartialEdgeList(*G1, *G2, fileName, true);
 }
 

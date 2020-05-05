@@ -2,10 +2,8 @@
 
 using namespace std;
 
-SANAPISWAPWrapper::SANAPISWAPWrapper(Graph* G1, Graph* G2, ArgumentParser args, MeasureCombination M): WrappedMethod(G1, G2, "SANAPISWAP", args.strings["-wrappedArgs"]){
+SANAPISWAPWrapper::SANAPISWAPWrapper(const Graph* G1, const Graph* G2, ArgumentParser args, MeasureCombination M): WrappedMethod(G1, G2, "SANAPISWAP", args.strings["-wrappedArgs"]){
     wrappedDir = "wrappedAlgorithms/PISWAP";
-    Graph1 = G1;
-    Graph2 = G2;
     this->M = M;
     sanaMethod = (SANA*)(methodSelector::initSANA(*G1, *G2, args, this->M));
     
@@ -17,14 +15,14 @@ SANAPISWAPWrapper::SANAPISWAPWrapper(Graph* G1, Graph* G2, ArgumentParser args, 
     double alpha = args.doubles["-alpha"];
     string wrappedArgs = args.strings["-wrappedArgs"];
 
-    piswapMethod = new PISwapWrapper(Graph1, Graph2, alpha, intermediateAlignment + ".align", wrappedArgs);
+    piswapMethod = new PISwapWrapper(G1, G2, alpha, intermediateAlignment + ".align", wrappedArgs);
 }
 
 Alignment SANAPISWAPWrapper::run(){
     Alignment A = sanaMethod->runAndPrintTime();
-    A.printDefinitionErrors(*Graph1, *Graph2);
-    assert(A.isCorrectlyDefined(*Graph1, *Graph2) and "Resulting alignment is not correctly defined");
-    report::saveReport(*Graph1, *Graph2, A, M, sanaMethod, intermediateAlignment);
+    A.printDefinitionErrors(*G1, *G2);
+    assert(A.isCorrectlyDefined(*G1, *G2) and "Resulting alignment is not correctly defined");
+    report::saveReport(*G1, *G2, A, M, sanaMethod, intermediateAlignment);
     Alignment B = piswapMethod->runAndPrintTime();
     return B;
 }
@@ -41,7 +39,7 @@ string SANAPISWAPWrapper::generateAlignment(){
     return "";
 }
 
-Alignment SANAPISWAPWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName){
+Alignment SANAPISWAPWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName){
     return Alignment::empty();
 }
 

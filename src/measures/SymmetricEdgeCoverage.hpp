@@ -4,7 +4,7 @@
 
 class SymmetricEdgeCoverage: public Measure {
 public:
-    SymmetricEdgeCoverage(Graph* G1, Graph* G2);
+    SymmetricEdgeCoverage(const Graph* G1, const Graph* G2);
     virtual ~SymmetricEdgeCoverage();
     double eval(const Alignment& A);
 

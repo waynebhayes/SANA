@@ -8,7 +8,7 @@
 
 using namespace std;
 
-Sequence::Sequence(Graph* G1, Graph* G2) : LocalMeasure(G1, G2, "sequence") {
+Sequence::Sequence(const Graph* G1, const Graph* G2) : LocalMeasure(G1, G2, "sequence") {
     string subfolder = autogenMatricesFolder+getName()+"/";
     createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_sequence.bin";
@@ -120,6 +120,6 @@ Sequence::~Sequence() {}
 string Sequence::blastScoreFile(const string& G1Name, const string& G2Name) {
     return "sequence/scores/"+G1Name+"_"+G2Name+"_blast.out"; 
 }
-bool Sequence::fulfillsPrereqs(Graph* G1, Graph* G2) {
+bool Sequence::fulfillsPrereqs(const Graph* G1, const Graph* G2) {
     return fileExists(blastScoreFile(G1->getName(), G2->getName()));
 }

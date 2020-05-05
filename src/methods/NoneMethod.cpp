@@ -3,7 +3,7 @@
 #include "NoneMethod.hpp"
 using namespace std;
 
-NoneMethod::NoneMethod(Graph* G1, Graph* G2, string startAName):
+NoneMethod::NoneMethod(const Graph* G1, const Graph* G2, string startAName):
     Method(G1, G2, "None"), A(Alignment::empty()) {
     if (startAName == "") {
         uint n1 = G1->getNumNodes();

@@ -6,7 +6,7 @@ const string CONVERTER = "python converter_to_gml.py";
 const string PROGRAM   = "./spinal";
 const string OUTPUT_CONVERT  = "python spinal_output_converter.py";
 
-SPINALWrapper::SPINALWrapper(Graph* G1, Graph* G2, double alpha, string args): WrappedMethod(G1, G2, "SPINAL", args) {
+SPINALWrapper::SPINALWrapper(const Graph* G1, const Graph* G2, double alpha, string args): WrappedMethod(G1, G2, "SPINAL", args) {
     this->alpha = alpha;
     wrappedDir = "wrappedAlgorithms/SPINAL";
 }
@@ -44,7 +44,7 @@ string SPINALWrapper::generateAlignment() {
     return wrappedDir + "/" + alignmentTmpName + ".aln";
 }
 
-Alignment SPINALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+Alignment SPINALWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
     return Alignment::loadPartialEdgeList(*G1, *G2, fileName, false);
 }
 

@@ -13,7 +13,7 @@ using namespace std;
 class LGraalWrapper: public Method {
 public:
 
-    LGraalWrapper(Graph* G1, Graph* G2, double alpha, uint iterlimit, uint timelimit);
+    LGraalWrapper(const Graph* G1, const Graph* G2, double alpha, uint iterlimit, uint timelimit);
     Alignment run();
     void describeParameters(ostream& stream);
     string fileNameSuffix(const Alignment& A) const;

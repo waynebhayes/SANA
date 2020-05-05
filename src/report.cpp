@@ -10,7 +10,7 @@
 
 bool multiPairwiseIteration; //todo: refactor without this out here -Nil
 
-void report::makeReport(const Graph& G1, Graph& G2, const Alignment& A,
+void report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
                 const MeasureCombination& M, Method* method,
                 ofstream& stream, bool multiPairwiseIteration = false) {
     Timer T1;
@@ -119,12 +119,12 @@ void report::makeReport(const Graph& G1, Graph& G2, const Alignment& A,
     }
 }
 
-void report::saveReport(const Graph& G1, Graph& G2, const Alignment& A,
+void report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
         const MeasureCombination& M, Method* method, string reportFileName) {
     saveReport(G1, G2, A, M, method, reportFileName, false);
 }
 
-void report::saveReport(const Graph& G1, Graph& G2, const Alignment& A,
+void report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
                         const MeasureCombination& M, Method* method,
                         string reportFileName, bool multiPairwiseIteration) {
     Timer T;

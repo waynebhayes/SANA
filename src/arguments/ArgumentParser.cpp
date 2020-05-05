@@ -11,7 +11,6 @@ ArgumentParser::ArgumentParser(int argc, char* argv[]) {
              << "Try './sana --help' or './sana -h' for more information." << endl;
         exit(0);
     }
-
     for (int i = 0; i < argc; i++) originalArgv.push_back(argv[i]);
 
     vector<string> vArg;

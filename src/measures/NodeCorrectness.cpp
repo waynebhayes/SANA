@@ -112,6 +112,6 @@ vector<uint> NodeCorrectness::getMappingforNC() const {
     return trueA.asVector();
 }
 
-bool NodeCorrectness::fulfillsPrereqs(Graph* G1, Graph* G2) {
+bool NodeCorrectness::fulfillsPrereqs(const Graph* G1, const Graph* G2) {
     return G1->hasSameNodeNamesAs(*G2);
 }

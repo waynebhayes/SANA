@@ -7,13 +7,13 @@ using namespace std;
 class PISwapWrapper: public WrappedMethod {
 public:
 
-    PISwapWrapper(Graph* G1, Graph* G2, double alpha, string startingAlignment, string args);
+    PISwapWrapper(const Graph* G1, const Graph* G2, double alpha, string startingAlignment, string args);
 
 private:
     void loadDefaultParameters();
     string convertAndSaveGraph(const Graph* graph, string name);
     string generateAlignment();
-    Alignment loadAlignment(Graph* G1, Graph* G2, string fileName);
+    Alignment loadAlignment(const Graph* G1, const Graph* G2, string fileName);
     void deleteAuxFiles();
     string startingAligName;
     double alpha;

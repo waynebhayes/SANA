@@ -1,7 +1,7 @@
 #include "MultiEdgeCorrectness.hpp"
 #include <vector>
 
-MultiEdgeCorrectness::MultiEdgeCorrectness(Graph* G1, Graph* G2) : Measure(G1, G2, "mec") {
+MultiEdgeCorrectness::MultiEdgeCorrectness(const Graph* G1, const Graph* G2) : Measure(G1, G2, "mec") {
 }
 
 MultiEdgeCorrectness::~MultiEdgeCorrectness() {

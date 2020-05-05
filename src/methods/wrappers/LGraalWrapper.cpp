@@ -6,7 +6,7 @@ using namespace std;
 const string LGraalWrapper::GDVCounterProgram = "./wrappedAlgorithms/LGRAAL/ncount4.exe";
 const string LGraalWrapper::lgraalProgram = "./wrappedAlgorithms/LGRAAL/L-GRAAL.exe";
 
-LGraalWrapper::LGraalWrapper(Graph* G1, Graph* G2, double alpha, uint iterlimit, uint timelimit):
+LGraalWrapper::LGraalWrapper(const Graph* G1, const Graph* G2, double alpha, uint iterlimit, uint timelimit):
     Method(G1, G2, "LGRAAL"), g1Name(G1->getName()), g2Name(G2->getName()), alpha(alpha),
     iterlimit(iterlimit), timelimit(timelimit) {
     g1Folder = "networks/" + g1Name + "/";

@@ -4,7 +4,7 @@
 
 using namespace std;
 
-EdgeCount::EdgeCount(Graph* G1, Graph* G2, const vector<double>& distWeights) : LocalMeasure(G1, G2, "edgec") {
+EdgeCount::EdgeCount(const Graph* G1, const Graph* G2, const vector<double>& distWeights) : LocalMeasure(G1, G2, "edgec") {
     vector<double> normWeights(distWeights);
     normalizeWeights(normWeights);
     this->distWeights = normWeights;

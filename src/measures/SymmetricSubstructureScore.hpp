@@ -4,7 +4,7 @@
 
 class SymmetricSubstructureScore: public Measure {
 public:
-    SymmetricSubstructureScore(Graph* G1, Graph* G2);
+    SymmetricSubstructureScore(const Graph* G1, const Graph* G2);
     virtual ~SymmetricSubstructureScore();
     double eval(const Alignment& A);
 

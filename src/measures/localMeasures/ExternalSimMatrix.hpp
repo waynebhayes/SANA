@@ -5,7 +5,7 @@
 
 class ExternalSimMatrix: public LocalMeasure {
 public:
-    ExternalSimMatrix(Graph* G1, Graph* G2, string file, int format);
+    ExternalSimMatrix(const Graph* G1, const Graph* G2, string file, int format);
     virtual ~ExternalSimMatrix();
 private:
     void initSimMatrix();

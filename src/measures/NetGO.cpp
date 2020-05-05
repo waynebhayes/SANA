@@ -13,7 +13,7 @@ using namespace std;
 #define INVERSE_SQRT 0
 #define INVERSE_LOG 0
 
-NetGO::NetGO(Graph* G1, Graph* G2) :
+NetGO::NetGO(const Graph* G1, const Graph* G2):
     Measure(G1, G2, "netgo") {
     NORMALIZE = true;
     assert(COMBIN + INVERSE_FREQ + INVERSE_LOG + INVERSE_SQRT == 1);

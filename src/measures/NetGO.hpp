@@ -5,7 +5,7 @@
 
 class NetGO: public Measure {
 public:
-    NetGO(Graph* G1, Graph* G2);
+    NetGO(const Graph* G1, const Graph* G2);
     virtual ~NetGO();
     double eval(const Alignment& A);
 private:

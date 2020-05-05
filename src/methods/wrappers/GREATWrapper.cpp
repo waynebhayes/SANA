@@ -10,7 +10,8 @@ const string scripts[4] = {
             "run_H_G.sh",
             "run_H_H.sh",};
 
-GREATWrapper::GREATWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "GREAT", args) {
+GREATWrapper::GREATWrapper(const Graph* G1, const Graph* G2, string args):
+        WrappedMethod(G1, G2, "GREAT", args) {
     wrappedDir = "wrappedAlgorithms/GREAT";
 }
 
@@ -26,8 +27,6 @@ string GREATWrapper::convertAndSaveGraph(const Graph* graph, string name) {
 
 string GREATWrapper::generateAlignment() {
     exec("cd " + wrappedDir + "; mv *.gw networks/.");
-
-
     exec("cd " + wrappedDir + "; chmod +x *.sh");
     exec("cd " + wrappedDir + "/src; chmod +x *");
 
@@ -43,11 +42,8 @@ string GREATWrapper::generateAlignment() {
     return " ";
 }
 
-Alignment GREATWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
-    //TODO replace
-    exit(-1);
-    vector<uint> mapping(G1->getNumNodes(), G2->getNumNodes());
-    return Alignment(mapping);
+Alignment GREATWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
+    exit(-1); //TODO replace
 }
 
 void GREATWrapper::deleteAuxFiles() {

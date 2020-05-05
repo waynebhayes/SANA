@@ -2,7 +2,7 @@
 #include <vector>
 #include <iostream>
 
-NodeCount::NodeCount(Graph* G1, Graph* G2, const vector<double>& distWeights) : LocalMeasure(G1, G2, "nodec") {
+NodeCount::NodeCount(const Graph* G1, const Graph* G2, const vector<double>& distWeights) : LocalMeasure(G1, G2, "nodec") {
     vector<double> normWeights(distWeights);
     normalizeWeights(normWeights);
     this->distWeights = normWeights;

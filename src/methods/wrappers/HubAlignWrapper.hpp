@@ -10,7 +10,7 @@ using namespace std;
 class HubAlignWrapper: public Method {
 public:
 
-    HubAlignWrapper(Graph* G1, Graph* G2, double alpha);
+    HubAlignWrapper(const Graph* G1, const Graph* G2, double alpha);
     Alignment run();
     void describeParameters(ostream& stream);
     string fileNameSuffix(const Alignment& A) const;

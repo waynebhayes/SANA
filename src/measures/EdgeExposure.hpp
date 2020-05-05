@@ -9,7 +9,7 @@
 
 class EdgeExposure : public Measure {
 public:
-    EdgeExposure(Graph* G1, Graph* G2);
+    EdgeExposure(const Graph* G1, const Graph* G2);
     virtual ~EdgeExposure();
     double eval(const Alignment& A);
 

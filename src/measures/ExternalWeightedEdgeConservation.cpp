@@ -6,7 +6,7 @@
 using namespace std;
 
 ExternalWeightedEdgeConservation::ExternalWeightedEdgeConservation(
-    Graph* G1, Graph* G2, string scoresFile):
+    const Graph* G1, const Graph* G2, string scoresFile):
         Measure(G1, G2, "ewec"),
         matrixG2(G2->getAdjMatrix()),
         nodeNamesG1(G1->getNodeNames()),

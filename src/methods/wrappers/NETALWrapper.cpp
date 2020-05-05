@@ -4,7 +4,7 @@ using namespace std;
 
 const string NETALProgram = "./NETAL";
 
-NETALWrapper::NETALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "NETAL", args) {
+NETALWrapper::NETALWrapper(const Graph* G1, const Graph* G2, string args): WrappedMethod(G1, G2, "NETAL", args) {
     wrappedDir = "wrappedAlgorithms/NETAL";
 }
 
@@ -36,7 +36,7 @@ string NETALWrapper::generateAlignment() {
     return wrappedDir + "/" + alignmentTmpName;
 }
 
-Alignment NETALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+Alignment NETALWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
     vector<string> lines = fileToStrings(fileName, true);
     string word;
     int n1= G1->getNumNodes();

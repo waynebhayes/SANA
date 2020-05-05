@@ -5,7 +5,7 @@
 #include "../../computeGraphletsWrapper.hpp"
 using namespace std;
 
-GraphletNorm::GraphletNorm(Graph* G1, Graph* G2, uint maxGraphletSize):
+GraphletNorm::GraphletNorm(const Graph* G1, const Graph* G2, uint maxGraphletSize):
         LocalMeasure(G1, G2, "graphletnorm"), maxGraphletSize(maxGraphletSize) {
     string subfolder = autogenMatricesFolder+getName()+"/";
     createFolder(subfolder);

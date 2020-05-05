@@ -5,7 +5,7 @@
 
 class GoSimilarity: public LocalMeasure {
 public:
-    GoSimilarity(Graph* G1, Graph* G2,
+    GoSimilarity(const Graph* G1, const Graph* G2,
         const vector<double>& countWeights,
         double occurrencesFraction = 1);
     
@@ -21,7 +21,7 @@ public:
     //returns the number of times that each go term appears in G
     static unordered_map<uint,uint> getGoCounts(const Graph& G);
 
-    static bool fulfillsPrereqs(Graph* G1, Graph* G2);
+    static bool fulfillsPrereqs(const Graph* G1, const Graph* G2);
 
     static vector<uint> leastFrequentGoTerms(const Graph& G,
         double occurrencesFraction);

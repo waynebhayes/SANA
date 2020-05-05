@@ -11,7 +11,7 @@ using namespace std;
 class RandomAligner: public Method {
 public:
 
-    RandomAligner(Graph* G1, Graph* G2);
+    RandomAligner(const Graph* G1, const Graph* G2);
     Alignment run();
     void describeParameters(ostream& stream);
     string fileNameSuffix(const Alignment& A) const;

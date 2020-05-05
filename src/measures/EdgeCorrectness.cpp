@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-EdgeCorrectness::EdgeCorrectness(Graph* G1, Graph* G2) : Measure(G1, G2, "ec") {
+EdgeCorrectness::EdgeCorrectness(const Graph* G1, const Graph* G2) : Measure(G1, G2, "ec") {
 }
 
 EdgeCorrectness::~EdgeCorrectness() {

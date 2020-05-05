@@ -6,14 +6,14 @@ using namespace std;
 
 class GHOSTWrapper: public WrappedMethod {
 public:
-    GHOSTWrapper(Graph* G1, Graph* G2, string args);
+    GHOSTWrapper(const Graph* G1, const Graph* G2, string args);
 
 private:
     void createCfgFile(string cfgFileName);
     void loadDefaultParameters();
     string convertAndSaveGraph(const Graph* graph, string name);
     string generateAlignment();
-    Alignment loadAlignment(Graph* G1, Graph* G2, string fileName);
+    Alignment loadAlignment(const Graph* G1, const Graph* G2, string fileName);
     void deleteAuxFiles();
 
     string matcher;

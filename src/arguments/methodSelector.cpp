@@ -34,7 +34,7 @@ using namespace std;
 
 namespace methodSelector {
 
-Method* makeLgraalWrapper(Graph& G1, Graph& G2, ArgumentParser& args) {
+Method* makeLgraalWrapper(const Graph& G1,const Graph& G2, ArgumentParser& args) {
     string objFunType = args.strings["-objfuntype"];
     double alpha;
     if (objFunType == "generic") {
@@ -52,7 +52,7 @@ Method* makeLgraalWrapper(Graph& G1, Graph& G2, ArgumentParser& args) {
     return new LGraalWrapper(&G1, &G2, alpha, iters, seconds);
 }
 
-Method* makeHubAlignWrapper(Graph& G1, Graph& G2, ArgumentParser& args) {
+Method* makeHubAlignWrapper(const Graph& G1, const Graph& G2, ArgumentParser& args) {
     string objFunType = args.strings["-objfuntype"];
     double alpha;
     if (objFunType == "generic") {
@@ -68,7 +68,7 @@ Method* makeHubAlignWrapper(Graph& G1, Graph& G2, ArgumentParser& args) {
     return new HubAlignWrapper(&G1, &G2, alpha);
 }
 
-Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M, string startAligName) {
+Method* initSANA(const Graph& G1, const Graph& G2, ArgumentParser& args, MeasureCombination& M, string startAligName) {
     string TIniArg = args.strings["-tinitial"];
     string TDecayArg = args.strings["-tdecay"];
     string scheduleMethodName = args.strings["-schedulemethod"];
@@ -127,7 +127,7 @@ Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination&
     return static_cast<Method*>(sana);
 }
 
-Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M) {
+Method* initMethod(const Graph& G1, const Graph& G2, ArgumentParser& args, MeasureCombination& M) {
     string aligFile = args.strings["-eval"];
     if (aligFile != "")
         return new NoneMethod(&G1, &G2, aligFile);

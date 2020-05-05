@@ -8,8 +8,8 @@
 
 namespace methodSelector {
 
-Method* initMethod(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M);
-Method* initSANA(Graph& G1, Graph& G2, ArgumentParser& args, MeasureCombination& M, string startAligName=""); 
+Method* initMethod(const Graph& G1, const Graph& G2, ArgumentParser& args, MeasureCombination& M);
+Method* initSANA(const Graph& G1, const Graph& G2, ArgumentParser& args, MeasureCombination& M, string startAligName=""); 
 
 } //namespace methodSelector
 

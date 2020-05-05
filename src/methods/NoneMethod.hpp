@@ -7,7 +7,7 @@
 
 class NoneMethod : public Method {
 public:
-    NoneMethod(Graph* G1, Graph* G2, string startAName);
+    NoneMethod(const Graph* G1, const Graph* G2, string startAName);
     ~NoneMethod();
     Alignment run();
     void describeParameters(ostream& stream);

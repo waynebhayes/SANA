@@ -4,7 +4,7 @@
 
 class GraphletNorm: public LocalMeasure {
 public:
-    GraphletNorm(Graph* G1, Graph* G2, uint maxGraphletSize);
+    GraphletNorm(const Graph* G1, const Graph* G2, uint maxGraphletSize);
     virtual ~GraphletNorm();
 
 private:

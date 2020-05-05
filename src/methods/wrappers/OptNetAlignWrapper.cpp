@@ -5,7 +5,7 @@ using namespace std;
 const string PROGRAM   = "./optnetalign";
 const string GLOBAL_PARAMETERS = " --total --cxrate 0.05 --cxswappb 0.75 --mutrate 0.05 --mutswappb 0.0001 --oneobjrate 0.75 --dynparams --generations 1000000000 --hillclimbiters 10000 --finalstats --verbose --s3 ";
 
-OptNetAlignWrapper::OptNetAlignWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "OPTNETALIGN", args) {
+OptNetAlignWrapper::OptNetAlignWrapper(const Graph* G1, const Graph* G2, string args): WrappedMethod(G1, G2, "OPTNETALIGN", args) {
     wrappedDir = "wrappedAlgorithms/OptNetAlign";
 }
 
@@ -27,7 +27,7 @@ string OptNetAlignWrapper::generateAlignment() {
     return wrappedDir + "/" + alignmentTmpName;
 }
 
-Alignment OptNetAlignWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+Alignment OptNetAlignWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
     return Alignment::loadPartialEdgeList(*G1, *G2, fileName, false);
 }
 

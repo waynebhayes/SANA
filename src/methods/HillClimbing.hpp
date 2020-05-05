@@ -7,7 +7,7 @@
 class HillClimbing: public Method {
 public:
     HillClimbing();
-    HillClimbing(Graph* G1, Graph* G2, MeasureCombination* M, string startAName);
+    HillClimbing(const Graph* G1, const Graph* G2, MeasureCombination* M, string startAName);
     virtual ~HillClimbing();
 
     Alignment run();

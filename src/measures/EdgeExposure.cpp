@@ -6,7 +6,7 @@ uint EdgeExposure::MAX_EDGE = 1;
 uint EdgeExposure::denom = 0;
 uint EdgeExposure::numer = 0;
 
-EdgeExposure::EdgeExposure(Graph* G1, Graph* G2): Measure(G1, G2, "ee") {
+EdgeExposure::EdgeExposure(const Graph* G1, const Graph* G2): Measure(G1, G2, "ee") {
 #ifdef MULTI_PAIRWISE
     extern char *getetv(char*);
     char *s = getenv((char*)"EDGE_SUM");

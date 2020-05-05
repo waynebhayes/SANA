@@ -4,10 +4,10 @@
 
 class Importance: public LocalMeasure {
 public:
-    Importance(Graph* G1, Graph* G2);
+    Importance(const Graph* G1, const Graph* G2);
     virtual ~Importance();
 
-    static bool fulfillsPrereqs(Graph* G1, Graph* G2);
+    static bool fulfillsPrereqs(const Graph* G1, const Graph* G2);
     
 private:
     /* we use a minimum-degree heuristics algorithm to calcu-

@@ -4,7 +4,7 @@
 
 class GraphletCosine: public LocalMeasure {
 public:
-    GraphletCosine(Graph* G1, Graph* G2, uint maxGraphletSize);
+    GraphletCosine(const Graph* G1, const Graph* G2, uint maxGraphletSize);
     virtual ~GraphletCosine();
 
 private:

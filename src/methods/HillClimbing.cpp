@@ -26,7 +26,7 @@
 
 using namespace std;
 
-HillClimbing::HillClimbing(Graph* G1, Graph* G2, MeasureCombination* M, string startAName):
+HillClimbing::HillClimbing(const Graph* G1, const Graph* G2, MeasureCombination* M, string startAName):
     Method(G1, G2, "hillclimbing"), M(M), startAName(startAName), startA(Alignment::empty())
 {
 

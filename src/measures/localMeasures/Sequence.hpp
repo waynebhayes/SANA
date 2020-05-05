@@ -6,11 +6,11 @@
 
 class Sequence: public LocalMeasure {
 public:
-    Sequence(Graph* G1, Graph* G2);
+    Sequence(const Graph* G1, const Graph* G2);
     virtual ~Sequence();
     void generateBitscoresFile(string bitscoresFile);
 
-    static bool fulfillsPrereqs(Graph* G1, Graph* G2);
+    static bool fulfillsPrereqs(const Graph* G1, const Graph* G2);
 
 private:
 

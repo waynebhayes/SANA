@@ -9,7 +9,7 @@
 
 class Method {
 public:
-    Method(Graph* G1, Graph* G2, string name);
+    Method(const Graph* G1, const Graph* G2, string name);
     virtual ~Method();
     Alignment runAndPrintTime();
     virtual Alignment run() =0;
@@ -20,8 +20,8 @@ public:
     double getExecTime();
 
 protected:
-    Graph* G1;
-    Graph* G2;
+    const Graph* G1;
+    const Graph* G2;
 
 private:
     string name;

@@ -24,7 +24,7 @@ using namespace std;
 class SANA: public Method {
 
 public:
-    SANA(Graph* G1, Graph* G2, double TInitial, double TDecay, double t, bool usingIterations,
+    SANA(const Graph* G1, const Graph* G2, double TInitial, double TDecay, double t, bool usingIterations,
         bool addHillClimbing, MeasureCombination* MC, const string& scoreAggrStr,
         const Alignment& optionalStartAlig, const string& outputFileName, const string& localScoresFileName);
     ~SANA();

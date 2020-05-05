@@ -1,6 +1,6 @@
 #include "WrappedMethod.hpp"
 
-WrappedMethod::WrappedMethod(Graph* G1, Graph* G2, string name, string args): Method(G1, G2, name) {
+WrappedMethod::WrappedMethod(const Graph* G1, const Graph* G2, string name, string args): Method(G1, G2, name) {
     g1Name = G1->getName();
     g2Name = G2->getName();
 

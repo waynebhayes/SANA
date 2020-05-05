@@ -6,7 +6,7 @@ const string MAGNADIR     = "wrappedAlgorithms/MAGNA++";
 const string MAGNABinary = "./MAGNA++";
 const string GLOBAL_PARAMETERS = " -p 15000 -n 2000 -m S3 ";
 
-MagnaWrapper::MagnaWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "MAGNA", args) {
+MagnaWrapper::MagnaWrapper(const Graph* G1, const Graph* G2, string args): WrappedMethod(G1, G2, "MAGNA", args) {
     wrappedDir = "wrappedAlgorithms/MAGNA++";
     outputName = g1TmpName + "_" + g2TmpName;
 }
@@ -30,7 +30,7 @@ string MagnaWrapper::generateAlignment() {
     return outputName + "_final_alignment.txt";
 }
 
-Alignment MagnaWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+Alignment MagnaWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
     vector<string> words = fileToStrings(MAGNADIR + "/" + fileName, false);
     vector<uint> mapping(G1->getNumNodes(), G2->getNumNodes());
     const unordered_map<string,uint>* node1Map = G1->getNodeNameToIndexMap();

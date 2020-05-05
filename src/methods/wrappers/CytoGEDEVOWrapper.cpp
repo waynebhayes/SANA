@@ -9,7 +9,7 @@ const string GLOBAL_PARAMETERS = " --undirected --pop 400 ";
 
 //ARGUMENTS: --maxsecs <seconds> --blastpairlist [3 columns] --pop [400] --threads <N> [recommended runtime is "--maxsame 3000"]
 
-CytoGEDEVOWrapper::CytoGEDEVOWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "GEDEVO", args) {
+CytoGEDEVOWrapper::CytoGEDEVOWrapper(const Graph* G1, const Graph* G2, string args): WrappedMethod(G1, G2, "GEDEVO", args) {
     wrappedDir = "wrappedAlgorithms/CytoGEDEVO";
 }
 
@@ -37,7 +37,7 @@ string CytoGEDEVOWrapper::generateAlignment() {
     return wrappedDir + "/" + alignmentTmpName;
 }
 
-Alignment CytoGEDEVOWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+Alignment CytoGEDEVOWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
     return Alignment::loadPartialEdgeList(*G1, *G2, fileName, true);
 }
 

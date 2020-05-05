@@ -9,7 +9,7 @@ const string pyCreator = "gen-piswap-nohungarian.sh";
 const string usingAlignmentPyName = "piswap-nohungarian";
 const string PISwapNoHungarianBinary = "python " + usingAlignmentPyName;
 
-PISwapWrapper::PISwapWrapper(Graph* G1, Graph* G2, double alpha, string startingAlignment, string args): WrappedMethod(G1, G2, "PISWAP", args) {
+PISwapWrapper::PISwapWrapper(const Graph* G1, const Graph* G2, double alpha, string startingAlignment, string args): WrappedMethod(G1, G2, "PISWAP", args) {
     startingAligName = startingAlignment;
     this->alpha = 1-alpha;
     wrappedDir = "wrappedAlgorithms/PISWAP";
@@ -33,11 +33,10 @@ string PISwapWrapper::generateAlignment() {
         execPrintOutput("cd " + wrappedDir + "; " + PISwapNoHungarianBinary + TMP + ".py " + g1File + " " + g2File + " ../../" + parameters + " " + to_string(alpha)); 
     }
     execPrintOutput("cd " + wrappedDir + "; " + alignmentconverter + " match_output.txt " + alignmentTmpName);
-
     return wrappedDir + "/" + alignmentTmpName;
 }
 
-Alignment PISwapWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+Alignment PISwapWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
     return Alignment::loadEdgeListUnordered(*G1, *G2, fileName);
 }
 
@@ -45,5 +44,3 @@ void PISwapWrapper::deleteAuxFiles() {
     exec("cd " + wrappedDir + "; rm -f " + g1File + " " + g2File + " " + usingAlignmentPyName + TMP + ".py " + usingAlignmentPyName + TMP + ".pyc");
 }//probably the plan is to create a new piswap.py based on inputs no matter what.
 
-//it is good practice to sign comments like the one above so that people know who
-//they can reach to when trying to decrypt it -Nil

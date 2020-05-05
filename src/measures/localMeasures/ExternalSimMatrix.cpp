@@ -4,7 +4,7 @@
 #include <string>
 using namespace std;
 
-ExternalSimMatrix::ExternalSimMatrix(Graph* G1, Graph* G2, string file, int format): LocalMeasure(G1, G2, "esim") {
+ExternalSimMatrix::ExternalSimMatrix(const Graph* G1, const Graph* G2, string file, int format): LocalMeasure(G1, G2, "esim") {
     this->file = file;
     this->format = format;
     string subfolder = autogenMatricesFolder+getName()+"/";

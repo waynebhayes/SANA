@@ -6,7 +6,7 @@ using namespace std;
 const string wrappedDir = "wrappedAlgorithms/HubAlign/";
 const string HubAlignWrapper::hubalignProgram = "./HubAlign";
 
-HubAlignWrapper::HubAlignWrapper(Graph* G1, Graph* G2, double alpha): Method(G1, G2, "HubAlign"),
+HubAlignWrapper::HubAlignWrapper(const Graph* G1, const Graph* G2, double alpha): Method(G1, G2, "HubAlign"),
     alpha(alpha), g1Name(G1->getName()), g2Name(G2->getName()) {
 
     createFolder("sequence");
@@ -29,9 +29,7 @@ HubAlignWrapper::HubAlignWrapper(Graph* G1, Graph* G2, double alpha): Method(G1,
 }
 
 void HubAlignWrapper::generateEdgeListFile(int graphNum) {
-    Graph* G;
-    if (graphNum == 1) G = G1;
-    else G = G2;
+    const Graph* G = (graphNum == 1 ? G1 : G2);
 
     const vector<array<uint, 2>>* edgeList = G->getEdgeList();
     uint m = G->getNumEdges();

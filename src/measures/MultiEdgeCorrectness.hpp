@@ -5,7 +5,7 @@
 
 class MultiEdgeCorrectness: public Measure {
 public:
-    MultiEdgeCorrectness(Graph* G1, Graph* G2);
+    MultiEdgeCorrectness(const Graph* G1, const Graph* G2);
     virtual ~MultiEdgeCorrectness();
     double eval(const Alignment& A);
 

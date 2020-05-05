@@ -4,7 +4,7 @@
 
 class LargestCommonConnectedSubgraph: public Measure {
 public:
-    LargestCommonConnectedSubgraph(Graph* G1, Graph* G2);
+    LargestCommonConnectedSubgraph(const Graph* G1, const Graph* G2);
     virtual ~LargestCommonConnectedSubgraph();
     double eval(const Alignment& A);
 private:

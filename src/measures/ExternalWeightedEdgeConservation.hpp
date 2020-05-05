@@ -14,7 +14,7 @@ using namespace std;
 
 class ExternalWeightedEdgeConservation: public Measure {
 public:
-    ExternalWeightedEdgeConservation(Graph* G1, Graph* G2, string scoresFile);
+    ExternalWeightedEdgeConservation(const Graph* G1, const Graph* G2, string scoresFile);
     //virtual ~ExternalWeightedEdgeConservation();
     double eval(const Alignment& A);
     //double simScore(uint source, uint target, const Alignment& A);

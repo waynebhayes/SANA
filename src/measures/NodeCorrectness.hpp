@@ -10,7 +10,7 @@ public:
     double eval(const Alignment& A);
     virtual vector<uint> getMappingforNC() const;
     static vector<uint> convertAlign(const Graph& G1, const Graph& G2, const vector<string>& E);        
-    static bool fulfillsPrereqs(Graph* G1, Graph* G2);
+    static bool fulfillsPrereqs(const Graph* G1, const Graph* G2);
     
 private:
     Alignment trueA;

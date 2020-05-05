@@ -2,7 +2,7 @@
 #include <cmath>
 #include "LargestCommonConnectedSubgraph.hpp"
 
-LargestCommonConnectedSubgraph::LargestCommonConnectedSubgraph(Graph* G1, Graph* G2) : Measure(G1, G2, "lccs") {
+LargestCommonConnectedSubgraph::LargestCommonConnectedSubgraph(const Graph* G1, const Graph* G2) : Measure(G1, G2, "lccs") {
 }
 
 LargestCommonConnectedSubgraph::~LargestCommonConnectedSubgraph() {}
