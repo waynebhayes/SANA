@@ -37,7 +37,7 @@
 #include "../measures/EdgeExposure.hpp"
 #include "../measures/MultiS3.hpp"
 #include "../utils/utils.hpp"
-#include "../report.hpp"
+#include "../Report.hpp"
 
 using namespace std;
 
@@ -533,8 +533,8 @@ void SANA::printReport() {
     std::replace(timestamp.begin(), timestamp.end(), ' ', '_');
     string out = outputFileName+"_"+timestamp;
     string local = localScoresFileName+"_"+timestamp;
-    report::saveReport(*G1, *G2, A, *MC, this, out, false);
-    report::saveLocalMeasures(*G1, *G2, A, *MC, this, local);
+    Report::saveReport(*G1, *G2, A, *MC, this, out, false);
+    Report::saveLocalMeasures(*G1, *G2, A, *MC, this, local);
     cout << "Alignment saved. SANA will now continue." << endl;
 }
 

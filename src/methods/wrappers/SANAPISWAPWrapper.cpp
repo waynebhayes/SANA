@@ -1,4 +1,6 @@
 #include "SANAPISWAPWrapper.hpp"
+#include "../../arguments/methodSelector.hpp"
+#include "../../Report.hpp"
 
 using namespace std;
 
@@ -22,7 +24,7 @@ Alignment SANAPISWAPWrapper::run(){
     Alignment A = sanaMethod->runAndPrintTime();
     A.printDefinitionErrors(*G1, *G2);
     assert(A.isCorrectlyDefined(*G1, *G2) and "Resulting alignment is not correctly defined");
-    report::saveReport(*G1, *G2, A, M, sanaMethod, intermediateAlignment);
+    Report::saveReport(*G1, *G2, A, M, sanaMethod, intermediateAlignment);
     Alignment B = piswapMethod->runAndPrintTime();
     return B;
 }

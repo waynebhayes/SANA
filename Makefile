@@ -125,7 +125,7 @@ OTHER_SRC = 							\
 	src/Alignment.cpp                                   	\
 	src/complementaryProteins.cpp                       	\
 	src/main.cpp                                        	\
-	src/report.cpp
+	src/Report.cpp
 
 SRCS = $(METHODS_SRC) $(OTHER_SRC) $(UTILS_SRC) $(MEASURES_SRCS) $(METHOD_WRAPPERS_SRC) $(SCHEDULEMETHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC)
 OBJDIR = _objs

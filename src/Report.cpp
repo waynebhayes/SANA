@@ -1,5 +1,4 @@
-#include "report.hpp"
-
+#include "Report.hpp"
 #include "arguments/GraphLoader.hpp"
 #include "measures/EdgeCorrectness.hpp"
 #include "measures/InducedConservedStructure.hpp"
@@ -10,7 +9,7 @@
 
 bool multiPairwiseIteration; //todo: refactor without this out here -Nil
 
-void report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
+void Report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
                 const MeasureCombination& M, Method* method,
                 ofstream& stream, bool multiPairwiseIteration = false) {
     Timer T1;
@@ -119,12 +118,12 @@ void report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
     }
 }
 
-void report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
+void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
         const MeasureCombination& M, Method* method, string reportFileName) {
     saveReport(G1, G2, A, M, method, reportFileName, false);
 }
 
-void report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
+void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
                         const MeasureCombination& M, Method* method,
                         string reportFileName, bool multiPairwiseIteration) {
     Timer T;
@@ -148,7 +147,7 @@ void report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
     cout<<"Took "<<T.elapsed()<<" seconds to save the alignment and scores."<<endl;
 }
 
-void report::saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A,
+void Report::saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A,
     const MeasureCombination& M, const Method* method, string& localMeasureFileName) {
     Timer T;
     T.start();
@@ -169,7 +168,7 @@ void report::saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment
 NOTE: the && is a move semantic, which moves the internal pointers of one object
 to another and then destructs the original, instead of destructing all of the
 internal data of the original. */
-string report::ensureFileNameExistsAndOpenOutFile(const string& fileType, string outFileName, 
+string Report::ensureFileNameExistsAndOpenOutFile(const string& fileType, string outFileName, 
                     ofstream& outfile, const string& G1Name, const string& G2Name, 
                     const Method* method, Alignment const & A) {     
     string extension = fileType == "local measure" ? ".localscores" : ".out";
@@ -198,7 +197,7 @@ string report::ensureFileNameExistsAndOpenOutFile(const string& fileType, string
     return outFileName;
 }
 
-void report::printStats(const Graph& G, uint numCCsToPrint, ostream& stream) {
+void Report::printStats(const Graph& G, uint numCCsToPrint, ostream& stream) {
     stream << "n    = " << G.getNumNodes() << endl;
     stream << "m    = " << G.getNumEdges() << endl;
     uint numCCs = G.getNumConnectedComponents();
