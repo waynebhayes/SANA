@@ -1,8 +1,10 @@
-#include "computeGraphletsWrapper.hpp"
+#include "ComputeGraphletsWrapper.hpp"
 #include "computeGraphlets.hpp"
+#include <sys/types.h>
+#include <sys/stat.h>
 using namespace std;
 
-vector<vector<uint>> computeGraphletsWrapper::loadGraphletDegreeVectors(const Graph& G, uint maxGraphletSize) {
+vector<vector<uint>> ComputeGraphletsWrapper::loadGraphletDegreeVectors(const Graph& G, uint maxGraphletSize) {
     string graphletSizeStr = to_string(maxGraphletSize);
     string subfolder = "gdv"+graphletSizeStr+"/";
     createFolder(AUTOGENEREATED_FILES_FOLDER + subfolder);
@@ -28,7 +30,15 @@ vector<vector<uint>> computeGraphletsWrapper::loadGraphletDegreeVectors(const Gr
     return gdvs;
 }
 
-vector<vector<uint>> computeGraphletsWrapper::computeGraphletDegreeVectors(const Graph& G, uint maxGraphletSize) {
+bool ComputeGraphletsWrapper::newerGraphAvailable(const char* graphDir, const char* binaryDir) {
+    struct stat st;
+    stat(graphDir, &st);
+    time_t graphTime = st.st_mtime;
+    if (stat(binaryDir, &st) != 0) return true;
+    return (graphTime > st.st_mtime);
+}
+
+vector<vector<uint>> ComputeGraphletsWrapper::computeGraphletDegreeVectors(const Graph& G, uint maxGraphletSize) {
     cout<<"Computing Graphlet Degree Vectors... "<<endl;
     FILE *fp = tmpfile();
     fprintf(fp, "%d %d\n", G.getNumNodes(), G.getNumEdges()); 
@@ -41,7 +51,7 @@ vector<vector<uint>> computeGraphletsWrapper::computeGraphletDegreeVectors(const
     return gdvs;
 }
 
-void computeGraphletsWrapper::saveGraphletsAsSigs(const Graph& G, uint maxGraphletSize, const string& outFile) {
+void ComputeGraphletsWrapper::saveGraphletsAsSigs(const Graph& G, uint maxGraphletSize, const string& outFile) {
     vector<vector<uint>> graphlets = computeGraphletDegreeVectors(G, maxGraphletSize);
     ofstream ofs;
     ofs.open(outFile.c_str());
@@ -53,4 +63,37 @@ void computeGraphletsWrapper::saveGraphletsAsSigs(const Graph& G, uint maxGraphl
         ofs<<endl;
     }
     ofs.close();
+}
+
+void ComputeGraphletsWrapper::writeMatrixToFile(const vector<vector<uint>>& matrix, const string& fileName) {
+    uint n1 = matrix.size();
+    uint n2 = matrix[0].size();
+    ofstream fout(fileName.c_str());
+    for (uint i = 0; i < n1; i++) {
+        for (uint j = 0; j < n2; j++) {
+            fout << matrix[i][j] << " ";
+        }
+        fout << endl;
+    }
+    fout.close();
+}
+
+void ComputeGraphletsWrapper::writeMatrixToBinaryFile(const vector<vector<uint>>& matrix, const string& fileName) {
+    uint n1 = matrix.size();
+    uint n2 = matrix[0].size();
+    ofstream fout(fileName.c_str(), ios::out | ios::binary);
+    for (uint i = 0; i < n1; i++) {
+        fout.write((char*)&matrix[i][0], n2*sizeof(uint));
+    }
+    fout.close();
+}
+
+void ComputeGraphletsWrapper::readMatrixFromBinaryFile(vector<vector<uint>>& matrix, const string& fileName) {
+    uint n1 = matrix.size();
+    uint n2 = matrix[0].size();
+    ifstream fin(fileName.c_str(), ios::in | ios::binary);
+    for (uint i = 0; i < n1; i++) {
+        fin.read((char*)&matrix[i][0], n2*sizeof(uint));
+    }
+    fin.close();
 }

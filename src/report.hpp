@@ -30,7 +30,7 @@ string ensureFileNameExistsAndOpenOutFile(const string& fileType, string outFile
 	ofstream& outfile, const string& G1Name, const string& G2Name, const Method* method, 
 	const Alignment& A);
 
-void printStats(const Graph& G, int numConnectedComponentsToPrint, ostream& stream);
+void printStats(const Graph& G, uint numCCsToPrint, ostream& stream);
 
 } // namespace report
 

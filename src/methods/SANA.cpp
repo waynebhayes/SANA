@@ -41,13 +41,6 @@
 
 using namespace std;
 
-// All comparisons with nan variables are false, including self-equality.
-// Thus if it's not equal to itself, it's NAN.
-// Note you can't just do (x!=x), because that's always false, NAN or not.
-#ifdef CORES //inside macro to shut warning about unused function
-static bool myNan(double x) { return !(x==x); }
-#endif
-
 //static fields
 bool SANA::interrupt = false;
 bool SANA::saveAlignment = false;

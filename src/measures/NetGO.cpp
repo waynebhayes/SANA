@@ -1,9 +1,10 @@
-#include <vector>
+#include "NetGO.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
+#include <unordered_set>
 #include <unordered_map>
-#include "NetGO.hpp"
 #include "localMeasures/GoSimilarity.hpp"
 
 using namespace std;
@@ -73,15 +74,17 @@ double NetGO::scoreUpperBound() {
 double NetGO::eval(const Alignment& A) {
     uint n1 = G1->getNumNodes();
 
-    vector<vector<uint> > goTermsG1 = GoSimilarity::loadGOTerms(*G1, 1);
-    vector<vector<uint> > goTermsG2 = GoSimilarity::loadGOTerms(*G2, 1);
+    vector<vector<uint>> goTermsG1 = GoSimilarity::loadGOTerms(*G1, 1);
+    vector<vector<uint>> goTermsG2 = GoSimilarity::loadGOTerms(*G2, 1);
+    vector<unordered_set<uint>> g2TermSets;
+    for (const auto& termList : goTermsG2) g2TermSets.emplace_back(termList.begin(), termList.end());
     unordered_map<uint,uint> goCountG1 = GoSimilarity::getGoCounts(*G1);
     unordered_map<uint,uint> goCountG2 = GoSimilarity::getGoCounts(*G2);
 
     double total = 0;
     for (uint i = 0; i < n1; i++) {
         for (uint goTerm : goTermsG1[i]) {
-            if (contains(goTermsG2[A[i]], goTerm)) {
+            if (g2TermSets[A[i]].count(goTerm)) {
                 uint M = goCountG1[goTerm];
                 uint N = goCountG2[goTerm];
                 if (N > M) swap(N, M);

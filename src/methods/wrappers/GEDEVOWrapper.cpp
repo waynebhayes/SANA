@@ -1,6 +1,6 @@
 #include "GEDEVOWrapper.hpp"
 #include "../../arguments/GraphLoader.hpp"
-#include "../../computeGraphletsWrapper.hpp"
+#include "../../utils/ComputeGraphletsWrapper.hpp"
 using namespace std;
 
 const string CONVERTER = "python GWtoNTW.py";
@@ -34,8 +34,8 @@ string GEDEVOWrapper::convertAndSaveGraph(const Graph* graph, string name) {
 string GEDEVOWrapper::generateAlignment() {
     string g1Sigs = g1TmpName + ".sigs";
     string g2Sigs = g2TmpName + ".sigs";
-    computeGraphletsWrapper::saveGraphletsAsSigs(*G1, maxGraphletSize, wrappedDir + "/" + g1Sigs);
-    computeGraphletsWrapper::saveGraphletsAsSigs(*G2, maxGraphletSize, wrappedDir + "/" + g2Sigs);
+    ComputeGraphletsWrapper::saveGraphletsAsSigs(*G1, maxGraphletSize, wrappedDir + "/" + g1Sigs);
+    ComputeGraphletsWrapper::saveGraphletsAsSigs(*G2, maxGraphletSize, wrappedDir + "/" + g2Sigs);
 
     string cmd = GLOBAL_PARAMETERS + " --save " + alignmentTmpName + " --no-save --groups " +
             g1TmpName + " " + g2TmpName +

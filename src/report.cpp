@@ -15,7 +15,7 @@ void report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
                 ofstream& stream, bool multiPairwiseIteration = false) {
     Timer T1;
     T1.start();
-    const int numCCsToPrint = 3;
+    const uint numCCsToPrint = 3;
     stream << endl << currentDateTime() << endl << endl;
     stream << "G1: " << G1.getName() << endl;
     if (!multiPairwiseIteration) {
@@ -52,7 +52,7 @@ void report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
         printStats(CS, numCCsToPrint, stream);
         stream << endl;
 
-        int tableRows = min(5, CS.getNumConnectedComponents())+2;
+        int tableRows = min((uint) 5, CS.getNumConnectedComponents())+2;
         vector<vector<string> > table(tableRows, vector<string> (9));
         table[0][0] = "Graph"; table[0][1] = "n"; table[0][2] = "m"; table[0][3] = "alig-edges";
         table[0][4] = "indu-edges"; table[0][5] = "EC";
@@ -198,13 +198,13 @@ string report::ensureFileNameExistsAndOpenOutFile(const string& fileType, string
     return outFileName;
 }
 
-void report::printStats(const Graph& G, int numConnectedComponentsToPrint, ostream& stream) {
+void report::printStats(const Graph& G, uint numCCsToPrint, ostream& stream) {
     stream << "n    = " << G.getNumNodes() << endl;
     stream << "m    = " << G.getNumEdges() << endl;
     uint numCCs = G.getNumConnectedComponents();
     stream << "#connectedComponents = " << numCCs << endl;
     stream << "Largest connectedComponents (nodes, edges) = ";
-    for (int i = 0; i < min(numConnectedComponentsToPrint, numCCs); i++) {
+    for (uint i = 0; i < min(numCCsToPrint, numCCs); i++) {
         const vector<uint>& CC = (*(G.getConnectedComponents()))[i];
         stream << "(" << CC.size() << ", " << G.numEdgesInNodeInducedSubgraph(CC) << ") ";
     }

@@ -491,25 +491,25 @@ vector<array<string, 2>> Graph::colorsAsNodeColorNamePairs() const {
 }
 
 void Graph::debugPrint() const {
-    uint MAX_LEN = 10;        
+    size_t MAX_LEN = 10;        
     cerr<<"DEBUG PRINT "<<name<<endl;
     cerr<<"filePath: "<<filePath<<endl;
     cerr<<"adjLists size: "<<adjLists.size()<<endl;
     cerr<<"neighbor lists sizes: ";
-    for(int i = 0; i < min(adjLists.size(),MAX_LEN); i++) cerr<<adjLists[i].size()<<' ';
+    for(uint i = 0; i < min(adjLists.size(), MAX_LEN); i++) cerr<<adjLists[i].size()<<' ';
     if (MAX_LEN < adjLists.size()) cerr<<"..."; cerr<<endl;
     cerr<<"adjLists[0]: ";
-    for (int i = 0; i < min(adjLists[0].size(),MAX_LEN); i++) cerr<<adjLists[0][i]<<' ';
+    for (uint i = 0; i < min(adjLists[0].size(), MAX_LEN); i++) cerr<<adjLists[0][i]<<' ';
     if (MAX_LEN < adjLists[0].size()) cerr<<"..."; cerr<<endl;
 
     cerr<<"adjMatrix size: "<<adjMatrix.size()<<endl;
 
     cerr<<"nodeNames (size "<<nodeNames.size()<<"): ";
-    for (int i = 0; i < min(nodeNames.size(),MAX_LEN); i++) cerr<<nodeNames[i]<<' ';
+    for (uint i = 0; i < min(nodeNames.size(), MAX_LEN); i++) cerr<<nodeNames[i]<<' ';
     if (MAX_LEN < nodeNames.size()) cerr<<"..."; cerr<<endl;
 
     cerr<<"nodeColors (size "<<nodeColors.size()<<"): ";
-    for (int i = 0; i < min(nodeColors.size(),MAX_LEN); i++) cerr<<nodeColors[i]<<' ';
+    for (uint i = 0; i < min(nodeColors.size(), MAX_LEN); i++) cerr<<nodeColors[i]<<' ';
     if (MAX_LEN < nodeColors.size()) cerr<<"..."; cerr<<endl;
 
     cerr<<"nodeNameToIndexMap (size "<<nodeNameToIndexMap.size()<<"): ";
@@ -521,21 +521,21 @@ void Graph::debugPrint() const {
     cerr<<endl;
 
     cerr<<"edge list (size "<<edgeList.size()<<"): ";
-    for (int i = 0; i < min(edgeList.size(),MAX_LEN); i++) cerr<<'{'<<edgeList[i][0]<<", "<<edgeList[i][1]<<"} ";
+    for (uint i = 0; i < min(edgeList.size(), MAX_LEN); i++) cerr<<'{'<<edgeList[i][0]<<", "<<edgeList[i][1]<<"} ";
     if (MAX_LEN < edgeList.size()) cerr<<"..."; cerr<<endl;
 
     cerr<<"totalEdgeWeight: "<<totalEdgeWeight<<endl;
 
     cerr<<"connectedComponents size: "<<connectedComponents.size()<<endl;
     cerr<<"CC sizes: ";
-    for(int i = 0; i < min(connectedComponents.size(),MAX_LEN); i++) cerr<<connectedComponents[i].size()<<' ';
+    for(uint i = 0; i < min(connectedComponents.size(), MAX_LEN); i++) cerr<<connectedComponents[i].size()<<' ';
     if (MAX_LEN < connectedComponents.size()) cerr<<"..."; cerr<<endl;
     cerr<<"connectedComponents[0]: ";
-    for (int i = 0; i < min(connectedComponents[0].size(),MAX_LEN); i++) cerr<<connectedComponents[0][i]<<' ';
+    for (uint i = 0; i < min(connectedComponents[0].size(), MAX_LEN); i++) cerr<<connectedComponents[0][i]<<' ';
     if (MAX_LEN < connectedComponents[0].size()) cerr<<"..."; cerr<<endl;
 
     cerr<<"colorNames (size "<<colorNames.size()<<"): ";
-    for (int i = 0; i < min(colorNames.size(),MAX_LEN); i++) cerr<<colorNames[i]<<' ';
+    for (uint i = 0; i < min(colorNames.size(), MAX_LEN); i++) cerr<<colorNames[i]<<' ';
     if (MAX_LEN < colorNames.size()) cerr<<"..."; cerr<<endl;
 
     cerr<<"colorNameToId (size "<<colorNameToId.size()<<"): ";
@@ -548,10 +548,10 @@ void Graph::debugPrint() const {
 
     cerr<<"nodeGroupsByColor size: "<<nodeGroupsByColor.size()<<endl;
     cerr<<"color group sizes: ";
-    for(int i = 0; i < min(nodeGroupsByColor.size(),MAX_LEN); i++) cerr<<nodeGroupsByColor[i].size()<<' ';
+    for(uint i = 0; i < min(nodeGroupsByColor.size(), MAX_LEN); i++) cerr<<nodeGroupsByColor[i].size()<<' ';
     if (MAX_LEN < nodeGroupsByColor.size()) cerr<<"..."; cerr<<endl;
     cerr<<"nodeGroupsByColor[0]: ";
-    for (int i = 0; i < min(nodeGroupsByColor[0].size(),MAX_LEN); i++) cerr<<nodeGroupsByColor[0][i]<<' ';
+    for (uint i = 0; i < min(nodeGroupsByColor[0].size(), MAX_LEN); i++) cerr<<nodeGroupsByColor[0][i]<<' ';
     if (MAX_LEN < nodeGroupsByColor[0].size()) cerr<<"..."; cerr<<endl;
     cerr<<endl;
 }
