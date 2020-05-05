@@ -27,6 +27,9 @@ experiments/*/results/
 
 *.bitscores
 
+*.progress
+*.stdout
+
 #latex aux files
 *.bbl
 *.blg
