@@ -112,6 +112,7 @@ MODES_SRC = 								\
 	src/modes/Experiment.cpp 					\
 	src/modes/ParameterEstimation.cpp 				\
 	src/modes/NormalMode.cpp					\
+	src/modes/CreateShadow.cpp					\
 	src/modes/DebugMode.cpp						\
 	src/modes/ClusterMode.cpp					\
 	src/modes/AnalysisMode.cpp					\

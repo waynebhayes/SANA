@@ -40,6 +40,10 @@ public:
     //the graph is loaded as monochromatic
     static Graph loadGraphFromFile(
       const string& graphName, const string& filePath, bool loadWeights);
+
+    //utility
+    static vector<array<string, 2>> rawTwoColumnFileData(const string& filePath);
+
 private:
     //functions to extract raw data from the file and process it as necessary
     //to call the graph constructor (without colors)
@@ -97,7 +101,6 @@ private:
     static array<vector<array<string, 2>>, 2> nodeColorListsFromCommonNames(const vector<string>& commonNames);
 
     //utility functions -- changing data formats
-    static vector<array<string, 2>> rawTwoColumnFileData(const string& filePath);
     static pair<vector<array<uint, 2>>, vector<string>> namedEdgeListToEdgeListAndNodeNameList(
                                     const vector<array<string, 2>>& namedEdgeList);
 };

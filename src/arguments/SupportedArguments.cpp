@@ -143,7 +143,7 @@ vector<array<string, 6>> supportedArguments = {
 
     //------------------------------------MODE-------------------------------------------
     { "", "mode", "banner", "", "Mode", "0" },
-    { "-mode", "string", "normal", "Mode", "Runs SANA in a specified mode. Arguments for this option are: \"cluster\", \"exp\", \"param\", \"alpha\", \"dbg\", \"normal\", \"analysis\", \"similarity\".", "0" },
+    { "-mode", "string", "normal", "Mode", "Runs SANA in a specified mode. Arguments for this option are: \"cluster\", \"exp\", \"param\", \"alpha\", \"dbg\", \"normal\", \"analysis\", \"shadow\", \"similarity\".", "0" },
     { "End Mode", "", "banner", "", "", "0" },
     //----------------------------------END MODE-----------------------------------------
 
@@ -181,11 +181,11 @@ vector<array<string, 6>> supportedArguments = {
     { "End More options for \"-mode alpha\"", "", "banner", "", "", "0" },
     //----------------------------END ALPHA ESTIMATION-----------------------------------
 
-    //-----------------------------------DEBUG-------------------------------------------
-    //---------------------------------END DEBUG-----------------------------------------
-
-    //----------------------------------NORMAL-------------------------------------------
-    //--------------------------------END NORMAL-----------------------------------------
+    //----------------------------------CREATE SHADOW------------------------------------
+    { "", "mode-shadow", "banner", "", "More options for \"-mode shadow\"", "0" },
+    { "-fshadow", "string", "", "File with source networks and alignments", "Provide listing all the files necessary to create the shadow network.", "0" },
+    { "End More options for \"-mode shadow\"", "", "banner", "", "", "0" },
+    //--------------------------------END CREATE SHADOW----------------------------------
 
     //---------------------------------ANALYSIS------------------------------------------
     { "", "-mode-analysis", "banner", "", "More options for \"-mode analysis\"", "0" },

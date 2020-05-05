@@ -301,7 +301,7 @@ Graph Graph::subtractGraph(const Graph& other, const vector<uint>& otherToThisNo
 
     return Graph(name, filePath, newEdgeList, nodeNames, 
                  newEdgeWeights, colorsAsNodeColorNamePairs());
-    //note: the new graph takes the same name/path as the original graph. this seems confused
+    //note: the new graph takes the same name/path as the original graph. this may be confusing
     //since it's no longer the same graph, but I think SANA relies on this -Nil
 }
 
