@@ -19,15 +19,15 @@ done
 export SANA_EXE
 if $MAKE ; then
     CORES=`cpus 2>/dev/null || echo 4`
-    dot='' # This is a cheap hack to ensure the "." only appears after the $ext is equal to something
-    for ext in '' multi float; do
+    for ext in multi float ''; do
 	make clean; make $ext -j$CORES
+	# We only want a "." separator if the extension is non-null
+	if [ "$ext" = "" ]; then dot=""; else dot="."; fi
 	if [ -x sana$dot$ext ]; then
-	    mv -f sana$dot$ext "$SANA_EXE$dot$ext"
+	    mv -f "sana$dot$ext" "$SANA_EXE$dot$ext"
 	else
 	    warn "could not create executable 'sana$dot$ext'"
 	fi
-	dot=. # See cheap hack comment above
     done
 fi
 
