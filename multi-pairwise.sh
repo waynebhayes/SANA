@@ -220,7 +220,7 @@ do
         sed -e 's/\.out//' -e 's/\.align/.stdout/' $OUTDIR/dir$ITER/jobs-done.txt | fgrep -v -f /dev/stdin $OUTDIR/dir$ITER/jobs.txt | eval timeout $TIME_LIMIT2 $PARALLEL
     done
     ./shadow2align.sh $OUTDIR/dir$i1/*.align > $OUTDIR/dir$i1/multiAlign.tsv
-     ./createShadow -s$MAX_NODES $TYPEcreateSh "$@" $OUTDIR/dir$i1/*-shadow.$CrShAlignInput  >$OUTDIR/dir$i1/$NAME-shadow$i1.$CrShOutType || die "$OUTDIR/dir$i1/$NAME-shadow$i1.$CrShOutType network creation failed"
+     ./createShadow -s$MAX_NODES $TYPEcreateSh "$@" $OUTDIR/dir$i1/*-shadow.$CrShAlignInput > $OUTDIR/dir$i1/$NAME-shadow$i1.$CrShOutType || die "$OUTDIR/dir$i1/$NAME-shadow$i1.$CrShOutType network creation failed"
     #./createShadow -s29315      $TYPEcreateSh "$@" $OUTDIR/dir$i1/*-shadow.$CrShAlignInput > $OUTDIR/dir$i1/$NAME-shadow$i1.$CrShOutType || die "$OUTDIR/dir$i1/$NAME-shadow$i1.$CrShOutType network creation failed"
     [ $TYPES ] && yes | head | (awk '{printf "DUMMY\tmRNA-%c\t0\n", 64+NR}' >> $OUTDIR/dir$i1/$NAME-shadow$i1.el)
 #   awk '{gsub("[|{}]","")}$'$SEScol'>1{sum2+=$'$SEScol'^2}END{printf " SES %g\n", sum2/'$SES_DENOM'}' $OUTDIR/dir$i1/$NAME-shadow$i1.$CrShOutType
