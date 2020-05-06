@@ -12,6 +12,10 @@ ifeq ($(MULTI), 1)
 CXXFLAGS := $(CXXFLAGS) -DMULTI_PAIRWISE
 endif
 
+ifeq ($(FLOAT), 1)
+CXXFLAGS := $(CXXFLAGS) -DFLOAT_WEIGHTS
+endif
+
 
 INCLUDES =
 LFLAGS =
@@ -136,7 +140,6 @@ MAIN = sana
 
 .PHONY: depend clean test test_all regression_test
 
-#all:    $(MAIN) argumentCSV createShadow NetGO parallel
 all:    $(MAIN) argumentCSV NetGO parallel #I removed createShadow due to a problem with the includes I couldn't figure out -Nil
 
 $(MAIN): $(OBJS)
@@ -185,7 +188,7 @@ $(GTEST_OBJS):
 clean: #clear_cache
 	$(RM) -rf cache*  # mostly for pBad
 	$(RM) -rf $(OBJDIR)/src
-	$(RM) -f $(MAIN) createShadow parallel
+	$(RM) -f $(MAIN) createShadow
 	$(RM) -f src/arguments/argumentTable.csv
 
 clear_cache:
@@ -204,6 +207,10 @@ optnetalign:
 
 NetGO:
 # 	(cd NetGO && git pull)
+
+float:
+	$(MAKE) 'FLOAT=1'
+	mv sana sana.float
 
 multi:
 	$(MAKE) 'MULTI=1'

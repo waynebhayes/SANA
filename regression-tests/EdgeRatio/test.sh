@@ -7,6 +7,7 @@ CORES=`cpus 2>/dev/null || echo 4`
 
 TEST_DIR=`pwd`/regression-tests/EdgeRatio
 [ -d "$TEST_DIR" ] || die "should be run from top-level directory of the SANA repo"
+(cd "$TEST_DIR" && /bin/rm -f *.align *.out *.progress)
 
 NUM_FAILS=0
 
@@ -14,10 +15,9 @@ nets="150 WMean_con WMean_ocd"
 
 for network in $nets; do
     file="$TEST_DIR/$network"
-
     # Run SANA to align the graph to itself
     echo "Aligning network $network" >&2
-    echo "'$SANA_EXE' -t 20 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
+    echo "'$SANA_EXE.float' -t 20 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
 done | ./parallel -s /bin/bash $CORES
 
 

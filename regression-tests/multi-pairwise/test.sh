@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 echo() { /bin/echo "$@"
 }
 die() { echo "FATAL ERROR: $@" >&2; exit 1

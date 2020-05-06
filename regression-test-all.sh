@@ -1,6 +1,8 @@
 #!/bin/bash
 die() { echo "FATAL ERROR: $@" >&2; exit 1
 }
+warn() { echo "WARNING: $@" >&2;
+}
 PATH=`pwd`:`pwd`/scripts:$PATH
 export PATH
 
@@ -17,12 +19,16 @@ done
 export SANA_EXE
 if $MAKE ; then
     CORES=`cpus 2>/dev/null || echo 4`
-    make clean; make multi -j$CORES; [ -x sana.multi ] || die "could not create executable 'sana.multi'"
-    make clean; make -j$CORES; [ -x sana ] || die "could not create 'sana' executable"
-    if [ "$SANA_EXE" != ./sana ]; then
-	mv -i sana "$SANA_EXE"
-	mv -i sana.multi "$SANA_EXE.multi"
-    fi
+    dot='' # This is a cheap hack to ensure the "." only appears after the $ext is equal to something
+    for ext in '' multi float; do
+	make clean; make $ext -j$CORES
+	if [ -x sana$dot$ext ]; then
+	    mv -f sana$dot$ext "$SANA_EXE$dot$ext"
+	else
+	    warn "could not create executable 'sana$dot$ext'"
+	fi
+	dot=. # See cheap hack comment above
+    done
 fi
 
 NUM_FAILS=0
@@ -30,7 +36,7 @@ for dir in regression-tests/*; do
     echo --- in directory $dir ---
     for r in $dir/*.sh; do
 	echo --- running test $r ---
-	if bash -x "$r"; then
+	if "$r"; then
 	    :
 	else
 	    (( NUM_FAILS+=$? ))
