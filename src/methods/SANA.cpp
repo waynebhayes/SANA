@@ -1074,7 +1074,7 @@ double SANA::edgeRatioIncChangeOp(uint source, uint oldTarget, uint newTarget) {
 
         uint node2Target = node2 == source ? newTarget : A[node2];
         r = getRatio(G1->edgeWeight(source, node2), G2->edgeWeight(newTarget, node2Target));
-        y = +r - c;
+        y = r - c;
         t = edgeRatioIncDiff + y;
         c = (t - edgeRatioIncDiff) - y;
         edgeRatioIncDiff = t;

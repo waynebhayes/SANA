@@ -63,7 +63,9 @@ double HillClimbing::getExecutionTime() const {
 
 Alignment HillClimbing::run() {
 #ifdef FLOAT_WEIGHTS
-    throw runtime_error("Hill climb only supports ec/ics/s3");
+    //would be cleaner if method selector failed if HC is selected with 
+    //a measure it doesn't optimize 
+    throw runtime_error("Hill climbing only supports ec/ics/s3/wec/local measures");
 #else
     uint n1 = G1->getNumNodes(), n2 = G2->getNumNodes();
     vector<uint> A(startA.asVector());
@@ -318,8 +320,8 @@ Alignment HillClimbing::run() {
             A[bestSource2] = target1;
         }
     }
-#endif // FLOAT_WEIGHTS
     return A;
+#endif // FLOAT_WEIGHTS
 }
 
 string HillClimbing::fileNameSuffix(const Alignment& A) const {

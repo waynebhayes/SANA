@@ -23,8 +23,7 @@ double EdgeRatio::getEdgeRatioSum(const Graph *G1, const Graph *G2, const Alignm
 #else
     double edgeRatioSum = 0;
     double c = 0;
-    const vector<array<uint, 2>>* edgeList = G1->getEdgeList();
-    for (const auto& edge : *edgeList) {
+    for (const auto& edge : *(G1->getEdgeList())) {
       uint node1 = edge[0], node2 = edge[1];
       double r = getRatio(G1->edgeWeight(node1, node2), G2->edgeWeight(A[node1], A[node2]));
       double y = r - c;
@@ -42,12 +41,10 @@ double EdgeRatio::adjustSumToTargetScore(double edgeRatioSum, uint pairsCount) {
 }
 
 double EdgeRatio::getRatio(double w1, double w2) {
-    double r;
-    if (w1==0 && w2==0) r = 1;
-    else if (abs(w1)<abs(w2)) r = w1/w2;
-    else r = w2/w1;
-    // At this point, r can be in [-1,1], but we want it [0,1], so add 1 and divide by 2
+    if (w1 == 0 and w2 == 0) return 1;
+    double r = (abs(w1) < abs(w2) ? w1/w2 : w2/w1);
+    //At this point, r is in [-1,1], but we want it in [0,1], so add 1 and divide by 2
     r = (r+1)/2;
-    assert(r>=0 && r<=1);
+    assert(r >= 0 and r <= 1);
     return r;
 }
