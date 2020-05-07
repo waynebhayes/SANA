@@ -2,7 +2,7 @@
 
 #generates a warning. this is intended.
 # "Warning: some G2 nodes have a color non-existent in G1, so some G2 nodes won't be part of any valid alignment"
-./sana -g1 yeast -g2 human -t 2 -s3 1 -fcolor1 regression-tests/node-color/yeast.col -fcolor2 regression-tests/node-color/human.col
+"$SANA_EXE" -g1 yeast -g2 human -t 2 -s3 1 -fcolor1 regression-tests/node-color/yeast.col -fcolor2 regression-tests/node-color/human.col
 
 #after running it:
 grep PAP1 sana.align #check that it is aligned to LEP
@@ -10,7 +10,7 @@ grep RSC6 sana.align #check that it is aligned to either MYOC or PXN
 grep CTSB sana.align #check that it does not appear
 
 
-./sana -fg1 regression-tests/node-color/covid.el -fg2 regression-tests/node-color/covid.el -t 4 -s3 1 -fcolor1 regression-tests/node-color/covid.col -fcolor2 regression-tests/node-color/covid.col
+"$SANA_EXE" -fg1 regression-tests/node-color/covid.el -fg2 regression-tests/node-color/covid.el -t 4 -s3 1 -fcolor1 regression-tests/node-color/covid.col -fcolor2 regression-tests/node-color/covid.col
 
 #after running it:
 grep -w 'E\|M\|N\|NSP1\|NSP10\|NSP11\|NSP12\|NSP13\|NSP14\|NSP15\|NSP2\|NSP4\|NSP5\|NSP5_C145A\|NSP6\|NSP7\|NSP8\|NSP9\|ORF10\|ORF3A\|ORF3B\|ORF6\|ORF7A\|ORF8\|ORF9B\|PROTEIN14\|S' sana.align
@@ -22,7 +22,7 @@ grep -w 'E\|M\|N\|NSP1\|NSP10\|NSP11\|NSP12\|NSP13\|NSP14\|NSP15\|NSP2\|NSP4\|NS
 #terminates with a runtime error. this is intended.
 # "there is a unique valid alignment, so running SANA is pointless"
 #locking is implemented on top of the color system, so this tests the color system
-./sana -fg1 regression-tests/node-color/covid.el -fg2 regression-tests/node-color/covid.el -t 0.3 -s3 1 -lock-same-names
+"$SANA_EXE" -fg1 regression-tests/node-color/covid.el -fg2 regression-tests/node-color/covid.el -t 0.3 -s3 1 -lock-same-names
 
 
 #in this test:
@@ -40,7 +40,7 @@ grep -w 'E\|M\|N\|NSP1\|NSP10\|NSP11\|NSP12\|NSP13\|NSP14\|NSP15\|NSP2\|NSP4\|NS
 # color c2 (id 1) has prob 0.05 (accumulated prob is now up to 0.8)
 # color c1 (id 2) has prob 0.05 (accumulated prob is now up to 0.85)
 # color c3 (id 3) has prob 0.15 (accumulated prob is now up to 1)
-./sana -fg1 regression-tests/node-color/colorTest1.el -fcolor1 regression-tests/node-color/colorTest1.col -fg2 regression-tests/node-color/colorTest2.el -fcolor2 regression-tests/node-color/colorTest2.col -s3 1 -t 2
+"$SANA_EXE" -fg1 regression-tests/node-color/colorTest1.el -fcolor1 regression-tests/node-color/colorTest1.col -fg2 regression-tests/node-color/colorTest2.el -fcolor2 regression-tests/node-color/colorTest2.col -s3 1 -t 2
 
 more sana.align
 #check the following matches:
@@ -57,7 +57,7 @@ more sana.align
 # color lock_2 (id 2) is inactive
 # color lock_1 (id 3) is inactive
 # color lock_0 (id 4) is inactive
-./sana -fg1 regression-tests/node-color/colorTest1.el -fg2 regression-tests/node-color/colorTest2.el -lock regression-tests/node-color/lockTest.lock -s3 1 -t 2
+"$SANA_EXE" -fg1 regression-tests/node-color/colorTest1.el -fg2 regression-tests/node-color/colorTest2.el -lock regression-tests/node-color/lockTest.lock -s3 1 -t 2
 
 more sana.align 
 #check the following matches:
