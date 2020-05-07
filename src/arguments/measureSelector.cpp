@@ -151,7 +151,7 @@ bool shouldInit(string measureName, const Graph& G1, const Graph& G2, ArgumentPa
 }
 
 void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, ArgumentParser& args) {
-    cout << "Initializing measures... ";
+    cout << "Initializing measures... " << endl;
     Timer T;
     T.start();
 
@@ -254,7 +254,7 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
     double maxGraphletSize = 4; //4 is default because 5 is too big
     if (args.doubles["-maxGraphletSize"] != 0) {
         maxGraphletSize = args.doubles["-maxGraphletSize"];
-        if (maxGraphletSize == 5 || maxGraphletSize == 4)
+        if (maxGraphletSize == 5 or maxGraphletSize == 4)
             cerr<<"Setting maximum graphlet size to "<<maxGraphletSize<<endl;
         else throw runtime_error("Invalid graphlet size: "+to_string(maxGraphletSize)+"\nShould be 4 or 5\n");
     }

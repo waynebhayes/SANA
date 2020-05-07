@@ -191,19 +191,19 @@ SANA::SANA(const Graph* G1, const Graph* G2,
         uint numNbrs = numSwapNeighborsByColor[id] + numChangeNeighborsByColor[id];
         totalAligNbrs += numNbrs;
         // debug info:
-        // cerr<<"color "<<colorName<<" has "<<numSwapNeighborsByColor[id]<<" swap nbrs and "
-            // <<numChangeNeighborsByColor[id]<<" change nbrs ("<<numNbrs<<" total)"<<endl;
+        cerr<<"color "<<colorName<<" has "<<numSwapNeighborsByColor[id]<<" swap nbrs and "
+            <<numChangeNeighborsByColor[id]<<" change nbrs ("<<numNbrs<<" total)"<<endl;
     }
     if (totalAligNbrs == 0) throw runtime_error(
             "there is a unique valid alignment, so running SANA is pointless");
     //debug info:
-    // cerr<<"an alignment has "<<totalAligNbrs<<" nbrs in total"<<endl;
+    cerr<<"an alignment has "<<totalAligNbrs<<" nbrs in total"<<endl;
 
     //init activeColorIds, changeProbByColor, and colorAccumProbCutpoints
     for (uint id = 0; id < G1->numColors(); id++) {
         uint numNbrs = numSwapNeighborsByColor[id] + numChangeNeighborsByColor[id];
         if (numNbrs == 0) { 
-            // cerr<<"color "<<id<<" ("<<G1->getColorName(id)<<") is inactive"<<endl;
+            cerr<<"color "<<G1->getColorName(id)<<" (id "<<id<<") is inactive"<<endl;
             continue; //inactive color (e.g., a locked pair)
         }
         activeColorIds.push_back(id);
@@ -213,8 +213,8 @@ SANA::SANA(const Graph* G1, const Graph* G2,
                 (colorAccumProbCutpoints.empty() ? 0 : colorAccumProbCutpoints.back());
         colorAccumProbCutpoints.push_back(accumProb);
         //debug info:
-        // cerr<<"color "<<G1->getColorName(id)<<" (id "<<id<<") has prob "<<colorProb
-        //     <<" (accumulated prob is now up to "<<accumProb<<")"<<endl;
+        cerr<<"color "<<G1->getColorName(id)<<" (id "<<id<<") has prob "<<colorProb
+            <<" (accumulated prob is now up to "<<accumProb<<")"<<endl;
     }
     //due to rounding errors, the last number may not be exactly 1, so we correct it
     colorAccumProbCutpoints.back() = 1;
@@ -542,8 +542,20 @@ void SANA::SANAIteration() {
     ++iterationsPerformed;
     uint index = randColorWeightedByNumNbrs();
     uint colorId = activeColorIds[index];
-    if (randomReal(gen) < changeProbByColor[index]) performChange(colorId);
-    else performSwap(colorId);
+    double p = randomReal(gen);
+    if (p < changeProbByColor[index]) {
+        if (G2->numNodesWithColor(colorId) <= 1) { //this shouldn't happen, but happened once
+            //printing this to trace back the bug if it happens again
+            //remove nested if after bug is fixed
+            cerr<<"p: "<<p<<" index: "<<index<<" colorId: "<<colorId
+                <<"changeProbByColor[index]: "<<changeProbByColor[index]<<endl;
+            G1->debugPrint();
+            G2->debugPrint();
+        }
+        performChange(colorId);
+    } else {
+        performSwap(colorId);
+    }
 }
 
 void SANA::performChange(uint colorId) {

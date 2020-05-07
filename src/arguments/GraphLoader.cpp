@@ -501,7 +501,7 @@ array<vector<array<string, 2>>, 2> GraphLoader::nodeColorListsFromLockFile(
     for (uint i = 0; i < lockedPairs.size(); i++) {
         //give color "i" to the i-th locked pair
         string g1Node = lockedPairs[i][0], g2Node = lockedPairs[i][1];
-        string color_i = to_string(i);
+        string color_i = "lock_"+to_string(i);
         res[0].push_back({g1Node, color_i});
         res[1].push_back({g2Node, color_i});
     }
