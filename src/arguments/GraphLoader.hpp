@@ -41,8 +41,9 @@ public:
     static Graph loadGraphFromFile(
       const string& graphName, const string& filePath, bool loadWeights);
 
-    //utility
-    static vector<array<string, 2>> rawTwoColumnFileData(const string& filePath);
+    //utility (todo: consider moving them to utils)
+    static vector<array<string, 2>> rawTwoColumnFileData(const string& outFile);
+    static void saveTwoColumnData(const vector<array<string, 2>>& rows, const string& outFile);
 
 private:
     //functions to extract raw data from the file and process it as necessary

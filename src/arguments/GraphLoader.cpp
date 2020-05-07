@@ -142,26 +142,25 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     return {G1, G2};
 }
 
-void GraphLoader::saveInGWFormat(const Graph& G, string outFile,
-    bool saveWeights) {
-    ofstream outfile;
-    string saveIn = "/tmp/saveInGWFormat", pid = to_string(getpid());
-    string tempFile = saveIn+pid; //a comment explaining why tempFile is necessary would be nice -Nil
-    outfile.open(tempFile.c_str());
-    outfile <<"LEDA.GRAPH"<<endl<<"string"<<endl<<"short"<<endl<<"-2"<<endl; //header
-    outfile << G.getNumNodes() << endl;
-    for (const auto& name : *(G.getNodeNames())) {
-        outfile << "|{" << name << "}|" << endl;
-    }
-    outfile << G.getNumEdges() << endl;
-    const vector<array<uint, 2>>* edges = G.getEdgeList();
+void GraphLoader::saveInGWFormat(const Graph& G, string outFile, bool saveWeights) {
 
-    for (const auto& edge : *edges) {
-        outfile << edge[0]+1 << " " << edge[1]+1 << " 0 |{"; //re-indexing to 1-based
-        if (saveWeights) outfile << G.edgeWeight(edge[0], edge[1]) << endl;
-        outfile << "}|" << endl;
+    //a comment explaining why a temp file is necessary (and why only
+    //in this function) would be nice -Nil
+    string tempFile = "/tmp/saveInGWFormat"+to_string(getpid()); 
+
+    ofstream ofs;
+    ofs.open(tempFile.c_str());
+    ofs << "LEDA.GRAPH" << endl << "string" << endl << "short" << endl << "-2" << endl;
+    ofs << G.getNumNodes() << endl;
+    for (const auto& name : *(G.getNodeNames())) ofs << "|{" << name << "}|" << endl;
+    ofs << G.getNumEdges() << endl;
+    for (const auto& edge : *(G.getEdgeList())) {
+        ofs << edge[0]+1 << " " << edge[1]+1 << " 0 |{"; //re-indexing to 1-based
+        if (saveWeights) ofs << G.edgeWeight(edge[0], edge[1]) << endl;
+        ofs << "}|" << endl;
     }
-    outfile.close();
+    ofs.close();
+
     exec("mv "+tempFile+" "+outFile);
 }
 
@@ -177,6 +176,13 @@ void GraphLoader::saveInEdgeListFormat(const Graph& G, string outFile, bool weig
         if (weightColumn) ofs<<sep<<G.edgeWeight(edge[0], edge[1]);
         ofs<<endl;
     }
+    ofs.close();
+}
+
+void GraphLoader::saveTwoColumnData(const vector<array<string, 2>>& rows, const string& outFile) {
+    ofstream ofs;
+    ofs.open(outFile.c_str());
+    for (const auto& row : rows) ofs<<row[0]<<" "<<row[1]<<endl;
     ofs.close();
 }
 

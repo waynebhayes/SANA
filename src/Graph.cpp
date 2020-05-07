@@ -459,6 +459,7 @@ uint Graph::getColorId(string name) const {
     return colorNameToId.at(name);
 }
 string Graph::getColorName(uint colorId) const { return colorNames.at(colorId); }
+const vector<string>* Graph::getColorNames() const { return &colorNames; }
 bool Graph::hasColor(string name) const { return colorNameToId.count(name); }
 uint Graph::numNodesWithColor(uint colorId) const {
     return nodeGroupsByColor[colorId].size();
