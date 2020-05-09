@@ -308,25 +308,6 @@ Graph Graph::subtractGraph(const Graph& other, const vector<uint>& otherToThisNo
     //since it's no longer the same graph, but I think SANA relies on this -Nil
 }
 
-string Graph::getName() const { return name; }
-string Graph::getFilePath() const { return filePath; }
-uint Graph::getNumNodes() const { return adjLists.size(); }
-uint Graph::getNumEdges() const { return edgeList.size(); }
-string Graph::getNodeName(uint node) const { return nodeNames.at(node); }
-bool Graph::hasNodeName(const string& nodeName) const { return nodeNameToIndexMap.count(nodeName); }
-uint Graph::getNameIndex(const string& nodeName) const { return nodeNameToIndexMap.at(nodeName); };
-uint Graph::getNumNbrs(uint node) const { return adjLists[node].size(); }
-uint Graph::getNumConnectedComponents() const { return connectedComponents.size(); }
-double Graph::getTotalEdgeWeight() const { return totalEdgeWeight; }
-bool Graph::hasEdge(uint node1, uint node2) const { return adjMatrix.get(node1, node2) != 0; }
-EDGE_T Graph::edgeWeight(uint node1, uint node2) const { return adjMatrix.get(node1, node2); }
-bool Graph::hasSelfLoop(uint node) const { return adjMatrix.get(node, node) != 0; }
-const vector<vector<uint>>* Graph::getAdjLists() const { return &adjLists; }
-const vector<array<uint, 2>>* Graph::getEdgeList() const { return &edgeList; }
-const Matrix<EDGE_T>* Graph::getAdjMatrix() const { return &adjMatrix; }
-const vector<string>* Graph::getNodeNames() const { return &nodeNames; } 
-const unordered_map<string,uint>* Graph::getNodeNameToIndexMap() const { return &nodeNameToIndexMap; }
-const vector<vector<uint> >* Graph::getConnectedComponents() const { return &connectedComponents; }
 uint Graph::randomNode() const {
     if (getNumNodes() == 0) throw runtime_error("no nodes");
     return randInt(0, getNumNodes()-1);

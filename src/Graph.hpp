@@ -85,32 +85,32 @@ public:
     //(e.g., if the colors depend on the node names, like with -lock-same-names)
     void initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs);
 
-    //O(1) getters
-    string getName() const;
-    string getFilePath() const;
-    uint getNumNodes() const;
-    uint getNumEdges() const;
-    string getNodeName(uint node) const;
-    bool hasNodeName(const string& nodeName) const;
-    uint getNameIndex(const string& nodeName) const; //reverse of getNodeName
-    uint getNumNbrs(uint node) const;
-    uint getNumConnectedComponents() const;
-    double getTotalEdgeWeight() const;
-    bool hasEdge(uint node1, uint node2) const; //equivalent to edgeWeight != 0 (edges with weight 0 not supported)
-    EDGE_T edgeWeight(uint node1, uint node2) const; //returns 0 if there is no edge
-    bool hasSelfLoop(uint node) const;
-    uint randomNode() const;
+
+    //O(1) getters (defined in header for efficiency -- allows inlining)
+    string getName() const { return name; }
+    string getFilePath() const { return filePath; }
+    uint getNumNodes() const { return adjLists.size(); }
+    uint getNumEdges() const { return edgeList.size(); }
+    bool hasEdge(uint node1, uint node2) const { return adjMatrix.get(node1, node2) != 0; } //(edges with weight 0 not supported)
+    EDGE_T edgeWeight(uint node1, uint node2) const { return adjMatrix.get(node1, node2); } //returns 0 if there is no edge
+    bool hasNodeName(const string& nodeName) const { return nodeNameToIndexMap.count(nodeName); }
+    string getNodeName(uint node) const { return nodeNames.at(node); }
+    uint getNameIndex(const string& nodeName) const { return nodeNameToIndexMap.at(nodeName); } //reverse of getNodeName
+    uint getNumNbrs(uint node) const { return adjLists[node].size(); }
+    uint getNumConnectedComponents() const { return connectedComponents.size(); }
+    double getTotalEdgeWeight() const { return totalEdgeWeight; }
+    bool hasSelfLoop(uint node) const { return adjMatrix.get(node, node) != 0; }
     //large data structures are returned as const pointers
-    //(pointers such that the receiver cannot modify the pointed content)
-    const vector<vector<uint>>* getAdjLists() const;
-    const vector<array<uint, 2>>* getEdgeList() const;
-    const Matrix<EDGE_T>* getAdjMatrix() const; //recommended to use hasEdge() and edgeWeight() instead
-    const vector<string>* getNodeNames() const; //recommended to use getNodeName() instead
-    const unordered_map<string,uint>* getNodeNameToIndexMap() const; //recommended to use getNameIndex() instead
-    const vector<vector<uint> >* getConnectedComponents() const; 
+    const vector<vector<uint>>* getAdjLists() const { return &adjLists; }
+    const vector<array<uint, 2>>* getEdgeList() const { return &edgeList; }
+    const Matrix<EDGE_T>* getAdjMatrix() const { return &adjMatrix; } //recommendation: use hasEdge() and edgeWeight() instead
+    const vector<string>* getNodeNames() const { return &nodeNames; } //recommendation: use getNodeName() instead
+    const unordered_map<string,uint>* getNodeNameToIndexMap() const { return &nodeNameToIndexMap; } //recommendation: use getNameIndex() instead
+    const vector<vector<uint> >* getConnectedComponents() const { return &connectedComponents; }
 
 
     //things that are computed when called
+    uint randomNode() const;
     uint maxDegree() const;
     vector<uint> degreeDistribution() const;
     uint numEdgesInNodeInducedSubgraph(const vector<uint>& subgraphNodes) const;
