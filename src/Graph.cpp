@@ -31,17 +31,20 @@ Graph::Graph(const string& graphName, const string& optionalFilePath,
         name(graphName), filePath(optionalFilePath),
         edgeList(edgeList), nodeNames(optionalNodeNames) {
 
-    if (edgeList.empty()) throw runtime_error("empty edge list");
     uint numNodes;
     if (optionalNodeNames.size() != 0) numNodes = optionalNodeNames.size();
     else {
         //if names are not given, derive the number of nodes from the edge list
         //and give them dummy names
-        uint maxInd = 0;
-        for (const auto& edge : edgeList)
-            for (uint node : edge)
-                if (node > maxInd) maxInd = node;
-        numNodes = maxInd+1;
+        if (edgeList.empty()) {
+            numNodes = 0;
+        } else {
+            uint maxInd = 0;
+            for (const auto& edge : edgeList)
+                for (uint node : edge)
+                    if (node > maxInd) maxInd = node;
+            numNodes = maxInd+1;
+        }
         nodeNames.reserve(numNodes);
         for (uint i = 0; i < numNodes; i++) nodeNames.push_back(to_string(i));
     }

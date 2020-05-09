@@ -156,7 +156,7 @@ void GraphLoader::saveInGWFormat(const Graph& G, string outFile, bool saveWeight
     ofs << G.getNumEdges() << endl;
     for (const auto& edge : *(G.getEdgeList())) {
         ofs << edge[0]+1 << " " << edge[1]+1 << " 0 |{"; //re-indexing to 1-based
-        if (saveWeights) ofs << G.edgeWeight(edge[0], edge[1]) << endl;
+        if (saveWeights) ofs << +G.edgeWeight(edge[0], edge[1]); //the + makes it print as a number even if it has type char/bool
         ofs << "}|" << endl;
     }
     ofs.close();
@@ -173,7 +173,7 @@ void GraphLoader::saveInEdgeListFormat(const Graph& G, string outFile, bool weig
     for (const auto& edge : *edges) {
         if (namedEdges) ofs<<G.getNodeName(edge[0])<<sep<<G.getNodeName(edge[1]);
         else ofs<<edge[0]<<sep<<edge[1];
-        if (weightColumn) ofs<<sep<<G.edgeWeight(edge[0], edge[1]);
+        if (weightColumn) ofs<<sep<<+G.edgeWeight(edge[0], edge[1]); //the + makes it print as a number even if it has type char/bool
         ofs<<endl;
     }
     ofs.close();

@@ -4,7 +4,6 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <unordered_map>
 #include <array>
 #include <algorithm>
 #include "../utils/utils.hpp"
@@ -20,30 +19,68 @@ void CreateShadow::run(ArgumentParser& args) {
     assert(false and "create shadow should be compiled in MULTI_PAIRWISE");
 #endif
     //parse input
-    stdiobuf sbuf = readFileAsStreamBuffer(args.strings["-fshadow"]);
-    istream ifs(&sbuf);
-    string outFile, outColorFile;
-    bool hasAligs, hasColors;
-    uint numDummies, k;
-    ifs >> outFile >> numDummies >> k;
-    vector<string> graphFiles(k), aligFiles(k), colorFiles(k);
-    for (uint i = 0; i < k; i++) ifs >> graphFiles[i]; 
-    ifs >> hasAligs;
-    if (hasAligs) for (uint i = 0; i < k; i++) ifs >> aligFiles[i];
-    ifs >> hasColors;
-    if (hasColors) {
-        for (uint i = 0; i < k; i++) ifs >> colorFiles[i];
-        ifs >> outColorFile;
+    //strip comments
+    vector<string> lines = fileToStrings(args.strings["-fshadow"], true);
+    for (uint i = 0; i < lines.size(); i++) lines[i] = lines[i].substr(0, lines[i].find('#'));
+
+    //put the rest into an input stream
+    string concatLines = "";
+    for (const string& line : lines) concatLines += " " + line;
+    istringstream iss(concatLines);
+
+    //begin parse
+    string outFile;
+    uint k;
+    iss >> outFile >> k;
+    vector<string> graphFiles(k);
+    for (uint i = 0; i < k; i++) {
+        iss >> graphFiles[i]; 
+        checkFileExists(graphFiles[i]);
     }
-    createShadow(outFile, numDummies, graphFiles,
+
+    bool hasAligs;
+    vector<string> aligFiles;
+    iss >> hasAligs;
+    if (hasAligs) {
+        aligFiles.resize(k);
+        for (uint i = 0; i < k; i++) {
+            iss >> aligFiles[i];
+            checkFileExists(aligFiles[i]);
+        }
+    }
+
+    bool hasCols;
+    vector<string> colFiles;
+    string outColFile = "";
+    iss >> hasCols;
+    if (hasCols) {
+        colFiles.resize(k);
+        for (uint i = 0; i < k; i++) {
+            iss >> colFiles[i];
+            checkFileExists(colFiles[i]);
+        }
+        iss >> outColFile;
+    }
+
+    unordered_map<string, uint> colToNumDummies;
+    uint numCols;
+    iss >> numCols;
+    for (uint i = 0; i < numCols; i++) {
+        string colName;
+        iss >> colName;
+        iss >> colToNumDummies[colName];
+    }
+
+    createShadow(outFile, graphFiles,
                  hasAligs, aligFiles, 
-                 hasColors, colorFiles, outColorFile);
+                 hasCols, colFiles, outColFile,
+                 colToNumDummies);
 }
 
-void CreateShadow::createShadow(const string& outFile, uint numDummies,
-        const vector<string>& graphFiles, 
+void CreateShadow::createShadow(const string& outFile, const vector<string>& graphFiles, 
         bool hasAligs, const vector<string>& aligFiles,
-        bool hasColors, const vector<string>& colorFiles, const string& outColorFile) {
+        bool hasCols, const vector<string>& colFiles, const string& outColFile,
+        const unordered_map<string, uint>& colToNumDummies) {
 
     //figure out the colors and the number of nodes for each color
     //for each color in any of the graphs, the number of nodes in the shadow graph of that color
@@ -52,9 +89,9 @@ void CreateShadow::createShadow(const string& outFile, uint numDummies,
     unordered_map<string, uint> colToNodeCount;
     for (uint i = 0; i < graphFiles.size(); i++) {
         Graph G = GraphLoader::loadGraphFromFile("", graphFiles[i], false);
-        //if hasColors is false, every node gets the default color, which is a valid color
-        if (hasColors) {
-            auto nodeColorPairs = GraphLoader::rawTwoColumnFileData(colorFiles[i]);
+        //if hasCols is false, every node gets the default color, which is a valid color
+        if (hasCols) {
+            auto nodeColorPairs = GraphLoader::rawTwoColumnFileData(colFiles[i]);
             G.initColorDataStructs(nodeColorPairs);
         }
         for (const string& gColor : *(G.getColorNames())) {
@@ -62,8 +99,13 @@ void CreateShadow::createShadow(const string& outFile, uint numDummies,
             if (colToNodeCount[gColor] < gColorCount) colToNodeCount[gColor] = gColorCount;
         }
     }
-    for (const auto& kv : colToNodeCount) colToNodeCount[kv.first] += numDummies;
-
+    assert(colToNodeCount.size() == colToNumDummies.size());
+    for (const auto& kv : colToNodeCount) {
+        string colName = kv.first;
+        assert(colToNumDummies.count(colName));
+        colToNodeCount[colName] += colToNumDummies.at(colName);
+    }
+    
     //generate the node names, which are called "shad_{i}"
     vector<string> shadNodeNames;
     uint numShadNodes = 0;
@@ -74,18 +116,16 @@ void CreateShadow::createShadow(const string& outFile, uint numDummies,
     //assign colors to the names in alphabetical order of the colors
     //to get always the same mapping from node names to color names
     vector<string> shadNodeColors;
-    shadNodeColors.reserve(numShadNodes);
     vector<string> orderedColNames;
     for (const auto& kv : colToNodeCount) orderedColNames.push_back(kv.first);
     sort(orderedColNames.begin(), orderedColNames.end());
-    uint nodeColInd = 0;
+    shadNodeColors.reserve(numShadNodes);
     for (const string& col : orderedColNames) {
         for (uint i = 0; i < colToNodeCount[col]; i++) {
-            shadNodeColors[nodeColInd] = col;
-            nodeColInd++;
+            shadNodeColors.push_back(col);
         }
     }
-    assert(nodeColInd == shadNodeColors.size());
+    assert(numShadNodes == shadNodeColors.size());
 
     //put the color names in the appropriate format for the graph constructor
     vector<array<string, 2>> nodeColorPairs;        
@@ -106,8 +146,8 @@ void CreateShadow::createShadow(const string& outFile, uint numDummies,
 
     for (uint i = 0; i < graphFiles.size(); i++) {
         Graph G = GraphLoader::loadGraphFromFile("", graphFiles[i], false);
-        if (hasColors) {
-            auto nodeColorPairs = GraphLoader::rawTwoColumnFileData(colorFiles[i]);
+        if (hasCols) {
+            auto nodeColorPairs = GraphLoader::rawTwoColumnFileData(colFiles[i]);
             G.initColorDataStructs(nodeColorPairs);
         }
 
@@ -129,17 +169,22 @@ void CreateShadow::createShadow(const string& outFile, uint numDummies,
         for (uint gNode = 0; gNode < G.getNumNodes(); gNode++) {
             string gNodeName = G.getNodeName(gNode);
             string gNodeColor = G.getColorName(G.getNodeColor(gNode));
+            assert(gNameToSName.count(gNodeName));
             string sNodeName = gNameToSName[gNodeName];
+            assert(emptyShadow.hasNodeName(sNodeName));
             uint sNode = emptyShadow.getNameIndex(sNodeName);
             string sNodeColor = emptyShadow.getColorName(emptyShadow.getNodeColor(sNode));
+            if (gNodeColor != sNodeColor) cerr<<"mismatch: "<<gNodeColor<<" "<<sNodeColor<<endl;
             assert (gNodeColor == sNodeColor);
         }
 
         //add the edges
         for (const auto& edge : (*G.getEdgeList())) {
             string gName1 = G.getNodeName(edge[0]), gName2 = G.getNodeName(edge[1]);
+            assert(gNameToSName.count(gName1));
+            assert(gNameToSName.count(gName2));
             string sName1 = gNameToSName[gName1], sName2 = gNameToSName[gName2];
-            uint shadNode1 = stoi(sName1.substr(5)), shadNode2 = stoi(sName2.substr(5)); //"shad_{i} -> i"
+            uint shadNode1 = stoi(sName1.substr(5)), shadNode2 = stoi(sName2.substr(5)); //"shad_{i}" -> i
             if (shadNode1 > shadNode2) swap(shadNode1, shadNode2); //to avoid double-counting
             shadNbrSets[shadNode1][shadNode2]++; //auto-inserts shadNode2 if missing
         }
@@ -155,22 +200,24 @@ void CreateShadow::createShadow(const string& outFile, uint numDummies,
     for (uint node = 0; node < numShadNodes; node++) {
         for (const auto& kv : shadNbrSets[node]) {
             uint nbr = kv.first;
-            auto weight = kv.second;
+            EDGE_T weight = kv.second;
             shadEdgeList.push_back({node, nbr});
             shadEdgeWeights.push_back(weight);
         }
     }
-
+    // cerr<<shadEdgeList.size()<<" "<<shadEdgeWeights.size()<<" "<<shadEdgeWeights[0]<<endl;
     //finally, build and save the shadow
-    Graph shadow("", "", shadEdgeList, shadNodeNames, shadEdgeWeights, nodeColorPairs);
+    Graph shadow("shadow", "", shadEdgeList, shadNodeNames, shadEdgeWeights, nodeColorPairs);
     GraphLoader::saveInGWFormat(shadow, outFile, true);
-    if (hasColors) {
+    if (hasCols) {
         //the colors never change after the first iteration of multi pairwise, so we could
         //store them only when hasAligs is false. this optimizationi is turned off:
         // if (hasAligs) continue;
 
-        GraphLoader::saveTwoColumnData(nodeColorPairs, outColorFile);
+        GraphLoader::saveTwoColumnData(nodeColorPairs, outColFile);
     }
+    shadow.debugPrint();
+    assert(shadow.isWellDefined());
 }
 
 string CreateShadow::getName() { return "CreateShadow"; }

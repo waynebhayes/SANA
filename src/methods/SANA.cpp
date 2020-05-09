@@ -575,17 +575,17 @@ void SANA::performChange(uint colorId) {
         oldMs3Denom = MultiS3::denom;
     }
     int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newEdSum            = (needEd) ? edSum + edgeDifferenceIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newErSum            = (needEr) ? erSum + edgeRatioIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newSquaredAligEdges = (needSquaredAligEdges) ? squaredAligEdges + squaredAligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newExposedEdgesNumer= (needExposedEdges) ? EdgeExposure::numer + exposedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newMS3Numer         = (needMS3) ? MultiS3::numer + MS3IncChangeOp(source, oldTarget, newTarget) : -1;
-    int newInducedEdges        = (needInducedEdges) ? inducedEdges + inducedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newLocalScoreSum    = (needLocal) ? localScoreSum + localScoreSumIncChangeOp(sims, source, oldTarget, newTarget) : -1;
-    double newWecSum           = (needWec) ? wecSum + WECIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newJsSum            = (needJs) ? jsSum + JSIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newEwecSum          = (needEwec) ? ewecSum + EWECIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newNcSum            = (needNC) ? ncSum + ncIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newEdSum            = needEd ? edSum + edgeDifferenceIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newErSum            = needEr ? erSum + edgeRatioIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncChangeOp(source, oldTarget, newTarget) : -1;
+    int newInducedEdges        = needInducedEdges ? inducedEdges + inducedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncChangeOp(sims, source, oldTarget, newTarget) : -1;
+    double newWecSum           = needWec ? wecSum + WECIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newJsSum            = needJs ? jsSum + JSIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newEwecSum          = needEwec ? ewecSum + EWECIncChangeOp(source, oldTarget, newTarget) : -1;
+    double newNcSum            = needNC ? ncSum + ncIncChangeOp(source, oldTarget, newTarget) : -1;
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
@@ -664,16 +664,16 @@ void SANA::performSwap(uint colorId) {
     }
 
     int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    double newSquaredAligEdges = (needSquaredAligEdges) ? squaredAligEdges + squaredAligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    double newExposedEdgesNumer= (needExposedEdges) ? EdgeExposure::numer + exposedEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    double newMS3Numer         = (needMS3) ? MultiS3::numer + MS3IncSwapOp(source1, source2, target1, target2) : -1;
-    double newWecSum           = (needWec) ? wecSum + WECIncSwapOp(source1, source2, target1, target2) : -1;
-    double newJsSum            = (needJs) ? jsSum + JSIncSwapOp(source1, source2, target1, target2) : -1;
-    double newEwecSum          = (needEwec) ? ewecSum + EWECIncSwapOp(source1, source2, target1, target2) : -1;
-    double newNcSum            = (needNC) ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
-    double newLocalScoreSum    = (needLocal) ? localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2) : -1;
-    double newEdSum            = (needEd) ? edSum + edgeDifferenceIncSwapOp(source1, source2, target1, target2) : -1;
-    double newErSum            = (needEr) ? erSum + edgeRatioIncSwapOp(source1, source2, target1, target2) : -1;
+    double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
+    double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(source1, source2, target1, target2) : -1;
+    double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncSwapOp(source1, source2, target1, target2) : -1;
+    double newWecSum           = needWec ? wecSum + WECIncSwapOp(source1, source2, target1, target2) : -1;
+    double newJsSum            = needJs ? jsSum + JSIncSwapOp(source1, source2, target1, target2) : -1;
+    double newEwecSum          = needEwec ? ewecSum + EWECIncSwapOp(source1, source2, target1, target2) : -1;
+    double newNcSum            = needNC ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
+    double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2) : -1;
+    double newEdSum            = needEd ? edSum + edgeDifferenceIncSwapOp(source1, source2, target1, target2) : -1;
+    double newErSum            = needEr ? erSum + edgeRatioIncSwapOp(source1, source2, target1, target2) : -1;
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
