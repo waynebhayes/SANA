@@ -108,7 +108,6 @@ public:
     const unordered_map<string,uint>* getNodeNameToIndexMap() const { return &nodeNameToIndexMap; } //recommendation: use getNameIndex() instead
     const vector<vector<uint> >* getConnectedComponents() const { return &connectedComponents; }
 
-
     //things that are computed when called
     uint randomNode() const;
     uint maxDegree() const;
@@ -134,8 +133,14 @@ public:
     bool hasColor(string colorName) const;
     uint getNodeColor(uint node) const;
     uint numColors() const;
-    uint numNodesWithColor(uint colorId) const;
-    uint getRandomNodeWithColor(uint colorId) const; //used by SANA to choose random nodes
+    
+    //function in SANA's main loop. defined here to allow inlining
+    uint numNodesWithColor(uint colorId) const  {
+        return nodeGroupsByColor[colorId].size();
+    }
+    uint getRandomNodeWithColor(uint colorId) const {
+        return nodeGroupsByColor[colorId][randInt(0, nodeGroupsByColor[colorId].size()-1)];
+    } 
     static const string DEFAULT_COLOR_NAME; 
 
     //color ids are internal to each graph (i.e., color i in G1 may not have the same name as color i in G2)

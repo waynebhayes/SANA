@@ -83,8 +83,48 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
         if (g1HasColorFile) g1Colors = RawColorFileData(fcolors1).nodeColorList;
         if (g2HasColorFile) g2Colors = RawColorFileData(fcolors2).nodeColorList;
     }
+    if (g1Colors.empty() and g2Colors.empty() and G1.getNumNodes() > G2.getNumNodes()) {
+        throw runtime_error("Please swap G1 and G2. G2 should have more nodes.");
+    }
     G1.initColorDataStructs(g1Colors);
     G2.initColorDataStructs(g2Colors);
+
+    //add dummy nodes to G2 to guarantee an alignment exists
+    unordered_map<string,uint> colToNumDummies;
+    for (const string& colName : *(G1.getColorNames())) {
+        uint g1Count = G1.numNodesWithColor(G1.getColorId(colName));
+        uint g2Count;
+        if (not G2.hasColor(colName)) g2Count = 0;
+        else g2Count = G2.numNodesWithColor(G2.getColorId(colName));
+        if (g1Count > g2Count) colToNumDummies[colName] = g1Count - g2Count;
+    }
+    if (not colToNumDummies.empty()) {
+        vector<string> g2NodeNames = *(G2.getNodeNames());
+        g2NodeNames.reserve(g2NodeNames.size() + colToNumDummies.size());
+        uint numDummiesWithDefCol = (colToNumDummies.count(Graph::DEFAULT_COLOR_NAME) ?
+                                            colToNumDummies[Graph::DEFAULT_COLOR_NAME] : 0);
+        g2Colors.reserve(g2Colors.size() + colToNumDummies.size() - numDummiesWithDefCol);
+        for (const auto& kv : colToNumDummies) {
+            string colName = kv.first;
+            uint count = kv.second;
+            cerr<<"adding "<<count<<" dummies colored "<<colName<<" to G2"<<endl;
+            for (uint i = 0; i < count; i++) {
+                string dummyName = "dummy_"+to_string(i);
+                if (colName != Graph::DEFAULT_COLOR_NAME) dummyName += "_"+colName;
+                g2NodeNames.push_back(dummyName);
+                if (colName != Graph::DEFAULT_COLOR_NAME) {
+                    g2Colors.push_back({dummyName, colName});
+                }
+            }
+        }
+        vector<EDGE_T> g2Weights;
+        if (g2HasWeights) {
+            g2Weights.reserve(G2.getNumEdges());
+            for (const auto& edge : *(G2.getEdgeList()))
+                g2Weights.push_back(G2.edgeWeight(edge[0], edge[1]));
+        }
+        G2 = Graph(G2.getName(), G2.getFilePath(), *(G2.getEdgeList()), g2NodeNames, g2Weights, g2Colors);
+    }
 
     string path1 = args.strings["-pathmap1"], path2 = args.strings["-pathmap2"];
     if (path1 != "") {
