@@ -43,6 +43,8 @@ public:
     /* All-purpose constructor
     - optionalFilePath can be left empty if not relevant
     - self-loops are allowed in the edge list
+    - the edge list should not contain repeated entries (the constructor
+      will not crash if it does, but 'isWellDefined()' will)
     - if optionalNodeNames is empty, the number of nodes is deduced from
       the edge list and name "i" is given to the i-th node
     - if optionalEdgeWeights is empty, all nodes get weight 1 (i.e., unweighted graph).
@@ -85,14 +87,16 @@ public:
     //(e.g., if the colors depend on the node names, like with -lock-same-names)
     void initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs);
 
-
     //O(1) getters (defined in header for efficiency -- allows inlining)
     string getName() const { return name; }
     string getFilePath() const { return filePath; }
     uint getNumNodes() const { return adjLists.size(); }
     uint getNumEdges() const { return edgeList.size(); }
-    bool hasEdge(uint node1, uint node2) const { return adjMatrix.get(node1, node2) != 0; } //(edges with weight 0 not supported)
-    EDGE_T edgeWeight(uint node1, uint node2) const { return adjMatrix.get(node1, node2); } //returns 0 if there is no edge
+    //note: edges with weight 0 are not supported
+    bool hasEdge(uint node1, uint node2) const { return adjMatrix.get(node1, node2) != 0; }
+    //returns 0 if there is no edge (should be renamed to getEdgeWeight)
+    //the order of the arguments is irrelevant
+    EDGE_T edgeWeight(uint node1, uint node2) const { return adjMatrix.get(node1, node2); }
     bool hasNodeName(const string& nodeName) const { return nodeNameToIndexMap.count(nodeName); }
     string getNodeName(uint node) const { return nodeNames.at(node); }
     uint getNameIndex(const string& nodeName) const { return nodeNameToIndexMap.at(nodeName); } //reverse of getNodeName
@@ -100,12 +104,16 @@ public:
     uint getNumConnectedComponents() const { return connectedComponents.size(); }
     double getTotalEdgeWeight() const { return totalEdgeWeight; }
     bool hasSelfLoop(uint node) const { return adjMatrix.get(node, node) != 0; }
+    
     //large data structures are returned as const pointers
     const vector<vector<uint>>* getAdjLists() const { return &adjLists; }
     const vector<array<uint, 2>>* getEdgeList() const { return &edgeList; }
-    const Matrix<EDGE_T>* getAdjMatrix() const { return &adjMatrix; } //recommendation: use hasEdge() and edgeWeight() instead
-    const vector<string>* getNodeNames() const { return &nodeNames; } //recommendation: use getNodeName() instead
-    const unordered_map<string,uint>* getNodeNameToIndexMap() const { return &nodeNameToIndexMap; } //recommendation: use getNameIndex() instead
+    //recommendation: use hasEdge() and edgeWeight() instead of getAdjMatrix()
+    const Matrix<EDGE_T>* getAdjMatrix() const { return &adjMatrix; }
+    //recommendation: use getNodeName() instead of getNodeNames() 
+    const vector<string>* getNodeNames() const { return &nodeNames; }
+    //recommendation: use getNameIndex() instead of getNodeNameToIndexMap()
+    const unordered_map<string,uint>* getNodeNameToIndexMap() const { return &nodeNameToIndexMap; }
     const vector<vector<uint> >* getConnectedComponents() const { return &connectedComponents; }
 
     //things that are computed when called
@@ -134,7 +142,7 @@ public:
     uint getNodeColor(uint node) const;
     uint numColors() const;
     
-    //function in SANA's main loop. defined here to allow inlining
+    //functions that are part of SANA's main loop. Defined here to allow inlining
     uint numNodesWithColor(uint colorId) const  {
         return nodeGroupsByColor[colorId].size();
     }
@@ -158,11 +166,14 @@ private:
     string name, filePath;
 
     //main data structures
-    vector<array<uint, 2> > edgeList; //edges in no particular order
+    vector<array<uint, 2> > edgeList; //edges in no particular order, no repetitions
     vector<string> nodeNames;
-    vector<vector<uint> > adjLists; //neighbors in no particular order
+    vector<vector<uint> > adjLists; //neighbors in no particular order, no repetitions
     Matrix<EDGE_T> adjMatrix;
     unordered_map<string,uint> nodeNameToIndexMap; //reverse of nodeNames
+
+    //CCs have very few use cases, so I think CCs should be computed "on demand"
+    //rather than being computed in the constructor and being part of the Graph's state -Nil
     vector<vector<uint> > connectedComponents; //nodes grouped by CCs, sorted from larger to smaller
 
     //each edge has a weight in the range of type EDGE_T, but their sum may be beyond that range

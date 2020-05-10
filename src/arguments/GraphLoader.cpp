@@ -150,12 +150,8 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     string format = nodeMapFile.substr(nodeMapFile.size()-6);
     if (format != ".align") throw runtime_error("only edge list format is supported for start alignment");
     Alignment A = Alignment::loadEdgeList(G1, G2, nodeMapFile);
-    const vector<uint>* G1ToG2Map = A.getVector();
-    uint n1 = G1.getNumNodes();
-    if (G1ToG2Map->size() != n1)
-        throw runtime_error("G1ToG2Map size ("+to_string(G1ToG2Map->size())+
-                            ") less than number of nodes ("+to_string(n1)+")");
-    G2 = G2.subtractGraph(G1, *G1ToG2Map);
+    vector<uint> G1ToG2Map = A.asVector();
+    G2 = G2.subtractGraph(G1, G1ToG2Map);
 #endif
 
     double rewiredFraction1 = args.doubles["-rewire1"];
