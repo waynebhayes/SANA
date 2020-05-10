@@ -2335,7 +2335,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         uint n_num = G2AdjLists[oldTarget].size();
         for (uint i =0; i < n_num; i++){
             neighbor = G2AdjLists[oldTarget][i];
-            if (whichPeg[neighbor]<n1 and G1Matrix[source][whichPeg[neighbor]]){
+            if (whichPeg[neighbor]<n1){// and G1Matrix[source][whichPeg[neighbor]]){
                 MultiS3::denom-=G2Matrix[oldTarget][neighbor]+1;
         }
     }   //cout << "111111111111111111" << endl;
@@ -2353,7 +2353,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         n_num = G2AdjLists[newTarget].size();
         for (uint i =0; i < n_num; i++){
             neighbor = G2AdjLists[newTarget][i];
-          if (whichPeg[neighbor]<n1 and source!=whichPeg[neighbor] and G1Matrix[source][whichPeg[neighbor]]){//and G2Matrix[newTarget][neighbor]){
+          if (whichPeg[neighbor]<n1 and source!=whichPeg[neighbor]){// and G1Matrix[source][whichPeg[neighbor]]){//and G2Matrix[newTarget][neighbor]){
             //if ((*A)[newTarget]<n1 and G1Matrix[(*A)[newTarget]][whichPeg[neighbor]]){
             MultiS3::denom+=G2Matrix[newTarget][neighbor]+1;
            // else {MultiS3::denom+=G2Matrix[newTarget][neighbor];}
@@ -2546,53 +2546,55 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
         uint n_num = G2AdjLists[target1].size();
         for (uint i =0; i < n_num; i++){
             neighbor = G2AdjLists[target1][i];
-            if (whichPeg[neighbor]<n1 and G1Matrix[source1][whichPeg[neighbor]]){
+            if (whichPeg[neighbor]<n1){// and G1Matrix[source1][whichPeg[neighbor]]){
                 MultiS3::denom-=G2Matrix[target1][neighbor]+1;
+            }
         }
-    }
         n_num = G1AdjLists[source1].size();
         for (uint i =0; i < n_num; i++){
             neighbor = G1AdjLists[source1][i];
-            if (!G2Matrix[(*A)[neighbor]][target1]){
+            if (!G2Matrix[(*A)[neighbor]][target1] and G1Matrix[source1][neighbor]){
                 MultiS3::denom--;
-        }
-            if ((*A)[neighbor]!=target2 and !G2Matrix[(*A)[neighbor]][target2]){
+            }
+            if ((*A)[neighbor]!=target2 and !G2Matrix[(*A)[neighbor]][target2] and G1Matrix[source1][neighbor]){
                 MultiS3::denom++;
             //assert(G2Matrix[(*A)[neighbor]][target2] == G2Matrix[target2][(*A)[neighbor]]);
+            }
         }
-    }
         n_num = G2AdjLists[target2].size();
         for (uint i =0; i < n_num; i++){
             neighbor = G2AdjLists[target2][i];
-          if (whichPeg[neighbor]<n1 and source1!=whichPeg[neighbor] and G1Matrix[source1][whichPeg[neighbor]]){
-            MultiS3::denom+=G2Matrix[target2][neighbor]+1;
+            if (whichPeg[neighbor]<n1 and source1!=whichPeg[neighbor]){// and G1Matrix[source1][whichPeg[neighbor]]){
+                MultiS3::denom+=G2Matrix[target2][neighbor]+1;
+             }
         }
-    }
-
+///////////
          n_num = G2AdjLists[target2].size();
         for (uint i =0; i < n_num; i++){
             neighbor = G2AdjLists[target2][i];
-            if (whichPeg[neighbor]<n1 and G1Matrix[source2][whichPeg[neighbor]]){
+            if (whichPeg[neighbor]<n1 and !G2Matrix[target1][neighbor]){
                 MultiS3::denom-=G2Matrix[target2][neighbor]+1;
-        }
-    }
+             }
+        }    
         n_num = G1AdjLists[source2].size();
         for (uint i =0; i < n_num; i++){
             neighbor = G1AdjLists[source2][i];
-            if (!G2Matrix[(*A)[neighbor]][target2]){
+            if (!G1Matrix[source1][neighbor]  and !G2Matrix[(*A)[neighbor]][target2] and G1Matrix[source2][neighbor]){
                 MultiS3::denom--;
-        }
-            if ((*A)[neighbor]!=target1 and !G2Matrix[(*A)[neighbor]][target1]){
+            }
+            if (!G1Matrix[source1][neighbor] and (*A)[neighbor]!=target1 and !G2Matrix[(*A)[neighbor]][target1] and G1Matrix[source2][neighbor] and !G2Matrix[(*A)[neighbor]][target2]){
                 MultiS3::denom++;
+            }
         }
-    }
         n_num = G2AdjLists[target1].size();
         for (uint i =0; i < n_num; i++){
             neighbor = G2AdjLists[target1][i];
-          if (whichPeg[neighbor]<n1 and source2!=whichPeg[neighbor] and G1Matrix[source2][whichPeg[neighbor]]){
-            MultiS3::denom+=G2Matrix[target1][neighbor]+1;
-        }
-    }
+            if (!G2Matrix[target2][neighbor] and whichPeg[neighbor]<n1 and source2!=whichPeg[neighbor]){// and G1Matrix[source2][whichPeg[neighbor]]){
+                MultiS3::denom+=G2Matrix[target1][neighbor]+1;
+            }
+         }
+	if(G1Matrix[source1][source2] or G2Matrix[target1][target2]){
+		MultiS3::denom += 2*(G2Matrix[target2][target1]+1);}
     }
     else if (MultiS3::denominator_type==MultiS3::ee_i){
         //MultiS3::denom += exposedEdgesIncSwapOp(source1, source2, target1, target2);
