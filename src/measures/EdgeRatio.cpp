@@ -25,7 +25,7 @@ double EdgeRatio::getEdgeRatioSum(const Graph *G1, const Graph *G2, const Alignm
     double c = 0;
     for (const auto& edge : *(G1->getEdgeList())) {
       uint node1 = edge[0], node2 = edge[1];
-      double r = getRatio(G1->edgeWeight(node1, node2), G2->edgeWeight(A[node1], A[node2]));
+      double r = getRatio(G1->getEdgeWeight(node1, node2), G2->getEdgeWeight(A[node1], A[node2]));
       double y = r - c;
       double t = edgeRatioSum + y;
       c = (t - edgeRatioSum) - y;

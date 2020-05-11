@@ -94,7 +94,7 @@ public:
     //note: edges with weight 0 are not supported
     bool hasEdge(uint node1, uint node2) const { return adjMatrix.get(node1, node2) != 0; }
     //returns 0 if there is no edge; the order of the arguments is irrelevant
-    EDGE_T edgeWeight(uint node1, uint node2) const { return adjMatrix.get(node1, node2); }
+    EDGE_T getEdgeWeight(uint node1, uint node2) const { return adjMatrix.get(node1, node2); }
     bool hasNodeName(const string& nodeName) const { return nodeNameToIndexMap.count(nodeName); }
     string getNodeName(uint node) const { return nodeNames.at(node); }
     uint getNameIndex(const string& nodeName) const { return nodeNameToIndexMap.at(nodeName); } //reverse of getNodeName

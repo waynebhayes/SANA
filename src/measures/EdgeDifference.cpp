@@ -19,7 +19,7 @@ double EdgeDifference::getEdgeDifferenceSum(const Graph* G1, const Graph* G2, co
     double c = 0; //use descriptive name please
     for (const auto& edge : *(G1->getEdgeList())) {
        uint node1 = edge[0], node2 = edge[1];
-       double y = abs(G1->edgeWeight(node1,node2) - G2->edgeWeight(A[node1],A[node2])) - c;
+       double y = abs(G1->getEdgeWeight(node1,node2) - G2->getEdgeWeight(A[node1],A[node2])) - c;
        double t = edgeDifferenceSum + y;
        c = (t - edgeDifferenceSum) - y;
        edgeDifferenceSum = t;

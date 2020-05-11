@@ -121,7 +121,7 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
         if (g2HasWeights) {
             g2Weights.reserve(G2.getNumEdges());
             for (const auto& edge : *(G2.getEdgeList()))
-                g2Weights.push_back(G2.edgeWeight(edge[0], edge[1]));
+                g2Weights.push_back(G2.getEdgeWeight(edge[0], edge[1]));
         }
         G2 = Graph(G2.getName(), G2.getFilePath(), *(G2.getEdgeList()), g2NodeNames, g2Weights, g2Colors);
     }
@@ -192,7 +192,7 @@ void GraphLoader::saveInGWFormat(const Graph& G, string outFile, bool saveWeight
     ofs << G.getNumEdges() << endl;
     for (const auto& edge : *(G.getEdgeList())) {
         ofs << edge[0]+1 << " " << edge[1]+1 << " 0 |{"; //re-indexing to 1-based
-        if (saveWeights) ofs << +G.edgeWeight(edge[0], edge[1]); //the + makes it print as a number even if it has type char/bool
+        if (saveWeights) ofs << +G.getEdgeWeight(edge[0], edge[1]); //the + makes it print as a number even if it has type char/bool
         ofs << "}|" << endl;
     }
     ofs.close();
@@ -209,7 +209,7 @@ void GraphLoader::saveInEdgeListFormat(const Graph& G, string outFile, bool weig
     for (const auto& edge : *edges) {
         if (namedEdges) ofs<<G.getNodeName(edge[0])<<sep<<G.getNodeName(edge[1]);
         else ofs<<edge[0]<<sep<<edge[1];
-        if (weightColumn) ofs<<sep<<+G.edgeWeight(edge[0], edge[1]); //the + makes it print as a number even if it has type char/bool
+        if (weightColumn) ofs<<sep<<+G.getEdgeWeight(edge[0], edge[1]); //the + makes it print as a number even if it has type char/bool
         ofs<<endl;
     }
     ofs.close();

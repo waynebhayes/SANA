@@ -94,10 +94,10 @@ vector<double> Importance::getImportances(const Graph& G) {
     uint n = G.getNumNodes();
 
     vector<double> nodeWeights(n, 0);
-    vector<vector<double> > edgeWeights = initEdgeWeights(G);
+    vector<vector<double>> edgeWeights = initEdgeWeights(G);
 
     //adjLists will change as we remove nodes from G
-    vector<vector<uint> > adjLists(G.getAdjLists()->begin(), G.getAdjLists()->end());
+    vector<vector<uint>> adjLists(G.getAdjLists()->begin(), G.getAdjLists()->end());
 
     //as opposed to adjLists, degrees remain true to the original graph
     vector<uint> degrees(n);

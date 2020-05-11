@@ -26,14 +26,14 @@ int SquaredEdgeScore::numSquaredAlignedEdges(const Alignment& A) const {
     int count = 0;
     for (const auto& edge: *G2Edges) {
         uint g2Node1 = edge[0], g2Node2 = edge[1];
-        int rungs = G2->edgeWeight(g2Node1, g2Node2);
+        int rungs = G2->getEdgeWeight(g2Node1, g2Node2);
         assert(rungs > 0);
 
         //if an edge in G1 maps to this edge in G2, add the weight of that edge
         //(which should be 1, because G1 is unweighted) to the number of rungs for this edge
         uint g1Node1 = revA[g2Node1], g1Node2 = revA[g2Node2];
         if (g1Node1 != n1 and g1Node2 != n1 and G2->hasEdge(g1Node1, g1Node2)) {
-            assert (G1->edgeWeight(g1Node1, g1Node2) == 1);
+            assert (G1->getEdgeWeight(g1Node1, g1Node2) == 1);
             rungs += 1;
         }
         count += rungs * rungs;
@@ -44,7 +44,7 @@ int SquaredEdgeScore::numSquaredAlignedEdges(const Alignment& A) const {
         uint g1Node1 = edge[0], g1Node2 = edge[1];
         uint g2Node1 = A[g1Node1], g2Node2 = A[g1Node2];
         if (not G2->hasEdge(g2Node1, g2Node2)) {
-            assert(G1->edgeWeight(g1Node1, g1Node2) == 1);
+            assert(G1->getEdgeWeight(g1Node1, g1Node2) == 1);
             count += 1; //1 comes from 1*1 (squaring single-rung edge)  
         }
     }

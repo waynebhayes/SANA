@@ -45,7 +45,7 @@ uint MultiS3::computeNumer(const Alignment& A) const {
     uint res = 0;
     for (const auto& edge: *(G1->getEdgeList())) {
         uint node1 = edge[0], node2 = edge[1];
-        auto weight = G2->edgeWeight(A[node1], A[node2]);
+        auto weight = G2->getEdgeWeight(A[node1], A[node2]);
         if (MultiS3::_type==1) {
             if (weight >= 1) res += weight + 1; // +1 because G1 was pruned out of G2
         } else if (MultiS3::_type==0) {
@@ -80,7 +80,7 @@ void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2) 
     totalDegrees = vector<uint>(G2.getNumNodes(), 0);
     for (uint i = 0; i < G2.getNumNodes(); i++) totalDegrees[i] = G2.getNumNbrs(i);
     for (const auto& edge : *(G2.getEdgeList())) {
-        auto w = G2.edgeWeight(edge[0],edge[1]);
+        auto w = G2.getEdgeWeight(edge[0],edge[1]);
         totalDegrees[edge[0]] += w;
         if (edge[0] != edge[1]) totalDegrees[edge[1]] += w; //avoid double-counting for self-lopos
     }

@@ -135,7 +135,7 @@ Graph Graph::nodeInducedSubgraph(const vector<uint>& nodes) const {
         uint newNode2 = oldToNewIndex[edge[1]];
         if (newNode1 != INVALID_NEW_INDEX and newNode2 != INVALID_NEW_INDEX) {
             newEdgeList.push_back({newNode1, newNode2});
-            newEdgeWeights.push_back(edgeWeight(edge[0], edge[1]));
+            newEdgeWeights.push_back(getEdgeWeight(edge[0], edge[1]));
         }
     }
 
@@ -229,7 +229,7 @@ Graph Graph::subtractGraph(const Graph& other, const vector<uint>& otherToThisNo
     uint numRemovedEdges = 0;
     for (const auto& otherEdge : other.edgeList) {
         uint on1 = otherEdge[0], on2 = otherEdge[1];
-        EDGE_T ow = other.edgeWeight(on1, on2);
+        EDGE_T ow = other.getEdgeWeight(on1, on2);
         assert(ow > 0);
         uint tn1 = otherToThisNodeMap.at(on1), tn2 = otherToThisNodeMap.at(on2);
         assert(tn1 < getNumNodes() and tn2 < getNumNodes());
@@ -263,7 +263,7 @@ Graph Graph::subtractGraph(const Graph& other, const vector<uint>& otherToThisNo
         uint on1 = otherEdge[0], on2 = otherEdge[1];
         uint tn1 = otherToThisNodeMap.at(on1), tn2 = otherToThisNodeMap.at(on2);
 #ifndef BOOL_EDGE_T //general case:
-        EDGE_T ow = other.edgeWeight(on1, on2);
+        EDGE_T ow = other.getEdgeWeight(on1, on2);
         adjMatrix[tn1][tn2] += ow;
 #else //special case for bools
         assert(adjMatrix[tn1][tn2] == 0);
@@ -566,7 +566,7 @@ bool Graph::isWellDefined() const {
                 ss<<"adjMatrix is not symmetric at ("<<i<<", "<<j<<")"<<endl;
             if (hasEdge(i,j)) {
                 numEdgesInAdjMat++;
-                adjMatSum += edgeWeight(i,j);
+                adjMatSum += getEdgeWeight(i,j);
             }
         }
     }

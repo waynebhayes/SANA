@@ -73,8 +73,8 @@ Alignment HillClimbing::run() {
     //todo: avoid the copies
     Matrix<EDGE_T> G1Matrix = *(G1->getAdjMatrix());
     Matrix<EDGE_T> G2Matrix = *(G2->getAdjMatrix());
-    vector<vector<uint> > G1AdjLists = *(G1->getAdjLists());
-    vector<vector<uint> > G2AdjLists = *(G2->getAdjLists());
+    vector<vector<uint>> G1AdjLists = *(G1->getAdjLists());
+    vector<vector<uint>> G2AdjLists = *(G2->getAdjLists());
 
     vector<bool> assignedNodesG2(n2, false);
     for (uint i = 0; i < n1; i++) {

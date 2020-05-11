@@ -53,7 +53,7 @@ int EdgeExposure::numExposedEdges(const Alignment& A, const Graph& G1, const Gra
         uint g1Node1 = edge[0], g1Node2 = edge[1];
         uint g2Node1 = A[g1Node1], g2Node2 = A[g1Node2];
         if (!G2.hasEdge(g2Node1, g2Node2)) res++;
-        assert(G1.edgeWeight(g1Node1, g1Node2) == 1); //sanity check
+        assert(G1.getEdgeWeight(g1Node1, g1Node2) == 1); //sanity check
     }
     return res;
 #else

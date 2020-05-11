@@ -19,7 +19,7 @@ double JaccardSimilarityScore::eval(const Alignment& A) {
 }
 
 vector<uint> JaccardSimilarityScore::getAlignedByNode(const Graph *G1, const Graph *G2, const Alignment& A){
-    const vector<vector<uint>> * G1AdjLists = G1->getAdjLists();
+    const vector<vector<uint>>* G1AdjLists = G1->getAdjLists();
     vector<uint> alignedByNode;
     for (uint i = 0; i < G1->getNumNodes(); i++){
         // dont need to check if i is aligned because g1 is smaller and always will be alinged
@@ -30,7 +30,7 @@ vector<uint> JaccardSimilarityScore::getAlignedByNode(const Graph *G1, const Gra
         for (uint j = 0; j < iTotalEdges; j++){
             uint neighbour = iNeighbours[j];
             uint neighbourAlignedTo = A[neighbour]; //find the node neighbour is mapped to
-            iAlignedEdges += G2->edgeWeight(iAlignedTo,neighbourAlignedTo);
+            iAlignedEdges += G2->getEdgeWeight(iAlignedTo,neighbourAlignedTo);
         }
         alignedByNode.push_back(iAlignedEdges);
     }
