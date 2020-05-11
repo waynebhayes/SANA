@@ -372,10 +372,10 @@ GraphLoader::RawGWFileData::RawGWFileData(const string& fileName, bool containsE
                 edgeList.push_back({node1, node2});
             else throw runtime_error("Failed to read edge from line: "+line);
             if (containsEdgeWeights) {
-                int edgeWeight;
+                int w;
                 char dumpChar;
-                if (iss >> dumpChar >> dumpChar >> dumpChar >> edgeWeight)
-                    edgeWeights.push_back(edgeWeight);
+                if (iss >> dumpChar >> dumpChar >> dumpChar >> w)
+                    edgeWeights.push_back(w);
                 else throw runtime_error("Failed to read edge weight from line: "+line);
             }
         } else throw runtime_error("Failed to read all edges");

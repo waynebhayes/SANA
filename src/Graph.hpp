@@ -93,8 +93,7 @@ public:
     uint getNumEdges() const { return edgeList.size(); }
     //note: edges with weight 0 are not supported
     bool hasEdge(uint node1, uint node2) const { return adjMatrix.get(node1, node2) != 0; }
-    //returns 0 if there is no edge (should be renamed to getEdgeWeight)
-    //the order of the arguments is irrelevant
+    //returns 0 if there is no edge; the order of the arguments is irrelevant
     EDGE_T edgeWeight(uint node1, uint node2) const { return adjMatrix.get(node1, node2); }
     bool hasNodeName(const string& nodeName) const { return nodeNameToIndexMap.count(nodeName); }
     string getNodeName(uint node) const { return nodeNames.at(node); }
@@ -106,7 +105,7 @@ public:
     //large data structures are returned as const pointers
     const vector<vector<uint>>* getAdjLists() const { return &adjLists; }
     const vector<array<uint, 2>>* getEdgeList() const { return &edgeList; }
-    //recommendation: use hasEdge() and edgeWeight() instead of getAdjMatrix()
+    //recommendation: use hasEdge() and getEdgeWeight() instead of getAdjMatrix()
     const Matrix<EDGE_T>* getAdjMatrix() const { return &adjMatrix; }
     //recommendation: use getNodeName() instead of getNodeNames() 
     const vector<string>* getNodeNames() const { return &nodeNames; }
@@ -188,7 +187,6 @@ private:
 
     //for convenience and speed(maybe?)
     friend class SANA;
-    friend class Alignment; 
 }; 
 
 #endif /* GRAPH_H */

@@ -14,7 +14,7 @@ Alignment::Alignment(const Graph& G1, const Graph& G2, const vector<vector<strin
     for (uint i = 0; i < n1; i++) {
         string nodeG1 = mapList[i][0];
         string nodeG2 = mapList[i][1];
-        A[G1.nodeNameToIndexMap.at(nodeG1)] = G2.nodeNameToIndexMap.at(nodeG2);
+        A[G1.getNameIndex(nodeG1)] = G2.getNameIndex(nodeG2);
     }
     printDefinitionErrors(G1,G2);
     assert(isCorrectlyDefined(G1, G2));
@@ -44,10 +44,11 @@ Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, con
 
         //check if G1 contains the nodename edges[2*i]. If this is false, G2 must contain
         //it and edges[2*i+1] must be in G1.
-        if (find(G1.nodeNames.begin(), G1.nodeNames.end(), edges[2*i]) != G1.nodeNames.end()) {
+        if (G1.hasNodeName(edges[2*i])) {
             edgeList[i][0] = edges[2*i];
             edgeList[i][1] = edges[2*i+1];
         } else {
+            assert(G2.hasNodeName(edges[2*i]));
             edgeList[i][0] = edges[2*i+1];
             edgeList[i][1] = edges[2*i];
         }
@@ -175,7 +176,7 @@ Alignment Alignment::correctMapping(const Graph& G1, const Graph& G2) {
     }
     vector<uint> A(G1.getNumNodes());
     for (uint i = 0; i < G1.getNumNodes(); i++) {
-        A[i] = G2.nodeNameToIndexMap.at(G1.nodeNames.at(i));
+        A[i] = G2.getNameIndex(G1.getNodeName(i));
     }
     return Alignment(A);
 }
@@ -192,7 +193,7 @@ Alignment &Alignment::operator=(Alignment other) {
 
 uint Alignment::numAlignedEdges(const Graph& G1, const Graph& G2) const {
     uint res = 0;
-    for (const auto& edge: G1.edgeList)
+    for (const auto& edge: *(G1.getEdgeList()))
         if (G2.hasEdge(A[edge[0]], A[edge[1]])) res++;
     return res;
 }
