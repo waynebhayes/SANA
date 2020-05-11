@@ -79,13 +79,12 @@ public:
     //it does *not* modify 'this' graph. It is not marked const solely for technical reasons
     Graph subtractGraph(const Graph& other, const vector<uint>& otherToThisNodeMap); 
 
-    //functions that *modify* this graph
-
     //calling this function is the same as passing the parameter directly to the constructor
     //(which is recommended). This function only exists in case you need to construct
     //the (rest of the) graph before you can compute the colors
     //(e.g., if the colors depend on the node names, like with -lock-same-names)
     void initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs);
+
 
     //O(1) getters (defined in header for efficiency -- allows inlining)
     string getName() const { return name; }
@@ -101,7 +100,6 @@ public:
     string getNodeName(uint node) const { return nodeNames.at(node); }
     uint getNameIndex(const string& nodeName) const { return nodeNameToIndexMap.at(nodeName); } //reverse of getNodeName
     uint getNumNbrs(uint node) const { return adjLists[node].size(); }
-    uint getNumConnectedComponents() const { return connectedComponents.size(); }
     double getTotalEdgeWeight() const { return totalEdgeWeight; }
     bool hasSelfLoop(uint node) const { return adjMatrix.get(node, node) != 0; }
     
@@ -114,19 +112,20 @@ public:
     const vector<string>* getNodeNames() const { return &nodeNames; }
     //recommendation: use getNameIndex() instead of getNodeNameToIndexMap()
     const unordered_map<string,uint>* getNodeNameToIndexMap() const { return &nodeNameToIndexMap; }
-    const vector<vector<uint> >* getConnectedComponents() const { return &connectedComponents; }
 
     //things that are computed when called
     uint randomNode() const;
     uint maxDegree() const;
     vector<uint> degreeDistribution() const;
+    vector<vector<uint>> connectedComponents() const; //nodes grouped by CCs, sorted from larger to smaller
     uint numEdgesInNodeInducedSubgraph(const vector<uint>& subgraphNodes) const;
     vector<uint> numEdgesAroundByLayers(uint node, uint maxDist) const;
     vector<uint> numNodesAroundByLayers(uint node, uint maxDist) const;
     vector<uint> nodesAround(uint node, uint maxDist) const;
     bool hasSameNodeNamesAs(const Graph& other) const;
     vector<string> commonNodeNames(const Graph& other) const;
-        
+    
+
     // COLOR SYSTEM
     //colors have arbitrary strings as names. internally, they also have a numeric
     //id starting from 0, used as index for data structures
@@ -166,15 +165,11 @@ private:
     string name, filePath;
 
     //main data structures
-    vector<array<uint, 2> > edgeList; //edges in no particular order, no repetitions
+    vector<array<uint, 2>> edgeList; //edges in no particular order, no repetitions
     vector<string> nodeNames;
-    vector<vector<uint> > adjLists; //neighbors in no particular order, no repetitions
+    vector<vector<uint>> adjLists; //neighbors in no particular order, no repetitions
     Matrix<EDGE_T> adjMatrix;
-    unordered_map<string,uint> nodeNameToIndexMap; //reverse of nodeNames
-
-    //CCs have very few use cases, so I think CCs should be computed "on demand"
-    //rather than being computed in the constructor and being part of the Graph's state -Nil
-    vector<vector<uint> > connectedComponents; //nodes grouped by CCs, sorted from larger to smaller
+    unordered_map<string, uint> nodeNameToIndexMap; //reverse of nodeNames
 
     //each edge has a weight in the range of type EDGE_T, but their sum may be beyond that range
     //double can contain the sum of EDGE_T values for any EDGE_T.
@@ -189,9 +184,6 @@ private:
     //useful when creating a derived graph with the same nodes and colors
     //creates the vector of pairs that the constructor needs
     vector<array<string, 2>> colorsAsNodeColorNamePairs() const;
-    
-    //part of the constructor, not meant to be called by itself
-    void initConnectedComponents();
 
 
     //for convenience and speed(maybe?)

@@ -9,7 +9,7 @@ LargestCommonConnectedSubgraph::~LargestCommonConnectedSubgraph() {}
 
 double LargestCommonConnectedSubgraph::eval(const Alignment& A) {
     Graph CS = G1->graphIntersection(*G2, *(A.getVector()));
-    vector<uint> LCCSNodes = (*CS.getConnectedComponents())[0]; //largest CC
+    vector<uint> LCCSNodes = (CS.connectedComponents())[0]; //largest CC
     uint n = LCCSNodes.size();
     double N = (double) n/G1->getNumNodes();
     if (not USE_MAGNA_DEFINITION) return N;

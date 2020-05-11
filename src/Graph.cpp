@@ -73,39 +73,8 @@ Graph::Graph(const string& graphName, const string& optionalFilePath,
         adjMatrix[node1][node2] = adjMatrix[node2][node1] = weight;
         totalEdgeWeight += weight;
     }
-    initConnectedComponents();
     initColorDataStructs(partialNodeColorPairs);
 }   
-
-//predicate for sorting CCs
-bool _isBigger(const vector<uint>& a, const vector<uint>& b) {return a.size()>b.size();}
-void Graph::initConnectedComponents() {
-    uint n = getNumNodes();
-    vector<bool> nodesAreChecked(n, false);
-    vector<uint> nodes;
-    nodes.reserve(n);
-    for (uint i = 0; i < n; ++i) nodes.push_back(i);
-    while (not nodes.empty()) {
-        uint startOfConnected = nodes.back();
-        nodes.pop_back();
-        if (nodesAreChecked[startOfConnected]) continue;
-        vector<uint> connected;
-        queue<uint> neighbors;
-        neighbors.push(startOfConnected);
-        while (not neighbors.empty()) {
-            uint node = neighbors.front();
-            neighbors.pop();
-            if (nodesAreChecked[node]) continue;
-            connected.push_back(node);
-            nodesAreChecked[node] = true;
-            for (uint nbr: adjLists[node]) {
-                if (not nodesAreChecked[nbr]) neighbors.push(nbr);
-            }
-        }
-        connectedComponents.push_back(connected);
-    }
-    sort(connectedComponents.begin(), connectedComponents.end(), _isBigger);
-}
 
 void Graph::initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs) {
     //data structures initialized here:
@@ -328,6 +297,38 @@ vector<uint> Graph::degreeDistribution() const {
     return res;
 }
 
+//predicate for sorting CCs
+bool _isBiggerCC(const vector<uint>& a, const vector<uint>& b) { return a.size()>b.size(); }
+vector<vector<uint>> Graph::connectedComponents() const {
+    uint n = getNumNodes();
+    vector<bool> nodesAreChecked(n, false);
+    vector<uint> nodes;
+    nodes.reserve(n);
+    for (uint i = 0; i < n; ++i) nodes.push_back(i);
+    vector<vector<uint>> res;
+    while (not nodes.empty()) {
+        uint startOfConnected = nodes.back();
+        nodes.pop_back();
+        if (nodesAreChecked[startOfConnected]) continue;
+        vector<uint> connected;
+        queue<uint> neighbors;
+        neighbors.push(startOfConnected);
+        while (not neighbors.empty()) {
+            uint node = neighbors.front();
+            neighbors.pop();
+            if (nodesAreChecked[node]) continue;
+            connected.push_back(node);
+            nodesAreChecked[node] = true;
+            for (uint nbr: adjLists[node]) {
+                if (not nodesAreChecked[nbr]) neighbors.push(nbr);
+            }
+        }
+        res.push_back(connected);
+    }
+    sort(res.begin(), res.end(), _isBiggerCC);
+    return res;
+}
+
 uint Graph::numEdgesInNodeInducedSubgraph(const vector<uint>& subgraphNodes) const {
     unordered_set<uint> nodeSet(subgraphNodes.begin(), subgraphNodes.end());
     uint count = 0;
@@ -507,13 +508,14 @@ void Graph::debugPrint() const {
 
     cerr<<"totalEdgeWeight: "<<totalEdgeWeight<<endl;
 
-    cerr<<"connectedComponents size: "<<connectedComponents.size()<<endl;
+    auto CCs = connectedComponents();
+    cerr<<"Number of CCs: "<<CCs.size()<<endl;
     cerr<<"CC sizes: ";
-    for(uint i = 0; i < min(connectedComponents.size(), MAX_LEN); i++) cerr<<connectedComponents[i].size()<<' ';
-    if (MAX_LEN < connectedComponents.size()) cerr<<"..."; cerr<<endl;
-    cerr<<"connectedComponents[0]: ";
-    for (uint i = 0; i < min(connectedComponents[0].size(), MAX_LEN); i++) cerr<<connectedComponents[0][i]<<' ';
-    if (MAX_LEN < connectedComponents[0].size()) cerr<<"..."; cerr<<endl;
+    for(uint i = 0; i < min(CCs.size(), MAX_LEN); i++) cerr<<CCs[i].size()<<' ';
+    if (MAX_LEN < CCs.size()) cerr<<"..."; cerr<<endl;
+    cerr<<"CCs[0]: ";
+    for (uint i = 0; i < min(CCs[0].size(), MAX_LEN); i++) cerr<<CCs[0][i]<<' ';
+    if (MAX_LEN < CCs[0].size()) cerr<<"..."; cerr<<endl;
 
     cerr<<"colorNames (size "<<colorNames.size()<<"): ";
     for (uint i = 0; i < min(colorNames.size(), MAX_LEN); i++) cerr<<colorNames[i]<<' ';
@@ -636,22 +638,6 @@ bool Graph::isWellDefined() const {
         else if (nodeNameToIndexMap.at(nodeNames[i]) != i)
             ss<<"nodeNameToIndexMap is not the inverse of nodeNames for "<<i<<endl;
     }
-
-    //connected components contain every node exactly once
-    //(we do not check that CCs are connected and maximal)
-    unordered_set<uint> nodesInCCs;
-    nodesInCCs.reserve(n);
-    for (const auto& cc : connectedComponents) {
-        for (uint node : cc) {
-            if (node < 0 or node >= n)
-                ss<<"CCs contain node "<<node<<" but adjLists has size "<<n<<endl;
-            if (nodesInCCs.count(node))
-                ss<<"CCs contain repeated node "<<node<<endl;
-            nodesInCCs.insert(node);
-        }
-    }
-    if (nodesInCCs.size() != n)
-        ss<<"CCs contain "<<nodesInCCs.size()<<"nodes in total but adjLists has size "<<n<<endl;
 
     //nodeColors contains valid color indices
     for (uint i = 0; i < nodeColors.size(); i++)
