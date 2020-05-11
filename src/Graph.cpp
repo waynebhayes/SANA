@@ -50,7 +50,11 @@ Graph::Graph(const string& graphName, const string& optionalFilePath,
     }
 
     nodeNameToIndexMap.reserve(numNodes);
-    for (uint i = 0; i < numNodes; i++) nodeNameToIndexMap[nodeNames[i]] = i;
+    for (uint i = 0; i < numNodes; i++) {
+        if (nodeNameToIndexMap.count(nodeNames[i]))
+            throw runtime_error("repeated node name "+nodeNames[i]+" passed to graph constructor");
+        nodeNameToIndexMap[nodeNames[i]] = i;
+    }
 
     bool uniformWeights = optionalEdgeWeights.size() == 0;
     assert(uniformWeights or optionalEdgeWeights.size() == edgeList.size());
@@ -68,8 +72,9 @@ Graph::Graph(const string& graphName, const string& optionalFilePath,
         EDGE_T weight;
         if (uniformWeights) weight = 1;
         else weight = optionalEdgeWeights[i];
-        //throwing an error would be more appropriate, but choosing assert for effiency
-        assert(weight != 0 and "edges with weight 0 are not supported");
+        if (weight == 0) throw runtime_error("edges with weight 0 are not supported");
+        if (adjMatrix[node1][node2] != 0 or adjMatrix[node2][node1] != 0)
+            throw runtime_error("repeated edge in edge list passed to graph constructor");
         adjMatrix[node1][node2] = adjMatrix[node2][node1] = weight;
         totalEdgeWeight += weight;
     }

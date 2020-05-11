@@ -43,10 +43,10 @@ public:
     /* All-purpose constructor
     - optionalFilePath can be left empty if not relevant
     - self-loops are allowed in the edge list
-    - the edge list should not contain repeated entries (the constructor
-      will not crash if it does, but 'isWellDefined()' will)
+    - the edge list should not contain repeated entries
     - if optionalNodeNames is empty, the number of nodes is deduced from
       the edge list and name "i" is given to the i-th node
+      the name list should not contain repeated names
     - if optionalEdgeWeights is empty, all nodes get weight 1 (i.e., unweighted graph).
       Otherwise, edgeWeights should have the same size as edgeList.
       Edges with weight 0 are not supported and will end in runtime_error
@@ -85,7 +85,6 @@ public:
     Graph subtractGraph(const Graph& other, const vector<uint>& otherToThisNodeMap); 
 
 
-
     //O(1) getters (defined in header for efficiency -- allows inlining)
     string getName() const { return name; }
     string getFilePath() const { return filePath; }
@@ -103,14 +102,12 @@ public:
     bool hasSelfLoop(uint node) const { return adjMatrix.get(node, node) != 0; }
     
     //large data structures are returned as const pointers
+    //recommendation: use the getters above instead, when possible
     const vector<uint>* getAdjList(uint node) const { return &adjLists.at(node); }
     const vector<vector<uint>>* getAdjLists() const { return &adjLists; }
     const vector<array<uint, 2>>* getEdgeList() const { return &edgeList; }
-    //recommendation: use hasEdge() and getEdgeWeight() instead of getAdjMatrix()
     const Matrix<EDGE_T>* getAdjMatrix() const { return &adjMatrix; }
-    //recommendation: use getNodeName() instead of getNodeNames() 
     const vector<string>* getNodeNames() const { return &nodeNames; }
-    //recommendation: use getNameIndex() instead of getNodeNameToIndexMap()
     const unordered_map<string,uint>* getNodeNameToIndexMap() const { return &nodeNameToIndexMap; }
 
     //things that are computed when called
