@@ -15,11 +15,9 @@ EdgeDensity::EdgeDensity(const Graph* G1, const Graph* G2, uint maxDist) : Local
 }
 
 double EdgeDensity::calcEdgeDensity(const Graph* G, uint originNode, uint maxDist) const {
-    const vector<vector<uint>>* adjLists = G->getAdjLists();
     uint numNodes = G->getNumNodes();
-
     uint UNINTIALIZED_DISTANCE = numNodes;
-    vector<uint> distanceFromOrigin(numNodes,UNINTIALIZED_DISTANCE);
+    vector<uint> distanceFromOrigin(numNodes, UNINTIALIZED_DISTANCE);
     vector<bool> visited(numNodes, false);
     queue <uint> Q;
 
@@ -35,12 +33,12 @@ double EdgeDensity::calcEdgeDensity(const Graph* G, uint originNode, uint maxDis
         if (dist == maxDist) break;
         numNodesWithinMaxDistance++;
 
-        for(uint neighbor : (*adjLists)[currentNode]) {
-            if (distanceFromOrigin[neighbor] == UNINTIALIZED_DISTANCE) {
-                distanceFromOrigin[neighbor] = dist + 1;
-                Q.push(neighbor);
+        for(uint nbr : *(G->getAdjList(currentNode))) {
+            if (distanceFromOrigin[nbr] == UNINTIALIZED_DISTANCE) {
+                distanceFromOrigin[nbr] = dist + 1;
+                Q.push(nbr);
             }
-            if (not visited[neighbor] and distanceFromOrigin[neighbor] < maxDist) {
+            if (not visited[nbr] and distanceFromOrigin[nbr] < maxDist) {
                 numEdgesWithinMaxDistance++;
             }
         }

@@ -12,19 +12,21 @@ public:
 private:
     /* we use a minimum-degree heuristics algorithm to calcu-
     late the topological importance of nodes and edges, starting from
-    the nodes with degree one and stopping at those with degree d */
-    static const uint d;
+    the nodes with degree one and stopping at those with degree DEG */
+    static const uint DEG;
+
     /* lambda controls the importance of
     the edge weight relative to the node weight. Empirically lambda=0.2
     yields a biologically more meaningful alignment */
-    static const double lambda;
+    static const double LAMBDA;
 
     void initSimMatrix();
 
     static vector<double> getImportances(const Graph& G);
 
-    static vector<vector<double>> initEdgeWeights(const Graph& G);
-    static vector<uint> getNodesSortedByDegree(const vector<vector<uint>>& adjLists);
+    //returns only the nodes with degree <= DEG
+    static vector<uint> getNodesSortedByDegree(const Graph& G);
+
     static void removeFromAdjList(vector<uint>& list, uint u);
     static void normalizeImportances(vector<double>& v);
 

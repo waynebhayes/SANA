@@ -6,8 +6,8 @@
 
 using namespace std;
 
-const uint Importance::d = 10;
-const double Importance::lambda = 0.2; // best value according to the HubAlign paper.
+const uint Importance::DEG = 10;
+const double Importance::LAMBDA = 0.2; // best value according to the HubAlign paper.
 
 Importance::Importance(const Graph* G1, const Graph* G2) : LocalMeasure(G1, G2, "importance") {
     string subfolder = autogenMatricesFolder+getName()+"/";
@@ -15,28 +15,11 @@ Importance::Importance(const Graph* G1, const Graph* G2) : LocalMeasure(G1, G2, 
     string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_importance.bin";
     loadBinSimMatrix(fileName);
 }
-
-Importance::~Importance() {
-}
-
-vector<vector<double>> Importance::initEdgeWeights(const Graph& G) {
-    uint n = G.getNumNodes();
-    vector<vector<double>> edgeWeights(n, vector<double> (n, 0));
-#ifdef MULTI_PAIRWISE
-    throw runtime_error("Importance not implemented for weighted Graphs");
-#endif
-    for (uint i = 0; i < n; i++) {
-        for (uint j = 0; j < n; j++) {
-            if (G.hasEdge(i,j)) edgeWeights[i][j] = 1;
-        }
-    }
-    return edgeWeights;
-}
+Importance::~Importance() {}
 
 struct DegreeComp {
-    DegreeComp(vector<vector<uint>> const *adjLists) {
-        this->adjLists = adjLists;
-    }
+    const Graph* G;
+    DegreeComp(const Graph& G): G(&G) {}
 
     // Note: the paper provides a deterministic algorithm that, unfortunately, means that nodes that "in spirit"
     // should have the same importance---meaning they have the same degree at some point---will end up with
@@ -47,33 +30,28 @@ struct DegreeComp {
     // to figure out some way to delete all equally-valued importance nodes simultaneously rather than imposing
     // an arbitrary order.
     bool operator() (uint i, uint j) {
-        int size1 = (*adjLists)[i].size(), size2 = (*adjLists)[j].size();
-        if (size1 == size2)
-        return 0;
-    else
-        return (size1 < size2);
+        int size1 = G->getNumNbrs(i), size2 = G->getNumNbrs(j);
+        if (size1 == size2) return false;
+        return size1 < size2;
     }
-
-    vector<vector<uint>> const *adjLists;
 };
 
-vector<uint> Importance::getNodesSortedByDegree(const vector<vector<uint>>& adjLists) {
-    uint n = adjLists.size();
+vector<uint> Importance::getNodesSortedByDegree(const Graph& G) {
+    uint n = G.getNumNodes();
     vector<uint> nodes(n);
-    for (uint i = 0; i < n; i++) {
-        nodes[i] = i;
-    }
-    sort(nodes.begin(), nodes.end(), DegreeComp(&adjLists));
+    for (uint i = 0; i < n; i++) nodes[i] = i;
+    sort(nodes.begin(), nodes.end(), DegreeComp(G));
     vector<uint> res(0);
     for (uint i = 0; i < n; i++) {
-        if (adjLists[nodes[i]].size() > d) return res;
+        if (G.getNumNbrs(nodes[i]) > DEG) return res;
         res.push_back(nodes[i]);
     }
-    throw runtime_error("no nodes left");
-    return res;//dummy return
+    throw runtime_error("every node has degree <= DEG");
 }
 
 void Importance::removeFromAdjList(vector<uint>& list, uint u) {
+    //to avoid shifting, swap the element to remove with the last
+    //or to turn this from O(n) to O(1), use a hash table -Nil 
     for (uint i = 0; i < list.size(); i++) {
         if (list[i] == u) list.erase(list.begin()+i);
     }
@@ -82,7 +60,7 @@ void Importance::removeFromAdjList(vector<uint>& list, uint u) {
 void Importance::normalizeImportances(vector<double>& v) {
     double maxim = 0;
     for (double val : v) {
-    assert(val >= 0);
+        assert(val >= 0);
         if (val > maxim) maxim = val;
     }
     for (uint i = 0; i < v.size(); i++) {
@@ -91,19 +69,27 @@ void Importance::normalizeImportances(vector<double>& v) {
 }
 
 vector<double> Importance::getImportances(const Graph& G) {
+#ifdef MULTI_PAIRWISE
+    throw runtime_error("Importance not implemented in multi pairwise mode");
+#endif
+#ifdef FLOAT_WEIGHTS
+    throw runtime_error("Importance not implemented for weighted Graphs");
+#endif
+
     uint n = G.getNumNodes();
+    vector<vector<double>> edgeWeights(n, vector<double> (n, 0));
+    for (const auto& edge : *(G.getEdgeList())) edgeWeights[edge[0]][edge[1]] = 1;
 
     vector<double> nodeWeights(n, 0);
-    vector<vector<double>> edgeWeights = initEdgeWeights(G);
 
     //adjLists will change as we remove nodes from G
-    vector<vector<uint>> adjLists(G.getAdjLists()->begin(), G.getAdjLists()->end());
+    vector<vector<uint>> adjLists = *(G.getAdjLists());
 
     //as opposed to adjLists, degrees remain true to the original graph
     vector<uint> degrees(n);
-    for (uint i = 0; i < n; i++) degrees[i] = adjLists[i].size();
+    for (uint i = 0; i < n; i++) degrees[i] = G.getNumNbrs(i);
 
-    vector<uint> nodesSortedByDegree = getNodesSortedByDegree(adjLists); //returns only the nodes with degree <= d
+    vector<uint> nodesSortedByDegree = getNodesSortedByDegree(G);
     for (uint u : nodesSortedByDegree) {
         //update neighbors' weights
         if (degrees[u] == 1) {
@@ -139,7 +125,7 @@ vector<double> Importance::getImportances(const Graph& G) {
         way, the topological information is propagated from a node to
         its neighbors."
         It is not clear whether when a node is removed it loses its weight.
-        The wording seems to indicate so, but then all the nodes with degree <=10 (d)
+        The wording seems to indicate so, but then all the nodes with degree <=10 (DEG)
         would end up with weight 0, and many mappings would be random (this is no longer
         true when also adding sequnece similarity).
         I assume here that they don't keep their weight (to change this, comment the previous line)
@@ -152,11 +138,10 @@ vector<double> Importance::getImportances(const Graph& G) {
     }
 
     //compute importances
-    const vector<vector<uint>> * originalAdjLists = G.getAdjLists();
     vector<double> res(n);
     for (uint u = 0; u < n; u++) {
         double edgeWeightSum = 0;
-        for (uint v : (*originalAdjLists)[u]) {
+        for (uint v : *(G.getAdjList(u))) {
             edgeWeightSum += edgeWeights[u][v];
         }
         res[u] = nodeWeights[u] + edgeWeightSum;
@@ -194,8 +179,8 @@ bool Importance::hasNodesWithEnoughDegree(const Graph& G) {
     for (uint i = 0; i < n; i++) {
         nodes[i] = i;
     }
-    sort(nodes.begin(), nodes.end(), DegreeComp(G.getAdjLists()));
-    return (*G.getAdjLists())[nodes[n-1]].size() > d;
+    sort(nodes.begin(), nodes.end(), DegreeComp(G));
+    return (*G.getAdjLists())[nodes[n-1]].size() > DEG;
 }
 
 bool Importance::fulfillsPrereqs(const Graph* G1, const Graph* G2) {

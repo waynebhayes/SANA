@@ -17,25 +17,22 @@ NodeDensity::~NodeDensity() {}
 
 double NodeDensity::calcNodeDensity (const Graph* G, uint originNode, uint maxDist) const {
     uint numNodes = G->getNumNodes();
-    const vector<vector<uint>>* adjLists = G->getAdjLists();
     uint UNINTIALIZED_DISTANCE = numNodes;
     vector<uint> distanceFromOrigin(numNodes,UNINTIALIZED_DISTANCE);
     queue <uint> Q;
-
     uint numNodesWithinMaxDistance = 0;
     distanceFromOrigin[originNode] = 0;
     Q.push(originNode);
-
-    while(not Q.empty()) {
+    while (not Q.empty()) {
         uint currentNode = Q.front();
         Q.pop();
         uint dist = distanceFromOrigin[currentNode];
-        if(dist == maxDist) break;
+        if (dist == maxDist) break;
         numNodesWithinMaxDistance++;
-        for(uint neighbor : (*adjLists)[currentNode]) {
-            if(distanceFromOrigin[neighbor] == UNINTIALIZED_DISTANCE) {
-                distanceFromOrigin[neighbor] = dist + 1;
-                Q.push(neighbor);
+        for (uint nbr : *(G->getAdjList(currentNode))) {
+            if (distanceFromOrigin[nbr] == UNINTIALIZED_DISTANCE) {
+                distanceFromOrigin[nbr] = dist + 1;
+                Q.push(nbr);
             }
         }
     }

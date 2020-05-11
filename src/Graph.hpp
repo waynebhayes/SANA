@@ -62,6 +62,11 @@ public:
     //there is no default constructor intentionally to disable the option of
     //creating empty graphs and populating the data structures directly.
 
+    //calling this function is the same as passing the parameter directly to the constructor,
+    //which is recommended. This function only exists in case you need to construct the (rest 
+    //of the) graph before you can compute the colors (e.g., if the colors depend on the node names)
+    void initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs);
+
     //derived graphs: they all call the same constructor above, ensuring internal consistency.
     //prefer this "functional" way of creating new graphs rather than modifying the current graph
     //do not add I/O functions to the Graph class. Use GraphLoader.
@@ -79,11 +84,6 @@ public:
     //it does *not* modify 'this' graph. It is not marked const solely for technical reasons
     Graph subtractGraph(const Graph& other, const vector<uint>& otherToThisNodeMap); 
 
-    //calling this function is the same as passing the parameter directly to the constructor
-    //(which is recommended). This function only exists in case you need to construct
-    //the (rest of the) graph before you can compute the colors
-    //(e.g., if the colors depend on the node names, like with -lock-same-names)
-    void initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs);
 
 
     //O(1) getters (defined in header for efficiency -- allows inlining)
@@ -103,6 +103,7 @@ public:
     bool hasSelfLoop(uint node) const { return adjMatrix.get(node, node) != 0; }
     
     //large data structures are returned as const pointers
+    const vector<uint>* getAdjList(uint node) const { return &adjLists.at(node); }
     const vector<vector<uint>>* getAdjLists() const { return &adjLists; }
     const vector<array<uint, 2>>* getEdgeList() const { return &edgeList; }
     //recommendation: use hasEdge() and getEdgeWeight() instead of getAdjMatrix()
