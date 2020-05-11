@@ -11,8 +11,8 @@ private:
 	uint maxGraphletSize;
     void initSimMatrix();
     
-    double gdvSim(uint i, uint j, const vector<vector<uint> >& gdvsG1,
-        const vector<vector<uint> >& gdvsG2) const;
+    double gdvSim(uint i, uint j, const vector<vector<uint>>& gdvsG1,
+        const vector<vector<uint>>& gdvsG2) const;
 };
 
 #endif /* GRAPHLETLGRAAL_HPP_ */

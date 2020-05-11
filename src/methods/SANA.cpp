@@ -133,7 +133,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     if (needWec) {
         Measure* wec                     = MC->getMeasure("wec");
         LocalMeasure* m                  = ((WeightedEdgeConservation*) wec)->getNodeSimMeasure();
-        vector<vector<float> >* wecSimsP = m->getSimMatrix();
+        vector<vector<float>>* wecSimsP = m->getSimMatrix();
         wecSims                          = (*wecSimsP);
     }
     if (needLocal) {
@@ -165,7 +165,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     //things initialized in initDataStructures
     //they have the same size for every run, so we can allocate the size here
     assignedNodesG2 = vector<bool> (n2);
-    unassignedG2NodesByColor  = vector<vector<uint> > (G1->numColors());
+    unassignedG2NodesByColor  = vector<vector<uint>> (G1->numColors());
 
     // NODE COLOR SYSTEM initlialization
     if (G1->numColors() > G2->numColors())

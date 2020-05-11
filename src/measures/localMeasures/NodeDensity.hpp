@@ -13,7 +13,7 @@ private:
     vector<double> generateVector(const Graph* G, uint maxDist) const;
     vector<double> noded1;
     vector<double> noded2;
-    vector<vector<uint> > nodedList; //edges in no particular order
+    vector<vector<uint>> nodedList; //edges in no particular order
     uint maxDist;
 };
 

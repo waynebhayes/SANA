@@ -170,20 +170,20 @@ typedef function<void(SimMatrix &, uint const &, uint const &)> SimMatrixRecipe;
 
 //Returns a reference to the similarity matrix of the weighted sum of local measures.
 //Only initializes the matrix on the first call.
-vector<vector<float> >& MeasureCombination::getAggregatedLocalSims() {
+vector<vector<float>>& MeasureCombination::getAggregatedLocalSims() {
     //A flag to check if the map has been initialized.
     static bool is_init = false;
     //The "recipe" that describes how to create the sim matrix,
     //namely to combine all locals into a new localdo.
-    static function<void(vector<vector<float> > &, uint const &, uint const &)> const initFunc =
-      [this] (vector<vector<float> > & sim, uint const & n1, uint const & n2) {
+    static function<void(vector<vector<float>> &, uint const &, uint const &)> const initFunc =
+      [this] (vector<vector<float>> & sim, uint const & n1, uint const & n2) {
         Measure* m;
         double w;
         for (uint i = 0; i < numMeasures(); i++) {
             m = measures[i];
             w = weights[i];
             if (m->isLocal() and w > 0) {
-                vector<vector<float> >* mSims = ((LocalMeasure*) m)->getSimMatrix();
+                vector<vector<float>>* mSims = ((LocalMeasure*) m)->getSimMatrix();
                 for (uint i = 0; i < n1; i++) {
                     for (uint j = 0; j < n2; j++) {
                         sim[i][j] += w * (*mSims)[i][j];
@@ -237,7 +237,7 @@ map<string, SimMatrix>& MeasureCombination::getLocalSimMap() {
 SimMatrix MeasureCombination::initSim(SimMatrixRecipe recipe) const {
   static uint n1 = 0, n2 = 0;
   initn1n2(n1, n2);
-  vector<vector<float> > sim(n1, vector<float> (n2, 0));
+  vector<vector<float>> sim(n1, vector<float> (n2, 0));
   recipe(sim, n1, n2);
   return sim;
 }

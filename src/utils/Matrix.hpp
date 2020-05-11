@@ -12,7 +12,7 @@ using namespace std;
     #define MATRIX_DATA_STRUCTURE SparseMatrix<T>
 #else
     #define INNER_CONTAINER vector<T>
-    #define MATRIX_DATA_STRUCTURE vector<vector<T> >
+    #define MATRIX_DATA_STRUCTURE vector<vector<T>>
 #endif
 
 template <typename T>

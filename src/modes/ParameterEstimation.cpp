@@ -55,7 +55,7 @@ void ParameterEstimation::init(string parameterEstimationFile) {
     //calling init again would leak memory (G1, G2, and measure)
     if (hasInit) throw runtime_error("ParameterEstimation already initialized");
 
-    vector<vector<string> > content = fileToStringsByLines(parameterEstimationFile);
+    vector<vector<string>> content = fileToStringsByLines(parameterEstimationFile);
     string g1Name = content[0][0], g2Name = content[0][1];
     string g1File = "networks/"+g1Name+"/"+g1Name+".gw";
     string g2File = "networks/"+g2Name+"/"+g2Name+".gw";
@@ -133,7 +133,7 @@ void ParameterEstimation::collectData() {
     cout << "Collecting data...";
     Timer t;
     t.start();
-    data = vector<vector<double> > (kValues.size(), vector<double> (lValues.size()));
+    data = vector<vector<double>> (kValues.size(), vector<double> (lValues.size()));
     for (uint i = 0; i < kValues.size(); i++) {
         for (uint j = 0; j < lValues.size(); j++) {
             data[i][j] = getScore(kValues[i], lValues[j]);
@@ -144,7 +144,7 @@ void ParameterEstimation::collectData() {
 
 void ParameterEstimation::printData(string outputFile) {
     ofstream fout(outputFile.c_str());
-    vector<vector<string> > table(kValues.size()+1, vector<string> (lValues.size()+1));
+    vector<vector<string>> table(kValues.size()+1, vector<string> (lValues.size()+1));
     table[0][0] = "k\\l";
     for (uint i = 0; i < kValues.size(); i++) {
         table[i+1][0] = to_string(kValues[i]);

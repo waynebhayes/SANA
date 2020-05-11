@@ -24,8 +24,8 @@ void EdgeCount::initSimMatrix() {
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     uint k = distWeights.size();
-    vector<vector<uint> > densities1 (n1, vector<uint> (k+1));
-    vector<vector<uint> > densities2 (n2, vector<uint> (k+1));
+    vector<vector<uint>> densities1 (n1, vector<uint> (k+1));
+    vector<vector<uint>> densities2 (n2, vector<uint> (k+1));
     for (uint i = 0; i < n1; i++) {
         densities1[i] = G1->numEdgesAroundByLayers(i, k);
         for (uint j = 1; j < k; j++) {
@@ -38,7 +38,7 @@ void EdgeCount::initSimMatrix() {
             densities2[i][j] += densities2[i][j-1];
         }
     }
-    sims = vector<vector<float> > (n1, vector<float> (n2, 0));
+    sims = vector<vector<float>> (n1, vector<float> (n2, 0));
     for (uint h = 0; h < k; h++) {
         if (distWeights[h] > 0) {
             for (uint i = 0; i < n1; i++) {

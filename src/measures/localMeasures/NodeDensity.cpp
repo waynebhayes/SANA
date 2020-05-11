@@ -62,7 +62,7 @@ void NodeDensity::initSimMatrix() {
     uint size1 = noded1.size();
     uint size2 = noded2.size();
 
-    sims = vector<vector<float> > (size1, vector<float> (size2, 0));
+    sims = vector<vector<float>> (size1, vector<float> (size2, 0));
     for(uint i = 0; i < size1;  ++i) {
         for(uint j = 0; j < size2;  ++j) {
             sims[i][j] = compare(noded1[i], noded2[j]);

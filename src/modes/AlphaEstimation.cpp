@@ -48,7 +48,7 @@ string AlphaEstimation::getName(void) {
 }
 
 void AlphaEstimation::init(string alphaFile) {
-    vector<vector<string> > content = fileToStringsByLines(alphaFile);
+    vector<vector<string>> content = fileToStringsByLines(alphaFile);
     methods = content[0];
     for (uint i = 1; i < content.size(); i++) {
         networkPairs.push_back(content[i]);
@@ -137,7 +137,7 @@ void AlphaEstimation::printData(string outputFile) {
 void AlphaEstimation::computeAlphas() {
     uint nMethods = methods.size();
     uint nPairs = networkPairs.size();
-    alphas = vector<vector<double> > (nMethods, vector<double> (nPairs, -1));
+    alphas = vector<vector<double>> (nMethods, vector<double> (nPairs, -1));
     for (uint i = 0; i < nMethods; i++) {
         string methodName = methods[i];
         cout << methodName << endl;
@@ -170,7 +170,7 @@ AlphaEstimation::AlphaEstimation(string alphaFile) {
 }
 
 double AlphaEstimation::getAlpha(string alphaFile, string methodName, string G1Name, string G2Name) {
-    vector<vector<string> > content = fileToStringsByLines(alphaFile);
+    vector<vector<string>> content = fileToStringsByLines(alphaFile);
     for (uint i = 0; i < content.size(); i++) {
         if (content[i][0] == methodName and content[i][1] == G1Name and content[i][2] == G2Name)
             return stod(content[i][3]);

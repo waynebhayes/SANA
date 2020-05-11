@@ -36,8 +36,8 @@ public:
     //to private variables, similar to C# get {}
     //The const postfix has been therefore been removed
     //because these functions can lead to state changes.
-    vector<vector<float> >& getAggregatedLocalSims();
-    map<string, vector<vector<float> > >& getLocalSimMap();
+    vector<vector<float>>& getAggregatedLocalSims();
+    map<string, vector<vector<float>> >& getLocalSimMap();
 
     int getNumberOfLocalMeasures() const;
     void rebalanceWeight(string& input);

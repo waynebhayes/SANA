@@ -18,7 +18,7 @@ void SimilarityMode::run(ArgumentParser& args) {
         exit(-1);
     }
 
-    vector<vector <float> > sim = M.getAggregatedLocalSims();
+    vector<vector <float>> sim = M.getAggregatedLocalSims();
 
     assert(args.doubleVectors["-simFormat"].size() == 1);
     saveSimilarityMatrix(sim, G1, G2, args.strings["-o"] + ".sim", args.doubleVectors["-simFormat"][0]);

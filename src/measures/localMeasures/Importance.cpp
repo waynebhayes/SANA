@@ -19,9 +19,9 @@ Importance::Importance(const Graph* G1, const Graph* G2) : LocalMeasure(G1, G2, 
 Importance::~Importance() {
 }
 
-vector<vector<double> > Importance::initEdgeWeights(const Graph& G) {
+vector<vector<double>> Importance::initEdgeWeights(const Graph& G) {
     uint n = G.getNumNodes();
-    vector<vector<double> > edgeWeights(n, vector<double> (n, 0));
+    vector<vector<double>> edgeWeights(n, vector<double> (n, 0));
 #ifdef MULTI_PAIRWISE
     throw runtime_error("Importance not implemented for weighted Graphs");
 #endif
@@ -34,7 +34,7 @@ vector<vector<double> > Importance::initEdgeWeights(const Graph& G) {
 }
 
 struct DegreeComp {
-    DegreeComp(vector<vector<uint> > const *adjLists) {
+    DegreeComp(vector<vector<uint>> const *adjLists) {
         this->adjLists = adjLists;
     }
 
@@ -54,10 +54,10 @@ struct DegreeComp {
         return (size1 < size2);
     }
 
-    vector<vector<uint> > const *adjLists;
+    vector<vector<uint>> const *adjLists;
 };
 
-vector<uint> Importance::getNodesSortedByDegree(const vector<vector<uint> >& adjLists) {
+vector<uint> Importance::getNodesSortedByDegree(const vector<vector<uint>>& adjLists) {
     uint n = adjLists.size();
     vector<uint> nodes(n);
     for (uint i = 0; i < n; i++) {
@@ -152,7 +152,7 @@ vector<double> Importance::getImportances(const Graph& G) {
     }
 
     //compute importances
-    const vector<vector<uint> > * originalAdjLists = G.getAdjLists();
+    const vector<vector<uint>> * originalAdjLists = G.getAdjLists();
     vector<double> res(n);
     for (uint u = 0; u < n; u++) {
         double edgeWeightSum = 0;
@@ -167,7 +167,7 @@ vector<double> Importance::getImportances(const Graph& G) {
 
 void Importance::initSimMatrix() {
     uint n1 = G1->getNumNodes(), n2 = G2->getNumNodes();
-    sims = vector<vector<float> > (n1, vector<float> (n2, 0));
+    sims = vector<vector<float>> (n1, vector<float> (n2, 0));
 
     const uint NUM_SHUFFLES = 30;
     cout << "Creating average importances from " << NUM_SHUFFLES << " shuffles of the nodes of G1 and G2\n";

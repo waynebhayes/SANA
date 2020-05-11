@@ -748,7 +748,7 @@ void writeResults(int g=5) {
     fout.close();
 }
 
-std::vector<std::vector<uint> > computeGraphlets(int maxGraphletSize, FILE *fp) {
+std::vector<std::vector<uint>> computeGraphlets(int maxGraphletSize, FILE *fp) {
     if (!init(maxGraphletSize, fp)) {
         throw "Could not initialize computeGraphlets";
     }
@@ -758,7 +758,7 @@ std::vector<std::vector<uint> > computeGraphlets(int maxGraphletSize, FILE *fp) 
     else throw "The maximum graphlet size should be 4 or 5";
 
     int dgvSize = maxGraphletSize==4 ? 15 : 73; 
-    vector<vector<uint> > res(n, vector<uint> (dgvSize));
+    vector<vector<uint>> res(n, vector<uint> (dgvSize));
     for (int i = 0; i < n; i++)
         for (int j = 0; j < dgvSize; j++)
             res[i][j] = orbit[i][j];

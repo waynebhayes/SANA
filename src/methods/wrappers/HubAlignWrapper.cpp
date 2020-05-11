@@ -34,7 +34,7 @@ void HubAlignWrapper::generateEdgeListFile(int graphNum) {
 
     const vector<array<uint, 2>>* edgeList = G->getEdgeList();
     uint m = G->getNumEdges();
-    vector<vector<string> > edgeListNames(m, vector<string> (2));
+    vector<vector<string>> edgeListNames(m, vector<string> (2));
     for (uint i = 0; i < m; i++) {
         edgeListNames[i][0] = G->getNodeName((*edgeList)[i][0]);
         edgeListNames[i][1] = G->getNodeName((*edgeList)[i][1]);

@@ -15,7 +15,7 @@ public:
     static string getGoSimpleFileName(const Graph& G);
     static void ensureGoFileSimpleFormatExists(const Graph& G);
 
-    static vector<vector<uint> > loadGOTerms(const Graph& G,
+    static vector<vector<uint>> loadGOTerms(const Graph& G,
         double occurrencesFraction = 1);
 
     //returns the number of times that each go term appears in G
@@ -34,7 +34,7 @@ private:
 
     void initSimMatrix();
 
-    static void assertNoRepeatedEntries(const vector<vector<uint> >& goTerms);
+    static void assertNoRepeatedEntries(const vector<vector<uint>>& goTerms);
     static void simpleToInternalFormat(const Graph& G, string GOFileSimpleFormat, string GOFileInternalFormat);
     static void ensureGOFileInternalFormatExists(const Graph& G);
 

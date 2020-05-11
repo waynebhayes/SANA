@@ -103,12 +103,12 @@ Alignment HillClimbing::run() {
     else g2InducedEdges = 1; //dummy value
 
     //initialize data structures for incremental evaluation of local measures
-    vector<vector<float> > localsCombined (n1, vector<float> (n2, 0));
+    vector<vector<float>> localsCombined (n1, vector<float> (n2, 0));
     for (uint i = 0; i < M->numMeasures(); i++) {
         Measure* m = M->getMeasure(i);
         float weight = M->getWeight(m->getName());
         if (m->isLocal() and weight > 0) {
-            vector<vector<float> >* simMatrix = ((LocalMeasure*) m)->getSimMatrix();
+            vector<vector<float>>* simMatrix = ((LocalMeasure*) m)->getSimMatrix();
             for (uint i = 0; i < n1; i++) {
                 for (uint j = 0; j < n2; j++) {
                     localsCombined[i][j] += weight * (*simMatrix)[i][j];
@@ -122,7 +122,7 @@ Alignment HillClimbing::run() {
     //initialize data structures for incremental evaluation of WEC
     double wecWeight = M->getWeight("wec");
     double wecSum = 0;
-    vector<vector<float> >* wecSimMatrix = NULL;
+    vector<vector<float>>* wecSimMatrix = NULL;
     if (wecWeight > 0) {
         WeightedEdgeConservation* wec = (WeightedEdgeConservation*) M->getMeasure("wec");
         wecSum = wec->eval(Alignment(A))*2*g1Edges;

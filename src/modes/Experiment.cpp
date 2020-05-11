@@ -318,7 +318,7 @@ string doubleToPrettyString(double x) {
     return s;
 }
 
-void addAverageToLastRow(vector<vector<string> >& table) {
+void addAverageToLastRow(vector<vector<string>>& table) {
     table.push_back(vector<string> (table[0].size()));
     uint n = table.size();
     table[n-1][0] = "AVG";
@@ -375,9 +375,9 @@ void scoresToRankings(vector<string>& row) {
 void Experiment::saveHumanReadableResults() {
     ofstream fout(humanReadableResultsFile.c_str());
 
-    vector<vector<vector<string> > > tables;
+    vector<vector<vector<string>> > tables;
     for (uint i = 0; i < measures.size(); i++) {
-        vector<vector<string> > table(networkPairs.size()+1,
+        vector<vector<string>> table(networkPairs.size()+1,
             vector<string> (methods.size()+2));
 
         fout << "Measure: " << measures[i] << endl;
@@ -406,7 +406,7 @@ void Experiment::saveHumanReadableResults() {
     fout << endl << "=== rankings ===" << endl;
 
     for (uint i = 0; i < measures.size(); i++) {
-        vector<vector<string> > &table = tables[i];
+        vector<vector<string>> &table = tables[i];
         fout << "Measure: " << measures[i] << endl;
         for (uint j = 1; j < table.size(); j++) {
             scoresToRankings(table[j]);

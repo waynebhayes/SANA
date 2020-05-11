@@ -54,7 +54,7 @@ void Report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
         auto CCs = CS.connectedComponents();
         uint numCCs = CCs.size();
         int tableRows = min((uint) 5, numCCs)+2;
-        vector<vector<string> > table(tableRows, vector<string> (9));
+        vector<vector<string>> table(tableRows, vector<string> (9));
         table[0][0] = "Graph"; table[0][1] = "n"; table[0][2] = "m"; table[0][3] = "alig-edges";
         table[0][4] = "indu-edges"; table[0][5] = "EC";
         table[0][6] = "ICS"; table[0][7] = "S3"; table[0][8] = "JS";

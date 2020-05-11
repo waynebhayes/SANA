@@ -69,7 +69,7 @@ double vectorSum(const vector<double>& v) {
     return m;
 }
 
-void printTable(const vector<vector<string> >& table, int colSeparation, ostream& stream) {
+void printTable(const vector<vector<string>>& table, int colSeparation, ostream& stream) {
     int rows = table.size();
     int cols = table[0].size();
     vector<uint> colWidths(cols, 0);
@@ -205,10 +205,10 @@ FILE* decompressFile(const string& decompProg, const string& fileName) {
     return popen(command.c_str(), "r");
 }
 
-vector<vector<string> > fileToStringsByLines(const string& fileName) {
+vector<vector<string>> fileToStringsByLines(const string& fileName) {
     checkFileExists(fileName);
     ifstream ifs(fileName.c_str());
-    vector<vector<string> > result(0);
+    vector<vector<string>> result(0);
     string line;
     while (getline(ifs, line)) {
         istringstream iss(line);
@@ -287,7 +287,7 @@ void execPrintOutput(string cmd) {
 
 void deleteFile(string name) { remove(name.c_str()); }
 
-void writeDataToFile(const vector<vector<string> >& data, string fileName, bool useTabs) {
+void writeDataToFile(const vector<vector<string>>& data, string fileName, bool useTabs) {
     ofstream outfile;
     outfile.open(fileName.c_str());
     for (uint i = 0; i < data.size(); i++) {

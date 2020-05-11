@@ -15,7 +15,7 @@
 
 namespace computeGraphletsSource {
 
-std::vector<std::vector<uint> > computeGraphlets(int maxGraphletSize, FILE *fp);
+std::vector<std::vector<uint>> computeGraphlets(int maxGraphletSize, FILE *fp);
 
 }
 

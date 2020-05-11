@@ -19,7 +19,7 @@ void ExternalSimMatrix::initSimMatrix() {
     FILE* fp = readFileAsFilePointer(file, isPipe);
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
-    sims = vector<vector<float> > (n1, vector<float> (n2, 0));
+    sims = vector<vector<float>> (n1, vector<float> (n2, 0));
 
     if (fp == NULL) {
         throw runtime_error("ExternalSimMatrix: Error opening file");

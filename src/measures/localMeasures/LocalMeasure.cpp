@@ -27,7 +27,7 @@ bool LocalMeasure::isLocal() {
     return true;
 }
 
-vector<vector<float> >* LocalMeasure::getSimMatrix() {
+vector<vector<float>>* LocalMeasure::getSimMatrix() {
     return &sims;
 }
 

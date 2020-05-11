@@ -26,13 +26,13 @@ private:
 
     //first index: network pair
     //second index: 0: g1 1: g2
-    vector<vector<string> > networkPairs;
+    vector<vector<string>> networkPairs;
 
     map<string, Graph> graphs;
 
     //first index: method
     //second index: network pair
-    vector<vector<double> > alphas;
+    vector<vector<double>> alphas;
 
     void init(string alphaFile);
     double computeAlpha(Graph& G1, Graph& G2, string methodName, Measure* topMeasure);

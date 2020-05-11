@@ -185,7 +185,7 @@ private:
     //to evaluate wec incrementally
     bool needWec;
     double wecSum;
-    vector<vector<float> > wecSims;
+    vector<vector<float>> wecSims;
     double WECIncChangeOp(uint source, uint oldTarget, uint newTarget);
     double WECIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
@@ -208,7 +208,7 @@ private:
     bool needLocal;
     double localScoreSum;
     map<string, double> localScoreSumMap;
-    vector<vector<float> > sims;
+    vector<vector<float>> sims;
 
 #ifdef CORES
 #ifdef UNWEIGHTED_CORES

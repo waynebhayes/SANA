@@ -23,8 +23,8 @@ private:
 
     static vector<double> getImportances(const Graph& G);
 
-    static vector<vector<double> > initEdgeWeights(const Graph& G);
-    static vector<uint> getNodesSortedByDegree(const vector<vector<uint> >& adjLists);
+    static vector<vector<double>> initEdgeWeights(const Graph& G);
+    static vector<uint> getNodesSortedByDegree(const vector<vector<uint>>& adjLists);
     static void removeFromAdjList(vector<uint>& list, uint u);
     static void normalizeImportances(vector<double>& v);
 

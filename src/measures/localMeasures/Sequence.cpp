@@ -65,7 +65,7 @@ void Sequence::initSimMatrix() {
 
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
-    sims = vector<vector<float> > (n1, vector<float> (n2, 0));
+    sims = vector<vector<float>> (n1, vector<float> (n2, 0));
 
     string blastFile = "sequence/scores/"+g1Name+"_"+g2Name+"_blast.out";
     if (not fileExists(blastFile)) {

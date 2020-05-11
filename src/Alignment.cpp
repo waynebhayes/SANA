@@ -59,7 +59,7 @@ Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, con
 Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
                                     const string& fileName, bool byName) {
     vector<string> edges = fileToStrings(fileName);
-    vector<vector<string> > mapList(edges.size()/2, vector<string> (2));
+    vector<vector<string>> mapList(edges.size()/2, vector<string> (2));
     for (uint i = 0; i < edges.size()/2; i++) {
         mapList[i][0] = edges[2*i];
         mapList[i][1] = edges[2*i+1];

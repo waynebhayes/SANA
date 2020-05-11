@@ -8,7 +8,7 @@ public:
     virtual ~LocalMeasure() =0;
     virtual double eval(const Alignment& A);
     bool isLocal();
-    vector<vector<float> >* getSimMatrix();
+    vector<vector<float>>* getSimMatrix();
     void writeSimsWithNames(string outfile);
     double balanceWeight();
 
@@ -16,7 +16,7 @@ protected:
     void loadBinSimMatrix(string simMatrixFileName);
     virtual void initSimMatrix() =0;
     
-    vector<vector<float> > sims;
+    vector<vector<float>> sims;
     static const string autogenMatricesFolder;
 };
 
