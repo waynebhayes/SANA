@@ -151,9 +151,7 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     if (format != ".align") throw runtime_error("only edge list format is supported for start alignment");
     Alignment A = Alignment::loadEdgeList(G1, G2, nodeMapFile);
     vector<uint> G1ToG2Map = A.asVector();
-    G2.debugPrint();
     G2 = pruneG1FromG2(G1, G2, G1ToG2Map);
-    G2.debugPrint();
 #endif
 
     double rewiredFraction1 = args.doubles["-rewire1"];

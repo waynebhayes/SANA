@@ -8,6 +8,12 @@
 #include "ArgumentParser.hpp"
 #include "../Graph.hpp"
 
+#ifndef MULTI_PAIRWISE
+#ifndef FLOAT_WEIGHTS
+#define BOOL_EDGE_T 1
+#endif
+#endif
+
 //static-method only class. It is a class instead of a namespace to differenciate
 //between public/private methods. Do not add state to this class
 class GraphLoader {

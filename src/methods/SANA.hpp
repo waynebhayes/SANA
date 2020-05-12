@@ -253,18 +253,20 @@ private:
     // ***************************************************
     // NODE COLOR SYSTEM
     // ***************************************************
-    /*mechanism for choosing a neighbor of an alignment uniformly at random
+    /* mechanism for choosing a neighbor of an alignment uniformly at random
     this is done in steps:
     1. an "active" color is chosen randomly weighted by their "ramification"
     (number of change and swap neighbors using only nodes of that color)
     we say a color is "active" if it has at least one neighbor
     that is: it appears at least once in G1 and at least twice in G2
     in particular, "locked" pairs of nodes have inactive colors
-    non-active colors do not need to be considered for choosing neighbors
-    2. an operation between change and swap is chosen randomly weighted by their "ramification"
+    non-active colors do not need to be considered for choosing neighbors */
+    uint randColorWeightedByNumNbrs(); //not const because of RNG
+    /* 2. an operation between change and swap is chosen randomly weighted by their "ramification"
     (number of neighbors of that kind using only nodes of the chosen color)
-    3. the source node(s) is (are) chosen randomly from G1 among the nodes of the chosen color  
-    4. same with target node(s) */
+    3. the source node(s) is ( or are) chosen randomly from G1 among the nodes of the chosen color*/
+    uint randomG1NodeWithColor(uint colorId) const;
+    //4. same with target node(s)
  
     //ids *in G1* of the active colors
     vector<uint> activeColorIds;
@@ -280,9 +282,6 @@ private:
     //active color s.t. the length of each segment equals the probability of
     //chosing that color
     vector<double> colorAccumProbCutpoints; 
-
-    //this allows us to implement the following efficiently:
-    uint randColorWeightedByNumNbrs();
 
     //data structure used to initialize unassignedG2NodesByColor
     vector<uint> g2NodeToActiveColorId;

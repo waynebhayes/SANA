@@ -31,10 +31,6 @@ using namespace std;
     #define EDGE_T float
   #else
     #define EDGE_T bool //unweighted graphs -- the normal/traditional setting
-    //even though true/false act very much like 1 and 0, sometimes we need to
-    //write things slightly different for bools than for number types.
-    //We use the following flag to create an alternative code path in such cases
-    #define BOOL_EDGE_T 1
   #endif
 #endif
 
@@ -132,13 +128,8 @@ public:
     uint getNodeColor(uint node) const;
     uint numColors() const;
     
-    //functions that are part of SANA's main loop. Defined here to allow inlining
-    uint numNodesWithColor(uint colorId) const  {
-        return nodeGroupsByColor[colorId].size();
-    }
-    uint getRandomNodeWithColor(uint colorId) const {
-        return nodeGroupsByColor[colorId][randInt(0, nodeGroupsByColor[colorId].size()-1)];
-    } 
+    //functions that is part of SANA's main loop. Defined here to allow inlining
+    uint numNodesWithColor(uint colorId) const { return nodeGroupsByColor[colorId].size(); }
     static const string DEFAULT_COLOR_NAME; 
 
     //color ids are internal to each graph (i.e., color i in G1 may not have the same name as color i in G2)

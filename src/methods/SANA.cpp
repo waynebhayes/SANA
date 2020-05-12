@@ -320,6 +320,11 @@ uint SANA::randColorWeightedByNumNbrs() {
     }
 }
 
+uint SANA::randomG1NodeWithColor(uint colorId) const {
+    uint randIndex = randInt(0, G1->nodeGroupsByColor[colorId].size()-1);
+    return G1->nodeGroupsByColor[colorId][randIndex];
+} 
+
 /*The following is designed so that every single node from both networks
   is printed at least once. First, we find for every single node (across
   BOTH networks) what it's *highest* score is with a partner in the other
@@ -561,7 +566,7 @@ void SANA::SANAIteration() {
 void SANA::performChange(uint colorId) {
     assert(G2->numNodesWithColor(colorId) > 1);
     
-    uint source = G1->getRandomNodeWithColor(colorId);
+    uint source = randomG1NodeWithColor(colorId);
     uint oldTarget = A[source];
     uint unassignedVecIndex = randInt(0, unassignedG2NodesByColor[colorId].size()-1);
     uint newTarget = unassignedG2NodesByColor[colorId][unassignedVecIndex];
@@ -644,11 +649,11 @@ void SANA::performChange(uint colorId) {
 
 void SANA::performSwap(uint colorId) {
     assert(G1->numNodesWithColor(colorId) > 1);
-    uint source1 = G1->getRandomNodeWithColor(colorId);
+    uint source1 = randomG1NodeWithColor(colorId);
     
     uint source2;
     for (uint i = 0; i < 1000; i++) {
-        source2 = G1->getRandomNodeWithColor(colorId);
+        source2 = randomG1NodeWithColor(colorId);
         if (source1 != source2) break;
     }
     assert(source1 != source2);
