@@ -68,8 +68,8 @@ paste $TMPDIR/*.2.nodes 2>/dev/null | sed -e 's/		/	_	/g' -e 's/		/	_	/g' -e 's/
 	cut -f$N $GROUP.multiAlign | if $TYPES; then
 	    awk '$1!="_"{if(/MNEST/)printf("%s\tmRNA-%04d\n",$1,MNEST++);else printf("%s\t%s\n",$1,$1);}'
 	else
-	    awk '$1!="_"{printf("%s\tshadow%d\n",$1,NR-1);}'
-	fi | tee $b-shadow.align | awk '{printf "%d ", NR-1}END{print ""}' | tee $b-shadow.out > /dev/null #shadow-$b.out
+	    awk '$1!="_"{printf("%s\tshad_%d\n",$1,NR-1);}'
+	fi > $b-shadow.align
     done
 )
 mv $TMPDIR/*[Aa]lign $TMPDIR/*.out "$OUTDIR"

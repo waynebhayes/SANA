@@ -140,7 +140,7 @@ MAIN = sana
 
 .PHONY: depend clean test test_all regression_test
 
-all:    $(MAIN) argumentCSV NetGO parallel #I removed createShadow due to a problem with the includes I couldn't figure out -Nil
+all:    $(MAIN) argumentCSV NetGO parallel #I removed due to a problem with the includes I couldn't figure out -Nil
 
 $(MAIN): $(OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
@@ -188,7 +188,6 @@ $(GTEST_OBJS):
 clean: #clear_cache
 	$(RM) -rf cache*  # mostly for pBad
 	$(RM) -rf $(OBJDIR)/src
-	$(RM) -f $(MAIN) createShadow
 	$(RM) -f src/arguments/argumentTable.csv
 
 clear_cache:
@@ -219,9 +218,6 @@ multi:
 sparse:
 	$(MAKE) 'SPARSE=1'
 	mv sana sana.sparse
-
-createShadow: scripts/createShadowCpp/createShadow
-	mv scripts/createShadowCpp/createShadow .
 
 parallel: src/parallel.c
 	gcc -o parallel src/parallel.c
