@@ -79,11 +79,6 @@ public:
     Graph graphWithRewiredRandomEdges(double rewiredEdgesProportion) const;
     //keeps only the edges that are also in other. the result is unweighted
     Graph graphIntersection(const Graph& other, const vector<uint>& thisToOtherNodeMap) const;
-    //return a graph with the edge weights in 'this' minus the weights in 'other'.
-    //Crashes if any edge weight would be negative 
-    //it does *not* modify 'this' graph. It is not marked const solely for technical reasons
-    Graph subtractGraph(const Graph& other, const vector<uint>& otherToThisNodeMap); 
-
 
     //O(1) getters (defined in header for efficiency -- allows inlining)
     string getName() const { return name; }
@@ -122,7 +117,6 @@ public:
     bool hasSameNodeNamesAs(const Graph& other) const;
     vector<string> commonNodeNames(const Graph& other) const;
     
-
     // COLOR SYSTEM
     //colors have arbitrary strings as names. internally, they also have a numeric
     //id starting from 0, used as index for data structures
@@ -153,6 +147,10 @@ public:
     vector<uint> myColorIdsToOtherGraphColorIds(const Graph& other) const;
     static const uint INVALID_COLOR_ID;
 
+    //useful when creating a derived graph with the same nodes and colors
+    //creates the vector of pairs that the constructor needs
+    vector<array<string, 2>> colorsAsNodeColorNamePairs() const;
+
     //check for internal consistency. good practice to keep it in an "assert"
     //after constructing or modifying a graph
     bool isWellDefined() const;
@@ -177,14 +175,8 @@ private:
     vector<string> colorNames; //color index to color name
     unordered_map<string, uint> colorNameToId; //color name to color index
     vector<vector<uint>> nodeGroupsByColor; //color index to list of node indices
-
-    //useful when creating a derived graph with the same nodes and colors
-    //creates the vector of pairs that the constructor needs
-    vector<array<string, 2>> colorsAsNodeColorNamePairs() const;
-
-
-    //for convenience and speed(maybe?)
-    friend class SANA;
+    
+    friend class SANA; //for convenience and speed(maybe?)
 }; 
 
 #endif /* GRAPH_H */

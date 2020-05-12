@@ -140,7 +140,7 @@ MAIN = sana
 
 .PHONY: depend clean test test_all regression_test
 
-all:    $(MAIN) argumentCSV NetGO parallel #I removed due to a problem with the includes I couldn't figure out -Nil
+all:    $(MAIN) argumentCSV NetGO parallel
 
 $(MAIN): $(OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)

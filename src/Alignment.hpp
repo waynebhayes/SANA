@@ -4,16 +4,14 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <array>
 #include <iostream>
 #include <cassert>
 #include <algorithm>
-// #include "arguments/GraphLoader.hpp"
 #include "Graph.hpp"
 #include "utils/utils.hpp"
 
 using namespace std;
-
-// class MeasureCombination; //what was this doing here? -Nil
 
 /* Please make it a priority not to modify this class. This is a very general/abstract/core class
    that should not know anything about any of the measures/methods/modes that use it.
@@ -25,9 +23,11 @@ public:
     Alignment(const Alignment& alig);
     Alignment &operator=(Alignment);
     Alignment(const vector<uint>& mapping);
-    Alignment(const Graph& G1, const Graph& G2, const vector<vector<string>>& mapList);
+    Alignment(const Graph& G1, const Graph& G2, const vector<array<string, 2>>& edgeList);
 
     static Alignment loadEdgeList(const Graph& G1, const Graph& G2, const string& fileName);
+
+    //list of pairs of aligned node names, but first node in each pair may be of G2
     static Alignment loadEdgeListUnordered(const Graph& G1, const Graph& G2, const string& fileName);
     static Alignment loadPartialEdgeList(const Graph& G1, const Graph& G2, const string& fileName, bool byName);
     static Alignment loadMapping(const string& fileName);

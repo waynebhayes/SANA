@@ -151,7 +151,9 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     if (format != ".align") throw runtime_error("only edge list format is supported for start alignment");
     Alignment A = Alignment::loadEdgeList(G1, G2, nodeMapFile);
     vector<uint> G1ToG2Map = A.asVector();
-    G2 = G2.subtractGraph(G1, G1ToG2Map);
+    G2.debugPrint();
+    G2 = pruneG1FromG2(G1, G2, G1ToG2Map);
+    G2.debugPrint();
 #endif
 
     double rewiredFraction1 = args.doubles["-rewire1"];
@@ -171,8 +173,8 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
 
     assert(G1.isWellDefined());
     assert(G2.isWellDefined());
-    // G1.debugPrint();
-    // G2.debugPrint();
+    G1.debugPrint();
+    G2.debugPrint();
 
     cout << "Total time for loading graphs (" << T.elapsedString() << ")" << endl;
     return {G1, G2};
@@ -563,3 +565,43 @@ array<vector<array<string, 2>>, 2> GraphLoader::nodeColorListsFromCommonNames(
     }
     return res;
 }
+
+Graph GraphLoader::pruneG1FromG2(const Graph& G1, const Graph& G2, const vector<uint>& G1ToG2NodeMap) {
+#ifndef MULTI_PAIRWISE
+    throw runtime_error("prunning only implemented for multi pairwise");
+#else
+    if (G1ToG2NodeMap.size() != G1.getNumNodes())
+        throw runtime_error("G1ToG2NodeMap size ("+to_string(G1ToG2NodeMap.size())+
+                            ") not same as G1's number of nodes ("+to_string(G1.getNumNodes())+")");
+    //subtract the weights from the edges in 'G1' from a copy of G2's adjacency matrix
+    auto adjMat = *(G2.getAdjMatrix());
+    uint numEdgesDownTo0 = 0;
+    for (const auto& g1Edge : *(G1.getEdgeList())) {
+        assert(G1.getEdgeWeight(g1Edge[0], g1Edge[1]) == 1 and "G1 is not unweighted");
+        uint g2Node1 = G1ToG2NodeMap.at(g1Edge[0]), g2Node2 = G1ToG2NodeMap.at(g1Edge[1]);
+        assert(g2Node1 < G2.getNumNodes() and g2Node2 < G2.getNumNodes());
+        assert(G2.getEdgeWeight(g2Node1, g2Node2) >= 1 and "edge cannot be pruned");            
+        assert(G2.getEdgeWeight(g2Node1, g2Node2) == adjMat[g2Node1][g2Node2] and "edge has already been pruned");
+        adjMat[g2Node1][g2Node2] -= 1;
+        adjMat[g2Node2][g2Node1] -= 1;
+        if (adjMat[g2Node1][g2Node2] == 0) numEdgesDownTo0++;        
+    }
+    //keep the edges in G2's edge list that still have positive weight
+    vector<array<uint, 2>> newEdgeList;
+    vector<EDGE_T> newEdgeWeights;
+    uint newNumEdges = G2.getNumEdges() - numEdgesDownTo0;
+    newEdgeList.reserve(newNumEdges);
+    newEdgeWeights.reserve(newNumEdges);
+    for (const auto& g2Edge : *(G2.getEdgeList())) {
+        EDGE_T newWeight = adjMat.get(g2Edge[0], g2Edge[1]);
+        assert(newWeight >= 0);
+        if (newWeight > 0) {
+            newEdgeList.push_back({g2Edge[0], g2Edge[1]});
+            newEdgeWeights.push_back(newWeight);
+        }
+    }
+    return Graph(G2.getName(), G2.getFilePath(), newEdgeList, *(G2.getNodeNames()), 
+                 newEdgeWeights, G2.colorsAsNodeColorNamePairs());
+#endif /* MULTI_PAIRWISE */
+}
+

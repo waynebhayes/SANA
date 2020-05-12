@@ -7,13 +7,13 @@ using namespace std;
 Alignment::Alignment() {}
 Alignment::Alignment(const vector<uint>& mapping): A(mapping) {}
 Alignment::Alignment(const Alignment& alig): A(alig.A) {}
-Alignment::Alignment(const Graph& G1, const Graph& G2, const vector<vector<string>>& mapList) {
-    uint n1 = mapList.size();
+Alignment::Alignment(const Graph& G1, const Graph& G2, const vector<array<string, 2>>& edgeList) {
+    assert(G1.getNumNodes() == edgeList.size());
+    uint n1 = G1.getNumNodes();
     uint n2 = G2.getNumNodes();
-    A = vector<uint>(G1.getNumNodes(), n2); //n2 used to note invalid value
-    for (uint i = 0; i < n1; i++) {
-        string nodeG1 = mapList[i][0];
-        string nodeG2 = mapList[i][1];
+    A = vector<uint>(n1, n2); //n2 used to denote invalid index
+    for (const auto& edge : edgeList) {
+        string nodeG1 = edge[0], nodeG2 = edge[1];
         A[G1.getNameIndex(nodeG1)] = G2.getNameIndex(nodeG2);
     }
     printDefinitionErrors(G1,G2);
@@ -29,28 +29,29 @@ const uint& Alignment::operator[](const uint node) const { return A[node]; }
 
 Alignment Alignment::loadEdgeList(const Graph& G1, const Graph& G2, const string& fileName) {
     vector<string> edges = fileToStrings(fileName);
-    vector<vector<string>> edgeList(edges.size()/2, vector<string> (2));
-    for (uint i = 0; i < edges.size()/2; i++) {
-        edgeList[i][0] = edges[2*i];
-        edgeList[i][1] = edges[2*i+1];
+    vector<array<string, 2>> edgeList;
+    edgeList.reserve(edges.size()/2);
+    for (uint i = 0; i < edges.size(); i += 2) {
+        edgeList.push_back({edges[i], edges[i+1]});
     }
     return Alignment(G1, G2, edgeList);
 }
 
 Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, const string& fileName) {
     vector<string> edges = fileToStrings(fileName);
-    vector<vector<string>> edgeList(edges.size()/2, vector<string> (2));
-    for (uint i = 0; i < edges.size()/2; i++) { //G1 is always edgeList[i][0], not 1.
-
-        //check if G1 contains the nodename edges[2*i]. If this is false, G2 must contain
-        //it and edges[2*i+1] must be in G1.
-        if (G1.hasNodeName(edges[2*i])) {
-            edgeList[i][0] = edges[2*i];
-            edgeList[i][1] = edges[2*i+1];
+    vector<array<string, 2>> edgeList;
+    edgeList.reserve(edges.size()/2);
+    for (uint i = 0; i < edges.size(); i += 2) {
+        string name1 = edges[i], name2 = edges[i+1];
+        //check if G1 contains a node named name1. If not, G2 must contain it and name2 must be in G1
+        //(note: may not work as intended if graphs have overlapping names -Nil)
+        if (G1.hasNodeName(name1)) {
+            assert(G2.hasNodeName(name2));
+            edgeList.push_back({name1, name2});
         } else {
-            assert(G2.hasNodeName(edges[2*i]));
-            edgeList[i][0] = edges[2*i+1];
-            edgeList[i][1] = edges[2*i];
+            assert(G1.hasNodeName(name2));
+            assert(G2.hasNodeName(name1));
+            edgeList.push_back({name2, name1});
         }
     }
     return Alignment(G1, G2, edgeList);
@@ -59,18 +60,18 @@ Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, con
 Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
                                     const string& fileName, bool byName) {
     vector<string> edges = fileToStrings(fileName);
-    vector<vector<string>> mapList(edges.size()/2, vector<string> (2));
-    for (uint i = 0; i < edges.size()/2; i++) {
-        mapList[i][0] = edges[2*i];
-        mapList[i][1] = edges[2*i+1];
+    vector<array<string, 2>> edgeList;
+    edgeList.reserve(edges.size()/2);
+    for (uint i = 0; i < edges.size(); i += 2) {
+        edgeList.push_back({edges[i], edges[i+1]});
     }
     uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();
     vector<uint> A(n1, n2); //n2 used to note invalid value
-    for (uint i = 0; i < mapList.size(); i++) {
-        string nodeG1 = mapList[i][0];
-        string nodeG2 = mapList[i][1];
-
-        if (byName) {
+    for (const auto& edge : edgeList) {
+        string nodeG1 = edge[0], nodeG2 = edge[1];
+        if (not byName) {
+            A[atoi(nodeG1.c_str())] = atoi(nodeG2.c_str());
+        } else {
             bool nodeG1Misplaced = false;
             bool nodeG2Misplaced = false;
             if (not G1.hasNodeName(nodeG1)) {
@@ -78,7 +79,7 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
                 if (G2.hasNodeName(nodeG1)) {
                     cout << ", but it is in G2. Will switch if appropriate." << endl;
                     nodeG1Misplaced = true;
-                }else{
+                } else {
                     cout << endl;
                     continue;
                 }
@@ -94,19 +95,18 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
                 }
             }
             if (nodeG1Misplaced and nodeG2Misplaced) {
-                string temp = nodeG1;
-                nodeG1 = nodeG2;
-                nodeG2 = temp;
+                swap(nodeG1, nodeG2);
                 cout << nodeG1 << " and " << nodeG2 << " swapped." << endl;
             }
             A[G1.getNameIndex(nodeG1)] = G2.getNameIndex(nodeG2);
-        } else {
-            A[atoi(nodeG1.c_str())] = atoi(nodeG2.c_str());
         }
     }
     vector<bool> G2AssignedNodes(n2, false);
     for (uint i = 0; i < n1; i++) {
-        if (A[i] != n2) G2AssignedNodes[A[i]] = true;
+        if (A[i] != n2) {
+            if (G2AssignedNodes[A[i]]) throw runtime_error("two G1 nodes map to the same G2 node");
+            G2AssignedNodes[A[i]] = true;
+        }
     }
     for (uint i = 0; i < n1; i++) {
         if (A[i] == n2) {
@@ -131,8 +131,8 @@ Alignment Alignment::loadMapping(const string& fileName) {
     getline(infile, line); //reads only the first line, ignores the rest
     istringstream iss(line);
     vector<uint> A(0);
-    int n;
-    while (iss >> n) A.push_back(n);
+    int g2Ind;
+    while (iss >> g2Ind) A.push_back(g2Ind);
     infile.close();
     return A;
 }

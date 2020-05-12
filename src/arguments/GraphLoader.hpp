@@ -104,6 +104,9 @@ private:
     //utility functions -- changing data formats
     static pair<vector<array<uint, 2>>, vector<string>> namedEdgeListToEdgeListAndNodeNameList(
                                     const vector<array<string, 2>>& namedEdgeList);
+
+    //for multi-pairwise
+    static Graph pruneG1FromG2(const Graph& G1, const Graph& G2, const vector<uint>& G1ToG2NodeMap);
 };
 
 #endif /* GRAPHLOADER_H_ */

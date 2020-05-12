@@ -226,62 +226,6 @@ Graph Graph::graphIntersection(const Graph& other, const vector<uint>& thisToOth
                  nodeNames, {}, colorsAsNodeColorNamePairs()); //unweighted result
 }
 
-Graph Graph::subtractGraph(const Graph& other, const vector<uint>& otherToThisNodeMap) {
-    if (otherToThisNodeMap.size() != other.getNumNodes())
-        throw runtime_error("otherToThisNodeMap size ("+to_string(otherToThisNodeMap.size())+
-                            ") != other's number of nodes ("+to_string(other.getNumNodes())+")");
-    //subtract the weights from the edges in 'other' from the adjacency matrix
-    uint numRemovedEdges = 0;
-    for (const auto& otherEdge : other.edgeList) {
-        uint on1 = otherEdge[0], on2 = otherEdge[1];
-        EDGE_T ow = other.getEdgeWeight(on1, on2);
-        assert(ow > 0);
-        uint tn1 = otherToThisNodeMap.at(on1), tn2 = otherToThisNodeMap.at(on2);
-        assert(tn1 < getNumNodes() and tn2 < getNumNodes());
-#ifndef BOOL_EDGE_T //general case:
-        adjMatrix[tn1][tn2] -= ow;
-        assert(adjMatrix[tn1][tn2] >= 0);            
-#else //special case is needed because '-=' does not work on bools
-        assert(adjMatrix[tn1][tn2] == 1);
-        adjMatrix[tn1][tn2] = 0; //0 comes from 1-1
-#endif
-        if (adjMatrix[tn1][tn2] == 0) numRemovedEdges++;        
-    }
-    //keep the edges in this graph's edge list that have positive weight
-    vector<array<uint, 2>> newEdgeList;
-    vector<EDGE_T> newEdgeWeights;
-    uint newNumEdges = getNumEdges() - numRemovedEdges;
-    newEdgeList.reserve(newNumEdges);
-    newEdgeWeights.reserve(newNumEdges);
-    for (const auto& thisEdge : edgeList) {
-        uint tn1 = thisEdge[0], tn2 = thisEdge[1];
-        EDGE_T newWeight = adjMatrix.get(tn1, tn2);
-        assert(newWeight >= 0);
-        if (newWeight > 0) {
-            newEdgeList.push_back({tn1, tn2});
-            newEdgeWeights.push_back(newWeight);
-        }
-    }
-
-    //restore the original adjacency matrix of this graph
-    for (const auto& otherEdge : other.edgeList) {
-        uint on1 = otherEdge[0], on2 = otherEdge[1];
-        uint tn1 = otherToThisNodeMap.at(on1), tn2 = otherToThisNodeMap.at(on2);
-#ifndef BOOL_EDGE_T //general case:
-        EDGE_T ow = other.getEdgeWeight(on1, on2);
-        adjMatrix[tn1][tn2] += ow;
-#else //special case for bools
-        assert(adjMatrix[tn1][tn2] == 0);
-        adjMatrix[tn1][tn2] = 1; //1 comes from 0+1
-#endif
-    }
-
-    return Graph(name, filePath, newEdgeList, nodeNames, 
-                 newEdgeWeights, colorsAsNodeColorNamePairs());
-    //note: the new graph takes the same name/path as the original graph. this may be confusing
-    //since it's no longer the same graph, but I think SANA relies on this -Nil
-}
-
 uint Graph::randomNode() const {
     if (getNumNodes() == 0) throw runtime_error("no nodes");
     return randInt(0, getNumNodes()-1);
