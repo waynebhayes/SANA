@@ -247,7 +247,7 @@ SANA::~SANA() {}
 void SANA::initDataStructures() {
     iterationsPerformed = 0;
     numPBadsInBuffer = pBadBufferSum = pBadBufferIndex = 0;
-
+    
     Alignment alig;
     if (startA.size() != 0) alig = startA;
     else alig = Alignment::randomColorRestrictedAlignment(*G1, *G2);
@@ -272,7 +272,7 @@ void SANA::initDataStructures() {
     if (needSquaredAligEdges) squaredAligEdges =
             ((SquaredEdgeScore*) MC->getMeasure("ses"))->numSquaredAlignedEdges(alig);
     if (needExposedEdges) EdgeExposure::numer = 
-            EdgeExposure::numExposedEdges(A, *G1, *G2) - EdgeExposure::getMaxEdge();
+            EdgeExposure::numExposedEdges(alig, *G1, *G2) - EdgeExposure::getMaxEdge();
     if (needMS3) MultiS3::numer =
             ((MultiS3*) MC->getMeasure("ms3"))->computeNumer(alig);
     if (needInducedEdges) inducedEdges = G2->numEdgesInNodeInducedSubgraph(alig.asVector());
