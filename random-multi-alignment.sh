@@ -72,4 +72,4 @@ paste $TMPDIR/*.2.nodes 2>/dev/null | sed -e 's/		/	_	/g' -e 's/		/	_	/g' -e 's/
 	fi > $b-shadow.align
     done
 )
-mv $TMPDIR/*[Aa]lign $TMPDIR/*.out "$OUTDIR"
+mv $TMPDIR/*[Aa]lign "$OUTDIR"
