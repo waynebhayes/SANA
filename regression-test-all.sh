@@ -32,9 +32,9 @@ if $MAKE ; then
 fi
 
 NUM_FAILS=0
-for dir in regression-tests/*; do
-    echo --- in directory $dir ---
-    for r in $dir/*.sh; do
+for REG_DIR in regression-tests/*; do
+    echo --- in directory $REG_DIR ---
+    for r in $REG_DIR/*.sh; do
 	echo --- running test $r ---
 	if "$r"; then
 	    :
