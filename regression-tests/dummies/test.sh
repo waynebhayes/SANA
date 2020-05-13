@@ -1,4 +1,5 @@
-./$SANA_EXE -fg1 regression-tests/dummies/testG1.el -fg2 regression-tests/dummies/testG2.el -fcolor1 regression-tests/dummies/testG1.col -fcolor2 regression-tests/dummies/testG2.col -ec 1 -t 0.1 -tinitial 1 -tdecay 1
+#!/bin/sh
+./$SANA_EXE -fg1 $REG_DIR/testG1.el -fg2 $REG_DIR/testG2.el -fcolor1 $REG_DIR/testG1.col -fcolor2 $REG_DIR/testG2.col -ec 1 -t 0.1 -tinitial 1 -tdecay 1 > $REG_DIR/sana.stdout
 # adding 2 dummies colored red to G2
 # adding 1 dummies colored blue to G2
 # adding 1 dummies colored __default to G2

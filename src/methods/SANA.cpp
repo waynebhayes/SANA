@@ -170,10 +170,10 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     // NODE COLOR SYSTEM initlialization
     if (G1->numColors() > G2->numColors())
         throw runtime_error("some G1 nodes have a color non-existent in G2, "
-                            "so there is no valid alignment");
+	    "so there is no valid alignment");
     else if (G1->numColors() < G2->numColors())
-        cerr<<"Warning: some G2 nodes have a color non-existent in G1, "
-            <<"so some G2 nodes won't be part of any valid alignment"<<endl;
+        throw runtime_error("some G2 nodes have a color non-existent in G1, "
+            "so there is no valid alignment");
 
     vector<uint> numSwapNeighborsByColor(G1->numColors(), 0);
     vector<uint> numChangeNeighborsByColor(G1->numColors(), 0);
