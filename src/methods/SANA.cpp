@@ -167,13 +167,15 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     assignedNodesG2 = vector<bool> (n2);
     unassignedG2NodesByColor  = vector<vector<uint>> (G1->numColors());
 
+#define COLOR_WARNING "so there is no valid alignment. For example, if you are aligning two virus-host networks, " \
+	"then the colors should be 'virus' and 'host'; using species names won't work, because for example a node " \
+	"of color 'mouse' cannot align to a node of color 'human'. Call the both 'host'."
+
     // NODE COLOR SYSTEM initlialization
     if (G1->numColors() > G2->numColors())
-        throw runtime_error("some G1 nodes have a color non-existent in G2, "
-	    "so there is no valid alignment");
+        throw runtime_error("some G1 nodes have a color non-existent in G2, " COLOR_WARNING);
     else if (G1->numColors() < G2->numColors())
-        throw runtime_error("some G2 nodes have a color non-existent in G1, "
-            "so there is no valid alignment");
+        throw runtime_error("some G2 nodes have a color non-existent in G1, " COLOR_WARNING);
 
     vector<uint> numSwapNeighborsByColor(G1->numColors(), 0);
     vector<uint> numChangeNeighborsByColor(G1->numColors(), 0);
