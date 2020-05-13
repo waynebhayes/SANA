@@ -3,7 +3,7 @@ echo() { /bin/echo "$@"
 }
 die() { echo "FATAL ERROR: $@" >&2; exit 1
 }
-CORES=`cpus 2>/dev/null || echo 4`
+CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 PATH="`pwd`/scripts:$PATH"
 export PATH
 DIR=/tmp/syeast.$$
