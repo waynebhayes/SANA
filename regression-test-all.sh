@@ -18,7 +18,7 @@ done
 
 export SANA_EXE
 if $MAKE ; then
-    CORES=`cpus 2>/dev/null || echo 4`
+    CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
     for ext in multi float ''; do
 	make clean; make $ext -j$CORES
 	# We only want a "." separator if the extension is non-null
