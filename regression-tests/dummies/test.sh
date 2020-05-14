@@ -1,5 +1,13 @@
 #!/bin/sh
-./$SANA_EXE -fg1 $REG_DIR/testG1.el -fg2 $REG_DIR/testG2.el -fcolor1 $REG_DIR/testG1.col -fcolor2 $REG_DIR/testG2.col -ec 1 -t 0.1 -tinitial 1 -tdecay 1 > $REG_DIR/sana.stdout
+echo "The following SHOULD abort, not to worry:" >&2
+if ./$SANA_EXE -fg1 $REG_DIR/testG1.el -fg2 $REG_DIR/testG2.el -fcolor1 $REG_DIR/testG1.col -fcolor2 $REG_DIR/testG2.col -ec 1 -t 0.1 -tinitial 1 -tdecay 1 > $REG_DIR/sana.stdout 2>&1; then
+    #This SHOULD fail
+    cat $REG_DIR/sana.stdout >&2
+    echo 'Hmmm... this one was supposed to fail' >&2
+    exit 1
+else
+    exit 0
+fi
 # adding 2 dummies colored red to G2
 # adding 1 dummies colored blue to G2
 # adding 1 dummies colored __default to G2
