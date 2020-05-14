@@ -33,6 +33,7 @@ fi
 
 NUM_FAILS=0
 for REG_DIR in regression-tests/*; do
+    export REG_DIR
     echo --- in directory $REG_DIR ---
     for r in $REG_DIR/*.sh; do
 	echo --- running test $r ---
