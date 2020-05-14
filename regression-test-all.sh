@@ -17,10 +17,14 @@ while [ $# -gt -0 ]; do
 done
 
 export SANA_EXE
+CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 if $MAKE ; then
-    CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
     for ext in multi float ''; do
-	make clean; make $ext -j$CORES
+	if [ `hostname` = Jenkins ]; then
+	    make clean; make $ext -j2
+	else
+	    make clean; make $ext -j$CORES
+	fi
 	# We only want a "." separator if the extension is non-null
 	if [ "$ext" = "" ]; then dot=""; else dot="."; fi
 	if [ -x sana$dot$ext ]; then
