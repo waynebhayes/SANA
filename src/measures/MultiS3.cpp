@@ -26,7 +26,7 @@ MultiS3::MultiS3(Graph* G1, Graph* G2, int _numerator_type, int _denominator_typ
 {
 #if MULTI_PAIRWISE
     
-    cout << "EEEEEEEEEEEEEEEEnter MultiS3......" << endl;
+    //cout << "EEEEEEEEEEEEEEEEnter MultiS3......" << endl;
     extern char *getetv(char*);
     char *s = getenv((char*)"NUM_GRAPHS");
     if (s)
@@ -47,7 +47,7 @@ MultiS3::MultiS3(Graph* G1, Graph* G2, int _numerator_type, int _denominator_typ
 //    }    
     numerator_type   = _numerator_type  ;
     denominator_type = _denominator_type;
-    cout<<"Multi S3: numer = ";
+    //cout<<"Multi S3: numer = ";
     switch(numerator_type){
         case 1:
             cout<<"ra_i"<<endl;
@@ -82,7 +82,7 @@ MultiS3::MultiS3(Graph* G1, Graph* G2, int _numerator_type, int _denominator_typ
             cout<<"default"<<endl;
     }
 
-    cout << "Multi S3: NUM_GRAPHS = " << NUM_GRAPHS << endl;
+    //cout << "Multi S3: NUM_GRAPHS = " << NUM_GRAPHS << endl;
     degreesInit = false;
     //G1->printStats(0, cout);
     //G2->printStats(0, cout);
@@ -180,7 +180,7 @@ unsigned MultiS3::computeDenom(const Alignment& A, const Graph& G1, const Graph&
 double MultiS3::eval(const Alignment& A)
 {
 #if MULTI_PAIRWISE
-    cout << "Incdenom: " << denom << endl;
+    //cout << "Incdenom: " << denom << endl;
     if (!degreesInit)
     {
         initDegrees(A, *G1, *G2);
@@ -199,10 +199,10 @@ double MultiS3::eval(const Alignment& A)
         denom = ne;
     }
     unsigned newNumer = A.multiS3Numerator(*G1, *G2);
-    if(newNumer != numer) cerr << "inc eval MS3numer wrong: should be "<<newNumer<<" but is "<<numer << '\n';
-    cout << "numer: " << numer << "newNumer: " << newNumer << endl;
+    //if(newNumer != numer) cerr << "inc eval MS3numer wrong: should be "<<newNumer<<" but is "<<numer << '\n';
+    //cout << "numer: " << numer << "newNumer: " << newNumer << endl;
     numer = newNumer;
-    cout << "Evaldenom: " << denom << endl;
+    //cout << "Evaldenom: " << denom << endl;
     if (   (   (numerator_type==ra_i   or numerator_type==ra_global)
            and (denominator_type==ee_i or denominator_type==ee_global))
         or (numerator_type==_default and denominator_type==_default)  ){
