@@ -9,7 +9,7 @@ CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
     #grep CTSB sana.align #check that it does not appear
 
 
-    echo "'$SANA_EXE' -fg1 $REG_DIR/covid.el -fg2 $REG_DIR/covid.el -t 4 -s3 1 -fcolor1 $REG_DIR/covid.col -fcolor2 $REG_DIR/covid.col -o $REG_DIR/covid > $REG_DIR/covid.stdout 2>&1 || exit 1; if grep -w 'E\|M\|N\|NSP1\|NSP10\|NSP11\|NSP12\|NSP13\|NSP14\|NSP15\|NSP2\|NSP4\|NSP5\|NSP5_C145A\|NSP6\|NSP7\|NSP8\|NSP9\|ORF10\|ORF3A\|ORF3B\|ORF6\|ORF7A\|ORF8\|ORF9B\|PROTEIN14\|S' sana.align | grep EN; then exit 1; fi"
+    echo "'$SANA_EXE' -fg1 $REG_DIR/covid.el -fg2 $REG_DIR/covid.el -t 4 -s3 1 -fcolor1 $REG_DIR/covid.col -fcolor2 $REG_DIR/covid.col -o $REG_DIR/covid > $REG_DIR/covid.stdout 2>&1 || exit 1; if grep -w 'E\|M\|N\|NSP1\|NSP10\|NSP11\|NSP12\|NSP13\|NSP14\|NSP15\|NSP2\|NSP4\|NSP5\|NSP5_C145A\|NSP6\|NSP7\|NSP8\|NSP9\|ORF10\|ORF3A\|ORF3B\|ORF6\|ORF7A\|ORF8\|ORF9B\|PROTEIN14\|S' $REG_DIR/covid.align | grep EN; then exit 1; fi"
     #after running it:
     #egrep are all the virus nodes (color "virus"). Make sure none of them
     #are aligned to a node starting with prefix "EN" (which are colored "human")
