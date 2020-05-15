@@ -122,6 +122,7 @@ void ArgumentParser::initParsedValues(vector<string> vArg) {
     while (i < n) {
         arg = vArg[i];
         if(strings.count(arg)) {
+
             strings[arg]=vArg[i+1];
             i++;
         }
