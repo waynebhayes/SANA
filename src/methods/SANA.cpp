@@ -42,10 +42,9 @@
 using namespace std;
 
 //static fields
-bool SANA::interrupt = false;
-bool SANA::saveAlignment = false;
-
-uint SANA::INVALID_ACTIVE_ID;
+bool SANA::saveAligAndExitOnInterruption = false;
+bool SANA::saveAligAndContOnInterruption = false;
+uint SANA::INVALID_ACTIVE_COLOR_ID;
 
 SANA::SANA(const Graph* G1, const Graph* G2,
         double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing,
@@ -162,83 +161,86 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     iterationsPerStep     = 10000000;
     avgEnergyInc          = -0.00001; //to track progress
 
-    //things initialized in initDataStructures
-    //they have the same size for every run, so we can allocate the size here
-    assignedNodesG2 = vector<bool> (n2);
-    unassignedG2NodesByColor  = vector<vector<uint>> (G1->numColors());
+    // NODE COLOR SYSTEM initialization
+    assert(G1->numColors() <= G2->numColors());
+    const bool COL_DBG = true; //print stats about color/neighbor type probabilities
 
-#define COLOR_WARNING "so there is no valid alignment. For example, if you are aligning two virus-host networks, " \
-	"then the colors should be 'virus' and 'host'; using species names won't work, because for example a node " \
-	"of color 'mouse' cannot align to a node of color 'human'. Call the both 'host'."
-
-    // NODE COLOR SYSTEM initlialization
-    if (G1->numColors() > G2->numColors())
-        throw runtime_error("some G1 nodes have a color non-existent in G2, " COLOR_WARNING);
-    else if (G1->numColors() < G2->numColors())
-        throw runtime_error("some G2 nodes have a color non-existent in G1, " COLOR_WARNING);
-
-    vector<uint> numSwapNeighborsByColor(G1->numColors(), 0);
-    vector<uint> numChangeNeighborsByColor(G1->numColors(), 0);
-    uint totalAligNbrs = 0;
-    for (uint id = 0; id < G1->numColors(); id++) {
-        string colorName = G1->getColorName(id);
-        if (!G2->hasColor(colorName))
-            throw runtime_error("G1 nodes colored "+colorName+" cannot be matched to any G2 nodes");
-        uint c1 = G1->numNodesWithColor(id);
-        uint c2 = G2->numNodesWithColor(G2->getColorId(colorName));
+    vector<uint> numSwapNeighborsByG1Color(G1->numColors(), 0);
+    vector<uint> numChangeNeighborsByG1Color(G1->numColors(), 0);
+    uint totalNbrCount = 0;
+    for (uint g1Id = 0; g1Id < G1->numColors(); g1Id++) {
+        string colName = G1->getColorName(g1Id);
+        if (not G2->hasColor(colName))
+            throw runtime_error("G1 nodes colored "+colName+" cannot be matched to any G2 nodes");
+        uint c1 = G1->numNodesWithColor(g1Id);
+        uint c2 = G2->numNodesWithColor(G2->getColorId(colName));
         if (c1 > c2) throw runtime_error("there are "+to_string(c1)+" G1 nodes colored "
-                    +colorName+" but only "+to_string(c2)+" such nodes in G2");  
-        numSwapNeighborsByColor[id] = c1*(c1-1)/2;
-        numChangeNeighborsByColor[id] = c1*(c2-c1);
-        uint numNbrs = numSwapNeighborsByColor[id] + numChangeNeighborsByColor[id];
-        totalAligNbrs += numNbrs;
-        // debug info:
-        cerr<<"color "<<colorName<<" has "<<numSwapNeighborsByColor[id]<<" swap nbrs and "
-            <<numChangeNeighborsByColor[id]<<" change nbrs ("<<numNbrs<<" total)"<<endl;
-    }
-    if (totalAligNbrs == 0) throw runtime_error(
-            "there is a unique valid alignment, so running SANA is pointless");
-    //debug info:
-    cerr<<"an alignment has "<<totalAligNbrs<<" nbrs in total"<<endl;
-
-    //init activeColorIds, changeProbByColor, and colorAccumProbCutpoints
-    for (uint id = 0; id < G1->numColors(); id++) {
-        uint numNbrs = numSwapNeighborsByColor[id] + numChangeNeighborsByColor[id];
-        if (numNbrs == 0) { 
-            cerr<<"color "<<G1->getColorName(id)<<" (id "<<id<<") is inactive"<<endl;
-            continue; //inactive color (e.g., a locked pair)
+                    +colName+" but only "+to_string(c2)+" such nodes in G2");  
+        uint numSwapNbrs = c1*(c1-1)/2, numChangeNbrs = c1*(c2-c1);
+        numSwapNeighborsByG1Color[g1Id] = numSwapNbrs;
+        numChangeNeighborsByG1Color[g1Id] = numChangeNbrs;
+        uint numNbrs = numSwapNbrs + numChangeNbrs;
+        totalNbrCount += numNbrs;
+        if (COL_DBG) {
+            cerr<<"color "<<colName<<" has "<<numSwapNbrs<<" swap nbrs and "
+                <<numChangeNbrs<<" change nbrs ("<<numNbrs<<" total)"<<endl;
+            if (numNbrs == 0) cerr<<"color "<<colName<<" is inactive"<<endl;
         }
-        activeColorIds.push_back(id);
-        changeProbByColor.push_back(numChangeNeighborsByColor[id]/ (double) numNbrs);
-        double colorProb = numNbrs / (double) totalAligNbrs;
+    }
+    if (COL_DBG) cerr<<"alignments have "<<totalNbrCount<<" nbrs in total"<<endl;
+    if (totalNbrCount == 0) throw runtime_error(
+            "there is a unique valid alignment, so running SANA is pointless");
+
+    //init active color data structures
+    for (uint g1Id = 0; g1Id < G1->numColors(); g1Id++) {
+        uint numChangeNbrs = numChangeNeighborsByG1Color[g1Id];
+        uint numNbrs = numChangeNbrs + numSwapNeighborsByG1Color[g1Id];
+        if (numNbrs == 0) continue; //inactive color
+        double colorProb = numNbrs / (double) totalNbrCount;
         double accumProb = colorProb +
-                (colorAccumProbCutpoints.empty() ? 0 : colorAccumProbCutpoints.back());
-        colorAccumProbCutpoints.push_back(accumProb);
-        //debug info:
-        cerr<<"color "<<G1->getColorName(id)<<" (id "<<id<<") has prob "<<colorProb
-            <<" (accumulated prob is now up to "<<accumProb<<")"<<endl;
+                (actColToAccumProbCutpoint.empty() ? 0 : actColToAccumProbCutpoint.back());
+        assert(accumProb <= 1);
+        actColToAccumProbCutpoint.push_back(accumProb);
+        actColToChangeProb.push_back(numChangeNbrs/ (double) numNbrs);
+        actColToG1ColId.push_back(g1Id);
     }
     //due to rounding errors, the last number may not be exactly 1, so we correct it
-    colorAccumProbCutpoints.back() = 1;
-
-    //init g2NodeToActiveColorId
-    vector<uint> g2ToG1ColorIdMap = G2->myColorIdsToOtherGraphColorIds(*G1);
-    INVALID_ACTIVE_ID = n1;
-    vector<uint> g1ColorIdToActiveId(G1->numColors(), INVALID_ACTIVE_ID);
-    for (uint i = 0; i < activeColorIds.size(); i++) {
-        g1ColorIdToActiveId[activeColorIds[i]] = i;
+    actColToAccumProbCutpoint.back() = 1;
+    if (COL_DBG) {
+        cerr<<"Active colors:"<<endl;
+        vector<vector<string>> colTable;
+        colTable.push_back({"id","name","color P","accum P","change-P","swap-P"});
+        for (uint i = 0; i < actColToG1ColId.size(); i++) {
+            string name = G1->getColorName(actColToG1ColId[i]);
+            double colP = actColToAccumProbCutpoint[i] - (i>0 ? actColToAccumProbCutpoint[i-1] : 0);
+            colTable.push_back({to_string(i), name, to_string(colP), to_string(actColToAccumProbCutpoint[i]), 
+                                to_string(actColToChangeProb[i]), to_string(1-actColToChangeProb[i])});
+        }
+        printTable(colTable, 4, cerr);
     }
-    g2NodeToActiveColorId = vector<uint> (n2, INVALID_ACTIVE_ID);
+
+    //init g2NodeToActColId. For each node, we do the following transformations:
+    //g2Node -> g2ColorId -> g1ColorId -> actColId
+    vector<uint> g2ToG1ColorIdMap = G2->myColorIdsToOtherGraphColorIds(*G1);
+    INVALID_ACTIVE_COLOR_ID = n1;
+    vector<uint> g1ColIdToActColId(G1->numColors(), INVALID_ACTIVE_COLOR_ID);
+    for (uint i = 0; i < actColToG1ColId.size(); i++) {
+        g1ColIdToActColId[actColToG1ColId[i]] = i;
+    }
+    g2NodeToActColId = vector<uint> (n2, INVALID_ACTIVE_COLOR_ID);
     for (uint g2Node = 0; g2Node < n2; g2Node++) {
         uint g2ColorId = G2->nodeColors[g2Node];
         uint g1ColorId = g2ToG1ColorIdMap[g2ColorId];
-        if (g1ColorId == Graph::INVALID_COLOR_ID) {
-            g2NodeToActiveColorId[g2Node] = INVALID_ACTIVE_ID;
-        } else {
-            g2NodeToActiveColorId[g2Node] = g1ColorIdToActiveId[g1ColorId];
-        }
+        if (g1ColorId == Graph::INVALID_COLOR_ID) continue; //no node in G1 has this color
+        g2NodeToActColId[g2Node] = g1ColIdToActColId[g1ColorId];
     }
+
+    //things initialized in initDataStructures because they d epend on the starting alignment
+    //they have the same size for every run, so we can allocate the size here
+    assignedNodesG2 = vector<bool> (n2);
+    actColToUnassignedG2Nodes = vector<vector<uint>> (actColToG1ColId.size());
 }
+
 SANA::~SANA() {}
 
 //initialize data structures specific to the starting alignment
@@ -254,17 +256,17 @@ void SANA::initDataStructures() {
     if (startA.size() != 0) alig = startA;
     else alig = Alignment::randomColorRestrictedAlignment(*G1, *G2);
 
-    //initialize assignedNodesG2 (the space was already allocated in the constructor)
+    //initialize assignedNodesG2 (the size was already set in the constructor)
     for (uint i = 0; i < n2; i++) assignedNodesG2[i] = false;
     for (uint i = 0; i < n1; i++) assignedNodesG2[alig[i]] = true;
-    //initialize unassignedG2NodesByColor (the space was already allocated in the constructor)
-    for (uint i = 0; i <  unassignedG2NodesByColor.size(); i++)
-        unassignedG2NodesByColor[i].clear();
+    //initialize actColToUnassignedG2Nodes (the size was already set in the constructor)
+    for (uint i = 0; i < actColToUnassignedG2Nodes.size(); i++)
+        actColToUnassignedG2Nodes[i].clear();
     for (uint g2Node = 0; g2Node < n2; g2Node++) {
         if (assignedNodesG2[g2Node]) continue;
-        uint actInd = g2NodeToActiveColorId[g2Node];
-        if (actInd != INVALID_ACTIVE_ID) {
-            unassignedG2NodesByColor[actInd].push_back(g2Node);
+        uint actColId = g2NodeToActColId[g2Node];
+        if (actColId != INVALID_ACTIVE_COLOR_ID) {
+            actColToUnassignedG2Nodes[actColId].push_back(g2Node);
         }
     }
 
@@ -305,27 +307,6 @@ void SANA::initDataStructures() {
     A = alig.asVector();
     timer.start();
 }
-
-uint SANA::randColorWeightedByNumNbrs() {
-    if (activeColorIds.size() == 1) return 0; //optimized special case: monochromatic graphs
-    else if (activeColorIds.size() == 2) { //optimized special case: bichromatic graphs
-        return (randomReal(gen) < colorAccumProbCutpoints[0] ? 0 : 1);
-    } else { //general case
-        double p = randomReal(gen);
-        //use binary search to optimizie for the case with many (non-unique) colors
-        //could be optimized to avoid the std::lower_bound call for the mono and bichromatic cases
-        auto iter = lower_bound(colorAccumProbCutpoints.begin(), colorAccumProbCutpoints.end(), p);
-        if (iter == colorAccumProbCutpoints.end()) throw runtime_error(
-            "random number between 0 and 1 is beyond the last color cutpoint, which should be 1");
-        uint index = iter - colorAccumProbCutpoints.begin();
-        return index;
-    }
-}
-
-uint SANA::randomG1NodeWithColor(uint colorId) const {
-    uint randIndex = randInt(0, G1->nodeGroupsByColor[colorId].size()-1);
-    return G1->nodeGroupsByColor[colorId][randIndex];
-} 
 
 /*The following is designed so that every single node from both networks
   is printed at least once. First, we find for every single node (across
@@ -383,8 +364,8 @@ Alignment SANA::run() {
     for (iter = 0; iter <= maxIters; ++iter) {
         Temperature = temperatureFunction(iter, TInitial, TDecay);
         SANAIteration();
-        if (interrupt) break; //set from interruption
-        if (saveAlignment) printReport(); //set from interruption
+        if (saveAligAndExitOnInterruption) break;
+        if (saveAligAndContOnInterruption) printReportOnInterruption();
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter, maxIters);
             if (maxTime != -1 and timer.elapsed() > maxTime and currentScore-previousScore < 0.005) break;
@@ -521,21 +502,20 @@ void sigIntHandler(int s) {
         }
         if      (c == 0) cerr << "Continuing..." << endl;
         else if (c == 1) exit(0);
-        else if (c == 2) SANA::interrupt = true;
-        else if (c == 3) SANA::saveAlignment = true;
+        else if (c == 2) SANA::saveAligAndExitOnInterruption = true;
+        else if (c == 3) SANA::saveAligAndContOnInterruption = true;
     } while (c < 0 || c > 3);    
 }
 void SANA::setInterruptSignal() {
-    interrupt = false;
+    saveAligAndExitOnInterruption = false;
     struct sigaction sigInt;
     sigInt.sa_handler = sigIntHandler;
     sigemptyset(&sigInt.sa_mask);
     sigInt.sa_flags = 0;
     sigaction(SIGINT, &sigInt, NULL);
 }
-
-void SANA::printReport() {
-    saveAlignment = false;
+void SANA::printReportOnInterruption() {
+    saveAligAndContOnInterruption = false; //reset value
     string timestamp = string(currentDateTime()); //necessary to make it not const
     std::replace(timestamp.begin(), timestamp.end(), ' ', '_');
     string out = outputFileName+"_"+timestamp;
@@ -547,31 +527,48 @@ void SANA::printReport() {
 
 void SANA::SANAIteration() {
     ++iterationsPerformed;
-    uint index = randColorWeightedByNumNbrs();
-    uint colorId = activeColorIds[index];
+    uint actColId = randActiveColorIdWeightedByNumNbrs();
     double p = randomReal(gen);
-    if (p < changeProbByColor[index]) {
-        if (G2->numNodesWithColor(colorId) <= 1) { //this shouldn't happen, but happened once
-            //printing this to trace back the bug if it happens again
-            //remove nested if after bug is fixed
-            cerr<<"p: "<<p<<" index: "<<index<<" colorId: "<<colorId
-                <<"changeProbByColor[index]: "<<changeProbByColor[index]<<endl;
-            G1->debugPrint();
-            G2->debugPrint();
-        }
-        performChange(colorId);
+    if (p < actColToChangeProb[actColId]) {
+        performChange(actColId);
     } else {
-        performSwap(colorId);
+        performSwap(actColId);
     }
 }
 
-void SANA::performChange(uint colorId) {
-    assert(G2->numNodesWithColor(colorId) > 1);
-    
-    uint source = randomG1NodeWithColor(colorId);
+uint SANA::numActiveColors() const {
+    return actColToChangeProb.size();
+}
+
+uint SANA::randActiveColorIdWeightedByNumNbrs() {
+    if (numActiveColors() == 1) return 0; //optimized special case: monochromatic graphs
+    double p = randomReal(gen);
+    if (numActiveColors() == 2) //optimized special case: bichromatic graphs
+        return (p < actColToAccumProbCutpoint[0] ? 0 : 1);
+
+    //general case: use binary search to optimizie for the case with many active colors
+    auto iter = lower_bound(actColToAccumProbCutpoint.begin(), actColToAccumProbCutpoint.end(), p);
+    assert(iter != actColToAccumProbCutpoint.end());
+    return iter - actColToAccumProbCutpoint.begin();
+}
+
+uint SANA::randomG1NodeWithActiveColor(uint actColId) const {
+    uint g1ColId = actColToG1ColId[actColId];
+    uint randIndex = randInt(0, G1->nodeGroupsByColor[g1ColId].size()-1);
+    return G1->nodeGroupsByColor[g1ColId][randIndex];
+} 
+
+void SANA::performChange(uint actColId) {    
+    uint source = randomG1NodeWithActiveColor(actColId);
     uint oldTarget = A[source];
-    uint unassignedVecIndex = randInt(0, unassignedG2NodesByColor[colorId].size()-1);
-    uint newTarget = unassignedG2NodesByColor[colorId][unassignedVecIndex];
+    uint numUnassigWithCol = actColToUnassignedG2Nodes[actColId].size();
+    uint unassignedVecIndex = randInt(0, numUnassigWithCol-1);
+    uint newTarget = actColToUnassignedG2Nodes[actColId][unassignedVecIndex];
+
+    assert(numUnassigWithCol > 0);
+    assert(oldTarget != newTarget);
+    // assert(G1->getColorName(G1->getNodeColor(source)) == G2->getColorName(G2->getNodeColor(oldTarget)));
+    // assert(G2->getNodeColor(newTarget) == G2->getNodeColor(oldTarget));
 
     //added this dummy initialization to shut compiler warning -Nil
     unsigned oldOldTargetDeg = 0, oldNewTargetDeg = 0, oldMs3Denom = 0;
@@ -625,7 +622,7 @@ void SANA::performChange(uint colorId) {
 
     if (makeChange) {
         A[source] = newTarget;
-        unassignedG2NodesByColor[colorId][unassignedVecIndex] = oldTarget;
+        actColToUnassignedG2Nodes[actColId][unassignedVecIndex] = oldTarget;
         assignedNodesG2[oldTarget] = false;
         assignedNodesG2[newTarget] = true;
         aligEdges                     = newAligEdges;
@@ -649,18 +646,23 @@ void SANA::performChange(uint colorId) {
     }
 }
 
-void SANA::performSwap(uint colorId) {
-    assert(G1->numNodesWithColor(colorId) > 1);
-    uint source1 = randomG1NodeWithColor(colorId);
+void SANA::performSwap(uint actColId) {
+    uint source1 = randomG1NodeWithActiveColor(actColId);
     
     uint source2;
-    for (uint i = 0; i < 1000; i++) {
-        source2 = randomG1NodeWithColor(colorId);
+    for (uint i = 0; i < 100; i++) { //each attempt has >=50% chance of success
+        source2 = randomG1NodeWithActiveColor(actColId);
         if (source1 != source2) break;
     }
-    assert(source1 != source2);
+
     uint target1 = A[source1], target2 = A[source2];
     
+    assert(source1 != source2);
+    assert(target1 != target2);
+    // assert(G1->getNodeColor(source1) == G1->getNodeColor(source2));
+    // assert(G2->getNodeColor(target1) == G2->getNodeColor(target2));
+    // assert(G1->getColorName(G1->getNodeColor(source1)) == G2->getColorName(G2->getNodeColor(target1)));
+
     //added this dummy initialization to shut compiler warning -Nil
     unsigned oldTarget1Deg = 0, oldTarget2Deg = 0, oldMs3Denom = 0;
 

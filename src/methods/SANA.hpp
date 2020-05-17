@@ -45,9 +45,6 @@ public:
     double getPBad(double temp, double maxTime = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
     list<pair<double, double>> ipsList;
 
-    //interrupt handling stuff
-    static bool interrupt;
-    static bool saveAlignment;
 
 private:
     Alignment startA;
@@ -113,7 +110,6 @@ private:
     void initDataStructures();
     vector<uint> A;
     vector<bool> assignedNodesG2;
-    vector<vector<uint>> unassignedG2NodesByColor;        
 
     //objective function
     MeasureCombination* MC;
@@ -235,58 +231,66 @@ private:
     double previousScore;
     double energyInc;
     void SANAIteration();
-    void performChange(uint colorId);
-    void performSwap(uint colorId);
+    void performChange(uint activeColorId);
+    void performSwap(uint activeColorId);
 
     Timer timer;
 
     //Control+C during execution offers options
     //exit, save alignment and exit, save alignment and continue
     static void setInterruptSignal(); 
+    void printReportOnInterruption();
+public: //these need to be public to be set from the interruption handler
+    static bool saveAligAndExitOnInterruption;
+    static bool saveAligAndContOnInterruption;
+private:
 
-    void printReport(); //print out reports from inside SANA
     string outputFileName;
     string localScoresFileName;
 
     Alignment getStartingAlignment();
 
-    // ***************************************************
-    // NODE COLOR SYSTEM
-    // ***************************************************
-    /* mechanism for choosing a neighbor of an alignment uniformly at random
-    this is done in steps:
-    1. an "active" color is chosen randomly weighted by their "ramification"
-    (number of change and swap neighbors using only nodes of that color)
-    we say a color is "active" if it has at least one neighbor
-    that is: it appears at least once in G1 and at least twice in G2
-    in particular, "locked" pairs of nodes have inactive colors
-    non-active colors do not need to be considered for choosing neighbors */
-    uint randColorWeightedByNumNbrs(); //not const because of RNG
-    /* 2. an operation between change and swap is chosen randomly weighted by their "ramification"
-    (number of neighbors of that kind using only nodes of the chosen color)
-    3. the source node(s) is ( or are) chosen randomly from G1 among the nodes of the chosen color*/
-    uint randomG1NodeWithColor(uint colorId) const;
-    //4. same with target node(s)
+    /* NODE COLOR SYSTEM
+    We define the number of neighbors of a color as the number of change and swap neighbors
+    of an alignment involving only nodes of that color. We say a color is "active" if it has at
+    least one neighbor. Equivalently, a color is active if it appears at least once in G1 and
+    at least twice in G2. An example of non-active color is a color used to "lock" two nodes together.
+
+    The goal of the color system is to be able to choose a random neighbor of an alignment
+    uniformly at random and efficiently. For this, inactive colors don't need to be considered
+
+    colors that are active receive a new "active color" id, which is an index from 0 to the
+    number of active color ids -1. This id is not the same as the id of these 
+    colors in either G1 or G2, so colors normally have 3 different ids used as 
+    indices in different data structures. SANA's data structures below operate on active color ids */
+    uint numActiveColors() const;
+
+    // The mechanism for choosing a neighbor of an alignment uniformly at random is done in 4 steps:
+    // 1. an active color is chosen randomly weighted by their number of neighbors
+    uint randActiveColorIdWeightedByNumNbrs(); //not const because of RNG
+
+    /* Data structure to implement step 1. index i contains the accumulated probability of choosing
+    any of the active colors with active color id <= i. The last value is 1 (by definition).
+    Storing the probs like this breaks the range [0,1] into segments for each active color such that the
+    length of segment i equals the probability of chosing active color i. To choose a color randomly,
+    a random real is taken from [0, 1] and the color corresponding to the segment containing it is returned */
+    vector<double> actColToAccumProbCutpoint; 
+
+    //2. an operation between change and swap is chosen randomly weighted by their number of neighbors
+    vector<double> actColToChangeProb;
+
+    //3. the source node (or pair of source nodes, for a swap) are chosen randomly from G1 among the
+    //nodes of the chosen color
+    uint randomG1NodeWithActiveColor(uint actColId) const;
+    vector<uint> actColToG1ColId; //to implement step 3.
+
+    //4. same with target nodes
+    vector<vector<uint>> actColToUnassignedG2Nodes;        
+
+    //data structure used to initialize actColToUnassignedG2Nodes
+    vector<uint> g2NodeToActColId;
+    static uint INVALID_ACTIVE_COLOR_ID; //arbitrary value bigger than any valid active color id
  
-    //ids *in G1* of the active colors
-    vector<uint> activeColorIds;
-
-    //position i contains the change probability for color with id activeColorIds[i]
-    //a number between 0 and 1, depending on the number of swap and change neighbors
-    //of that color
-    vector<double> changeProbByColor;
-
-    //position i contains the probability of choosing any of the colors with ids
-    //activeColorIds[0]..activeColorIds[i]
-    //storing the probs like this breaks the range [0,1] into segments for each
-    //active color s.t. the length of each segment equals the probability of
-    //chosing that color
-    vector<double> colorAccumProbCutpoints; 
-
-    //data structure used to initialize unassignedG2NodesByColor
-    vector<uint> g2NodeToActiveColorId;
-    static uint INVALID_ACTIVE_ID; //arbitrary value bigger than any valid G1 color id
-
 
 
     friend class Ameur; //it needs to read the PBad buffer

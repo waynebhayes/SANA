@@ -259,31 +259,29 @@ void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) {
 }
 
 //precondition: a valid color-restricted matching exists between G1 and G2
-//that means: every color in G1 has at least as many nodes in G2
+//equivalently: every color in G1 has at least as many nodes in G2
 Alignment Alignment::randomColorRestrictedAlignment(const Graph& G1, const Graph& G2) {
-
-    vector<uint> G2ColorIdToG1ColorId = G2.myColorIdsToOtherGraphColorIds(G1);
-    vector<vector<uint>> G2NodesByG1ColorId(G1.numColors());
-    for (uint node = 0; node < G2.getNumNodes(); node++) {
-        uint g2ColorId = G2.getNodeColor(node);
-        uint g1ColorId = G2ColorIdToG1ColorId[g2ColorId];
-        if (g1ColorId == Graph::INVALID_COLOR_ID) continue;
-        G2NodesByG1ColorId[g1ColorId].push_back(node);
+    vector<uint> g2ColIdToG1ColId = G2.myColorIdsToOtherGraphColorIds(G1);
+    vector<vector<uint>> g1ColIdToG2Nodes(G1.numColors());
+    for (uint g2Node = 0; g2Node < G2.getNumNodes(); g2Node++) {
+        uint g2ColId = G2.getNodeColor(g2Node);
+        uint g1ColId = g2ColIdToG1ColId[g2ColId];
+        if (g1ColId == Graph::INVALID_COLOR_ID) continue;
+        g1ColIdToG2Nodes[g1ColId].push_back(g2Node);
     }
-    for (uint id = 0; id < G1.numColors(); id++) {
-        randomShuffle(G2NodesByG1ColorId[id]);
+    for (uint g1ColId = 0; g1ColId < G1.numColors(); g1ColId++) {
+        randomShuffle(g1ColIdToG2Nodes[g1ColId]);
     }
     
-    vector<uint> colorIndices(G1.numColors(), 0);
     vector<uint> A(0);
     A.reserve(G1.getNumNodes());
-    for (uint node = 0; node < G1.getNumNodes(); node++) {
-        uint colorId = G1.getNodeColor(node);
-        if (colorIndices[colorId] >= G2NodesByG1ColorId[colorId].size()) {
-            throw runtime_error("for some color, ran out of nodes in g2 to assign to nodes in g1");
+    for (uint g1Node = 0; g1Node < G1.getNumNodes(); g1Node++) {
+        uint g1ColId = G1.getNodeColor(g1Node);
+        if (g1ColIdToG2Nodes[g1ColId].empty()) {
+            throw runtime_error("not enough nodes in G2 with color "+G1.getColorName(g1ColId));
         }
-        A.push_back(G2NodesByG1ColorId[colorId][colorIndices[colorId]]);
-        colorIndices[colorId]++;
+        A.push_back(g1ColIdToG2Nodes[g1ColId].back());
+        g1ColIdToG2Nodes[g1ColId].pop_back();
     }
 
     Alignment alig(A);

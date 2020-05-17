@@ -89,6 +89,15 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     G1.initColorDataStructs(g1Colors);
     G2.initColorDataStructs(g2Colors);
 
+    const string COLOR_USAGE = 
+        "For example, if you are aligning two virus-host networks, then the colors " \
+        "should be 'virus' and 'host'; using species names won't work, because for example a node " \
+        "of color 'mouse' cannot align to a node of color 'human'. Call both 'host'.";
+    if (G1.numColors() > G2.numColors())
+        throw runtime_error("some G1 nodes have a color non-existent in G2, so there is no valid alignment. "+COLOR_USAGE);
+    else if (G1.numColors() < G2.numColors())
+        throw runtime_error("some G2 nodes have a color non-existent in G1. "+COLOR_USAGE);
+
     //add dummy nodes to G2 to guarantee an alignment exists
     unordered_map<string,uint> colToNumDummies;
     for (const string& colName : *(G1.getColorNames())) {
