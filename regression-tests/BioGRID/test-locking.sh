@@ -14,7 +14,7 @@ TMPDIR=/tmp/regression-test$$
 trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
 
-OutputFile="regression-test.result"
+OutputFile="$REG_DIR/regression-lock.result"
 ErrorMargin="0.04"
 #echo "WARNING: temporarily set error margin way too big while core scores are being tested"
 OutputDir="regression-out"
