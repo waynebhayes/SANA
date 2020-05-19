@@ -56,6 +56,8 @@ public:
         archive(v, n);
     }
     
+    
+
    /**
     * This function is part of the SparseMatrix library implemented by Petr Kessler
     *

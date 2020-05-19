@@ -1391,6 +1391,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool bi
     istream ifs(&sbuf2);
     size_t nodesCount = 0;
     string line;
+    unordered_map<uint,int> nodeToNeighborCount = unordered_map<uint,int>(nodeLen);
     for (uint i = 0; getline(ifs, line); ++i) {
         /*-------------------------- Parse -------------------------*/
         istringstream iss(line);
@@ -1469,7 +1470,8 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool bi
         index2 = g.nodeNameToIndexMap[node2s];
         g.edgeList[i][0] = index1;
         g.edgeList[i][1] = index2;
-        
+        nodeToNeighborCount[index1]++;
+        nodeToNeighborCount[index2]++;
 #ifdef MULTI_PAIRWISE
         g.edgeList[i][2] = stoi(edgeValue);
         assert(g.edgeList[i][2] < (1L << 8*sizeof(MATRIX_UNIT)) -1 ); // ensure type is large enough
@@ -1485,6 +1487,7 @@ void Graph::loadFromEdgeListFile(string fin, string graphName, Graph& g, bool bi
     /*----------------------------- Fill adjLists and matrix ------------------------- */
     g.adjLists = vector<vector<uint> > (nodeLen, vector<uint>(0));
     g.matrix = Matrix<MATRIX_UNIT>(nodeLen);
+    g.matrix.reserve_inner(nodeToNeighborCount);
     uint node1;
     uint node2;
     for(unsigned i = 0; i < g.edgeList.size(); ++i){
