@@ -10,23 +10,13 @@ die() { echo "ERROR: $@" >&2; exit 1
 PATH="$PATH:`pwd`/scripts"
 export PATH
 
-TMPDIR=/tmp/regression-test$$
-#trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
+TMPDIR=/tmp/regression-test$$ # gets removed only if everything works
 mkdir $TMPDIR
 
-OutputFile="regression-test.result"
+OutputFile="$REG_DIR/regression-lock.result"
 ErrorMargin="0.04"
-#echo "WARNING: temporarily set error margin way too big while core scores are being tested"
-OutputDir="regression-out"
-mkdir -p $OutputDir
 
-if [ ! -d "$OutputDir" ]; then
-    mkdir $OutputDir
-fi
-
-if [ -f $OutpuFile ]; then
-    > "$OutputFile"
-fi
+> "$OutputFile"
 
 NL='
 '

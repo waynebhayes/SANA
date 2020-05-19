@@ -15,15 +15,20 @@ TMPDIR=/tmp/regression-test$$
 trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
 
-OutputFile="regression-test.result"
+[ -d "$REG_DIR" ] || die "Expecting REG_DIR to be set"
+
+OutputFile="$REG_DIR/regression-test.result"
 ErrorMargin="0.04"
 #echo "WARNING: temporarily set error margin way too big while core scores are being tested"
-OutputDir="regression-out"
+OutputDir="$REG_DIR/regression-out"
 mkdir -p $OutputDir
 CompareFile=""
 
-while getopts "b:e:o:c:" opt; do
+RUN=true # use -n to turn off run and only compare
+
+while getopts "b:e:o:c:n" opt; do
     case $opt in
+    n)  RUN=false;;
     e)
         if [[ $OPTARG =~ "^[0.9]*.[0.9]\+$" ]]; then
             ErrorMargin=$OPTARG
@@ -49,23 +54,16 @@ while getopts "b:e:o:c:" opt; do
     esac
 done
 
-if [ -z $CompareFile ] && [ ! -f $CompareFile ]; then
+$RUN && cat /dev/null > "$OutputFile" # create empty file
+
+if [ -z $CompareFile -a ! -f $CompareFile ]; then
     printf "Regression file specified: %s does not exists\n" "$CompareFile"
     exit 1
 fi
 
-if [ ! -d "$OutputDir" ]; then
-    mkdir $OutputDir
-fi
-
-if [ -f $OutpuFile ]; then
-    > "$OutputFile"
-fi
 
 NL='
 '
-
-[ -x "$SANA_EXE" ] || die "can't find executable '$SANA_EXE'"
 
 # Alphabetical order--not particularly useful
 #nets='AThaliana CElegans DMelanogaster HSapiens MMusculus RNorvegicus SCerevisiae SPombe'
@@ -75,27 +73,30 @@ nets="`echo RNorvegicus SPombe CElegans MMusculus SCerevisiae AThaliana DMelanog
 export Networks_count=`echo $nets | wc -w`
 #Biogrid_network="$nets" #`echo $nets | newlines | sed 's/$/.el/' | (cd networks; xargs ls -Sr) | sed 's/\.el$//'`
 
-echo "$nets" | awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; \"'"$SANA_EXE"'\" -t 5 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
+if $RUN; then
+    [ -x "$SANA_EXE" ] || die "can't find executable '$SANA_EXE'"
+    echo "$nets" | awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; \"'"$SANA_EXE"'\" -t 5 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
 
-Iterations=""
-echo "Checking Iterations Speed" >> $OutputFile
-printf "%-30s | %-20s$NL" "Networks Pair" "Iterations Speed" >> $OutputFile
-for i in $(seq 1 $((Networks_count - 1)));do
-    for j in $(seq $((i + 1)) $Networks_count); do
-	if [ "$i" -lt "$j" ]; then
-	    Network1=`echo "$nets" | awk 'NR=='$i'{print}'`
-	    Network2=`echo "$nets" | awk 'NR=='$j'{print}'`
-	    progress="$OutputDir/$Network1-$Network2.progress"
-	    cIt=`grep -o "[0-9]*.[0-9]* iterations per second" ./$progress | awk '{print $1}' | sort -u`
-	    Iterations="$Iterations $cIt"
-	    printf "%-30s | %-20s$NL" "$Network1-$Network2" "$cIt" >> $OutputFile
-	fi
+    Iterations=""
+    echo "Checking Iterations Speed" >> $OutputFile
+    printf "%-30s | %-20s$NL" "Networks Pair" "Iterations Speed" >> $OutputFile
+    for i in $(seq 1 $((Networks_count - 1)));do
+	for j in $(seq $((i + 1)) $Networks_count); do
+	    if [ "$i" -lt "$j" ]; then
+		Network1=`echo "$nets" | awk 'NR=='$i'{print}'`
+		Network2=`echo "$nets" | awk 'NR=='$j'{print}'`
+		progress="$OutputDir/$Network1-$Network2.progress"
+		cIt=`grep -o "[0-9]*.[0-9]* iterations per second" ./$progress | awk '{print $1}' | sort -u`
+		Iterations="$Iterations $cIt"
+		printf "%-30s | %-20s$NL" "$Network1-$Network2" "$cIt" >> $OutputFile
+	    fi
+	done
     done
-done
 
-IterationsAvg=`echo $Iterations | tr " " "$NL" | awk '{s+=$1}END{print s/NR}'`
-IterationsAvg=`printf "%f" $IterationsAvg`
-printf "Iterations /s Average: %s \n" "$IterationsAvg" >> $OutputFile
+    IterationsAvg=`echo $Iterations | tr " " "$NL" | awk '{s+=$1}END{print s/NR}'`
+    IterationsAvg=`printf "%f" $IterationsAvg`
+    printf "Iterations /s Average: %s \n" "$IterationsAvg" >> $OutputFile
+fi
 
 PrintTestScores()
 {
