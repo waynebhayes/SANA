@@ -18,7 +18,7 @@ mkdir $TMPDIR
 OutputFile="$REG_DIR/regression-test.result"
 ErrorMargin="0.04"
 #echo "WARNING: temporarily set error margin way too big while core scores are being tested"
-OutputDir="regression-out"
+OutputDir="$REG_DIR/regression-out"
 mkdir -p $OutputDir
 CompareFile=""
 
@@ -52,10 +52,6 @@ done
 if [ -z $CompareFile ] && [ ! -f $CompareFile ]; then
     printf "Regression file specified: %s does not exists\n" "$CompareFile"
     exit 1
-fi
-
-if [ ! -d "$OutputDir" ]; then
-    mkdir $OutputDir
 fi
 
 if [ -f $OutpuFile ]; then

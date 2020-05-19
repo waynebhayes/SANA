@@ -17,12 +17,8 @@ mkdir $TMPDIR
 OutputFile="$REG_DIR/regression-lock.result"
 ErrorMargin="0.04"
 #echo "WARNING: temporarily set error margin way too big while core scores are being tested"
-OutputDir="regression-out"
+OutputDir="$REG_DIR/regression-out"
 mkdir -p $OutputDir
-
-if [ ! -d "$OutputDir" ]; then
-    mkdir $OutputDir
-fi
 
 if [ -f $OutpuFile ]; then
     > "$OutputFile"
