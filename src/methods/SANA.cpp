@@ -1832,10 +1832,22 @@ int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
         if (selfLoopAtOldTarget) res--;
         if (selfLoopAtNewTarget) res++;
     }
+#ifdef SPARSE
+cout<<"sprase correct********";
+    for (uint neighbor : v) if(neighbor != source) {
+        if(G2Matrix[oldTarget].count(neighbor)){
+            res -= G2Matrix[oldTarget][(*A)[neighbor]];
+        }
+        if(G2Matrix[newTarget].count(neighbor)){
+            res += G2Matrix[newTarget][(*A)[neighbor]];
+        }
+    }
+#else
     for (uint neighbor : v) if(neighbor != source) {
         res -= G2Matrix[oldTarget][(*A)[neighbor]];
         res += G2Matrix[newTarget][(*A)[neighbor]];
     }
+#endif
     return res;
 }
 
@@ -1860,24 +1872,52 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
         if (selfLoopAtTarget1) res--;
         if (selfLoopAtTarget2) res++;
     }
+#ifdef SPARSE
+    for(uint neighbor : v1) if(neighbor != source1) {
+        if(G2Matrix[target1].count(neighbor)){
+            res -= G2Matrix[target1][(*A)[neighbor]];
+        }
+        if(G2Matrix[target2].count(neighbor)){
+            res += G2Matrix[target2][(*A)[neighbor]];
+        }
+    }
+#else
     for(uint neighbor : v1) if(neighbor != source1) {
         res -= G2Matrix[target1][(*A)[neighbor]];
         res += G2Matrix[target2][(*A)[neighbor]];
     }
+#endif
 
     const vector<uint>& v2 = G1AdjLists[source2];
     if(selfLoopAtSource2) {
         if (selfLoopAtTarget2) res--;
         if (selfLoopAtTarget1) res++;
     }
+#ifdef SPARSE
+    for(uint neighbor : v2) if(neighbor != source2) {
+        if(G2Matrix[target2].count(neighbor)){
+            res -= G2Matrix[target2][(*A)[neighbor]];
+        }
+        if(G2Matrix[target1].count(neighbor)){
+            res += G2Matrix[target1][(*A)[neighbor]];
+        }
+    }
+#else
     for(uint neighbor : v2) if(neighbor != source2) {
         res -= G2Matrix[target2][(*A)[neighbor]];
         res += G2Matrix[target1][(*A)[neighbor]];
     }
+#endif
 #ifdef MULTI_PAIRWISE
     res += (-1 << 1) & (G1Matrix[source1][source2] + G2Matrix[target1][target2]);
 #else
-    res += 2 * (G1Matrix[source1][source2] & G2Matrix[target1][target2]);
+    #ifdef SPARSE
+        if(G1Matrix[source1].count(source2) & G2Matrix[target1].count(target2)){
+            res += 2 * (G1Matrix[source1][source2] & G2Matrix[target1][target2]);
+        }
+    #else
+        res += 2 * (G1Matrix[source1][source2] & G2Matrix[target1][target2]);
+    #endif
 #endif
     return res;
 }
@@ -3799,11 +3839,29 @@ int SANA::aligEdgesIncChangeOp(Job &job, uint source, uint oldTarget, uint newTa
     int res = 0;
     const uint n = G1AdjLists[source].size();
     uint neighbor;
+    // for (uint i = 0; i < n; ++i) {
+    //     neighbor = G1AdjLists[source][i];
+    //     res -= G2Matrix[oldTarget][(*A)[neighbor]];
+    //     res += G2Matrix[newTarget][(*A)[neighbor]];
+    // }
+#ifdef SPARSE
+    cout<<"sprase correct********";
+    for (uint i = 0; i < n; ++i) {
+        neighbor = G1AdjLists[source][i];
+        if(G2Matrix[oldTarget].count(neighbor)){
+            res -= G2Matrix[oldTarget][(*A)[neighbor]];
+        }
+        if(G2Matrix[newTarget].count(neighbor)){
+            res += G2Matrix[newTarget][(*A)[neighbor]];
+        }
+    }
+#else
     for (uint i = 0; i < n; ++i) {
         neighbor = G1AdjLists[source][i];
         res -= G2Matrix[oldTarget][(*A)[neighbor]];
         res += G2Matrix[newTarget][(*A)[neighbor]];
     }
+#endif
     return res;
 }
 
@@ -4068,22 +4126,52 @@ int SANA::aligEdgesIncSwapOp(Job &job, uint source1, uint source2, uint target1,
     const uint n = G1AdjLists[source1].size();
     uint neighbor;
     uint i = 0;
+#ifdef SPARSE
+    for (; i < n; ++i) {
+        neighbor = G1AdjLists[source1][i];
+        if( G2Matrix[target1].count(neighbor)){
+            res -= G2Matrix[target1][(*A)[neighbor]];
+        }
+        if(G2Matrix[target2].count(neighbor)){
+            res += G2Matrix[target2][(*A)[neighbor]];
+        }
+    }
+#else
     for (; i < n; ++i) {
         neighbor = G1AdjLists[source1][i];
         res -= G2Matrix[target1][(*A)[neighbor]];
         res += G2Matrix[target2][(*A)[neighbor]];
     }
+#endif
     const uint m = G1AdjLists[source2].size();
+#ifdef SPARSE
+    for (i = 0; i < m; ++i) {
+        neighbor = G1AdjLists[source2][i];
+        if(G2Matrix[target2].count(neighbor)){
+            res -= G2Matrix[target2][(*A)[neighbor]];
+        }
+        if(G2Matrix[target1].count(neighbor)){
+            res += G2Matrix[target1][(*A)[neighbor]];
+        }
+    }
+#else
     for (i = 0; i < m; ++i) {
         neighbor = G1AdjLists[source2][i];
         res -= G2Matrix[target2][(*A)[neighbor]];
         res += G2Matrix[target1][(*A)[neighbor]];
     }
+#endif
     //address case swapping between adjacent nodes with adjacent images:
 #ifdef MULTI_PAIRWISE
     res += (-1 << 1) & (G1Matrix[source1][source2] + G2Matrix[target1][target2]);
 #else
-    res += 2*(G1Matrix[source1][source2] & G2Matrix[target1][target2]);
+    #ifdef SPARSE
+        if(G1Matrix[source1].count(source2) & G2Matrix[target1].count(target2)){
+            res += 2*(G1Matrix[source1][source2] & G2Matrix[target1][target2]);
+        }
+    #else
+        res += 2*(G1Matrix[source1][source2] & G2Matrix[target1][target2]);
+    #endif
 #endif
     return res;
 }
