@@ -51,13 +51,14 @@ TMPDIR=/tmp/GOpredict.$$
 trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
 echo $EVC_SEQ | newlines | awk '{printf "\t%s\t\n",$0}' > $TMPDIR/EVC_SEQ # sequence evidence codes
+cat "$seqSim" > $TMPDIR/seqSim # in case it's a named pipe, we need to store it
 
 # "Predictions" that are already known for the target species at time t1:
 grep "^$tax2	" $go1.allGO | cut -f1-3 | sort -u >$TMPDIR/go1.tax2.already
 # "Predictions" that had been derived via sequence for the target species by time t2:
 grep "^$tax2	" $go2.allGO | fgrep -f $TMPDIR/EVC_SEQ | cut -f1-3 | sort -u >$TMPDIR/go2.tax2.already
 #Predictable-in-principle
-./Predictable.sh $tax1 $tax2 $go1 $go2 $G2 $TMPDIR/EVC_SEQ > $TMPDIR/Predictable
+./Predictable.sh $tax1 $tax2 $go1 $go2 $G2 > $TMPDIR/Predictable
 
 dataDir=`echo "$@" | newlines | sed 's,/[^/]*$,,' | sort -u`
 sort "$@" | uniq -c | sort -nr | awk 'BEGIN{tax1='$tax1';tax2='$tax2';
@@ -72,7 +73,7 @@ sort "$@" | uniq -c | sort -nr | awk 'BEGIN{tax1='$tax1';tax2='$tax2';
     }
     ARGIND==3{FS="	"; if(/	NOT	/)next} # make FS a tab, and ignore "NOT" lines
     ARGIND==3&&($1==tax1||$1==tax2){++pGO[$1][$2][$3][$4]; # species, protein, GO, evidence code
-	H[$3]=$NF; # hierarchy (BP,MF,CC)
+	C[$3]=$NF; # Category (BP,MF,CC)
     }
     END{
 	for(p1 in pGO[tax1]) # loop over all proteins in species1 that have any GO terms
@@ -88,11 +89,11 @@ sort "$@" | uniq -c | sort -nr | awk 'BEGIN{tax1='$tax1';tax2='$tax2';
 			    }
 	# Now that we have accumulated all the possible predictions and evidences, print out only those that meet NAFthresh
 	for(p2 in NAFpredict[tax2])for(g in NAFpredict[tax2][p2])for(evc in NAFpredict[tax2][p2][g])
-	    if(NAFpredict[tax2][p2][g][evc] >= NAFthresh) { # do we want EACH evidence above NAFthresh, or just the total?
+	    if(NAFpredict[tax2][p2][g][evc] >= NAFthresh) { # do we want EACH evidence above NAFthresh? ALL accounts this.
 		# it is a prediction!!! Print out the NAF and the expected line to find in the later gene2go file:
-		printf "%d\t%d\t%s\t%s\t%s\t%s\n",NAFpredict[tax2][p2][g][evc],tax2,p2,g,evc,H[g]
+		printf "%d\t%d\t%s\t%s\t%s\t%s\n",NAFpredict[tax2][p2][g][evc],tax2,p2,g,evc,C[g]
 	    }
-    }' "$seqSim" - "$go1.NOSEQ" | # make predictions using ????
+    }' "$TMPDIR/seqSim" - "$go1.NOSEQ" | # make predictions using ????
 	fgrep -v -f $TMPDIR/go1.tax2.already | # remove ones that are already known in allGO
 	sort -nr | # sort highest first but do NOT remove duplicates: the same p2 predicted from different p1s means something
 	tee $TMPDIR/predictions.allCol |
@@ -123,13 +124,13 @@ for c in $Categories; do
     echo "$c $pred $PIP $val" |
 	awk '$2>0{printf "%10s %9s NAF %3d : %6d pred %6d PIP %5d val prec %5.1f%%\n",
 	    "'$dataDir'",$1,'$NAFthresh',$2,$3,$4,100*$4/$2}'
-done > $TMPDIR/predHierSummary
+done > $TMPDIR/predCatSummary
 echo "Predictions by evidence code for $dataDir $GO1 -> $GO2, NAF $NAFthresh"
 lastCol=`awk '{print NF}' $TMPDIR/predECSummary | sort | uniq -c | sort -nr | head -1 | awk '{print $2}'`
 [ "X$lastCol" != X ] && sort -k ${lastCol}gr $TMPDIR/predECSummary
 echo "Predictions by GO hierarchy for $dataDir $GO1 -> $GO2, NAF $NAFthresh"
-lastCol=`awk '{print NF}' $TMPDIR/predHierSummary | sort | uniq -c | sort -nr | head -1 | awk '{print $2}'`
-[ "X$lastCol" != X ] && sort -k ${lastCol}gr $TMPDIR/predHierSummary
+lastCol=`awk '{print NF}' $TMPDIR/predCatSummary | sort | uniq -c | sort -nr | head -1 | awk '{print $2}'`
+[ "X$lastCol" != X ] && sort -k ${lastCol}gr $TMPDIR/predCatSummary
 
 mv $TMPDIR/predictions.allCol $outName-p # includes leading NAF+duplicates, each should be from a different p1 in tax1
 mv $TMPDIR/Predictable $outName-PIP
