@@ -195,6 +195,7 @@ Alignment HillClimbing::run() {
                     }
                 }
 
+
                 double newCurrentScore = newLocalScoreSum / g1Nodes +
                     newAligEdges*(ecWeight/g1Edges +
                                   icsWeight/newG2InducedEdges +

@@ -13,6 +13,7 @@ vector<string> defaultArguments = {
 "-mode normal",
 "-method sana",
 "-s3 0",
+"-js 0",
 "-lgraaliter 1000",
 "-objfuntype generic",
 "-tnew 3",
@@ -33,5 +34,5 @@ vector<string> defaultArguments = {
 "-paretoCapacity 200",
 "-paretoIterations 10000",
 "-paretoThreads 1",
-"-multipartite 1"
+"-multipartite 1",
 };

@@ -50,7 +50,6 @@ class Alignment:
         self.statsfile = ""
 
 
-
 def best_pair(pq, delta):
     try:
         pair_list = pq.pop(delta)
@@ -140,7 +139,6 @@ def get_aligned_neighbor_pairs(g1,g2, node1,node2, aligned_pairs, trace = False)
  
 def num_edges_back_to_subgraph(graph, node, aligned_nodes, trace=False):
     edges = 0
-  
     for neighbor_node in aligned_nodes:
         if graph.has_edge(node, neighbor_node):
             if trace:
@@ -153,7 +151,6 @@ def num_edge_pairs_back_to_subgraph(g1, g2, g1node, g2node, aligned_pairs):
     for n1, n2 in aligned_pairs:
         if g1.has_edge(g1node, n1) and g2.has_edge(g2node, n2):
             edgepairs += 1
-
     return edgepairs
 
 def update_skip_list(g1, g2, curralign, candidatePairs, sims, debug):
@@ -177,7 +174,7 @@ def update_skip_list(g1, g2, curralign, candidatePairs, sims, debug):
         val = curralign.edge_freq[pair][0]
         curralign.pq.add((val,pair), debug=debug)
 
-
+        
 def writelog(curralign): 
     g1edges = induced_graph1(g1, curralign.aligned_pairs)
     g2edges = induced_graph2(g2,curralign.aligned_pairs)
@@ -307,7 +304,9 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
             #combination checking
             inserted = aligncombs.insertalignment(s+1, curralign.aligned_pairs.union({pair}))
             if not inserted:
+                #print("Combination already exists, don't add that pair")
                 continue
+                
 
 
             #TODO 
@@ -325,7 +324,6 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
             newcandidatePairs = get_new_neighbor_pairs(g1,g2,pair[0],pair[1], curralign.g1alignednodes, curralign.g2alignednodes, curralign.sb, sims)
              
             exisiting_neighbor_candidatePairs = get_neighbor_candidate_pairs(g1, g2, pair[0], pair[1], curralign.g1alignednodes, curralign.g2alignednodes, curralign.g1candidatenodes, curralign.g2candidatenodes, curralign.edge_freq, curralign.sb, sims) 
-
 
 
             #TODO 
@@ -385,7 +383,6 @@ def rec_alignhelper(g1, g2, curralign, candidatePairs, aligncombs, sims, debug):
                 val = curralign.edge_freq[(node1, node2)][0]
                 curralign.pq.add((val, (node1,node2))) 
 
-
             curralign.E1 -= n1val
             curralign.E2 -= n2val
             curralign.EA -= mval
@@ -436,6 +433,7 @@ def rec_align(g1, g2, seed, sims, ec_mode, ed, m, sb, delta, alpha, seednum, out
         print("graph 2:")
         for i in range(len(g2)):
             print(i,":",g2.get_neighbors(i))
+
 
     for seed1, seed2 in seed:
         if debug:
@@ -502,7 +500,6 @@ def unaligned_edges_g2_in(graph1, graph2, aligned_pairs, subgraph):
         uedges.extend( [ (p[1], q[1]) for q in aligned_pairs if graph2.has_edge(p[1], q[1]) and ((p[0], q[0]), (p[1], q[1])) not in subgraph ]   )
     return uedges
 
-
 def ec1score(E1, EA):
     return EA/E1
 
@@ -512,12 +509,10 @@ def ec2score(E2, EA):
 def s3score(E1,E2, EA):
     return EA/(E1+E1-EA)    
 
-
 def write_result(g1,g2, curralign):
     uuidstr = str(uuid.uuid4())
     uid = uuidstr[:13]
     fname = g1.name + "--" + g2.name + "--" + str(curralign.delta) + "--" + str(curralign.k) + "--"  + uid +  ".dijkstra"
-
     if curralign.outputdir == "":
         output_dir =  "seed" + str(curralign.seednum)
     else: 
@@ -531,3 +526,4 @@ def write_result(g1,g2, curralign):
 
 def output(k, E1, E2, EA, seed, runtime, seednum, size):
     print("seednum: " + str(seednum) + " k:" + str(k) +  " size:" + str(size) + " E1:" + str(E1) + " E2:" + str(E2) + " EA:" + str(EA) + " time:" + str(runtime) + " seed: " + str(seed))
+

@@ -70,6 +70,7 @@ MEASURES_SRCS = 							\
 	src/measures/SquaredEdgeScore.cpp 				\
 	src/measures/EdgeExposure.cpp 				\
 	src/measures/WeightedEdgeConservation.cpp 			\
+	src/measures/JaccardSimilarityScore.cpp         			\
 	src/measures/MultiS3.cpp							\
 	src/measures/localMeasures/EdgeCount.cpp 			\
 	src/measures/localMeasures/EdgeDensity.cpp 			\
@@ -216,6 +217,10 @@ NetGO:
 multi:
 	$(MAKE) 'MULTI=1'
 	mv sana sana.multi
+
+sparse:
+	$(MAKE) 'SPARSE=1'
+	mv sana sana.sparse
 
 createShadow: scripts/createShadowCpp/createShadow
 	mv scripts/createShadowCpp/createShadow .

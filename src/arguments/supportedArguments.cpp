@@ -100,6 +100,7 @@ vector<array<string, 6>> supportedArguments = {
     { "", "objectives-simple", "banner", "", "Objective Function Specification and Weight. Combine with \"-objfuntype x\"", "0" },
     { "-ec", "double", "0", "Weight of EC", "The weight of the Edge Coverage (aka Edge Conservation or Edge Correctness) in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-s3", "double", "1", "Weight of S3", "The weight of the Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-js", "double", "1", "Weight of JS", "The weight of the Jaccard Similarity in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ics", "double", "0", "Weight of ICS", "The weight of the Induced Conserved Structure in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-importance", "double", "0", "Weight of Importance", "HubAlign's objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-graphlet", "double", "0", "Weight of Graphlet Similarity.", "The weight of the Graphlet Objective Function as defined in the original GRAAL paper (2010). Used when \"-objfuntype\" is \"generic\".", "1" },
@@ -129,6 +130,9 @@ vector<array<string, 6>> supportedArguments = {
     { "-ses", "double", "0", "Weight of SES", "The weight of the Squared Edge Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ee", "double", "0", "Weight of EE", "The weight of the Edge Exposure Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ms3", "double", "0", "Weight of MS3", "The weight of the Multi Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-ms3_type", "double", "0", "type of MS3", "some description", "0" },
+    { "-ms3_numer", "string", "default", "numerator MS3", "Chioces are: default, ra_i, la_i, la_global, ra_global", "0" },
+    { "-ms3_denom", "string", "default", "denominator MS3", "Choices are: default, rt_i, ee_i, ee_global, rt_global", "0" },
     { "End Objective Function Specification and Weight. Combine with \"-objfuntype x\"", "", "banner", "", "", "0" },
     //-------------------END Objective Function Tyoe Specifications----------------------
 

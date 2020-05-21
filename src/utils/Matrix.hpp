@@ -34,6 +34,7 @@ public:
     INNER_CONTAINER & operator [] (uint node1);
 
     const T get(uint node1, uint node2) const;
+    void reserve_inner(unordered_map<uint,int> neighborCount);
     uint size() const;
 
     template <class Archive>
@@ -68,6 +69,13 @@ inline const T Matrix<T>::get(uint node1, uint node2) const {
 #else
     return data[node1][node2];
 #endif
+}
+
+template <typename T>
+void Matrix<T>::reserve_inner(unordered_map<uint,int> neighborCount) {
+    for(auto p : neighborCount){
+        data[p.first].reserve(p.second);
+    }
 }
 
 template <typename T>
