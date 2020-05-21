@@ -1,14 +1,16 @@
+#include "GraphletCosine.hpp"
 #include <vector>
 #include <iostream>
 #include <cmath>
-#include "GraphletCosine.hpp"
 #include "../../utils/ComputeGraphletsWrapper.hpp"
+#include "../../utils/FileIO.hpp"
+
 using namespace std;
 
 GraphletCosine::GraphletCosine(const Graph* G1, const Graph* G2, uint maxGraphletSize):
         LocalMeasure(G1, G2, "graphletcosine"), maxGraphletSize(maxGraphletSize) {
     string subfolder = autogenMatricesFolder+getName()+"/";
-    createFolder(subfolder);
+    FileIO::createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_graphletcosine.bin";
     loadBinSimMatrix(fileName);
 }

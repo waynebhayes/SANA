@@ -1,6 +1,7 @@
+#include "measureSelector.hpp"
 #include <cassert>
 #include <iostream>
-#include "measureSelector.hpp"
+#include "../utils/FileIO.hpp"
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/EdgeDifference.hpp"
 #include "../measures/EdgeRatio.hpp"
@@ -36,14 +37,8 @@ const string scoreFile = "topologySequenceScoreTable.cnf";
 
 namespace measureSelector {
 
-vector<vector<string>> getScoreTable() {
-    if (not fileExists(scoreFile))
-        throw runtime_error("Couldn't find file "+scoreFile);
-    return fileToStringsByLines(scoreFile);
-}
-
 vector<string> getScoreTuple(string methodName, const string& G1Name, const string& G2Name) {
-    vector<vector<string>> scoreTable = getScoreTable();
+    vector<vector<string>> scoreTable = FileIO::fileToWordsByLines(scoreFile);
     for (vector<string> line : scoreTable) {
         if (methodName == line[0] and G1Name == line[1] and G2Name == line[2]) {
             return line;
@@ -285,7 +280,7 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
         M.addMeasure(m, wecWeight);
     }
     if (args.strings["-truealignment"] != "") {
-        vector<string> edges = fileToStrings(args.strings["-truealignment"]);
+        vector<string> edges = FileIO::fileToWords(args.strings["-truealignment"]);
         double ncWeight = 0;
         try { ncWeight = getWeight("nc", G1, G2, args); }
         catch(...) {}

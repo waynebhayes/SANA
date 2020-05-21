@@ -27,30 +27,25 @@ void SimilarityMode::run(ArgumentParser& args) {
 }
 
 void SimilarityMode::saveSimilarityMatrix(const vector<vector<float>>& sim, 
-        const Graph& G1, const Graph& G2, const string& file, int format) {
-    ofstream outfile;
-    outfile.open(file.c_str());
-    if (not outfile.is_open()) {
+        const Graph& G1, const Graph& G2, const string& fileName, int format) {
+    ofstream ofs(fileName);
+    if (not ofs.is_open()) {
         cout << "Problem saving similarity to specified location. Saving to sana program file." << endl;
         exit(-1);
     }
-    switch(format) {
-        case 0:
-            for(uint i = 0; i < sim.size(); ++i) {
-                for(uint j = 0; j < sim[i].size(); ++j) if(sim[i][j]) {
-                    outfile << i << " " << j << " " << sim[i][j] << endl;
-                }
+    if (format == 0) {
+        for(uint i = 0; i < sim.size(); ++i) {
+            for(uint j = 0; j < sim[i].size(); ++j) if(sim[i][j]) {
+                ofs << i << " " << j << " " << sim[i][j] << endl;
             }
-        break;
-        case 1:
-            for(uint i = 0; i < sim.size(); ++i) {
-                for(uint j = 0; j < sim[i].size(); ++j) if(sim[i][j]) {
-                    outfile << G1.getNodeName(i) << " " << G2.getNodeName(j) << " " << sim[i][j] << endl;
-                }
+        }
+    } else if (format == 1) {
+        for(uint i = 0; i < sim.size(); ++i) {
+            for(uint j = 0; j < sim[i].size(); ++j) if(sim[i][j]) {
+                ofs << G1.getNodeName(i) << " " << G2.getNodeName(j) << " " << sim[i][j] << endl;
             }
-        break;
-    }
-    outfile.close();
+        }
+    } else throw runtime_error("unexpected format");
 }
 
 string SimilarityMode::getName() {

@@ -160,3 +160,21 @@ double StatisticalTest::expectedNumAccEInc(double temp, const vector<double>& EI
     }
     return res;
 }
+
+double StatisticalTest::vectorMax(const vector<double>& v) {
+    double m = v[0];
+    for (uint i = 1; i < v.size(); i++) m = max(m, v[i]);
+    return m;
+}
+
+double StatisticalTest::vectorMin(const vector<double>& v) {
+    double m = v[0];
+    for (uint i = 1; i < v.size(); i++) m = min(m, v[i]);
+    return m;
+}
+
+double StatisticalTest::vectorSum(const vector<double>& v) {
+    double m = 0;
+    for (uint i = 0; i < v.size(); i++) m += v[i];
+    return m;
+}

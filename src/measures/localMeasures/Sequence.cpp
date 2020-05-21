@@ -1,16 +1,17 @@
+#include "Sequence.hpp"
 #include <vector>
 #include <unordered_map>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <cassert>
-#include "Sequence.hpp"
+#include "../../utils/FileIO.hpp"
 
 using namespace std;
 
 Sequence::Sequence(const Graph* G1, const Graph* G2) : LocalMeasure(G1, G2, "sequence") {
     string subfolder = autogenMatricesFolder+getName()+"/";
-    createFolder(subfolder);
+    FileIO::createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_sequence.bin";
     loadBinSimMatrix(fileName);
 }
@@ -31,9 +32,9 @@ void Sequence::generateBitscoresFile(string bitscoresFile) {
 
 unordered_map<string,string> Sequence::initNameMap(string curatedFastaFile) {
     unordered_map<string,string> res;
-    ifstream infile(curatedFastaFile);
+    ifstream ifs(curatedFastaFile);
     string line;
-    while (getline(infile, line)) {
+    while (FileIO::safeGetLine(ifs, line)) {
         istringstream iss(line);
         string name1;
         iss >> name1;
@@ -44,7 +45,7 @@ unordered_map<string,string> Sequence::initNameMap(string curatedFastaFile) {
         name2 = name2.substr(3); //remove leading 'GN='
         assert(res.count(name1) == 0);
         res[name1] = name2;
-        getline(infile, line); //line containing the actual sequence
+        FileIO::safeGetLine(ifs, line); //line containing the actual sequence
     }
     return res;
 }
@@ -55,8 +56,8 @@ void Sequence::initSimMatrix() {
     string g2Name = G2->getName();
     string g1CuratedFastaFile = "sequence/"+g1Name+".fasta";
     string g2CuratedFastaFile = "sequence/"+g2Name+".fasta";
-    bool g1NeedNameMap = fileExists(g1CuratedFastaFile);
-    bool g2NeedNameMap = fileExists(g2CuratedFastaFile);
+    bool g1NeedNameMap = FileIO::fileExists(g1CuratedFastaFile);
+    bool g2NeedNameMap = FileIO::fileExists(g2CuratedFastaFile);
     unordered_map<string,string> g1NameMap;
     unordered_map<string,string> g2NameMap;
 
@@ -68,14 +69,14 @@ void Sequence::initSimMatrix() {
     sims = vector<vector<float>> (n1, vector<float> (n2, 0));
 
     string blastFile = "sequence/scores/"+g1Name+"_"+g2Name+"_blast.out";
-    if (not fileExists(blastFile)) {
+    if (not FileIO::fileExists(blastFile)) {
         throw runtime_error("Cannot find sequence scores for "+g1Name+"-"+g2Name);
     }
-    ifstream infile(blastFile);
+    ifstream ifs(blastFile);
 
     string line;
     float maxim = -1;
-    while (getline(infile, line)) {
+    while (FileIO::safeGetLine(ifs, line)) {
         istringstream iss(line);
         string node1, node2;
         iss >> node1 >> node2;
@@ -118,5 +119,5 @@ string Sequence::blastScoreFile(const string& G1Name, const string& G2Name) {
     return "sequence/scores/"+G1Name+"_"+G2Name+"_blast.out"; 
 }
 bool Sequence::fulfillsPrereqs(const Graph* G1, const Graph* G2) {
-    return fileExists(blastScoreFile(G1->getName(), G2->getName()));
+    return FileIO::fileExists(blastScoreFile(G1->getName(), G2->getName()));
 }

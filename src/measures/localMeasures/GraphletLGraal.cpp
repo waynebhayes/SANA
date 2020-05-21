@@ -1,14 +1,15 @@
+#include "GraphletLGraal.hpp"
 #include <vector>
 #include <iostream>
 #include <cmath>
-#include "GraphletLGraal.hpp"
 #include "../../utils/ComputeGraphletsWrapper.hpp"
+#include "../../utils/FileIO.hpp"
 using namespace std;
 
 GraphletLGraal::GraphletLGraal(const Graph* G1, const Graph* G2, uint maxGraphletSize):
         LocalMeasure(G1, G2, "graphletlgraal"), maxGraphletSize(maxGraphletSize) {
     string subfolder = autogenMatricesFolder+getName()+"/";
-    createFolder(subfolder);
+    FileIO::createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_graphletlgraal.bin";
     loadBinSimMatrix(fileName);
 }

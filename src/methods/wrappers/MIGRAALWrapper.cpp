@@ -1,5 +1,7 @@
 #include "MIGRAALWrapper.hpp"
 #include "../../arguments/GraphLoader.hpp"
+#include "../../utils/FileIO.hpp"
+
 using namespace std;
 
 const string MIGRAALDIR     = "wrappedAlgorithms/MI-GRAAL";
@@ -33,7 +35,7 @@ string MIGRAALWrapper::generateAlignment() {
 }
 
 Alignment MIGRAALWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
-    vector<string> words = fileToStrings(fileName);
+    vector<string> words = FileIO::fileToWords(fileName);
     vector<uint> mapping(G1->getNumNodes(), G2->getNumNodes());
     for (uint i = 0; i < words.size(); i+=2) {
         string node1 = words[i];

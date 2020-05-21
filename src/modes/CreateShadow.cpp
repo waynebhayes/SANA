@@ -7,6 +7,7 @@
 #include <array>
 #include <algorithm>
 #include "../utils/utils.hpp"
+#include "../utils/FileIO.hpp"
 #include "../utils/Matrix.hpp"
 #include "../Graph.hpp"
 #include "../Alignment.hpp"
@@ -20,7 +21,7 @@ void CreateShadow::run(ArgumentParser& args) {
 #endif
     //parse input
     //strip comments
-    vector<string> lines = fileToStrings(args.strings["-fshadow"], true);
+    vector<string> lines = FileIO::fileToLines(args.strings["-fshadow"]);
     for (uint i = 0; i < lines.size(); i++) lines[i] = lines[i].substr(0, lines[i].find('#'));
 
     //put the rest into an input stream
@@ -35,7 +36,7 @@ void CreateShadow::run(ArgumentParser& args) {
     vector<string> graphFiles(k);
     for (uint i = 0; i < k; i++) {
         iss >> graphFiles[i]; 
-        checkFileExists(graphFiles[i]);
+        FileIO::checkFileExists(graphFiles[i]);
     }
 
     bool hasAligs;
@@ -45,7 +46,7 @@ void CreateShadow::run(ArgumentParser& args) {
         aligFiles.resize(k);
         for (uint i = 0; i < k; i++) {
             iss >> aligFiles[i];
-            checkFileExists(aligFiles[i]);
+            FileIO::checkFileExists(aligFiles[i]);
         }
     }
 
@@ -57,7 +58,7 @@ void CreateShadow::run(ArgumentParser& args) {
         colFiles.resize(k);
         for (uint i = 0; i < k; i++) {
             iss >> colFiles[i];
-            checkFileExists(colFiles[i]);
+            FileIO::checkFileExists(colFiles[i]);
         }
         iss >> outColFile;
     }

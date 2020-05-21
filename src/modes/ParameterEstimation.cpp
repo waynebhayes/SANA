@@ -3,6 +3,8 @@
 #include <sstream>
 #include <map>
 #include "Experiment.hpp"
+#include "../utils/Timer.hpp"
+#include "../utils/FileIO.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
 #include "../measures/JaccardSimilarityScore.hpp"
 #include "../measures/EdgeCorrectness.hpp"
@@ -12,7 +14,6 @@
 #include "../measures/InvalidMeasure.hpp"
 #include "../measures/localMeasures/GoSimilarity.hpp"
 #include "../Alignment.hpp"
-#include "../utils/Timer.hpp"
 #include "../arguments/GraphLoader.hpp"
 
 const int ParameterEstimation::PRECISION_DECIMALS = 6;
@@ -23,7 +24,7 @@ const string ParameterEstimation::projectFolder = "/extra/wayne0/preserve/nmaman
 void ParameterEstimation::run(ArgumentParser& args) {
     string paramEstimation = args.strings["-paramestimation"];
     string experFile = "experiments/"+paramEstimation+".exp";
-    assert(fileExists(experFile));
+    FileIO::checkFileExists(experFile);
 
     init(experFile);
 
@@ -55,7 +56,7 @@ void ParameterEstimation::init(string parameterEstimationFile) {
     //calling init again would leak memory (G1, G2, and measure)
     if (hasInit) throw runtime_error("ParameterEstimation already initialized");
 
-    vector<vector<string>> content = fileToStringsByLines(parameterEstimationFile);
+    vector<vector<string>> content = FileIO::fileToWordsByLines(parameterEstimationFile);
     string g1Name = content[0][0], g2Name = content[0][1];
     string g1File = "networks/"+g1Name+"/"+g1Name+".gw";
     string g2File = "networks/"+g2Name+"/"+g2Name+".gw";
@@ -76,7 +77,7 @@ void ParameterEstimation::init(string parameterEstimationFile) {
 
     experimentFolder = parameterEstimationFile.substr(0,parameterEstimationFile.size()-4); //remove '.exp'
     experimentFolder += "/";
-    createFolder(experimentFolder);
+    FileIO::createFolder(experimentFolder);
 }
 
 string ParameterEstimation::getScriptName(double k, double l) {
@@ -89,17 +90,17 @@ string ParameterEstimation::getAlignmentFileName(double k, double l) {
 
 void ParameterEstimation::makeScript(double k, double l) {
     string scriptName = getScriptName(k, l);
-    ofstream fout(scriptName.c_str());
-    fout << "#!/bin/bash" << endl;
-    fout << "cd " << projectFolder << endl;
-    fout << "./simanneal -g1 " << G1->getName() << " -g2 " << G2->getName();
-    fout << " -method " << method << " -restart 60";
-    if (measureName == "ec") fout << " -ec 1 -s3 0";
-    else if (measureName == "s3") fout << " -ec 0 -s3 1";
+    ofstream ofs(scriptName);
+    ofs << "#!/bin/bash" << endl;
+    ofs << "cd " << projectFolder << endl;
+    ofs << "./simanneal -g1 " << G1->getName() << " -g2 " << G2->getName();
+    ofs << " -method " << method << " -restart 60";
+    if (measureName == "ec") ofs << " -ec 1 -s3 0";
+    else if (measureName == "s3") ofs << " -ec 0 -s3 1";
     else throw runtime_error("unexpected optimization measure");
-    fout << " -k " << k << " -l " << l;
-    fout << " -t " << minutes;
-    fout << " -o " << getAlignmentFileName(k, l) << endl;
+    ofs << " -k " << k << " -l " << l;
+    ofs << " -t " << minutes;
+    ofs << " -o " << getAlignmentFileName(k, l) << endl;
 }
 
 void ParameterEstimation::submitScript(double k, double l) {
@@ -126,7 +127,7 @@ void ParameterEstimation::collectData() {
     //check that all files exist
     for (double k : kValues) {
         for (double l : lValues) {
-            assert(fileExists(getAlignmentFileName(k, l)));
+            FileIO::checkFileExists(getAlignmentFileName(k, l));
         }
     }
 
@@ -143,7 +144,7 @@ void ParameterEstimation::collectData() {
 }
 
 void ParameterEstimation::printData(string outputFile) {
-    ofstream fout(outputFile.c_str());
+    ofstream ofs(outputFile);
     vector<vector<string>> table(kValues.size()+1, vector<string> (lValues.size()+1));
     table[0][0] = "k\\l";
     for (uint i = 0; i < kValues.size(); i++) {
@@ -164,9 +165,8 @@ void ParameterEstimation::printData(string outputFile) {
             table[i+1][j+1] = val;
         }
     }
-    printTable(table, 1, fout);
-    fout << endl;
-    fout.close();
+    printTable(table, 1, ofs);
+    ofs << endl;
 }
 
 string ParameterEstimation::getName(void) {

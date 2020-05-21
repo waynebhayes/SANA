@@ -691,7 +691,6 @@ int init(int maxGraphletSize, FILE *fp) {
     fprintf(stderr,"nodes: %d\n",n);
     fprintf(stderr,"edges: %d\n",m);
     fprintf(stderr,"max degree: %d\n",d_max);
-    // fin.close();
     if ((int)(set<PAIR>(edges,edges+m).size())!=m) {
         cerr << "Input file contains duplicate undirected edges." << endl;
         return 0;

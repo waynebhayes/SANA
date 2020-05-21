@@ -27,6 +27,9 @@ private:
 
     double expectedNumAccEInc(double temp, const vector<double>& EIncSample);
 
+    static double vectorMax(const vector<double>& v);
+    static double vectorMin(const vector<double>& v);
+    static double vectorSum(const vector<double>& v);
 };
 
 #endif

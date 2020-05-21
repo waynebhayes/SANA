@@ -1,6 +1,7 @@
 #include "HubAlignWrapper.hpp"
 #include <algorithm>
 #include "../../measures/localMeasures/Sequence.hpp"
+#include "../../utils/FileIO.hpp"
 
 using namespace std;
 
@@ -10,8 +11,8 @@ const string HubAlignWrapper::hubalignProgram = "./HubAlign";
 HubAlignWrapper::HubAlignWrapper(const Graph* G1, const Graph* G2, double alpha): Method(G1, G2, "HubAlign"),
     alpha(alpha), g1Name(G1->getName()), g2Name(G2->getName()) {
 
-    createFolder("sequence");
-    createFolder("sequence/bitscores");
+    FileIO::createFolder("sequence");
+    FileIO::createFolder("sequence/bitscores");
     similarityFile = "sequence/bitscores/" + g1Name + "_" + g2Name + ".bitscores";
 
     // TEMPORRAY CODE UNTIL WE INHERIT FROM WrappedMethod
@@ -45,7 +46,7 @@ void HubAlignWrapper::generateEdgeListFile(int graphNum) {
     random_shuffle(edgeListNames.begin(), edgeListNames.end(), randMod);
 
     string file = graphNum == 1 ? g1EdgeListFile : g2EdgeListFile;
-    writeDataToFile(edgeListNames, wrappedDir+file, true);
+    FileIO::writeDataToFile(edgeListNames, wrappedDir+file, true);
 }
 
 //Examples of executions of HubAlign (if alpha==1 sim file is not needed)
@@ -77,9 +78,8 @@ void HubAlignWrapper::deleteAuxFiles() {
 }
 
 Alignment HubAlignWrapper::run() {
-    if (alpha > 0 and not fileExists(similarityFile)) {
+    if (alpha > 0 and not FileIO::fileExists(similarityFile)) {
         Sequence sequence(G1, G2);
-
         sequence.generateBitscoresFile(similarityFile);
     }
     generateEdgeListFile(1);

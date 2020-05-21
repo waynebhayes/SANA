@@ -1,8 +1,9 @@
+#include "Importance.hpp"
 #include <vector>
 #include <iostream>
 #include <cmath>
 #include <algorithm>
-#include "Importance.hpp"
+#include "../../utils/FileIO.hpp"
 
 using namespace std;
 
@@ -11,7 +12,7 @@ const double Importance::LAMBDA = 0.2; // best value according to the HubAlign p
 
 Importance::Importance(const Graph* G1, const Graph* G2) : LocalMeasure(G1, G2, "importance") {
     string subfolder = autogenMatricesFolder+getName()+"/";
-    createFolder(subfolder);
+    FileIO::createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_importance.bin";
     loadBinSimMatrix(fileName);
 }

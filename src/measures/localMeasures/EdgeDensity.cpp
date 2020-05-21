@@ -3,12 +3,13 @@
 #include <vector>
 #include <queue>
 #include <iostream>
+#include "../../utils/FileIO.hpp"
 
 using namespace std;
 
 EdgeDensity::EdgeDensity(const Graph* G1, const Graph* G2, uint maxDist) : LocalMeasure(G1, G2, "edged") {
     string subfolder = autogenMatricesFolder+getName()+"/";
-    createFolder(subfolder);
+    FileIO::createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_edged.bin";
     this->maxDist = maxDist;
     loadBinSimMatrix(fileName);

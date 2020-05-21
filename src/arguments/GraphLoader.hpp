@@ -33,13 +33,13 @@ public:
     static pair<Graph,Graph> initGraphs(ArgumentParser& args);
 
     //output functions (Do not output functions directly to the Graph class)
-    static void saveInGWFormat(const Graph& G, string outFile, bool saveWeights = false);
+    static void saveInGWFormat(const Graph& G, const string& outFile, bool saveWeights = false);
 
     //weightColumn: add 3rd column with edge weights
     //namedEdges: use node names instead of indices. indices are 0-based
     //headerLine: add a line at the top. leave empty to skip
     //sep: string between columns (usually just a space)
-    static void saveInEdgeListFormat(const Graph& G, string outFile, bool weightColumn, bool namedEdges, 
+    static void saveInEdgeListFormat(const Graph& G, const string& outFile, bool weightColumn, bool namedEdges, 
                               const string& headerLine, const string& sep);
 
     //loads graph from filePath according to the file extension

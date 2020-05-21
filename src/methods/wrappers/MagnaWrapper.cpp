@@ -1,5 +1,7 @@
 #include "MagnaWrapper.hpp"
 #include "../../arguments/GraphLoader.hpp"
+#include "../../utils/FileIO.hpp"
+
 using namespace std;
 
 const string MAGNADIR     = "wrappedAlgorithms/MAGNA++";
@@ -31,7 +33,7 @@ string MagnaWrapper::generateAlignment() {
 }
 
 Alignment MagnaWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
-    vector<string> words = fileToStrings(MAGNADIR + "/" + fileName, false);
+    vector<string> words = FileIO::fileToWords(MAGNADIR + "/" + fileName);
     vector<uint> mapping(G1->getNumNodes(), G2->getNumNodes());
     for (uint i = 0; i < words.size(); i+=2) {
         string node1 = words[i];

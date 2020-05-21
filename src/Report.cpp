@@ -1,11 +1,12 @@
 #include "Report.hpp"
+#include "utils/utils.hpp"
+#include "utils/randomSeed.hpp"
+#include "utils/FileIO.hpp"
 #include "arguments/GraphLoader.hpp"
 #include "measures/EdgeCorrectness.hpp"
 #include "measures/InducedConservedStructure.hpp"
 #include "measures/SymmetricSubstructureScore.hpp"
 #include "measures/JaccardSimilarityScore.hpp"
-#include "utils/utils.hpp"
-#include "utils/randomSeed.hpp"
 
 bool multiPairwiseIteration; //todo: refactor without this out here -Nil
 
@@ -129,22 +130,19 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
                         string reportFileName, bool multiPairwiseIteration) {
     Timer T;
     T.start();
-    ofstream outfile;
-    reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, outfile,
+    ofstream ofs;
+    reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, ofs,
                                                     G1.getName(), G2.getName(), method, A);
     cout<<"Saving report as \""<<reportFileName<<"\""<<endl;
 
-    for (uint i = 0; i < A.size(); i++) outfile<<A[i]<<" ";
-    outfile<<endl;
+    for (uint i = 0; i < A.size(); i++) ofs<<A[i]<<" ";
+    ofs<<endl;
+    makeReport(G1, G2, A, M, method, ofs, multiPairwiseIteration);
 
     string elAligFile = reportFileName.substr(0,reportFileName.length()-4)+".align";
-    ofstream ofs;
-    ofs.open(elAligFile.c_str());
-    for (uint i = 0; i < A.size(); i++) ofs<<G1.getNodeName(i)<<"\t"<<G2.getNodeName(A[i])<<endl;
-    ofs.close();
+    ofstream elOfs(elAligFile);
+    for (uint i = 0; i < A.size(); i++) elOfs<<G1.getNodeName(i)<<"\t"<<G2.getNodeName(A[i])<<endl;
 
-    makeReport(G1, G2, A, M, method, outfile, multiPairwiseIteration);
-    outfile.close();
     cout<<"Took "<<T.elapsed()<<" seconds to save the alignment and scores."<<endl;
 }
 
@@ -170,30 +168,29 @@ NOTE: the && is a move semantic, which moves the internal pointers of one object
 to another and then destructs the original, instead of destructing all of the
 internal data of the original. */
 string Report::ensureFileNameExistsAndOpenOutFile(const string& fileType, string outFileName, 
-                    ofstream& outfile, const string& G1Name, const string& G2Name, 
+                    ofstream& ofs, const string& G1Name, const string& G2Name, 
                     const Method* method, Alignment const & A) {     
     string extension = fileType == "local measure" ? ".localscores" : ".out";
     if (outFileName == "") {
         outFileName = "alignments/" + G1Name + "_" + G2Name + "/"
         + G1Name + "_" + G2Name + "_" + method->getName() + method->fileNameSuffix(A);
-        addUniquePostfixToFilename(outFileName, ".txt");
-        outFileName += ".txt";
+        outFileName = FileIO::addUniquePostfixToFileName(outFileName, ".txt");
     } else {
         string location = outFileName.substr(0, outFileName.find_last_of("/"));
         if (location != outFileName) {
             uint lastPos = 0;
-            while (not folderExists(location)) { //Making each of the folders, one by one.
-                createFolder(location.substr(0, location.find("/", lastPos)));
+            while (not FileIO::folderExists(location)) { //Making each of the folders, one by one.
+                FileIO::createFolder(location.substr(0, location.find("/", lastPos)));
                 lastPos = location.find("/", location.find("/", lastPos)+1);
             }
         }
     }
     outFileName += extension;
-    outfile.open(outFileName.c_str());
-    if (not outfile.is_open()) {
+    ofs.open(outFileName);
+    if (not ofs.is_open()) {
         cout << "Problem saving " << fileType << " file to specified location. Saving to sana program file." << endl;
         outFileName = outFileName.substr(outFileName.find_last_of("/")+1);
-        outfile.open(outFileName.c_str());
+        ofs.open(outFileName);
     }
     return outFileName;
 }

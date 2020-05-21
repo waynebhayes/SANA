@@ -1,11 +1,11 @@
 #include "complementaryProteins.hpp"
 #include <vector>
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include "Graph.hpp"
 #include "utils/Timer.hpp"
 #include "utils/utils.hpp"
+#include "utils/FileIO.hpp"
 #include "arguments/GraphLoader.hpp"
 #include "measures/localMeasures/Graphlet.hpp"
 #include "measures/localMeasures/NodeCount.hpp"
@@ -19,7 +19,7 @@ namespace complementaryProteins {
 
 vector<vector<string>> getProteinPairs(string complementStatus, bool BioGRIDNetworks) {
     string complementProteinsFile = "sequence/complementProteins.txt";
-    vector<vector<string>> data = fileToStringsByLines(complementProteinsFile);
+    vector<vector<string>> data = FileIO::fileToWordsByLines(complementProteinsFile);
     vector<vector<string>> res(0);
     uint yeastNameIndex = BioGRIDNetworks ? 2 : 1;
     uint humanNameIndex = BioGRIDNetworks ? 6 : 5;

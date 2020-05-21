@@ -33,6 +33,7 @@ UTILS_SRC = 								\
 	src/utils/templateUtils.cpp					\
 	src/utils/Timer.cpp						\
 	src/utils/utils.cpp						\
+	src/utils/FileIO.cpp						\
 	src/utils/randomSeed.cpp					\
 	src/utils/LinearRegression.cpp					\
 	src/utils/computeGraphlets.cpp                            	\

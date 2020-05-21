@@ -1,14 +1,15 @@
+#include "GraphletNorm.hpp"
 #include <vector>
 #include <iostream>
 #include <cmath>
-#include "GraphletNorm.hpp"
 #include "../../utils/ComputeGraphletsWrapper.hpp"
+#include "../../utils/FileIO.hpp"
 using namespace std;
 
 GraphletNorm::GraphletNorm(const Graph* G1, const Graph* G2, uint maxGraphletSize):
         LocalMeasure(G1, G2, "graphletnorm"), maxGraphletSize(maxGraphletSize) {
     string subfolder = autogenMatricesFolder+getName()+"/";
-    createFolder(subfolder);
+    FileIO::createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_graphletnorm.bin";
     loadBinSimMatrix(fileName);
 }

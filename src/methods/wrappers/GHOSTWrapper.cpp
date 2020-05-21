@@ -42,27 +42,22 @@ void GHOSTWrapper::createCfgFile(string cfgFileName) {
     ratio      = G_PARAMS[3];
     searchiter = G_PARAMS[4];
 
-    ofstream outfile;
-    outfile.open(cfgFileName.c_str());
-
-    outfile << "[main]" << endl;
-    outfile << "network1: " << g1File << endl;
-    outfile << "network2: " << g2File << endl;
-    outfile << "sigs1: " << g1TmpName << ".sig.gz" << endl;
-    outfile << "sigs2: " << g2TmpName << ".sig.gz" << endl;
-    outfile << "matcher: "  << matcher << endl;
-    outfile << "nneighbors: "  << nneighbors << endl;
-    outfile << "beta: " << beta << endl;
-    outfile << "ratio: " << ratio << endl;
-    outfile << "searchiter: " << searchiter << endl;
-    // outfile << "dumpDistances: true " << endl; // to dump huge 3-column nxm matrix of all-by-all node similarities
+    ofstream ofs(cfgFileName);
+    ofs << "[main]" << endl;
+    ofs << "network1: " << g1File << endl;
+    ofs << "network2: " << g2File << endl;
+    ofs << "sigs1: " << g1TmpName << ".sig.gz" << endl;
+    ofs << "sigs2: " << g2TmpName << ".sig.gz" << endl;
+    ofs << "matcher: "  << matcher << endl;
+    ofs << "nneighbors: "  << nneighbors << endl;
+    ofs << "beta: " << beta << endl;
+    ofs << "ratio: " << ratio << endl;
+    ofs << "searchiter: " << searchiter << endl;
     for(uint i=0;i<params.size();i+=2) {
         if(params[i][0] == '-')
         params[i].erase(0,1);
-        outfile << params[i] << ": " << params[i+1] << endl;
+        ofs << params[i] << ": " << params[i+1] << endl;
     }
-
-    outfile.close();
 }
 
 string GHOSTWrapper::generateAlignment() {

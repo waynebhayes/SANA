@@ -1,14 +1,14 @@
 #include "NodeDensity.hpp"
-
 #include <vector>
 #include <queue>
 #include <iostream>
+#include "../../utils/FileIO.hpp"
 
 using namespace std;
 
 NodeDensity::NodeDensity(const Graph* G1, const Graph* G2, uint maxDist) : LocalMeasure(G1, G2, "noded") {
     string subfolder = autogenMatricesFolder+getName()+"/";
-    createFolder(subfolder);
+    FileIO::createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_noded.bin";
     this->maxDist = maxDist;
     loadBinSimMatrix(fileName);

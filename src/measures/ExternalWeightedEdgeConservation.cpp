@@ -2,6 +2,7 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm>
+#include "../utils/FileIO.hpp"
 
 using namespace std;
 
@@ -11,7 +12,7 @@ ExternalWeightedEdgeConservation::ExternalWeightedEdgeConservation(
     loadMatrix(scoresFile);
 }
 
-double ExternalWeightedEdgeConservation::eval(const Alignment& A){
+double ExternalWeightedEdgeConservation::eval(const Alignment& A) {
     double score = 0;
     for (const auto& edge: *(G1->getEdgeList())) {
         uint node1 = edge[0], node2 = edge[1];
@@ -28,14 +29,14 @@ double ExternalWeightedEdgeConservation::eval(const Alignment& A){
     return score;
 }
 
-void ExternalWeightedEdgeConservation::breakEdge(string e, string &n1, string &n2){
+void ExternalWeightedEdgeConservation::breakEdge(string e, string &n1, string &n2) {
     int breakPoint = e.find('-');
     e[breakPoint] = ' ';
     stringstream ss(e);
     ss >> n1 >> n2;
 }
 
-void ExternalWeightedEdgeConservation::addEdgeToCol(string e, int ind){
+void ExternalWeightedEdgeConservation::addEdgeToCol(string e, int ind) {
     string n1, n2;
     breakEdge(e, n1, n2);
     uint n1Index = G2->getNameIndex(n1), n2Index = G2->getNameIndex(n2);
@@ -43,7 +44,7 @@ void ExternalWeightedEdgeConservation::addEdgeToCol(string e, int ind){
     colIndex[n1Index][n2Index] = ind;
 }
 
-void ExternalWeightedEdgeConservation::addEdgeToRow(string e, int ind){
+void ExternalWeightedEdgeConservation::addEdgeToRow(string e, int ind) {
     string n1, n2;
     breakEdge(e, n1, n2);
     uint n1Index = G1->getNameIndex(n1), n2Index = G1->getNameIndex(n2);
@@ -57,26 +58,23 @@ void ExternalWeightedEdgeConservation::loadMatrix(string scoresFile){
     colIndex = vector<vector<int>>(G2->getNumNodes(), vector<int>(G2->getNumNodes()));
     rowIndex = vector<vector<int>>(G1->getNumNodes(), vector<int>(G1->getNumNodes()));
 
-    ifstream infile(scoresFile);
-    if(not infile) {
-        cerr << "Can't open file " << scoresFile << endl;
-        exit(-1);
-    }
+    FileIO::checkFileExists(scoresFile);
+    ifstream ifs(scoresFile);
     string line;
     int r = 0, c = 0;
 
     //process first row from file
-    getline(infile, line);
+    FileIO::safeGetLine(ifs, line);
     stringstream colHeadersStream(line);
     string edge1;
-    while(colHeadersStream >> edge1){
+    while (colHeadersStream >> edge1) {
         addEdgeToCol(edge1, c);
         simScores.push_back(vector<double>());
         ++c;
     }
     
     //process rest of the file
-    while(getline(infile, line)){
+    while (FileIO::safeGetLine(ifs, line)) {
         c = 0;
         stringstream lnStream(line);
         string edge2;
@@ -91,15 +89,15 @@ void ExternalWeightedEdgeConservation::loadMatrix(string scoresFile){
     }
 }
 
-double ExternalWeightedEdgeConservation::getScore(int colNum, int rowNum){
+double ExternalWeightedEdgeConservation::getScore(int colNum, int rowNum) {
     return simScores[colNum][rowNum];
 }
 
-int ExternalWeightedEdgeConservation::getColIndex(string n1, string n2){
+int ExternalWeightedEdgeConservation::getColIndex(string n1, string n2) {
     uint n1Index = G2->getNameIndex(n1), n2Index = G2->getNameIndex(n2);
     return getColIndex(n1Index, n2Index);
 }
-int ExternalWeightedEdgeConservation::getRowIndex(string n1, string n2){
+int ExternalWeightedEdgeConservation::getRowIndex(string n1, string n2) {
     uint n1Index = G1->getNameIndex(n1), n2Index = G1->getNameIndex(n2);
     return getRowIndex(n1Index, n2Index);
 }

@@ -1,5 +1,7 @@
 #include "NETALWrapper.hpp"
 #include "../../arguments/GraphLoader.hpp"
+#include "../../utils/FileIO.hpp"
+
 using namespace std;
 
 const string NETALProgram = "./NETAL";
@@ -37,7 +39,7 @@ string NETALWrapper::generateAlignment() {
 }
 
 Alignment NETALWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
-    vector<string> lines = fileToStrings(fileName, true);
+    vector<string> lines = FileIO::fileToLines(fileName);
     string word;
     int n1= G1->getNumNodes();
     int n2= G2->getNumNodes();
@@ -49,7 +51,7 @@ Alignment NETALWrapper::loadAlignment(const Graph* G1, const Graph* G2, string f
         while (line >> word) words.push_back(word);
 
         if (words.size() == 3) {
-        mapping[atoi(words[0].c_str())] = atoi(words[2].c_str());
+        mapping[stoi(words[0])] = stoi(words[2]);
         }
     }
     return Alignment(mapping);

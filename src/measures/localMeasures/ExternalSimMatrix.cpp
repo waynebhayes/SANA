@@ -1,6 +1,8 @@
 #include <iostream>
 #include "ExternalSimMatrix.hpp"
 #include "../../utils/utils.hpp"
+#include "../../utils/FileIO.hpp"
+
 #include <string>
 using namespace std;
 
@@ -8,20 +10,20 @@ ExternalSimMatrix::ExternalSimMatrix(const Graph* G1, const Graph* G2, string fi
     this->file = file;
     this->format = format;
     string subfolder = autogenMatricesFolder+getName()+"/";
-    createFolder(subfolder);
+    FileIO::createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+
         G2->getName()+"_esim_"+file;
     loadBinSimMatrix(fileName);
 }
 
 void ExternalSimMatrix::initSimMatrix() {
-    bool isPipe = false;
-    FILE* fp = readFileAsFilePointer(file, isPipe);
+    bool isPiped;
+    FILE* fp = FileIO::readFileAsFilePointer(file, isPiped);
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     sims = vector<vector<float>> (n1, vector<float> (n2, 0));
 
-    if (fp == NULL) {
+    if (fp == nullptr) {
         throw runtime_error("ExternalSimMatrix: Error opening file");
     }
 
@@ -47,7 +49,7 @@ void ExternalSimMatrix::initSimMatrix() {
         }
     }
     
-    closeFile(fp, isPipe);
+    FileIO::closeFile(fp, isPiped);
 }
 
 void ExternalSimMatrix::loadFormat0(FILE* infile) {

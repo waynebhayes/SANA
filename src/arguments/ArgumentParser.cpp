@@ -1,6 +1,7 @@
 #include <iostream>
 #include "ArgumentParser.hpp"
 #include "../utils/utils.hpp"
+#include "../utils/FileIO.hpp"
 #include "defaultArguments.hpp"
 #include "SupportedArguments.hpp"
 using namespace std;
@@ -23,9 +24,9 @@ ArgumentParser::ArgumentParser(int argc, char* argv[]) {
     }
     if (argc >= 2) {
         //next add values from file
-        bool addValuesFromFile = fileExists(argv[1]);
+        bool addValuesFromFile = FileIO::fileExists(argv[1]);
         if (addValuesFromFile) {
-            vector<string> aux = fileToStrings(argv[1]);
+            vector<string> aux = FileIO::fileToWords(argv[1]);
             vArg.insert(vArg.end(), aux.begin(), aux.end());
         }
         //finally, add command line values

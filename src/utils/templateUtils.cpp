@@ -4,11 +4,13 @@
 
 using namespace std;
 
+//same as utils, but for templated functions
+//it is included from utils. because it contains templates, it has no header itself
+
 template <typename T>
-string toStringWithPrecision(const T a_value, const int n = 6)
-{
-    std::ostringstream out;
-    out.precision(n);
-    out << std::fixed << a_value;
-    return out.str();
+string toStringWithPrecision(const T val, const int n) {
+    ostringstream oss;
+    oss.precision(n);
+    oss << std::fixed << val;
+    return oss.str();
 }

@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 #include "EdgeCount.hpp"
+#include "../../utils/FileIO.hpp"
 
 using namespace std;
 
@@ -10,7 +11,7 @@ EdgeCount::EdgeCount(const Graph* G1, const Graph* G2, const vector<double>& dis
     this->distWeights = normWeights;
 
     string subfolder = autogenMatricesFolder+getName()+"/";
-    createFolder(subfolder);
+    FileIO::createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+
         G2->getName()+"_edgec_"+to_string(normWeights.size());
     for (double w : normWeights)

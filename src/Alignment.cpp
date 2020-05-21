@@ -1,7 +1,7 @@
 #include "Alignment.hpp"
 #include "Graph.hpp"
 #include "utils/utils.hpp"
-
+#include "utils/FileIO.hpp"
 using namespace std;
 
 Alignment::Alignment() {}
@@ -28,7 +28,7 @@ uint& Alignment::operator[] (uint node) { return A[node]; }
 const uint& Alignment::operator[](const uint node) const { return A[node]; }
 
 Alignment Alignment::loadEdgeList(const Graph& G1, const Graph& G2, const string& fileName) {
-    vector<string> edges = fileToStrings(fileName);
+    vector<string> edges = FileIO::fileToWords(fileName);
     vector<array<string, 2>> edgeList;
     edgeList.reserve(edges.size()/2);
     for (uint i = 0; i < edges.size(); i += 2) {
@@ -38,7 +38,7 @@ Alignment Alignment::loadEdgeList(const Graph& G1, const Graph& G2, const string
 }
 
 Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, const string& fileName) {
-    vector<string> edges = fileToStrings(fileName);
+    vector<string> edges = FileIO::fileToWords(fileName);
     vector<array<string, 2>> edgeList;
     edgeList.reserve(edges.size()/2);
     for (uint i = 0; i < edges.size(); i += 2) {
@@ -59,7 +59,7 @@ Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, con
 
 Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
                                     const string& fileName, bool byName) {
-    vector<string> edges = fileToStrings(fileName);
+    vector<string> edges = FileIO::fileToWords(fileName);
     vector<array<string, 2>> edgeList;
     edgeList.reserve(edges.size()/2);
     for (uint i = 0; i < edges.size(); i += 2) {
@@ -70,7 +70,7 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
     for (const auto& edge : edgeList) {
         string nodeG1 = edge[0], nodeG2 = edge[1];
         if (not byName) {
-            A[atoi(nodeG1.c_str())] = atoi(nodeG2.c_str());
+            A[stoi(nodeG1)] = stoi(nodeG2);
         } else {
             bool nodeG1Misplaced = false;
             bool nodeG2Misplaced = false;
@@ -123,17 +123,16 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
 }
 
 Alignment Alignment::loadMapping(const string& fileName) {
-    if (not fileExists(fileName)) {
+    if (not FileIO::fileExists(fileName)) {
         throw runtime_error("Starting alignment file "+fileName+" not found");
     }
-    ifstream infile(fileName.c_str());
-    string line;
-    getline(infile, line); //reads only the first line, ignores the rest
-    istringstream iss(line);
+    ifstream ifs(fileName);
+    string firstLine;
+    FileIO::safeGetLine(ifs, firstLine); //ignore anything past first line
+    istringstream iss(firstLine);
     vector<uint> A(0);
     int g2Ind;
     while (iss >> g2Ind) A.push_back(g2Ind);
-    infile.close();
     return A;
 }
 

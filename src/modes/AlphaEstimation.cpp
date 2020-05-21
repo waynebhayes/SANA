@@ -1,5 +1,8 @@
-#include "Experiment.hpp"
 #include "AlphaEstimation.hpp"
+#include "../utils/utils.hpp"
+#include "../utils/FileIO.hpp"
+#include "../utils/Timer.hpp"
+#include "Experiment.hpp"
 #include "../measures/Measure.hpp"
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
@@ -8,9 +11,7 @@
 #include "../measures/SymmetricSubstructureScore.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/localMeasures/GraphletLGraal.hpp"
-#include "../utils/utils.hpp"
 #include "../Alignment.hpp"
-#include "../utils/Timer.hpp"
 #include <cassert>
 
 double AlphaEstimation::computeAlpha(Graph& G1, Graph& G2, string methodName, Measure* topMeasure) {
@@ -23,8 +24,8 @@ double AlphaEstimation::computeAlpha(Graph& G1, Graph& G2, string methodName, Me
         string aligFileAlpha0 = "experiments/"+methodName+"_alpha0/"+g1Name+"_"+g2Name+"_"+methodName+"_alpha0.txt";
         string aligFileAlpha1 = "experiments/"+methodName+"_alpha0,9999/"+g1Name+"_"+g2Name+"_"+methodName+"_alpha0.9999.txt";
     }
-    if (not fileExists(aligFileAlpha0)) return -1;
-    if (not fileExists(aligFileAlpha1)) return -1;
+    if (not FileIO::fileExists(aligFileAlpha0)) return -1;
+    if (not FileIO::fileExists(aligFileAlpha1)) return -1;
 
     double topScore = topMeasure->eval(Alignment::loadMapping(aligFileAlpha0));
     Sequence seq(&G1, &G2);
@@ -36,7 +37,7 @@ double AlphaEstimation::computeAlpha(Graph& G1, Graph& G2, string methodName, Me
 void AlphaEstimation::run(ArgumentParser& args) {
     string alphaEstimation = args.strings["-alphaestimation"];
     string experFile = "experiments/"+alphaEstimation;
-    assert(fileExists(experFile));
+    FileIO::checkFileExists(experFile);
     init(experFile);
     printData(experFile+".out");
 }
@@ -48,7 +49,7 @@ string AlphaEstimation::getName(void) {
 }
 
 void AlphaEstimation::init(string alphaFile) {
-    vector<vector<string>> content = fileToStringsByLines(alphaFile);
+    vector<vector<string>> content = FileIO::fileToWordsByLines(alphaFile);
     methods = content[0];
     for (uint i = 1; i < content.size(); i++) {
         networkPairs.push_back(content[i]);
@@ -88,7 +89,7 @@ double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasu
             aligFileAlpha0[aligFileAlpha0.size()-1] = '1';
             aligFileAlpha0 += "0";
         }
-        if (not fileExists(aligFileAlpha0)) {
+        if (not FileIO::fileExists(aligFileAlpha0)) {
             sampleCount--;
         }
         else {
@@ -109,7 +110,7 @@ double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasu
             aligFileAlpha1[aligFileAlpha1.size()-1] = '1';
             aligFileAlpha1 += "0";
         }
-        if (not fileExists(aligFileAlpha1)) {
+        if (not FileIO::fileExists(aligFileAlpha1)) {
             sampleCount--;
         }
         else {
@@ -120,15 +121,15 @@ double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasu
     return topScore/(topScore+seqScore);
 }
 
-void AlphaEstimation::printData(string outputFile) {
+void AlphaEstimation::printData(const string& outputFile) {
     uint nMethods = methods.size();
     uint nPairs = networkPairs.size();
 
-    ofstream fout(outputFile.c_str());
+    ofstream ofs(outputFile);
     for (uint i = 0; i < nMethods; i++) {
         for (uint j = 0; j < nPairs; j++) {
-            fout << methods[i] << "\t" << networkPairs[j][0] << "\t";
-            fout << networkPairs[j][1] << "\t" << alphas[i][j] << endl;
+            ofs << methods[i] << "\t" << networkPairs[j][0] << "\t";
+            ofs << networkPairs[j][1] << "\t" << alphas[i][j] << endl;
         }
     }
 }
@@ -170,7 +171,7 @@ AlphaEstimation::AlphaEstimation(string alphaFile) {
 }
 
 double AlphaEstimation::getAlpha(string alphaFile, string methodName, string G1Name, string G2Name) {
-    vector<vector<string>> content = fileToStringsByLines(alphaFile);
+    vector<vector<string>> content = FileIO::fileToWordsByLines(alphaFile);
     for (uint i = 0; i < content.size(); i++) {
         if (content[i][0] == methodName and content[i][1] == G1Name and content[i][2] == G2Name)
             return stod(content[i][3]);

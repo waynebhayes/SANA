@@ -34,7 +34,7 @@ string GREATWrapper::generateAlignment() {
     // exec("cd " + wrappedDir + "; count.sh " + g1TmpName);
     // exec("cd " + wrappedDir + "; count.sh " + g2TmpName);
 
-    string script = scripts[atoi(parameters.substr(0, 1).c_str())];
+    string script = scripts[stoi(parameters.substr(0, 1))];
     string alpha = parameters.substr(2, 2);
 
     string options = "echo \"" + g1TmpName + "\n" + g2TmpName + "\n" + alpha + "\n" + "\" | ";

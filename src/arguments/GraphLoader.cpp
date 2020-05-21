@@ -10,6 +10,7 @@
 #include <future>
 #include "GraphLoader.hpp"
 #include "../utils/Timer.hpp"
+#include "../utils/FileIO.hpp"
 #include "../Alignment.hpp"
 
 using namespace std;
@@ -21,14 +22,14 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     string fg1 = args.strings["-fg1"], fg2 = args.strings["-fg2"];
     string g1Name, g2Name, g1File, g2File;
     if (fg1 != "") {
-        g1Name = extractFileNameNoExtension(fg1);
+        g1Name = FileIO::extractFileNameNoExtension(fg1);
         g1File = fg1;
     } else {
         g1Name = args.strings["-g1"];
         g1File = "networks/"+g1Name+"/"+g1Name+".gw";
     }
     if (fg2 != "") {
-        g2Name = extractFileNameNoExtension(fg2);
+        g2Name = FileIO::extractFileNameNoExtension(fg2);
         g2File = fg2;
     } else {
         g2Name = args.strings["-g2"];
@@ -137,14 +138,14 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
 
     string path1 = args.strings["-pathmap1"], path2 = args.strings["-pathmap2"];
     if (path1 != "") {
-        uint power1 = atoi(path1.c_str());
+        uint power1 = stoi(path1);
         if (power1 > 1) {
             cout << "Raising G1 to the " << power1 << " power" << endl;
             G1 = G1.graphPower(power1);
         }
     }
     if (path2 != "") {
-        uint power2 = atoi(path2.c_str());
+        uint power2 = stoi(path2);
         if (power2 > 1) {
             cout << "Raising G2 to the " << power2 << " power" << endl;
             G2 = G2.graphPower(power2);
@@ -187,14 +188,13 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     return {G1, G2};
 }
 
-void GraphLoader::saveInGWFormat(const Graph& G, string outFile, bool saveWeights) {
+void GraphLoader::saveInGWFormat(const Graph& G, const string& outFile, bool saveWeights) {
 
     //a comment explaining why a temp file is necessary (and why only
     //in this function) would be nice -Nil
     string tempFile = "/tmp/saveInGWFormat"+to_string(getpid()); 
 
-    ofstream ofs;
-    ofs.open(tempFile.c_str());
+    ofstream ofs(tempFile);
     ofs << "LEDA.GRAPH" << endl << "string" << endl << "short" << endl << "-2" << endl;
     ofs << G.getNumNodes() << endl;
     for (const auto& name : *(G.getNodeNames())) ofs << "|{" << name << "}|" << endl;
@@ -204,15 +204,12 @@ void GraphLoader::saveInGWFormat(const Graph& G, string outFile, bool saveWeight
         if (saveWeights) ofs << +G.getEdgeWeight(edge[0], edge[1]); //the + makes it print as a number even if it has type char/bool
         ofs << "}|" << endl;
     }
-    ofs.close();
-
     exec("mv "+tempFile+" "+outFile);
 }
 
-void GraphLoader::saveInEdgeListFormat(const Graph& G, string outFile, bool weightColumn, bool namedEdges, 
+void GraphLoader::saveInEdgeListFormat(const Graph& G, const string& outFile, bool weightColumn, bool namedEdges, 
                                        const string& headerLine, const string& sep) {
-    ofstream ofs;
-    ofs.open(outFile.c_str());
+    ofstream ofs(outFile);
     if (headerLine.size() != 0) ofs<<headerLine<<endl;
     const vector<array<uint, 2>>* edges = G.getEdgeList();
     for (const auto& edge : *edges) {
@@ -221,21 +218,18 @@ void GraphLoader::saveInEdgeListFormat(const Graph& G, string outFile, bool weig
         if (weightColumn) ofs<<sep<<+G.getEdgeWeight(edge[0], edge[1]); //the + makes it print as a number even if it has type char/bool
         ofs<<endl;
     }
-    ofs.close();
 }
 
 void GraphLoader::saveTwoColumnData(const vector<array<string, 2>>& rows, const string& outFile) {
-    ofstream ofs;
-    ofs.open(outFile.c_str());
+    ofstream ofs(outFile);
     for (const auto& row : rows) ofs<<row[0]<<" "<<row[1]<<endl;
-    ofs.close();
 }
 
 //dispatches to one of the format-specific functions based on the file extension
 Graph GraphLoader::loadGraphFromFile(const string& graphName, const string& fileName,
                                      bool loadWeights) {
     string format = fileName.substr(fileName.find_last_of('.')+1);
-    string uncompressedFileExt = getUncompressedFileExtension(fileName);
+    string uncompressedFileExt = FileIO::getUncompressedFileExtension(fileName);
 
     if (loadWeights and (format == "gml" or format == "lgf" or format == "xml" or format == "csv"))
         throw runtime_error("GraphLoader does not support weights for format '"+format+"'");
@@ -249,7 +243,8 @@ Graph GraphLoader::loadGraphFromFile(const string& graphName, const string& file
     if (format == "lgf") return loadGraphFromLgfFile(graphName, fileName);
     if (format == "xml") return loadGraphFromXmlFile(graphName, fileName);
     if (format == "csv") return loadGraphFromCsvFile(graphName, fileName);
-    if (format == "mpel") throw runtime_error("Multipartite edge list format (MPEL) no longer supported. Use coloring feature instead");
+    if (format == "mpel") throw runtime_error(
+        "Multipartite edge list format (MPEL) no longer supported. Use coloring feature instead");
     throw runtime_error("Unsupported graph format: " + format);
 }
 
@@ -342,22 +337,22 @@ Graph GraphLoader::loadGraphFromCsvFile(const string& gName, const string& file)
 }
 
 GraphLoader::RawGWFileData::RawGWFileData(const string& fileName, bool containsEdgeWeights) {
-    if (not fileExists(fileName)) throw runtime_error("File not found: " + fileName);
-    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    FileIO::checkFileExists(fileName);
+    stdiobuf sbuf = FileIO::readFileAsStreamBuffer(fileName);
     istream ifs(&sbuf);
     string line;
     //ignore header
-    for (uint i = 0; i < 4; i++) getline(ifs, line);
+    for (uint i = 0; i < 4; i++) FileIO::safeGetLine(ifs, line);
     //read number of nodes
     int n;
-    if (getline(ifs, line)) {
+    if (FileIO::safeGetLine(ifs, line)) {
         n = stoi(line);
         if (n <= 0) throw runtime_error("Failed to read non-zero node number: "+line);
     } else throw runtime_error("Failed to read line with node number");
     //read nodes
     nodeNames.reserve(n);
     for (uint i = 0; i < (uint) n; i++) {
-        if (getline(ifs, line)) {
+        if (FileIO::safeGetLine(ifs, line)) {
             if (line.size() <= 4) throw runtime_error("Failed to read node name from line: "+line);
             string node = line.substr(2,line.size()-4); //strip |{ and }|
             nodeNames.emplace_back(node);
@@ -365,7 +360,7 @@ GraphLoader::RawGWFileData::RawGWFileData(const string& fileName, bool containsE
     }
     //read number of edges
     int m;
-    if (getline(ifs, line)) {
+    if (FileIO::safeGetLine(ifs, line)) {
         m = stoi(line);
         istringstream iss2(line);
         if (m <= 0) throw runtime_error("Failed to read non-zero edge number: "+line);        
@@ -374,7 +369,7 @@ GraphLoader::RawGWFileData::RawGWFileData(const string& fileName, bool containsE
     edgeList.reserve(m);
     if (containsEdgeWeights) edgeWeights.reserve(m);
     for (int i = 0; i < m; ++i) {
-        if (getline(ifs, line)) {
+        if (FileIO::safeGetLine(ifs, line)) {
             istringstream iss(line);
             uint node1, node2;
             if (iss >> node1 >> node2)
@@ -389,22 +384,22 @@ GraphLoader::RawGWFileData::RawGWFileData(const string& fileName, bool containsE
             }
         } else throw runtime_error("Failed to read all edges");
     }
-    if (getline(ifs, line) and line.size() != 0)
+    if (FileIO::safeGetLine(ifs, line) and line.size() != 0)
         cerr<<"Warning: ignoring leftover lines at the end of .gw file: "<<line<<endl;
 }
 
 GraphLoader::RawEdgeListFileData::RawEdgeListFileData(
             const string& fileName, const string& weightType) {
-    if (not fileExists(fileName)) throw runtime_error("File not found: " + fileName);
-    uint numLines = numLinesInFile(fileName);
+    FileIO::checkFileExists(fileName);
+    uint numLines = FileIO::numLinesInFile(fileName);
     namedEdgeList.reserve(numLines);                                       
     if (weightType == "int") intWeights.reserve(numLines);
     else if (weightType == "float") floatWeights.reserve(numLines);
     else if (weightType != "") throw runtime_error("weightType cannot be "+weightType);
 
-    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    stdiobuf sbuf = FileIO::readFileAsStreamBuffer(fileName);
     istream ifs(&sbuf);
-    for (string line; getline(ifs, line); ) {
+    for (string line; FileIO::safeGetLine(ifs, line); ) {
         string name1, name2;
         istringstream iss(line);
         if (iss >> name1 >> name2) namedEdgeList.push_back({name1, name2});
@@ -425,29 +420,29 @@ GraphLoader::RawEdgeListFileData::RawEdgeListFileData(
 }
 
 GraphLoader::RawGmlFileData::RawGmlFileData(const string& fileName) {
-    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    stdiobuf sbuf = FileIO::readFileAsStreamBuffer(fileName);
     istream ifs(&sbuf);
-    skipWordInStream(ifs, "graph");
-    skipWordInStream(ifs, "[");
-    while (canSkipWordInStream(ifs, "edge")) {
+    FileIO::skipWordInStream(ifs, "graph");
+    FileIO::skipWordInStream(ifs, "[");
+    while (FileIO::canSkipWordInStream(ifs, "edge")) {
         string name1, name2;
-        skipWordInStream(ifs, "[");
-        skipWordInStream(ifs, "source");
+        FileIO::skipWordInStream(ifs, "[");
+        FileIO::skipWordInStream(ifs, "source");
         ifs >> name1;
-        skipWordInStream(ifs, "target");
+        FileIO::skipWordInStream(ifs, "target");
         ifs >> name2;
-        skipWordInStream(ifs, "]");
+        FileIO::skipWordInStream(ifs, "]");
         namedEdgeList.push_back({name1, name2});
     }
     //does not check for closing bracket for "graph [ ... ]"
 }
 
 GraphLoader::RawLgfFileData::RawLgfFileData(const string& fileName) {
-    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    stdiobuf sbuf = FileIO::readFileAsStreamBuffer(fileName);
     istream ifs(&sbuf);
-    skipWordInStream(ifs, "@edges");
-    skipWordInStream(ifs, "label");
-    skipWordInStream(ifs, "weight");
+    FileIO::skipWordInStream(ifs, "@edges");
+    FileIO::skipWordInStream(ifs, "label");
+    FileIO::skipWordInStream(ifs, "weight");
     string name1, name2;
     int waste1, waste2;
     while (ifs >> name1) {
@@ -457,12 +452,12 @@ GraphLoader::RawLgfFileData::RawLgfFileData(const string& fileName) {
 }
 
 GraphLoader::RawXmlFileData::RawXmlFileData(const string& fileName) {
-    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    stdiobuf sbuf = FileIO::readFileAsStreamBuffer(fileName);
     istream ifs(&sbuf);
     string line;
     string srcPrefix = "source=\"", trgPrefix = "target=\"";
-    for (uint i = 0; i < 5; i++) getline(ifs, line); //skip headers
-    while (canSkipWordInStream(ifs, "<edge")) {
+    for (uint i = 0; i < 5; i++) FileIO::safeGetLine(ifs, line); //skip headers
+    while (FileIO::canSkipWordInStream(ifs, "<edge")) {
         string waste, source, target;
         ifs >> waste >> source >> target;
         source = source.substr(srcPrefix.size()); //remove 'source="'
@@ -475,10 +470,10 @@ GraphLoader::RawXmlFileData::RawXmlFileData(const string& fileName) {
 }
 
 GraphLoader::RawCsvFileData::RawCsvFileData(const string& fileName) {
-    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    stdiobuf sbuf = FileIO::readFileAsStreamBuffer(fileName);
     istream ifs(&sbuf);
     string line;
-    while(getline(ifs, line)) {
+    while(FileIO::safeGetLine(ifs, line)) {
         string source, target;
         size_t sep = line.find(";");
         if (sep == string::npos) continue;
@@ -496,12 +491,12 @@ GraphLoader::RawLockFileData::RawLockFileData(const string& fileName) {
 }
 
 vector<array<string, 2>> GraphLoader::rawTwoColumnFileData(const string& fileName) {
-    if (not fileExists(fileName)) throw runtime_error("File not found: " + fileName);
-    stdiobuf sbuf = readFileAsStreamBuffer(fileName);
+    FileIO::checkFileExists(fileName);
+    stdiobuf sbuf = FileIO::readFileAsStreamBuffer(fileName);
     istream ifs(&sbuf);
     vector<array<string, 2>> res;
-    res.reserve(numLinesInFile(fileName));
-    for (string line; getline(ifs, line); ) {
+    res.reserve(FileIO::numLinesInFile(fileName));
+    for (string line; FileIO::safeGetLine(ifs, line); ) {
         if (line.size() == 0) continue;
         string col1, col2;
         istringstream iss(line);

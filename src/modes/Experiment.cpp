@@ -4,6 +4,7 @@
 #include <sstream>
 #include "../utils/utils.hpp"
 #include "../utils/Timer.hpp"
+#include "../utils/FileIO.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
 #include "../measures/JaccardSimilarityScore.hpp"
 #include "../measures/EdgeCorrectness.hpp"
@@ -35,12 +36,12 @@ void Experiment::run(ArgumentParser& args) {
         exit(-1);
     }
 
-    checkFileExists(methodArgsFile);
-    checkFileExists(datasetsFile);
+    FileIO::checkFileExists(methodArgsFile);
+    FileIO::checkFileExists(datasetsFile);
     experName = args.strings["-experiment"];
     experFolder = "experiments/"+experName+"/";
     experFile = experFolder+experName+".exp";
-    checkFileExists(experFile);
+    FileIO::checkFileExists(experFile);
 
     plainResultsFile = experFolder+experName+"PlainResults.txt";
     humanReadableResultsFile = experFolder+experName+"HumanReadableResults.txt";
@@ -74,14 +75,14 @@ void Experiment::initSubfolders(string projectFolder) {
     outsFolder = projectFolder+experFolder+"outs/";
     errsFolder = projectFolder+experFolder+"errs/";
 
-    createFolder(resultsFolder);
-    createFolder(outsFolder);
-    createFolder(errsFolder);
-    createFolder(scriptsFolder);
+    FileIO::createFolder(resultsFolder);
+    FileIO::createFolder(outsFolder);
+    FileIO::createFolder(errsFolder);
+    FileIO::createFolder(scriptsFolder);
 }
 
 void Experiment::initData() {
-    vector<vector<string>> data = fileToStringsByLines(experFile);
+    vector<vector<string>> data = FileIO::fileToWordsByLines(experFile);
     t = stod(data[0][0]);
     nSubs = stoi(data[1][0]);
     experArgs = data[2];
@@ -110,7 +111,7 @@ void Experiment::makeSubmissions(bool shouldSubmitToCluster) {
                 string cmd = createCommand(method, pair[0], pair[1], i, shouldSubmitToCluster);
                 string subId = getSubId(method, pair[0], pair[1], i);
                 string resultFile = resultsFolder+subId + ".out";
-                if (not fileExists(resultFile)) {
+                if (not FileIO::fileExists(resultFile)) {
                     cout << "SUBMIT "+subId << endl;
                     execWithoutPrintingErr(cmd);
                 } else {
@@ -128,7 +129,7 @@ void Experiment::printSubmissions(bool shouldSubmitToCluster) {
                 string cmd = createCommand(method, pair[0], pair[1], i, shouldSubmitToCluster);
                 string subId = getSubId(method, pair[0], pair[1], i);
                 string resultFile = resultsFolder+subId + ".out";
-                if (not fileExists(resultFile)) {
+                if (not FileIO::fileExists(resultFile)) {
                     cout << "SUBMIT "+subId << endl;
                 } else {
                     cout << "OMIT   "+subId << endl;
@@ -145,7 +146,7 @@ bool Experiment::allRunsFinished() {
             for (uint i = 0; i < nSubs; i++) {
                 string subId = getSubId(method, pair[0], pair[1], i);
                 string resultFile = resultsFolder+subId+".out";
-                if (not fileExists(resultFile)) {
+                if (not FileIO::fileExists(resultFile)) {
                     return false;
                 }
             }
@@ -238,8 +239,7 @@ double Experiment::computeScore(string method, string G1Name,
     string subId = getSubId(method, G1Name, G2Name, numSub);
     string resultFile = resultsFolder+subId+".out";
 
-    bool NA = measure->getName() == "invalid" or
-              not fileExists(resultFile);
+    bool NA = measure->getName() == "invalid" or not FileIO::fileExists(resultFile);
     double score;
     if (NA) score = -1;
     else {
@@ -287,8 +287,7 @@ void Experiment::saveResults() {
 }
 
 void Experiment::savePlainResults() {
-    ofstream fout;
-    fout.open(plainResultsFile.c_str());
+    ofstream ofs(plainResultsFile);
     for (string measure : measures) {
         for (auto pair : networkPairs) {
             string G1Name = pair[0];
@@ -296,9 +295,9 @@ void Experiment::savePlainResults() {
             for (string method : methods) {
                 for (uint numSub = 0; numSub < nSubs; numSub++) {
                     double score = getScore(method, G1Name, G2Name, numSub, measure);
-                    fout << measure << " " << G1Name << " ";
-                    fout << G2Name << " " << method << " ";
-                    fout << numSub << " " << score << endl;
+                    ofs << measure << " " << G1Name << " ";
+                    ofs << G2Name << " " << method << " ";
+                    ofs << numSub << " " << score << endl;
                 }
             }
         }
@@ -373,14 +372,14 @@ void scoresToRankings(vector<string>& row) {
 }
 
 void Experiment::saveHumanReadableResults() {
-    ofstream fout(humanReadableResultsFile.c_str());
+    ofstream ofs(humanReadableResultsFile);
 
     vector<vector<vector<string>> > tables;
     for (uint i = 0; i < measures.size(); i++) {
         vector<vector<string>> table(networkPairs.size()+1,
             vector<string> (methods.size()+2));
 
-        fout << "Measure: " << measures[i] << endl;
+        ofs << "Measure: " << measures[i] << endl;
         table[0][0] = "G1";
         table[0][1] = "G2";
         for (uint j = 0; j < methods.size(); j++) {
@@ -399,39 +398,37 @@ void Experiment::saveHumanReadableResults() {
         }
         tables.push_back(table);
         addAverageToLastRow(table);
-        printTable(table, 1, fout);
-        fout << endl << endl;
+        printTable(table, 1, ofs);
+        ofs << endl << endl;
     }
 
-    fout << endl << "=== rankings ===" << endl;
+    ofs << endl << "=== rankings ===" << endl;
 
     for (uint i = 0; i < measures.size(); i++) {
         vector<vector<string>> &table = tables[i];
-        fout << "Measure: " << measures[i] << endl;
+        ofs << "Measure: " << measures[i] << endl;
         for (uint j = 1; j < table.size(); j++) {
             scoresToRankings(table[j]);
         }
         addAverageToLastRow(table);
-        printTable(table, 1, fout);
-        fout << endl << endl;
+        printTable(table, 1, ofs);
+        ofs << endl << endl;
     }
-
-    fout.close();
 }
 
 void Experiment::saveResultsForPlots() {
-    ofstream fout(forPlotResultsFile.c_str());
+    ofstream ofs(forPlotResultsFile);
 
     //headers
     bool firstCol = true;
     for (string method : plotMethods) {
         for (string measure : plotMeasures) {
             if (firstCol) firstCol = false;
-            else fout << ",";
-            fout << experName+"_"+method+"_"+measure;
+            else ofs << ",";
+            ofs << experName+"_"+method+"_"+measure;
         }
     }
-    fout << endl;
+    ofs << endl;
 
     //data, one row per network pair
     for (auto pair : networkPairs) {
@@ -445,11 +442,11 @@ void Experiment::saveResultsForPlots() {
                     throw runtime_error("invalid score: "+to_string(score));
                 }
                 if (firstCol) firstCol = false;
-                else fout << ",";
-                fout << to_string(score);
+                else ofs << ",";
+                ofs << to_string(score);
             }
         }
-        fout << endl;
+        ofs << endl;
     }
 
     //averages
@@ -464,11 +461,11 @@ void Experiment::saveResultsForPlots() {
                 scoreSum += score;
             }
             if (firstCol) firstCol = false;
-            else fout << ",";
-            fout << scoreSum/networkPairs.size();
+            else ofs << ",";
+            ofs << scoreSum/networkPairs.size();
         }
     }
-    fout << endl;
+    ofs << endl;
 }
 
 string Experiment::getName() {
@@ -480,7 +477,7 @@ Experiment::Experiment() {
 }
 
 vector<string> Experiment::getMethodArgs(string method) {
-    vector<vector<string>> data = fileToStringsByLines(methodArgsFile);
+    vector<vector<string>> data = FileIO::fileToWordsByLines(methodArgsFile);
     for (uint i = 0; i < data.size(); i++) {
         if (data[i][0] == method) {
             data[i].erase(data[i].begin());
@@ -491,7 +488,7 @@ vector<string> Experiment::getMethodArgs(string method) {
 }
 
 vector<vector<string>> Experiment::getNetworkPairs(string dataset) {
-    vector<vector<string>> data = fileToStringsByLines(datasetsFile);
+    vector<vector<string>> data = FileIO::fileToWordsByLines(datasetsFile);
     for (uint i = 0; i < data.size(); i++) {
         if (data[i].size() == 1 and data[i][0] == dataset) {
             vector<vector<string>> res(0);
@@ -717,7 +714,7 @@ void Experiment::loadResultMap(string experName) {
 
 void Experiment::initResults() {
     resultMap.clear(); //init the map empty
-    vector<vector<string>> data = fileToStringsByLines(plainResultsFile);
+    vector<vector<string>> data = FileIO::fileToWordsByLines(plainResultsFile);
     for (vector<string> line : data) {
         string method = line[3];
         string G1Name = line[1];
@@ -772,7 +769,7 @@ void Experiment::updateTopSeqScoreTableEntry(string method,
 
     string topSeqScoreTableFile = "topologySequenceScoreTable.cnf";
 
-    vector<vector<string>> table = fileToStringsByLines(topSeqScoreTableFile);
+    vector<vector<string>> table = FileIO::fileToWordsByLines(topSeqScoreTableFile);
     bool found = false;
     for (vector<string>& line : table) {
         if (line[0] == method and line[1] == G1Name and line[2] == G2Name) {
@@ -798,8 +795,8 @@ void Experiment::updateTopSeqScoreTableEntry(string method,
         } else throw runtime_error("invalid update type: "+updateType);
         table.push_back(newLine);
     }
-    ofstream fout(topSeqScoreTableFile.c_str());
-    for (vector<string> line : table) {
-        fout<<line[0]<<" "<<line[1]<<" "<<line[2]<<" "<<line[3]<<" "<<line[4]<<endl;
+    ofstream ofs(topSeqScoreTableFile);
+    for (const auto& line : table) {
+        ofs<<line[0]<<" "<<line[1]<<" "<<line[2]<<" "<<line[3]<<" "<<line[4]<<endl;
     }
 }

@@ -1,6 +1,7 @@
 #include "ClusterMode.hpp"
 #include <iostream>
 #include "../utils/utils.hpp"
+#include "../utils/FileIO.hpp"
 #include "../arguments/modeSelector.hpp"
 
 using namespace std;
@@ -76,8 +77,7 @@ string ClusterMode::getScriptFileName() {
     return scriptFileNameArg;
   }
   string scriptFile = "tmp/submit";
-  addUniquePostfixToFilename(scriptFile, ".sh");
-  scriptFile += ".sh";
+  scriptFile = FileIO::addUniquePostfixToFileName(scriptFile, ".sh");
   return scriptFile;
 }
 
@@ -87,9 +87,9 @@ string ClusterMode::makeScript(const vector<string>& argv, string dir) {
   //mode to be used in the cluster
   string qmode = getQModeArgValue(argv);
 
-  ofstream fout(scriptFile.c_str());
-  fout << "#!/bin/bash" << endl;
-  fout << "cd " << dir << endl;
+  ofstream ofs(scriptFile);
+  ofs << "#!/bin/bash" << endl;
+  ofs << "cd " << dir << endl;
 
   //add all the same arguments, but:
   //replace the value of -mode for the value of -qmode
@@ -102,14 +102,14 @@ string ClusterMode::makeScript(const vector<string>& argv, string dir) {
       i += 2;
     } else {
       if (argv[i] == "cluster") { //this is the original value of '-mode'
-        fout << qmode << " ";
+        ofs << qmode << " ";
       } else {
-        fout << argv[i] << " ";
+        ofs << argv[i] << " ";
       }
       ++i;     
     }
   }
-  fout << endl;
+  ofs << endl;
   return scriptFile;
 }
 

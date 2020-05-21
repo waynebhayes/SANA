@@ -1,15 +1,16 @@
+#include "Graphlet.hpp"
 #include <vector>
 #include <iostream>
 #include <cmath>
-#include "Graphlet.hpp"
 #include "../../utils/ComputeGraphletsWrapper.hpp"
+#include "../../utils/FileIO.hpp"
 
 using namespace std;
 
 Graphlet::Graphlet(const Graph* G1, const Graph* G2, uint maxGraphletSize) :
         LocalMeasure(G1, G2, "graphlet"), maxGraphletSize(maxGraphletSize) {
     string subfolder = autogenMatricesFolder+getName()+"/";
-    createFolder(subfolder);
+    FileIO::createFolder(subfolder);
     string fileName = subfolder+G1->getName()+"_"+G2->getName()+"_graphlet.bin";
     loadBinSimMatrix(fileName);
 }

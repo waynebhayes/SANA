@@ -1,3 +1,4 @@
+#include "utils.hpp"
 #include <random>
 #include <vector>
 #include <ctime>
@@ -5,17 +6,10 @@
 #include <unordered_set>
 #include <cstdlib>
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include <cstdio>
 #include <set>
-#include <string.h>
-#include <iterator>
 #include <algorithm>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include "utils.hpp"
 #include "randomSeed.hpp"
 
 using namespace std;
@@ -51,24 +45,6 @@ double vectorMean(const vector<double>& v) {
     return sum/v.size();
 }
 
-double vectorMax(const vector<double>& v) {
-    double m = v[0];
-    for (uint i = 1; i < v.size(); i++) m = max(m, v[i]);
-    return m;
-}
-
-double vectorMin(const vector<double>& v) {
-    double m = v[0];
-    for (uint i = 1; i < v.size(); i++) m = min(m, v[i]);
-    return m;
-}
-
-double vectorSum(const vector<double>& v) {
-    double m = 0;
-    for (uint i = 0; i < v.size(); i++) m += v[i];
-    return m;
-}
-
 void printTable(const vector<vector<string>>& table, int colSeparation, ostream& stream) {
     int rows = table.size();
     int cols = table[0].size();
@@ -90,28 +66,6 @@ void printTable(const vector<vector<string>>& table, int colSeparation, ostream&
     }
 }
 
-bool fileExists(const string& fileName) {
-    if (FILE *file = fopen(fileName.c_str(), "r")) {
-        fclose(file);
-        return true;
-    }
-    return false;
-}
-
-void checkFileExists(const string& fileName) {
-    if (not fileExists(fileName))
-        throw runtime_error("File "+fileName+" not found");
-}
-
-void addUniquePostfixToFilename(string& name, const string& fileExtension) {
-    string origName = name;
-    int i = 2;
-    while (fileExists(name + fileExtension)) {
-        name = origName + "_" + to_string(i);
-        i++;
-    }
-}
-
 string currentDateTime() {
     time_t now = time(0);
     struct tm tstruct;
@@ -130,97 +84,6 @@ void normalizeWeights(vector<double>& weights) {
     }
 }
 
-vector<string> fileToStrings(const string& fileName, bool asLines) {
-    checkFileExists(fileName);
-    char buf[10240];
-    bool isPiped;
-    FILE *fp = readFileAsFilePointer(fileName, isPiped);
-    vector<string> result;
-    if (asLines) {
-        while (fgets(buf, sizeof(buf), fp)){string line(buf); result.push_back(line);}
-    }
-    else {
-        while (fscanf(fp, "%s", buf)>0){string word(buf); result.push_back(word);}
-    }
-    closeFile(fp, isPiped);
-    return result;
-}
-
-void closeFile(FILE* fp, const bool& isPiped) {
-    if(isPiped) pclose(fp);
-    else fclose(fp);
-}
-stdiobuf readFileAsStreamBuffer(const string& fileName) {
-    bool piped = false;
-    FILE* f = readFileAsFilePointer(fileName, piped);
-    return stdiobuf(f, piped);
-}
-FILE* readFileAsFilePointer(const string& fileName, bool& piped) {
-    FILE* fp;
-    string decompressionProg = getDecompressionProgram(fileName);
-    piped = false;
-    if(decompressionProg != "") {
-        fp = decompressFile(decompressionProg, fileName);
-        piped = true;
-    }
-    else fp = fopen(fileName.c_str(), "r");
-    return fp;
-}
-
-string getDecompressionProgram(const string& fileName) {
-    string ext = fileName.substr(fileName.find_last_of(".") + 1);
-    if(ext == "gz") return "gunzip";
-    else if(ext == "xz") return "xzcat";
-    else if(ext == "bz2") return "bzip2 -dk";
-    return "";
-}
-string getUncompressedFileExtension(const string& fileName) {
-    if(getDecompressionProgram(fileName) != "") {
-        string noCompressionExt = extractFileNameNoExtension(fileName);
-        return noCompressionExt.substr(noCompressionExt.find_last_of(".") + 1);
-    }
-    return "";
-}
-
-void skipWordInStream(istream& is, const string& word) {
-    string s;
-    if (is >> s) {
-        if (s != word) throw runtime_error("expected word '"+word+"'' but got '"+s+"'");
-    } else {
-        throw runtime_error("expected word '"+word+"' but couldn't read from stream");
-    }
-}
-bool canSkipWordInStream(istream& is, const string& str) {
-    string s;
-    if (is >> s) return str == s;
-    return false;
-}
-
-FILE* decompressFile(const string& decompProg, const string& fileName) {
-    stringstream stream;
-    string command;
-    cerr << "decompressFile: decompressing using " << decompProg << ": " << fileName << endl;
-    stream << decompProg << " < " << fileName;
-    command = stream.str(); // eg "gunzip < filename.gz"
-    return popen(command.c_str(), "r");
-}
-
-vector<vector<string>> fileToStringsByLines(const string& fileName) {
-    checkFileExists(fileName);
-    ifstream ifs(fileName.c_str());
-    vector<vector<string>> result(0);
-    string line;
-    while (getline(ifs, line)) {
-        istringstream iss(line);
-        vector<string> words;
-        words.reserve(2);
-        copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter(words));
-        result.push_back(words);
-    }
-    ifs.close();
-    return result;
-}
-
 string extractDecimals(double value, int count) {
     string valueString = to_string(value);
     int k = 0;
@@ -235,23 +98,6 @@ string extractDecimals(double value, int count) {
     }
     while (result.size() < (uint) count) result += "0";
     return result;
-}
-
-bool folderExists(string folderName) {
-    DIR* dir = opendir(folderName.c_str());
-    if (dir) {
-        closedir(dir);
-        return true;
-    }
-    return false;
-}
-
-void createFolder(string folderName) {
-    if (not folderExists(folderName)) {
-        int res = mkdir(folderName.c_str(), ACCESSPERMS);
-        //race condition: if somebody else created it in the meantime (EEXIST), it is OK.
-        if (res == -1 && errno != EEXIST) throw runtime_error("error creating directory " + folderName + " (errno "+to_string(errno)+", "+strerror(errno)+")");
-    }
 }
 
 string exec(string cmd) {
@@ -285,79 +131,12 @@ void execPrintOutput(string cmd) {
     pclose(pipe);
 }
 
-void deleteFile(string name) { remove(name.c_str()); }
-
-void writeDataToFile(const vector<vector<string>>& data, string fileName, bool useTabs) {
-    ofstream outfile;
-    outfile.open(fileName.c_str());
-    for (uint i = 0; i < data.size(); i++) {
-        for (uint j = 0; j < data[i].size(); j++) {
-            outfile << data[i][j];
-            if (j != data[i].size() - 1) {
-                if (useTabs) outfile << "\t";
-                else outfile << " ";
-            }
-        }
-        outfile << endl;
-    }
-    outfile.close();
-}
-
-uint numLinesInFile(const string& fileName) {
-    ifstream ifs(fileName); 
-    return 1 + count(istreambuf_iterator<char>(ifs), 
-                     istreambuf_iterator<char>(), '\n') ;
-}
-
-//source: http://stackoverflow.com/questions/306533/how-do-i-get-a-list-of-files-in-a-directory-in-c
-vector<string> getFilesInDirectory(const string &directory) {
-    DIR *dir;
-    class dirent *ent;
-    class stat st;
-    vector<string> out(0);
-    dir = opendir(directory.c_str());
-    while ((ent = readdir(dir)) != NULL) {
-        const string file_name = ent->d_name;
-        const string full_file_name = directory + "/" + file_name;
-        if (file_name[0] == '.') continue;
-        if (stat(full_file_name.c_str(), &st) == -1) continue;
-        const bool is_directory = (st.st_mode & S_IFDIR) != 0;
-        if (is_directory) continue;
-        out.push_back(file_name);
-    }
-    closedir(dir);
-    return out;
-}
-
-string autocompleteFileName(const string dir, const string fileNamePrefix) {
-    vector<string> files = getFilesInDirectory(dir);
-    uint n = fileNamePrefix.size();
-    for (uint i = 0; i < files.size(); i++) {
-        if (files[i].substr(0, n) == fileNamePrefix) return files[i];
-    }
-    throw runtime_error("file with prefix "+fileNamePrefix+" in directory "+dir+" not found");
-}
-
 string toLowerCase(const string& s) {
     string res = s;
     for (uint i = 0; i < s.size(); i++)
         if (s[i] >= 'A' and s[i] <= 'Z')
             res[i] = s[i] - 'A' + 'a';
     return res;
-}
-
-string extractFileName(const string& s) {
-    int pos = s.size()-1;
-    while (pos >= 0 and s[pos] != '/') pos--;
-    return s.substr(pos+1);
-}
-
-string extractFileNameNoExtension(const string& s) {
-    string res = extractFileName(s);
-    //remove suffix starting with '.'
-    int pos = res.size() - 1;
-    while (pos >= 0 and res[pos] != '.') pos--; //gives position of last "."
-    return res.substr(0, pos);
 }
 
 vector<string> split(const string& s, char c) {

@@ -16,9 +16,9 @@ class AlphaEstimation : public Mode {
 public:
     AlphaEstimation();
     AlphaEstimation(string alphaFile);
-    void printData(string outputFile);
+    void printData(const string& outputFile);
     void run(ArgumentParser& args);
-    std::string getName(void);
+    string getName();
 
     static double getAlpha(string alphaFile, string methodName, string G1Name, string G2Name);
 private:

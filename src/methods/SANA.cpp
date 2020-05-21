@@ -234,7 +234,6 @@ SANA::SANA(const Graph* G1, const Graph* G2,
         if (g1ColorId == Graph::INVALID_COLOR_ID) continue; //no node in G1 has this color
         g2NodeToActColId[g2Node] = g1ColIdToActColId[g1ColorId];
     }
-
     //things initialized in initDataStructures because they d epend on the starting alignment
     //they have the same size for every run, so we can allocate the size here
     assignedNodesG2 = vector<bool> (n2);
@@ -251,7 +250,6 @@ SANA::~SANA() {}
 void SANA::initDataStructures() {
     iterationsPerformed = 0;
     numPBadsInBuffer = pBadBufferSum = pBadBufferIndex = 0;
-    
     Alignment alig;
     if (startA.size() != 0) alig = startA;
     else alig = Alignment::randomColorRestrictedAlignment(*G1, *G2);
@@ -1570,10 +1568,9 @@ void SANA::initIterPerSecond() {
     //what is this? can it be removed? -Nil
     uint integralMin = minutes;
     string folder = "cache-pbad/"+MC->toString()+"/progress_"+to_string(integralMin)+"/";
-    string file = folder+G1->getName()+"_"+G2->getName()+"_0.csv";
-    ofstream header(file);
-    header<<"time,score,avgEnergyInc,Temperature,realTemp,pBad,lower,higher,timer"<<endl;
-    header.close();
+    string fileName = folder+G1->getName()+"_"+G2->getName()+"_0.csv";
+    ofstream ofs(fileName);
+    ofs<<"time,score,avgEnergyInc,Temperature,realTemp,pBad,lower,higher,timer"<<endl;
 }
 
 void SANA::constantTempIterations(long long int iterTarget) {
@@ -1599,7 +1596,7 @@ double SANA::getPBad(double temp, double maxTime, int logLevel) {
     constantTemp = true;
     Temperature = temp;
     enableTrackProgress = false;
-    
+
     //note: this is a circular buffer that maintains scores sampled at intervals
     vector<double> scoreBuffer;
     //the larger 'numScores' is, the stronger evidence of reachign equilibrium. keep this value odd
