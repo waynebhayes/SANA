@@ -15,10 +15,11 @@ public:
     EdgeExposure(Graph* G1, Graph* G2);
     virtual ~EdgeExposure();
     double eval(const Alignment& A);
+    static unsigned getNumer();
     static unsigned getDenom();
-	static unsigned getMaxEdge();
+    static unsigned getMaxEdge();
+    static unsigned numer, denom;
 private:
-	static unsigned denom;
 };
 #endif
 

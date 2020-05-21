@@ -8,6 +8,7 @@
 #include "../measures/EdgeRatio.hpp"
 #include "../measures/InducedConservedStructure.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
+#include "../measures/JaccardSimilarityScore.hpp"
 #include "../measures/SymmetricEdgeCoverage.hpp"
 #include "../measures/LargestCommonConnectedSubgraph.hpp"
 #include "../measures/GoAverage.hpp"
@@ -101,7 +102,7 @@ double getAlpha(Graph& G1, Graph& G2, ArgumentParser& args) {
 
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableDoubleMeasures = {
-        "ec","ed", "er", "s3","ics","tc","sec","wec","nodec","noded","edgec","edged", "go","importance",
+        "ec","ed","er","s3","js","ics","tc","sec","wec","nodec","noded","edgec","edged", "go","importance",
         "sequence","graphlet","graphletlgraal", "graphletcosine", "graphletnorm", "spc", "nc","mec", "ewec", "ses", "ee", "ms3"
     };
     double total = 0;
@@ -199,6 +200,9 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
     m = new EdgeDifference(&G1, &G2);
     M.addMeasure(m, getWeight("ed", G1, G2, args));
 
+    m = new JaccardSimilarityScore(&G1, &G2);
+    M.addMeasure(m, getWeight("js", G1, G2, args));
+
     m = new EdgeRatio(&G1, &G2);
     M.addMeasure(m, getWeight("er", G1, G2, args));
 
@@ -214,7 +218,30 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
 	m = new EdgeExposure(&G1, &G2);
     M.addMeasure(m, getWeight("ee", G1, G2, args));
     
-    m = new MultiS3(&G1, &G2);
+    int _numerator_type,_denominator_type;
+    if (args.strings["-ms3_numer"] == "default"){
+        _numerator_type = 0;}
+    else if (args.strings["-ms3_numer"] == "ra_i"){
+        _numerator_type = 1;}
+    else if (args.strings["-ms3_numer"] == "la_i"){
+        _numerator_type = 2;}
+    else if (args.strings["-ms3_numer"] == "la_global"){
+        _numerator_type = 3;}
+    else if (args.strings["-ms3_numer"] == "ra_global"){
+        _numerator_type = 4;}
+
+    if (args.strings["-ms3_denom"] == "default"){
+        _denominator_type = 0;}
+    else if (args.strings["-ms3_denom"] == "rt_i"){
+        _denominator_type = 1;}
+    else if (args.strings["-ms3_denom"] == "ee_i"){
+        _denominator_type = 2;}
+    else if (args.strings["-ms3_denom"] == "ee_global"){
+        _denominator_type = 3;}
+    else if (args.strings["-ms3_denom"] == "rt_global"){
+        _denominator_type = 4;}
+    
+    m = new MultiS3(&G1, &G2, _numerator_type, _denominator_type);
     M.addMeasure(m, getWeight("ms3", G1, G2, args));
 
     m = new InducedConservedStructure(&G1, &G2);
@@ -347,6 +374,12 @@ void initMeasures(MeasureCombination& M, Graph& G1, Graph& G2, ArgumentParser& a
         m = new WeightedEdgeConservation(&G1, &G2, nodeSim);
         M.addMeasure(m, wecWeight);
     }
+
+    // double jsWeight = getWeight("js", G1, G2, args);
+    // if (jsWeight > 0){
+    //     m = new JaccardSimilarityScore(&G1, &G2);
+    //     M.addMeasure(m, jsWeight);
+    // }
 
     if (args.strings["-truealignment"] != "") {
         vector<string> edges = fileToStrings(args.strings["-truealignment"]);

@@ -3,6 +3,7 @@
 #include "measures/EdgeCorrectness.hpp"
 #include "measures/InducedConservedStructure.hpp"
 #include "measures/SymmetricSubstructureScore.hpp"
+#include "measures/JaccardSimilarityScore.hpp"
 #include "utils/utils.hpp"
 #include "utils/randomSeed.hpp"
 
@@ -58,16 +59,16 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
       stream << endl;
 
       int tableRows = min(5, CS.getConnectedComponents().size())+2;
-      vector<vector<string> > table(tableRows, vector<string> (8));
+      vector<vector<string> > table(tableRows, vector<string> (9));
 
       table[0][0] = "Graph"; table[0][1] = "n"; table[0][2] = "m"; table[0][3] = "alig-edges";
       table[0][4] = "indu-edges"; table[0][5] = "EC";
-      table[0][6] = "ICS"; table[0][7] = "S3";
+      table[0][6] = "ICS"; table[0][7] = "S3"; table[0][8] = "JS";
 
       table[1][0] = "G1"; table[1][1] = to_string(G1.getNumNodes()); table[1][2] = to_string(G1.getNumEdges());
       table[1][3] = to_string(A.numAlignedEdges(G1, G2)); table[1][4] = to_string(G2.numNodeInducedSubgraphEdges(A.getMapping()));
       table[1][5] = to_string(M.eval("ec",A));
-      table[1][6] = to_string(M.eval("ics",A)); table[1][7] = to_string(M.eval("s3",A));
+      table[1][6] = to_string(M.eval("ics",A)); table[1][7] = to_string(M.eval("s3",A)); table[0][8] = to_string(M.eval("js", A));
 
       for (int i = 0; i < tableRows-2; i++) {
 	const vector<uint>& nodes = CS.getConnectedComponents()[i];
@@ -84,6 +85,8 @@ void makeReport(const Graph& G1, Graph& G2, const Alignment& A,
 	table[i+2][6] = to_string(ics.eval(newA));
 	SymmetricSubstructureScore s3(&H, &G2);
 	table[i+2][7] = to_string(s3.eval(newA));
+  JaccardSimilarityScore js(&H, &G2);
+  table[i+2][8] = to_string(js.eval(newA));
       }
 
       stream << "Common connected subgraphs:" << endl;

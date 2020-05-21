@@ -97,3 +97,4 @@ if __name__ == '__main__':
             print(mat2)
 
         recalignment.rec_align(graph1, graph2, seeding.get_aligned_seed(zip(*seed),graph1, graph2), sims, ec_mode, ed, e1, delta, alpha, seednum, timestop=timestop_arg, debug=args.debugval)    
+

@@ -1,5 +1,7 @@
 #!/bin/sh
-cat "$@" | awk 'BEGIN{srand();srand(int(2^30*rand())+'$$')}
+DIR=`dirname $0`
+PATH="$DIR:$DIR/../NetGO:$PATH"
+cat "$@" | hawk 'BEGIN{Srand()}
     function randint(N){return int(N*rand())}
     {line[NR]=$0}
     END{
