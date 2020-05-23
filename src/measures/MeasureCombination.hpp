@@ -26,7 +26,7 @@ public:
     double getWeight(const string& measureName) const;
     Measure* getMeasure(const string& measureName) const;
     Measure* getMeasure(int i) const;
-    bool containsMeasure(const string& measureName);
+    bool containsMeasure(const string& measureName) const;
     void normalize();
     uint numMeasures() const;
     string toString() const;

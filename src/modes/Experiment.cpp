@@ -571,7 +571,8 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
     }
     if (name == "nc") {
         if (NodeCorrectness::fulfillsPrereqs(G1, G2)) {
-            return new NodeCorrectness(Alignment::correctMapping(*G1, *G2));
+            auto alig = Alignment::correctMapping(*G1, *G2);
+            return new NodeCorrectness(alig.asVector());
         } else {
             return new InvalidMeasure();
         }

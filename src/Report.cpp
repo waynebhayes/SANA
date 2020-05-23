@@ -7,6 +7,7 @@
 #include "measures/InducedConservedStructure.hpp"
 #include "measures/SymmetricSubstructureScore.hpp"
 #include "measures/JaccardSimilarityScore.hpp"
+#include "measures/NodeCorrectness.hpp"
 
 void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
                         const MeasureCombination& M, const Method* method,
@@ -17,6 +18,7 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
     ofstream ofs(fileName);
     cout<<"Saving report as \""<<fileName<<"\""<<endl;
 
+    //first line is the alignment itself
     for (uint i = 0; i < A.size(); i++) ofs<<A[i]<<" ";
     ofs<<endl;
 
@@ -44,6 +46,18 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
         ofs << endl << "Scores:" << endl;
         M.printMeasures(A, ofs);
         ofs << endl;
+
+        if (M.containsMeasure("nc")) {
+            auto NC = M.getMeasure("nc");
+            auto ncByColors = ((NodeCorrectness*) NC)->evalByColor(A, G1, G2);
+            if (ncByColors.size() > 1) {
+                ofs << "NC by color:" << endl;
+                for (auto p : ncByColors) {
+                    ofs << p.first << ": " << p.second << endl;
+                }
+                ofs << endl;
+            }
+        }
 
         cout << "  printing scores done (" << T2.elapsedString() << ")" << endl;
 
@@ -118,8 +132,9 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
         }
     }
 
-    string elAligFile = FileIO::fileNameWithoutExtension(fileName)+".align";
-    ofstream elOfs(elAligFile);
+    //print the alignment using node names in a separate file
+    string edgeListFile = FileIO::fileNameWithoutExtension(fileName)+".align";
+    ofstream elOfs(edgeListFile);
     for (uint i = 0; i < A.size(); i++) elOfs<<G1.getNodeName(i)<<"\t"<<G2.getNodeName(A[i])<<endl;
 
     cout<<"Took "<<T.elapsed()<<" seconds to save the alignment and scores."<<endl;

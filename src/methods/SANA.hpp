@@ -174,7 +174,7 @@ private:
     //to evaluate nc incrementally
     bool needNC;
     int ncSum;
-    vector<uint> trueA;
+    vector<uint> trueAWithValidCountAppended;
     int ncIncChangeOp(uint source, uint oldTarget, uint newTarget);
     int ncIncSwapOp(uint source1, uint source2, uint target1, uint target2);
 
