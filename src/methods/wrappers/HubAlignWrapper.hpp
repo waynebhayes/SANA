@@ -12,7 +12,7 @@ public:
 
     HubAlignWrapper(const Graph* G1, const Graph* G2, double alpha);
     Alignment run();
-    void describeParameters(ostream& stream);
+    void describeParameters(ostream& stream) const;
     string fileNameSuffix(const Alignment& A) const;
 
 private:

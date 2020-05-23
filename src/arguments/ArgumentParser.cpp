@@ -18,7 +18,7 @@ ArgumentParser::ArgumentParser(int argc, char* argv[]) {
     //add first the base values
     vector<string> baseValues;
     for (string line: defaultArguments) { //from defaultArguments.hpp
-        for (string s: split(line, ' ')) {
+        for (string s: nonEmptySplit(line, ' ')) {
             vArg.push_back(s);
         }
     }
@@ -89,7 +89,7 @@ ArgumentParser::ArgumentParser(int argc, char* argv[]) {
                 stringVectors[arg].push_back(vArg[i+2+j]);
             i = i+k+1;
         } else {
-            if (arg.size() > 1)
+            // if (arg.size() > 1)  I *think* this was needed because of a bug in split that I just fixed. Not sure, so leaving it commented -Nil
                 throw runtime_error("Unknown argument: "+arg+". See the README for the correct syntax");
         }
     }

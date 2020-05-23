@@ -13,7 +13,7 @@ class WrappedMethod: public Method {
 public:
     WrappedMethod(const Graph* G1, const Graph* G2, string name, string args);
     Alignment run();
-    void describeParameters(ostream& stream);
+    void describeParameters(ostream& stream) const;
     string fileNameSuffix(const Alignment& A) const;
 
 protected:

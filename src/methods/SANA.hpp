@@ -30,7 +30,7 @@ public:
     ~SANA();
 
     Alignment run();
-    void describeParameters(ostream& stream);
+    void describeParameters(ostream& stream) const;
     string fileNameSuffix(const Alignment& A) const;
     
     //set temperature decay dynamically

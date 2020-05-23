@@ -7,7 +7,7 @@ Method::~Method() {
     // cerr<<"in Method base destructor"<<endl;
 }
 string Method::getName() const { return name; }
-double Method::getExecTime() { return execTime; }
+double Method::getExecTime() const { return execTime; }
 
 Alignment Method::runAndPrintTime() {
     cout << "Start execution of " << name << endl;

@@ -139,19 +139,19 @@ string toLowerCase(const string& s) {
     return res;
 }
 
-vector<string> split(const string& s, char c) {
-    vector<string> res(s.length());
-    string currentWord = "";
+vector<string> nonEmptySplit(const string& s, char c) {
+    vector<string> res;
+    string curr = "";
     for (char x : s) {
         if (x == c) {
-            if (currentWord != "") {
-                res.push_back(currentWord);
-                currentWord = "";
+            if (curr != "") {
+                res.push_back(curr);
+                curr = "";
             }
         } else {
-            currentWord.push_back(x);
+            curr.push_back(x);
         }
     }
-    if (currentWord != "") res.push_back(currentWord);
+    if (curr != "") res.push_back(curr);
     return res;
 }

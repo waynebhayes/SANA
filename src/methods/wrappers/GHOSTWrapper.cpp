@@ -33,8 +33,8 @@ string GHOSTWrapper::convertAndSaveGraph(const Graph* graph, string name) {
 }
 
 void GHOSTWrapper::createCfgFile(string cfgFileName) {
-    vector<string> G_PARAMS = split(GLOBAL_PARAMETERS, ' ');
-    vector<string> params = split(parameters, ' ');
+    vector<string> G_PARAMS = nonEmptySplit(GLOBAL_PARAMETERS, ' ');
+    vector<string> params = nonEmptySplit(parameters, ' ');
 
     matcher    = G_PARAMS[0];
     nneighbors = G_PARAMS[1];
@@ -54,8 +54,7 @@ void GHOSTWrapper::createCfgFile(string cfgFileName) {
     ofs << "ratio: " << ratio << endl;
     ofs << "searchiter: " << searchiter << endl;
     for(uint i=0;i<params.size();i+=2) {
-        if(params[i][0] == '-')
-        params[i].erase(0,1);
+        if(params[i][0] == '-') params[i].erase(0,1);
         ofs << params[i] << ": " << params[i+1] << endl;
     }
 }

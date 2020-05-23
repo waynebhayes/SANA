@@ -11,7 +11,7 @@ public:
     virtual ~HillClimbing();
 
     Alignment run();
-    void describeParameters(ostream& stream);
+    void describeParameters(ostream& stream) const;
     string fileNameSuffix(const Alignment& A) const;
     double getExecutionTime() const;
 

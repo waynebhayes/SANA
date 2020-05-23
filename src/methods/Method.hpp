@@ -13,11 +13,11 @@ public:
     virtual ~Method();
     Alignment runAndPrintTime();
     virtual Alignment run() =0;
-    virtual void describeParameters(ostream& stream) =0;
+    virtual void describeParameters(ostream& stream) const =0;
     virtual string fileNameSuffix(const Alignment& A) const =0;
 
     string getName() const;
-    double getExecTime();
+    double getExecTime() const;
 
 protected:
     const Graph* G1;

@@ -199,7 +199,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
         double colorProb = numNbrs / (double) totalNbrCount;
         double accumProb = colorProb +
                 (actColToAccumProbCutpoint.empty() ? 0 : actColToAccumProbCutpoint.back());
-        assert(accumProb <= (1+2e-16)); // <=1 but account for possible minor roundoff error
+        assert(accumProb <= 1);
         actColToAccumProbCutpoint.push_back(accumProb);
         actColToChangeProb.push_back(numChangeNbrs/ (double) numNbrs);
         actColToG1ColId.push_back(g1Id);
@@ -445,7 +445,7 @@ void SANA::performHillClimbing(long long int idleCountTarget) {
     cout<<"Hill climbing took "<<hillTimer.elapsedString()<<endl;
 }
 
-void SANA::describeParameters(ostream& sout) {
+void SANA::describeParameters(ostream& sout) const {
     sout << "Temperature schedule:" << endl;
     sout << "T_initial: " << TInitial << endl;
     sout << "T_decay: " << TDecay << endl;
@@ -516,10 +516,10 @@ void SANA::printReportOnInterruption() {
     saveAligAndContOnInterruption = false; //reset value
     string timestamp = string(currentDateTime()); //necessary to make it not const
     std::replace(timestamp.begin(), timestamp.end(), ' ', '_');
-    string out = outputFileName+"_"+timestamp;
-    string local = localScoresFileName+"_"+timestamp;
-    Report::saveReport(*G1, *G2, A, *MC, this, out, false);
-    Report::saveLocalMeasures(*G1, *G2, A, *MC, this, local);
+    string outFile = outputFileName+"_"+timestamp;
+    string localFile = localScoresFileName+"_"+timestamp;
+    Report::saveReport(*G1, *G2, A, *MC, this, outFile, true);
+    Report::saveLocalMeasures(*G1, *G2, A, *MC, this, localFile);
     cout << "Alignment saved. SANA will now continue." << endl;
 }
 
