@@ -23,10 +23,9 @@ void NormalMode::run(ArgumentParser& args) {
     A.printDefinitionErrors(G1,G2);
     assert(A.isCorrectlyDefined(G1, G2) and "Resulting alignment is not correctly defined");
 
-    bool shortReport = false; // for multiPairwiseIteration
-    if(args.bools["-multi-iteration-only"]) shortReport = true;
+    bool longReport = (args.bools["-multi-iteration-only"] ? false : true);
 
-    Report::saveReport(G1, G2, A, M, method, args.strings["-o"], shortReport);
+    Report::saveReport(G1, G2, A, M, method, args.strings["-o"], longReport);
     Report::saveLocalMeasures(G1, G2, A, M, method, args.strings["-localScoresFile"]);
     delete method;
 }

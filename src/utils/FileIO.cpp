@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <string.h> //strerror
 #include <algorithm>
+#include "utils.hpp"
 
 vector<string> FileIO::fileToLines(const string& fileName) {
     return breakFileIntoStrings(fileName, true);
@@ -74,16 +75,6 @@ void FileIO::checkFileExists(const string& fileName) {
     if (not fileExists(fileName)) throw runtime_error("File "+fileName+" not found");
 }
 
-string FileIO::addUniquePostfixToFileName(const string& fileName, const string& extension) {
-    string res = fileName;
-    int i = 2;
-    while (fileExists(res + extension)) {
-        res = fileName + "_" + to_string(i);
-        i++;
-    }
-    return res + extension;
-}
-
 void FileIO::closeFile(FILE* fp, const bool& isPiped) {
     if (isPiped) pclose(fp);
     else fclose(fp);
@@ -116,11 +107,9 @@ string FileIO::getDecompressionProgram(const string& fileName) {
 }
 
 string FileIO::getUncompressedFileExtension(const string& fileName) {
-    if(getDecompressionProgram(fileName) != "") {
-        string noCompressionExt = extractFileNameNoExtension(fileName);
-        return noCompressionExt.substr(noCompressionExt.find_last_of(".") + 1);
-    }
-    return "";
+    if(getDecompressionProgram(fileName) == "") return "";
+    string nameWithoutComprExt = fileNameWithoutExtension(fileName);
+    return getFileExtension(nameWithoutComprExt);
 }
 
 FILE* FileIO::decompressFile(const string& decompProg, const string& fileName) {
@@ -139,12 +128,20 @@ bool FileIO::folderExists(const string& folderName) {
 }
 
 void FileIO::createFolder(const string& folderName) {
-    if (not folderExists(folderName)) {
-        int res = mkdir(folderName.c_str(), ACCESSPERMS);
+    if (folderName.empty()) return;
+    if (folderName[0] == '/') throw runtime_error("trying to create absolute-path folder "+folderName);
+    if (folderName.find("//") != string::npos)
+        throw runtime_error("cannot parse folder name containing '//': "+folderName);
+    vector<string> pathFolders = nonEmptySplit(folderName, '/');
+    string name = "";
+    for (uint i = 0; i < pathFolders.size(); i++) {
+        name += (i > 0 ? "/" : "");
+        name += pathFolders[i];
+        if (folderExists(name)) continue;
+        int res = mkdir(name.c_str(), ACCESSPERMS);
         //race condition: if somebody else created it in the meantime (EEXIST), it is OK.
-        if (res == -1 && errno != EEXIST)
-            throw runtime_error("error creating directory " + folderName
-                                + " (errno "+to_string(errno)+", "+strerror(errno)+")");
+        if (res == -1 && errno != EEXIST) throw runtime_error("error creating directory "+name
+                                        +" (errno "+to_string(errno)+", "+strerror(errno)+")");
     }
 }
 
@@ -172,18 +169,44 @@ uint FileIO::numLinesInFile(const string& fileName) {
                      istreambuf_iterator<char>(), '\n');
 }
 
-string FileIO::extractFileName(const string& s) {
-    int pos = s.size()-1;
-    while (pos >= 0 and s[pos] != '/') pos--;
-    return s.substr(pos+1);
+string FileIO::fileNameWithoutPath(const string& fileName) {
+    auto pos = fileName.find_last_of("/");
+    if (pos == string::npos) return fileName;
+    return fileName.substr(pos+1);
 }
 
-string FileIO::extractFileNameNoExtension(const string& s) {
-    string res = extractFileName(s);
-    //remove suffix starting with '.'
-    int pos = res.size() - 1;
-    while (pos >= 0 and res[pos] != '.') pos--; //gives position of last "."
-    return res.substr(0, pos);
+string FileIO::getFilePath(const string& fileName) {
+    auto pos = fileName.find_last_of("/");
+    if (pos == string::npos) return "";
+    return fileName.substr(0, pos);
+}
+
+string FileIO::fileNameWithoutExtension(const string& fileName) {
+    auto pos = fileName.find_last_of(".");
+    if (pos == string::npos) throw runtime_error("cannot remove extension from \""+fileName+"\"");
+    return fileName.substr(0, pos);    
+}
+
+string FileIO::getFileExtension(const string& fileName) {
+    auto pos = fileName.find_last_of(".");
+    if (pos == string::npos) throw runtime_error("cannot get the extension of \""+fileName+"\"");
+    return fileName.substr(pos+1);
+}
+
+string FileIO::fileNameWithoutPathAndExtension(const string& fileName) {
+    return fileNameWithoutExtension(fileNameWithoutPath(fileName));
+}
+
+string FileIO::addVersionNumIfFileAlreadyExists(const string& fileName) {
+    string ext = getFileExtension(fileName);
+    string name = fileNameWithoutExtension(fileName);
+    string res = name+"."+ext;
+    uint i = 2;
+    while (fileExists(res)) {
+        res = name+"_"+to_string(i)+"."+ext;
+        i++;
+    }
+    return res;
 }
 
 void FileIO::skipWordInStream(istream& is, const string& word) {

@@ -311,7 +311,7 @@ string HillClimbing::fileNameSuffix(const Alignment& A) const {
     return "_" + M->toString() + "_" + extractDecimals(M->eval(A),3);
 }
 
-void HillClimbing::describeParameters(ostream& stream) {
+void HillClimbing::describeParameters(ostream& stream) const {
     stream << "starting alignment: ";
     if (startAName == "") stream << "'random'" << endl;
     else stream << startAName << endl;

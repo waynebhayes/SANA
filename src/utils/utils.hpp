@@ -25,7 +25,7 @@ void randomShuffle(vector<uint>& v);
 
 string extractDecimals(double value, int count);
 string toLowerCase(const string& s);
-vector<string> split(const string& s, char c);
+vector<string> nonEmptySplit(const string& s, char c); //keeps only non-empty strings
 
 double vectorMean(const vector<double>& v);
 void normalizeWeights(vector<double>& weights);

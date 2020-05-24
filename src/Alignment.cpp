@@ -8,9 +8,8 @@ Alignment::Alignment() {}
 Alignment::Alignment(const vector<uint>& mapping): A(mapping) {}
 Alignment::Alignment(const Alignment& alig): A(alig.A) {}
 Alignment::Alignment(const Graph& G1, const Graph& G2, const vector<array<string, 2>>& edgeList) {
-    assert(G1.getNumNodes() == edgeList.size());
-    uint n1 = G1.getNumNodes();
-    uint n2 = G2.getNumNodes();
+    uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();
+    assert(n1 == edgeList.size());
     A = vector<uint>(n1, n2); //n2 used to denote invalid index
     for (const auto& edge : edgeList) {
         string nodeG1 = edge[0], nodeG2 = edge[1];

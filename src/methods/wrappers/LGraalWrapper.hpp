@@ -15,7 +15,7 @@ public:
 
     LGraalWrapper(const Graph* G1, const Graph* G2, double alpha, uint iterlimit, uint timelimit);
     Alignment run();
-    void describeParameters(ostream& stream);
+    void describeParameters(ostream& stream) const;
     string fileNameSuffix(const Alignment& A) const;
     
 private:

@@ -20,7 +20,7 @@ Alignment NoneMethod::run() {
     return A;
 }
 
-void NoneMethod::describeParameters(ostream& stream) {}
+void NoneMethod::describeParameters(ostream& stream) const {}
 
 string NoneMethod::fileNameSuffix(const Alignment& A) const {
     return "none";

@@ -100,14 +100,14 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     try { ewecWeight = MC->getWeight("ewec"); }
     catch(...) { ewecWeight = 0; }
     try {
-        needNC      = false;
-        ncWeight    = MC->getWeight("nc");
+        needNC = false;
+        ncWeight = MC->getWeight("nc");
         Measure* nc = MC->getMeasure("nc");
-        trueA       = ((NodeCorrectness*) nc)->getMappingforNC();
-        needNC      = true;
+        trueAWithValidCountAppended = ((NodeCorrectness*) nc)->getMappingforNC();
+        needNC = true;
     } catch(...) {
         ncWeight = 0;
-        trueA    = {static_cast<uint>(G2->getNumNodes()), 1};
+        trueAWithValidCountAppended = {static_cast<uint>(G2->getNumNodes()), 1};
     }
     localWeight = MC->getSumLocalWeight();
 
@@ -199,7 +199,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
         double colorProb = numNbrs / (double) totalNbrCount;
         double accumProb = colorProb +
                 (actColToAccumProbCutpoint.empty() ? 0 : actColToAccumProbCutpoint.back());
-        assert(accumProb <= (1+2e-16)); // <=1 but account for possible minor roundoff error
+        assert(accumProb <= 1);
         actColToAccumProbCutpoint.push_back(accumProb);
         actColToChangeProb.push_back(numChangeNbrs/ (double) numNbrs);
         actColToG1ColId.push_back(g1Id);
@@ -299,7 +299,7 @@ void SANA::initDataStructures() {
     }
     if (needNC) {
         Measure* nc = MC->getMeasure("nc");
-        ncSum       = (nc->eval(alig))*trueA.back();
+        ncSum       = (nc->eval(alig))*trueAWithValidCountAppended.back(); 
     }
     currentScore = eval(alig);
     A = alig.asVector();
@@ -445,7 +445,7 @@ void SANA::performHillClimbing(long long int idleCountTarget) {
     cout<<"Hill climbing took "<<hillTimer.elapsedString()<<endl;
 }
 
-void SANA::describeParameters(ostream& sout) {
+void SANA::describeParameters(ostream& sout) const {
     sout << "Temperature schedule:" << endl;
     sout << "T_initial: " << TInitial << endl;
     sout << "T_decay: " << TDecay << endl;
@@ -516,10 +516,10 @@ void SANA::printReportOnInterruption() {
     saveAligAndContOnInterruption = false; //reset value
     string timestamp = string(currentDateTime()); //necessary to make it not const
     std::replace(timestamp.begin(), timestamp.end(), ' ', '_');
-    string out = outputFileName+"_"+timestamp;
-    string local = localScoresFileName+"_"+timestamp;
-    Report::saveReport(*G1, *G2, A, *MC, this, out, false);
-    Report::saveLocalMeasures(*G1, *G2, A, *MC, this, local);
+    string outFile = outputFileName+"_"+timestamp;
+    string localFile = localScoresFileName+"_"+timestamp;
+    Report::saveReport(*G1, *G2, A, *MC, this, outFile, true);
+    Report::saveLocalMeasures(*G1, *G2, A, *MC, this, localFile);
     cout << "Alignment saved. SANA will now continue." << endl;
 }
 
@@ -760,7 +760,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
         newCurrentScore += jsWeight * (newJsSum);
         newCurrentScore += ewecWeight * (newEwecSum);
-        newCurrentScore += ncWeight * (newNcSum / trueA.back());
+        newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
 #ifdef MULTI_PAIRWISE
         newCurrentScore += mecWeight * (newAligEdges / (g1WeightedEdges + g2WeightedEdges));
         newCurrentScore += sesWeight * newSquaredAligEdges / (double)SquaredEdgeScore::getDenom();
@@ -786,7 +786,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore *= secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
         newCurrentScore *= wecWeight * (newWecSum / (2 * g1Edges));
         newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore *= ncWeight * (newNcSum / trueA.back());
+        newCurrentScore *= ncWeight * (newNcSum / trueAWithValidCountAppended.back());
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
         badProbability = exp(energyInc / Temperature);
@@ -798,7 +798,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         // this is a terrible way to compute the max; we should loop through all of them and figure out which is the biggest
         // and in fact we haven't yet integrated icsWeight here yet, so assert so
         assert(icsWeight == 0.0);
-        double deltaEnergy = max(ncWeight* (newNcSum / trueA.back() - ncSum / trueA.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
+        double deltaEnergy = max(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
@@ -811,7 +811,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
         newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ncWeight * (newNcSum / trueA.back());
+        newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -823,7 +823,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
     {
         // see comment above in max
         assert(icsWeight == 0.0);
-        double deltaEnergy = min(ncWeight* (newNcSum / trueA.back() - ncSum / trueA.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
+        double deltaEnergy = min(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
@@ -836,7 +836,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
         newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ncWeight * (newNcSum / trueA.back());
+        newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
 
         energyInc = newCurrentScore - currentScore; //is this even used?
         wasBadMove = deltaEnergy < 0;
@@ -853,7 +853,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore += localWeight / (newLocalScoreSum / n1);
         newCurrentScore += wecWeight / (newWecSum / (2 * g1Edges));
         newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ncWeight / (newNcSum / trueA.back());
+        newCurrentScore += ncWeight / (newNcSum / trueAWithValidCountAppended.back());
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -864,13 +864,13 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
     case ScoreAggregation::maxFactor:
     {
         assert(icsWeight == 0.0);
-        double maxScore = max(ncWeight*(newNcSum / trueA.back() - ncSum / trueA.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
+        double maxScore = max(ncWeight*(newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
             max(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
-        double minScore = min(ncWeight*(newNcSum / trueA.back() - ncSum / trueA.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
+        double minScore = min(ncWeight*(newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
@@ -883,7 +883,7 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore += localWeight * (newLocalScoreSum / n1);
         newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
         newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ncWeight * (newNcSum / trueA.back());
+        newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = maxScore < -1 * minScore;
@@ -1464,17 +1464,17 @@ double SANA::EWECSimCombo(uint source, uint target) {
 
 int SANA::ncIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int change = 0;
-    if (trueA[source] == oldTarget) change -= 1;
-    if (trueA[source] == newTarget) change += 1;
+    if (trueAWithValidCountAppended[source] == oldTarget) change -= 1;
+    if (trueAWithValidCountAppended[source] == newTarget) change += 1;
     return change;
 }
 
 int SANA::ncIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     int change = 0;
-    if (trueA[source1] == target1) change -= 1;
-    if (trueA[source2] == target2) change -= 1;
-    if (trueA[source1] == target2) change += 1;
-    if (trueA[source2] == target1) change += 1;
+    if (trueAWithValidCountAppended[source1] == target1) change -= 1;
+    if (trueAWithValidCountAppended[source2] == target2) change -= 1;
+    if (trueAWithValidCountAppended[source1] == target2) change += 1;
+    if (trueAWithValidCountAppended[source2] == target1) change += 1;
     return change;
 }
 

@@ -7,26 +7,30 @@
 #include "measures/InducedConservedStructure.hpp"
 #include "measures/SymmetricSubstructureScore.hpp"
 #include "measures/JaccardSimilarityScore.hpp"
+#include "measures/NodeCorrectness.hpp"
 
-bool multiPairwiseIteration; //todo: refactor without this out here -Nil
+void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
+                        const MeasureCombination& M, const Method* method,
+                        const string& reportFileName, bool longVersion) {
+    Timer T;
+    T.start();
+    string fileName = formattedFileName(reportFileName, "out", G1.getName(), G2.getName(), method, A);
+    ofstream ofs(fileName);
+    cout<<"Saving report as \""<<fileName<<"\""<<endl;
 
-void Report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
-                const MeasureCombination& M, Method* method,
-                ofstream& ofs, bool multiPairwiseIteration = false) {
+    //first line is the alignment itself
+    for (uint i = 0; i < A.size(); i++) ofs<<A[i]<<" ";
+    ofs<<endl;
+
     Timer T1;
     T1.start();
     const uint numCCsToPrint = 3;
     ofs << endl << currentDateTime() << endl << endl;
     ofs << "G1: " << G1.getName() << endl;
-    if (!multiPairwiseIteration) {
-        printStats(G1, numCCsToPrint, ofs);
-        ofs << endl;
-    }
+    if (longVersion) printGraphStats(G1, numCCsToPrint, ofs);
     ofs << "G2: " << G2.getName() << endl;
-    if (!multiPairwiseIteration) {
-        printStats(G2, numCCsToPrint, ofs);
-        ofs << endl;
-    }
+    if (longVersion) printGraphStats(G2, numCCsToPrint, ofs);
+
     if (method != NULL) {
         ofs << "Method: " << method->getName() << endl;
         method->describeParameters(ofs);
@@ -34,7 +38,7 @@ void Report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
     }
     ofs << endl << "Seed: " << getRandomSeed() << endl;
 
-    if (!multiPairwiseIteration) {
+    if (longVersion) {
         cout << "  printing stats done (" << T1.elapsedString() << ")" << endl;
         Timer T2;
         T2.start();
@@ -43,14 +47,23 @@ void Report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
         M.printMeasures(A, ofs);
         ofs << endl;
 
+        if (M.containsMeasure("nc")) {
+            auto NC = M.getMeasure("nc");
+            auto ncByColors = ((NodeCorrectness*) NC)->evalByColor(A, G1, G2);
+            if (ncByColors.size() > 1) {
+                ofs << "NC by color:" << endl;
+                for (auto p : ncByColors) {
+                    ofs << p.first << ": " << p.second << endl;
+                }
+                ofs << endl;
+            }
+        }
+
         cout << "  printing scores done (" << T2.elapsedString() << ")" << endl;
-        Timer T3;
-        T3.start();
 
         Graph CS = G1.graphIntersection(G2, *(A.getVector()));
         ofs << "Common subgraph:" << endl;
-        printStats(CS, numCCsToPrint, ofs);
-        ofs << endl;
+        printGraphStats(CS, numCCsToPrint, ofs);
 
         auto CCs = CS.connectedComponents();
         uint numCCs = CCs.size();
@@ -118,92 +131,62 @@ void Report::makeReport(const Graph& G1, const Graph& G2, const Alignment& A,
             cout << "  printing tables done (" << T2.elapsedString() << ")" << endl;
         }
     }
-}
 
-void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
-        const MeasureCombination& M, Method* method, string reportFileName) {
-    saveReport(G1, G2, A, M, method, reportFileName, false);
-}
-
-void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
-                        const MeasureCombination& M, Method* method,
-                        string reportFileName, bool multiPairwiseIteration) {
-    Timer T;
-    T.start();
-    ofstream ofs;
-    reportFileName = ensureFileNameExistsAndOpenOutFile("report", reportFileName, ofs,
-                                                    G1.getName(), G2.getName(), method, A);
-    cout<<"Saving report as \""<<reportFileName<<"\""<<endl;
-
-    for (uint i = 0; i < A.size(); i++) ofs<<A[i]<<" ";
-    ofs<<endl;
-    makeReport(G1, G2, A, M, method, ofs, multiPairwiseIteration);
-
-    string elAligFile = reportFileName.substr(0,reportFileName.length()-4)+".align";
-    ofstream elOfs(elAligFile);
+    //print the alignment using node names in a separate file
+    string edgeListFile = FileIO::fileNameWithoutExtension(fileName)+".align";
+    ofstream elOfs(edgeListFile);
     for (uint i = 0; i < A.size(); i++) elOfs<<G1.getNodeName(i)<<"\t"<<G2.getNodeName(A[i])<<endl;
 
     cout<<"Took "<<T.elapsed()<<" seconds to save the alignment and scores."<<endl;
 }
 
 void Report::saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A,
-    const MeasureCombination& M, const Method* method, string& localMeasureFileName) {
+                    const MeasureCombination& M, const Method* method, const string& localMeasureFileName) {
     Timer T;
     T.start();
     if (M.getSumLocalWeight() <= 0) { //This is how needLocal is calculated in SANA.cpp
         cout << "No local measures provided, not writing local scores file." << endl;
         return;
     }
-    ofstream outfile;
-    ensureFileNameExistsAndOpenOutFile("local measure", localMeasureFileName, outfile, 
+    string fileName = formattedFileName(localMeasureFileName, "localscores", 
                                        G1.getName(), G2.getName(), method, A);
+    ofstream ofs(fileName);
     cout << "Saving local measure as \"" << localMeasureFileName << "\"" << endl;
-    M.writeLocalScores(outfile, G1, G2, A);
-    outfile.close();
+    M.writeLocalScores(ofs, G1, G2, A);
     cout << "Took " << T.elapsed() << " seconds to save the alignment and scores." << endl;
 }
 
-/*"Ensure" here means ensure that there is a valid file to output to.
-NOTE: the && is a move semantic, which moves the internal pointers of one object
-to another and then destructs the original, instead of destructing all of the
-internal data of the original. */
-string Report::ensureFileNameExistsAndOpenOutFile(const string& fileType, string outFileName, 
-                    ofstream& ofs, const string& G1Name, const string& G2Name, 
-                    const Method* method, Alignment const & A) {     
-    string extension = fileType == "local measure" ? ".localscores" : ".out";
+string Report::formattedFileName(const string& outFileName, const string& extension, 
+                    const string& G1Name, const string& G2Name, 
+                    const Method* method, const Alignment& A) {
+    string res;
     if (outFileName == "") {
-        outFileName = "alignments/" + G1Name + "_" + G2Name + "/"
-        + G1Name + "_" + G2Name + "_" + method->getName() + method->fileNameSuffix(A);
-        outFileName = FileIO::addUniquePostfixToFileName(outFileName, ".txt");
+        string gNames = G1Name+"_"+G2Name;
+        res = "alignments/"+gNames+"/"+gNames+"_"+method->getName()+method->fileNameSuffix(A)+".txt";
+        res = FileIO::addVersionNumIfFileAlreadyExists(res);
     } else {
-        string location = outFileName.substr(0, outFileName.find_last_of("/"));
-        if (location != outFileName) {
-            uint lastPos = 0;
-            while (not FileIO::folderExists(location)) { //Making each of the folders, one by one.
-                FileIO::createFolder(location.substr(0, location.find("/", lastPos)));
-                lastPos = location.find("/", location.find("/", lastPos)+1);
-            }
-        }
+        res = outFileName;
+        string folder = FileIO::getFilePath(res);
+        FileIO::createFolder(folder);
     }
-    outFileName += extension;
-    ofs.open(outFileName);
+    res += "."+extension; //is the double extension after .txt intended? -Nil
+    ofstream ofs(res);
     if (not ofs.is_open()) {
-        cout << "Problem saving " << fileType << " file to specified location. Saving to sana program file." << endl;
-        outFileName = outFileName.substr(outFileName.find_last_of("/")+1);
-        ofs.open(outFileName);
+        cout << "Problem saving " << res << " to specified folder. Saving to base project folder." << endl;
+        res = res.substr(res.find_last_of("/")+1);
     }
-    return outFileName;
+    return res;
 }
 
-void Report::printStats(const Graph& G, uint numCCsToPrint, ostream& sout) {
-    sout << "n    = " << G.getNumNodes() << endl;
-    sout << "m    = " << G.getNumEdges() << endl;
+void Report::printGraphStats(const Graph& G, uint numCCsToPrint, ofstream& ofs) {
+    ofs << "n    = " << G.getNumNodes() << endl;
+    ofs << "m    = " << G.getNumEdges() << endl;
     auto CCs = G.connectedComponents();
     uint numCCs = CCs.size();
-    sout << "#connectedComponents = " << numCCs << endl;
-    sout << "Largest connectedComponents (nodes, edges) = ";
+    ofs << "#connectedComponents = " << numCCs << endl;
+    ofs << "Largest connectedComponents (nodes, edges) = ";
     for (uint i = 0; i < min(numCCsToPrint, numCCs); i++) {
-        sout << "(" << CCs[i].size() << ", " << G.numEdgesInNodeInducedSubgraph(CCs[i]) << ") ";
+        ofs << "(" << CCs[i].size() << ", " << G.numEdgesInNodeInducedSubgraph(CCs[i]) << ") ";
     }
-    sout << endl;
+    ofs << endl << endl;
 }

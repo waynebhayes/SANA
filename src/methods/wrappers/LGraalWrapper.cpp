@@ -120,7 +120,7 @@ Alignment LGraalWrapper::run() {
     return result;
 }
 
-void LGraalWrapper::describeParameters(ostream& stream) {
+void LGraalWrapper::describeParameters(ostream& stream) const {
     stream << "alpha: " << alpha << " (alpha = 0 means only topology)" << endl;
     stream << "iter limit: " << iterlimit << endl;
     stream << "time limit: " << timelimit << "s" << endl;

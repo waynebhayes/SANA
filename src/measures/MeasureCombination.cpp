@@ -146,7 +146,7 @@ Measure* MeasureCombination::getMeasure(int i) const {
 uint MeasureCombination::numMeasures() const {
     return measures.size();
 }
-bool MeasureCombination::containsMeasure(const string& measureName) {
+bool MeasureCombination::containsMeasure(const string& measureName) const {
     for (auto m : measures) {
         if (m->getName() == measureName) return true;
     }

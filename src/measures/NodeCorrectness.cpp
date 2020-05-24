@@ -2,112 +2,113 @@
 #include <vector>
 #include <iostream>
 
-#define TRUEALIGNMENT_ERRORCHECKING
-
-namespace
-{
-    void displayWarnings(bool oneToOneError, bool nodeExistError, unsigned int E, unsigned int R)
-    {
-
-        if(oneToOneError)
-        {
-        std::cout << "WARNING: PROVIDED TRUE ALIGNMENT IS NOT ONE TO ONE" << std::endl;
-        std::cout << "         ONLY ONE TO ONE PAIRS HAVE BEEN INCLUDED" << std::endl;
-        }
-        if ( nodeExistError )
-        {
-
-        std::cout << "WARNING: TRUE ALIGNMENT CONTAINS NODES WHICH DO NOT EXIST" << std::endl;
-            std::cout << "         ONLY PAIRS WITH NODES WHICH EXIST HAVE BEEN INCLUDED" << std::endl;
-        }
-        if( oneToOneError || nodeExistError)
-        {
-        std::cout << "         ORIGINAL TRUEALIGNMENT SIZE = " << E << std::endl;
-        std::cout << "         ACTUAL TRUEALIGNMENT SIZE = " << R << std::endl;
-        }
-    }
-}
-
 using namespace std;
 
-NodeCorrectness::NodeCorrectness(const Alignment& A): Measure(NULL, NULL, "nc"),
-    trueA(A) {
-}
-
-NodeCorrectness::~NodeCorrectness() {
-}
+NodeCorrectness::NodeCorrectness(const vector<uint>& A): Measure(NULL, NULL, "nc"), trueAWithValidCountAppended(A) {}
+NodeCorrectness::~NodeCorrectness() {}
 
 double NodeCorrectness::eval(const Alignment& A) {
     uint count = 0;
     for (uint i = 0; i < A.size(); i++) {
-        if (A[i] == trueA[i]) count++;
+        if (A[i] == trueAWithValidCountAppended[i]) count++;
     }
-    return (double) count / trueA.back();
+    return (double) count / trueAWithValidCountAppended.back();
 }
 
-vector<uint> NodeCorrectness::convertAlign(const Graph& G1, const Graph& G2, const vector<string>& E){
-    vector<uint> alignment(G1.getNumNodes(), G2.getNumNodes());
-    //this is the initial size of the provided true alignment file
-    alignment.push_back(E.size()/2);
+unordered_map<string, double> NodeCorrectness::evalByColor(const Alignment& A, const Graph& G1, const Graph& G2) const {
+    const uint INVALID_TRUEA_MAPPING = G2.getNumNodes();
+    unordered_map<string, double> res;
+    uint totalCountAllColors = 0;
+    for (uint colorId = 0; colorId < G1.numColors(); colorId++) {
+        string colorName = G1.getColorName(colorId);        
+        if (G1.numNodesWithColor(colorId) == 1 and G2.numNodesWithColor(G2.getColorId(colorName)) == 1) {
+            uint g1Node = (G1.getNodesWithColor(colorId))->at(0);
+            uint g2Node = (G2.getNodesWithColor(G2.getColorId(colorName)))->at(0);
+            assert(A[g1Node] == g2Node); //sanity check
+            if (trueAWithValidCountAppended[g1Node] != g2Node) throw runtime_error("True Alignment maps nodes of different colors");
+            continue; //locked pair - skip it because NC is 1 by definition
+        }
 
-    bool exist = true;
-    bool used = false;
+        uint correctCount = 0;
+        uint totalCount = 0;
+        for (uint node : *(G1.getNodesWithColor(colorId))) {
+            if (A[node] == INVALID_TRUEA_MAPPING) continue;
+            totalCount++;
+            if (A[node] == trueAWithValidCountAppended[node]) correctCount++;
+        }
+        totalCountAllColors += totalCount;
+        res[colorName] = (double) correctCount / (double) totalCount;
+    }
+
+    uint trueAValidCount = trueAWithValidCountAppended.at(trueAWithValidCountAppended.size()-1);
+    assert(totalCountAllColors == trueAValidCount); //sanity check
+    return res;
+}
+
+vector<uint> NodeCorrectness::createTrueAlignment(const Graph& G1, const Graph& G2, const vector<string>& E) {
+    const uint INVALID_TRUEA_MAPPING = G2.getNumNodes();
+    vector<uint> trueA(G1.getNumNodes(), INVALID_TRUEA_MAPPING);
+    
+    uint trueASize = E.size()/2; //initial size of the provided true alignment file
+
     bool oneToOneError = false;
     bool nodeExistError = false;
-    bool g2Used[G2.getNumNodes()];
+    vector<bool> g2Used(G2.getNumNodes(), false);
 
-    //it is unecessary (and non-idiomatic) to use macros like this
-    //the compiler is able to discard dead code
-    //so just use a const bool variable
-#ifdef TRUEALIGNMENT_ERRORCHECKING
-    for(unsigned int i = 0; i < G2.getNumNodes(); ++i)
-        g2Used[i] = false;
-#endif
-    for(unsigned int i = 0; i < E.size()/2; ++i) {
-        string n1 = E[2*i];
-        string n2 = E[2*i+1];
-        unsigned int g1pos,g2pos;
-#ifdef TRUEALIGNMENT_ERRORCHECKING
+    for(uint i = 0; i < E.size()/2; ++i) {
+        string name1 = E[2*i], name2 = E[2*i+1];
+        bool exist = true;
+        bool used = false;
+        uint g1pos, g2pos;
         try {
             //checks for nodes which do not exist; if either one or both nodes
             //fail to exist, then that pair is ignored and the size of the
             //true alignment is reduced by one
-            g1pos = G1.getNameIndex(n1);
-            g2pos = G2.getNameIndex(n2);
+            g1pos = G1.getNameIndex(name1);
+            g2pos = G2.getNameIndex(name2);
         } catch(...) {
-            alignment.back()--;
+            trueASize--;
             exist = false;
             nodeExistError = true;
         }
         //only if the nodes exist, which they be checked if they have already
         //been used; if they have the true alignment is not 1-1 and the pair
         //is not counted in the truealignment size
-        if (exist && (alignment[g1pos] != G2.getNumNodes() || g2Used[g2pos])) {
-            alignment.back()--;
+        if (exist and (trueA[g1pos] != INVALID_TRUEA_MAPPING or g2Used[g2pos])) {
+            trueASize--;
             used = true;
             oneToOneError = true;
         }
-#else
-        g2pos = G2.getNameIndex(n2);
-#endif
         //only if the nodes exist and the pair keeps truealignment 1 to 1,
         //then it will added to the true alignment vector
         //this always happens if errorchecking is off
-        if (exist && !used) {
+        if (exist and not used) {
             g2Used[g2pos] = true;
-            alignment[G1.getNameIndex(n1)] = G2.getNameIndex(n2);
+            trueA[G1.getNameIndex(name1)] = G2.getNameIndex(name2);
         }
-        exist = true;
-        used = false;
     }
-    displayWarnings(oneToOneError, nodeExistError, E.size()/2, alignment.back());
-    return alignment;
+
+    if(oneToOneError) {
+        cout << "WARNING: PROVIDED TRUE ALIGNMENT IS NOT ONE TO ONE" << endl;
+        cout << "         ONLY ONE TO ONE PAIRS HAVE BEEN INCLUDED" << endl;
+    }
+    if (nodeExistError) {
+        cout << "WARNING: TRUE ALIGNMENT CONTAINS NODES WHICH DO NOT EXIST" << endl;
+        cout << "         ONLY PAIRS WITH NODES WHICH EXIST HAVE BEEN INCLUDED" << endl;
+    }
+    if (oneToOneError or nodeExistError) {
+        cout << "         ORIGINAL TRUEALIGNMENT SIZE = " << E.size()/2 << endl;
+        cout << "         ACTUAL TRUEALIGNMENT SIZE = " << trueASize << endl;
+    }
+    trueA.push_back(trueASize); //storing the size at the end of the alignment is insane -Nil
+    return trueA;
 }
 
 vector<uint> NodeCorrectness::getMappingforNC() const {
-    return trueA.asVector();
+    return trueAWithValidCountAppended;
 }
 
 bool NodeCorrectness::fulfillsPrereqs(const Graph* G1, const Graph* G2) {
     return G1->hasSameNodeNamesAs(*G2);
 }
+

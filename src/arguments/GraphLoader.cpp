@@ -22,14 +22,14 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     string fg1 = args.strings["-fg1"], fg2 = args.strings["-fg2"];
     string g1Name, g2Name, g1File, g2File;
     if (fg1 != "") {
-        g1Name = FileIO::extractFileNameNoExtension(fg1);
+        g1Name = FileIO::fileNameWithoutPathAndExtension(fg1);
         g1File = fg1;
     } else {
         g1Name = args.strings["-g1"];
         g1File = "networks/"+g1Name+"/"+g1Name+".gw";
     }
     if (fg2 != "") {
-        g2Name = FileIO::extractFileNameNoExtension(fg2);
+        g2Name = FileIO::fileNameWithoutPathAndExtension(fg2);
         g2File = fg2;
     } else {
         g2Name = args.strings["-g2"];

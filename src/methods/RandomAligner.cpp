@@ -9,7 +9,7 @@ Alignment RandomAligner::run() {
     return Alignment::random(G1->getNumNodes(), G2->getNumNodes());
 }
 
-void RandomAligner::describeParameters(ostream& stream) {}
+void RandomAligner::describeParameters(ostream& stream) const {}
 string RandomAligner::fileNameSuffix(const Alignment& A) const {
     return "";
 }

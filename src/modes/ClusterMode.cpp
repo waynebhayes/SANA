@@ -76,8 +76,8 @@ string ClusterMode::getScriptFileName() {
   if (scriptFileNameArg != "") {
     return scriptFileNameArg;
   }
-  string scriptFile = "tmp/submit";
-  scriptFile = FileIO::addUniquePostfixToFileName(scriptFile, ".sh");
+  string scriptFile = "tmp/submit.sh";
+  scriptFile = FileIO::addVersionNumIfFileAlreadyExists(scriptFile);
   return scriptFile;
 }
 

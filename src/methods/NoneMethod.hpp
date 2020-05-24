@@ -10,7 +10,7 @@ public:
     NoneMethod(const Graph* G1, const Graph* G2, string startAName);
     ~NoneMethod();
     Alignment run();
-    void describeParameters(ostream& stream);
+    void describeParameters(ostream& stream) const;
     string fileNameSuffix(const Alignment& A) const;
 private:
     Alignment A;

@@ -29,7 +29,7 @@ Alignment WrappedMethod::run() {
     return A;
 }
 
-void WrappedMethod::describeParameters(ostream& stream) {
+void WrappedMethod::describeParameters(ostream& stream) const {
     stream << parameters;
 }
 

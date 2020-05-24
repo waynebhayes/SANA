@@ -91,7 +91,7 @@ Alignment HubAlignWrapper::run() {
     return A;
 }
 
-void HubAlignWrapper::describeParameters(ostream& stream) {
+void HubAlignWrapper::describeParameters(ostream& stream) const {
     stream << "alpha: " << alpha << endl;
     if (alpha > 0) {
         stream << "Similarity file: " << similarityFile << endl;
