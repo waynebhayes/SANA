@@ -129,11 +129,11 @@ bool FileIO::folderExists(const string& folderName) {
 
 void FileIO::createFolder(const string& folderName) {
     if (folderName.empty()) return;
-    if (folderName[0] == '/') throw runtime_error("trying to create absolute-path folder "+folderName);
     if (folderName.find("//") != string::npos)
         throw runtime_error("cannot parse folder name containing '//': "+folderName);
+    bool absolutePath = folderName[0] == '/';
     vector<string> pathFolders = nonEmptySplit(folderName, '/');
-    string name = "";
+    string name = (absolutePath ? "/" : "");
     for (uint i = 0; i < pathFolders.size(); i++) {
         name += (i > 0 ? "/" : "");
         name += pathFolders[i];
