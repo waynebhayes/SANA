@@ -90,13 +90,36 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     G1.initColorDataStructs(g1Colors);
     G2.initColorDataStructs(g2Colors);
 
+    //check that G1 and G2 have the same colors
+    bool colorMismatch = false;
+    string errMsg = "";
+    for (const string& colName : *(G1.getColorNames())) {
+        if (not G2.hasColor(colName)) {
+            colorMismatch = true;
+            errMsg += "G1 has nodes colored '"+colName+"' but G2 does not.\n";
+        }
+    }
+    for (const string& colName : *(G2.getColorNames())) {
+        if (not G1.hasColor(colName)) {
+            colorMismatch = true;
+            errMsg += "G2 has nodes colored '"+colName+"' but G1 does not.\n";
+        }
+    }
+    if (colorMismatch) {
+        G1.debugPrint();
+        G2.debugPrint();
+        errMsg += "The two networks should have the same colors. " \
+            "For example, if you are aligning two virus-host networks, then the colors " \
+            "should be 'virus' and 'host'; using species names won't work, because for example a node " \
+            "of color 'mouse' cannot align to a node of color 'human'. Call both 'host'.";
+        throw runtime_error(errMsg);
+    }
+
     //add dummy nodes to G2 to guarantee an alignment exists
     unordered_map<string,uint> colToNumDummies;
     for (const string& colName : *(G1.getColorNames())) {
         uint g1Count = G1.numNodesWithColor(G1.getColorId(colName));
-        uint g2Count;
-        if (not G2.hasColor(colName)) g2Count = 0;
-        else g2Count = G2.numNodesWithColor(G2.getColorId(colName));
+        uint g2Count = G2.numNodesWithColor(G2.getColorId(colName));
         if (g1Count > g2Count) colToNumDummies[colName] = g1Count - g2Count;
     }
     if (not colToNumDummies.empty()) {
@@ -175,15 +198,6 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     assert(G2.isWellDefined());
     G1.debugPrint();
     G2.debugPrint();
-
-    const string COLOR_USAGE = 
-        "For example, if you are aligning two virus-host networks, then the colors " \
-        "should be 'virus' and 'host'; using species names won't work, because for example a node " \
-        "of color 'mouse' cannot align to a node of color 'human'. Call both 'host'.";
-    if (G1.numColors() > G2.numColors())
-        throw runtime_error("some G1 nodes have a color non-existent in G2, so there is no valid alignment. "+COLOR_USAGE);
-    else if (G1.numColors() < G2.numColors())
-        throw runtime_error("some G2 nodes have a color non-existent in G1. "+COLOR_USAGE);
 
     cout << "Total time for loading graphs (" << T.elapsedString() << ")" << endl;
     return {G1, G2};
