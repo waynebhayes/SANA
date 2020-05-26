@@ -94,9 +94,11 @@ void Graph::initColorDataStructs(const vector<array<string, 2>>& partialNodeColo
         string nodeName = p[0], colorName = p[1];
         assert(colorName != DEFAULT_COLOR_NAME);
         if (nodeNameToColorName.count(nodeName))
-            throw runtime_error("node name '"+nodeName+"' appears twice in node-color pairs");
+            throw runtime_error("node name '"+nodeName+
+                "' appears twice in node-color pairs while initializing Graph "+name);
         if (not nodeNameToIndexMap.count(nodeName))
-            throw runtime_error("unknown node name '"+nodeName+"' in node-color pairs");
+            throw runtime_error("unknown node name '"+nodeName+
+                "' in node-color pairs while initializing Graph "+name);
         nodeNameToColorName[nodeName] = colorName;
         colorSet.insert(colorName);
     }

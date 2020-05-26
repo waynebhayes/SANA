@@ -133,11 +133,27 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
     }
 
     //print the alignment using node names in a separate file
-    string edgeListFile = FileIO::fileNameWithoutExtension(fileName)+".align";
-    ofstream elOfs(edgeListFile);
-    for (uint i = 0; i < A.size(); i++) elOfs<<G1.getNodeName(i)<<"\t"<<G2.getNodeName(A[i])<<endl;
+    string edgeListFileName = FileIO::fileNameWithoutExtension(fileName)+".align";
+    saveAlignmentAsEdgeList(A, G1, G2, edgeListFileName);
 
     cout<<"Took "<<T.elapsed()<<" seconds to save the alignment and scores."<<endl;
+}
+
+void Report::saveAlignmentAsEdgeList(const Alignment& A, const Graph& G1, const Graph& G2, const string& fileName) {
+    //sort the color names from least common to most common
+    vector<uint> g1ColorIds;
+    g1ColorIds.reserve(G1.numColors());
+    for (uint colId = 0; colId < G1.numColors(); colId++) g1ColorIds.push_back(colId);
+    sort(g1ColorIds.begin(), g1ColorIds.end(), [&G1](const uint& id1, const uint& id2) {
+        return G1.numNodesWithColor(id1) < G1.numNodesWithColor(id2);
+    });
+
+    ofstream ofs(fileName);
+    for (uint colId : g1ColorIds) {
+        for (uint node : *(G1.getNodesWithColor(colId))) {
+            ofs<<G1.getNodeName(node)<<"\t"<<G2.getNodeName(A[node])<<endl;
+        }
+    }
 }
 
 void Report::saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A,

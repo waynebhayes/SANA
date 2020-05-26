@@ -19,6 +19,9 @@ static void saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment&
 
 private:
 
+//print the alignment in edge list format, using node names, and sorted from least frequent to most frequent color
+static void saveAlignmentAsEdgeList(const Alignment& A, const Graph& G1, const Graph& G2, const string& fileName);
+
 //this function does so many things I can't give it a more relevant name -Nil
 static string formattedFileName(const string& outFileName, const string& extension, 
     const string& G1Name, const string& G2Name, const Method* method, Alignment const & A);

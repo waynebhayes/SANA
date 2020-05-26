@@ -94,15 +94,21 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     bool colorMismatch = false;
     string errMsg = "";
     for (const string& colName : *(G1.getColorNames())) {
+        uint g1ColId = G1.getColorId(colName);
         if (not G2.hasColor(colName)) {
             colorMismatch = true;
-            errMsg += "G1 has nodes colored '"+colName+"' but G2 does not.\n";
+            errMsg += "G1 has "+to_string(G1.numNodesWithColor(g1ColId))
+                   +" nodes colored '"+colName+"', like node '"
+                   +G1.getNodeName((G1.getNodesWithColor(g1ColId))->at(0))+"', but G2 has 0.\n";
         }
     }
     for (const string& colName : *(G2.getColorNames())) {
+        uint g2ColId = G2.getColorId(colName);
         if (not G1.hasColor(colName)) {
             colorMismatch = true;
-            errMsg += "G2 has nodes colored '"+colName+"' but G1 does not.\n";
+            errMsg += "G2 has "+to_string(G2.numNodesWithColor(g2ColId))
+                   +" nodes colored '"+colName+"', like node '"
+                   +G2.getNodeName((G2.getNodesWithColor(g2ColId))->at(0))+"', but G1 has 0.\n";
         }
     }
     if (colorMismatch) {
