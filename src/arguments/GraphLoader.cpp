@@ -53,7 +53,7 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     auto futureG2 = async(&loadGraphFromFile, g2Name, g2File, g2HasWeights);
     Graph G1 = futureG1.get();
     Graph G2 = futureG2.get();
-    cout << "Graph loading completed in " << T.elapsedString() << endl;
+    cout << "Graph loading completed in " << T.elapsedString() << endl <<endl;
 
     if (G1.getNumNodes() > G2.getNumNodes())
         throw runtime_error("G1 has more nodes than G2. Please swap the graphs");
@@ -90,15 +90,6 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     G1.initColorDataStructs(g1Colors);
     G2.initColorDataStructs(g2Colors);
 
-    const string COLOR_USAGE = 
-        "For example, if you are aligning two virus-host networks, then the colors " \
-        "should be 'virus' and 'host'; using species names won't work, because for example a node " \
-        "of color 'mouse' cannot align to a node of color 'human'. Call both 'host'.";
-    if (G1.numColors() > G2.numColors())
-        throw runtime_error("some G1 nodes have a color non-existent in G2, so there is no valid alignment. "+COLOR_USAGE);
-    else if (G1.numColors() < G2.numColors())
-        throw runtime_error("some G2 nodes have a color non-existent in G1. "+COLOR_USAGE);
-
     //add dummy nodes to G2 to guarantee an alignment exists
     unordered_map<string,uint> colToNumDummies;
     for (const string& colName : *(G1.getColorNames())) {
@@ -117,7 +108,7 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
         for (const auto& kv : colToNumDummies) {
             string colName = kv.first;
             uint count = kv.second;
-            cerr<<"adding "<<count<<" dummies colored "<<colName<<" to G2"<<endl;
+            cout<<"Adding "<<count<<" dummy "<<(count==1?"node":"nodes")<<" colored '"<<colName<<"' to G2"<<endl;
             for (uint i = 0; i < count; i++) {
                 string dummyName = "dummy_"+to_string(i);
                 if (colName != Graph::DEFAULT_COLOR_NAME) dummyName += "_"+colName;
@@ -127,6 +118,7 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
                 }
             }
         }
+        cout<<endl;
         vector<EDGE_T> g2Weights;
         if (g2HasWeights) {
             g2Weights.reserve(G2.getNumEdges());
@@ -183,6 +175,15 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     assert(G2.isWellDefined());
     G1.debugPrint();
     G2.debugPrint();
+
+    const string COLOR_USAGE = 
+        "For example, if you are aligning two virus-host networks, then the colors " \
+        "should be 'virus' and 'host'; using species names won't work, because for example a node " \
+        "of color 'mouse' cannot align to a node of color 'human'. Call both 'host'.";
+    if (G1.numColors() > G2.numColors())
+        throw runtime_error("some G1 nodes have a color non-existent in G2, so there is no valid alignment. "+COLOR_USAGE);
+    else if (G1.numColors() < G2.numColors())
+        throw runtime_error("some G2 nodes have a color non-existent in G1. "+COLOR_USAGE);
 
     cout << "Total time for loading graphs (" << T.elapsedString() << ")" << endl;
     return {G1, G2};
