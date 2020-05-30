@@ -12,7 +12,7 @@ export PATH
 TMPDIR=/tmp/regression-test$$ # gets removed only if everything works
 mkdir $TMPDIR
 
-OutputFile="$REG_DIR/regression-lock.result"
+OutputFile="$REG_DIR/regression-lock.$HOST.result"
 ErrorMargin="0.04"
 
 > "$OutputFile"

@@ -8,6 +8,7 @@ warn() { echo "WARNING: $@" >&2;
 }
 PATH=`pwd`:`pwd`/scripts:$PATH
 export PATH
+export HOST=`hostname|sed 's/\..*//'`
 
 SANA_EXE=./sana
 MAKE=false
