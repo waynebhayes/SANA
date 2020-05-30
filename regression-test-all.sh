@@ -1,5 +1,8 @@
 #!/bin/bash
-die() { echo "FATAL ERROR: $@" >&2; exit 1
+USAGE="USAGE: $0 [ -make ] [ -x SANA_EXE ] [ list of tests to run, defaults to regression-tests/*/*.sh ]"
+NL='
+'
+die() { echo "$USAGE$NL FATAL ERROR: $@" >&2; exit 1
 }
 warn() { echo "WARNING: $@" >&2;
 }
@@ -8,11 +11,13 @@ export PATH
 
 SANA_EXE=./sana
 MAKE=false
-while [ $# -gt -0 ]; do
+while true; do
     case "$1" in
     -make) MAKE=true; shift;;
-    *) [ -x "$1" -o "$MAKE" = true ] || die "unknown argument '$1'; valid arguments are '-make', and an optional sana executable"
-	SANA_EXE="$1"; shift;;
+    -x) [ -x "$2" -o "$MAKE" = true ] || die "unknown argument '$2'"
+	SANA_EXE="$2"; shift 2;;
+    -*) die "unknown option '$1";;
+    *) break;;
     esac
 done
 
@@ -36,17 +41,19 @@ if $MAKE ; then
 fi
 
 NUM_FAILS=0
-for REG_DIR in regression-tests/*; do
+if [ $# -eq 0 ]; then
+    set regression-tests/*/*.sh
+fi
+for r
+do
+    REG_DIR=`dirname "$r"`
     export REG_DIR
-    echo --- in directory $REG_DIR ---
-    for r in $REG_DIR/*.sh; do
-	echo --- running test $r ---
-	if "$r"; then
-	    :
-	else
-	    (( NUM_FAILS+=$? ))
-	fi
-    done
+    echo --- running test $r ---
+    if "$r"; then
+	:
+    else
+	(( NUM_FAILS+=$? ))
+    fi
 done
 echo Number of failures: $NUM_FAILS
 exit $NUM_FAILS

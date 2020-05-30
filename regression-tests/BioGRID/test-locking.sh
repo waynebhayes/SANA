@@ -1,9 +1,8 @@
 #!/bin/bash
 set -e
 CORES=${CORES:=`cores 2>/dev/null || echo 4`}
-PARALLEL="./parallel -s bash $CORES"  # run in parallel on jenkins
+PARALLEL="./parallel -s bash $CORES"
 #PARALLEL=bash # if you don't have the parallel program
-
 die() { echo "ERROR: $@" >&2; exit 1
 }
 
@@ -39,6 +38,7 @@ echo "$nets" |
     done
 echo "running lock test."
 echo "$nets" | awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; \"'"$SANA_EXE"'\" -t 1 -s3 1 -g1 %s -g2 %s -lock '$TMPDIR'/%s-%s.lock -o '$TMPDIR'/%s-%s > '$TMPDIR'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
+(( NUM_FAILS+=$? ))
 echo "Checking SANA Locking Mechanism" | tee -a $OutputFile
 cat $TMPDIR/networks.locking | while read Network1 Network2; do
     if [[ `grep -c -x -f "$TMPDIR/$Network1-$Network2.lock" "$TMPDIR/$Network1-$Network2.align"` -ne $NUM_LOCK ]]; then
@@ -54,3 +54,4 @@ if [ "$NUM_FAILS" -eq 0 ]; then
 else
     echo "results in $TMPDIR">&2
 fi
+exit $NUM_FAILS

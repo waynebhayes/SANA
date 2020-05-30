@@ -61,7 +61,6 @@ if [ -z $CompareFile -a ! -f $CompareFile ]; then
     exit 1
 fi
 
-
 NL='
 '
 
@@ -74,9 +73,15 @@ export Networks_count=`echo $nets | wc -w`
 #Biogrid_network="$nets" #`echo $nets | newlines | sed 's/$/.el/' | (cd networks; xargs ls -Sr) | sed 's/\.el$//'`
 
 if $RUN; then
+    case `hostname` in
+    pisica3*) OLD_STEP=`cpu-step`; cpu-step 2500;; # time regressions at constant 2.5GHz on pisica3
+    esac
     [ -x "$SANA_EXE" ] || die "can't find executable '$SANA_EXE'"
     echo "$nets" | awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; \"'"$SANA_EXE"'\" -t 5 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
-
+    (( NUM_FAILS+=$? ))
+    case `hostname` in
+    pisica3*) cpu-step $OLD_STEP;;
+    esac
     Iterations=""
     echo "Checking Iterations Speed" >> $OutputFile
     printf "%-30s | %-20s$NL" "Networks Pair" "Iterations Speed" >> $OutputFile

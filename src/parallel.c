@@ -5,7 +5,8 @@ parallel(1) reads command lines from the standard input, and keeps\n\
 environment variable as the executor; '-s' by itself will use the\n\
 Bourne Shell, and -s shell-name will use whatever shell you prefer\n\
 like rc(1).  To distinguish '-s {n}' from '-s {shell-name}', it assumes\n\
-your shell name doesn't start with a digit.";
+your shell name doesn't start with a digit.\n\
+It exits with the number of failed jobs";
 
 #include <strings.h>
 #include <string.h>
@@ -15,7 +16,7 @@ your shell name doesn't start with a digit.";
 #include <signal.h>
 #include <unistd.h>
 
-int parallel;
+int parallel, numFailed;
 
 void SigHandler_changeParallel(int sig)
 {
@@ -85,6 +86,7 @@ int main(int argc, char *argv[])
 	while(n >= parallel)
 	{
 	    wait(&status);
+	    if(!WIFEXITED(status) || WEXITSTATUS(status)) ++numFailed;
 	    --n;
 	}
 	if(fork() == 0)  /* child */
@@ -98,13 +100,16 @@ int main(int argc, char *argv[])
 	    if(++n >= parallel)
 	    {
 		wait(&status);
+		if(!WIFEXITED(status) || WEXITSTATUS(status)) ++numFailed;
 		--n;
 	    }
 	}
     }
 #if 1
-    while(n-- > 0)  /* wait for everyone to finish */
-	wait(&parallel); // we no longer need the value of parallel so nuke it with wait status.
+    while(n-- > 0) { /* wait for everyone to finish */
+	wait(&status);
+	if(!WIFEXITED(status) || WEXITSTATUS(status)) ++numFailed;
+    }
 #endif
-    return 0;
+    return numFailed;
 }
