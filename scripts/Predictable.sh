@@ -1,72 +1,94 @@
 #!/bin/bash
-USAGE="USAGE: $0 [-already1] [-already2] tax1 tax2 GO1 GO2 net2.old
-    where GO1 and GO2 do NOT include the allGO or NOSEQ extension
-Purpose: produce the list of 'predictable-in-principle' tax2-protein-GO triplets, eliminating any triplets with sequence-based
-    evidence at EITHER the earlier or later time, no matter whether they also have non-sequence-based evidence.
-    Arguments: tax1 is the source species for the
-    predictions, tax2 is the target species, GO1 and GO2 are the paths to the gene2go files for the old and new times,
-    net2.old is the old version of the target species' PPI network."
+USAGE="USAGE: $0 [-evc 'egrep-expr' ] [-gene2go (allGO|NOSEQ|...)] tax1 tax2 GO1 GO2 G2.el
+    where GO1 and GO2 are paths to gene2go files WITHOUT the allGO or NOSEQ extension
+Purpose: produce the list of 'predictable-in-principle' (protein,GO) annotations for species tax2: this is simply the
+    Cartesian product of
+	    {all proteins in G2} x {all (GOterm, EvidenceCode) pairs for tax1 in GO1}.
+    By default this Cartesian product is then restricted to include only *validatable* predictions---ie., those that actually
+    exist for tax2 in GO2. The result is the largest possible set of 'correct' predictions coming from species1's GO terms in
+    the GO1 file, applied to all proteins from species2's G2 network---ie., the size of this set is the denominator of 'Recall'.
+    If GO2 is 'NONE', then the Cartesian product is not so restricted. THIS IS NOT RECOMMENDED, because the above Cartesian
+    product, unrestricted, is HUGE (bascally |V2| * |GOterms in tax2|).
+
+Options:
+    -gene2go XXX: which version of gene2go to use? Options include allGO, NOSEQ, and whatever else exists.
+	default=allGO
+    -evc 'egrep-expr': restrict predicting evidence codes to those in the egrep-style expression. (NOTE: we don't use
+	SEQ_FREE any more since it doesn't make sense in the context of creating a 'predictable-in-principle' set: we
+	shouldn't restricted the *predicting* evidence code since it could add value at the target; and we *can't*
+	restrict the evidence code at the target because, at this stage, even though it's an annotation predicted in
+	the target species, the evidence code is the *PREDICTING* evidence code, not the evidence code we expect at a
+	later date---which we cannot possibly predict, nor do we care to.)
+
+NOTE: the evidence code that is output is the SOURCE (ie., predicting) evidence code from species1, and has no bearing
+    on the expected evidence code we'll find for species2 in GO2, if annotation is validated. It is produced for
+    statistics only, eg., discovering what SOURCE evidence codes provide the best predictions. Typically it's IPI."
+
 die() { (echo "$USAGE"; echo "FATAL ERROR: $@") >&2; exit 1
 }
 
-ALREADY1=false
-ALREADY2=false
+TMPDIR=/tmp/PIP.$$
+trap "/bin/rm -rf $TMPDIR" 0 1 2 15
+trap "TMPDIR is $TMPDIR" 3
+mkdir -p $TMPDIR
+
+EVC_EGREP='.' # matches anything
+GENE2GO=allGO
 while true; do
     case "$1" in
-    -a*1) ALREADY1=true;;
-    -a*2) ALREADY2=true;;
+    -e*) EVC_EGREP="($2)";shift;;
+    -g*) GENE2GO="$2";shift;;
     -*) die "unknown option '$1'";;
     *) break;;
     esac
+    shift
 done
 
-[ $# -eq 5 ] || die "expecting exactly 6 arguments"
-tax1=$1;tax2=$2
-GO1=$3; GO2=$4
-G2old=$5
+[ $# -eq 5 ] || die "expecting exactly 4 arguments after options"
+tax1=$1; tax2=$2
+GO1=$3; GO2=$4; 
+G2=$5
+if [ "$GO2" = NONE ]; then
+    GO2=$TMPDIR/NONE
+    touch $GO2.allGO $GO2.NOSEQ $GO2.SEQ
+fi
+
 SEQ="(IBA|IEA|IGC|ISA|ISM|ISO|ISS|RCA)" # egrep expression matching all sequence-based evidence codes
 
-TMPDIR=/tmp/PIP.$$
-trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
-mkdir -p $TMPDIR
-
-# This script returns all species-protein-GO triplets for species $1 from gene2go file $2.allGO that used any sequence evidence
-getSeqSuppTriplets() {
-    grep "^$1	" $2.allGO | # extract *ALL* annotations from our target species
-    egrep "	($SEQ)	" | # extract those that use sequence evidence
-    cut -f1-3
+# Get rid of annoying NOT lines...
+notNOT() { fgrep -v '	NOT	' "$@"
 }
-# Opposite of the above: list of annotation lines for species $1 from gene2go files $2 that had no sequence evidence codes
-getSeqFreeTriplets() {
-    getSeqSuppTriplets $1 $2 | # extract sequence-supported annotations for species 1 from gene2go file $2
+# This script returns all annotation lines for species $1 from gene2go file $2.allGO that used ANY sequence evidence
+getSeqSupp() {
+    grep "^$1	" $2.allGO | # extract all annotations from our target species (except "NOT")
+    egrep "	$SEQ	" | # extract those that were supported by ANY sequence evidence code
+    cut -f1-5,8
+}
+# Opposite of the above: list of annotation lines for species $1 from gene2go files $2 that had NO sequence evidence codes
+getSeqFree() {
+    getSeqSupp $1 $2 | # extract sequence-supported annotations for species 1 from gene2go file $2
+    cut -f1-3 | # just the relevant columns
     fgrep -v -f - $2.NOSEQ | # remove sequence-supported annotations from NOSEQ, even those with non-sequence evidence
-    grep "^$1	" | # extract our target species, returning only those annotations that had no sequence evidence
-    cut -f1-3
+    grep "^$1	" | # extract our target species, returning only those annotations that had NO sequence evidence whatsoever
+    cut -f1-5,8
 }
 
-if $ALREADY1; then
-    # ALL "already-known" tax2-protein-GO triplets for target species at the earlier time (ANY evidence code)
-    grep "^$tax2	" $GO1.allGO | cut -f1-3 > $TMPDIR/GO1.tax2.already
-fi
-if $ALREADY2; then
-    # ALL "already-known" tax2-protein-GO triplets for target species at the later time (ANY evidence code)
-    grep "^$tax2	" $GO2.allGO | cut -f1-3 > $TMPDIR/GO2.tax2.already
-fi
-
-# The ultimate source of our predictions: sequence-free triplets from the source species at the earlier time
-getSeqFreeTriplets $tax1 $GO1 > $TMPDIR/GO1.tax1.seq-free
+# The ultimate source of our predictions: from the source species at the earlier time
+grep "^$tax1	" $GO1.$GENE2GO | cut -f1-5,8 > $TMPDIR/GO1.tax1.$GENE2GO.1-5,8
 
 # The most basic set of Predictable-in-Principle 
-getSeqFreeTriplets $tax2 $GO2 | # all seq-free annotations at the later date---ie., the target list we're trying to predict
-    fgrep -v -f $TMPDIR/GO1.tax2.already | # remove any that were already known via ANY evidence at the earlier date
-    awk 'ARGIND==1{++deg[$1];++deg[$2];next} # get list of nodes in target species, earlier network
-	ARGIND==2&&$1=='$tax1'{++GOtax1[$3][$4]} # get list of all earlier GO terms and their evidence from source species
-	ARGIND==3&&$2 in deg&&$3 in GOtax1{
+    awk 'BEGIN{tax2='$tax2'} # Vable means "validatable", ie., is among the set we are trying to predict at time t2
+	ARGIND==1 && NF && $1==tax2{Vable[$2][$3]=$4} # if GO2 is NONE, this never gets executed and Vable will not exist
+	ARGIND==2{V2[$1]=V2[$2]=1;next} # get list of nodes at earlier date in target species
+	ARGIND==3{GO1tax1[$3][$4]=1;Cat[$3]=$NF} # term,evCode,Category from source species, earlier date
+	END{
 	    # predictable annotation if node is in earlier target network and earlier source network has such a GO term
-	    for(e in GOtax1[$3]) printf "%s\t%s\t%s\t%s\t%s\n",$1,$2,$3,e,$NF
-	}' $G2old $TMPDIR/GO1.tax1.seq-free - |
-    fgrep -v -f <(
-	    grep "^$tax2	" $GO1.allGO | cut -f1-3 # already known at earlier time
-	    grep "^$tax2	" $GO2.allGO | fgrep -f $SEQ | cut -f1-3 # discovered using sequence at later time
-	) | sort -u
+	    for(p in V2)for(g in GO1tax1)for(e in GO1tax1[g])
+		# if not filtering on validatable, or if annotation (p,g) is validatable:
+		if(!isarray(Vable) || (p in Vable && g in Vable[p]))
+		    printf "%d\t%s\t%s\t%s\t%s\n",tax2,p,g,e,Cat[g]
+		    # Would could be even more specific here and when we copy a GO term from p1\in V1 to p2\in V2,
+		    # we list *only* the (GO,evc) pairs assigned to p1, rather than all (GO,evc) pairs seen across all of V1.
+		    # But that would require changing our whole code. Thus, NOT NOW!
+	}' $GO2.$GENE2GO $G2 $TMPDIR/GO1.tax1.$GENE2GO.1-5,8
 # note the evidence code listed here is the PREDICTING (ie., old) evidence code, NOT the one you'll find in the new GO file
