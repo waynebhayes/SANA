@@ -19,7 +19,7 @@ for network in $nets; do
     echo "Aligning network $network" >&2
     echo "'$SANA_EXE.float' -t 20 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
 done | ./parallel -s /bin/bash $CORES
-(( $NUM_FAILS+=$? ))
+(( NUM_FAILS+=$? ))
 
 for network in $nets; do
     file="$REG_DIR/$network"
