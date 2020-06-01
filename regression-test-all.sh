@@ -48,13 +48,16 @@ fi
 for r
 do
     REG_DIR=`dirname "$r"`
+    NEW_FAILS=0
     export REG_DIR
     echo --- running test $r ---
     if "$r"; then
 	:
     else
-	(( NUM_FAILS+=$? ))
+	NEW_FAILS=$?
+	(( NUM_FAILS+=$NEW_FAILS ))
     fi
+    echo --- test $r incurred $NEW_FAILS failures, cumulative failures is $NUM_FAILS ---
 done
 echo Number of failures: $NUM_FAILS
 exit $NUM_FAILS

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+
 CORES=${CORES:=`cores 2>/dev/null || echo 4`}
 PARALLEL="./parallel -s bash $CORES"  # run in parallel on jenkins
 #PARALLEL=bash # if you don't have the parallel program
@@ -13,15 +13,14 @@ export PATH
 
 TMPDIR=/tmp/regression-test$$
 trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
-mkdir $TMPDIR
+mkdir $TMPDIR || die "couldn't create OutputDir $TMPDIR"
 
 [ -d "$REG_DIR" ] || die "Expecting REG_DIR to be set"
 
-OutputFile="$REG_DIR/regression-test.$HOST.result"
+OutputDir="$TMPDIR"
+OutputFile="$TMPDIR/regression-test.result"
 ErrorMargin="0.04"
 #echo "WARNING: temporarily set error margin way too big while core scores are being tested"
-OutputDir="$REG_DIR/regression-out"
-mkdir -p $OutputDir
 CompareFile=""
 
 RUN=true # use -n to turn off run and only compare
@@ -83,6 +82,7 @@ if $RUN; then
     pisica3*) cpu-step $OLD_STEP;;
     esac
 fi
+
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
 printf "%-30s | %-20s$NL" "Networks Pair" "Iterations Speed" >> $OutputFile
@@ -92,7 +92,7 @@ for i in $(seq 1 $((Networks_count - 1)));do
 	    Network1=`echo "$nets" | awk 'NR=='$i'{print}'`
 	    Network2=`echo "$nets" | awk 'NR=='$j'{print}'`
 	    progress="$OutputDir/$Network1-$Network2.progress"
-	    cIt=`grep -o "[0-9]*.[0-9]* iterations per second" ./$progress | awk '{print $1}' | sort -u`
+	    cIt=`grep -o "[0-9]*.[0-9]* iterations per second" $progress | awk '{print $1}' | sort -u`
 	    Iterations="$Iterations $cIt"
 	    printf "%-30s | %-20s$NL" "$Network1-$Network2" "$cIt" >> $OutputFile
 	fi
@@ -113,7 +113,7 @@ PrintTestScores()
             Network1=`echo "$nets" | awk 'NR=='$i'{print}'`
             Network2=`echo "$nets" | awk 'NR=='$j'{print}'`
             progress="$OutputDir/$Network1-$Network2.out"
-            Score=`grep -o "^$1: 0.[0-9]\+$" ./$progress | awk '{print $2}' | sort -u`
+            Score=`grep -o "^$1: 0.[0-9]\+$" $progress | awk '{print $2}' | sort -u`
             Scores=$Scores" "$Score
             printf "%-30s | %-20s$NL" "$Network1-$Network2" "$Score" >> $OutputFile
         done
