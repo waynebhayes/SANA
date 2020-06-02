@@ -43,7 +43,6 @@ echo "'$PARALLEL' returned $PARA_EXIT; current NUM_FAILS is $NUM_FAILS"
 
 (( NUM_FAILS+=$PARA_EXIT ))
 
-echo "was NUM_FAILS updated correctly? $NUM_FAILS"
 echo "Checking SANA Locking Mechanism" | tee -a $OutputFile
 cat $TMPDIR/networks.locking | while read Network1 Network2; do
     if [[ `grep -c -x -f "$TMPDIR/$Network1-$Network2.lock" "$TMPDIR/$Network1-$Network2.align"` -ne $NUM_LOCK ]]; then
@@ -53,7 +52,7 @@ cat $TMPDIR/networks.locking | while read Network1 Network2; do
     fi
 done
 
-echo encountered a total of $NUM_FAILS failures | tee /dev/fd/2
+echo encountered a total of $NUM_FAILS failures
 if [ "$NUM_FAILS" -eq 0 ]; then
     /bin/rm -rf $TMPDIR
 else
