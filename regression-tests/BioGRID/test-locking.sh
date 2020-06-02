@@ -40,9 +40,9 @@ echo "running lock test."
 echo "$nets" | awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; \"'"$SANA_EXE"'\" -t 1 -s3 1 -g1 %s -g2 %s -lock '$TMPDIR'/%s-%s.lock -o '$TMPDIR'/%s-%s > '$TMPDIR'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
 PARA_EXIT=$?
 echo "'$PARALLEL' returned $PARA_EXIT; current NUM_FAILS is $NUM_FAILS"
-set -x
+
 (( NUM_FAILS+=$PARA_EXIT ))
-set -x
+
 echo "was NUM_FAILS updated correctly? $NUM_FAILS"
 echo "Checking SANA Locking Mechanism" | tee -a $OutputFile
 cat $TMPDIR/networks.locking | while read Network1 Network2; do
@@ -59,5 +59,5 @@ if [ "$NUM_FAILS" -eq 0 ]; then
 else
     echo "$NUM_FAILS locks failed; results in directory $TMPDIR">&2
 fi
-set -x
+
 exit $NUM_FAILS
