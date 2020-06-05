@@ -597,9 +597,10 @@ void SANA::performChange(uint actColId) {
     }
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(newAligEdges, newInducedEdges,
+    double pBad = scoreComparison(newAligEdges, newInducedEdges,
             newLocalScoreSum, newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum,
             newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
+    bool makeChange = randomReal(gen) <= pBad;
 
 #ifdef CORES
     // Statistics on the emerging core alignment.
@@ -690,9 +691,10 @@ void SANA::performSwap(uint actColId) {
     }
 
     double newCurrentScore = 0;
-    bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum,
+    double pBad = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum,
                 newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges,
                 newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
+    bool makeChange = randomReal(gen) <= pBad;
 
 #ifdef CORES
         // Statistics on the emerging core alignment.
@@ -739,13 +741,13 @@ void SANA::performSwap(uint actColId) {
     }
 }
 
-bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
+// returns pBad
+double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         double newLocalScoreSum, double newWecSum, double newJsSum, double newNcSum, double& newCurrentScore,
         double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newMS3Numer,
         double newEdgeDifferenceSum, double newEdgeRatioSum) {
-    bool makeChange = false;
     wasBadMove = false;
-    double badProbability = 0;
+    double pBad = 0;
 
     switch (scoreAggr) {
     case ScoreAggregation::sum:
@@ -772,8 +774,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         wasBadMove = energyInc < 0;
         //using max and min here because with extremely low temps I was seeing invalid probabilities
         //note: I did not make this change for the other types of ScoreAggregation::  -Nil
-        badProbability = max(0.0, min(1.0, exp(energyInc / Temperature)));
-        makeChange = (energyInc >= 0 or randomReal(gen) <= badProbability);
+        if(energyInc >= 0) pBad=1.0;
+        else pBad = max(0.0, min(1.0, exp(energyInc / Temperature)));
         break;
     }
     case ScoreAggregation::product:
@@ -789,8 +791,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore *= ncWeight * (newNcSum / trueAWithValidCountAppended.back());
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        badProbability = exp(energyInc / Temperature);
-        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / Temperature));
+        if(energyInc >= 0) pBad=1;
+        else pBad = exp(energyInc / Temperature);
         break;
     }
     case ScoreAggregation::max:
@@ -815,8 +817,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        badProbability = exp(energyInc / Temperature);
-        makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc / Temperature);
+        if(deltaEnergy >= 0)pBad=1;
+        else pBad = exp(energyInc / Temperature);
         break;
     }
     case ScoreAggregation::min:
@@ -840,8 +842,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 
         energyInc = newCurrentScore - currentScore; //is this even used?
         wasBadMove = deltaEnergy < 0;
-        badProbability = exp(energyInc / Temperature);
-        makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(newCurrentScore / Temperature);
+        if(deltaEnergy >= 0)pBad=1;
+	else pBad = exp(energyInc / Temperature);
         break;
     }
     case ScoreAggregation::inverse:
@@ -857,8 +859,8 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        badProbability = exp(energyInc / Temperature);
-        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc / Temperature));
+        if(energyInc >= 0)pBad=1;
+        else pBad = exp(energyInc / Temperature);
         break;
     }
     case ScoreAggregation::maxFactor:
@@ -887,28 +889,28 @@ bool SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = maxScore < -1 * minScore;
-        badProbability = exp(energyInc / Temperature);
-        makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc / Temperature);
+        if(maxScore >= -1 * minScore)pBad=1;
+        else pBad = exp(energyInc / Temperature);
         break;
     }
     }
 
-    //if (wasBadMove && (iterationsPerformed % 512 == 0 || (iterationsPerformed % 32 == 0))) {
+    //if (wasBadMove && (iterationsPerformed % 512 == 0 || (iterationsPerformed % 32 == 0))) 
     //the above will never be true in the case of iterationsPerformed never being changed so that it doesn't greatly
     // slow down the program if for some reason iterationsPerformed doesn't need to be changed.
     if (wasBadMove) { // I think Dillon was wrong above, just do it always - WH
         if (numPBadsInBuffer == PBAD_CIRCULAR_BUFFER_SIZE) {
             pBadBufferIndex = (pBadBufferIndex == PBAD_CIRCULAR_BUFFER_SIZE ? 0 : pBadBufferIndex);
             pBadBufferSum -= pBadBuffer[pBadBufferIndex];
-            pBadBuffer[pBadBufferIndex] = badProbability;
+            pBadBuffer[pBadBufferIndex] = pBad;
         } else {
-            pBadBuffer[pBadBufferIndex] = badProbability;
+            pBadBuffer[pBadBufferIndex] = pBad;
             numPBadsInBuffer++;
         }
-        pBadBufferSum += badProbability;
+        pBadBufferSum += pBad;
         pBadBufferIndex++;
     }
-    return makeChange;
+    return pBad;
 }
 
 int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {

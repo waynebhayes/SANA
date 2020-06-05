@@ -118,7 +118,8 @@ private:
            ncWeight, localWeight, mecWeight, sesWeight, eeWeight, ms3Weight, ewecWeight;
 
     //this should be refactored so that the return parameter is not the 9th one out of 15
-    bool scoreComparison(double newAligEdges, double newInducedEdges,
+    // changed in June 2020 to return pBad, not the decision itself. -WH
+    double scoreComparison(double newAligEdges, double newInducedEdges,
         double newLocalScoreSum, double newWecSum, 
         double newJsSum, double newNcSum, double& newCurrentScore, 
         double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, 
