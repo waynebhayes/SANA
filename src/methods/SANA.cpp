@@ -199,7 +199,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
         double colorProb = numNbrs / (double) totalNbrCount;
         double accumProb = colorProb +
                 (actColToAccumProbCutpoint.empty() ? 0 : actColToAccumProbCutpoint.back());
-        assert(accumProb <= 1);
+        assert(accumProb <= 1 + 1e-14); // allow for a bit of numerical roundoff error
         actColToAccumProbCutpoint.push_back(accumProb);
         actColToChangeProb.push_back(numChangeNbrs/ (double) numNbrs);
         actColToG1ColId.push_back(g1Id);
