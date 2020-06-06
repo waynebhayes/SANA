@@ -385,7 +385,9 @@ unsigned Alignment::multiS3Numerator(const Graph& G1, const Graph& G2) const {
     uint node1, node2;
         
 	switch (MultiS3::numerator_type){
-	    case MultiS3::ra_i or la_i:
+        case 1:
+        case 2:
+        {
             for (const auto& edge: G1EdgeList)
             {
                 node1 = edge[0], node2 = edge[1];
@@ -404,8 +406,11 @@ unsigned Alignment::multiS3Numerator(const Graph& G1, const Graph& G2) const {
                     ret += G2Matrix[A[node1]][A[node2]] + 1;
                 }
             }
+        }
             break;
-        case MultiS3::ra_global or MultiS3::la_global:
+        case 4:
+        case 3:
+        {
             const uint n1 = G1.getNumNodes();
             const uint n2 = G2.getNumNodes();
             vector<uint> reverse_A = vector<uint> (n2,n1);// value of n1 represents not used
@@ -427,14 +432,17 @@ unsigned Alignment::multiS3Numerator(const Graph& G1, const Graph& G2) const {
                     }
                 }
             }
+        }
             break;
         default:
+        {
             for (const auto& edge: G1EdgeList)
             {
                node1 = edge[0], node2 = edge[1];
                ret += G2Matrix[A[node1]][A[node2]] + 1; // +1 because G1 was pruned out of G2
                //cerr << "numerator_type not specified, Using default numerator." << endl;
              }
+        }
             break;
 	}
     return ret;
@@ -461,7 +469,9 @@ unsigned Alignment::multiS3Denominator(const Graph& G1, const Graph& G2) const {
     }
     
     switch (MultiS3::denominator_type){
-        case MultiS3::ee_global or MultiS3::rt_global:
+        case 3:
+        case 4:
+        {
             for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j){
                 bool exposed = (G2Matrix[i][j] > 0);
                 if(!exposed && whichPeg[i] < n1 && whichPeg[j] < n1 && G1Matrix[whichPeg[i]][whichPeg[j]] > 0){
@@ -476,8 +486,11 @@ unsigned Alignment::multiS3Denominator(const Graph& G1, const Graph& G2) const {
                     }
                 }
             }
+        }
             break;
-        case MultiS3::ee_i or MultiS3::rt_i:
+        case 2:
+        case 1:
+        {
             for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j){
                 bool exposed = (whichPeg[i] < n1 && whichPeg[j] < n1 && G1Matrix[whichPeg[i]][whichPeg[j]] > 0);
                 if(!exposed && whichPeg[i] < n1 && whichPeg[j] < n1 && G2Matrix[i][j]> 0){
@@ -494,6 +507,7 @@ unsigned Alignment::multiS3Denominator(const Graph& G1, const Graph& G2) const {
                 }
             }
             break;
+        }
         default:
             break;
     }

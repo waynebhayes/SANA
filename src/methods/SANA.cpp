@@ -2319,8 +2319,9 @@ int SANA::MS3IncChangeOp(Job &job, uint source, uint oldTarget, uint newTarget) 
 
 // Return the change in NUMERATOR of MS3
 int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    switch(MultiS3::denominator_type) {
-        case MultiS3::rt_i:
+    switch (MultiS3::denominator_type) {
+        case 1: //MultiS3::rt_i
+        {
             int neighbor;
                  const uint n1 = G1->getNumNodes();
                  const uint n2 = G2->getNumNodes();
@@ -2340,48 +2341,57 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
                  for (uint i =0; i < n_num; i++){
                      neighbor = G2AdjLists[newTarget][i];
                    if (whichPeg[neighbor]<n1 and neighbor != oldTarget){
+
                      MultiS3::denom+=G2Matrix[newTarget][neighbor];
+
                  }
              }
+        }
             break;
-        case MultiS3::ee_i:
-            int neighbor;
-            const uint n1 = G1->getNumNodes();
-            const uint n2 = G2->getNumNodes();
-            vector<uint> whichPeg(n2, n1); // value of n1 represents not used
-            for (uint i = 0; i < n1; ++i){
-                whichPeg[(*A)[i]] = i; // inverse of the alignment
-             }
-            uint n_num = G2AdjLists[oldTarget].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G2AdjLists[oldTarget][i];
-                if (whichPeg[neighbor]<n1){
-                    MultiS3::denom--;
+            
+        case 2: //MultiS3::ee_i
+        {
+
+                int neighbor;
+                const uint n1 = G1->getNumNodes();
+                const uint n2 = G2->getNumNodes();
+                vector<uint> whichPeg(n2, n1); // value of n1 represents not used
+                for (uint i = 0; i < n1; ++i){
+                    whichPeg[(*A)[i]] = i; // inverse of the alignment
+                 }
+                uint n_num = G2AdjLists[oldTarget].size();
+                for (uint i =0; i < n_num; i++){
+                    neighbor = G2AdjLists[oldTarget][i];
+                    if (whichPeg[neighbor]<n1){
+                        MultiS3::denom--;
+                }
             }
+                n_num = G1AdjLists[source].size();
+                for (uint i =0; i < n_num; i++){
+                    neighbor = G1AdjLists[source][i];
+                    if (!G2Matrix[(*A)[neighbor]][oldTarget]){
+                        MultiS3::denom--;
+                }
+                    if ((*A)[neighbor]!=newTarget and !G2Matrix[(*A)[neighbor]][newTarget]){
+                        MultiS3::denom++;
+                }
             }
-            n_num = G1AdjLists[source].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G1AdjLists[source][i];
-                if (!G2Matrix[(*A)[neighbor]][oldTarget]){
-                    MultiS3::denom--;
-            }
-                if ((*A)[neighbor]!=newTarget and !G2Matrix[(*A)[neighbor]][newTarget]){
+                n_num = G2AdjLists[newTarget].size();
+                for (uint i =0; i < n_num; i++){
+                    neighbor = G2AdjLists[newTarget][i];
+                  if (whichPeg[neighbor]<n1 and source!=whichPeg[neighbor] ){
                     MultiS3::denom++;
+                }
             }
-            }
-            n_num = G2AdjLists[newTarget].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G2AdjLists[newTarget][i];
-              if (whichPeg[neighbor]<n1 and source!=whichPeg[neighbor]){
-            }
-            }
+        }
             break;
         default:
             break;
-            
     }
-    switch(MultiS3::numerator_type) {
-        case MultiS3::ra_i:
+////////
+    switch (MultiS3::numerator_type){
+        case 1: //MultiS3::ra_i
+        {
             int res = 0, diff;
             uint neighbor;
             const uint n = G1AdjLists[source].size();
@@ -2394,28 +2404,36 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
 
                 res += (diff==1?0:diff);
             }
+            return res;
+        }
             break;
-        case MultiS3::ra_global:
+        
+        case 4: //MultiS3::ra_global
+        {
             int res = 0;
             int diff= 0;
-            uint neighbor;
-            const uint n = G1AdjLists[source].size();
-            for (uint i = 0; i < n; ++i) {
-            neighbor = G1AdjLists[source][i];
-            if (G1Matrix[source][neighbor]>0){
-            diff = G2Matrix[oldTarget][(*A)[neighbor]] + 1;
-                if (diff <= 1){res -= 0;}
-                else if (G2Matrix[oldTarget][(*A)[neighbor]]>1){res --;}
-                else{res-=2;}
+                uint neighbor;
+                const uint n = G1AdjLists[source].size();
+                for (uint i = 0; i < n; ++i) {
+                neighbor = G1AdjLists[source][i];
+                if (G1Matrix[source][neighbor]>0){
+                diff = G2Matrix[oldTarget][(*A)[neighbor]] + 1;
+                        if (diff <= 1){res -= 0;}
+                        else if (G2Matrix[oldTarget][(*A)[neighbor]]>1){res --;}
+                        else{res-=2;}
 
-                diff = G2Matrix[newTarget][(*A)[neighbor]] + 1;
-                if (diff <= 1){res += 0;}
-                else if (G2Matrix[newTarget][(*A)[neighbor]]>1){res ++;}
-                else{res+=2;}
+                        diff = G2Matrix[newTarget][(*A)[neighbor]] + 1;
+                        if (diff <= 1){res += 0;}
+                        else if (G2Matrix[newTarget][(*A)[neighbor]]>1){res ++;}
+                        else{res+=2;}
                 }
             }
+            return res;
+        }
             break;
-        case MultiS3::la_i:
+        
+        case 2: //MultiS3::la_i
+        {
             int res = 0, diff;
             uint neighbor;
             const uint n = G1AdjLists[source].size();
@@ -2431,8 +2449,12 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
                 ladder = (diff>1?true:false);
                 if (ladder){res += 1;}
             }
+            return res;
+        }
             break;
-        case MultiS3::la_global:
+            
+        case 3: //MultiS3::la_global
+        {
             int res = 0;
             int diff = 0;
             int neighbor = 0;
@@ -2449,9 +2471,12 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
                     if (ladder and G2Matrix[newTarget][(*A)[neighbor]]==1) {res ++;}
                 }
             }
+            return res;
+        }
             break;
         default:
-            int res = 0;
+        {
+            int ret = 0;
                 unsigned oldOldTargetDeg = MultiS3::totalDegrees[oldTarget];
                 unsigned oldNewTargetDeg = MultiS3::totalDegrees[newTarget];
                 bool selfLoopAtSource, selfLoopAtOldTarget, selfLoopAtNewTarget;
@@ -2471,11 +2496,11 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
                 {
                     if (selfLoopAtOldTarget)
                     {
-                        --res;
+                        --ret;
                     }
                     if (selfLoopAtNewTarget)
                     {
-                        ++res;
+                        ++ret;
                     }
                 }
                 
@@ -2499,12 +2524,12 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
                 {
                     MultiS3::denom += 1;
                 }
+                
+                return ret;
+        }
             break;
-            
     }
-    return res;
 }
-
 int SANA::MS3IncSwapOp(Job &job, uint source1, uint source2, uint target1, uint target2) {
     cerr << "MS3 not implemented yet for Pareto mode\n";
     assert(false);
@@ -2512,8 +2537,10 @@ int SANA::MS3IncSwapOp(Job &job, uint source1, uint source2, uint target1, uint 
 }
 // Return change in NUMERATOR only
 int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    switch (MultiS3::denominator_type) {
-        case MultiS3::rt_i:
+    switch (MultiS3::denominator_type){
+        case 1: //MultiS3::rt_i
+        {
+            
             int neighbor;
             const uint n1 = G1->getNumNodes();
             const uint n2 = G2->getNumNodes();
@@ -2537,6 +2564,7 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                 }
                 if (G1Matrix[source1][neighbor]){
                     MultiS3::denom++;
+
                 }
             }
             n_num = G2AdjLists[target2].size();
@@ -2546,6 +2574,7 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                     MultiS3::denom+=G2Matrix[target2][neighbor];
                  }
             }
+
              n_num = G2AdjLists[target2].size();
             for (uint i =0; i < n_num; i++){
                 neighbor = G2AdjLists[target2][i];
@@ -2570,8 +2599,10 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                     MultiS3::denom+=G2Matrix[target1][neighbor];
                 }
              }
+        }
             break;
-        case MultiS3::ee_i:
+        case 2: //MultiS3::ee_i
+        {
             int neighbor;
                const uint n1 = G1->getNumNodes();
                const uint n2 = G2->getNumNodes();
@@ -2638,12 +2669,14 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                        MultiS3::denom++;
                        }
                }
+        }
             break;
-        default:
-            break;
+            
     }
-    switch (MultiS3::numerator_type) {
-        case MultiS3::ra_i:
+    switch (MultiS3::numerator_type){
+        case 1: //MultiS3::ra_i
+        {
+            
             int res = 0, diff;
             uint neighbor;
             const uint n = G1AdjLists[source1].size();
@@ -2651,7 +2684,6 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
             for (; i < n; ++i) {
                 neighbor = G1AdjLists[source1][i];
                 diff = G2Matrix[target1][(*A)[neighbor]] + 1;
-
                 res -= (diff==1?0:diff);
                 diff = G2Matrix[target2][(*A)[neighbor]] + 1;
                 if (target2==(*A)[neighbor]){
@@ -2664,7 +2696,6 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
             for (i = 0; i < m; ++i) {
                 neighbor = G1AdjLists[source2][i];
                 diff = G2Matrix[target2][(*A)[neighbor]] + 1;
-
                 res -= (diff==1?0:diff);
                 diff = G2Matrix[target1][(*A)[neighbor]] + 1;
                 if (target1==(*A)[neighbor]){
@@ -2679,8 +2710,11 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
 
                 res += 2*(diff==1?0:diff);
             }
+            return res;
+        }
             break;
-        case MultiS3::ra_global:
+        case 4: //MultiS3::ra_global
+        {
             int res = 0, diff;
             uint neighbor;
             const uint n = G1AdjLists[source1].size();
@@ -2730,51 +2764,60 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                     }
                 }
             }
-            
+            return res;
+        }
             break;
-        case MultiS3::la_i:
-            int res = 0, diff;
-            uint neighbor;
-            const uint n = G1AdjLists[source1].size();
-            uint i = 0;
-            bool ladder = false;
-            for (; i < n; ++i) {
-                neighbor = G1AdjLists[source1][i];
-                diff = G2Matrix[target1][(*A)[neighbor]] + 1;
-                ladder = (diff>1?true:false);
-                diff = G2Matrix[target2][(*A)[neighbor]] + 1;
-                if (target2==(*A)[neighbor]){
-                    diff=0;
-                }
-                if (ladder and diff<=1){
-                    res--;
-                }else if (not ladder and diff>1){
-                    res++;
-                }
-            }
-            const uint m = G1AdjLists[source2].size();
-            for (i = 0; i < m; ++i) {
-                neighbor = G1AdjLists[source2][i];
-                diff = G2Matrix[target2][(*A)[neighbor]] + 1;
-                ladder = (diff>1?true:false);
-                diff = G2Matrix[target1][(*A)[neighbor]] + 1;
-                if (target1==(*A)[neighbor]){
-                    diff=0;
-                }
-                if (ladder and diff<=1){
-                    res--;
-                }else if (not ladder and diff>1){
-                    res++;
-                }
-            }
-            if(G2Matrix[target1][target2] and  G1Matrix[source1][source2])
-            {
-                diff = ( G2Matrix[target1][(*A)[source2]] + 1);
+        case 2: //MultiS3::la_i
+        {
+             int res = 0, diff;
+             uint neighbor;
+             const uint n = G1AdjLists[source1].size();
+             uint i = 0;
+             bool ladder = false;
+             for (; i < n; ++i) {
+                 neighbor = G1AdjLists[source1][i];
+                 diff = G2Matrix[target1][(*A)[neighbor]] + 1;
 
-                res += 2*(diff>1?1:0);
-            }
+                 ladder = (diff>1?true:false);
+                 diff = G2Matrix[target2][(*A)[neighbor]] + 1;
+                 if (target2==(*A)[neighbor]){
+                     diff=0;
+                 }
+
+                 if (ladder and diff<=1){
+                     res--;
+                 }else if (not ladder and diff>1){
+                     res++;
+                 }
+             }
+             const uint m = G1AdjLists[source2].size();
+             for (i = 0; i < m; ++i) {
+                 neighbor = G1AdjLists[source2][i];
+                 diff = G2Matrix[target2][(*A)[neighbor]] + 1;
+
+                 ladder = (diff>1?true:false);
+                 diff = G2Matrix[target1][(*A)[neighbor]] + 1;
+                 if (target1==(*A)[neighbor]){
+                     diff=0;
+                 }
+
+                 if (ladder and diff<=1){
+                     res--;
+                 }else if (not ladder and diff>1){
+                     res++;
+                 }
+             }
+             if(G2Matrix[target1][target2] and  G1Matrix[source1][source2])
+             {
+                 diff = ( G2Matrix[target1][(*A)[source2]] + 1);
+
+                 res += 2*(diff>1?1:0);
+             }
+             return res;
+        }
             break;
-        case MultiS3::la_global:
+        case 3: //MultiS3::la_global
+        {
             int res = 0, diff;
             uint neighbor;
             const uint n = G1AdjLists[source1].size();
@@ -2804,10 +2847,13 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                     if (target1!=(*A)[neighbor] and G2Matrix[target1][(*A)[neighbor]]==1 and neighbor!=source1){res++;}
                 }
             }
+            return res;
+        }
             break;
         default:
-            int res = 0;
-                unsigned oldTarget1Deg = MultiS3::totalDegrees[target1];
+        {
+            int ret = 0;
+                    unsigned oldTarget1Deg = MultiS3::totalDegrees[target1];
                 unsigned oldTarget2Deg = MultiS3::totalDegrees[target2];
                 
                     bool selfLoopAtSource1, selfLoopAtSource2, selfLoopAtTarget1, selfLoopAtTarget2;
@@ -2830,11 +2876,11 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                 {
                     if (selfLoopAtTarget1)
                     {
-                        --res;
+                        --ret;
                     }
                     if (selfLoopAtTarget2)
                     {
-                        ++res;
+                        ++ret;
                     }
                 }
                 
@@ -2842,11 +2888,11 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                 {
                     if (selfLoopAtTarget1)
                     {
-                        --res;
+                        --ret;
                     }
                     if (selfLoopAtTarget2)
                     {
-                        ++res;
+                        ++ret;
                     }
                 }
                 
@@ -2881,10 +2927,12 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                 {
                     MultiS3::denom += 1;
                 }
+
+                return ret;
+        }
             break;
-            
     }
-    return res;
+  
 }
 
 int SANA::inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
