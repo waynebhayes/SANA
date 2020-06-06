@@ -471,11 +471,11 @@ double SANA::acceptingProbability(double energyInc, double Temperature) {
     return energyInc >= 0 ? 1 : exp(energyInc/Temperature);
 }
 
-double SANA::trueAcceptingProbability() {
+double SANA::mean_pBad() {
     return pBadBufferSum/(double) numPBadsInBuffer;
 }
 
-//trueAcceptingProbability can give incorrect probabilities (even negative) if the pbads in the buffer are small enough
+//mean_pBad can give incorrect probabilities (even negative) if the pbads in the buffer are small enough
 //due to accumulated precision errors of adding and subtracting tiny values
 double SANA::slowTrueAcceptingProbability() {
     double sum = 0;
@@ -607,7 +607,7 @@ void SANA::performChange(uint actColId) {
     // only update pBad if is nonzero; reuse previous nonzero pBad if the current one is zero.
     uint betterHole = wasBadMove ? oldTarget : newTarget;
 
-    double pBad = trueAcceptingProbability();
+    double pBad = mean_pBad(); // maybe we should use the *actual* pBad of *this* move?
     if (pBad <= 0 || myNan(pBad)) pBad = LOW_PBAD_LIMIT;
 #ifdef UNWEIGHTED_CORES
     numPegSamples[source]++;
@@ -699,7 +699,7 @@ void SANA::performSwap(uint actColId) {
 #ifdef CORES
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; reuse previous nonzero pBad if the current one is zero.
-        double pBad = trueAcceptingProbability();
+        double pBad = mean_pBad(); // maybe we should use the *actual* pBad of *this* move?
         if (pBad <= 0 || myNan(pBad)) pBad = LOW_PBAD_LIMIT;
 
         uint betterDest1 = wasBadMove ? target1 : target2;
@@ -1491,7 +1491,7 @@ void SANA::trackProgress(long long int i, long long int maxIters) {
     oldIterationsPerformed = iterationsPerformed;
     cout<<i/iterationsPerStep<<" ("<<100*fractionTime<<"%,"<<elapsedTime<<"s): score = "<<currentScore;
     cout<< " ips = "<<ips<<", P("<<Temperature<<") = "<<acceptingProbability(avgEnergyInc, Temperature);
-    cout<<", pBad = "<<trueAcceptingProbability()<<endl;
+    cout<<", pBad = "<<mean_pBad()<<endl;
 
     bool checkScores = true;
     if (checkScores) {
