@@ -1388,6 +1388,11 @@ void SANA::performChange(int type) {
             newLocalScoreSum, newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum,
             newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
 
+#define DISALLOW_SELF 1 // testing to see how good score can get if G1==G2 but we disallow all nodes to self-align
+#if DISALLOW_SELF
+    if(source==newTarget) makeChange=false;
+#endif
+
 #ifdef CORES
 	// Statistics on the emerging core alignment.
 	// only update pBad if it's nonzero; re-use previous nonzero pBad if the current one is zero.
@@ -1521,6 +1526,11 @@ void SANA::performSwap(int type) {
     bool makeChange = scoreComparison(newAligEdges, inducedEdges, newTCSum, newLocalScoreSum,
                         newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges,
                         newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
+
+#define DISALLOW_SELF 1 // testing to see how good score can get if G1==G2 but we disallow all nodes to self-align
+#if DISALLOW_SELF
+    if(source1==target2 || source2==target1) makeChange=false;
+#endif
 
 #ifdef CORES
         // Statistics on the emerging core alignment.
