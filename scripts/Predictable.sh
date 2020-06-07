@@ -1,5 +1,5 @@
 #!/bin/bash
-USAGE="USAGE: $0 [-evc 'egrep-expr' ] [-gene2go (allGO|NOSEQ|...)] tax1 tax2 GO1 GO2 G2.el
+USAGE="USAGE: $0 [-evc 'egrep-expr' ] [-gene2go (allGO|NOSEQ|...)] [ -GO1freq k ] tax1 tax2 GO1 GO2 G2.el
     where GO1 and GO2 are paths to gene2go files WITHOUT the allGO or NOSEQ extension
 Purpose: produce the list of 'predictable-in-principle' (protein,GO) annotations for species tax2: this is simply the
     Cartesian product of
@@ -11,6 +11,7 @@ Purpose: produce the list of 'predictable-in-principle' (protein,GO) annotations
     product, unrestricted, is HUGE (bascally |V2| * |GOterms in tax2|).
 
 Options:
+    -GO1freq k: remove GO terms with frequencies above k (ie., restrict to GO terms with higher specificity]
     -gene2go XXX: which version of gene2go to use? Options include allGO, NOSEQ, and whatever else exists.
 	default=allGO
     -evc 'egrep-expr': restrict predicting evidence codes to those in the egrep-style expression. (NOTE: we don't use
@@ -34,10 +35,12 @@ mkdir -p $TMPDIR
 
 EVC_EGREP='.' # matches anything
 GENE2GO=allGO
+GO1freq=2000000000 # definitely high enough as a default threshold to allow "all" GO terms regardless of GO1freq
 while true; do
     case "$1" in
-    -e*) EVC_EGREP="($2)";shift;;
-    -g*) GENE2GO="$2";shift;;
+    -evc) EVC_EGREP="($2)";shift;;
+    -gene2go) GENE2GO="$2";shift;;
+    -GO1freq) GO1freq="$2";shift;;
     -*) die "unknown option '$1'";;
     *) break;;
     esac
@@ -80,10 +83,10 @@ grep "^$tax1	" $GO1.$GENE2GO | cut -f1-5,8 > $TMPDIR/GO1.tax1.$GENE2GO.1-5,8
     awk 'BEGIN{tax2='$tax2'} # Vable means "validatable", ie., is among the set we are trying to predict at time t2
 	ARGIND==1 && NF && $1==tax2{Vable[$2][$3]=$4} # if GO2 is NONE, this never gets executed and Vable will not exist
 	ARGIND==2{V2[$1]=V2[$2]=1;next} # get list of nodes at earlier date in target species
-	ARGIND==3{GO1tax1[$3][$4]=1;Cat[$3]=$NF} # term,evCode,Category from source species, earlier date
+	ARGIND==3{++GO1freq[$3];GO1tax1[$3][$4]=1;Cat[$3]=$NF} # term,evCode,Category from source species, earlier date
 	END{
 	    # predictable annotation if node is in earlier target network and earlier source network has such a GO term
-	    for(p in V2)for(g in GO1tax1)for(e in GO1tax1[g])
+	    for(p in V2)for(g in GO1tax1)if(g in GO1freq && GO1freq[g] < '$GO1freq')for(e in GO1tax1[g])
 		# if not filtering on validatable, or if annotation (p,g) is validatable:
 		if(!isarray(Vable) || (p in Vable && g in Vable[p]))
 		    printf "%d\t%s\t%s\t%s\t%s\n",tax2,p,g,e,Cat[g]

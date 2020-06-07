@@ -1,5 +1,5 @@
 #!/bin/bash
-USAGE="$0 [-a] gene2goWhich oldG1.el oldG2.el seqSim GO1 GO2 tax1 tax2 NAFthresh col1 col2 outName [files]
+USAGE="$0 [-a] [-GO1freq k] gene2goWhich oldG1.el oldG2.el seqSim GO1 GO2 tax1 tax2 NAFthresh col1 col2 outName [files]
 NOTE: predictions go to outName-p, validations to outName-v, summary to stdout
 where:
 seqSim is the file with sequence similarities/orthologs used to eliminate predictions possible to predict by sequence
@@ -13,7 +13,8 @@ files contain at least 2 columns with aligned protein pairs, including duplicate
 gene2goWhich: should be NOSEQ, allGO, or any other extension that exists
 
 Options:
-    -a : allow all predictions, even those not validatable (default is to restrict to validatable)"
+    -a : allow all predictions, even those not validatable (NOT recommended! default is to restrict to validatable)
+    -GO1freq k: remove predictions of GO terms with frequency above k"
 
 die(){ echo "$USAGE">&2; echo "$@" >&2; exit 1
 }
@@ -27,10 +28,15 @@ trap "trap '' 0 1 2 15; echo TMPDIR is $TMPDIR >&2; exit 1" 3
 mkdir $TMPDIR || die "Hmmm, $TMPDIR could not make $TMPDIR"
 
 ALLOW_ALL=false
-case "$1" in
--a) ALLOW_ALL=true; shift;;
--*) die "unknown option '$1'";;
-esac
+GO1freq=2000000000 # big enough for default...
+while true; do
+    case "$1" in
+    -a) ALLOW_ALL=true; shift;;
+    -GO1freq) GO1freq="$2"; shift 2;;
+    -*) die "unknown option '$1'";;
+    *) break;;
+    esac
+done
 
 [ $# -ge 12 ] || die "expecting at least 12 args, not $#"
 GENE2GO="$1"
@@ -75,7 +81,7 @@ PGO2="$GO2" # Argument representing GO2 for Predictable.sh script
 if $ALLOW_ALL; then
     PGO2=NONE # Predictable.sh will not restrict based on validatable annotations
 fi
-./Predictable.sh -gene2go $GENE2GO $tax1 $tax2 $GO1 $PGO2 $G2 | # Predictable-in-principle, with SOURCE evidence codes
+./Predictable.sh -GO1freq $GO1freq -gene2go $GENE2GO $tax1 $tax2 $GO1 $PGO2 $G2 | # Predictable-in-principle, with SOURCE evidence codes
     tee $TMPDIR/Predictable.Vable | # validatable=(predictable-in-principle annotations) \INTERSECT (actual annotations in GO2)
     fgrep -v -f $TMPDIR/GO1.tax2.allGO.1-3 | # remove predictions already known in target species at earlier date
     fgrep -v -f $TMPDIR/GO2.tax2.SEQ.1-3 | # remove sequence-based annotations discovered by later date
