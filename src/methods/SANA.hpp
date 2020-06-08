@@ -61,7 +61,7 @@ private:
     int numPBadsInBuffer;
     int pBadBufferIndex;
     double pBadBufferSum;
-    double trueAcceptingProbability();
+    double mean_pBad();
     double slowTrueAcceptingProbability();
 
     //store whether or not most recent move was bad
