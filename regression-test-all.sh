@@ -27,16 +27,16 @@ CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 if $MAKE ; then
     for ext in multi float ''; do
 	if [ `hostname` = Jenkins ]; then
-	    make clean; make $ext -j2
+	    make clean; make $ext -j2 || die "make of '$ext' failed"
 	else
-	    make clean; make $ext -j$CORES
+	    make clean; make $ext -j$CORES || die "make of '$ext' failed"
 	fi
 	# We only want a "." separator if the extension is non-null
 	if [ "$ext" = "" ]; then dot=""; else dot="."; fi
 	if [ -x sana$dot$ext ]; then
-	    mv -f "sana$dot$ext" "$SANA_EXE$dot$ext"
+	    [ "sana$dot$ext" != "$SANA_EXE$dot$ext" ] && mv -f "sana$dot$ext" "$SANA_EXE$dot$ext"
 	else
-	    warn "could not create executable 'sana$dot$ext'"
+	    die "could not create executable 'sana$dot$ext'"
 	fi
     done
 fi
