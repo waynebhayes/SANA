@@ -7,7 +7,7 @@ uint MultiS3::denom = 1;
 uint MultiS3::numer = 1;
 double MultiS3::_type = 0;
 bool MultiS3::degreesInit = false;
-vector<uint> MultiS3::totalDegrees;
+vector<uint> MultiS3::shadowDegree;
 
 MultiS3::MultiS3(const Graph* G1, const Graph* G2, int type) : Measure(G1, G2, "ms3") {
 #ifdef MULTI_PAIRWISE
@@ -35,7 +35,7 @@ void MultiS3::setDenom(const Alignment& A) {
     denom = 0;
     const uint n1 = G1->getNumNodes();
     for (uint i = 0; i < n1; i++) {
-        if (totalDegrees[i] > 0) denom += n1-1-i;
+        if (shadowDegree[i] > 0) denom += n1-1-i; // Nil correctly compressed this from SANA1.1 but I think SANA1.1 was wrong
     }
     denom /= 2;
 }
@@ -77,13 +77,13 @@ double MultiS3::eval(const Alignment& A) {
 }
 
 void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2) {
-    totalDegrees = vector<uint>(G2.getNumNodes(), 0);
-    for (uint i = 0; i < G2.getNumNodes(); i++) totalDegrees[i] = G2.getNumNbrs(i);
+    shadowDegree = vector<uint>(G2.getNumNodes(), 0);
+    for (uint i = 0; i < G2.getNumNodes(); i++) shadowDegree[i] = G2.getNumNbrs(i);
     for (const auto& edge : *(G2.getEdgeList())) {
         auto w = G2.getEdgeWeight(edge[0],edge[1]);
-        totalDegrees[edge[0]] += w;
-        if (edge[0] != edge[1]) totalDegrees[edge[1]] += w; //avoid double-counting for self-lopos
+        shadowDegree[edge[0]] += w; // doesn't this overcount by 1 since we already set it to getNumNbrs(i) above?
+        if (edge[0] != edge[1]) shadowDegree[edge[1]] += w; //avoid double-counting for self-lopos
     }
-    for (uint i = 0; i < G1.getNumNodes(); ++i) totalDegrees[A[i]] += 1;
+    for (uint i = 0; i < G1.getNumNodes(); ++i) shadowDegree[A[i]] += 1;
     degreesInit = true;
 }
