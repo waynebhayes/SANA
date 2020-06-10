@@ -1357,8 +1357,8 @@ void SANA::performChange(int type) {
     unsigned oldOldTargetDeg = 0, oldNewTargetDeg = 0, oldMs3Denom = 0, oldMs3Numer =0;
    if (needMS3)
     {
-        oldOldTargetDeg = MultiS3::totalDegrees[oldTarget];
-        oldNewTargetDeg = MultiS3::totalDegrees[newTarget];
+        oldOldTargetDeg = MultiS3::shadowDegree[oldTarget];
+        oldNewTargetDeg = MultiS3::shadowDegree[newTarget];
         oldMs3Denom = MultiS3::denom;
         oldMs3Numer = MultiS3::numer;
     }
@@ -1465,8 +1465,8 @@ void SANA::performChange(int type) {
     {
        if (needMS3)
         {
-            MultiS3::totalDegrees[oldTarget] = oldOldTargetDeg;
-            MultiS3::totalDegrees[newTarget] = oldNewTargetDeg;
+            MultiS3::shadowDegree[oldTarget] = oldOldTargetDeg;
+            MultiS3::shadowDegree[newTarget] = oldNewTargetDeg;
             MultiS3::denom = oldMs3Denom;
             MultiS3::numer = oldMs3Numer;
         }
@@ -1497,8 +1497,8 @@ void SANA::performSwap(int type) {
     unsigned oldTarget1Deg = 0, oldTarget2Deg = 0, oldMs3Denom = 0;
     if (needMS3)
     {
-        oldTarget1Deg = MultiS3::totalDegrees[target1];
-        oldTarget2Deg = MultiS3::totalDegrees[target2];
+        oldTarget1Deg = MultiS3::shadowDegree[target1];
+        oldTarget2Deg = MultiS3::shadowDegree[target2];
         oldMs3Denom = MultiS3::denom;
     }
 
@@ -1590,8 +1590,8 @@ void SANA::performSwap(int type) {
     {
         if (needMS3)
         {
-            MultiS3::totalDegrees[target1] = oldTarget1Deg;
-            MultiS3::totalDegrees[target2] = oldTarget2Deg;
+            MultiS3::shadowDegree[target1] = oldTarget1Deg;
+            MultiS3::shadowDegree[target2] = oldTarget2Deg;
             MultiS3::denom = oldMs3Denom;
         }
     }
@@ -2487,8 +2487,8 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         default:
         {
             int ret = 0;
-                unsigned oldOldTargetDeg = MultiS3::totalDegrees[oldTarget];
-                unsigned oldNewTargetDeg = MultiS3::totalDegrees[newTarget];
+                unsigned oldOldTargetDeg = MultiS3::shadowDegree[oldTarget];
+                unsigned oldNewTargetDeg = MultiS3::shadowDegree[newTarget];
                 bool selfLoopAtSource, selfLoopAtOldTarget, selfLoopAtNewTarget;
             #ifdef SPARSE
                 selfLoopAtSource = G1->hasSelfLoop(source);
@@ -2518,19 +2518,19 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
                 {
                     if (neighbor != source)
                     {
-                        --MultiS3::totalDegrees[oldTarget];
-                        ++MultiS3::totalDegrees[newTarget];
+                        --MultiS3::shadowDegree[oldTarget];
+                        ++MultiS3::shadowDegree[newTarget];
                         ret -= G2Matrix[oldTarget][(*A)[neighbor]];
                         ret += G2Matrix[newTarget][(*A)[neighbor]];
                     }
                 }
                 
-                if (oldOldTargetDeg > 0 && !MultiS3::totalDegrees[oldTarget])
+                if (oldOldTargetDeg > 0 && !MultiS3::shadowDegree[oldTarget])
                 {
                     MultiS3::denom -= 1;
                 }
                 
-                if (oldNewTargetDeg > 0 && !MultiS3::totalDegrees[newTarget])
+                if (oldNewTargetDeg > 0 && !MultiS3::shadowDegree[newTarget])
                 {
                     MultiS3::denom += 1;
                 }
@@ -2863,8 +2863,8 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
         default:
         {
             int ret = 0;
-                    unsigned oldTarget1Deg = MultiS3::totalDegrees[target1];
-                unsigned oldTarget2Deg = MultiS3::totalDegrees[target2];
+                    unsigned oldTarget1Deg = MultiS3::shadowDegree[target1];
+                unsigned oldTarget2Deg = MultiS3::shadowDegree[target2];
                 
                     bool selfLoopAtSource1, selfLoopAtSource2, selfLoopAtTarget1, selfLoopAtTarget2;
             #ifdef SPARSE
@@ -2910,8 +2910,8 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                 {
                     if (neighbor != source1)
                     {
-                        --MultiS3::totalDegrees[target1];
-                        ++MultiS3::totalDegrees[target2];
+                        --MultiS3::shadowDegree[target1];
+                        ++MultiS3::shadowDegree[target2];
                         ret -= G2Matrix[target1][(*A)[neighbor]];
                         ret += G2Matrix[target2][(*A)[neighbor]];
                     }
@@ -2921,19 +2921,19 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                 {
                     if (neighbor != source1)
                     {
-                        --MultiS3::totalDegrees[target2];
-                        ++MultiS3::totalDegrees[target1];
+                        --MultiS3::shadowDegree[target2];
+                        ++MultiS3::shadowDegree[target1];
                         ret -= G2Matrix[target2][(*A)[neighbor]];
                         ret += G2Matrix[target1][(*A)[neighbor]];
                     }
                 }
                 
-                if (oldTarget1Deg > 0 && !MultiS3::totalDegrees[target1])
+                if (oldTarget1Deg > 0 && !MultiS3::shadowDegree[target1])
                 {
                     MultiS3::denom -= 1;
                 }
                 
-                if (oldTarget2Deg > 0 && !MultiS3::totalDegrees[target2])
+                if (oldTarget2Deg > 0 && !MultiS3::shadowDegree[target2])
                 {
                     MultiS3::denom += 1;
                 }

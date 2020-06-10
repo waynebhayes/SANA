@@ -14,7 +14,7 @@ public:
     MultiS3(Graph* G1, Graph* G2, int _numerator_type, int _denominator_type);
     virtual ~MultiS3();
     double eval(const Alignment& A);
-    static vector<uint> totalDegrees; // sum of neighboring edge weights including G1
+    static vector<uint> shadowDegree; // sum of neighboring edge weights including G1
     unsigned computeDenom(const Alignment& A, const Graph& G1, const Graph& G2);
     
     static unsigned numer, denom; // used for inc eval

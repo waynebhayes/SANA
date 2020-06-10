@@ -5,7 +5,7 @@ unsigned NUM_GRAPHS;
 unsigned MultiS3::denom = 1;
 unsigned MultiS3::numer = 1;
 double MultiS3::_type = 0;
-vector<uint> MultiS3::totalDegrees;
+vector<uint> MultiS3::shadowDegree;
 
 unsigned MultiS3::numerator_type   = 0; // 0 for default version of ms3
 unsigned MultiS3::denominator_type = 0;
@@ -92,44 +92,33 @@ MultiS3::MultiS3(Graph* G1, Graph* G2, int _numerator_type, int _denominator_typ
 MultiS3::~MultiS3() {
 }
 
+// I think this is correct, but it's mis-used in computeDenom
 void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2)
 {
-    totalDegrees = vector<uint>(G2.getNumNodes(), 0);
-#if 0
-    vector<vector<uint> > G1EdgeList;
-    G1.getEdgeList(G1EdgeList);
-    
-    vector<vector<uint>> G2AdjLists;
-    G2.getAdjLists(G2AdjLists);
-    
-    uint node1, node2;
-
-    for (const auto& edge: G1EdgeList)
-    {
-        node1 = edge[0], node2 = edge[1];
-        G2Matrix[A[node1]][A[node2]] += 1; // +1 because G1 was pruned out of G2
-    }
-#endif
+    shadowDegree = vector<uint>(G2.getNumNodes(), 0);
     Matrix<MATRIX_UNIT> G1Matrix;
     G1.getMatrix(G1Matrix);
     
     Matrix<MATRIX_UNIT> G2Matrix;
     G2.getMatrix(G2Matrix);
     
+    const uint n2 = G2.getNumNodes();
+    for (uint i = 0; i < n2; ++i) // for each shadow node i
+    {
+        for (uint j = 0; j < n2; ++j) // and for all possible neighbors of node i
+        {
+	    if(i==j) assert(G2Matrix[i][j]==0); // no self loops
+            shadowDegree[i] += G2Matrix[i][j]; // increment the "total degree" of node i by the weight of edge(i,j)
+        }
+    }
+
+    // Now add in the edges from G1
     const uint n1 = G1.getNumNodes();
     for (uint i = 0; i < n1; ++i)
     {
-        totalDegrees[A[i]] += 1;
+        shadowDegree[A[i]] += 1;
     }
     
-    const uint n2 = G2.getNumNodes();
-    for (uint i = 0; i < n2; ++i)
-    {
-        for (uint j = 0; j < n2; ++j)
-        {
-            totalDegrees[i] += G2Matrix[i][j];
-        }
-    }
     degreesInit = true;
 }
 
@@ -137,13 +126,13 @@ unsigned MultiS3::computeDenom(const Alignment& A, const Graph& G1, const Graph&
 {
     LaddersUnderG1 = 0;
 #if 1    
-    const uint n = G1.getNumNodes();
-    for (uint i = 0; i < n - 1; ++i)
+    const uint n1 = G1.getNumNodes();
+    for (uint i = 0; i < n1 - 1; ++i)
     {
-        for (uint j = i + 1; j < n; ++j)
+        for (uint j = i + 1; j < n1; ++j)
         {
-            if (totalDegrees[i] > 0)
-            {
+            if (shadowDegree[i] > 0) 
+            {// this makes no sense: shadowDegree index is a G2 node, not G1, and even if it was A[i] this doesn't imply a ladder
                 ++LaddersUnderG1;
             }
         }
@@ -165,7 +154,7 @@ unsigned MultiS3::computeDenom(const Alignment& A, const Graph& G1, const Graph&
     // I don't think this correctly handles the fact that G1 was pruned.
     for (const auto& hole : holes)
     {
-        if (totalDegrees[hole] > 0)
+        if (shadowDegree[hole] > 0)
         {
             ++LaddersUnderG1;
         }
