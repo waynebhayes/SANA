@@ -572,8 +572,8 @@ void SANA::performChange(uint actColId) {
     unsigned oldOldTargetDeg = 0, oldNewTargetDeg = 0, oldMs3Denom = 0;
 
     if (needMS3) {
-        oldOldTargetDeg = MultiS3::totalDegrees[oldTarget];
-        oldNewTargetDeg = MultiS3::totalDegrees[newTarget];
+        oldOldTargetDeg = MultiS3::shadowDegree[oldTarget];
+        oldNewTargetDeg = MultiS3::shadowDegree[newTarget];
         oldMs3Denom = MultiS3::denom;
     }
     int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
@@ -639,8 +639,8 @@ void SANA::performChange(uint actColId) {
         MultiS3::numer                = newMS3Numer;
     }
     else if (needMS3) {
-        MultiS3::totalDegrees[oldTarget] = oldOldTargetDeg;
-        MultiS3::totalDegrees[newTarget] = oldNewTargetDeg;
+        MultiS3::shadowDegree[oldTarget] = oldOldTargetDeg;
+        MultiS3::shadowDegree[newTarget] = oldNewTargetDeg;
         MultiS3::denom = oldMs3Denom;
     }
 }
@@ -666,8 +666,8 @@ void SANA::performSwap(uint actColId) {
     unsigned oldTarget1Deg = 0, oldTarget2Deg = 0, oldMs3Denom = 0;
 
     if (needMS3) {
-        oldTarget1Deg = MultiS3::totalDegrees[target1];
-        oldTarget2Deg = MultiS3::totalDegrees[target2];
+        oldTarget1Deg = MultiS3::shadowDegree[target1];
+        oldTarget2Deg = MultiS3::shadowDegree[target2];
         oldMs3Denom = MultiS3::denom;
     }
 
@@ -735,8 +735,8 @@ void SANA::performSwap(uint actColId) {
         MultiS3::numer      = newMS3Numer;
         if (needLocal) localScoreSumMap = newLocalScoreSumMap;
     } else if (needMS3) {
-        MultiS3::totalDegrees[target1] = oldTarget1Deg;
-        MultiS3::totalDegrees[target2] = oldTarget2Deg;
+        MultiS3::shadowDegree[target1] = oldTarget1Deg;
+        MultiS3::shadowDegree[target2] = oldTarget2Deg;
         MultiS3::denom = oldMs3Denom;
     }
 }
@@ -1190,8 +1190,8 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         return res;
     }
     int res = 0;
-    unsigned oldOldTargetDeg = MultiS3::totalDegrees[oldTarget];
-    unsigned oldNewTargetDeg = MultiS3::totalDegrees[newTarget];
+    unsigned oldOldTargetDeg = MultiS3::shadowDegree[oldTarget];
+    unsigned oldNewTargetDeg = MultiS3::shadowDegree[newTarget];
 
     if (G1->hasSelfLoop(source)) {
         if (G2->hasSelfLoop(oldTarget)) --res;
@@ -1199,14 +1199,14 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
     }
     for (uint nbr : G1->adjLists[source]) {
         if (nbr != source) {
-            --MultiS3::totalDegrees[oldTarget];
-            ++MultiS3::totalDegrees[newTarget];
+            --MultiS3::shadowDegree[oldTarget];
+            ++MultiS3::shadowDegree[newTarget];
             res -= G2->getEdgeWeight(oldTarget, A[nbr]);
             res += G2->getEdgeWeight(newTarget, A[nbr]);
         }
     }
-    if (oldOldTargetDeg > 0 and !MultiS3::totalDegrees[oldTarget]) MultiS3::denom -= 1;
-    if (oldNewTargetDeg > 0 and !MultiS3::totalDegrees[newTarget]) MultiS3::denom += 1;
+    if (oldOldTargetDeg > 0 and !MultiS3::shadowDegree[oldTarget]) MultiS3::denom -= 1;
+    if (oldNewTargetDeg > 0 and !MultiS3::shadowDegree[newTarget]) MultiS3::denom += 1;
     return res;
 }
 
@@ -1236,8 +1236,8 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     }
 
     int res = 0;
-    uint oldTarget1Deg = MultiS3::totalDegrees[target1];
-    uint oldTarget2Deg = MultiS3::totalDegrees[target2];
+    uint oldTarget1Deg = MultiS3::shadowDegree[target1];
+    uint oldTarget2Deg = MultiS3::shadowDegree[target2];
     if (G1->hasSelfLoop(source1)) {
         if (G2->hasSelfLoop(target1)) --res;
         if (G2->hasSelfLoop(target2)) ++res;
@@ -1248,22 +1248,22 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     }
     for (uint nbr : G1->adjLists[source1]) {
         if (nbr != source1) {
-            --MultiS3::totalDegrees[target1];
-            ++MultiS3::totalDegrees[target2];
+            --MultiS3::shadowDegree[target1];
+            ++MultiS3::shadowDegree[target2];
             res -= G2->getEdgeWeight(target1, A[nbr]);
             res += G2->getEdgeWeight(target2, A[nbr]);
         }
     }
     for (uint nbr : G1->adjLists[source2]) {
         if (nbr != source1) {
-            --MultiS3::totalDegrees[target2];
-            ++MultiS3::totalDegrees[target1];
+            --MultiS3::shadowDegree[target2];
+            ++MultiS3::shadowDegree[target1];
             res -= G2->getEdgeWeight(target2, A[nbr]);
             res += G2->getEdgeWeight(target1, A[nbr]);
         }
     }
-    if (oldTarget1Deg > 0 && !MultiS3::totalDegrees[target1]) MultiS3::denom -= 1;
-    if (oldTarget2Deg > 0 && !MultiS3::totalDegrees[target2]) MultiS3::denom += 1;
+    if (oldTarget1Deg > 0 && !MultiS3::shadowDegree[target1]) MultiS3::denom -= 1;
+    if (oldTarget2Deg > 0 && !MultiS3::shadowDegree[target2]) MultiS3::denom += 1;
     return res;
 }
 
