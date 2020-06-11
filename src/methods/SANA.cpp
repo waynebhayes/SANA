@@ -47,7 +47,7 @@ bool SANA::saveAligAndContOnInterruption = false;
 uint SANA::INVALID_ACTIVE_COLOR_ID;
 
 SANA::SANA(const Graph* G1, const Graph* G2,
-        double TInitial, double TDecay, double t, bool usingIterations, bool addHillClimbing,
+        double TInitial, double TDecay, double t, bool useIterations, bool addHillClimbing,
         MeasureCombination* MC, const string& scoreAggrStr, const Alignment& startA,
         const string& outputFileName, const string& localScoresFileName):
                 Method(G1, G2, "SANA_"+MC->toString()),
@@ -55,7 +55,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
                 addHillClimbing(addHillClimbing),
                 TInitial(TInitial), TDecay(TDecay),
                 wasBadMove(false),
-                usingIterations(usingIterations),
+                useIterations(useIterations),
                 MC(MC),
                 outputFileName(outputFileName),
                 localScoresFileName(localScoresFileName) {
@@ -78,7 +78,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     randomReal = uniform_real_distribution<>(0, 1);
 
     //temperature schedule
-    if (usingIterations) maxIterations = (uint)(t);
+    if (useIterations) maxIterations = ((long long int) t) * 10000000LL;
     else minutes = t;
     initializedIterPerSecond = false;
     pBadBuffer = vector<double> (PBAD_CIRCULAR_BUFFER_SIZE, 0);
@@ -352,21 +352,21 @@ Alignment SANA::run() {
     initDataStructures();
     setInterruptSignal();
 
-    cerr<<"usingIterations = "<<usingIterations<<endl;
-    long long int maxIters = usingIterations ? ((long long int)(maxIterations))*10000000 
-                                             : (long long int) (getIterPerSecond()*minutes*60);
+    cerr<<"useIterations = "<<useIterations<<endl;
+    long long int maxIters = useIterations ? ((long long int)(maxIterations))
+                                           : (long long int) (getIterPerSecond()*minutes*60);
     double leeway = 2;
-    double maxTime = usingIterations ? -1 : minutes * 60 * leeway;
+    double maxTime = useIterations ? -1 : minutes * 60 * leeway;
 
     long long int iter;
-    for (iter = 0; iter <= maxIters; ++iter) {
+    for (iter = 0; iter <= maxIters; iter++) {
         Temperature = temperatureFunction(iter, TInitial, TDecay);
         SANAIteration();
         if (saveAligAndExitOnInterruption) break;
         if (saveAligAndContOnInterruption) printReportOnInterruption();
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter, maxIters);
-            if (maxTime != -1 and timer.elapsed() > maxTime and currentScore-previousScore < 0.005) break;
+            if (not useIterations and timer.elapsed() > maxTime and currentScore-previousScore < 0.005) break;
             previousScore = currentScore;
         }
     }
@@ -451,8 +451,8 @@ void SANA::describeParameters(ostream& sout) const {
     sout << "T_decay: " << TDecay << endl;
     sout << "Optimize: " << endl;
     MC->printWeights(sout);
-    if (!usingIterations) sout << "Execution time: " << minutes << "m" << endl;
-    else sout << "Iterations Run: " << maxIterations << "00,000,000" << endl; //it's in hundred millions
+    if (!useIterations) sout << "Execution time: " << minutes << "m" << endl;
+    else sout << "Max iterations: " << maxIterations << endl;
 }
 
 string SANA::fileNameSuffix(const Alignment& Al) const {
@@ -462,7 +462,7 @@ string SANA::fileNameSuffix(const Alignment& Al) const {
 double SANA::temperatureFunction(long long int iter, double TInitial, double TDecay) {
     if (constantTemp) return TInitial;
     double fraction;
-    if (usingIterations) fraction = iter / (100000000.0 * maxIterations);
+    if (useIterations) fraction = iter / maxIterations;
     else fraction = iter / (minutes * 60.0 * getIterPerSecond());
     return TInitial * exp(-TDecay * fraction);
 }

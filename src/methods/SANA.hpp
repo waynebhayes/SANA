@@ -80,7 +80,7 @@ private:
 
     double minutes = 0;
     bool usingIterations;
-    uint maxIterations = 0;
+    long long int maxIterations = 0;
     uint iterationsPerformed = 0;
     uint oldIterationsPerformed = 0;
     double oldTimeElapsed = 0;
