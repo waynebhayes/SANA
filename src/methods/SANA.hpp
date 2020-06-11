@@ -24,7 +24,7 @@ using namespace std;
 class SANA: public Method {
 
 public:
-    SANA(const Graph* G1, const Graph* G2, double TInitial, double TDecay, double t, bool usingIterations,
+    SANA(const Graph* G1, const Graph* G2, double TInitial, double TDecay, double t, bool useIterations,
         bool addHillClimbing, MeasureCombination* MC, const string& scoreAggrStr,
         const Alignment& optionalStartAlig, const string& outputFileName, const string& localScoresFileName);
     ~SANA();
@@ -61,8 +61,14 @@ private:
     int numPBadsInBuffer;
     int pBadBufferIndex;
     double pBadBufferSum;
-    double mean_pBad();
-    double slowTrueAcceptingProbability();
+
+    //may incorrect probabilities (even negative) if the pbads in the buffer are small enough
+    //due to accumulated precision errors of adding and subtracting tiny values from pBadBufferSum
+    double incrementalMeanPBad(); 
+
+    //this function adds all the pBads in the buffer from scratch and divides at the end
+    //this takes linear time instead of constant, hence the name
+    double slowMeanPBad();
 
     //store whether or not most recent move was bad
     bool wasBadMove;
@@ -79,7 +85,7 @@ private:
     uniform_real_distribution<> randomReal;
 
     double minutes = 0;
-    bool usingIterations;
+    bool useIterations;
     long long int maxIterations = 0;
     uint iterationsPerformed = 0;
     uint oldIterationsPerformed = 0;

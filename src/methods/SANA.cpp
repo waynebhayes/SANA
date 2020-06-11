@@ -451,8 +451,8 @@ void SANA::describeParameters(ostream& sout) const {
     sout << "T_decay: " << TDecay << endl;
     sout << "Optimize: " << endl;
     MC->printWeights(sout);
-    if (!useIterations) sout << "Execution time: " << minutes << "m" << endl;
-    else sout << "Max iterations: " << maxIterations << endl;
+    if (useIterations) sout << "Max iterations: " << maxIterations << endl;
+    else sout << "Execution time: " << minutes << "m" << endl;
 }
 
 string SANA::fileNameSuffix(const Alignment& Al) const {
@@ -471,13 +471,11 @@ double SANA::acceptingProbability(double energyInc, double Temperature) {
     return energyInc >= 0 ? 1 : exp(energyInc/Temperature);
 }
 
-double SANA::mean_pBad() {
+double SANA::incrementalMeanPBad() {
     return pBadBufferSum/(double) numPBadsInBuffer;
 }
 
-//mean_pBad can give incorrect probabilities (even negative) if the pbads in the buffer are small enough
-//due to accumulated precision errors of adding and subtracting tiny values
-double SANA::slowTrueAcceptingProbability() {
+double SANA::slowMeanPBad() {
     double sum = 0;
     for (int i = 0; i < numPBadsInBuffer; i++) sum += pBadBuffer[i];
     return sum/(double) numPBadsInBuffer;
@@ -607,7 +605,7 @@ void SANA::performChange(uint actColId) {
     // only update pBad if is nonzero; reuse previous nonzero pBad if the current one is zero.
     uint betterHole = wasBadMove ? oldTarget : newTarget;
 
-    double pBad = mean_pBad(); // maybe we should use the *actual* pBad of *this* move?
+    double pBad = incrementalMeanPBad(); // maybe we should use the *actual* pBad of *this* move?
     if (pBad <= 0 || myNan(pBad)) pBad = LOW_PBAD_LIMIT;
 #ifdef UNWEIGHTED_CORES
     numPegSamples[source]++;
@@ -699,7 +697,7 @@ void SANA::performSwap(uint actColId) {
 #ifdef CORES
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; reuse previous nonzero pBad if the current one is zero.
-        double pBad = mean_pBad(); // maybe we should use the *actual* pBad of *this* move?
+        double pBad = incrementalMeanPBad(); // maybe we should use the *actual* pBad of *this* move?
         if (pBad <= 0 || myNan(pBad)) pBad = LOW_PBAD_LIMIT;
 
         uint betterDest1 = wasBadMove ? target1 : target2;
@@ -774,7 +772,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         wasBadMove = energyInc < 0;
         //using max and min here because with extremely low temps I was seeing invalid probabilities
         //note: I did not make this change for the other types of ScoreAggregation::  -Nil
-        if(energyInc >= 0) pBad=1.0;
+        if (energyInc >= 0) pBad = 1.0;
         else pBad = max(0.0, min(1.0, exp(energyInc / Temperature)));
         break;
     }
@@ -791,7 +789,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore *= ncWeight * (newNcSum / trueAWithValidCountAppended.back());
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        if(energyInc >= 0) pBad=1;
+        if (energyInc >= 0) pBad = 1;
         else pBad = exp(energyInc / Temperature);
         break;
     }
@@ -817,7 +815,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        if(deltaEnergy >= 0)pBad=1;
+        if (deltaEnergy >= 0) pBad = 1;
         else pBad = exp(energyInc / Temperature);
         break;
     }
@@ -842,7 +840,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 
         energyInc = newCurrentScore - currentScore; //is this even used?
         wasBadMove = deltaEnergy < 0;
-        if(deltaEnergy >= 0)pBad=1;
+        if (deltaEnergy >= 0) pBad = 1;
 	else pBad = exp(energyInc / Temperature);
         break;
     }
@@ -859,7 +857,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        if(energyInc >= 0)pBad=1;
+        if (energyInc >= 0) pBad = 1;
         else pBad = exp(energyInc / Temperature);
         break;
     }
@@ -889,7 +887,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = maxScore < -1 * minScore;
-        if(maxScore >= -1 * minScore)pBad=1;
+        if (maxScore >= -1 * minScore) pBad = 1;
         else pBad = exp(energyInc / Temperature);
         break;
     }
@@ -1480,18 +1478,18 @@ int SANA::ncIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     return change;
 }
 
-void SANA::trackProgress(long long int i, long long int maxIters) {
+void SANA::trackProgress(long long int iter, long long int maxIters) {
     if (!enableTrackProgress) return;
-    double fractionTime = maxIters == -1 ? 0 : i/(double)maxIters;
+    double fractionTime = maxIters == -1 ? 0 : iter/(double)maxIters;
     double elapsedTime = timer.elapsed();
     uint iterationsElapsed = iterationsPerformed-oldIterationsPerformed;
     if (elapsedTime == 0) oldTimeElapsed = 0;
     double ips = (iterationsElapsed/(elapsedTime-oldTimeElapsed));
     oldTimeElapsed = elapsedTime;
     oldIterationsPerformed = iterationsPerformed;
-    cout<<i/iterationsPerStep<<" ("<<100*fractionTime<<"%,"<<elapsedTime<<"s): score = "<<currentScore;
+    cout<<iter/iterationsPerStep<<" ("<<100*fractionTime<<"%,"<<elapsedTime<<"s): score = "<<currentScore;
     cout<< " ips = "<<ips<<", P("<<Temperature<<") = "<<acceptingProbability(avgEnergyInc, Temperature);
-    cout<<", pBad = "<<mean_pBad()<<endl;
+    cout<<", pBad = "<<incrementalMeanPBad()<<endl;
 
     bool checkScores = true;
     if (checkScores) {
@@ -1617,7 +1615,7 @@ double SANA::getPBad(double temp, double maxTime, int logLevel) {
         if (iter%sampleInterval == 0) {
             if (verbose) {
                 cerr<<verbose_i<<" score: "<<currentScore<<" (avg pBad: "
-                    <<slowTrueAcceptingProbability()<<")"<<endl;
+                    <<slowMeanPBad()<<")"<<endl;
                 verbose_i++;
             }
             //circular buffer behavior
@@ -1652,7 +1650,7 @@ double SANA::getPBad(double temp, double maxTime, int logLevel) {
             }
         }
     }
-    double pBadAvgAtEq = slowTrueAcceptingProbability();
+    double pBadAvgAtEq = slowMeanPBad();
     double nextIps = (double)iter / (double)timer.elapsed();
     pair<double, double> nextPair (temp, nextIps);
     ipsList.push_back(nextPair);
