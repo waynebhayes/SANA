@@ -2,7 +2,7 @@ CC = g++
 
 #CXXFLAGS = -I "src/utils" -Wall -fno-inline -O2 -std=c++11 -g3
 #CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DMULTI_PAIRWISE #-pg -ggdb -Bstatic #-static
- CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread #-ggdb -DMULTI_PAIRWISE #-DCORES #-DUSE_CACHED_FILES #-DSPARSE -ggdb #-pg
+ CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread #-g -ggdb #-DMULTI_PAIRWISE #-DCORES #-DUSE_CACHED_FILES #-DSPARSE -ggdb #-pg
 
 ifeq ($(SPARSE), 1)
 CXXFLAGS := $(CXXFLAGS) -DSPARSE
@@ -46,8 +46,7 @@ ARGUMENTS_SRC = 							\
 	src/arguments/measureSelector.cpp				\
 	src/arguments/methodSelector.cpp				\
 	src/arguments/GraphLoader.cpp					\
-	src/arguments/SupportedArguments.cpp				\
-	src/arguments/defaultArguments.cpp
+	src/arguments/SupportedArguments.cpp				
 
 MEASURES_SRCS = 							\
 	src/measures/EdgeCorrectness.cpp 				\

@@ -1,10 +1,10 @@
+// Created by Hudson Hughes on 8/2/16.
+
 #ifndef LINEARREGRESSION_HPP_
 #define LINEARREGRESSION_HPP_
-//
-// Created by Hudson Hughes on 8/2/16.
+
 #include "../arguments/ArgumentParser.hpp"
 #include "../arguments/SupportedArguments.hpp"
-#include "../arguments/defaultArguments.hpp"
 #include "../arguments/modeSelector.hpp"
 #include "randomSeed.hpp"
 #include <fstream>
@@ -14,6 +14,7 @@
 #include <map>
 #include <tuple>
 #include "utils.hpp"
+
 using namespace std;
 
 class LinearRegression {

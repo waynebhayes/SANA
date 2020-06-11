@@ -6,20 +6,41 @@
 
 using namespace std;
 
-vector<string> stringArgs;
-vector<string> doubleArgs;
-vector<string> boolArgs;
-vector<string> doubleVectorArgs;
-vector<string> stringVectorArgs;
+//there is a "default value" column in the supported arguments table which is currently ignored
+//that should be used instead of this, as keeping them separate makes it harder to keep in sync -Nil
+vector<string> defaultArguments = {
+"-nodecweights 4 0.1 0.25 0.5 0.15",
+"-edgecweights 4 0.1 0.25 0.5 0.15",
+"-goweights 1 1",
+"-gofrac 1",
+"-wecnodesim graphletlgraal",
+"-wavenodesim nodec",
+"-tinitial auto",
+"-tdecay auto",
+"-schedulemethod auto",
+"-mode normal",
+"-method sana",
+"-s3 0",
+"-js 0",
+"-lgraaliter 1000",
+"-objfuntype generic",
+"-qcount 1",
+"-o sana",
+"-localScoresFile sana", 
+"-qmode normal",
+"-combinedScoreAs sum",
+"-sec 0",
+"-maxGraphletSize 4"
+};
 
 //This file contains every argument supported by SANA contained basically inside an array, each element in the array contains 6 fields.
 //A Description of each field:
 // "Option": name of the argument, always begins with a dash.
 // "Type": datatype/datastructure that is expected as an argument for that option.
-// "Default": IGNORED. Was meant to be the default value if none is given on the command line (why is it ignored ? ) 
+// "Default": IGNORED. Was meant to be the default value if none is given on the command line (why is it ignored ? Instead, defaultArguments array is used) 
 // "Title": longer English title (used only by "./sana --help")
 // "Description": arbitrarily long description for the option.
-// "0/1": Boolean: can this option be accessed from other interfaces controlling SANA (when SANA is NOT run from a shell)
+// "ExternalAccess": should be "0" or "1". It indicates if this option be accessed from other interfaces controlling SANA (when SANA is NOT run from a shell)
 //
 // Each line below must start with a "{" and end with "}," (modulo whitespace), since we use a script to convert this to CSV.
 
@@ -31,9 +52,8 @@ vector<string> stringVectorArgs;
 // the format for vector arguments is an integer followed by exactly that many values (but this is only documented in the description of some of the vector arguments)
 // For an exhaustive list of supported types, see the if/else checks inside "validateAndAddArguments" function
 
-
 vector<array<string, 6>> supportedArguments = {
-    { "Option", "Type", "Default", "Title", "Description", "0/1" },
+    { "Option", "Type", "Default", "Title", "Description", "ExternalAccess" },
     //-----------------------------------GENERAL-----------------------------------------
     { "", "general", "banner", "", "General Options", "0" },
     { "-g1", "string", "yeast", "Network 1", "First nerwork (smaller one). Requirement: An alignment file must exist inside the networks directory which matches the name of the specified species.", "0" },
@@ -211,6 +231,13 @@ vector<array<string, 6>> supportedArguments = {
      //-------------------------------END UNDEFINED--------------------------------------
 };
 
+
+vector<string> stringArgs;
+vector<string> doubleArgs;
+vector<string> boolArgs;
+vector<string> doubleVectorArgs;
+vector<string> stringVectorArgs;
+
 void SupportedArguments::validateAndAddArguments(){
     for(uint i = 1; i < supportedArguments.size(); ++i){
         if(supportedArguments[i][2] == "banner") continue;
@@ -235,7 +262,7 @@ void SupportedArguments::validateAndAddArguments(){
     }
 }
 
-void SupportedArguments::printAllArgumentDescriptions(unordered_set<string> helpArgs) {
+void SupportedArguments::printAllArgumentDescriptions(const unordered_set<string>& helpArgs) {
     ifstream outputIfs("./src/arguments/helpOutput");
     ifstream tutorialIfs("./src/arguments/helpTutorial");
     string line;
@@ -269,7 +296,7 @@ void SupportedArguments::printAllArgumentDescriptions(unordered_set<string> help
     }
 }
 
-string SupportedArguments::printItem(const array<string, 6> &item) {
+string SupportedArguments::printItem(const array<string, 6>& item) {
     ostringstream oss;
     oss << '\n';
     if (item[2] == "banner") {
@@ -305,20 +332,21 @@ string SupportedArguments::printItem(const array<string, 6> &item) {
     return oss.str();
 }
 
-string SupportedArguments::formatDescription(string description) {
+string SupportedArguments::formatDescription(const string& description) {
     ostringstream oss;
     int end = 38;
-    while (description.length() > 38) {
-        while (description[end] != ' ') end--;
-        oss << setw(42) << left << "" << description.substr(0, end) + '\n';
-        description = description.substr(end + 1, description.length());
+    string desc = description;
+    while (desc.length() > 38) {
+        while (desc[end] != ' ') end--;
+        oss << setw(42) << left << "" << desc.substr(0, end) + '\n';
+        desc = desc.substr(end + 1, desc.length());
         end = 38;
     }
-    oss << setw(42) << left << "" << description;
+    oss << setw(42) << left << "" << desc;
     return oss.str();
 }
 
-string SupportedArguments::formatWithNewLines(const string &item4) {
+string SupportedArguments::formatWithNewLines(const string& item4) {
     string res = "";
     res += formatDescription(item4.substr(0, item4.find_first_of('\n'))) + '\n';
     string textWithNewLine = item4.substr(item4.find_first_of('\n') + 1, item4.size() - item4.find_first_of('\n') + 1);

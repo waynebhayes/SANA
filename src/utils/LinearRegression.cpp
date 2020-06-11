@@ -1,15 +1,14 @@
-//
 // Created by Hudson Hughes on 8/2/16.
-//
+
+#include "LinearRegression.hpp"
 #include <string>
 #include <tuple>
 #include <vector>
 #include <cmath>
 #include <limits>
 #include <assert.h>
-#include "LinearRegression.hpp"
-using namespace std;
 
+using namespace std;
 
 LinearRegression::Sample::Sample(double temp, double pBad): temp(temp), pBad(pBad) {}
 

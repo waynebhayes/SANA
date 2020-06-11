@@ -2,7 +2,6 @@
 #include "ArgumentParser.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/FileIO.hpp"
-#include "defaultArguments.hpp"
 #include "SupportedArguments.hpp"
 using namespace std;
 

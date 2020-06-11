@@ -11,7 +11,8 @@ using namespace std;
 
 //this should be refactored without global/extern variables -Nil
 
-extern vector<array<string, 6>> supportedArguments; //table filled in SupportedArguments.cpp
+extern vector<string> defaultArguments; //static table filled in the cpp file
+extern vector<array<string, 6>> supportedArguments; //static table filled in the cpp file
 
 extern vector<string> stringArgs;
 extern vector<string> doubleArgs;
@@ -25,11 +26,11 @@ public:
 	static void validateAndAddArguments();
 
 	//Used to generate the help text when ./sana -h or ./sana --help is invoked from command line.
-	static void printAllArgumentDescriptions(unordered_set<string> help_args);
+	static void printAllArgumentDescriptions(const unordered_set<string>& help_args);
 
 private:
-	static string printItem(const array<string, 6> &item); //Helper function of printAllArgumentDescriptions() that prints a single argument to the console.
-	static string formatDescription(string description); //helper function of printItem() that helps with the formatting of console output.
+	static string printItem(const array<string, 6>& item); //Helper function of printAllArgumentDescriptions() that prints a single argument to the console.
+	static string formatDescription(const string& description); //helper function of printItem() that helps with the formatting of console output.
 	static string formatWithNewLines(const string &item4); //helper function of formatDescription() that outputs a description of an argument on multiple lines when hasNewLines() evaluates to true.
 };
 
