@@ -124,7 +124,7 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
            itm = args.doubles["-itm"], itb = args.doubles["-itb"];
     double maxSeconds = 0;
     long long int maxIterations = 0;
-    if (t > 0) maxSeconds = t;
+    if (t > 0) maxSeconds = 60*t;
     if (ts > 0) maxSeconds = ts;
     if (tm > 0) maxSeconds = 60*tm;
     if (it > 0) maxIterations = (long long int) it;
