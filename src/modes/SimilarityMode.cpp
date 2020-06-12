@@ -3,7 +3,6 @@
 #include <utility>
 #include "../utils/utils.hpp"
 #include "../arguments/measureSelector.hpp"
-#include "../arguments/methodSelector.hpp"
 #include "../arguments/GraphLoader.hpp"
 
 void SimilarityMode::run(ArgumentParser& args) {

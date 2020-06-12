@@ -45,23 +45,15 @@ ArgumentParser::ArgumentParser(int argc, char* argv[]) {
     for (string s: stringVectorArgs) stringVectors[s] = vector<string> (0);
 
     bool helpFound = false;
-    bool timeFound = false;
     unordered_set<string> helpArgs;
     //check to see if there is a help argument
     for (string arg : vArg) {
         if (arg == "-h" or arg == "--help") helpFound = true;
         else if (helpFound) helpArgs.insert(arg);
-
-        if (arg == "-t") timeFound = true;
     }
     if (helpFound) {
         SupportedArguments::printAllArgumentDescriptions(helpArgs);
         exit(0);
-    }
-    // Removed time from default arguments, Instead checks here if time provided
-    if (not timeFound) {
-        throw runtime_error("please specify a run time in minutes using the"
-                            " '-t xxx' option; type './sana -h' for help");
     }
 
     for (uint i = 0; i < vArg.size(); i++) {

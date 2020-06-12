@@ -169,7 +169,7 @@ string Experiment::createCommand(string method, string G1Name, string G2Name, ui
     }
 
     command += " -g1 " + G1Name + " -g2 " + G2Name;
-    command += " -t " + to_string(t);
+    command += " -tm " + to_string(t);
     for (string arg: getMethodArgs(method)) command += " " + arg;
     for (string arg: experArgs) command += " " + arg;
 

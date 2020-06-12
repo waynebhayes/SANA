@@ -9,7 +9,6 @@
 #include "../modes/Experiment.hpp"
 #include "../modes/AnalysisMode.hpp"
 #include "../modes/SimilarityMode.hpp"
-#include "../modes/ParetoMode.hpp"
 
 #include "../utils/utils.hpp"
 

@@ -3,13 +3,12 @@
 #include "AnalysisMode.hpp"
 #include "../utils/utils.hpp"
 #include "../arguments/measureSelector.hpp"
-#include "../arguments/methodSelector.hpp"
 #include "../arguments/GraphLoader.hpp"
 #include "../Report.hpp"
 
 Alignment loadAlignment(int format, const string& file, const Graph& G1, const Graph& G2) {
-    string errorHelpMsg = "The following are supported\n1: sana.out format\n2: edge list format\n";
-    errorHelpMsg += "3: partial edge list format\n4: partial edge list format using numbers instead of names\n";
+    string errorHelpMsg = "The following are supported\n1: sana.out format\n2: edge list format\n"
+                          "3: partial edge list format\n4: partial edge list format using numbers instead of names\n";
 
     if(format == 0 or file == "")
         throw runtime_error("When using analysis mode you must specify both -alignFile and -alignFormat. "+errorHelpMsg);

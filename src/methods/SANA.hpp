@@ -24,7 +24,7 @@ using namespace std;
 class SANA: public Method {
 
 public:
-    SANA(const Graph* G1, const Graph* G2, double TInitial, double TDecay, double t, bool useIterations,
+    SANA(const Graph* G1, const Graph* G2, double TInitial, double TDecay, double maxSeconds, long long maxIterations,
         bool addHillClimbing, MeasureCombination* MC, const string& scoreAggrStr,
         const Alignment& optionalStartAlig, const string& outputFileName, const string& localScoresFileName);
     ~SANA();
@@ -42,7 +42,7 @@ public:
     //requires TInitial and TFinal to be already initialized
     void setTDecayFromTempRange();
 
-    double getPBad(double temp, double maxTime = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
+    double getPBad(double temp, double maxTimeInS = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
     list<pair<double, double>> ipsList;
 
 
@@ -84,9 +84,12 @@ private:
     mt19937 gen;
     uniform_real_distribution<> randomReal;
 
-    double minutes = 0;
+    //execution time is delimited by either maxSeconds or maxIterations
+    //exactly one of them can be > 0 
     bool useIterations;
-    long long int maxIterations = 0;
+    double maxSeconds;
+    long long int maxIterations;
+
     uint iterationsPerformed = 0;
     uint oldIterationsPerformed = 0;
     double oldTimeElapsed = 0;

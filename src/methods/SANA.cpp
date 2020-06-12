@@ -47,7 +47,7 @@ bool SANA::saveAligAndContOnInterruption = false;
 uint SANA::INVALID_ACTIVE_COLOR_ID;
 
 SANA::SANA(const Graph* G1, const Graph* G2,
-        double TInitial, double TDecay, double t, bool useIterations, bool addHillClimbing,
+        double TInitial, double TDecay, double maxSeconds, long long int maxIterations, bool addHillClimbing,
         MeasureCombination* MC, const string& scoreAggrStr, const Alignment& startA,
         const string& outputFileName, const string& localScoresFileName):
                 Method(G1, G2, "SANA_"+MC->toString()),
@@ -55,7 +55,8 @@ SANA::SANA(const Graph* G1, const Graph* G2,
                 addHillClimbing(addHillClimbing),
                 TInitial(TInitial), TDecay(TDecay),
                 wasBadMove(false),
-                useIterations(useIterations),
+                maxSeconds(maxSeconds),
+                maxIterations(maxIterations),
                 MC(MC),
                 outputFileName(outputFileName),
                 localScoresFileName(localScoresFileName) {
@@ -78,8 +79,12 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     randomReal = uniform_real_distribution<>(0, 1);
 
     //temperature schedule
-    if (useIterations) maxIterations = ((long long int) t) * 10000000LL;
-    else minutes = t;
+    if (maxIterations > 0 and maxSeconds > 0)
+        throw runtime_error("use only one of maxIterations or maxSeconds");
+    else if (maxIterations <= 0 and maxSeconds <= 0)
+        throw runtime_error("exactly one of maxIterations and maxSeconds must be > 0");
+    useIterations = maxIterations > 0;
+
     initializedIterPerSecond = false;
     pBadBuffer = vector<double> (PBAD_CIRCULAR_BUFFER_SIZE, 0);
 
@@ -217,6 +222,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
                                 to_string(actColToChangeProb[i]), to_string(1-actColToChangeProb[i])});
         }
         printTable(colTable, 4, cerr);
+        cerr<<endl;
     }
 
     //init g2NodeToActColId. For each node, we do the following transformations:
@@ -352,11 +358,10 @@ Alignment SANA::run() {
     initDataStructures();
     setInterruptSignal();
 
-    cerr<<"useIterations = "<<useIterations<<endl;
-    long long int maxIters = useIterations ? ((long long int)(maxIterations))
-                                           : (long long int) (getIterPerSecond()*minutes*60);
+    long long int maxIters = useIterations ? maxIterations
+                                           : (long long int) (getIterPerSecond()*maxSeconds);
     double leeway = 2;
-    double maxTime = useIterations ? -1 : minutes * 60 * leeway;
+    double maxSecondsWithLeeway = maxSeconds * leeway;
 
     long long int iter;
     for (iter = 0; iter <= maxIters; iter++) {
@@ -366,7 +371,8 @@ Alignment SANA::run() {
         if (saveAligAndContOnInterruption) printReportOnInterruption();
         if (iter%iterationsPerStep == 0) {
             trackProgress(iter, maxIters);
-            if (not useIterations and timer.elapsed() > maxTime and currentScore-previousScore < 0.005) break;
+            if (not useIterations and timer.elapsed() > maxSecondsWithLeeway
+                and currentScore-previousScore < 0.005) break;
             previousScore = currentScore;
         }
     }
@@ -430,8 +436,8 @@ void SANA::performHillClimbing(long long int idleCountTarget) {
     numPBadsInBuffer = pBadBufferSum = pBadBufferIndex = 0; 
 
     cout << "Beginning Final Pure Hill Climbing Stage" << endl;
-    Timer hillTimer;
-    hillTimer.start();
+    Timer T;
+    T.start();
     uint idleCount = 0;
     while(idleCount < idleCountTarget) {
         if (iter%iterationsPerStep == 0) trackProgress(iter);
@@ -442,7 +448,7 @@ void SANA::performHillClimbing(long long int idleCountTarget) {
         ++iter;
     }
     trackProgress(iter);
-    cout<<"Hill climbing took "<<hillTimer.elapsedString()<<endl;
+    cout<<"Hill climbing took "<<T.elapsedString()<<"s"<<endl;
 }
 
 void SANA::describeParameters(ostream& sout) const {
@@ -452,7 +458,7 @@ void SANA::describeParameters(ostream& sout) const {
     sout << "Optimize: " << endl;
     MC->printWeights(sout);
     if (useIterations) sout << "Max iterations: " << maxIterations << endl;
-    else sout << "Execution time: " << minutes << "m" << endl;
+    else sout << "Execution time: " << maxSeconds << "s" << endl;
 }
 
 string SANA::fileNameSuffix(const Alignment& Al) const {
@@ -463,7 +469,7 @@ double SANA::temperatureFunction(long long int iter, double TInitial, double TDe
     if (constantTemp) return TInitial;
     double fraction;
     if (useIterations) fraction = iter / maxIterations;
-    else fraction = iter / (minutes * 60.0 * getIterPerSecond());
+    else fraction = iter / (maxSeconds * getIterPerSecond());
     return TInitial * exp(-TDecay * fraction);
 }
 
@@ -487,7 +493,7 @@ void sigIntHandler(int s) {
     string line;
     int c = -1;
     do {
-        cerr<<"Select an option (0 - 3):"<<endl<<"  (0) Do nothing and continue"<<endl<<"  (1) Exit"<<endl
+        cout<<"Select an option (0 - 3):"<<endl<<"  (0) Do nothing and continue"<<endl<<"  (1) Exit"<<endl
             <<"  (2) Save Alignment and Exit"<<endl<<"  (3) Save Alignment and Continue"<<endl<<">> ";
         cin >> c;
         if (cin.eof()) exit(0);
@@ -496,7 +502,7 @@ void sigIntHandler(int s) {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
-        if      (c == 0) cerr << "Continuing..." << endl;
+        if      (c == 0) cout<<"Continuing..."<<endl;
         else if (c == 1) exit(0);
         else if (c == 2) SANA::saveAligAndExitOnInterruption = true;
         else if (c == 3) SANA::saveAligAndContOnInterruption = true;
@@ -1506,7 +1512,7 @@ void SANA::trackProgress(long long int iter, long long int maxIters) {
     //our "ideal" P(bad), then decay is either "sped up" or "slowed down"
     if (dynamicTDecay) {
         int NSteps = 100;
-        double fractionTime = (timer.elapsed()/(minutes*60));
+        double fractionTime = (timer.elapsed()/maxSeconds);
         double lowIndex = floor(NSteps*fractionTime);
         double highIndex = ceil(NSteps*fractionTime);
         double betweenFraction = NSteps*fractionTime - lowIndex;
@@ -1566,7 +1572,7 @@ void SANA::initIterPerSecond() {
     iterPerSecond = totalIps;
 
     //what is this? can it be removed? -Nil
-    uint integralMin = minutes;
+    uint integralMin = maxSeconds/60.0;
     string folder = "cache-pbad/"+MC->toString()+"/progress_"+to_string(integralMin)+"/";
     string fileName = folder+G1->getName()+"_"+G2->getName()+"_0.csv";
     ofstream ofs(fileName);
@@ -1591,7 +1597,7 @@ if the score went down at least half the time,
 this suggests that the upward trend is over and we are at equilirbium
 once we know we are at equilibrium, we use the buffer of pbads to get an average pBad
 'logLevel' can be 0 (no output) 1 (logs result in cerr) or 2 (verbose/debug mode)*/
-double SANA::getPBad(double temp, double maxTime, int logLevel) {
+double SANA::getPBad(double temp, double maxTimeInS, int logLevel) {
     //new state for the run at fixed temperature
     constantTemp = true;
     Temperature = temp;
@@ -1640,7 +1646,7 @@ double SANA::getPBad(double temp, double maxTime, int logLevel) {
                     }
                 }
             }
-            if (timer.elapsed() > maxTime) {
+            if (timer.elapsed() > maxTimeInS) {
                 if (verbose) {
                     cerr<<"ran out of time. scoreBuffer:"<<endl;
                     for (uint i = 0; i < scoreBuffer.size(); i++) cerr<<scoreBuffer[i]<<endl;
@@ -1657,7 +1663,7 @@ double SANA::getPBad(double temp, double maxTime, int logLevel) {
     if (logLevel >= 1) {
         cout<<"> getPBad("<<temp<<") = "<<pBadAvgAtEq<<" (score: "<<currentScore<<")";
         if (reachedEquilibrium) cout<<" (time: "<<timer.elapsed()<<"s)";
-        else cout<<" (didn't detect eq. after "<<maxTime<<"s)";
+        else cout<<" (didn't detect eq. after "<<maxSeconds<<"s)";
         cout<<" iterations = "<<iter<<", ips = "<<nextIps<<endl;
         if (verbose) cerr<<"final result: "<<pBadAvgAtEq<<endl
                          <<"****************************************"<<endl<<endl;

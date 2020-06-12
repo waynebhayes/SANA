@@ -44,7 +44,7 @@ ARGUMENTS_SRC = 							\
 	src/arguments/ArgumentParser.cpp				\
 	src/arguments/modeSelector.cpp					\
 	src/arguments/measureSelector.cpp				\
-	src/arguments/methodSelector.cpp				\
+	src/arguments/MethodSelector.cpp				\
 	src/arguments/GraphLoader.cpp					\
 	src/arguments/SupportedArguments.cpp				
 

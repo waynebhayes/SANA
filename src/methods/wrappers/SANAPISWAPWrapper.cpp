@@ -1,13 +1,14 @@
 #include "SANAPISWAPWrapper.hpp"
-#include "../../arguments/methodSelector.hpp"
+#include "../../arguments/MethodSelector.hpp"
 #include "../../Report.hpp"
 
 using namespace std;
 
-SANAPISWAPWrapper::SANAPISWAPWrapper(const Graph* G1, const Graph* G2, ArgumentParser args, MeasureCombination M): WrappedMethod(G1, G2, "SANAPISWAP", args.strings["-wrappedArgs"]){
+SANAPISWAPWrapper::SANAPISWAPWrapper(const Graph* G1, const Graph* G2, ArgumentParser args, MeasureCombination M):
+            WrappedMethod(G1, G2, "SANAPISWAP", args.strings["-wrappedArgs"]){
     wrappedDir = "wrappedAlgorithms/PISWAP";
     this->M = M;
-    sanaMethod = (SANA*)(methodSelector::initSANA(*G1, *G2, args, this->M));
+    sanaMethod = MethodSelector::initSANA(*G1, *G2, args, this->M);
     
     string outfile = args.strings["-o"];
     int location = outfile.find_last_of("/");

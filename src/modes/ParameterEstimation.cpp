@@ -99,7 +99,7 @@ void ParameterEstimation::makeScript(double k, double l) {
     else if (measureName == "s3") ofs << " -ec 0 -s3 1";
     else throw runtime_error("unexpected optimization measure");
     ofs << " -k " << k << " -l " << l;
-    ofs << " -t " << minutes;
+    ofs << " -tm " << minutes;
     ofs << " -o " << getAlignmentFileName(k, l) << endl;
 }
 

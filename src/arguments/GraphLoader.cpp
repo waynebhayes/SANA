@@ -17,8 +17,6 @@ using namespace std;
 
 pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     cout << "Initializing graphs..." << endl;
-    Timer T;
-    T.start();
     string fg1 = args.strings["-fg1"], fg2 = args.strings["-fg2"];
     string g1Name, g2Name, g1File, g2File;
     if (fg1 != "") {
@@ -49,11 +47,13 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     g1HasWeights = false, g2HasWeights = false; //unweighted
 #endif
 
+    Timer T;
+    T.start();
     auto futureG1 = async(&loadGraphFromFile, g1Name, g1File, g1HasWeights);
     auto futureG2 = async(&loadGraphFromFile, g2Name, g2File, g2HasWeights);
     Graph G1 = futureG1.get();
     Graph G2 = futureG2.get();
-    cout << "Graph loading completed in " << T.elapsedString() << endl <<endl;
+    cout << "Loading graph files took " << T.elapsedString() << endl <<endl;
 
     if (G1.getNumNodes() > G2.getNumNodes())
         throw runtime_error("G1 has more nodes than G2. Please swap the graphs");
@@ -176,7 +176,7 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
 #ifdef MULTI_PAIRWISE
     //prune G1 from G2
     string nodeMapFile = args.strings["-startalignment"];
-    cerr << "Starting to prune using " << nodeMapFile << endl;
+    cout << "Starting to prune using " << nodeMapFile << endl;
     assert(nodeMapFile.size() > 6);
     string format = nodeMapFile.substr(nodeMapFile.size()-6);
     if (format != ".align") throw runtime_error("only edge list format is supported for start alignment");
@@ -200,12 +200,19 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     if (G1.getNumEdges() == 0) throw runtime_error("G1 has 0 edges");
     if (G2.getNumEdges() == 0) throw runtime_error("G2 has 0 edges");
 
-    assert(G1.isWellDefined());
-    assert(G2.isWellDefined());
-    G1.debugPrint();
-    G2.debugPrint();
-
     cout << "Total time for loading graphs (" << T.elapsedString() << ")" << endl;
+
+    const bool ASSERT_WELL_DEFINED = true;
+    if (ASSERT_WELL_DEFINED) {
+        cout << endl;
+        T.start();
+        G1.debugPrint();
+        G2.debugPrint();
+        if (not G1.isWellDefined()) throw runtime_error("G1 is not well-defined");
+        if (not G2.isWellDefined()) throw runtime_error("G2 is not well-defined");
+        cout << "Total time validating graphs (" << T.elapsedString() << ")" << endl << endl;
+    }
+
     return {G1, G2};
 }
 
@@ -406,7 +413,7 @@ GraphLoader::RawGWFileData::RawGWFileData(const string& fileName, bool containsE
         } else throw runtime_error("Failed to read all edges");
     }
     if (FileIO::safeGetLine(ifs, line) and line.size() != 0)
-        cerr<<"Warning: ignoring leftover lines at the end of .gw file: "<<line<<endl;
+        cout<<"Warning: ignoring leftover lines at the end of .gw file: "<<line<<endl;
 }
 
 GraphLoader::RawEdgeListFileData::RawEdgeListFileData(

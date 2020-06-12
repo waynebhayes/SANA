@@ -6,7 +6,7 @@
 
 #include "../arguments/ArgumentParser.hpp"
 #include "../arguments/measureSelector.hpp"
-#include "../arguments/methodSelector.hpp"
+#include "../arguments/MethodSelector.hpp"
 #include "../arguments/GraphLoader.hpp"
 
 #include "../measures/MeasureCombination.hpp"
