@@ -35,4 +35,6 @@ vector<string> defaultArguments = {
 "-paretoIterations 10000",
 "-paretoThreads 1",
 "-multipartite 1",
+"-ms3_numer default", 
+"-ms3_denom default"
 };
