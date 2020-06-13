@@ -358,6 +358,7 @@ Alignment SANA::run() {
     initDataStructures();
     setInterruptSignal();
 
+    getIterPerSecond(); // print it out even if we don't use it
     long long int maxIters = useIterations ? maxIterations
                                            : (long long int) (getIterPerSecond()*maxSeconds);
     double leeway = 2;
@@ -468,7 +469,7 @@ string SANA::fileNameSuffix(const Alignment& Al) const {
 double SANA::temperatureFunction(long long int iter, double TInitial, double TDecay) {
     if (constantTemp) return TInitial;
     double fraction;
-    if (useIterations) fraction = iter / maxIterations;
+    if (useIterations) fraction = iter / (double) maxIterations;
     else fraction = iter / (maxSeconds * getIterPerSecond());
     return TInitial * exp(-TDecay * fraction);
 }

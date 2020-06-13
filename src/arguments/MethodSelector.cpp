@@ -128,9 +128,9 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
     if (ts > 0) maxSeconds = ts;
     if (tm > 0) maxSeconds = 60*tm;
     if (it > 0) maxIterations = (long long int) it;
-    if (itk > 0) maxIterations = (long long int) (itk * 1000.0);
-    if (itm > 0) maxIterations = (long long int) (itm * 1000000.0);
-    if (itb > 0) maxIterations = (long long int) (itb * 1000000000.0);
+    if (itk > 0) maxIterations = (long long int) (itk * 1e3);
+    if (itm > 0) maxIterations = (long long int) (itm * 1e6);
+    if (itb > 0) maxIterations = (long long int) (itb * 1e9);
 
     Alignment startAlig;
     if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
