@@ -37,7 +37,7 @@ if $MAKE ; then
 	# We only want a "." separator if the extension is non-null
 	if [ "$ext" = "" ]; then dot=""; else dot="."; fi
 	if [ -x sana$dot$ext ]; then
-	    [ "sana$dot$ext" != "$SANA_EXE$dot$ext" ] && mv -f "sana$dot$ext" "$SANA_EXE$dot$ext"
+	    [ "sana$dot$ext" != "$SANA_EXE$dot$ext" ] && mv -f "sana$dot$ext" "$SANA_EXE$dot$ext" 2>/dev/null
 	else
 	    die "could not create executable 'sana$dot$ext'"
 	fi
