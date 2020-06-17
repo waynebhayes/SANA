@@ -1,19 +1,33 @@
 CC = g++
+CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread #-ggdb -DCORES -pg -fno-inline
 
-#CXXFLAGS = -I "src/utils" -Wall -fno-inline -O2 -std=c++11 -g3
-#CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DMULTI_PAIRWISE #-pg -ggdb -Bstatic #-static
- CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread #-g -ggdb #-DMULTI_PAIRWISE #-DCORES #-DUSE_CACHED_FILES #-DSPARSE -ggdb #-pg
-
-ifeq ($(SPARSE), 1)
-CXXFLAGS := $(CXXFLAGS) -DSPARSE
-endif
+MAIN = sana
 
 ifeq ($(MULTI), 1)
-CXXFLAGS := $(CXXFLAGS) -DMULTI_PAIRWISE
+    CXXFLAGS := $(CXXFLAGS) -DMULTI_PAIRWISE
+    MAIN := $(MAIN).multi
 endif
 
 ifeq ($(FLOAT), 1)
-CXXFLAGS := $(CXXFLAGS) -DFLOAT_WEIGHTS
+    CXXFLAGS := $(CXXFLAGS) -DFLOAT_WEIGHTS
+    MAIN := $(MAIN).float
+endif
+
+ifeq ($(SPARSE), 1)
+    CXXFLAGS := $(CXXFLAGS) -DSPARSE
+    MAIN := $(MAIN).sparse
+endif
+
+ifeq ($(STATIC), 1)
+    CXXFLAGS := $(CXXFLAGS) -Bstatic #-static for some versions of gcc
+    MAIN := $(MAIN).static
+endif
+
+ifeq ($(MULTI), 1)
+    ifeq ($(FLOAT), 1)
+	ERROR="SANA cannot currently use FLOAT in MULTI mode"
+	MAIN=error
+    endif
 endif
 
 
@@ -135,18 +149,17 @@ SRCS = $(METHODS_SRC) $(OTHER_SRC) $(UTILS_SRC) $(MEASURES_SRCS) $(METHOD_WRAPPE
 OBJDIR = _objs
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
-#MAIN = sana_dbg
-MAIN = sana
-
 .PHONY: depend clean test test_all regression_test
 
 all:    $(MAIN) argumentCSV NetGO parallel
 
+ifeq ($(MAIN), error)
+error:
+	echo "ERROR: $(ERROR)">&2; exit 1
+else
 $(MAIN): $(OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
-
-$(MAIN).static: $(OBJS)
-	$(CC) $(CXXFLAGS) -static $(INCLUDES) -o $(MAIN).static $(OBJS) $(LFLAGS) $(LIBS)
+endif
 
 #.c.o:
 #	$(CC) $(CXXFLAGS) $(INCLUDES) -c $<  -o $@
@@ -206,18 +219,6 @@ optnetalign:
 
 NetGO:
 # 	(cd NetGO && git pull)
-
-float:
-	$(MAKE) 'FLOAT=1'
-	mv sana sana.float
-
-multi:
-	$(MAKE) 'MULTI=1'
-	mv sana sana.multi
-
-sparse:
-	$(MAKE) 'SPARSE=1'
-	mv sana sana.sparse
 
 parallel: src/parallel.c
 	gcc -o parallel src/parallel.c

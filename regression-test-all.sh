@@ -26,10 +26,13 @@ export SANA_EXE
 CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 if $MAKE ; then
     for ext in multi float ''; do
+	if [ "$ext" = "" ]; then EXT=''
+	else EXT="`echo $ext | tr a-z A-Z`=1"
+	fi
 	if [ `hostname` = Jenkins ]; then
-	    make clean; make $ext -j2 || die "make of '$ext' failed"
+	    make clean; make $EXT -j2 || die "make '$EXT' failed"
 	else
-	    make clean; make $ext -j$CORES || die "make of '$ext' failed"
+	    make clean; make $EXT -j$CORES || die "make '$EXT' failed"
 	fi
 	# We only want a "." separator if the extension is non-null
 	if [ "$ext" = "" ]; then dot=""; else dot="."; fi
