@@ -45,6 +45,7 @@ using namespace std;
 bool SANA::saveAligAndExitOnInterruption = false;
 bool SANA::saveAligAndContOnInterruption = false;
 uint SANA::INVALID_ACTIVE_COLOR_ID;
+const double LOW_PBAD_LIMIT = 1e10;
 
 SANA::SANA(const Graph* G1, const Graph* G2,
         double TInitial, double TDecay, double maxSeconds, long long int maxIterations, bool addHillClimbing,
@@ -157,6 +158,10 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     totalWeightedPegWeight_pBad = vector<double>(n1, 0);
     weightedPegHoleFreq_1mpBad = Matrix<double>(n1, n2);
     totalWeightedPegWeight_1mpBad = vector<double>(n1, 0);
+    weightedPegHoleFreq_pwPBad = Matrix<double>(n1, n2);
+    totalWeightedPegWeight_pwPBad = vector<double>(n1, 0);
+    weightedPegHoleFreq_1mpwPBad = Matrix<double>(n1, n2);
+    totalWeightedPegWeight_1mpwPBad = vector<double>(n1, 0);
 #endif
 
     //other execution options
@@ -383,53 +388,12 @@ Alignment SANA::run() {
     if (addHillClimbing) performHillClimbing(10000000LL); //arbitrarily chosen, probably too big.
 
 #ifdef CORES
-    const bool PRINT_CORES = false;
-    if (PRINT_CORES) {
-#ifdef UNWEIGHTED_CORES
-        double SminUnW = TrimCoreScores(pegHoleFreq,numPegSamples);
-        cout << "Smin_UnW "<< SminUnW << " ";
+    Report::saveCoreScores(*G1, *G2, A, this, pegHoleFreq, numPegSamples, weightedPegHoleFreq_pBad, totalWeightedPegWeight_pBad, weightedPegHoleFreq_1mpBad, totalWeightedPegWeight_1mpBad, weightedPegHoleFreq_pwPBad, totalWeightedPegWeight_pwPBad, weightedPegHoleFreq_1mpwPBad, totalWeightedPegWeight_1mpwPBad, outputFileName);
 #endif
-        double Smin_pBad =TrimCoreScores(weightedPegHoleFreq_pBad, totalWeightedPegWeight_pBad);
-        double Smin_1mpBad =TrimCoreScores(weightedPegHoleFreq_1mpBad, totalWeightedPegWeight_1mpBad);
-        cout << "Smin_pBad "<< Smin_pBad << " Smin_(1-pBad) " << Smin_1mpBad << endl;
-
-        printf("######## core frequencies#########\n");
-        printf("p1 p2");
-#ifdef UNWEIGHTED_CORES
-        printf(" unwgtd");
-#endif
-        printf("wpB w1_pB\n");
-        for (uint i=0; i<n1; i++) for (uint j=0; j<n2; j++) {
-#ifdef UNWEIGHTED_CORES
-            double unweightdedScore = pegHoleFreq[i][j]/(double)numPegSamples[i];
-#endif
-            double weightedScore_pBad = weightedPegHoleFreq_pBad[i][j]/totalWeightedPegWeight_pBad[i];
-            double weightedScore_1mpBad = weightedPegHoleFreq_1mpBad[i][j]/totalWeightedPegWeight_1mpBad[i];
-            const double MIN_CORE_SCORE = 1e-4;
-            if (
-#ifdef UNWEIGHTED_CORES
-            unweightdedScore  >= max(MIN_CORE_SCORE,SminUnW) ||
-#endif
-            weightedScore_pBad >= max(MIN_CORE_SCORE,Smin_pBad) ||
-            weightedScore_1mpBad >= max(MIN_CORE_SCORE,Smin_1mpBad)) {
-                printf(
-#ifdef UNWEIGHTED_CORES
-                "%s %s %.6f %.6f %.6f\n",
-#else
-                "%s %s %.6f %.6f\n",
-#endif
-                (G1->nodeNames)[i].c_str(), (G2->nodeNames)[j].c_str(),
-#ifdef UNWEIGHTED_CORES
-                unweightdedScore,
-#endif
-                weightedScore_pBad, weightedScore_1mpBad);
-            }
-        }
-    }
-#endif // cores
 
     return A;
 }
+
 
 void SANA::performHillClimbing(long long int idleCountTarget) {
     long long int iter = 0;
@@ -612,16 +576,20 @@ void SANA::performChange(uint actColId) {
     // only update pBad if is nonzero; reuse previous nonzero pBad if the current one is zero.
     uint betterHole = wasBadMove ? oldTarget : newTarget;
 
-    double pBad = incrementalMeanPBad(); // maybe we should use the *actual* pBad of *this* move?
-    if (pBad <= 0 || myNan(pBad)) pBad = LOW_PBAD_LIMIT;
+    double meanPBad = incrementalMeanPBad(); // maybe we should use the *actual* pBad of *this* move?
+    if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = LOW_PBAD_LIMIT;
 #ifdef UNWEIGHTED_CORES
     numPegSamples[source]++;
     pegHoleFreq[source][betterHole]++;
 #endif
-    totalWeightedPegWeight_pBad[source] += pBad;
-    weightedPegHoleFreq_pBad[source][betterHole] += pBad;
-    totalWeightedPegWeight_1mpBad[source] += 1-pBad;
-    weightedPegHoleFreq_1mpBad[source][betterHole] += 1-pBad;
+    totalWeightedPegWeight_pBad[source] += meanPBad;
+    weightedPegHoleFreq_pBad[source][betterHole] += meanPBad;
+    totalWeightedPegWeight_1mpBad[source] += 1-meanPBad;
+    weightedPegHoleFreq_1mpBad[source][betterHole] += 1-meanPBad;
+    totalWeightedPegWeight_pwPBad[source] += pBad;
+    weightedPegHoleFreq_pwPBad[source][betterHole] += pBad;
+    totalWeightedPegWeight_1mpwPBad[source] += 1-pBad;
+    weightedPegHoleFreq_1mpwPBad[source][betterHole] += 1-pBad;
 #endif
 
     if (makeChange) {
@@ -704,8 +672,8 @@ void SANA::performSwap(uint actColId) {
 #ifdef CORES
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; reuse previous nonzero pBad if the current one is zero.
-        double pBad = incrementalMeanPBad(); // maybe we should use the *actual* pBad of *this* move?
-        if (pBad <= 0 || myNan(pBad)) pBad = LOW_PBAD_LIMIT;
+        double meanPBad = incrementalMeanPBad(); // maybe we should use the *actual* pBad of *this* move?
+        if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = LOW_PBAD_LIMIT;
 
         uint betterDest1 = wasBadMove ? target1 : target2;
         uint betterDest2 = wasBadMove ? target2 : target1;
@@ -713,15 +681,25 @@ void SANA::performSwap(uint actColId) {
         numPegSamples[source1]++; numPegSamples[source2]++;
         pegHoleFreq[source1][betterDest1]++; pegHoleFreq[source2][betterDest2]++;
 #endif
-        totalWeightedPegWeight_pBad[source1] += pBad;
-        weightedPegHoleFreq_pBad[source1][betterDest1] += pBad;
-        totalWeightedPegWeight_pBad[source2] += pBad;
-        weightedPegHoleFreq_pBad[source2][betterDest2] += pBad;
+        totalWeightedPegWeight_pBad[source1] += meanPBad;
+        weightedPegHoleFreq_pBad[source1][betterDest1] += meanPBad;
+        totalWeightedPegWeight_pBad[source2] += meanPBad;
+        weightedPegHoleFreq_pBad[source2][betterDest2] += meanPBad;
 
-        totalWeightedPegWeight_1mpBad[source1] += 1-pBad;
-        weightedPegHoleFreq_1mpBad[source1][betterDest1] += 1-pBad;
-        totalWeightedPegWeight_1mpBad[source2] += 1-pBad;
-        weightedPegHoleFreq_1mpBad[source2][betterDest2] += 1-pBad;
+        totalWeightedPegWeight_1mpBad[source1] += 1-meanPBad;
+        weightedPegHoleFreq_1mpBad[source1][betterDest1] += 1-meanPBad;
+        totalWeightedPegWeight_1mpBad[source2] += 1-meanPBad;
+        weightedPegHoleFreq_1mpBad[source2][betterDest2] += 1-meanPBad;
+        
+        totalWeightedPegWeight_pwPBad[source1] += pBad;
+        weightedPegHoleFreq_pwPBad[source1][betterDest1] += pBad;
+        totalWeightedPegWeight_pwPBad[source2] += pBad;
+        weightedPegHoleFreq_pwPBad[source2][betterDest2] += pBad;
+
+        totalWeightedPegWeight_1mpwPBad[source1] += 1-pBad;
+        weightedPegHoleFreq_1mpwPBad[source1][betterDest1] += 1-pBad;
+        totalWeightedPegWeight_1mpwPBad[source2] += 1-pBad;
+        weightedPegHoleFreq_1mpwPBad[source2][betterDest2] += 1-pBad;
 #endif
 
     if (makeChange) {

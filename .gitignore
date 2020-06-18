@@ -24,6 +24,7 @@ experiments/*/results/
 *.psq
 *.aln
 *.align
+*.naf
 
 *.bitscores
 
