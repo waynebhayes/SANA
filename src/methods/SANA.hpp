@@ -45,6 +45,8 @@ public:
     double getPBad(double temp, double maxTimeInS = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
     list<pair<double, double>> ipsList;
 
+    static double TrimCoreScores(Matrix<unsigned long>& Freq, vector<unsigned long>& numPegSamples);
+    static double TrimCoreScores(Matrix<double>& Freq, vector<double>& totalPegWeight);
 
 private:
     Alignment startA;
@@ -105,8 +107,6 @@ private:
     double temperatureFunction(long long int iter, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double Temperature);
 
-    double TrimCoreScores(Matrix<unsigned long>& Freq, vector<unsigned long>& numPegSamples);
-    double TrimCoreScores(Matrix<double>& Freq, vector<double>& totalPegWeight);
 
     double iterPerSecond;
     double getIterPerSecond();
@@ -221,10 +221,14 @@ private:
     Matrix<unsigned long> pegHoleFreq;
     vector<unsigned long> numPegSamples; // number of times this node in g1 was sampled.
 #endif
-    Matrix<double> weightedPegHoleFreq_pBad; // weighted by 1-pBad
+    Matrix<double> weightedPegHoleFreq_pBad; // weighted by pBad
     vector<double> totalWeightedPegWeight_pBad;
     Matrix<double> weightedPegHoleFreq_1mpBad; // weighted by 1-pBad
     vector<double> totalWeightedPegWeight_1mpBad;
+    Matrix<double> weightedPegHoleFreq_pwPBad; // weighted by actual(pairwise) not mean pBad
+    vector<double> totalWeightedPegWeight_pwPBad;
+    Matrix<double> weightedPegHoleFreq_1mpwPBad; // weighted by 1-actual pBad
+    vector<double> totalWeightedPegWeight_1mpwPBad;
 #endif
 
     map<string, vector<vector<float>>> localSimMatrixMap;

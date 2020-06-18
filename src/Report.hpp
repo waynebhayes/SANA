@@ -16,6 +16,13 @@ static void saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
     const MeasureCombination& M, const Method* method, const string& reportFileName, bool longVersion);
 static void saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A,
     const MeasureCombination& M, const Method* method, const string& localMeasureFile);
+static void saveCoreScores(const Graph& G1, const Graph& G2, const Alignment& A, const Method*,
+        Matrix<unsigned long>& pegHoleFreq, vector<unsigned long>& numPegSamples,
+        Matrix<double>& weightedPegHoleFreq_pBad, vector<double>& totalWeightedPegWeight_pBad,
+        Matrix<double>& weightedPegHoleFreq_1mpBad, vector<double>& totalWeightedPegWeight_1mpBad,
+        Matrix<double>& weightedPegHoleFreq_pwPBad, vector<double>& totalWeightedPegWeight_pwPBad,
+        Matrix<double>& weightedPegHoleFreq_1mpwPBad, vector<double>& totalWeightedPegWeight_1mpwPBad,
+        const string& outputFileName);
 
 private:
 
