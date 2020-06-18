@@ -1,7 +1,12 @@
 CC = g++
-CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread #-ggdb -DCORES -pg -fno-inline
+CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -pthread #-DCORES -pg -fno-inline
 
 MAIN = sana
+
+ifeq ($(SPARSE), 1)
+    CXXFLAGS := $(CXXFLAGS) -DSPARSE
+    MAIN := $(MAIN).sparse
+endif
 
 ifeq ($(MULTI), 1)
     CXXFLAGS := $(CXXFLAGS) -DMULTI_PAIRWISE
@@ -13,23 +18,25 @@ ifeq ($(FLOAT), 1)
     MAIN := $(MAIN).float
 endif
 
-ifeq ($(SPARSE), 1)
-    CXXFLAGS := $(CXXFLAGS) -DSPARSE
-    MAIN := $(MAIN).sparse
-endif
-
 ifeq ($(STATIC), 1)
     CXXFLAGS := $(CXXFLAGS) -Bstatic #-static for some versions of gcc
     MAIN := $(MAIN).static
 endif
 
-ifeq ($(MULTI), 1)
-    ifeq ($(FLOAT), 1)
-	ERROR="SANA cannot currently use FLOAT in MULTI mode"
+ifeq ($(GDB), 1)
+    CXXFLAGS := $(CXXFLAGS) -ggdb
+    MAIN := $(MAIN).gdb
+else
+    CXXFLAGS := $(CXXFLAGS) -O3
+endif
+
+######## THIS ONE MUST BE LAST to ensure "MAIN=error" when an incompatible combination occurs ##################
+ifeq ($(FLOAT), 1)
+    ifeq ($(MULTI), 1)
+	ERROR="SANA cannot currently use FLOAT for MULTI-alignments"
 	MAIN=error
     endif
 endif
-
 
 INCLUDES =
 LFLAGS =

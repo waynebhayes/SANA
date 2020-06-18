@@ -202,12 +202,15 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
 
     cout << "Total time for loading graphs (" << T.elapsedString() << ")" << endl;
 
-    if (not args.bools["-skip-graph-validation"]) {
-        cout << endl;
+    if (args.bools["-skip-graph-validation"])
+	cout << "Skipping graph validation\n";
+    else {
         T.start();
         G1.debugPrint();
         G2.debugPrint();
+	cout << "Validating graph 1\n";
         if (not G1.isWellDefined()) throw runtime_error("G1 is not well-defined");
+	cout << "Validating graph 2\n";
         if (not G2.isWellDefined()) throw runtime_error("G2 is not well-defined");
         cout << "Total time validating graphs (" << T.elapsedString() << ")" << endl << endl;
     }
