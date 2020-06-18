@@ -194,13 +194,13 @@ void Report::saveCoreScores(const Graph& G1, const Graph& G2, const Alignment& A
     double Smin_1mpBad = SANA::TrimCoreScores(weightedPegHoleFreq_1mpBad, totalWeightedPegWeight_1mpBad);
     double Smin_pwPBad = SANA::TrimCoreScores(weightedPegHoleFreq_pwPBad, totalWeightedPegWeight_pwPBad);
     double Smin_1mpwPBad = SANA::TrimCoreScores(weightedPegHoleFreq_1mpwPBad, totalWeightedPegWeight_1mpwPBad);
-    ofs << "# Smin_pBad "<< Smin_pBad << endl <<  "# Smin_(1-pBad) " << Smin_1mpBad << endl;
-    ofs << "# Smin_pwPBad "<< Smin_pwPBad << endl <<  "# Smin_(1-pwPBad) " << Smin_1mpwPBad << endl;
-    ofs << "# p1\tp2";
+    ofs << "# Smin_mean_pBad "<< Smin_pBad << endl <<  "# Smin_(1-pBad) " << Smin_1mpBad << endl;
+    ofs << "# Smin_pBad "<< Smin_pBad << endl <<  "# Smin_(1-pBad) " << Smin_1mpwPBad << endl;
+    ofs << "#p1\tp2";
 #ifdef UNWEIGHTED_CORES
-    ofs << "\tunwgtd";
+    ofs << "\tunweighted";
 #endif
-    ofs << "\twpB\tw1-pB\twpwPB\tw1-pwPB"<< endl;
+    ofs << "\tmean_pBad\tmean1_pBad\tpBad\t1_pBad"<< endl;
     for (uint i=0; i<G1.getNumNodes(); i++) for (uint j=0; j<G2.getNumNodes(); j++) {
 #ifdef UNWEIGHTED_CORES
         double unweightedScore = pegHoleFreq[i][j]/(double)numPegSamples[i];

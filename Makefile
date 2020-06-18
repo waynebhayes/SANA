@@ -1,11 +1,16 @@
 CC = g++
-CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -pthread #-DCORES -pg -fno-inline
+CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -pthread #-pg -fno-inline
 
 MAIN = sana
 
 ifeq ($(SPARSE), 1)
     CXXFLAGS := $(CXXFLAGS) -DSPARSE
     MAIN := $(MAIN).sparse
+endif
+
+ifeq ($(CORES), 1)
+    CXXFLAGS := $(CXXFLAGS) -DCORES
+    MAIN := $(MAIN).cores
 endif
 
 ifeq ($(MULTI), 1)
@@ -31,9 +36,13 @@ else
 endif
 
 ######## THIS ONE MUST BE LAST to ensure "MAIN=error" when an incompatible combination occurs ##################
-ifeq ($(FLOAT), 1)
-    ifeq ($(MULTI), 1)
-	ERROR="SANA cannot currently use FLOAT for MULTI-alignments"
+ifeq ($(MULTI), 1)
+    ifeq ($(FLOAT), 1)
+	ERROR="SANA cannot currently use FLOAT in MULTI-alignments"
+	MAIN=error
+    endif
+    ifeq ($(CORES), 1)
+	ERROR="SANA cannot currently compute CORES in MULTI-alignments"
 	MAIN=error
     endif
 endif

@@ -489,6 +489,9 @@ void SANA::printReportOnInterruption() {
     string localFile = localScoresFileName+"_"+timestamp;
     Report::saveReport(*G1, *G2, A, *MC, this, outFile, true);
     Report::saveLocalMeasures(*G1, *G2, A, *MC, this, localFile);
+#ifdef CORES
+    Report::saveCoreScores(*G1, *G2, A, this, pegHoleFreq, numPegSamples, weightedPegHoleFreq_pBad, totalWeightedPegWeight_pBad, weightedPegHoleFreq_1mpBad, totalWeightedPegWeight_1mpBad, weightedPegHoleFreq_pwPBad, totalWeightedPegWeight_pwPBad, weightedPegHoleFreq_1mpwPBad, totalWeightedPegWeight_1mpwPBad, outputFileName);
+#endif
     cout << "Alignment saved. SANA will now continue." << endl;
 }
 
