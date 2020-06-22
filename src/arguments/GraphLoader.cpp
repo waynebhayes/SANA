@@ -176,6 +176,7 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
 #ifdef MULTI_PAIRWISE
     //prune G1 from G2
     string nodeMapFile = args.strings["-startalignment"];
+    if(nodeMapFile == "") throw runtime_error("missing startalignment file");
     cout << "Starting to prune using " << nodeMapFile << endl;
     assert(nodeMapFile.size() > 6);
     string format = nodeMapFile.substr(nodeMapFile.size()-6);
