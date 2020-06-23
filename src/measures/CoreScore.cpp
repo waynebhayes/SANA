@@ -3,10 +3,8 @@
 CoreScoreData::CoreScoreData() {}
 
 CoreScoreData::CoreScoreData(uint n1, uint n2) {
-#ifdef UNWEIGHTED_CORES
     numPegSamples = vector<unsigned long>(n1, 0);
     pegHoleFreq = Matrix<unsigned long>(n1, n2);
-#endif
     weightedPegHoleFreq_pBad = Matrix<double>(n1, n2);
     totalWeightedPegWeight_pBad = vector<double>(n1, 0);
     weightedPegHoleFreq_1mpBad = Matrix<double>(n1, n2);
@@ -62,10 +60,8 @@ double CoreScoreData::trimCoreScore(Matrix<double>& Freq, vector<double>& totalP
 
 void CoreScoreData::incChangeOp(uint source, uint betterHole, double pBad, double meanPBad)
 {
-#ifdef UNWEIGHTED_CORES
     numPegSamples[source]++;
     pegHoleFreq[source][betterHole]++;
-#endif
     totalWeightedPegWeight_pBad[source] += meanPBad;
     weightedPegHoleFreq_pBad[source][betterHole] += meanPBad;
     totalWeightedPegWeight_1mpBad[source] += 1-meanPBad;
@@ -78,10 +74,8 @@ void CoreScoreData::incChangeOp(uint source, uint betterHole, double pBad, doubl
 
 void CoreScoreData::incSwapOp(uint source1, uint source2, uint betterDest1, uint betterDest2, double pBad, double meanPBad)
 {
-#ifdef UNWEIGHTED_CORES
     numPegSamples[source1]++; numPegSamples[source2]++;
     pegHoleFreq[source1][betterDest1]++; pegHoleFreq[source2][betterDest2]++;
-#endif
     totalWeightedPegWeight_pBad[source1] += meanPBad;
     weightedPegHoleFreq_pBad[source1][betterDest1] += meanPBad;
     totalWeightedPegWeight_pBad[source2] += meanPBad;

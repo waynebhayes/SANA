@@ -180,10 +180,8 @@ void Report::saveCoreScore(const Graph& G1, const Graph& G2, const Alignment& A,
     string fileName = formattedFileName(outputFileName, "naf", G1.getName(), G2.getName(), method, A);
     ofstream ofs(fileName); 
     cout << "Saving core scores as \""<< fileName << "\'" << endl;
-#ifdef UNWEIGHTED_CORES
     double SminUnW = CoreScoreData::trimCoreScore(csd.pegHoleFreq,csd.numPegSamples);
     ofs << "# Smin_UnW "<< SminUnW << endl;
-#endif
     double Smin_pBad = CoreScoreData::trimCoreScore(csd.weightedPegHoleFreq_pBad, csd.totalWeightedPegWeight_pBad);
     double Smin_1mpBad = CoreScoreData::trimCoreScore(csd.weightedPegHoleFreq_1mpBad, csd.totalWeightedPegWeight_1mpBad);
     double Smin_pwPBad = CoreScoreData::trimCoreScore(csd.weightedPegHoleFreq_pwPBad, csd.totalWeightedPegWeight_pwPBad);
@@ -191,32 +189,24 @@ void Report::saveCoreScore(const Graph& G1, const Graph& G2, const Alignment& A,
     ofs << "# Smin_mean_pBad "<< Smin_pBad << endl <<  "# Smin_(1-pBad) " << Smin_1mpBad << endl;
     ofs << "# Smin_pBad "<< Smin_pBad << endl <<  "# Smin_(1-pBad) " << Smin_1mpwPBad << endl;
     ofs << "#p1\tp2";
-#ifdef UNWEIGHTED_CORES
     ofs << "\tunweighted";
-#endif
     ofs << "\tmean_pBad\tmean1_pBad\tpBad\t1_pBad"<< endl;
     for (uint i=0; i<G1.getNumNodes(); i++) for (uint j=0; j<G2.getNumNodes(); j++) {
-#ifdef UNWEIGHTED_CORES
         double unweightedScore = csd.pegHoleFreq[i][j]/(double)csd.numPegSamples[i];
-#endif
         double weightedScore_pBad = csd.weightedPegHoleFreq_pBad[i][j]/csd.totalWeightedPegWeight_pBad[i];
         double weightedScore_1mpBad = csd.weightedPegHoleFreq_1mpBad[i][j]/csd.totalWeightedPegWeight_1mpBad[i];
         double weightedScore_pwPBad = csd.weightedPegHoleFreq_pwPBad[i][j]/csd.totalWeightedPegWeight_pwPBad[i];
         double weightedScore_1mpwPBad = csd.weightedPegHoleFreq_1mpwPBad[i][j]/csd.totalWeightedPegWeight_1mpwPBad[i];
         const double MIN_CORE_SCORE = 1e-4;
         if (
-#ifdef UNWEIGHTED_CORES
         unweightedScore  >= max(MIN_CORE_SCORE,SminUnW) ||
-#endif
         weightedScore_pBad >= max(MIN_CORE_SCORE,Smin_pBad) ||
         weightedScore_1mpBad >= max(MIN_CORE_SCORE,Smin_1mpBad) ||
         weightedScore_pwPBad >= max(MIN_CORE_SCORE,Smin_pwPBad) ||
         weightedScore_1mpwPBad >= max(MIN_CORE_SCORE,Smin_1mpwPBad)
         ) {
             ofs << (G1.getNodeName(i)).c_str() << "\t" << (G2.getNodeName(j)).c_str() << "\t" << setprecision(6) <<
-#ifdef UNWEIGHTED_CORES
                 unweightedScore << "\t" <<
-#endif
                 weightedScore_pBad << "\t" << weightedScore_1mpBad << "\t" << weightedScore_pwPBad << "\t" << weightedScore_1mpwPBad <<endl;
         }
     }

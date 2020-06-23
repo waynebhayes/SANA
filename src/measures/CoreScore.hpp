@@ -6,18 +6,14 @@
 
 using namespace std;
 
-#define UNWEIGHTED_CORES
-
 class CoreScoreData {
 public:
 
     CoreScoreData();
     CoreScoreData(uint n1, uint n2);
 
-#ifdef UNWEIGHTED_CORES
     Matrix<unsigned long> pegHoleFreq;
     vector<unsigned long> numPegSamples; // number of times this node in g1 was sampled.
-#endif
     Matrix<double> weightedPegHoleFreq_pBad; // weighted by pBad
     vector<double> totalWeightedPegWeight_pBad;
     Matrix<double> weightedPegHoleFreq_1mpBad; // weighted by 1-pBad

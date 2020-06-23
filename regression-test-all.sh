@@ -23,28 +23,22 @@ while true; do
 done
 
 export SANA_EXE
+NUM_FAILS=0
 CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 if $MAKE ; then
-    for ext in multi float ''; do
-	if [ "$ext" = "" ]; then EXT=''
-	else EXT="`echo $ext | tr a-z A-Z`=1"
+    for EXT in `grep '^ifeq (' Makefile | sed -e 's/.*(//' -e 's/).*//' | grep -v MAIN | sort -u` ''; do
+	if [ "$EXT" = "" ]; then ext=''
+	else ext=`echo $EXT | tr A-Z a-z`
 	fi
-	if [ `hostname` = Jenkins ]; then
-	    make clean; make $EXT -j2 || die "make '$EXT' failed"
+	if [ `hostname` = Jenkins ]; then # make -k means "keep going even if some targets fail"
+	    make clean; make -k -j2 "$EXT=1" || warn "make '$EXT=1' failed" && (( NUM_FAILS+=1000 ))
 	else
-	    make clean; make $EXT -j$CORES || die "make '$EXT' failed"
+	    make clean; make -k -j$CORES "$EXT=1" || warn "make '$EXT=1' failed" && (( NUM_FAILS+=1000 ))
 	fi
-	# We only want a "." separator if the extension is non-null
-	if [ "$ext" = "" ]; then dot=""; else dot="."; fi
-	if [ -x sana$dot$ext ]; then
-	    [ "sana$dot$ext" != "$SANA_EXE$dot$ext" ] && mv -f "sana$dot$ext" "$SANA_EXE$dot$ext" 2>/dev/null
-	else
-	    die "could not create executable 'sana$dot$ext'"
-	fi
+	[ $NUM_FAILS -gt 0 ] && warn "Cumulative NUM_FAILS is $NUM_FAILS"
     done
 fi
 
-NUM_FAILS=0
 if [ $# -eq 0 ]; then
     set regression-tests/*/*.sh
 fi

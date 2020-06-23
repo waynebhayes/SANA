@@ -214,7 +214,6 @@ private:
 
     //to evaluate core scores    
 #ifdef CORES
-    constexpr double LOW_PBAD_LIMIT_FOR_CORES = 1e10;
     CoreScoreData coreScoreData;
 #endif
 

@@ -10,12 +10,10 @@ void LinearRegressionVintage::computeBoth(ScheduleMethod::Resources maxRes) {
     //resources are ignored for this method to preserve original logic
 
     const double HIGH_PBAD_LIMIT = 0.99999;
-    const double LOW_PBAD_LIMIT = 1e-10;
-
     cout << "Finding Upper Bound of the Temperature ... " << endl;
     double log10HighTemp = log10(doublingMethod(HIGH_PBAD_LIMIT, false));
     cout << "Finding Lower Bound of the Temperature ... " << endl;
-    double log10LowTemp = log10(doublingMethod(LOW_PBAD_LIMIT, true));
+    double log10LowTemp = log10(doublingMethod(DEFAULT_TARGET_FINAL_PBAD, true));
 
     double log10NumSteps = abs(log10LowTemp) + abs(log10HighTemp);
 

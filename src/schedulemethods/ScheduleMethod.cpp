@@ -10,10 +10,10 @@ using namespace std;
 //initialization of static members
 multimap<double, double> ScheduleMethod::allTempToPBad = multimap<double, double> (); 
 SANA* ScheduleMethod::sana = nullptr;
-double ScheduleMethod::DEFAULT_TARGET_TINITIAL_DIGITS_FROM_1 = 2; // represents 0.99
-double ScheduleMethod::DEFAULT_TARGET_TFINAL_DIGITS_FROM_0 = 10; // represents 1e-10
-double ScheduleMethod::DEFAULT_TARGET_INITIAL_PBAD = (1-pow(10,-DEFAULT_TARGET_TINITIAL_DIGITS_FROM_1));
-double ScheduleMethod::DEFAULT_TARGET_FINAL_PBAD = pow(10,-DEFAULT_TARGET_TFINAL_DIGITS_FROM_0);
+double ScheduleMethod::DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1 = 2; // represents 0.99
+double ScheduleMethod::DEFAULT_TARGET_INITIAL_PBAD = (1-pow(10,-DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1));
+double ScheduleMethod::DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0 = 10; // represents 1e-10
+double ScheduleMethod::DEFAULT_TARGET_FINAL_PBAD = pow(10,-DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0);
 double ScheduleMethod::DEFAULT_ERROR_TOL_DIGITS = 0.9; // as a fraction of digits in the last place from the above.
 double ScheduleMethod::DEFAULT_SAMPLE_TIME = 1;
 
@@ -90,17 +90,17 @@ double ScheduleMethod::getPBad(double temp) {
 double ScheduleMethod::targetRangeMin(double targetPBad, double errorTol) {
     int digits;
     if(targetPBad < 0.5) // assume it's tFinal;
-	digits = DEFAULT_TARGET_TFINAL_DIGITS_FROM_0;
+	digits = DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0;
     else
-	digits = DEFAULT_TARGET_TINITIAL_DIGITS_FROM_1;
+	digits = DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1;
     return targetPBad - errorTol*pow(10,-digits); // eg 0.99 + 0.5 * 0.01
 }
 double ScheduleMethod::targetRangeMax(double targetPBad, double errorTol) {
     int digits;
     if(targetPBad < 0.5) // assume it's tFinal;
-	digits = DEFAULT_TARGET_TFINAL_DIGITS_FROM_0;
+	digits = DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0;
     else
-	digits = DEFAULT_TARGET_TINITIAL_DIGITS_FROM_1;
+	digits = DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1;
     return targetPBad + errorTol*pow(10,-digits); // eg 0.99 + 0.5 * 0.01
 }
 double ScheduleMethod::distToTargetRange(double pBad, double targetPBad, double errorTol) {
@@ -389,9 +389,8 @@ double ScheduleMethod::tempWithBestLRFit(double targetPBad, bool fixLineHeights)
 
 void ScheduleMethod::populatePBadCurve() {
     const double HIGH_PBAD_LIMIT = 0.999999;
-    const double LOW_PBAD_LIMIT = 1e-14;
     double highTemp = doublingMethod(HIGH_PBAD_LIMIT, false);
-    double lowTemp = doublingMethod(LOW_PBAD_LIMIT, true);
+    double lowTemp = doublingMethod(DEFAULT_TARGET_FINAL_PBAD, true);
     double numSteps = pow(10, abs(log10(lowTemp)) + abs(log10(highTemp)));
     for (int T_i = 0; T_i <= log10(numSteps); T_i++) {
         double logTemp = log10(lowTemp) + T_i*(log10(highTemp)-log10(lowTemp))/log10(numSteps);
