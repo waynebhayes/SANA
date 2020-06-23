@@ -176,11 +176,11 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
 #ifdef MULTI_PAIRWISE
     //prune G1 from G2
     string nodeMapFile = args.strings["-startalignment"];
-    if(nodeMapFile == "") throw runtime_error("missing startalignment file");
+    if (nodeMapFile == "") throw runtime_error("argument -startalignment not provided");
     cout << "Starting to prune using " << nodeMapFile << endl;
-    assert(nodeMapFile.size() > 6);
+    if (nodeMapFile.size() <= 6) throw runtime_error("start alignment file should end with '.align'");
     string format = nodeMapFile.substr(nodeMapFile.size()-6);
-    if (format != ".align") throw runtime_error("only edge list format is supported for start alignment");
+    if (format != ".align") throw runtime_error("only edge list format ('.align') is supported for start alignment");
     Alignment A = Alignment::loadEdgeList(G1, G2, nodeMapFile);
     vector<uint> G1ToG2Map = A.asVector();
     G2 = pruneG1FromG2(G1, G2, G1ToG2Map);

@@ -1,6 +1,8 @@
 #include "CoreScore.hpp"
 
-void CoreScoreData::initDataStructures(uint n1, uint n2) {
+CoreScoreData::CoreScoreData() {}
+
+CoreScoreData::CoreScoreData(uint n1, uint n2) {
 #ifdef UNWEIGHTED_CORES
     numPegSamples = vector<unsigned long>(n1, 0);
     pegHoleFreq = Matrix<unsigned long>(n1, n2);

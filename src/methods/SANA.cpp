@@ -149,7 +149,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     }
 
 #ifdef CORES
-    coreScoreData.initDataStructures(n1, n2);
+    coreScoreData = CoreScoreData(n1, n2);
 #endif
 
     //other execution options
@@ -233,7 +233,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
         if (g1ColorId == Graph::INVALID_COLOR_ID) continue; //no node in G1 has this color
         g2NodeToActColId[g2Node] = g1ColIdToActColId[g1ColorId];
     }
-    //things initialized in initDataStructures because they d epend on the starting alignment
+    //things initialized in initDataStructures because they depend on the starting alignment
     //they have the same size for every run, so we can allocate the size here
     assignedNodesG2 = vector<bool> (n2);
     actColToUnassignedG2Nodes = vector<vector<uint>> (actColToG1ColId.size());
@@ -526,7 +526,7 @@ void SANA::performChange(uint actColId) {
     uint betterHole = wasBadMove ? oldTarget : newTarget;
 
     double meanPBad = incrementalMeanPBad(); // maybe we should use the *actual* pBad of *this* move?
-    if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = LOW_PBAD_LIMIT;
+    if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = LOW_PBAD_LIMIT_FOR_CORES;
 
     coreScoreData.incChangeOp(source, betterHole, pBad, meanPBad);
 #endif
@@ -612,7 +612,7 @@ void SANA::performSwap(uint actColId) {
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; reuse previous nonzero pBad if the current one is zero.
         double meanPBad = incrementalMeanPBad(); // maybe we should use the *actual* pBad of *this* move?
-        if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = LOW_PBAD_LIMIT;
+        if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = LOW_PBAD_LIMIT_FOR_CORES;
 
         uint betterDest1 = wasBadMove ? target1 : target2;
         uint betterDest2 = wasBadMove ? target2 : target1;
@@ -1176,11 +1176,11 @@ int SANA::inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     return res;
 }
 
-double SANA::localScoreSumIncChangeOp(vector<vector<float>> const & sim, uint const & source, uint const & oldTarget, uint const & newTarget) {
+double SANA::localScoreSumIncChangeOp(const vector<vector<float>>& sim, uint source, uint oldTarget, uint newTarget) {
     return sim[source][newTarget] - sim[source][oldTarget];
 }
 
-double SANA::localScoreSumIncSwapOp(vector<vector<float>> const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2) {
+double SANA::localScoreSumIncSwapOp(const vector<vector<float>>& sim, uint source1, uint source2, uint target1, uint target2) {
     return sim[source1][target2] - sim[source1][target1] + sim[source2][target1] - sim[source2][target2];
 }
 

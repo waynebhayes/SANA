@@ -59,7 +59,6 @@ private:
     int numPBadsInBuffer;
     int pBadBufferIndex;
     double pBadBufferSum;
-    const double LOW_PBAD_LIMIT = 1e10;
 
     //may incorrect probabilities (even negative) if the pbads in the buffer are small enough
     //due to accumulated precision errors of adding and subtracting tiny values from pBadBufferSum
@@ -215,12 +214,13 @@ private:
 
     //to evaluate core scores    
 #ifdef CORES
+    constexpr double LOW_PBAD_LIMIT_FOR_CORES = 1e10;
     CoreScoreData coreScoreData;
 #endif
 
     map<string, vector<vector<float>>> localSimMatrixMap;
-    double localScoreSumIncChangeOp(vector<vector<float>> const & sim, uint const & source, uint const & oldTarget, uint const & newTarget);
-    double localScoreSumIncSwapOp(vector<vector<float>> const & sim, uint const & source1, uint const & source2, uint const & target1, uint const & target2);
+    double localScoreSumIncChangeOp(const vector<vector<float>>& sim, uint source, uint oldTarget, uint newTarget);
+    double localScoreSumIncSwapOp(const vector<vector<float>>& sim, uint source1, uint source2, uint target1, uint target2);
 
     //other execution options
     bool constantTemp; //tempertare does not decrease as a function of iteration

@@ -3,6 +3,9 @@ CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -pthread #-pg -fno-
 
 MAIN = sana
 
+#you can give "SPARSE=1" or "FLOAT=1" or "MULTI=1" on Make's command line
+#all can be specified at the same time except FLOAT and MULTI
+
 ifeq ($(SPARSE), 1)
     CXXFLAGS := $(CXXFLAGS) -DSPARSE
     MAIN := $(MAIN).sparse
