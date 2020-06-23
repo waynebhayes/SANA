@@ -15,11 +15,10 @@
 #include "../measures/MeasureCombination.hpp"
 #include "../utils/randomSeed.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
+#include "../measures/CoreScore.hpp"
 
 using namespace std;
 
-//can this be a static constexpr SANA variable? -Nil
-#define UNWEIGHTED_CORES
 
 class SANA: public Method {
 
@@ -45,9 +44,6 @@ public:
     double getPBad(double temp, double maxTimeInS = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
     list<pair<double, double>> ipsList;
 
-    static double TrimCoreScores(Matrix<unsigned long>& Freq, vector<unsigned long>& numPegSamples);
-    static double TrimCoreScores(Matrix<double>& Freq, vector<double>& totalPegWeight);
-
 private:
     Alignment startA;
 
@@ -63,6 +59,7 @@ private:
     int numPBadsInBuffer;
     int pBadBufferIndex;
     double pBadBufferSum;
+    const double LOW_PBAD_LIMIT = 1e10;
 
     //may incorrect probabilities (even negative) if the pbads in the buffer are small enough
     //due to accumulated precision errors of adding and subtracting tiny values from pBadBufferSum
@@ -216,19 +213,9 @@ private:
     map<string, double> localScoreSumMap;
     vector<vector<float>> sims;
 
+    //to evaluate core scores    
 #ifdef CORES
-#ifdef UNWEIGHTED_CORES
-    Matrix<unsigned long> pegHoleFreq;
-    vector<unsigned long> numPegSamples; // number of times this node in g1 was sampled.
-#endif
-    Matrix<double> weightedPegHoleFreq_pBad; // weighted by pBad
-    vector<double> totalWeightedPegWeight_pBad;
-    Matrix<double> weightedPegHoleFreq_1mpBad; // weighted by 1-pBad
-    vector<double> totalWeightedPegWeight_1mpBad;
-    Matrix<double> weightedPegHoleFreq_pwPBad; // weighted by actual(pairwise) not mean pBad
-    vector<double> totalWeightedPegWeight_pwPBad;
-    Matrix<double> weightedPegHoleFreq_1mpwPBad; // weighted by 1-actual pBad
-    vector<double> totalWeightedPegWeight_1mpwPBad;
+    CoreScoreData coreScoreData;
 #endif
 
     map<string, vector<vector<float>>> localSimMatrixMap;

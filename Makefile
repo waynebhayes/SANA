@@ -98,6 +98,7 @@ MEASURES_SRCS = 							\
 	src/measures/WeightedEdgeConservation.cpp 			\
 	src/measures/JaccardSimilarityScore.cpp         			\
 	src/measures/MultiS3.cpp							\
+	src/measures/CoreScore.cpp						\
 	src/measures/localMeasures/EdgeCount.cpp 			\
 	src/measures/localMeasures/EdgeDensity.cpp 			\
 	src/measures/localMeasures/ExternalSimMatrix.cpp 		\

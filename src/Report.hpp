@@ -6,6 +6,7 @@
 #include "Alignment.hpp"
 #include "measures/MeasureCombination.hpp"
 #include "methods/Method.hpp"
+#include "measures/CoreScore.hpp"
 
 using namespace std;
 
@@ -16,13 +17,16 @@ static void saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
     const MeasureCombination& M, const Method* method, const string& reportFileName, bool longVersion);
 static void saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A,
     const MeasureCombination& M, const Method* method, const string& localMeasureFile);
-static void saveCoreScores(const Graph& G1, const Graph& G2, const Alignment& A, const Method*,
-        Matrix<unsigned long>& pegHoleFreq, vector<unsigned long>& numPegSamples,
-        Matrix<double>& weightedPegHoleFreq_pBad, vector<double>& totalWeightedPegWeight_pBad,
-        Matrix<double>& weightedPegHoleFreq_1mpBad, vector<double>& totalWeightedPegWeight_1mpBad,
-        Matrix<double>& weightedPegHoleFreq_pwPBad, vector<double>& totalWeightedPegWeight_pwPBad,
-        Matrix<double>& weightedPegHoleFreq_1mpwPBad, vector<double>& totalWeightedPegWeight_1mpwPBad,
-        const string& outputFileName);
+
+/*Some pair of nodes dubbed as "core alignment" appear to have greater affinity
+  for aligning with each other as opposed to other nodes. We've tried to
+  measure this affinity across iterations by assigning scores based on
+  frequency and pBad value (SANA.cpp). This function prints the node pairs
+  along with corresponding scores in a file with .naf (network alignment
+  frequency) extension. For more detail:
+  https://github.com/waynebhayes/SANA/pull/132#issuecomment-646183330 */
+static void saveCoreScore(const Graph& G1, const Graph& G2, const Alignment& A, const Method*,
+        CoreScoreData& coreScoreData, const string& outputFileName);
 
 private:
 

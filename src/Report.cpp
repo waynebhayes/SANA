@@ -8,7 +8,6 @@
 #include "measures/SymmetricSubstructureScore.hpp"
 #include "measures/JaccardSimilarityScore.hpp"
 #include "measures/NodeCorrectness.hpp"
-#include "methods/SANA.hpp"
 
 void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
                         const MeasureCombination& M, const Method* method,
@@ -173,13 +172,8 @@ void Report::saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment
     cout << "Took " << T.elapsed() << " seconds to save the alignment and scores." << endl;
 }
 
-void Report::saveCoreScores(const Graph& G1, const Graph& G2, const Alignment& A, const Method* method,
-        Matrix<unsigned long>& pegHoleFreq, vector<unsigned long>& numPegSamples,
-        Matrix<double>& weightedPegHoleFreq_pBad, vector<double>& totalWeightedPegWeight_pBad,
-        Matrix<double>& weightedPegHoleFreq_1mpBad, vector<double>& totalWeightedPegWeight_1mpBad,
-        Matrix<double>& weightedPegHoleFreq_pwPBad, vector<double>& totalWeightedPegWeight_pwPBad,
-        Matrix<double>& weightedPegHoleFreq_1mpwPBad, vector<double>& totalWeightedPegWeight_1mpwPBad,
-        const string& outputFileName)
+void Report::saveCoreScore(const Graph& G1, const Graph& G2, const Alignment& A, const Method* method,
+        CoreScoreData& csd, const string& outputFileName)
 {
     Timer T;
     T.start(); 
@@ -187,13 +181,13 @@ void Report::saveCoreScores(const Graph& G1, const Graph& G2, const Alignment& A
     ofstream ofs(fileName); 
     cout << "Saving core scores as \""<< fileName << "\'" << endl;
 #ifdef UNWEIGHTED_CORES
-    double SminUnW = SANA::TrimCoreScores(pegHoleFreq,numPegSamples);
+    double SminUnW = CoreScoreData::trimCoreScore(csd.pegHoleFreq,csd.numPegSamples);
     ofs << "# Smin_UnW "<< SminUnW << endl;
 #endif
-    double Smin_pBad = SANA::TrimCoreScores(weightedPegHoleFreq_pBad, totalWeightedPegWeight_pBad);
-    double Smin_1mpBad = SANA::TrimCoreScores(weightedPegHoleFreq_1mpBad, totalWeightedPegWeight_1mpBad);
-    double Smin_pwPBad = SANA::TrimCoreScores(weightedPegHoleFreq_pwPBad, totalWeightedPegWeight_pwPBad);
-    double Smin_1mpwPBad = SANA::TrimCoreScores(weightedPegHoleFreq_1mpwPBad, totalWeightedPegWeight_1mpwPBad);
+    double Smin_pBad = CoreScoreData::trimCoreScore(csd.weightedPegHoleFreq_pBad, csd.totalWeightedPegWeight_pBad);
+    double Smin_1mpBad = CoreScoreData::trimCoreScore(csd.weightedPegHoleFreq_1mpBad, csd.totalWeightedPegWeight_1mpBad);
+    double Smin_pwPBad = CoreScoreData::trimCoreScore(csd.weightedPegHoleFreq_pwPBad, csd.totalWeightedPegWeight_pwPBad);
+    double Smin_1mpwPBad = CoreScoreData::trimCoreScore(csd.weightedPegHoleFreq_1mpwPBad, csd.totalWeightedPegWeight_1mpwPBad);
     ofs << "# Smin_mean_pBad "<< Smin_pBad << endl <<  "# Smin_(1-pBad) " << Smin_1mpBad << endl;
     ofs << "# Smin_pBad "<< Smin_pBad << endl <<  "# Smin_(1-pBad) " << Smin_1mpwPBad << endl;
     ofs << "#p1\tp2";
@@ -203,12 +197,12 @@ void Report::saveCoreScores(const Graph& G1, const Graph& G2, const Alignment& A
     ofs << "\tmean_pBad\tmean1_pBad\tpBad\t1_pBad"<< endl;
     for (uint i=0; i<G1.getNumNodes(); i++) for (uint j=0; j<G2.getNumNodes(); j++) {
 #ifdef UNWEIGHTED_CORES
-        double unweightedScore = pegHoleFreq[i][j]/(double)numPegSamples[i];
+        double unweightedScore = csd.pegHoleFreq[i][j]/(double)csd.numPegSamples[i];
 #endif
-        double weightedScore_pBad = weightedPegHoleFreq_pBad[i][j]/totalWeightedPegWeight_pBad[i];
-        double weightedScore_1mpBad = weightedPegHoleFreq_1mpBad[i][j]/totalWeightedPegWeight_1mpBad[i];
-        double weightedScore_pwPBad = weightedPegHoleFreq_pwPBad[i][j]/totalWeightedPegWeight_pwPBad[i];
-        double weightedScore_1mpwPBad = weightedPegHoleFreq_1mpwPBad[i][j]/totalWeightedPegWeight_1mpwPBad[i];
+        double weightedScore_pBad = csd.weightedPegHoleFreq_pBad[i][j]/csd.totalWeightedPegWeight_pBad[i];
+        double weightedScore_1mpBad = csd.weightedPegHoleFreq_1mpBad[i][j]/csd.totalWeightedPegWeight_1mpBad[i];
+        double weightedScore_pwPBad = csd.weightedPegHoleFreq_pwPBad[i][j]/csd.totalWeightedPegWeight_pwPBad[i];
+        double weightedScore_1mpwPBad = csd.weightedPegHoleFreq_1mpwPBad[i][j]/csd.totalWeightedPegWeight_1mpwPBad[i];
         const double MIN_CORE_SCORE = 1e-4;
         if (
 #ifdef UNWEIGHTED_CORES
