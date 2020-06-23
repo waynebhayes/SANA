@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 USAGE="$0 {network.el}
 Purpose: use NAUTY's dreadnaut program to enumerate orbits in a graph represented as an edge list.
 Since NAUTY insists on node names being integers, we map the network's node names to ints and back.
@@ -16,6 +16,11 @@ die() { echo "FATAL ERROR: $@" >&2; exit 1
 }
 [ $# -eq 1 ] || die "expecting exactly one filename, an edgelist"
 
+TMP=/tmp/dreadnaut-orbits.$$
+trap "/bin/rm -f $TMP" 0 1 2 3 15
+
+sed 's///g' "$1" > $TMP # edit out DOS/Windoze carriage returns
+
 LANG=C # ensure "sort -n" puts alphas before nums
 NL='
 '
@@ -28,7 +33,7 @@ NAME2ID='
     edge[$1][$2]=edge[$2][$1]=1'
 
 (
-	awk "ARGIND==1{$NAME2ID}"'
+    awk "ARGIND==1{$NAME2ID}"'
 	END{
 	    printf "n=%d g\n",n; # NAUTY expects the number of nodes and "g" as the first line
 	    for(u in edge){
@@ -36,7 +41,7 @@ NAME2ID='
 		for(v in edge[u])printf " %d",id[v];
 		    print ""
 		}
-	    }' "$1" |
+	    }' $TMP |
 	sort -n; # NAUTY expects the lines to be sorted by integer node ID, smallest first
     echo ".${NL}x o" # this line ends the graph definition and then "x o" instructs dreadnaut to enumerate orbits
 ) |
@@ -61,5 +66,5 @@ NAME2ID='
 	    # The following ensures there are no leading or trailing spaces
 	    printf "%s", name[$1]; for(i=2;i<=NF;i++) printf " %s", name[$i]
 	    print ""
-    }' "$1" - # the single hyphen specifies that the second "file" is awk's standard input (from the pipe)
+    }' $TMP - # the single hyphen specifies that the second "file" is awk's standard input (from the pipe)
 
