@@ -33,7 +33,8 @@ CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 MAKE_CORES=$CORES
 [ `hostname` = Jenkins ] && MAKE_CORES=2 # only use 2 cores to make on Jenkins
 
-for EXT in `grep '^ifeq (' Makefile | sed -e 's/.*(//' -e 's/).*//' | grep -v MAIN | sort -u` ''; do
+EXECS=`grep '^ifeq (' Makefile | sed -e 's/.*(//' -e 's/).*//' | grep -v MAIN | sort -u`
+for EXT in $EXECS ''; do
     if $MAKE ; then
 	[ "$EXT" = "" ] || EXT="$EXT=1"
 	make clean
