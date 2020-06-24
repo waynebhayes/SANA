@@ -7,6 +7,7 @@ echo 'Testing SANA use different format as it input.'
 
 REG_DIR=`pwd`/regression-tests/DifferentFormat
 [ -d "$REG_DIR" ] || die "should be run from top-level directory of the SANA repo"
+[ -x "$SANA_EXE" ] || die "can't find executable '$SANA_EXE'"
 
 NETS=yeast
 #TYPES='gml csv lgf xml'

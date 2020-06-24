@@ -5,6 +5,7 @@ die() { echo "$@" >&2; exit 1
 echo 'Testing measurement CompressedFiles'
 
 [ -d "$REG_DIR" ] || die "should be run from top-level directory of the SANA repo"
+[ -x "$SANA_EXE" ] || die "can't find executable '$SANA_EXE'"
 
 echo "" > $REG_DIR/test1.align
 echo "" > $REG_DIR/test2.align

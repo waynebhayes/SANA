@@ -2,6 +2,7 @@
 TMPDIR=/tmp/regression-shadow.$$
 trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
+[ -x "$SANA_EXE.multi" ] || die "can't find executable '$SANA_EXE.multi'"
 
 echo "WARNING: TODO: ADD CHECKS ACCORDING TO THE COMMENTS IN THIS FILE ($0)" >&1
 

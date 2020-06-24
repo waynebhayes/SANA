@@ -2,6 +2,7 @@
 CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 die() { echo "$@" >&2; exit 1
 }
+[ -x "$SANA_EXE" ] || die "can't find executable '$SANA_EXE'"
 TMPDIR=/tmp/regression-col.$$
 trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
