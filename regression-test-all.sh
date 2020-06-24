@@ -35,6 +35,9 @@ MAKE_CORES=$CORES
 
 EXECS=`grep '^ifeq (' Makefile | sed -e 's/.*(//' -e 's/).*//' | grep -v MAIN | sort -u`
 for EXT in $EXECS ''; do
+    if [ "$EXT" = "" ]; then ext='' # no dot
+    else ext=.`echo $EXT | tr A-Z a-z` # includes the dot
+    fi
     if $MAKE ; then
 	[ "$EXT" = "" ] || EXT="$EXT=1"
 	make clean
@@ -43,9 +46,6 @@ for EXT in $EXECS ''; do
 	    warn "make '$EXT' failed"
 	fi
 	[ $NUM_FAILS -gt 0 ] && warn "Cumulative NUM_FAILS is $NUM_FAILS"
-    fi
-    if [ "$EXT" = "" ]; then ext='' # no dot
-    else ext=.`echo $EXT | tr A-Z a-z` # includes the dot
     fi
     [ -x sana$ext ] || warn "sana$ext doesn't exist; did you forget to pass the '-make' option?"
 done
