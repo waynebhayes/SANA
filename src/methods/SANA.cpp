@@ -23,7 +23,6 @@
 #include <unistd.h>
 
 #include "SANA.hpp"
-#include "../schedulemethods/ScheduleMethod.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
 #include "../measures/JaccardSimilarityScore.hpp"
 #include "../measures/InducedConservedStructure.hpp"
@@ -527,7 +526,7 @@ void SANA::performChange(uint actColId) {
     uint betterHole = wasBadMove ? oldTarget : newTarget;
 
     double meanPBad = incrementalMeanPBad(); // maybe we should use the *actual* pBad of *this* move?
-    if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = ScheduleMethod::DEFAULT_TARGET_FINAL_PBAD;
+    if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = LOW_PBAD_LIMIT_FOR_CORES;
 
     coreScoreData.incChangeOp(source, betterHole, pBad, meanPBad);
 #endif
@@ -613,7 +612,7 @@ void SANA::performSwap(uint actColId) {
         // Statistics on the emerging core alignment.
         // only update pBad if it's nonzero; reuse previous nonzero pBad if the current one is zero.
         double meanPBad = incrementalMeanPBad(); // maybe we should use the *actual* pBad of *this* move?
-        if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = ScheduleMethod::DEFAULT_TARGET_FINAL_PBAD;
+        if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = LOW_PBAD_LIMIT_FOR_CORES;
 
         uint betterDest1 = wasBadMove ? target1 : target2;
         uint betterDest2 = wasBadMove ? target2 : target1;
