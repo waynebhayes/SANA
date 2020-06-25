@@ -7,6 +7,7 @@ CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 
 REG_DIR=`pwd`/regression-tests/EdgeRatio
 [ -d "$REG_DIR" ] || die "should be run from top-level directory of the SANA repo"
+[ -x "$SANA_EXE.float" ] || die "can't find executable '$SANA_EXE.float'"
 (cd "$REG_DIR" && /bin/rm -f *.align *.out *.progress)
 
 nets="150 WMean_con WMean_ocd"

@@ -2,7 +2,7 @@
 USAGE="USAGE: $0 [ -make ] [ -x SANA_EXE ] [ list of tests to run, defaults to regression-tests/*/*.sh ]"
 NL='
 '
-die() { echo "$USAGE$NL FATAL ERROR: $@" >&2; exit 1
+die() { echo "$USAGE${NL}FATAL ERROR: $@" >&2; exit 1
 }
 warn() { echo "WARNING: $@" >&2;
 }
@@ -11,6 +11,9 @@ not() { if eval "$@"; then return 1; else return 0; fi
 PATH=`pwd`:`pwd`/scripts:$PATH
 export PATH
 export HOST=`hostname|sed 's/\..*//'`
+
+[ -x NetGO/NetGO.awk ] || die "you need the submodule NetGO; try running:
+    git submodule init; git submodule update"
 
 SANA_EXE=./sana
 MAKE=false
@@ -29,9 +32,13 @@ NUM_FAILS=0
 CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 MAKE_CORES=$CORES
 [ `hostname` = Jenkins ] && MAKE_CORES=2 # only use 2 cores to make on Jenkins
-if $MAKE ; then
-    for EXT in `grep '^ifeq (' Makefile | sed -e 's/.*(//' -e 's/).*//' | grep -v MAIN | sort -u` ''; do
-	ext=`echo $EXT | tr A-Z a-z`
+
+EXECS=`grep '^ifeq (' Makefile | sed -e 's/.*(//' -e 's/).*//' | grep -v MAIN | sort -u`
+for EXT in $EXECS ''; do
+    if [ "$EXT" = "" ]; then ext='' # no dot
+    else ext=.`echo $EXT | tr A-Z a-z` # includes the dot
+    fi
+    if $MAKE ; then
 	[ "$EXT" = "" ] || EXT="$EXT=1"
 	make clean
 	if not make -k -j$MAKE_CORES $EXT; then
@@ -39,8 +46,9 @@ if $MAKE ; then
 	    warn "make '$EXT' failed"
 	fi
 	[ $NUM_FAILS -gt 0 ] && warn "Cumulative NUM_FAILS is $NUM_FAILS"
-    done
-fi
+    fi
+    [ -x sana$ext ] || warn "sana$ext doesn't exist; did you forget to pass the '-make' option?"
+done
 
 if [ $# -eq 0 ]; then
     set regression-tests/*/*.sh
