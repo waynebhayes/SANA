@@ -183,7 +183,7 @@ uint MultiS3::computeNumer(const Alignment& A) const {
 #endif
 }
 
-void MultiS3::computeDenom(const Alignment& A) const {
+uint MultiS3::computeDenom(const Alignment& A) const {
 #ifdef MULTI_PAIRWISE
     
     uint ret = 0;
@@ -265,7 +265,7 @@ void MultiS3::computeDenom(const Alignment& A) const {
             break;
         }
     }
-    denom = ret;
+    return ret;
 #else
     return;
 #endif
@@ -280,7 +280,7 @@ double MultiS3::eval(const Alignment& A) {
 //    if (_type==1) denom = EdgeExposure::numExposedEdges(A, *G1, *G2);
 //    else if (_type==0) setDenom(A);
     
-    computeDenom(A);
+    denom = computeDenom(A);
     uint correctNumer = computeNumer(A);
     if(correctNumer != numer) {
         cerr<<"inc eval MS3numer wrong: should be "<<correctNumer<<" but is "<<numer<<endl;
