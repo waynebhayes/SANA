@@ -95,14 +95,14 @@ MultiS3::~MultiS3() {
 // I think this is correct, but it's mis-used in computeDenom
 void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2)
 {
-    shadowDegree = vector<uint>(G2.getNumNodes(), 0);
+    const uint n2 = G2.getNumNodes();
+    shadowDegree = vector<uint>(n2, 0);
     Matrix<MATRIX_UNIT> G1Matrix;
     G1.getMatrix(G1Matrix);
     
     Matrix<MATRIX_UNIT> G2Matrix;
     G2.getMatrix(G2Matrix);
     
-    const uint n2 = G2.getNumNodes();
     for (uint i = 0; i < n2; ++i) // for each shadow node i
     {
         for (uint j = 0; j < n2; ++j) // and for all possible neighbors of node i
@@ -115,9 +115,7 @@ void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2)
     // Now add in the edges from G1
     const uint n1 = G1.getNumNodes();
     for (uint i = 0; i < n1; ++i)
-    {
-        shadowDegree[A[i]] += 1;
-    }
+        ++shadowDegree[A[i]];
     
     degreesInit = true;
 }
@@ -125,43 +123,39 @@ void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2)
 unsigned MultiS3::computeDenom(const Alignment& A, const Graph& G1, const Graph& G2)
 {
     LaddersUnderG1 = 0;
-#if 1    
     const uint n1 = G1.getNumNodes();
-    for (uint i = 0; i < n1 - 1; ++i)
+    const uint n2 = G2.getNumNodes();
+#if 0
+    for (uint i = 0; i < n1-1; ++i)
     {
-        for (uint j = i + 1; j < n1; ++j)
-        {
-            if (shadowDegree[i] > 0) 
-            {// this makes no sense: shadowDegree index is a G2 node, not G1, and even if it was A[i] this doesn't imply a ladder
-                ++LaddersUnderG1;
-            }
-        }
+	for (uint j = i+1; j < n1; ++j)
+	{
+	    assert(0 <= A[i] && A[i] < n2);
+	    assert(0 <= A[j] && A[j] < n2);
+	    // The following is the wrong condition: we need the specific *EDGE* between shadow nodes to have weight >0
+	    if (shadowDegree[A[i]] > 0 && shadowDegree[A[j]] > 0) 
+		++LaddersUnderG1;
+	}
     }
 #else
+    uint u1,v1;
     vector<vector<uint>> G1EdgeList;
     G1.getEdgeList(G1EdgeList);
-    uint node1, node2;
-    unordered_set<uint> holes; // no duplicates allowed in cpp sets
-    
-    // Looping through edges is O(n1^2). Why can't this just be for(i=0;i<n1;i++) holes.insert(A[i]); ?
+
+    Matrix<MATRIX_UNIT> G2Matrix;
+    G2.getMatrix(G2Matrix);
+
     for (const auto& edge : G1EdgeList)
     {
-        node1 = edge[0], node2 = edge[1];
-        holes.insert(A[node1]);
-        holes.insert(A[node2]);
-    }
-    
-    // I don't think this correctly handles the fact that G1 was pruned.
-    for (const auto& hole : holes)
-    {
-        if (shadowDegree[hole] > 0)
-        {
-            ++LaddersUnderG1;
-        }
+        u1 = edge[0], v1 = edge[1];
+	assert(0 <= u1 && u1 < n1);
+	assert(0 <= v1 && v1 < n1);
+	assert(0 <= A[u1] && A[u1] < n2);
+	assert(0 <= A[v1] && A[v1] < n2);
+	if(G2Matrix[A[u1]][A[v1]] > 0) // > 0 because the edge in G1 is already here, so > 0 gives at least 2 rungs
+	    ++LaddersUnderG1;
     }
 #endif
-    //assert(LaddersUnderG1 % 2 == 0);
-    LaddersUnderG1 /= 2;
     denom = LaddersUnderG1;
     return denom;
 }
