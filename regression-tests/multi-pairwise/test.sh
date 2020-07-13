@@ -9,7 +9,7 @@ export PATH
 DIR=/tmp/syeast.$$
 MINSUM=0.25
 MEASURE="-ms3 1 -ms3_type 0"
-trap "/bin/rm -rf $DIR" 0 1 2 3 15
+ trap "/bin/rm -rf $DIR" 0 1 2 3 15
 if [ `hostname` = Jenkins ]; then
     ITERS=99; minutes=1
 else
@@ -23,11 +23,15 @@ esac
 echo "Running $ITERS iterations of $minutes minute(s) each"
 ./multi-pairwise.sh ./sana.multi "$MEASURE" $ITERS $minutes "-parallel $CORES" $DIR networks/syeast[12]*/*.el || die "multi-pairwise failed"
 cd $DIR
-rename.sh ';dir;dir0;' dir?
-mv dir00 dir0 # all except this zeroth one
+(   # rename all directories to as many leading zeros as necessary
+    if ls -d dir??  ; then rename.sh ';dir;dir0;' dir?; fi
+    if ls -d dir??? ; then rename.sh ';dir;dir0;' dir??; fi
+    if ls -d dir????; then rename.sh ';dir;dir0;' dir???; fi
+) >/dev/null 2>&1
+ls -d dir0* | awk '/dir00*$/{printf "mv %s dir0\n",$0}' | sh # all except this zeroth one
 echo "Now check NC values: below are the number of times the multiple alignment contains k correctly matching nodes, k=2,3,4:"
 echo "iter	NC2	NC3	NC4"
-for d in dir??; do echo "$d" `for i in 2 3 4; do gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)if(K[i]>='$i')print}' $d/multiAlign.tsv | wc -l; done` | sed 's/ /	/g'; done
+for d in dir*; do if [ "$d" != dir0 -a "$d" != dir-init ]; then echo "$d" `for i in 2 3 4; do gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)if(K[i]>='$i')print}' $d/multiAlign.tsv | wc -l; done` | sed 's/ /	/g'; fi; done
 echo "And now the Multi-NC, or MNC, measure, of the final alignment"
 echo 'k	number	MNC'
 for k in 2 3 4; do echo "$k	`gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)if(K[i]>='$k')nc++}END{printf "%d\t%.3f\n",nc,nc/NR}' dir$ITERS/multiAlign.tsv`"
