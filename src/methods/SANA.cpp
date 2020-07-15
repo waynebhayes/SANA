@@ -675,7 +675,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore += sesWeight * newSquaredAligEdges / (double)SquaredEdgeScore::getDenom();
         newCurrentScore += eeWeight * (1 - (newExposedEdgesNumer / (double)EdgeExposure::denom));
          if (MultiS3::denominator_type==MultiS3::ee_global) MultiS3::denom = newExposedEdgesNumer;
-        newCurrentScore += ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)NUM_GRAPHS;
+        newCurrentScore += ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)MultiS3::Normalization_factor;//(double)NUM_GRAPHS;
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -1184,7 +1184,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
 
                     diff = G2->getEdgeWeight(newTarget,A[neighbor]) + 1;
                     if (diff <= 1){res += 0;}
-                    else if (G2->getEdgeWeight(oldTarget,A[neighbor])>1){res ++;}
+                    else if (G2->getEdgeWeight(newTarget,A[neighbor])>1){res ++;}
                     else{res+=2;}
                 }
             }
@@ -1413,9 +1413,9 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
               const uint m = G1->adjLists[source2].size();
               for (i = 0; i < m; ++i) {
                   neighbor = G1->adjLists[source2][i];
-                  diff = G2->getEdgeWeight(target1,A[neighbor])+ 1;
+                  diff = G2->getEdgeWeight(target2,A[neighbor])+ 1;
                   res -= (diff==1?0:diff);
-                  diff = G2->getEdgeWeight(target2,A[neighbor]) + 1;
+                  diff = G2->getEdgeWeight(target1,A[neighbor]) + 1;
                   if (target1==A[neighbor]){
                       diff=0;
                   }

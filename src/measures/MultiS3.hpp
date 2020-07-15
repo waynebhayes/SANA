@@ -9,6 +9,7 @@
 
 extern uint NUM_GRAPHS;
 
+
 class MultiS3 : public Measure {
 public:
     MultiS3(const  Graph* G1, const Graph* G2, int _numerator_type, int _denominator_type);
@@ -20,9 +21,11 @@ public:
     void setDenom(const Alignment& A);
     uint computeNumer(const Alignment& A) const;
     uint computeDenom(const Alignment& A) const;
+    void getNormalizationFactor() const;
 
     //these don't belong here, they should be members in SANA -Nil
     static uint numer, denom; // used for inc eval
+    static double Normalization_factor;
     static double _type; //0 default ; 1 ee
     static unsigned numerator_type,denominator_type,_default,ra_i,la_i,la_global,ra_global,rt_i,ee_i,ee_global,rt_global;
 

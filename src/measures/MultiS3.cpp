@@ -1,8 +1,10 @@
 #include "MultiS3.hpp"
 #include "EdgeExposure.hpp"
 #include <cmath>
+#include <iostream>
 
 uint NUM_GRAPHS;
+double MultiS3::Normalization_factor = 2;
 uint MultiS3::denom = 1;
 uint MultiS3::numer = 1;
 double MultiS3::_type = 0;
@@ -22,6 +24,7 @@ unsigned MultiS3::rt_i             = 1;
 unsigned MultiS3::ee_i             = 2;
 unsigned MultiS3::ee_global        = 3;
 unsigned MultiS3::rt_global        = 4;
+
 
 MultiS3::MultiS3(const Graph* G1, const Graph* G2, int _numerator_type, int _denominator_type) : Measure(G1, G2, "ms3") {
 #ifdef MULTI_PAIRWISE
@@ -89,6 +92,83 @@ void MultiS3::setDenom(const Alignment& A) {
     }
     denom /= 2;
 }
+
+void MultiS3::getNormalizationFactor() const {
+#ifdef MULTI_PAIRWISE
+    double factor_denom = 0;
+    uint node1, node2;
+    switch (MultiS3::denominator_type) {
+        case 1: //rt_i
+        {
+            /*for (const auto& edge: *(G2->getEdgeList()))
+            {
+                node1 = edge[0], node2 = edge[1];
+                factor_denom += G2->getEdgeWeight(node1,node2) + 1;
+            }*/
+            factor_denom = G1->getEdgeList()->size() * NUM_GRAPHS;
+        }
+            break;
+        case 2: //ee_i
+        {
+            factor_denom = G2->getEdgeList()->size() + G1->getEdgeList()->size();
+        }
+            break;
+        case 3: //ee_global
+        {
+            factor_denom = G2->getEdgeList()->size() + G1->getEdgeList()->size();
+        }
+            break;
+        case 4: //rt_global
+        {
+            for (const auto& edge: *(G2->getEdgeList()))
+            {
+                node1 = edge[0], node2 = edge[1];
+                factor_denom += G2->getEdgeWeight(node1,node2) + 1;
+            }
+        }
+            break;
+    }
+    //cout << "Factor denom is "<< factor_denom << endl;
+    switch (MultiS3::numerator_type){
+        case 1: // ra_i
+        {
+            Normalization_factor = G1->getEdgeList()->size() * NUM_GRAPHS / factor_denom;
+        }
+            break;
+        case 2: // la_i
+        {
+            Normalization_factor = G1->getEdgeList()->size() / factor_denom;
+        }
+            break;
+        case 3: // la_global
+        {
+            uint temp_max = 0;
+            for (const auto& edge: *(G2->getEdgeList()))
+            {
+                node1 = edge[0], node2 = edge[1];
+                temp_max = G2->getEdgeWeight(node1,node2) + 1 > temp_max ? G2->getEdgeWeight(node1,node2) + 1 : temp_max;
+            }
+            Normalization_factor = temp_max * G2->getEdgeList()->size() / factor_denom / 2;
+        }
+            break;
+        case 4: // ra_global
+        {
+            uint temp_max = 0;
+            for (const auto& edge: *(G2->getEdgeList()))
+            {
+                node1 = edge[0], node2 = edge[1];
+                temp_max = G2->getEdgeWeight(node1,node2) + 1 > temp_max ? G2->getEdgeWeight(node1,node2) + 1 : temp_max;
+            }
+            Normalization_factor = temp_max * G2->getEdgeList()->size() / factor_denom;
+        }
+            break;
+    }
+    //cout << "Normalization factor is " << Normalization_factor << endl;
+#else
+return;
+#endif
+}
+
 
 uint MultiS3::computeNumer(const Alignment& A) const {
 #ifdef MULTI_PAIRWISE
@@ -272,6 +352,7 @@ uint MultiS3::computeDenom(const Alignment& A) const {
 
 double MultiS3::eval(const Alignment& A) {
 #if MULTI_PAIRWISE
+    getNormalizationFactor();
     if (not degreesInit) initDegrees(A, *G1, *G2);
 
 
@@ -283,7 +364,7 @@ double MultiS3::eval(const Alignment& A) {
         cerr<<"inc eval MS3numer wrong: should be "<<correctNumer<<" but is "<<numer<<endl;
         numer = correctNumer;
     }
-    return ((double) numer) / denom / NUM_GRAPHS;
+    return ((double) numer) / denom / Normalization_factor;//NUM_GRAPHS;
 #else
     return 0.0;
 #endif
@@ -300,3 +381,4 @@ void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2) 
     for (uint i = 0; i < G1.getNumNodes(); ++i) shadowDegree[A[i]] += 1;
     degreesInit = true;
 }
+

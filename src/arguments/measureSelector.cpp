@@ -182,6 +182,7 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
         _numerator_type = 3;}
     else if (args.strings["-ms3_numer"] == "ra_global"){
         _numerator_type = 4;}
+    else {_numerator_type = 0;}
 
     if (args.strings["-ms3_denom"] == "default"){
         _denominator_type = 0;}
@@ -193,6 +194,7 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
         _denominator_type = 3;}
     else if (args.strings["-ms3_denom"] == "rt_global"){
         _denominator_type = 4;}
+    else {_denominator_type = 0;}
 
     m = new MultiS3(&G1, &G2, _numerator_type, _denominator_type);
     
