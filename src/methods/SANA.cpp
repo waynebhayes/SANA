@@ -1086,7 +1086,7 @@ int SANA::exposedEdgesIncSwapOp(uint source1, uint source2, uint target1, uint t
 // Return the change in NUMERATOR of MS3
 int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
     switch (MultiS3::denominator_type) {
-        case 1: //MultiS3::rt_i
+        case MultiS3::rt_i:
         {
             int neighbor;
             const uint n1 = G1->getNumNodes();
@@ -1112,7 +1112,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         }
             break;
             
-        case 2: //MultiS3::ee_i
+        case MultiS3::ee_i:
         {
             int neighbor;
             const uint n1 = G1->getNumNodes();
@@ -1152,7 +1152,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
             break;
     }
     switch (MultiS3::numerator_type){
-        case 1: //MultiS3::ra_i
+        case MultiS3::ra_i:
         {
             int res = 0, diff;
             uint neighbor;
@@ -1168,7 +1168,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         }
             break;
     
-        case 4:
+        case MultiS3::ra_global:
         {
             int res = 0;
             int diff= 0;
@@ -1192,7 +1192,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         }
             break;
         
-        case 2: //MultiS3::la_i
+        case MultiS3::la_i:
         {
             int res = 0, diff;
             uint neighbor;
@@ -1213,7 +1213,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         }
             break;
             
-        case 3: //MultiS3::la_global
+        case MultiS3::la_global:
         {
             int res = 0;
             int diff = 0;
@@ -1264,7 +1264,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
 // Return change in NUMERATOR only
 int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     switch (MultiS3::denominator_type){
-          case 1: //MultiS3::rt_i
+          case MultiS3::rt_i:
         {
               int neighbor;
               const uint n1 = G1->getNumNodes();
@@ -1325,7 +1325,7 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
               }
           }
               break;
-          case 2: //MultiS3::ee_i
+          case MultiS3::ee_i:
           {
               int neighbor;
               const uint n1 = G1->getNumNodes();
@@ -1393,7 +1393,7 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
             break;
       }
       switch (MultiS3::numerator_type){
-          case 1: //MultiS3::ra_i
+          case MultiS3::ra_i:
           {
               int res = 0, diff;
               uint neighbor;
@@ -1431,7 +1431,7 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
           }
               break;
               
-          case 4: //MultiS3::ra_global
+          case MultiS3::ra_global:
           {
               int res = 0, diff;
               uint neighbor;
@@ -1483,7 +1483,7 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
               return res;
           }
               break;
-          case 2: //MultiS3::la_i
+          case MultiS3::la_i:
           {
                int res = 0, diff;
                uint neighbor;
@@ -1532,7 +1532,7 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                return res;
           }
               break;
-          case 3: //MultiS3::la_global
+          case MultiS3::la_global:
           {
               int res = 0, diff;
               uint neighbor;
