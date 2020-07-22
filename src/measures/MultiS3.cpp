@@ -93,6 +93,7 @@ MultiS3::~MultiS3() {
 }
 
 // I think this is correct, but it's mis-used in computeDenom
+// We assume that G1 has already been pruned, though there is no way to check it.
 void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2)
 {
     const uint n2 = G2.getNumNodes();
@@ -108,6 +109,7 @@ void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2)
         for (uint j = 0; j < n2; ++j) // and for all possible neighbors of node i
         {
 	    if(i==j) assert(G2Matrix[i][j]==0); // no self loops
+	    else assert(G2Matrix[i][j] >= 0 && G2Matrix[i][j] == G2Matrix[j][i]);
             shadowDegree[i] += G2Matrix[i][j]; // increment the "total degree" of node i by the weight of edge(i,j)
         }
     }
@@ -115,8 +117,10 @@ void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2)
     // Now add in the edges from G1
     const uint n1 = G1.getNumNodes();
     for (uint i = 0; i < n1; ++i)
-        ++shadowDegree[A[i]];
-    
+	for (uint j = 0; j < n1; ++j)
+	    if(G1Matrix[i][j])
+		++shadowDegree[A[i]];
+
     degreesInit = true;
 }
 
@@ -125,37 +129,29 @@ unsigned MultiS3::computeDenom(const Alignment& A, const Graph& G1, const Graph&
     LaddersUnderG1 = 0;
     const uint n1 = G1.getNumNodes();
     const uint n2 = G2.getNumNodes();
-#if 0
+    Matrix<MATRIX_UNIT> G1Matrix, G2Matrix;
+    G1.getMatrix(G1Matrix);
+    G2.getMatrix(G2Matrix);
+
     for (uint i = 0; i < n1-1; ++i)
     {
 	for (uint j = i+1; j < n1; ++j)
 	{
 	    assert(0 <= A[i] && A[i] < n2);
 	    assert(0 <= A[j] && A[j] < n2);
-	    // The following is the wrong condition: we need the specific *EDGE* between shadow nodes to have weight >0
+#if 0 //SANA1_BOGUS // The actual SANA1.1 condition, which works but doesn't make sense!
+	    // this makes no sense: shadowDegree index is a G2 node, not G1, and even if it was A[i] this doesn't imply a ladder
+            if (shadowDegree[i] > 0)
+#elif 0 // SANA1_BOGUS2
+	    // The following makes slightly more sense but not totally: we need the specific *EDGE* between shadow nodes to
+	    // have weight>0, not the total shadow degree. It seems to work slightly better than the one above.
 	    if (shadowDegree[A[i]] > 0 && shadowDegree[A[j]] > 0) 
+#else // CORRECT denominator: all ladders between *all* pegs of G1, not just those under G1's edges
+	    if (G1Matrix[i][j] || G2Matrix[A[i]][A[j]])
+#endif
 		++LaddersUnderG1;
 	}
     }
-#else
-    uint u1,v1;
-    vector<vector<uint>> G1EdgeList;
-    G1.getEdgeList(G1EdgeList);
-
-    Matrix<MATRIX_UNIT> G2Matrix;
-    G2.getMatrix(G2Matrix);
-
-    for (const auto& edge : G1EdgeList)
-    {
-        u1 = edge[0], v1 = edge[1];
-	assert(0 <= u1 && u1 < n1);
-	assert(0 <= v1 && v1 < n1);
-	assert(0 <= A[u1] && A[u1] < n2);
-	assert(0 <= A[v1] && A[v1] < n2);
-	if(G2Matrix[A[u1]][A[v1]] > 0) // > 0 because the edge in G1 is already here, so > 0 gives at least 2 rungs
-	    ++LaddersUnderG1;
-    }
-#endif
     denom = LaddersUnderG1;
     return denom;
 }
