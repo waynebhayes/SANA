@@ -252,8 +252,8 @@ uint MultiS3::computeNumer(const Alignment& A) const {
 }
 
 uint MultiS3::computeDenom(const Alignment& A) const {
-#ifdef MULTI_PAIRWISE
     uint ret = 0;
+#ifdef MULTI_PAIRWISE
     
     uint node1, node2;
     const uint n1 = G1->getNumNodes();
@@ -331,10 +331,8 @@ uint MultiS3::computeDenom(const Alignment& A) const {
         }
             break;
     }
-    return ret;
-#else
-    return;
 #endif
+    return ret;
 }
 
 
