@@ -2332,7 +2332,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
     switch (MultiS3::denominator_type) {
         case 1: //MultiS3::rt_i
         {
-            int neighbor;
+                 uint neighbor;
                  const uint n1 = G1->getNumNodes();
                  const uint n2 = G2->getNumNodes();
                  vector<uint> whichPeg(n2, n1); // value of n1 represents not used
@@ -2362,7 +2362,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         case 2: //MultiS3::ee_i
         {
 
-                int neighbor;
+                uint neighbor;
                 const uint n1 = G1->getNumNodes();
                 const uint n2 = G2->getNumNodes();
                 vector<uint> whichPeg(n2, n1); // value of n1 represents not used
@@ -2467,10 +2467,10 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         {
             int res = 0;
             int diff = 0;
-            int neighbor = 0;
+            uint neighbor = 0;
                 bool ladder = false;
             const uint n = G1AdjLists[source].size();
-            for (int i=0;i<n;i++){
+            for (uint i=0;i<n;i++){
                 neighbor = G1AdjLists[source][i];
                 if (G1Matrix[neighbor][source]>0){
                     diff = G2Matrix[oldTarget][(*A)[neighbor]] + 1;
@@ -2551,7 +2551,7 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
         case 1: //MultiS3::rt_i
         {
             
-            int neighbor;
+            uint neighbor;
             const uint n1 = G1->getNumNodes();
             const uint n2 = G2->getNumNodes();
             vector<uint> whichPeg(n2, n1);
@@ -2613,7 +2613,7 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
             break;
         case 2: //MultiS3::ee_i
         {
-            int neighbor;
+               uint neighbor;
                const uint n1 = G1->getNumNodes();
                const uint n2 = G2->getNumNodes();
                vector<uint> whichPeg(n2, n1); // value of n1 represents not used
