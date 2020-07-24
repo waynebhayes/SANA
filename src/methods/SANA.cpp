@@ -1220,7 +1220,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
             uint neighbor = 0;
             bool ladder = false;
             const uint n = G1->adjLists[source].size();
-            for (int i=0;i<n;i++){
+            for (uint i=0;i<n;i++){
                 neighbor = G1->adjLists[source][i];
                 if (G1->getEdgeWeight(neighbor,source)>0){
                     diff = G2->getEdgeWeight(oldTarget,A[neighbor]) + 1;
