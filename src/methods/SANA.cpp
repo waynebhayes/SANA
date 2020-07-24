@@ -1088,7 +1088,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
     switch (MultiS3::denominator_type) {
         case MultiS3::rt_i:
         {
-            int neighbor;
+            uint neighbor;
             const uint n1 = G1->getNumNodes();
             const uint n2 = G2->getNumNodes();
             vector<uint> whichPeg(n2, n1); // value of n1 represents not used
@@ -1114,7 +1114,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
             
         case MultiS3::ee_i:
         {
-            int neighbor;
+            uint neighbor;
             const uint n1 = G1->getNumNodes();
             const uint n2 = G2->getNumNodes();
             vector<uint> whichPeg(n2, n1); // value of n1 represents not used
@@ -1217,7 +1217,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         {
             int res = 0;
             int diff = 0;
-            int neighbor = 0;
+            uint neighbor = 0;
             bool ladder = false;
             const uint n = G1->adjLists[source].size();
             for (int i=0;i<n;i++){
@@ -1266,7 +1266,7 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
     switch (MultiS3::denominator_type){
           case MultiS3::rt_i:
         {
-              int neighbor;
+              uint neighbor;
               const uint n1 = G1->getNumNodes();
               const uint n2 = G2->getNumNodes();
               vector<uint> whichPeg(n2, n1);
@@ -1299,7 +1299,7 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                    }
               }
             
-               n_num = G2->adjLists[target2].size();
+              n_num = G2->adjLists[target2].size();
               for (uint i =0; i < n_num; i++){
                   neighbor = G2->adjLists[target2][i];
                   if (whichPeg[neighbor]<n1 and neighbor != target1){
@@ -1327,7 +1327,7 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
               break;
           case MultiS3::ee_i:
           {
-              int neighbor;
+              uint neighbor;
               const uint n1 = G1->getNumNodes();
               const uint n2 = G2->getNumNodes();
               vector<uint> whichPeg(n2, n1); // value of n1 represents not used
