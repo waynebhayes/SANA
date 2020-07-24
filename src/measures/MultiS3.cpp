@@ -131,7 +131,7 @@ void MultiS3::getNormalizationFactor() const {
             break;
         case MultiS3::la_global:
         {
-            uint temp_max = 0;
+            int temp_max = 0;
             for (const auto& edge: *(G2->getEdgeList()))
             {
                 node1 = edge[0], node2 = edge[1];
@@ -142,7 +142,7 @@ void MultiS3::getNormalizationFactor() const {
             break;
         case MultiS3::ra_global:
         {
-            uint temp_max = 0;
+            int temp_max = 0;
             for (const auto& edge: *(G2->getEdgeList()))
             {
                 node1 = edge[0], node2 = edge[1];
@@ -255,7 +255,7 @@ uint MultiS3::computeDenom(const Alignment& A) const {
     uint ret = 0;
 #ifdef MULTI_PAIRWISE
     
-    uint node1, node2;
+    //uint node1, node2;
     const uint n1 = G1->getNumNodes();
     const uint n2 = G2->getNumNodes();
     vector<uint> whichPeg(n2, n1); // element equal to n1 represents not used/aligned
