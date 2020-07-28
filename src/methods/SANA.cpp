@@ -1276,8 +1276,8 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         default:
         {
             int res = 0;
-            unsigned oldOldTargetDeg = MultiS3::shadowDegree[oldTarget];
-            unsigned oldNewTargetDeg = MultiS3::shadowDegree[newTarget];
+            //unsigned oldOldTargetDeg = MultiS3::shadowDegree[oldTarget];
+            //unsigned oldNewTargetDeg = MultiS3::shadowDegree[newTarget];
 
             if (G1->hasSelfLoop(source)) {
                 if (G2->hasSelfLoop(oldTarget)) --res;
@@ -1677,8 +1677,8 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
           default:
           {
               int res = 0;
-              uint oldTarget1Deg = MultiS3::shadowDegree[target1];
-              uint oldTarget2Deg = MultiS3::shadowDegree[target2];
+              //uint oldTarget1Deg = MultiS3::shadowDegree[target1];
+              //uint oldTarget2Deg = MultiS3::shadowDegree[target2];
               if (G1->hasSelfLoop(source1)) {
                   if (G2->hasSelfLoop(target1)) --res;
                   if (G2->hasSelfLoop(target2)) ++res;
