@@ -1149,6 +1149,44 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
             break;
             
         default:
+	{
+#if 0
+	    if (oldOldTargetDeg > 0 and !MultiS3::shadowDegree[oldTarget]) MultiS3::denom -= 1;
+            if (oldNewTargetDeg > 0 and !MultiS3::shadowDegree[newTarget]) MultiS3::denom += 1;
+#else
+	    uint neighbor;
+            const uint n1 = G1->getNumNodes();
+            const uint n2 = G2->getNumNodes();
+            vector<uint> whichPeg(n2, n1); // value of n1 represents not used
+            for (uint i = 0; i < n1; ++i){
+                whichPeg[A[i]] = i; // inverse of the alignment
+            }
+            uint n_num = G2->adjLists[oldTarget].size();
+            for (uint i =0; i < n_num; i++){
+                neighbor = G2->adjLists[oldTarget][i];
+                if (whichPeg[neighbor]<n1){
+                    MultiS3::denom--;
+                }
+            }
+            n_num = G1->adjLists[source].size();
+            for (uint i =0; i < n_num; i++){
+                neighbor = G1->adjLists[source][i];
+                if (!G2->getEdgeWeight(A[neighbor],oldTarget)){
+                    MultiS3::denom--;
+                }
+                if (A[neighbor]!=newTarget and !G2->getEdgeWeight(A[neighbor],newTarget)){
+                    MultiS3::denom++;
+                }
+            }
+            n_num = G2->adjLists[newTarget].size();
+            for (uint i =0; i < n_num; i++){
+                neighbor = G2->adjLists[newTarget][i];
+                if (whichPeg[neighbor]<n1 and source!=whichPeg[neighbor] ){
+                    MultiS3::denom++;
+                }
+            }  	    
+#endif
+	}
             break;
     }
     switch (MultiS3::numerator_type){
@@ -1238,8 +1276,8 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
         default:
         {
             int res = 0;
-            unsigned oldOldTargetDeg = MultiS3::shadowDegree[oldTarget];
-            unsigned oldNewTargetDeg = MultiS3::shadowDegree[newTarget];
+            //unsigned oldOldTargetDeg = MultiS3::shadowDegree[oldTarget];
+            //unsigned oldNewTargetDeg = MultiS3::shadowDegree[newTarget];
 
             if (G1->hasSelfLoop(source)) {
                 if (G2->hasSelfLoop(oldTarget)) --res;
@@ -1253,8 +1291,7 @@ int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
                     res += G2->getEdgeWeight(newTarget, A[nbr]);
                 }
             }
-            if (oldOldTargetDeg > 0 and !MultiS3::shadowDegree[oldTarget]) MultiS3::denom -= 1;
-            if (oldNewTargetDeg > 0 and !MultiS3::shadowDegree[newTarget]) MultiS3::denom += 1;
+
             return res;
         }
             break;
@@ -1391,6 +1428,77 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
               }
         }
             break;
+	default:
+        {
+#if 0
+		if (oldTarget1Deg > 0 && !MultiS3::shadowDegree[target1]) MultiS3::denom -= 1;
+        	if (oldTarget2Deg > 0 && !MultiS3::shadowDegree[target2]) MultiS3::denom += 1;	
+#else
+	      uint neighbor;
+              const uint n1 = G1->getNumNodes();
+              const uint n2 = G2->getNumNodes();
+              vector<uint> whichPeg(n2, n1); // value of n1 represents not used
+              for (uint i = 0; i < n1; ++i){
+                  whichPeg[A[i]] = i; // inverse of the alignment
+              }
+
+              uint n_num = G2->adjLists[target1].size();
+              for (uint i =0; i < n_num; i++){
+                  neighbor = G2->adjLists[target1][i];
+                  if (whichPeg[neighbor]<n1 and neighbor!=target2 and G2->getEdgeWeight(neighbor,target1)){
+                      MultiS3::denom--;
+                  }
+              }
+              n_num = G1->adjLists[source1].size();
+              for (uint i =0; i < n_num; i++){
+                  neighbor = G1->adjLists[source1][i];
+                    if (neighbor!=source2){
+                        if (!G2->getEdgeWeight(A[neighbor],target1)){
+                            MultiS3::denom--;
+                        }
+                        if (!G2->getEdgeWeight(A[neighbor],target2)){
+                            MultiS3::denom++;
+                        }
+                    }
+              }
+
+              n_num = G2->adjLists[target2].size();
+              for (uint i =0; i < n_num; i++){
+                  neighbor = G2->adjLists[target2][i];
+                  if (neighbor!=target1 and whichPeg[neighbor]<n1 and source1!=whichPeg[neighbor] and !G2->getEdgeWeight(neighbor,target2)){
+                      MultiS3::denom++;
+                  }
+              }
+              n_num = G2->adjLists[target2].size();
+              for (uint i =0; i < n_num; i++){
+                  neighbor = G2->adjLists[target2][i];
+                  if (neighbor!=target1 and whichPeg[neighbor]<n1 and !G2->getEdgeWeight(target2,neighbor)){
+                      MultiS3::denom--;
+                  }
+              }
+              
+              n_num = G1->adjLists[source2].size();
+              for (uint i =0; i < n_num; i++){
+                  neighbor = G1->adjLists[source2][i];
+                  if (neighbor!=source1){
+                      if (!G2->getEdgeWeight(A[neighbor],target2)){
+                          MultiS3::denom--;
+                      }
+                      if (!G2->getEdgeWeight(A[neighbor],target1)){
+                          MultiS3::denom++;
+                      }
+                  }
+              }
+              n_num = G2->adjLists[target1].size();
+              for (uint i =0; i < n_num; i++){
+                  neighbor = G2->adjLists[target1][i];
+                  if ( G2->getEdgeWeight(target1,neighbor)>0 and whichPeg[neighbor]<n1 and neighbor!=target2 and source2!=whichPeg[neighbor]){
+                      MultiS3::denom++;
+                  }
+              }
+#endif
+        }
+
       }
       switch (MultiS3::numerator_type){
           case MultiS3::ra_i:
@@ -1569,8 +1677,8 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
           default:
           {
               int res = 0;
-              uint oldTarget1Deg = MultiS3::shadowDegree[target1];
-              uint oldTarget2Deg = MultiS3::shadowDegree[target2];
+              //uint oldTarget1Deg = MultiS3::shadowDegree[target1];
+              //uint oldTarget2Deg = MultiS3::shadowDegree[target2];
               if (G1->hasSelfLoop(source1)) {
                   if (G2->hasSelfLoop(target1)) --res;
                   if (G2->hasSelfLoop(target2)) ++res;
@@ -1595,8 +1703,8 @@ int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
                       res += G2->getEdgeWeight(target1, A[nbr]);
                   }
               }
-              if (oldTarget1Deg > 0 && !MultiS3::shadowDegree[target1]) MultiS3::denom -= 1;
-              if (oldTarget2Deg > 0 && !MultiS3::shadowDegree[target2]) MultiS3::denom += 1;
+//              if (oldTarget1Deg > 0 && !MultiS3::shadowDegree[target1]) MultiS3::denom -= 1;
+//              if (oldTarget2Deg > 0 && !MultiS3::shadowDegree[target2]) MultiS3::denom += 1;
               return res;
 
           }

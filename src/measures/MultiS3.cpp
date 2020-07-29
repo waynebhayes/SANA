@@ -322,12 +322,22 @@ uint MultiS3::computeDenom(const Alignment& A) const {
             break;
         default:
         {
-	    //const uint n1 = G1->getNumNodes();
+#if 0	    //const uint n1 = G1->getNumNodes();
 	    if (not degreesInit) initDegrees(A, *G1, *G2);
             for (uint i = 0; i < n1; i++) {
                 if (shadowDegree[i] > 0) ret += n1-1-i; // Nil correctly compressed this from SANA1.1 but I think SANA1.1 was wrong
             } // Modified shadowDegree[i] ---> shadowDegree[A[i]]
             ret /= 2;
+#else
+	    for (uint i = 0; i < n1-1; ++i)
+	    {
+                for (uint j = i+1; j < n1; ++j)
+	        {
+             	    if (G1->getEdgeWeight(i,j) || G2->getEdgeWeight(A[i],A[j]))
+			++ret;
+		}
+	    }
+#endif
         }
             break;
     }
