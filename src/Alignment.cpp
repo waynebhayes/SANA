@@ -459,7 +459,6 @@ unsigned Alignment::multiS3Denominator(const Graph& G1, const Graph& G2) const {
     Matrix<MATRIX_UNIT> G2Matrix;
     G1.getMatrix(G1Matrix);
     G2.getMatrix(G2Matrix);
-    uint node1, node2;
     const uint n1 = G1.getNumNodes();
     const uint n2 = G2.getNumNodes();
     vector<uint> whichPeg(n2, n1); // value of n1 represents not used
