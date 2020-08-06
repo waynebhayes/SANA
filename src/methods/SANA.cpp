@@ -1388,8 +1388,8 @@ void SANA::performChange(int type) {
             newLocalScoreSum, newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum,
             newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
 
-#define DISALLOW_SELF 1 // testing to see how good score can get if G1==G2 but we disallow all nodes to self-align
-#if DISALLOW_SELF
+#define ALLOW_SELF_ALIGN 1 // set 0 to see how good can we get if G1==G2 but we disallow all nodes to self-align
+#if !ALLOW_SELF_ALIGN
     if(source==newTarget) makeChange=false;
 #endif
 
@@ -1527,8 +1527,8 @@ void SANA::performSwap(int type) {
                         newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges,
                         newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
 
-#define DISALLOW_SELF 1 // testing to see how good score can get if G1==G2 but we disallow all nodes to self-align
-#if DISALLOW_SELF
+#define ALLOW_SELF_ALIGN 1 // set 0 to see how good can we get if G1==G2 but we disallow all nodes to self-align
+#if !ALLOW_SELF_ALIGN
     if(source1==target2 || source2==target1) makeChange=false;
 #endif
 
