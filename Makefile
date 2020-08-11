@@ -238,7 +238,9 @@ optnetalign:
 	cd wrappedAlgorithms/OptNetAlign/src; $(MAKE) optnetalignubuntu; chmod +x optnetalign; cp optnetalign ../
 
 NetGO:
-# 	(cd NetGO && git pull)
+	git submodule init
+	git submodule update
+	(cd NetGO && git checkout master && git pull)
 
 parallel: src/parallel.c
 	gcc -o parallel src/parallel.c
