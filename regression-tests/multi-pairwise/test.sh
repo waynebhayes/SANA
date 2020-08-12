@@ -3,7 +3,7 @@ echo() { /bin/echo "$@"
 }
 die() { echo "FATAL ERROR: $@" >&2; exit 1
 }
-[ -x "$SANA_EXE.multi" ] || die "can't find executable '$SANA_EXE.multi'"
+[ -x "${SANA_EXE:=./sana}.multi" ] || die "can't find executable '$SANA_EXE.multi'"
 CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 PATH="`pwd`/scripts:$PATH"
 export PATH

@@ -12,8 +12,11 @@ PATH=`pwd`:`pwd`/scripts:$PATH
 export PATH
 export HOST=`hostname|sed 's/\..*//'`
 
-[ -x NetGO/NetGO.awk ] || die "you need the submodule NetGO; try running:
-    git submodule init; git submodule update"
+if [ ! -x NetGO/NetGO.awk ]; then
+    echo "you need the submodule NetGO; trying to get it now" >&2
+    (git submodule init && git submodule update && cd NetGO && git pull) || die "failed to get NetGO"
+    [ -x NetGO/NetGO.awk ] || die "Still can't find NetGO"
+fi
 
 SANA_EXE=./sana
 MAKE=false
