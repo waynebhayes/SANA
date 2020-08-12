@@ -25,7 +25,7 @@ done
 export SANA_EXE
 CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 if $MAKE ; then
-    for ext in multi ''; do
+    for ext in sparse multi ''; do
 	if [ `hostname` = Jenkins ]; then
 	    make clean; make $ext -j2 || die "make '$ext' failed"
 	else
@@ -34,7 +34,7 @@ if $MAKE ; then
 	# We only want a "." separator if the extension is non-null
 	if [ "$ext" = "" ]; then dot=""; else dot="."; fi
 	if [ -x sana$dot$ext ]; then
-	    [ "sana$dot$ext" != "$SANA_EXE$dot$ext" ] && mv -f "sana$dot$ext" "$SANA_EXE$dot$ext"
+	    [ "./sana$dot$ext" != "$SANA_EXE$dot$ext" ] && mv -f "sana$dot$ext" "$SANA_EXE$dot$ext"
 	else
 	    die "could not create executable 'sana$dot$ext'"
 	fi
