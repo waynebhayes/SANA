@@ -237,7 +237,7 @@ depend: $(SRCS)
 optnetalign:
 	cd wrappedAlgorithms/OptNetAlign/src; $(MAKE) optnetalignubuntu; chmod +x optnetalign; cp optnetalign ../
 
-NetGO:
+NetGO: /dev/null # always make
 	git submodule init
 	git submodule update
 	(cd NetGO && git checkout master && git pull)
