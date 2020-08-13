@@ -5,9 +5,9 @@ die() { echo "FATAL ERROR: $@" >&2; exit 1
 }
 SANA_MULTI="${SANA_EXE:=./sana}.multi"
 [ -x "$SANA_MULTI" ] || die "can't find $SANA_MULTI executable"
-CORES=`cpus 2>/dev/null || echo 4`
 PATH="`pwd`/scripts:$PATH"
 export PATH
+CORES=`cpus 2>/dev/null || echo 4`
 DIR=/tmp/syeast.$$
 MINSUM=0.25
 MEASURE="-ms3 1 -ms3_type 0"
