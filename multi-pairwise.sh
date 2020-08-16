@@ -127,7 +127,7 @@ case "$JOB" in
     *) ;; #[ -f "$JOB" ] || die "4th argument '$JOB' must be '-parallel N' or a job name for distrib_sge";;
 esac
 NUM_ITERS=`parse "$ITER_EXPR"` || die "'$ITER_EXPR': cannot figure out iteration count"
-if [ -d "$OUTDIR" ]; then
+if [ -d "$OUTDIR/dir-init" ]; then
     warn "outdir '$OUTDIR' already exists; continuing"
 fi
 
