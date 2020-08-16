@@ -26,7 +26,7 @@ echo "Running $ITERS iterations of $minutes minute(s) each, optimizing measure '
 cd $DIR
 echo "Now check NC values: below are the number of times the multiple alignment contains k correctly matching nodes, k=2,3,4:"
 echo "iter	NC2	NC3	NC4"
-for m in `ls -rt dir*/multiAlign.tsv`; do echo "`dirname $m; for i in 2 3 4; do gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)if(K[i]>='$i')print}' $m | wc -l; done`; done | sed 's/ /	/'
+for m in `ls -rt dir*/multiAlign.tsv`; do echo `dirname $m; for i in 2 3 4; do gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)if(K[i]>='$i')print}' $m | wc -l; done`; done | sed 's/ /	/'
 echo "And now the Multi-NC, or MNC, measure, of the final alignment"
 echo 'k	number	MNC'
 for k in 2 3 4; do echo "$k	`gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)if(K[i]>='$k')nc++}END{printf "%d\t%.3f\n",nc,nc/NR}' dir$ITERS/multiAlign.tsv`"
