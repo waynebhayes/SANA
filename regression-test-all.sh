@@ -32,7 +32,7 @@ done
 
 export SANA_EXE
 NUM_FAILS=0
-CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
+CORES=$((${CORES:=`cpus 2>/dev/null || echo 4`}-1))
 MAKE_CORES=$CORES
 [ `hostname` = Jenkins ] && MAKE_CORES=2 # only use 2 cores to make on Jenkins
 

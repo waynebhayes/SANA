@@ -1,5 +1,5 @@
 #!/bin/bash
-CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
+CORES=$((${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}-1))
 die() { echo "$@" >&2; exit 1
 }
 [ -x "$SANA_EXE" ] || die "can't find executable '$SANA_EXE'"
