@@ -3,7 +3,7 @@ die() { echo "$@" >&2; exit 1
 }
 
 echo 'Testing measurement Edge Ratio'
-CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
+CORES=$((${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}-1))
 
 REG_DIR=`pwd`/regression-tests/EdgeRatio
 [ -d "$REG_DIR" ] || die "should be run from top-level directory of the SANA repo"

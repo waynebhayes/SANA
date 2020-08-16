@@ -4,7 +4,7 @@ echo() { /bin/echo "$@"
 die() { echo "FATAL ERROR: $@" >&2; exit 1
 }
 [ -x "${SANA_EXE:=./sana}.multi" ] || die "can't find executable '$SANA_EXE.multi'"
-CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
+CORES=$((${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}-1))
 PATH="`pwd`/scripts:$PATH"
 export PATH
 DIR=`mktemp -d /tmp/syeast.XXXXXXXXX`

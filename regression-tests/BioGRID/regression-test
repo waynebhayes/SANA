@@ -1,6 +1,5 @@
 #!/bin/bash
-
-CORES=${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}
+CORES=$((${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}-1))
 PARALLEL="./parallel -s bash $CORES"  # run in parallel on jenkins
 #PARALLEL=bash # if you don't have the parallel program
 NUM_FAILS=0

@@ -1,7 +1,7 @@
 #!/bin/bash
 die() { echo "$@" >&2; exit 1
 }
-CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
+CORES=$((${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}-1))
 
 echo 'Testing SANA use different format as it input.'
 
