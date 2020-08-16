@@ -13,7 +13,7 @@ MINSUM=0.25
 MEASURE="-ms3 1 -ms3_type 0"
  trap "/bin/rm -rf $DIR" 0 1 2 3 15
 if [ `hostname` = Jenkins ]; then
-    ITERS=999; minutes=0.1
+    ITERS=256; minutes=0.1
 else
     ITERS=99; minutes=0.1
 fi
