@@ -1,6 +1,10 @@
 #!/bin/bash
 USAGE="USAGE: $0 [-H N] {multi-SANA.exe} 'measures' iterations time-per-iter parallel-spec outdir {list of input networks}
-parallel-spec is either a job name for distrib_sge, or '-parallel K' (including the quotes!) for K processes locally
+parallel-spec is one of the following:
+	a job name for distrib_sge (which only exists on UCI's openlab computers)
+	'-parallel K' (including the quotes!) for K processes locally
+	-1 for no parallelism (1 process at a time, very slow)
+
 multi-SANA.exe is the full path (including leading './' if necessary) to the multi-pairwise sana executable,
     usually called 'sana.multi'"
 
@@ -121,6 +125,7 @@ shift 6
 
 case "$JOB" in
     -parallel*) PARALLEL='./parallel -s bash '`echo $JOB | awk '{print $NF}'`;;
+    -1) PARALLEL=bash ;; # no parallelism
     *) ;; #[ -f "$JOB" ] || die "4th argument '$JOB' must be '-parallel N' or a job name for distrib_sge";;
 esac
 NUM_ITERS=`parse "$ITER_EXPR"` || die "'$ITER_EXPR': cannot figure out iteration count"
