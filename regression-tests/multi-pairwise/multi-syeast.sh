@@ -40,7 +40,7 @@ echo "iter	NC2	NC3	NC4"
 for m in `ls -rt dir*/multiAlign.tsv`; do echo `dirname $m; for i in 2 3 4; do gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)if(K[i]>='$i')print}' $m | wc -l; done`; done | sed 's/ /	/'
 echo "And now the Multi-NC, or MNC, measure, of the final alignment"
 echo 'k	number	MNC'
-gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)++nc[K[i]]}END{for(i=2;i<=NF;i++)printf "%d\t%d\t%.3f\n",i,nc[i],nc[i]/NR}' dir$ITERS/multiAlign.tsv | tee $DIR/MNC.txt
+gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)++nc[K[i]]}END{for(i=2;i<=NF;i++){for(j=i+1;j<=NF;j++)nc[i]+=nc[j];printf "%d\t%d\t%.3f\n",i,nc[i],nc[i]/NR}}' dir$ITERS/multiAlign.tsv | tee $DIR/MNC.txt
 echo "Check MNC are high enough: k=2,3,4 => 0.25,0.15,0.05, or sum >= $MINSUM"
 echo "DIR is $DIR"
 gawk 'BEGIN{code=0}{k=$1;expect=(0.45-k/10);sum+=$3;if($3<expect)code=1}END{if(sum>'$MINSUM')code=0; exit(code)}' $DIR/MNC.txt || die "MNC failed"
