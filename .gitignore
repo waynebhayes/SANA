@@ -19,12 +19,12 @@ experiments/*/results/
 .trash.*
 *.csv
 *.align
+*.alig-el
 *.phr
 *.pin
 *.psq
 *.aln
 *.align
-*.naf
 
 *.bitscores
 

@@ -223,8 +223,13 @@ Graph Graph::graphIntersection(const Graph& other, const vector<uint>& thisToOth
         uint on1 = thisToOtherNodeMap[edge[0]], on2 = thisToOtherNodeMap[edge[1]];
         if (other.hasEdge(on1, on2)) newEdgeList.push_back(edge);
     }
+    vector<string> newNodeNames;
+    newNodeNames.reserve(getNumNodes());
+    for (uint i = 0; i < getNumNodes(); i++) {
+        newNodeNames.push_back("("+nodeNames[i]+","+other.nodeNames[thisToOtherNodeMap[i]]+")");
+    }
     return Graph(name+"_intersection_"+other.name, "", newEdgeList,
-                 nodeNames, {}, colorsAsNodeColorNamePairs()); //unweighted result
+                 newNodeNames, {}, colorsAsNodeColorNamePairs()); //unweighted result
 }
 
 uint Graph::randomNode() const {

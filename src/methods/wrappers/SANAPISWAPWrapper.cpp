@@ -25,7 +25,7 @@ Alignment SANAPISWAPWrapper::run(){
     Alignment A = sanaMethod->runAndPrintTime();
     A.printDefinitionErrors(*G1, *G2);
     assert(A.isCorrectlyDefined(*G1, *G2) and "Resulting alignment is not correctly defined");
-    Report::saveReport(*G1, *G2, A, M, sanaMethod, intermediateAlignment, true);
+    Report::saveReport(*G1, *G2, A, M, sanaMethod, intermediateAlignment, true, true);
     Alignment B = piswapMethod->runAndPrintTime();
     return B;
 }

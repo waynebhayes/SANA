@@ -14,7 +14,7 @@ class Report {
 public:
 
 static void saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
-    const MeasureCombination& M, const Method* method, const string& reportFileName, bool longVersion);
+    const MeasureCombination& M, const Method* method, const string& reportFileName, bool longVersion, bool saveCommonSubgraph);
 static void saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A,
     const MeasureCombination& M, const Method* method, const string& localMeasureFile);
 
