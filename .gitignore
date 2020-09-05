@@ -46,7 +46,7 @@ wrappedAlgorithms/PISWAP/networkx/*.pyc
 wrappedAlgorithms/PISWAP/networkx/*/*.pyc
 wrappedAlgorithms/PISWAP/networkx/*/*/*.pyc
 
-sana.out
+*.txt
 *.localscores
 sana.multi
 sana.float

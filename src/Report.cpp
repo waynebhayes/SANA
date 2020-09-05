@@ -36,6 +36,7 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
     ofs << "Seed: " << getRandomSeed() << endl;
 
     const uint numCCsToPrint = 3;
+    ofs << endl;
     ofs << "G1: " << G1.getName() << endl;
     if (longVersion) printGraphStats(G1, numCCsToPrint, ofs);
     ofs << "G2: " << G2.getName() << endl;
