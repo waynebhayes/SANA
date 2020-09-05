@@ -14,7 +14,7 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
                         const string& reportFileName, bool longVersion) {
     Timer T;
     T.start();
-    string fileName = formattedFileName(reportFileName, "txt", G1.getName(), G2.getName(), method, A);
+    string fileName = formattedFileName(reportFileName, "out", G1.getName(), G2.getName(), method, A);
     string baseName = FileIO::fileNameWithoutExtension(fileName);
 
     string aligFileName = baseName+".align";
@@ -223,7 +223,7 @@ string Report::formattedFileName(const string& outFileName, const string& extens
     string res;
     if (outFileName == "") {
         string gNames = G1Name+"_"+G2Name;
-        res = "alignments/"+gNames+"/"+gNames+"_"+method->getName()+method->fileNameSuffix(A)+".txt";
+        res = "alignments/"+gNames+"/"+gNames+"_"+method->getName()+method->fileNameSuffix(A)+".out";
         res = FileIO::addVersionNumIfFileAlreadyExists(res);
     } else {
         res = outFileName;
