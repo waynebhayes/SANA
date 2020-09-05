@@ -437,7 +437,7 @@ void SANA::printReportOnInterruption() {
     std::replace(timestamp.begin(), timestamp.end(), ' ', '_');
     string outFile = outputFileName+"_"+timestamp;
     string localFile = localScoresFileName+"_"+timestamp;
-    Report::saveReport(*G1, *G2, A, *MC, this, outFile, true, true);
+    Report::saveReport(*G1, *G2, A, *MC, this, outFile, true);
     Report::saveLocalMeasures(*G1, *G2, A, *MC, this, localFile);
 #ifdef CORES
     Report::saveCoreScore(*G1, *G2, A, this, coreScoreData, outputFileName);

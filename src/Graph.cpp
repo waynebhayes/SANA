@@ -226,10 +226,25 @@ Graph Graph::graphIntersection(const Graph& other, const vector<uint>& thisToOth
     vector<string> newNodeNames;
     newNodeNames.reserve(getNumNodes());
     for (uint i = 0; i < getNumNodes(); i++) {
-        newNodeNames.push_back("("+nodeNames[i]+","+other.nodeNames[thisToOtherNodeMap[i]]+")");
+        string g1Name = nodeNames[i];
+        string newName = "("+g1Name+","+other.nodeNames[thisToOtherNodeMap[i]]+")";
+        newNodeNames.push_back(newName);
     }
+
+    vector<array<string, 2>> newNodeColorPairs;
+    bool hasDefColor = colorNames[0] == DEFAULT_COLOR_NAME;
+    newNodeColorPairs.reserve(getNumNodes() - (hasDefColor ? numNodesWithColor(0) : 0));
+    for (uint i = (hasDefColor ? 1 : 0); i < numColors(); i++) {
+        string colName = colorNames[i];
+        for (uint node : nodeGroupsByColor[i]) {
+            string g1Name = nodeNames[node];
+            string newName = "("+g1Name+","+other.nodeNames[thisToOtherNodeMap[node]]+")";
+            newNodeColorPairs.push_back({newName, colName});
+        }
+    }
+
     return Graph(name+"_intersection_"+other.name, "", newEdgeList,
-                 newNodeNames, {}, colorsAsNodeColorNamePairs()); //unweighted result
+                 newNodeNames, {}, newNodeColorPairs); //unweighted result
 }
 
 uint Graph::randomNode() const {

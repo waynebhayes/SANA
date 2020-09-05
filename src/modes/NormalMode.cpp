@@ -30,8 +30,7 @@ void NormalMode::run(ArgumentParser& args) {
 
     string fileName = args.strings["-o"];
     bool longReport = (args.bools["-multi-iteration-only"] ? false : true);
-    bool saveCommonSubgraph = args.bools["-save-alignment-edge-list"];
-    Report::saveReport(G1, G2, A, M, method, fileName, longReport, saveCommonSubgraph);
+    Report::saveReport(G1, G2, A, M, method, fileName, longReport);
     Report::saveLocalMeasures(G1, G2, A, M, method, args.strings["-localScoresFile"]);
     delete method;
 }

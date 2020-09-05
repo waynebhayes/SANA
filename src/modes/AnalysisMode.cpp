@@ -31,7 +31,7 @@ void AnalysisMode::run(ArgumentParser& args) {
     Alignment A = loadAlignment(args.doubles["-alignFormat"], args.strings["-alignFile"], G1, G2);
     A.printDefinitionErrors(G1,G2);
     assert(A.isCorrectlyDefined(G1, G2) and "Resulting alignment is not correctly defined");
-    Report::saveReport(G1, G2, A, M, NULL, args.strings["-o"], true, true);
+    Report::saveReport(G1, G2, A, M, NULL, args.strings["-o"], true);
 }
 
 string AnalysisMode::getName() { return "AnalysisMode"; }

@@ -1,0 +1,64 @@
+8 2 1 0 7 9 10 12 14 5 
+
+2020-09-04 18:07:13
+Seed: 584288597
+G1: colorTest1
+n    = 10
+m    = 17
+# connected components = 1
+Largest connected components (nodes, edges) = (10, 17) 
+
+G2: colorTest2
+n    = 15
+m    = 22
+# connected components = 1
+Largest connected components (nodes, edges) = (15, 22) 
+
+Method: SANA_s3
+Temperature schedule:
+T_initial: 4.86968
+T_decay: 8.63469
+Optimize: 
+weight s3: 1
+Execution time: 60s
+Actual execution time = 69.148
+
+Scores:
+ec: 0.470588
+ed: 0.918182
+js: 4.83333
+er: -2
+ics: 0.727273
+mec: 1
+ses: -1
+ee: 0
+ms3: 0
+ics: 0.727273
+s3: 0.4
+lccs: 0.369274
+sec: 0.410256
+
+Common subgraph:
+n    = 10
+m    = 8
+# connected components = 2
+Largest connected components (nodes, edges) = (6, 5) (4, 3) 
+
+Common connected subgraphs:
+Graph  n   m   alig-edges  indu-edges  EC        ICS       S3        JS        
+G1     10  17  8           11          0.470588  0.727273  0.400000  4.833333  
+CCS_0  6   5   5           5           1.000000  1.000000  1.000000  6.000000  
+CCS_1  4   3   3           4           1.000000  0.750000  0.750000  4.000000  
+
+CCS_0 Alignment, local (distance 1 to 0) edge counts and s3 score
+v9	w5
+v4	w7
+v5	w9
+v6	w10
+v7	w12
+v8	w14
+CCS_1 Alignment, local (distance 1 to 0) edge counts and s3 score
+v3	w0
+v1	w2
+v0	w8
+v2	w1

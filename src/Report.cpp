@@ -11,42 +11,44 @@
 
 void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
                         const MeasureCombination& M, const Method* method,
-                        const string& reportFileName, bool longVersion,
-                        bool saveCommonSubgraph) {
+                        const string& reportFileName, bool longVersion) {
     Timer T;
     T.start();
-    string fileName = formattedFileName(reportFileName, "out", G1.getName(), G2.getName(), method, A);
+    string fileName = formattedFileName(reportFileName, "txt", G1.getName(), G2.getName(), method, A);
     string baseName = FileIO::fileNameWithoutExtension(fileName);
-    saveAlignmentAsEdgeList(A, G1, G2, baseName+".align");
-    ofstream ofs(fileName);
-    cout<<"Saving report as \""<<fileName<<"\""<<endl;
 
-    //first line is the alignment itself
+    string aligFileName = baseName+".align";
+    cout<<"Saving alignment in edge list format as \""<<aligFileName<<"\""<<endl;
+    saveAlignmentAsEdgeList(A, G1, G2, aligFileName);
+
+    if (longVersion) {
+        Graph CS = G1.graphIntersection(G2, *(A.getVector()));
+        string aligGraphFileName = baseName+".alig-el";
+        cout<<"Saving common subgraph in edge list format as \""<<aligGraphFileName<<"\""<<endl;
+        GraphLoader::saveInEdgeListFormat(CS, aligGraphFileName, false, true, "", " ");        
+    }
+
+    cout<<"Saving report as \""<<fileName<<"\""<<endl;
+    ofstream ofs(fileName);
     for (uint i = 0; i < A.size(); i++) ofs<<A[i]<<" ";
     ofs<<endl;
+    ofs << endl << currentDateTime() << endl;
+    ofs << "Seed: " << getRandomSeed() << endl;
 
-    Timer T1;
-    T1.start();
     const uint numCCsToPrint = 3;
-    ofs << endl << currentDateTime() << endl << endl;
     ofs << "G1: " << G1.getName() << endl;
     if (longVersion) printGraphStats(G1, numCCsToPrint, ofs);
     ofs << "G2: " << G2.getName() << endl;
     if (longVersion) printGraphStats(G2, numCCsToPrint, ofs);
-
     if (method != NULL) {
         ofs << "Method: " << method->getName() << endl;
         method->describeParameters(ofs);
-        ofs << endl << "execution time = " << method->getExecTime() << endl;
+        ofs << "Actual execution time = " << method->getExecTime() << "s" << endl;
     }
-    ofs << endl << "Seed: " << getRandomSeed() << endl;
-    cout << "  printing stats done (" << T1.elapsedString() << ")" << endl;
-    if (not longVersion and not saveCommonSubgraph) return;
 
-    Graph CS = G1.graphIntersection(G2, *(A.getVector()));
-    if (saveCommonSubgraph) {
-        GraphLoader::saveInEdgeListFormat(CS, baseName+".alig-el", false, true, "", " ");
-        if (not longVersion) return;
+    if (not longVersion) {
+        cout<<"Took "<<T.elapsed()<<" seconds to save the alignment and report."<<endl;
+        return;
     }
 
     Timer T2;
@@ -65,11 +67,13 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
             ofs << endl;
         }
     }
-    cout << "  printing scores done (" << T2.elapsedString() << ")" << endl;
+    cout << "Writing scores done (" << T2.elapsedString() << ")" << endl;
         
-    printGraphStats(CS, numCCsToPrint, ofs);
-        
+    Timer T3;
+    T3.start();  
     ofs << "Common subgraph:" << endl;
+    Graph CS = G1.graphIntersection(G2, *(A.getVector()));
+    printGraphStats(CS, numCCsToPrint, ofs);
     auto CCs = CS.connectedComponents();
     uint numCCs = CCs.size();
     int tableRows = min((uint) 5, numCCs)+2;
@@ -104,6 +108,7 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
     ofs << "Common connected subgraphs:" << endl;
     printTable(table, 2, ofs);
     ofs << endl;
+    cout << "Writing table done (" << T3.elapsedString() << ")" << endl;
 
     const bool PRINT_CCS = true;
     if (PRINT_CCS) {
@@ -133,9 +138,8 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
                 ofs << endl;
             }
         }
-        cout << "  printing tables done (" << T2.elapsedString() << ")" << endl;
     }
-    cout<<"Took "<<T.elapsed()<<" seconds to save the alignment and scores."<<endl;
+    cout<<"Took "<<T.elapsed()<<" seconds to save the alignment and report."<<endl;
 }
 
 void Report::saveAlignmentAsEdgeList(const Alignment& A, const Graph& G1, const Graph& G2, const string& fileName) {
@@ -239,8 +243,8 @@ void Report::printGraphStats(const Graph& G, uint numCCsToPrint, ofstream& ofs) 
     ofs << "m    = " << G.getNumEdges() << endl;
     auto CCs = G.connectedComponents();
     uint numCCs = CCs.size();
-    ofs << "#connectedComponents = " << numCCs << endl;
-    ofs << "Largest connectedComponents (nodes, edges) = ";
+    ofs << "# connected components = " << numCCs << endl;
+    ofs << "Largest connected components (nodes, edges) = ";
     for (uint i = 0; i < min(numCCsToPrint, numCCs); i++) {
         ofs << "(" << CCs[i].size() << ", " << G.numEdgesInNodeInducedSubgraph(CCs[i]) << ") ";
     }

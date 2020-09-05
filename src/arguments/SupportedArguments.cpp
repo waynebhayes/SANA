@@ -64,7 +64,6 @@ vector<array<string, 6>> supportedArguments = {
     { "-fg2", "string", "human", "Network 2", "Initializes the network G2 with an external file. Make sure that the name and path of the file exists. The network of G2 should have more nodes than G1.", "1" },
     { "-skip-graph-validation", "bool", "", "Skip graph validation", "Speed up load time by skipping checks for graph validity .", "1" },
     { "-o", "string", "sana", "Output File basename", "Specifies the basename of output file; actual output files will append (.out, .align, etc) to this.", "0" },
-    { "-save-alignment-edge-list", "bool", "", "Save the alignment in edge list format", "Save the alignment in edge list format in a file with extension '.alig-el'.", "0" },
     { "-localScoresFile", "string", "sana", "Local Scores File basename", "Specifies the basename of the local score file; actual output files will append (.out, .align, etc) to this.", "0"},
     { "-ts", "double", "", "Runtime in seconds", "The number of seconds to run SANA. Must be non-zero, no upper limit.", "1" },
     { "-tm", "double", "", "Runtime in minutes", "The number of minutes to run SANA. Must be non-zero, no upper limit.", "1" },
