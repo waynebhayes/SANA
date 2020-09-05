@@ -7,7 +7,7 @@ using namespace std;
 
 ArgumentParser::ArgumentParser(int argc, char* argv[]) {
     if(argc == 1) {
-        cout << "Usage: ./sana [OPTION] [ARG(S)] [OPTION] [ARG(S)]..." << endl
+	cout << "Usage: ./sana [OPTION] [ARG(S)] [OPTION] [ARG(S)]..." << endl
              << "Try './sana --help' or './sana -h' for more information." << endl;
         exit(0);
     }
@@ -50,6 +50,10 @@ ArgumentParser::ArgumentParser(int argc, char* argv[]) {
     for (string arg : vArg) {
         if (arg == "-h" or arg == "--help") helpFound = true;
         else if (helpFound) helpArgs.insert(arg);
+        else if (arg == "-V" or arg == "--version"){
+	    cout << SANAversion << endl;
+	    exit(0);
+	}
     }
     if (helpFound) {
         SupportedArguments::printAllArgumentDescriptions(helpArgs);
