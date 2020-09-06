@@ -247,4 +247,4 @@ parallel: src/parallel.c
 	gcc -o parallel src/parallel.c
 
 src/utils/SANAversion.cpp: .git/HEAD .git/index Makefile
-	echo "const char *SANAversion = \"Version$(shell git show -s '--format=%d %H %ci')\\nCompiled with gcc/g++ \" __VERSION__;" > $@
+	echo "const char *SANAversion = \"Version$(shell git show -s '--format=%d %H %ci') Compiled with gcc/g++ \" __VERSION__;" > $@
