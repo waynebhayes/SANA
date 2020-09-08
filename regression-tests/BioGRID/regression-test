@@ -158,6 +158,6 @@ fi
 echo encountered a total of $NUM_FAILS failures
 if [ $NUM_FAILS -gt 0 ]; then
     trap "" 0
-    echo "Since regression had some failures; directory $TMPDIR is not being erased"
+    echo "Since regression had some failures; directory $OutputDir is not being erased"
 fi
 exit $NUM_FAILS
