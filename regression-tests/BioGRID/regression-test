@@ -54,7 +54,7 @@ done
 if [ "$OutputFile" = NONE ]; then
     OutputFile="$OutputDir/regression-test.result"
 fi
-#rap "/bin/rm -rf $OutputDir" 0 1 2 3 15
+trap "/bin/rm -rf $OutputDir" 0 1 2 3 15
 mkdir -p $OutputDir || die "couldn't create OutputDir $OutputDir"
 
 > "$OutputFile" # create empty file
@@ -156,8 +156,8 @@ if [ ! -z "$CompareFile" ]; then
 fi
 
 echo encountered a total of $NUM_FAILS failures
-if [ $NUM_FAILS -gt 0 ]; then
+if [ $NUM_FAILS -gt 0 -o "$OutputDir" != /tmp/regression-test$$ ]; then
+    echo "$OutputDir not erased due to failures or analysis-only" >&2
     trap "" 0
-    echo "Since regression had some failures; directory $OutputDir is not being erased"
 fi
 exit $NUM_FAILS
