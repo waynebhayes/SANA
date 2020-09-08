@@ -10,21 +10,17 @@ die() { echo "ERROR: $@" >&2; exit 1
 PATH="$PATH:`pwd`/scripts"
 export PATH
 
-TMPDIR=/tmp/regression-test$$
-trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
-mkdir $TMPDIR || die "couldn't create OutputDir $TMPDIR"
+# Both these may be changed below with optional arguments
+OutputDir=/tmp/regression-test$$
+OutputFile=NONE # will be set below either by argument or in OutputDir
 
-[ -d "$REG_DIR" ] || die "Expecting REG_DIR to be set"
-
-OutputDir="$TMPDIR"
-OutputFile="$TMPDIR/regression-test.result"
 ErrorMargin="0.04"
 #echo "WARNING: temporarily set error margin way too big while core scores are being tested"
 CompareFile=""
 
 RUN=true # use -n to turn off run and only compare
 
-while getopts "b:e:o:c:n" opt; do
+while getopts "d:b:e:o:c:n" opt; do
     case $opt in
     n)  RUN=false;;
     e)
@@ -34,6 +30,9 @@ while getopts "b:e:o:c:n" opt; do
             echo "Argument for provided option -e is not a decimal number between 0-1" >&2
             exit 1
         fi
+        ;;
+    d)
+        OutputDir=$OPTARG
         ;;
     o)
         OutputFile=$OPTARG
@@ -51,6 +50,12 @@ while getopts "b:e:o:c:n" opt; do
         ;;
     esac
 done
+
+if [ "$OutputFile" = NONE ]; then
+    OutputFile="$OutputDir/regression-test.result"
+fi
+#rap "/bin/rm -rf $OutputDir" 0 1 2 3 15
+mkdir -p $OutputDir || die "couldn't create OutputDir $OutputDir"
 
 > "$OutputFile" # create empty file
 
@@ -143,7 +148,7 @@ if [ ! -z "$CompareFile" ]; then
 	errorDif=`parse "$errorDif/$EXTRA_MARGIN"`
         errorDif=`parse "ABS($errorDif)" | awk '{printf "%.16f\n",$1}'`
         if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
-            touch $TMPDIR/failed
+            touch $OutputDir/failed
 	    echo "$name failed error margin: ($newItem - $baseItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
 	    (( ++NUM_FAILS ))
         fi
