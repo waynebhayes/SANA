@@ -314,7 +314,9 @@ Alignment SANA::run() {
     initDataStructures();
     setInterruptSignal();
 
-    getIterPerSecond(); // print it out even if we don't use it
+#ifndef MULTI_PAIRWISE
+    getIterPerSecond(); // this takes several seconds of CPU time; don't do it during multi-only-iterations.
+#endif
     long long int maxIters = useIterations ? maxIterations
                                            : (long long int) (getIterPerSecond()*maxSeconds);
     double leeway = 2;
