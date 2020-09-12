@@ -43,8 +43,8 @@ for EXT in $EXECS ''; do
     fi
     if $MAKE ; then
 	[ "$EXT" = "" ] || EXT="$EXT=1"
-	make clean
-	if not make -k -j$MAKE_CORES $EXT; then
+	make $EXT clean
+	if not make -k -j$MAKE_CORES $EXT; then # "-k" mean "keep going even if some targets fail"
 	    (( NUM_FAILS+=1000 ))
 	    warn "make '$EXT' failed"
 	fi
