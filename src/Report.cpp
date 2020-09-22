@@ -23,7 +23,7 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
 
     if (longVersion) {
         Graph CS = G1.graphIntersection(G2, *(A.getVector()));
-        string aligGraphFileName = baseName+".alig-el";
+        string aligGraphFileName = baseName+".ccs-el";
         cout<<"Saving common subgraph in edge list format as \""<<aligGraphFileName<<"\""<<endl;
         GraphLoader::saveInEdgeListFormat(CS, aligGraphFileName, false, true, "", " ");        
     }
