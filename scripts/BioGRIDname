@@ -1,0 +1,20 @@
+#!/bin/sh
+
+IGNORE_CASE=''
+case "$1" in
+-i) IGNORE_CASE="-i"; shift ;;
+esac
+
+for q
+do
+    (
+	cd /home/sana/resnik/taxons
+	Q=`echo "$q" | sed 's/[ 	.]//g' | sed 's/IID//'`
+	FILE=`ls | grep $IGNORE_CASE "$Q"`
+	#if [ `echo $FILE | wc -w` -gt 1 ]; then echo "Warning: $q" matches multiple files: $FILE >&2; fi
+	for f in $FILE; do
+	    newlines < $f | awk 'BEGIN{F="'"$f"'";short=substr(F,1,2); printf "%s\t%s",short,F}
+		{for(i=1;i<=NF;i++)printf "\t%s",$i}END{print ""}'
+	done
+    )
+done
