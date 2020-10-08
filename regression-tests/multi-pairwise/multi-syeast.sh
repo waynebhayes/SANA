@@ -9,7 +9,7 @@ USAGE="$0 [ ITERS minutes-per-iter [ measure-spec [ cores ] ] ]
     "
 echo() { /bin/echo "$@"
 }
-die() { (echo "$USAGE"; echo "FATAL ERROR: $@") >&2; exit 1
+die() { echo "DIR is $DIR"; trap "" 0 1 2 3 15; (echo "$USAGE"; echo "FATAL ERROR: $@") >&2; exit 1
 }
 [ -x "${SANA_EXE:=./sana}.multi" ] || die "can't find executable '$SANA_EXE.multi'"
 CORES=$((${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}-1))
@@ -40,5 +40,4 @@ echo "And now the Multi-NC, or MNC, measure, of the final alignment"
 echo 'k	number	MNC'
 gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)++nc[K[i]]}END{for(i=2;i<=NF;i++){for(j=i+1;j<=NF;j++)nc[i]+=nc[j];printf "%d\t%d\t%.3f\n",i,nc[i],nc[i]/NR}}' dir$ITERS/multiAlign.tsv | tee $DIR/MNC.txt
 echo "Check MNC are high enough: k=2,3,4 => 0.25,0.15,0.05, or sum >= $MINSUM"
-echo "DIR is $DIR"
 gawk 'BEGIN{code=0}{k=$1;expect=(0.45-k/10);sum+=$3;if($3<expect)code=1}END{if(sum>'$MINSUM')code=0; exit(code)}' $DIR/MNC.txt || die "MNC failed"
