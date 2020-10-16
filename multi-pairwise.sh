@@ -8,6 +8,8 @@ parallel-spec is one of the following:
 multi-SANA.exe is the full path (including leading './' if necessary) to the multi-pairwise sana executable,
     usually called 'sana.multi'"
 
+NL='
+' # newline
 EXEDIR=`dirname $0`
 EXEDIR=`cd "$EXEDIR"; /bin/pwd`
 PATH="$EXEDIR:$EXEDIR/NetGO:$EXEDIR/scripts:$PATH"
@@ -142,42 +144,40 @@ export NUM_GRAPHS=$#
 
 #script to create an fshadow config file for SANA's mode shadow
 ShadowConfig() {
-NL='
-' # newline
-#USAGE: shadowOutFile k {k graphs} alignFiles? [ maybe k alignFiles ] colors? [ maybe: numColors + "name dummyCount" pairs + k colorFiles + shadowColorOutFile]
-shadowFile="$1"; shift
-numGraphs="$1"; shift
-k=$numGraphs
-GRAPHS=""
-while [ "$k" -gt 0 ]; do
-    GRAPHS="$GRAPHS$1$NL"; shift; k=`expr $k - 1 `
-done
-alignFiles=$1; shift
-ALIGN_FILES=""
-if [ $alignFiles -ne 0 ]; then
+    #USAGE: shadowOutFile k {k graphs} alignFiles? [ maybe k alignFiles ] colors? [ maybe: numColors + "name dummyCount" pairs + k colorFiles + shadowColorOutFile]
+    shadowFile="$1"; shift
+    numGraphs="$1"; shift
     k=$numGraphs
+    GRAPHS=""
     while [ "$k" -gt 0 ]; do
-	ALIGN_FILES="$ALIGN_FILES$1$NL"; shift; k=`expr $k - 1 `
+	GRAPHS="$GRAPHS$1$NL"; shift; k=`expr $k - 1 `
     done
-fi
-colors="$1"; shift
-if [ $colors -eq 0 ]; then
-    numColors=1
-    colorFiles=0
-    COLOR_FILES=""
-    COLOR_DUMMYCOUNT="__default 100"
-else
-    numColors=$1; shift
-    colorFiles=1
-    k=$numColors
-    while [ "$k" -gt 0 ]; do
-	COLOR_DUMMYCOUNT="$COLOR_DUMMYCOUNT$1$NL"; shift; k=`expr $k - 1 `
-    done
-    k=$numGraphs
-    while [ "$k" -ge 0 ]; do # ge because we also need the color outfile last
-	COLOR_FILES="$COLOR_FILES$1$NL"; shift; k=`expr $k - 1 `
-    done
-fi
+    alignFiles=$1; shift
+    ALIGN_FILES=""
+    if [ $alignFiles -ne 0 ]; then
+	k=$numGraphs
+	while [ "$k" -gt 0 ]; do
+	    ALIGN_FILES="$ALIGN_FILES$1$NL"; shift; k=`expr $k - 1 `
+	done
+    fi
+    colors="$1"; shift
+    if [ "$colors" = 0 ]; then
+	numColors=1
+	colorFiles=0
+	COLOR_FILES=""
+	COLOR_DUMMYCOUNT="__default 100"
+    else
+	numColors=$1; shift
+	colorFiles=1
+	k=$numColors
+	while [ "$k" -gt 0 ]; do
+	    COLOR_DUMMYCOUNT="$COLOR_DUMMYCOUNT$1$NL"; shift; k=`expr $k - 1 `
+	done
+	k=$numGraphs
+	while [ "$k" -ge 0 ]; do # ge because we also need the color outfile last
+	    COLOR_FILES="$COLOR_FILES$1$NL"; shift; k=`expr $k - 1 `
+	done
+    fi
 
 cat <<-EOF
 	$shadowFile # file where the created shadow is stored
