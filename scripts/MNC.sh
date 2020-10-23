@@ -7,12 +7,13 @@ TMP="$1/MNC"
 trap "/bin/rm -rf $TMP; exit" 0 1 2 3 15
 mkdir -p $TMP
 cd $1
-cat dir*/multiAlign.tsv | sort -S1G | uniq -c | awk '{delete K; for(i=2;i<=NF;i++)++K[$i];delete K["_"];biggest=0;for(i in K)if(K[i]>biggest)biggest=K[i];print $1,biggest}' > "$TMP/bigs" & # get this running so pearson will be fast later
+cat *s/??/multiAlign.tsv | sort -S1G | uniq -c | awk '{delete K; for(i=2;i<=NF;i++)++K[$i];delete K["_"];biggest=0;for(i in K)if(K[i]>biggest)biggest=K[i];print $1,biggest}' > "$TMP/bigs" & # get this running so pearson will be fast later
 
-for i in `ls -rt dir[0-9]*/multiAlign.tsv`
+echo "step	clusters	weighted	unweighted"
+for d in *s/??
 do
-    [ -f "$i" ] || continue
-    echo -n "$i	"
+    [ -f "$d/multiAlign.tsv" ] || continue
+    echo -n "$d	" | sed -e 's,00s/,,' -e 's,0s/,,'
     awk '{
 	# Here you only get points for one of the largest, if there are multiple
 	delete K
@@ -29,14 +30,20 @@ do
 	# Here you only get points for every node pair on the line that is the same.
 	for(i=1;i<NF;i++)for(j=i+1;j<=NF;j++)if($i!="_" && $j!="_"){possible++;if($i==$j)correct++}
     }
-    END{printf "%d\t%.3f\t%.3f\n",NR,wSumNC/weight,correct/possible}' "$i"
+    END{printf "%8d\t%.6f\t%.6f\n",NR,wSumNC/weight,correct/possible}' "$d/multiAlign.tsv"
 done
-lastDir=`ls -lrt dir[0-9]*/multiAlign.tsv | sed -e 's,/multiAlign.tsv$,,' -e 's/.* dir//' | sort -n | tail -1`
-numNets=`awk '{print NF}' dir$lastDir/multiAlign.tsv | uniq -c | sort -n | tail -1 | awk '{print $2}'`
-for k in `integers 2 $numNets`; do echo "$k     `gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)if(K[i]>='$k')nc++}END{printf "%d\t%.3f\n",nc,nc/NR}' dir$lastDir/multiAlign.tsv`"
-done | tee $TMP/MNC.txt
 
+echo ""
+echo Last step:
+echo "matches	count	score"
+lastAlig=`ls *s/??/multiAlign.tsv | tail -1`
+numNets=`awk '{print NF}' $lastAlig | uniq -c | sort -n | tail -1 | awk '{print $2}'`
+for k in `integers 2 $numNets`; do gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)if(K[i]>='$k')nc++}END{printf "%7d\t%5d\t%.6f\n",'$k',nc,nc/NR}' $lastAlig
+done | tee $TMP/MNC.txt
+awk '{sum+=$NF}END{printf "Total:\t\t%.6f\n",sum}' $TMP/MNC.txt
+
+echo ""
 echo "Pearson of core frequency-vs-biggest: "
 wait
-pearson < $TMP/bigs
+pearson -V < $TMP/bigs
 
