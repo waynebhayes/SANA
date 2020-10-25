@@ -292,6 +292,7 @@ done
 [ "$VERBOSE" = "" ] && echo "" # final newline
 echo "Now archiving .gw files using 7-zip to save space; press ^C to abort archiving"
 (cd "$OUTDIR" && tar cf - */*.gw | xz > shadow-gws.tar.xz && /bin/rm -f */*.gw)
+chmod -R go+rX "$OUTDIR"
 
 #echo "Computing CIQ... may take awhile..."
 #/CIQ.sh $OUTDIR/$i1_dir/multiAlign.tsv `echo "$@" | newlines | sed 's/\.gw/.el/'`
