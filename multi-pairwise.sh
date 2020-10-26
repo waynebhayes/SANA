@@ -1,8 +1,9 @@
 #!/bin/bash
-USAGE="USAGE: $0 [-H N] {multi-SANA.exe} 'measures' iterations time-per-iter parallel-spec outdir {list of input networks}
+USAGE="USAGE: $0 [-7za] [-H N] {multi-SANA.exe} 'measures' iterations time-per-iter parallel-spec outdir {list of input networks}
 where:
     multi-SANA.exe: full path (with leading './' if necessary) to sana.multi executable (usually './sana.multi')
-    parallel-spec is a non-negative integer saying how many parallel multi-SANA processes to run simultaneously, 0 for 'any'"
+    parallel-spec is a non-negative integer saying how many parallel multi-SANA processes to run simultaneously, 0 for 'any'
+    -7za: upon successful completion, create a 7z archive as 'outdir.7z' and then 'rm -rf outdir'."
 
 NL='
 ' # newline
@@ -96,6 +97,7 @@ mkdir -p $TMPDIR
 VERBOSE=
 HILLCLIMB=0
 TYPES=false
+ARCHIVE=false
 TYPEargs=''
 TYPEcreateSh=''
 SEScol=4 # becomes 4 if TYPES
@@ -103,6 +105,7 @@ while echo "X$1" | grep '^X-' >/dev/null; do
     case "$1" in
     -H) HILLCLIMB=$2; shift;; # in addition to the shift that'll happen below
     -[vV]*) VERBOSE=-v;;
+    -7za) ARCHIVE=true;;
     -*) die "unknown option '$1'";;
     esac
     shift
@@ -290,9 +293,16 @@ do
 #   awk '{gsub("[|{}]","")}$'$SEScol'>1{sum2+=$'$SEScol'^2}END{printf " SES %g\n", sum2/'$SES_DENOM'}' $OUTDIR/$i1_dir/$NAME-shadow$i1.gw
 done
 [ "$VERBOSE" = "" ] && echo "" # final newline
-echo "Now archiving .gw files using 7-zip to save space; press ^C to abort archiving"
-(cd "$OUTDIR" && tar cf - */*.gw | xz > shadow-gws.tar.xz && /bin/rm -f */*.gw)
-chmod -R go+rX "$OUTDIR"
+
+if $ARCHIVE; then
+    echo "Archiving to '$OUTDIR.7z'"
+    DO=`dirname "$OUTDIR"`
+    BO=`basename "$OUTDIR"`
+    (cd "$DO" && 7za a "$BO.7z" "$BO" && /bin/rm -rf "$BO")
+    chmod go+rX "$OUTDIR.7z"
+else
+    chmod -R go+rX "$OUTDIR"
+fi
 
 #echo "Computing CIQ... may take awhile..."
 #/CIQ.sh $OUTDIR/$i1_dir/multiAlign.tsv `echo "$@" | newlines | sed 's/\.gw/.el/'`
