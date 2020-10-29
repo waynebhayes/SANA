@@ -299,10 +299,8 @@ if $ARCHIVE; then
     DO=`dirname "$OUTDIR"`
     BO=`basename "$OUTDIR"`
     (cd "$DO" && 7za a "$BO.7z" "$BO" && /bin/rm -rf "$BO")
-    chmod go+rX "$OUTDIR.7z"
-else
-    chmod -R go+rX "$OUTDIR"
 fi
+chmod -R go+rX $OUTDIR*
 
 #echo "Computing CIQ... may take awhile..."
 #/CIQ.sh $OUTDIR/$i1_dir/multiAlign.tsv `echo "$@" | newlines | sed 's/\.gw/.el/'`
