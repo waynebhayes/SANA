@@ -1,4 +1,10 @@
 #!/bin/bash
+if [ -f git-at -a `git log -1 --format=%at` -eq `tail -1 git-at` ]; then
+    echo -n "Repo unchanged; returning same status code as "
+    tail -1 git-at | xargs -I{} date -d @{} +%Y-%m-%d-%H:%M:%S
+    exit `head -1 git-at`
+fi
+
 USAGE="USAGE: $0 [ -make ] [ -x SANA_EXE ] [ list of tests to run, defaults to regression-tests/*/*.sh ]"
 NL='
 '
@@ -71,4 +77,5 @@ do
     echo --- test $r incurred $NEW_FAILS failures, cumulative failures is $NUM_FAILS ---
 done
 echo Number of failures: $NUM_FAILS
+(echo $NUM_FAILS; git log -1 --format=%at) > git-at
 exit $NUM_FAILS
