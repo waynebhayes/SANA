@@ -1,5 +1,4 @@
 #!/bin/bash
-CORES=$((${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}-1))
 PARALLEL="./parallel -s bash $CORES"  # run in parallel on jenkins
 #PARALLEL=bash # if you don't have the parallel program
 NUM_FAILS=0
@@ -76,8 +75,8 @@ export Networks_count=`echo $nets | wc -w`
 #Biogrid_network="$nets" #`echo $nets | newlines | sed 's/$/.el/' | (cd networks; xargs ls -Sr) | sed 's/\.el$//'`
 
 if $RUN; then
-    [ -x "$SANA_EXE" ] || die "can't find executable '$SANA_EXE'"
-    echo "$nets" | awk '{net[NR-1]=$NF}END{for(i=NR-2;i>=0;i--)for(j=NR-1;j>=i+1;j--) printf "echo Running %s-%s; \"'"$SANA_EXE"'\" -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
+    [ -x "$EXE" ] || die "can't find executable '$EXE'"
+    echo "$nets" | awk '{net[NR-1]=$NF}END{for(i=NR-2;i>=0;i--)for(j=NR-1;j>=i+1;j--) printf "echo Running %s-%s; \"'"$EXE"'\" -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
     (( NUM_FAILS+=$? ))
 fi
 

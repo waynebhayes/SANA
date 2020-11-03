@@ -7,7 +7,7 @@ CORES=$((${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}-1))
 
 REG_DIR=`pwd`/regression-tests/EdgeRatio
 [ -d "$REG_DIR" ] || die "should be run from top-level directory of the SANA repo"
-[ -x "$SANA_EXE.float" ] || die "can't find executable '$SANA_EXE.float'"
+[ -x "$EXE.float" ] || die "can't find executable '$EXE.float'"
 (cd "$REG_DIR" && /bin/rm -f *.align *.out *.progress)
 
 nets="150 WMean_con WMean_ocd"
@@ -19,7 +19,7 @@ while [ $TRIES -gt 0 ]; do
 	file="$REG_DIR/$network"
 	# Run SANA to align the graph to itself
 	echo "Aligning network $network" >&2
-	echo "'$SANA_EXE.float' -t 5 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
+	echo "'$EXE.float' -t 5 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
     done | ./parallel -s /bin/bash $CORES
     PARA_STATUS=$?
 

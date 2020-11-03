@@ -5,9 +5,9 @@ TMPDIR=/tmp/regression-dummies.$$
 trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
 
-[ -x "$SANA_EXE" ] || die "can't find executable '$SANA_EXE'"
+[ -x "$EXE" ] || die "can't find executable '$EXE'"
 echo "The following SHOULD abort, not to worry:" >&2
-if ./$SANA_EXE -fg1 $REG_DIR/testG1.el -fg2 $REG_DIR/testG2.el -fcolor1 $REG_DIR/testG1.col -fcolor2 $REG_DIR/testG2.col -ec 1 -t 0.1 -tinitial 1 -tdecay 1 > $TMPDIR/sana.stdout 2>&1; then
+if ./$EXE -fg1 $REG_DIR/testG1.el -fg2 $REG_DIR/testG2.el -fcolor1 $REG_DIR/testG1.col -fcolor2 $REG_DIR/testG2.col -ec 1 -t 0.1 -tinitial 1 -tdecay 1 > $TMPDIR/sana.stdout 2>&1; then
     cat $TMPDIR/sana.stdout >&2
     echo 'Hmmm... this one was supposed to fail' >&2
     exit 1
