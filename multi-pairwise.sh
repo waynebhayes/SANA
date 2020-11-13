@@ -219,7 +219,7 @@ ZERO_DIR=`echo 0 | DirDigits`
 SHADOW_GRAPH="$OUTDIR/$ZERO_DIR/$NAME-shadow0.gw"
 # Create initial random alignment, which also tells us the number of nodes.
 # When checking to continue, do NOT check for the .gw file since it may be gone due to -frugal
-if [ -f "$OUTDIR"/.init/group.multiAlign ] && [ `ls $ZERO_DIR/*-shadow.align 2>/dev/null | wc -l` -eq $NUM_GRAPHS ]
+if [ -f "$OUTDIR/.init/group.multiAlign" ] && [ `ls $OUTDIR/$ZERO_DIR/*-shadow.align 2>/dev/null | wc -l` -eq $NUM_GRAPHS ]
 then
     echo "not creating initial alignment since we're continuing"
 else
