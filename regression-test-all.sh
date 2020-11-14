@@ -1,9 +1,15 @@
 #!/bin/bash
-if [ -f git-at ] && [ `wc -l < git-at` -eq 2 -a `git log -1 --format=%at` -eq `tail -1 git-at` ]; then
-    echo -n "Repo unchanged; returning same status code as "
-    tail -1 git-at | xargs -I{} date -d @{} +%Y-%m-%d-%H:%M:%S
-    exit `head -1 git-at`
-fi
+case "$1" in
+-use-git-at)
+    if [ -f git-at ] && [ `wc -l < git-at` -eq 2 -a `git log -1 --format=%at` -eq `tail -1 git-at` ]; then
+	echo -n "Repo unchanged; returning same status code as "
+	tail -1 git-at | xargs -I{} date -d @{} +%Y-%m-%d-%H:%M:%S
+	exit `head -1 git-at`
+    fi
+    shift
+    ;;
+esac
+
 USAGE="USAGE: $0 [ -make ] [ -x SANA_EXE ] [ list of tests to run, defaults to regression-tests/*/*.sh ]"
 source ~/bin/misc.sh
 PATH=`pwd`:`pwd`/scripts:$PATH
