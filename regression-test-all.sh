@@ -17,7 +17,7 @@ export PATH
 
 if [ ! -x NetGO/NetGO.awk ]; then
     echo "you need the submodule NetGO; trying to get it now" >&2
-    (git submodule init && git submodule update && cd NetGO && git pull) || die "failed to get NetGO"
+    (git submodule init && git submodule update && cd NetGO && git checkout master && git pull) || die "failed to get NetGO"
     [ -x NetGO/NetGO.awk ] || die "Still can't find NetGO"
 fi
 
