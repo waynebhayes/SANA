@@ -1,5 +1,5 @@
 #!/bin/sh
-
+PATH="`pwd`/scripts:`pwd`/NetGO:$PATH"
 USAGE="$0 [-V] [list of shadow-network alignment files in 2-column format]"
 
 VERBOSE=0

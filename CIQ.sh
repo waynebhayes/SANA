@@ -1,5 +1,5 @@
 #!/bin/bash
-
+PATH="`pwd`/scripts:`pwd`/NetGO:$PATH"
 USAGE="$0 [-V] <multi-align file with K columns> <list of exactly K networks in edgelist format, in the same order the columns of the multi-align file>"
 
 VERBOSE=0

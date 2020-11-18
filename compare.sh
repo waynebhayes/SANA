@@ -1,4 +1,5 @@
 #!/bin/sh
+PATH="`pwd`/scripts:`pwd`/NetGO:$PATH"
 die() { echo "$USAGE" >&2; echo "FATAL ERROR: $@" >&2; exit 1
 }
 
