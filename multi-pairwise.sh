@@ -1,5 +1,5 @@
 #!/bin/bash
-USAGE="USAGE: $0 [-frugal] [-7za] [-H N] [-v|V] {multi-SANA.exe} 'measures' iterations time-per-iter parallel-spec outdir {list of input networks}
+USAGE="USAGE: $0 [-frugal] [-archive TYPE] [-H N] [-v|V] {multi-SANA.exe} 'measures' iterations time-per-iter parallel-spec outdir {list of input networks}
 NECESSARY arguments:
     {multi-SANA.exe}: full path (with leading './' if necessary) to sana.multi executable (usually './sana.multi')
     'measures': one or more multi-alignment measures to optimize--THE LIST MUST BE IN QUOTES
@@ -10,7 +10,9 @@ NECESSARY arguments:
     list-of-input-networks: the list of networks to be aligned
 OPTIONS:
     -frugal: be frugal with disk space by deleting large unnecessary files after each meta-iteration (eg the shadow network)
-    -7za: upon successful completion, create a 7z archive as 'outdir.7z' and then 'rm -rf outdir'.
+    -7z*: means the same as '-archive 7z*', for backwards compatibility
+    -archive: upon successful completion, create the specified archive 'outdir.TYPE' and then 'rm -rf outdir'; known TYPEs
+	are 7z, 7za, zip, tgz (tar.gz), and Z (very old unix 'compress' program)
     -H N: after running simulated annealing, perform N zero-temperature 'hill-climbing' meta-iterations (default zero)
     -v or -V: highly verbose output (only useful for debugging)"
 
@@ -107,20 +109,37 @@ VERBOSE=
 HILLCLIMB=0
 TYPES=false
 ARCHIVE=false
+ZIP=false
 TYPEargs=''
 TYPEcreateSh=''
 FRUGAL=false
 SEScol=4 # becomes 4 if TYPES
+
 while echo "X$1" | grep '^X-' >/dev/null; do
     case "$1" in
     -H) HILLCLIMB=$2; shift;; # in addition to the shift that'll happen below
     -[vV]*) VERBOSE=-v;;
-    -7za) ARCHIVE=true;;
+    -7z*) A=`echo $1 | sed 's/^-//'` # get rid of leading dash
+	shift; # get rid of -7z* argument
+	set DUMMY -archive "$A" "$@"; # DUMMY will get shifted off below, leaving "-archive 7z"
+	;;
+    -archive) ARCHIVE=true
+	case "$2" in
+	7z|7za) ZIP="$2"; ZIP_ADD="a"; ZIP_EXT="7z"; UNZIP="$2"; ZIP_X=x;;
+	zip|ZIP) ZIP='zip'; ZIP_ADD=''; ZIP_EXT="zip";UNZIP=unzip; ZIP_X='';;
+	*tar.gz|*tgz) ZIP='tar'; ZIP_ADD='zcf'; ZIP_EXT="tgz";UNZIP=tar; ZIP_X='vzxf';;
+	Z) ZIP='compress'; ZIP_ADD=''; ZIP_EXT=Z;UNZIP=uncompress; ZIP_X='';;
+	*) die "unknown archive time '$2'";;
+	esac
+	shift; # in addition to the shift below
+	echo "Using archiver '$ZIP' with add option '$ZIP_ADD' and filename extension '$ZIP_EXT'"
+	;;
     -frugal) FRUGAL=true;;
     -*) die "unknown option '$1'";;
     esac
     shift
 done
+
 SANA_MULTI="$1"
 MEASURES="$2"
 ITER_EXPR="$3"
@@ -311,10 +330,10 @@ done
 [ "$VERBOSE" = "" ] && echo "" # final newline
 
 if $ARCHIVE; then
-    echo "Archiving to '$OUTDIR.7z'"
+    echo "Archiving to '$OUTDIR.$ZIP_EXT'"
     DO=`dirname "$OUTDIR"`
     BO=`basename "$OUTDIR"`
-    (cd "$DO" && 7za a "$BO.7z" "$BO" && /bin/rm -rf "$BO")
+    (set -x; cd "$DO" && eval $ZIP $ZIP_ADD "$BO.$ZIP_EXT" "$BO" && /bin/rm -rf "$BO"; set +x)
 fi
 chmod -R go+rX $OUTDIR*
 
