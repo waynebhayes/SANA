@@ -1,9 +1,11 @@
 #!/bin/bash
-CORES=$((${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}-1))
+CORES=${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}
 PARALLEL="./parallel -s bash $CORES"
 #PARALLEL=bash # if you don't have the parallel program
+echo "PARALLEL is '$PARALLEL'" >&2
 die() { echo "ERROR: $@" >&2; exit 1
 }
+
 
 PATH="$PATH:`pwd`/scripts"
 export PATH

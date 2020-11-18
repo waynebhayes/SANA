@@ -12,7 +12,7 @@ echo() { /bin/echo "$@"
 die() { echo "DIR is $DIR"; trap "" 0 1 2 3 15; (echo "$USAGE"; echo "FATAL ERROR: $@") >&2; exit 1
 }
 [ -x "${EXE:=./sana}.multi" ] || die "can't find executable '$EXE.multi'"
-CORES=$((${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}-1))
+CORES=${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}
 if [ "$CORES" -eq 0 ]; then CORES=1; fi
 PATH="`pwd`/scripts:$PATH"
 export PATH

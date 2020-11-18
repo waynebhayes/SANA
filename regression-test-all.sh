@@ -11,7 +11,7 @@ case "$1" in
 esac
 
 USAGE="USAGE: $0 [ -make ] [ -x SANA_EXE ] [ list of tests to run, defaults to regression-tests/*/*.sh ]"
-source ~/bin/misc.sh
+
 PATH=`pwd`:`pwd`/scripts:$PATH
 export PATH
 
@@ -33,12 +33,13 @@ while [ $# -gt -0 ]; do
 done
 [ -x "$EXE" -o "$MAKE" = true ] || die "Executable '$EXE' must exist or you must specify -make"
 
-CORES=${CORES:=`cpus 2>/dev/null | awk '{c2=int($1/2); if(c2>0)print c2; else print 1}'`}
-[ "$CORES" -gt 0 ] || die "can't figure out how many cores this machine has"
-MAKE_CORES=$CORES
+REAL_CORES=`cpus 2>/dev/null | awk '{print 1*$1}'`
+[ "$REAL_CORES" -gt 0 ] || die "can't figure out how many cores this machine has"
+CORES=$REAL_CORES
+MAKE_CORES=`expr $REAL_CORES - 1`
 [ `hostname` = Jenkins ] && MAKE_CORES=2 # only use 2 cores to make on Jenkins
 echo "Using $MAKE_CORES cores to make and $CORES cores for regression tests"
-export EXE CORES MAKE_CORES
+export EXE CORES REAL_CORES MAKE_CORES
 
 NUM_FAILS=0
 EXECS=`grep '^ifeq (' Makefile | sed -e 's/.*(//' -e 's/).*//' | grep -v MAIN | sort -u`

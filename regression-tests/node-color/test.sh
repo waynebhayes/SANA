@@ -1,5 +1,7 @@
 #!/bin/bash
-CORES=$((${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}-1))
+CORES=${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}
+PARALLEL="./parallel -s bash $CORES"
+echo "PARALLEL is '$PARALLEL'" >&2
 die() { echo "$@" >&2; exit 1
 }
 [ -x "$EXE" ] || die "can't find executable '$EXE'"
@@ -60,9 +62,9 @@ echo "Two of the following (no more, no less) should fail" >&2
     # v2 w3 
     # v3 w2
     # v7 w7
-) | ./parallel $CORES
+) | eval $PARALLEL
 NUM_FAILS=$?
-echo parallel exited with $NUM_FAILS
+echo "'$PARALLEL' exited with $NUM_FAILS"
 if egrep -w 'E|M|N|NSP1|NSP10|NSP11|NSP12|NSP13|NSP14|NSP15|NSP2|NSP4|NSP5|NSP5_C145A|NSP6|NSP7|NSP8|NSP9|ORF10|ORF3A|ORF3B|ORF6|ORF7A|ORF8|ORF9B|PROTEIN14|S' $TMPDIR/covid.align | grep EN; then
     echo "ERROR: covid.el TO ITSELF WITH covid.col HAD ERRONEOUS COLOR ALIGNMENTS" >&2
     (( ++NUM_FAILS ))
