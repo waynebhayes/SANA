@@ -12,7 +12,7 @@ OPTIONS:
     -frugal: be frugal with disk space by deleting large unnecessary files after each meta-iteration (eg the shadow network)
     -7z*: means the same as '-archive 7z*', for backwards compatibility
     -archive: upon successful completion, create the specified archive 'outdir.TYPE' and then 'rm -rf outdir'; known TYPEs
-	are 7z, 7za, zip, tgz (tar.gz), and Z (very old unix 'compress' program)
+	are 7z, 7za, zip, tgz (tar.gz), and tar (no compression).
     -H N: after running simulated annealing, perform N zero-temperature 'hill-climbing' meta-iterations (default zero)
     -v or -V: highly verbose output (only useful for debugging)"
 
@@ -125,11 +125,11 @@ while echo "X$1" | grep '^X-' >/dev/null; do
 	;;
     -archive) ARCHIVE=true
 	case "$2" in
-	7z|7za) ZIP="$2"; ZIP_ADD="a"; ZIP_EXT="7z"; UNZIP="$2"; ZIP_X=x;;
-	zip|ZIP) ZIP='zip'; ZIP_ADD=''; ZIP_EXT="zip";UNZIP=unzip; ZIP_X='';;
-	*tar.gz|*tgz) ZIP='tar'; ZIP_ADD='zcf'; ZIP_EXT="tgz";UNZIP=tar; ZIP_X='vzxf';;
-	Z) ZIP='compress'; ZIP_ADD=''; ZIP_EXT=Z;UNZIP=uncompress; ZIP_X='';;
-	*) die "unknown archive time '$2'";;
+	7z|7za) ZIP="$2"; ZIP_ADD=a; ZIP_EXT=7z; UNZIP="$2"; ZIP_X=x;;
+	zip|ZIP) ZIP=zip; ZIP_ADD=''; ZIP_EXT=zip;UNZIP=unzip; ZIP_X='';;
+	tar.gz|tgz) ZIP=tar; ZIP_ADD=zcf; ZIP_EXT=tgz;UNZIP=tar; ZIP_X=vzxf;;
+	tar) ZIP=tar; ZIP_ADD=cf; ZIP_EXT=tar;UNZIP=tar; ZIP_X=vxf;;
+	*) die "unknown archive type '$2'";;
 	esac
 	shift; # in addition to the shift below
 	echo "Using archiver '$ZIP' with add option '$ZIP_ADD' and filename extension '$ZIP_EXT'"
