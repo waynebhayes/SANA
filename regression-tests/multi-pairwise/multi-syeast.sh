@@ -23,7 +23,7 @@ MEASURE="-ms3 1 -ms3_type 1"
 if [ `hostname` = Jenkins ]; then
     ITERS=256; minutes=0.1
 else
-    ITERS=9; minutes=0.1
+    ITERS=99; minutes=0.1
 fi
 [ "$#" -eq 0 -o "$#" -ge 2 -a "$#" -le 4 ] || die "incorrect number of arguments $#"
 [ "$#" -eq 4 ] && CORES=$4

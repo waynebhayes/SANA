@@ -28,7 +28,7 @@ echo() { /bin/echo "$@" # shell's built-in echo is broken on MacOS
 MAX_TRIES=10
 TIME_VERBOSE=-v
 NOBUF='stdbuf -o 0 -e 0'
-case `arch` in
+case `uname` in
 Darwin) TIME_VERBOSE=-l
 	NOBUF=''
 	;;
@@ -165,7 +165,7 @@ NUM_ITERS=`parse "$ITER_EXPR"` || die "'$ITER_EXPR': cannot figure out iteration
 if [ -d "$OUTDIR/.init" ]; then
     warn "outdir '$OUTDIR' already exists; continuing"
 fi
-DIR_DIGITS=`echo -n "$NUM_ITERS" | wc -c` # num digits for "hundreds" directory names
+DIR_DIGITS=`echo -n "$NUM_ITERS" | wc -c | sed 's/[^0-9]//g'` # num digits for "hundreds" directory names
 DirDigits() { # DirDigits is expect an integer on its STANDARD INPUT, not command line!
     hawk '{ASSERT(ARGC==1 && NR==1 && NF==1 && $1*1==$1 && $1>=0);
 	printf "%0'$DIR_DIGITS'ds/%02d\n", 100*int($1/100), $1 % 100}' "$@"
@@ -262,6 +262,7 @@ mkdir -p $OUTDIR/.init
 touch $OUTDIR/.init/schedule.tsv $OUTDIR/.init/tdecay.txt
 TIME_LIMIT=`parse "60*($T_ITER+20)"`
 TIME_LIMIT2=`parse "20*($TIME_LIMIT)"`
+
 if true; then # hard-coded as "true" but can be made "false" for debugging purposes
     TRIES=1
     while [ `awk '{printf "%s.stdout\n", $1}' $OUTDIR/.init/schedule.tsv | tee $OUTDIR/.init/schedule.done | wc -l` -lt `echo name "$@" | wc -w` ]; do
