@@ -36,7 +36,7 @@ echo "Running $ITERS iterations of $minutes minute(s) each, optimizing measure '
 
 # At this point $DIR has been archived, so un-archive it.
 mkdir $DIR || die "hmm, '$DIR' should be gone"
-cd $DIR/.. && tar zvxf $DIR.tgz
+cd $DIR/.. && tar zxf $DIR.tgz
 cd $DIR
 echo "Now check NC values: below are the number of times the multiple alignment contains k correctly matching nodes, k=2,3,4:"
 echo "iter	NC2	NC3	NC4"
