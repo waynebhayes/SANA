@@ -127,8 +127,8 @@ while echo "X$1" | grep '^X-' >/dev/null; do
 	case "$2" in
 	7z|7za) ZIP="$2"; ZIP_ADD=a; ZIP_EXT=7z; UNZIP="$2"; ZIP_X=x;;
 	zip|ZIP) ZIP=zip; ZIP_ADD=''; ZIP_EXT=zip;UNZIP=unzip; ZIP_X='';;
-	tar.gz|tgz) ZIP=tar; ZIP_ADD=zcf; ZIP_EXT=tgz;UNZIP=tar; ZIP_X=vzxf;;
-	tar) ZIP=tar; ZIP_ADD=cf; ZIP_EXT=tar;UNZIP=tar; ZIP_X=vxf;;
+	tar.gz|tgz) ZIP=tar; ZIP_ADD=zcf; ZIP_EXT=tgz;UNZIP=tar; ZIP_X=zxf;;
+	tar) ZIP=tar; ZIP_ADD=cf; ZIP_EXT=tar;UNZIP=tar; ZIP_X=xf;;
 	*) die "unknown archive type '$2'";;
 	esac
 	shift; # in addition to the shift below
