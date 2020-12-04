@@ -13,10 +13,10 @@ using namespace std;
 class LGraalWrapper: public Method {
 public:
 
-    LGraalWrapper(const Graph* G1, const Graph* G2, double alpha, uint iterlimit, uint timelimit);
+    LGraalWrapper(Graph* G1, Graph* G2, double alpha, uint iterlimit, uint timelimit);
     Alignment run();
-    void describeParameters(ostream& stream) const;
-    string fileNameSuffix(const Alignment& A) const;
+    void describeParameters(ostream& stream);
+    string fileNameSuffix(const Alignment& A);
     
 private:
     static const string GDVCounterProgram;

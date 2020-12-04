@@ -4,9 +4,10 @@
 
 class InducedConservedStructure: public Measure {
 public:
-    InducedConservedStructure(const Graph* G1, const Graph* G2);
+    InducedConservedStructure(Graph* G1, Graph* G2);
     virtual ~InducedConservedStructure();
     double eval(const Alignment& A);
+    double eval(const MultiAlignment& MA); //dummy declare
 private:
 
 };

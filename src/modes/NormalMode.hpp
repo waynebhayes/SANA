@@ -7,12 +7,11 @@
 #include "../measures/MeasureCombination.hpp"
 #include "../methods/Method.hpp"
 
-using namespace std;
-
 class NormalMode : public Mode {
 public:
     void run(ArgumentParser& args);
-    string getName();
+    std::string getName(void);
+
     static void createFolders();
 };
 

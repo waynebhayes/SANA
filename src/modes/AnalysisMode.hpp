@@ -8,7 +8,7 @@
 class AnalysisMode : public Mode {
 public:
     void run(ArgumentParser& args);
-    string getName();
+    std::string getName(void);
 };
 
 #endif /* ANALYSISMODE_HPP_ */

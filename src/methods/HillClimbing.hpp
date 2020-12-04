@@ -7,12 +7,12 @@
 class HillClimbing: public Method {
 public:
     HillClimbing();
-    HillClimbing(const Graph* G1, const Graph* G2, MeasureCombination* M, string startAName);
+    HillClimbing(Graph* G1, Graph* G2, MeasureCombination* M, string startAName);
     virtual ~HillClimbing();
 
     Alignment run();
-    void describeParameters(ostream& stream) const;
-    string fileNameSuffix(const Alignment& A) const;
+    void describeParameters(ostream& stream);
+    string fileNameSuffix(const Alignment& A);
     double getExecutionTime() const;
 
 

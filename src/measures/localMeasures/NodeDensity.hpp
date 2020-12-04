@@ -4,17 +4,17 @@
 
 class NodeDensity: public LocalMeasure {
 public:
-    NodeDensity(const Graph* G1, const Graph* G2, uint maxDist);
+	NodeDensity(Graph* G1, Graph* G2, ushort maxDist);
     virtual ~NodeDensity();
 private:
     void initSimMatrix();
     float compare(double n1, double n2);
-    double calcNodeDensity(const Graph* G, uint originNode, uint maxDist) const;
-    vector<double> generateVector(const Graph* G, uint maxDist) const;
+    double calcNodeDensity(vector<vector<ushort> > adjList, ushort originNode, ushort numNodes, ushort maxDist);
+    vector<double> generateVector(Graph* g, ushort maxDist);
     vector<double> noded1;
     vector<double> noded2;
-    vector<vector<uint>> nodedList; //edges in no particular order
-    uint maxDist;
+    vector<vector<ushort> > nodedList; //edges in no particular order
+    ushort maxDist;
 };
 
 #endif

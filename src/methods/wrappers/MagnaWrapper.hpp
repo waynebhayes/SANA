@@ -6,15 +6,15 @@ using namespace std;
 
 class MagnaWrapper: public WrappedMethod {
 public:
-    MagnaWrapper(const Graph* G1, const Graph* G2, string args);
+	MagnaWrapper(Graph* G1, Graph* G2, string args);
 
 private:
-    string outputName;
-    
+	string outputName;
+	
     void loadDefaultParameters();
-    string convertAndSaveGraph(const Graph* graph, string name);
+    string convertAndSaveGraph(Graph* graph, string name);
     string generateAlignment();
-    Alignment loadAlignment(const Graph* G1, const Graph* G2, string fileName);
+    Alignment loadAlignment(Graph* G1, Graph* G2, string fileName);
     void deleteAuxFiles();
 };
 

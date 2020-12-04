@@ -1,8 +1,5 @@
-#include "AlphaEstimation.hpp"
-#include "../utils/utils.hpp"
-#include "../utils/FileIO.hpp"
-#include "../utils/Timer.hpp"
 #include "Experiment.hpp"
+#include "AlphaEstimation.hpp"
 #include "../measures/Measure.hpp"
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
@@ -11,7 +8,9 @@
 #include "../measures/SymmetricSubstructureScore.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/localMeasures/GraphletLGraal.hpp"
+#include "../utils/utils.hpp"
 #include "../Alignment.hpp"
+#include "../utils/Timer.hpp"
 #include <cassert>
 
 double AlphaEstimation::computeAlpha(Graph& G1, Graph& G2, string methodName, Measure* topMeasure) {
@@ -24,8 +23,8 @@ double AlphaEstimation::computeAlpha(Graph& G1, Graph& G2, string methodName, Me
         string aligFileAlpha0 = "experiments/"+methodName+"_alpha0/"+g1Name+"_"+g2Name+"_"+methodName+"_alpha0.txt";
         string aligFileAlpha1 = "experiments/"+methodName+"_alpha0,9999/"+g1Name+"_"+g2Name+"_"+methodName+"_alpha0.9999.txt";
     }
-    if (not FileIO::fileExists(aligFileAlpha0)) return -1;
-    if (not FileIO::fileExists(aligFileAlpha1)) return -1;
+    if (not fileExists(aligFileAlpha0)) return -1;
+    if (not fileExists(aligFileAlpha1)) return -1;
 
     double topScore = topMeasure->eval(Alignment::loadMapping(aligFileAlpha0));
     Sequence seq(&G1, &G2);
@@ -37,7 +36,7 @@ double AlphaEstimation::computeAlpha(Graph& G1, Graph& G2, string methodName, Me
 void AlphaEstimation::run(ArgumentParser& args) {
     string alphaEstimation = args.strings["-alphaestimation"];
     string experFile = "experiments/"+alphaEstimation;
-    FileIO::checkFileExists(experFile);
+    assert(fileExists(experFile));
     init(experFile);
     printData(experFile+".out");
 }
@@ -49,29 +48,31 @@ string AlphaEstimation::getName(void) {
 }
 
 void AlphaEstimation::init(string alphaFile) {
-    vector<vector<string>> content = FileIO::fileToWordsByLines(alphaFile);
+    vector<vector<string> > content = fileToStringsByLines(alphaFile);
     methods = content[0];
     for (uint i = 1; i < content.size(); i++) {
         networkPairs.push_back(content[i]);
     }
 
-    cout << "Loading graphs...";
+    cerr << "Loading graphs...";
     Timer T;
     T.start();
     for (auto pair : networkPairs) {
-        for (string gName : pair) {
-            if (not graphs.count(gName)) {
-                string gFile = "networks/"+gName+"/"+gName+".gw";
-                graphs.insert({gName, GraphLoader::loadGraphFromFile(gName, gFile, false)});
-            }
+        string g1Name = pair[0];
+        string g2Name = pair[1];
+        if (graphs.count(g1Name) == 0) {
+            graphs[g1Name] = Graph::loadGraph(g1Name);
+        }
+        if (graphs.count(g2Name) == 0) {
+            graphs[g2Name] = Graph::loadGraph(g2Name);
         }
     }
-    cout << "graph loading done ("+T.elapsedString()+")" << endl;
+    cerr << "done ("+T.elapsedString()+")" << endl;
 
-    cout << "Computing alphas...";
+    cerr << "Computing alphas...";
     T.start();
     computeAlphas();
-    cout << "AlphaEstimation::init done ("+T.elapsedString()+")" << endl;
+    cerr << "done ("+T.elapsedString()+")" << endl;
 }
 
 double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasure) {
@@ -89,7 +90,7 @@ double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasu
             aligFileAlpha0[aligFileAlpha0.size()-1] = '1';
             aligFileAlpha0 += "0";
         }
-        if (not FileIO::fileExists(aligFileAlpha0)) {
+        if (not fileExists(aligFileAlpha0)) {
             sampleCount--;
         }
         else {
@@ -110,7 +111,7 @@ double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasu
             aligFileAlpha1[aligFileAlpha1.size()-1] = '1';
             aligFileAlpha1 += "0";
         }
-        if (not FileIO::fileExists(aligFileAlpha1)) {
+        if (not fileExists(aligFileAlpha1)) {
             sampleCount--;
         }
         else {
@@ -121,15 +122,15 @@ double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasu
     return topScore/(topScore+seqScore);
 }
 
-void AlphaEstimation::printData(const string& outputFile) {
+void AlphaEstimation::printData(string outputFile) {
     uint nMethods = methods.size();
     uint nPairs = networkPairs.size();
 
-    ofstream ofs(outputFile);
+    ofstream fout(outputFile.c_str());
     for (uint i = 0; i < nMethods; i++) {
         for (uint j = 0; j < nPairs; j++) {
-            ofs << methods[i] << "\t" << networkPairs[j][0] << "\t";
-            ofs << networkPairs[j][1] << "\t" << alphas[i][j] << endl;
+            fout << methods[i] << "\t" << networkPairs[j][0] << "\t";
+            fout << networkPairs[j][1] << "\t" << alphas[i][j] << endl;
         }
     }
 }
@@ -138,28 +139,28 @@ void AlphaEstimation::printData(const string& outputFile) {
 void AlphaEstimation::computeAlphas() {
     uint nMethods = methods.size();
     uint nPairs = networkPairs.size();
-    alphas = vector<vector<double>> (nMethods, vector<double> (nPairs, -1));
+    alphas = vector<vector<double> > (nMethods, vector<double> (nPairs, -1));
     for (uint i = 0; i < nMethods; i++) {
         string methodName = methods[i];
-        cout << methodName << endl;
+        cerr << methodName << endl;
         Measure* topMeasure;
         for (uint j = 0; j < nPairs; j++) {
             string g1Name = networkPairs[j][0];
             string g2Name = networkPairs[j][1];
 
             if (methodName == "LGRAAL") {
-                LocalMeasure* m = new GraphletLGraal(&graphs.at(g1Name), &graphs.at(g2Name), 5);
-                topMeasure = new WeightedEdgeConservation(&graphs.at(g1Name), &graphs.at(g2Name), m);
+                LocalMeasure* m = new GraphletLGraal(&graphs[g1Name], &graphs[g2Name]);
+                topMeasure = new WeightedEdgeConservation(&graphs[g1Name], &graphs[g2Name], m);
             }
-            else if (methodName == "HubAlign") topMeasure = new Importance(&graphs.at(g1Name), &graphs.at(g2Name));
-            else if (methodName == "SANA_EC") topMeasure = new EdgeCorrectness(&graphs.at(g1Name), &graphs.at(g2Name));
-            else /*if (methodName == "sanas3")*/ topMeasure = new SymmetricSubstructureScore(&graphs.at(g1Name), &graphs.at(g2Name));
+            else if (methodName == "HubAlign") topMeasure = new Importance(&graphs[g1Name], &graphs[g2Name]);
+            else if (methodName == "SANA_EC") topMeasure = new EdgeCorrectness(&graphs[g1Name], &graphs[g2Name]);
+            else /*if (methodName == "sanas3")*/ topMeasure = new SymmetricSubstructureScore(&graphs[g1Name], &graphs[g2Name]);
 
             if (methodName.substr(0,4) == "SANA") {
-                alphas[i][j] = computeAlphaSANA(graphs.at(g1Name), graphs.at(g2Name), topMeasure);
+                alphas[i][j] = computeAlphaSANA(graphs[g1Name], graphs[g2Name], topMeasure);
             }
             else {
-                alphas[i][j] = computeAlpha(graphs.at(g1Name), graphs.at(g2Name), methodName, topMeasure);
+                alphas[i][j] = computeAlpha(graphs[g1Name], graphs[g2Name], methodName, topMeasure);
             }
             delete topMeasure;
         }
@@ -171,7 +172,7 @@ AlphaEstimation::AlphaEstimation(string alphaFile) {
 }
 
 double AlphaEstimation::getAlpha(string alphaFile, string methodName, string G1Name, string G2Name) {
-    vector<vector<string>> content = FileIO::fileToWordsByLines(alphaFile);
+    vector<vector<string> > content = fileToStringsByLines(alphaFile);
     for (uint i = 0; i < content.size(); i++) {
         if (content[i][0] == methodName and content[i][1] == G1Name and content[i][2] == G2Name)
             return stod(content[i][3]);

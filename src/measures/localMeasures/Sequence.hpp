@@ -2,15 +2,14 @@
 #define SEQUENCE_HPP
 #include "LocalMeasure.hpp"
 #include <unordered_map>
-#include "../../arguments/GraphLoader.hpp"
 
 class Sequence: public LocalMeasure {
 public:
-    Sequence(const Graph* G1, const Graph* G2);
+    Sequence(Graph* G1, Graph* G2);
     virtual ~Sequence();
     void generateBitscoresFile(string bitscoresFile);
 
-    static bool fulfillsPrereqs(const Graph* G1, const Graph* G2);
+    static bool fulfillsPrereqs(Graph* G1, Graph* G2);
 
 private:
 

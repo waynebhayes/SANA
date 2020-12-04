@@ -1,16 +1,20 @@
 #include "NodeCount.hpp"
 #include <vector>
 #include <iostream>
-#include "../../utils/FileIO.hpp"
 
-NodeCount::NodeCount(const Graph* G1, const Graph* G2, const vector<double>& distWeights) : LocalMeasure(G1, G2, "nodec") {
+using namespace std;
+
+NodeCount::NodeCount(Graph* G1, Graph* G2, const vector<string>& strDistWeights) : LocalMeasure(G1, G2, "nodec") {
+    vector<double> distWeights(strDistWeights.size());
+    transform(strDistWeights.begin(), strDistWeights.end(), distWeights.begin(), [](const std::string& val)
+    {
+        return stod(val);
+    });
     vector<double> normWeights(distWeights);
     normalizeWeights(normWeights);
     this->distWeights = normWeights;
 
-    string subfolder = autogenMatricesFolder+getName()+"/";
-    FileIO::createFolder(subfolder);
-    string fileName = subfolder+G1->getName()+"_"+
+    string fileName = autogenMatricesFolder+G1->getName()+"_"+
         G2->getName()+"_nodec_"+to_string(normWeights.size());
     for (double w : normWeights)
         fileName += "_" + extractDecimals(w, 3);
@@ -19,25 +23,40 @@ NodeCount::NodeCount(const Graph* G1, const Graph* G2, const vector<double>& dis
     loadBinSimMatrix(fileName);
 }
 
+NodeCount::NodeCount(Graph* G1, Graph* G2, const vector<double>& distWeights) : LocalMeasure(G1, G2, "nodec") {
+    vector<double> normWeights(distWeights);
+    normalizeWeights(normWeights);
+    this->distWeights = normWeights;
+
+    string fileName = autogenMatricesFolder+G1->getName()+"_"+
+        G2->getName()+"_nodec_"+to_string(normWeights.size());
+    for (double w : normWeights)
+        fileName += "_" + extractDecimals(w, 3);
+    fileName += ".bin";
+
+    loadBinSimMatrix(fileName);
+}
+
+
 void NodeCount::initSimMatrix() {
     uint n1 = G1->getNumNodes();
     uint n2 = G2->getNumNodes();
     uint k = distWeights.size();
-    vector<vector<uint>> densities1 (n1, vector<uint> (k+1));
-    vector<vector<uint>> densities2 (n2, vector<uint> (k+1));
-    for (uint i = 0; i < n1; i++) {
-        densities1[i] = G1->numNodesAroundByLayers(i, k);
-        for (uint j = 1; j < k; j++) {
+    vector<vector<ushort> > densities1 (n1, vector<ushort> (k+1));
+    vector<vector<ushort> > densities2 (n2, vector<ushort> (k+1));
+    for (ushort i = 0; i < n1; i++) {
+        densities1[i] = G1->numNodesAround(i, k);
+        for (ushort j = 1; j < k; j++) {
             densities1[i][j] += densities1[i][j-1];
-        } 
+        }
     }
-    for (uint i = 0; i < n2; i++) {
-        densities2[i] = G2->numNodesAroundByLayers(i, k);
-        for (uint j = 1; j < k; j++) {
+    for (ushort i = 0; i < n2; i++) {
+        densities2[i] = G2->numNodesAround(i, k);
+        for (ushort j = 1; j < k; j++) {
             densities2[i][j] += densities2[i][j-1];
         }
     }
-    sims = vector<vector<float>> (n1, vector<float> (n2, 0));
+    sims = vector<vector<float> > (n1, vector<float> (n2, 0));
     for (uint h = 0; h < k; h++) {
         if (distWeights[h] > 0) {
             for (uint i = 0; i < n1; i++) {

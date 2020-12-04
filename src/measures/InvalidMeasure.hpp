@@ -7,6 +7,7 @@ public:
     InvalidMeasure();
     virtual ~InvalidMeasure();
     double eval(const Alignment& A);
+    double eval(const MultiAlignment& MA); //dummy declare
 
 private:
 

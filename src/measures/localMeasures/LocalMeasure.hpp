@@ -4,19 +4,19 @@
 
 class LocalMeasure: public Measure {
 public:
-    LocalMeasure(const Graph* G1, const Graph* G2, const string& name);
+    LocalMeasure(Graph* G1, Graph* G2, string name);
     virtual ~LocalMeasure() =0;
     virtual double eval(const Alignment& A);
+    virtual double eval(const MultiAlignment& MA); //dummy declare
     bool isLocal();
-    vector<vector<float>>* getSimMatrix();
+    vector<vector<float> >* getSimMatrix();
     void writeSimsWithNames(string outfile);
-    double balanceWeight();
 
 protected:
     void loadBinSimMatrix(string simMatrixFileName);
     virtual void initSimMatrix() =0;
     
-    vector<vector<float>> sims;
+    vector<vector<float> > sims;
     static const string autogenMatricesFolder;
 };
 

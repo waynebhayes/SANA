@@ -13,3 +13,5 @@ InvalidMeasure::~InvalidMeasure() {
 double InvalidMeasure::eval(const Alignment& A) {
     return -1;
 }
+
+double InvalidMeasure::eval(const MultiAlignment& MA){return 0;} //dummy declare

@@ -1,23 +1,24 @@
 #include "NETALWrapper.hpp"
-#include "../../arguments/GraphLoader.hpp"
-#include "../../utils/FileIO.hpp"
 
 using namespace std;
 
-const string NETALProgram = "./NETAL";
+const string NETALProgram = "./NETAL.sh";
 
-NETALWrapper::NETALWrapper(const Graph* G1, const Graph* G2, string args): WrappedMethod(G1, G2, "NETAL", args) {
-    wrappedDir = "wrappedAlgorithms/NETAL";
+NETALWrapper::NETALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "NETAL", args) {
+	wrappedDir = "wrappedAlgorithms/NETAL";
 }
 
-// a: Alpha. i: Iterations
+// a: Alpha 0.0001
+// b:
+// c:
+// i: Iterations 2
 void NETALWrapper::loadDefaultParameters() {
-    parameters = "-a 0.0001 -b 0 -c 1 -i 2";
+	parameters = "-a 0.0001 -b 0 -c 1 -i 2";
 }
 
-string NETALWrapper::convertAndSaveGraph(const Graph* graph, string name) {
-    GraphLoader::saveInEdgeListFormat(*graph, name, false, false, "", "\t");
-    return name;
+string NETALWrapper::convertAndSaveGraph(Graph* graph, string name) {
+	graph->writeGraphEdgeListFormatNETAL(name);
+	return name;
 }
 
 string NETALWrapper::generateAlignment() {
@@ -38,20 +39,20 @@ string NETALWrapper::generateAlignment() {
     return wrappedDir + "/" + alignmentTmpName;
 }
 
-Alignment NETALWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
-    vector<string> lines = FileIO::fileToLines(fileName);
+Alignment NETALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+    vector<string> lines = fileToStrings(fileName, true);
     string word;
     int n1= G1->getNumNodes();
     int n2= G2->getNumNodes();
-    vector<uint> mapping(n1, n2);
+    vector<ushort> mapping(n1, n2);
 
     for (uint i = 0; i < lines.size(); ++i) {
-        istringstream line(lines[i]);
+    	istringstream line(lines[i]);
         vector<string> words;
         while (line >> word) words.push_back(word);
 
         if (words.size() == 3) {
-        mapping[stoi(words[0])] = stoi(words[2]);
+	    mapping[atoi(words[0].c_str())] = atoi(words[2].c_str());
         }
     }
     return Alignment(mapping);
@@ -61,5 +62,5 @@ void NETALWrapper::deleteAuxFiles() {
     string evalFile = "\\(" + g1File + "-" + g2File + "*.eval";
 
     exec("cd " + wrappedDir + "; rm " + g1File + " " + g2File + " ../../" + alignmentFile +
-            " " + evalFile + " simLog.txt alignmentDetails.txt" );
+    		" " + evalFile + " simLog.txt alignmentDetails.txt" );
 }

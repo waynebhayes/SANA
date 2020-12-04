@@ -1,25 +1,26 @@
 #include "SymmetricEdgeCoverage.hpp"
 #include <vector>
 #include <iostream>
-SymmetricEdgeCoverage::SymmetricEdgeCoverage(const Graph* G1, const Graph* G2) : Measure(G1, G2, "sec") {
+SymmetricEdgeCoverage::SymmetricEdgeCoverage(Graph* G1, Graph* G2) : Measure(G1, G2, "sec") {
 }
 
 SymmetricEdgeCoverage::~SymmetricEdgeCoverage() {
 }
-// These are mutually exclusive!
-
-#define EQUAL_WEIGHT_PER_NETWORK 0
-#define EQUAL_WEIGHT_PER_EDGE 1
 
 double SymmetricEdgeCoverage::eval(const Alignment& A) {
-    assert(EQUAL_WEIGHT_PER_NETWORK + EQUAL_WEIGHT_PER_EDGE == 1);
-    double result = 0.0;
-#if EQUAL_WEIGHT_PER_NETWORK
-    result = (double) A.numAlignedEdges(*G1, *G2)/G1->getNumEdges();
-    result += (double) A.numAlignedEdges(*G1, *G2)/G2->getNumEdges();
+    double result = (double) A.numAlignedEdges(*G1, *G2)/G1->getNumEdges();
+	//std::cout<<"check at SymmetricEdgeCoverage before reversing graphs order"<<std::endl;
+    //result += (double) A.numAlignedEdges(*G2, *G1)/G2->getNumEdges();
+	result += (double) A.numAlignedEdges(*G1, *G2)/G2->getNumEdges();
     result = result/2;
-#elif EQUAL_WEIGHT_PER_EDGE
-    result = 2.0*A.numAlignedEdges(*G1, *G2)/(double)(G1->getNumEdges()+G2->getNumEdges());
-#endif
+
+    /*std::cout<<"\n\n-sec print start";
+    std::cout<<"\nA.numAlignedEdges(*G1, *G2) = "<<A.numAlignedEdges(*G1, *G2)<<"  G1->getNumEdges() = "<<G1->getNumEdges();
+    std::cout<<"\nA.numAlignedEdges(*G2, *G1) = "<<A.numAlignedEdges(*G2, *G1);
+    std::cout<<"  G2->getNumEdges() = "<<G2->getNumEdges();
+    std::cout<<"\nresult = "<<result<<"\n\n";*/
+
     return result;
 }
+
+double SymmetricEdgeCoverage::eval(const MultiAlignment& MA){return 0;} //dummy declare

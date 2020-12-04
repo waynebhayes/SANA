@@ -1,6 +1,6 @@
 #include "WeightedEdgeConservation.hpp"
 
-WeightedEdgeConservation::WeightedEdgeConservation(const Graph* G1, const Graph* G2, LocalMeasure* m) : Measure(G1, G2, "wec") {
+WeightedEdgeConservation::WeightedEdgeConservation(Graph* G1, Graph* G2, LocalMeasure* m) : Measure(G1, G2, "wec") {
     nodeSim = m;
 }
 
@@ -13,11 +13,15 @@ LocalMeasure* WeightedEdgeConservation::getNodeSimMeasure() {
 }
 
 double WeightedEdgeConservation::eval(const Alignment& A) {
-    vector<vector<float>>* simMatrix = nodeSim->getSimMatrix();
+    vector<vector<float> >* simMatrix = nodeSim->getSimMatrix();
+    vector<vector<ushort> > edgeListG1;
+    G1->getEdgeList(edgeListG1);
+    vector<vector<bool> > adjMatrixG2;
+    G2->getAdjMatrix(adjMatrixG2);
     double score = 0;
-    for (const auto& edge: *(G1->getEdgeList())) {
-        uint node1 = edge[0], node2 = edge[1];
-        if (G2->hasEdge(A[node1],A[node2])) {
+    for (const auto& edge: edgeListG1) {
+        ushort node1 = edge[0], node2 = edge[1];
+        if (adjMatrixG2[A[node1]][A[node2]]) {
             score += (*simMatrix)[node1][A[node1]];
             score += (*simMatrix)[node2][A[node2]];
         }
@@ -27,3 +31,5 @@ double WeightedEdgeConservation::eval(const Alignment& A) {
     score /= (2*G1->getNumEdges()); // Commenting it out breaks our duplication of LGRAAL, but may need to go when comparing to WAVE
     return score;
 }
+
+double WeightedEdgeConservation::eval(const MultiAlignment& MA){return 0;} //dummy declare

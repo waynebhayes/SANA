@@ -1,123 +1,207 @@
 #include <iostream>
 #include "ArgumentParser.hpp"
 #include "../utils/utils.hpp"
-#include "../utils/FileIO.hpp"
-#include "SupportedArguments.hpp"
 using namespace std;
 
-ArgumentParser::ArgumentParser(int argc, char* argv[]) {
-    if(argc == 1) {
-	cout << "Usage: ./sana [OPTION] [ARG(S)] [OPTION] [ARG(S)]..." << endl
-             << "Try './sana --help' or './sana -h' for more information." << endl;
-        exit(0);
-    }
-    for (int i = 0; i < argc; i++) originalArgv.push_back(argv[i]);
+ArgumentParser::ArgumentParser(
+    const vector<string>& defStringArgs,
+    const vector<string>& defDoubleArgs,
+    const vector<string>& defBoolArgs,
+    const vector<string>& defVectorArgs) {
+    initDefaultValues(defStringArgs, defDoubleArgs, defBoolArgs, defVectorArgs);
 
-    vector<string> vArg;
-    //add first the base values
-    vector<string> baseValues;
-    for (string line: defaultArguments) { //from defaultArguments.hpp
-        for (string s: nonEmptySplit(line, ' ')) {
-            vArg.push_back(s);
-        }
-    }
-    if (argc >= 2) {
-        //next add values from file
-        bool addValuesFromFile = FileIO::fileExists(argv[1]);
-        if (addValuesFromFile) {
-            vector<string> aux = FileIO::fileToWords(argv[1]);
-            vArg.insert(vArg.end(), aux.begin(), aux.end());
-        }
-        //finally, add command line values
-        for (int i = addValuesFromFile ? 2 : 1; i < argc; i++) {
-            vArg.push_back(string(argv[i]));
-        }
-    }
+}
 
-    //initializes the argument arrays declared in SupportedArguments.hpp
-    SupportedArguments::validateAndAddArguments();
+void ArgumentParser::initDefaultValues(
+    const vector<string>& defStringArgs,
+    const vector<string>& defDoubleArgs,
+    const vector<string>& defBoolArgs,
+    const vector<string>& defVectorArgs) {
 
-    //default values for missing arguments
-    for (string s: stringArgs)       strings[s]       = "";
-    for (string s: doubleArgs)       doubles[s]       = 0;
-    for (string s: boolArgs)         bools[s]         = false;
-    for (string s: doubleVectorArgs) doubleVectors[s] = vector<double> (0);
-    for (string s: stringVectorArgs) stringVectors[s] = vector<string> (0);
-
-    bool helpFound = false;
-    unordered_set<string> helpArgs;
-    //check to see if there is a help argument
-    for (string arg : vArg) {
-        if (arg == "-h" or arg == "--help") helpFound = true;
-        else if (helpFound) helpArgs.insert(arg);
-        else if (arg == "-V" or arg == "--version"){
-	    cout << SANAversion << endl;
-	    exit(0);
-	}
+    for (string s : defStringArgs) {
+        strings[s] = "";
     }
-    if (helpFound) {
-        SupportedArguments::printAllArgumentDescriptions(helpArgs);
-        exit(0);
+    for (string s : defDoubleArgs) {
+        doubles[s] = 0;
     }
-
-    for (uint i = 0; i < vArg.size(); i++) {
-        string arg = vArg[i];
-        if(strings.count(arg)) {
-            strings[arg]=vArg[i+1];
-            i++;
-        } else if (doubles.count(arg)) {
-            doubles[arg]=stod(vArg[i+1]);
-            i++;
-        } else if (bools.count(arg)) {
-            bools[arg] = true;
-        } else if (doubleVectors.count(arg)) {
-            int k = stoi(vArg[i+1]);
-            doubleVectors[arg] = vector<double> (0);
-            for (int j = 0; j < k; j++) {
-                doubleVectors[arg].push_back(stod(vArg[i+2+j]));
-            }
-            i = i+k+1;
-        } else if (stringVectors.count(arg)){
-            int k = stoi(vArg[i+1]);
-            stringVectors[arg] = vector<string>(0);
-            for (int j = 0; j < k; j++)
-                stringVectors[arg].push_back(vArg[i+2+j]);
-            i = i+k+1;
-        } else {
-            // if (arg.size() > 1)  I *think* this was needed because of a bug in split that I just fixed. Not sure, so leaving it commented -Nil
-                throw runtime_error("Unknown argument: "+arg+". See the README for the correct syntax");
-        }
+    for (string s : defBoolArgs) {
+        bools[s] = false;
+    }
+    for (string s : defVectorArgs) {
+        vectors[s] = vector<string> (0);
     }
 }
 
+void ArgumentParser::parseArgs(int argc, char* argv[],
+    vector<string> baseValueLines, bool readParamsFromFileInFirstArg) {
+
+    originalArgv = vector<string> (argc);
+    for (int i = 0; i < argc; i++) {
+        originalArgv[i] = argv[i];
+    }
+
+    vector<string> baseValues = vector<string> ();
+    for (string line : baseValueLines) {
+        for (string s : split(line, ' ')) {
+            baseValues.push_back(s);
+        }
+    }
+
+    vector<string> allArgs = getFullArgList(originalArgv, baseValues,
+        readParamsFromFileInFirstArg);
+
+    initParsedValues(allArgs);
+
+}
+
+vector<string> ArgumentParser::getFullArgList(const vector<string>& argv,
+    const vector<string>& baseValues, bool readParamsFromFileInFirstArg) {
+
+    uint argc = argv.size();
+
+    vector<string> result(0);
+
+    //add first the base values
+    for (string s : baseValues) {
+        result.push_back(s);
+    }
+    if (argc < 2) return result;
+
+    //next add values from file
+    bool addValuesFromFile = readParamsFromFileInFirstArg and fileExists(argv[1]);
+    if (addValuesFromFile) {
+		cerr<<endl;
+		cerr<<endl;
+		cerr<<endl;
+		cerr<<endl;
+		cerr<<endl;
+		cerr<<endl;
+		cerr<<endl;
+		cerr<<"check at  ArgumentParser::getFullArgList inside if (addValuesFromFile) {"<<endl;
+		cerr<<endl;
+		cerr<<endl;
+		cerr<<endl;
+		cerr<<endl;
+		cerr<<endl;
+		cerr<<endl;
+		cerr<<endl;
+
+        vector<string> aux = fileToStrings(argv[1]);
+        result.insert(result.end(), aux.begin(), aux.end());
+    }
+
+    //finally add command line values
+    for (uint i = addValuesFromFile ? 2 : 1; i < argc; i++) {
+        result.push_back(string(argv[i]));
+    }
+
+    return result;
+}
+
+void ArgumentParser::initParsedValues(vector<string> vArg) {
+    int n = vArg.size();
+    //check to see if there is a help argument
+    for (string arg : vArg) {
+        if (arg == "-h" or arg == "--help") {
+            cerr << "See the README to see the available arguments." << endl;
+            exit(0);
+        }
+    }
+
+    string arg = "";
+    bool multiAlign = false;
+    int i = 0;
+    cerr<<endl;
+    cerr<<"print out args in args"<< endl;
+    while (i < n) {
+        arg = vArg[i];
+        cerr <<arg<<" ";
+        if(strings.count(arg)) {
+            strings[arg]=vArg[i+1];
+            i++;
+        }
+        else if(doubles.count(arg)) {
+            doubles[arg]=stod(vArg[i+1]);
+            i++;
+        }
+        else if(bools.count(arg)) bools[arg] = true;
+        else if(vectors.count(arg)) {
+			/*if (arg == "-multialign"){
+				if(multiAlign == false){
+					int k = stoi(vArg[i+1]);
+					for (int j = 0; j < k; j++) {
+					    vectors[arg].push_back(vArg[i+2+j]);
+					}
+                    i = i+2+k-1;
+                    multiAlign = true;
+				}
+				else{
+					i = i+2+k-1;
+				}
+			}
+			else{
+				int k = stoi(vArg[i+1]);
+				for (int j = 0; j < k; j++) {
+					vectors[arg].push_back(vArg[i+2+j]);
+				}
+				i = i+2+k-1;*/
+			if(multiAlign == false){
+				if (arg == "-multialign"){
+					multiAlign =true;
+			    }
+                int k = stoi(vArg[i+1]);
+                cerr<<k<<" ";
+                for (int j = 0; j < k; j++) {
+                    vectors[arg].push_back(vArg[i+2+j]);
+                }
+                i = i+2+k-1;
+		    }
+		    else{
+				if (arg == "-multialign"){
+				    vectors[arg]=vector<string>(0);
+			    }
+                int k = stoi(vArg[i+1]);
+                cerr<<k<<" ";
+                for (int j = 0; j < k; j++) {
+                    vectors[arg].push_back(vArg[i+2+j]);
+                }
+                i = i+2+k-1;
+            }
+		}
+        else {
+                throw runtime_error("Unknown argument: " + arg + ". See the README for the correct syntax");
+        }
+        ++i;
+    }
+    cerr<<endl;
+}
+
+// This will only print initialized arguments now as opposed to all arguments supported.
 void ArgumentParser::writeArguments() {
-    cout << "=== Parsed arguments ===" << endl;
-    for (auto kv : strings) {
-        if (kv.second != "") cout << kv.first << ": " << kv.second << '\t';
+    cerr << "=== Parsed arguments ===" << endl;
+
+    for (auto it = strings.cbegin(); it != strings.cend(); ++it) {
+    	if ((*it).second == "") continue;
+        cerr << (*it).first << ": " << (*it).second << '\t';
     }
-    cout << endl;
-    for (auto kv : doubles) {
-        if (kv.second != 0) cout << kv.first << ": " << kv.second << '\t';
+    cerr << endl;
+
+    for (auto it = doubles.cbegin(); it != doubles.cend(); ++it) {
+    	if ((*it).second == 0.0) continue;
+        cerr << (*it).first << ": " << (*it).second << '\t';
     }
-    cout << endl;
-    for (auto kv : bools) {
-        if (kv.second) cout << kv.first << ": " << kv.second << '\t';
+    cerr << endl;
+
+    for (auto it = bools.cbegin(); it != bools.cend(); ++it) {
+    	if ((*it).second == false) continue;
+        cerr << (*it).first << ": " << (*it).second << '\t';
     }
-    cout << endl;
-    for (auto kv : doubleVectors) {
-        if (kv.second.size() != 0) {
-            cout << kv.first << ": ";
-            for (uint i = 0; i < kv.second.size(); i++) cout << kv.second[i] << " ";
-            cout << endl;
-        }
+    cerr << endl;
+
+    for (auto it = vectors.cbegin(); it != vectors.cend(); ++it) {
+        cerr << (*it).first << ": ";
+        for (uint i = 0; i < (*it).second.size(); i++)
+            cerr << (*it).second[i] << " ";
+        cerr << endl;
     }
-    cout << endl;
-    for (auto kv : stringVectors) {
-        if (kv.second.size() != 0) {
-            cout << kv.first << ": ";
-            for (uint i = 0; i < kv.second.size(); i++) cout << kv.second[i] << " ";
-            cout << endl;
-        }
-    }
-    cout << endl;
 }

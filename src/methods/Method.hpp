@@ -6,22 +6,34 @@
 #include "../utils/utils.hpp"
 #include "../Alignment.hpp"
 #include "../utils/Timer.hpp"
+#include "../MultiAlignment.hpp"
 
 class Method {
 public:
-    Method(const Graph* G1, const Graph* G2, string name);
+    Method(Graph* G1, Graph* G2, string name);
+    Method(string name);
     virtual ~Method();
     Alignment runAndPrintTime();
     virtual Alignment run() =0;
-    virtual void describeParameters(ostream& stream) const =0;
-    virtual string fileNameSuffix(const Alignment& A) const =0;
+    virtual void describeParameters(ostream& stream) =0;
+    virtual string fileNameSuffix(const Alignment& A) =0;
 
-    string getName() const;
-    double getExecTime() const;
+    string getName();
+    double getExecTime();
+
+    void setLockFile(string fileName);
+    void checkLockingBeforeReport(Alignment A);
+    void checkNodeTypesBeforeReport(Alignment A);
+
+    map<ushort,ushort> getReverseMap(const map<ushort,ushort> reverse) const;
 
 protected:
-    const Graph* G1;
-    const Graph* G2;
+    Graph* G1;
+    Graph* G2;
+
+    // whether or not we can use -lock for that method default to false
+    virtual bool implementsLocking(){ return false; }
+    string lockFileName = "";
 
 private:
     string name;
@@ -29,3 +41,4 @@ private:
 };
 
 #endif
+

@@ -4,13 +4,12 @@
 #include <sstream>
 #include "../utils/utils.hpp"
 #include "../utils/Timer.hpp"
-#include "../utils/FileIO.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
-#include "../measures/JaccardSimilarityScore.hpp"
 #include "../measures/EdgeCorrectness.hpp"
 #include "../measures/LargestCommonConnectedSubgraph.hpp"
 #include "../measures/NodeCorrectness.hpp"
-#include "../measures/NetGO.hpp"
+#include "../measures/GoCoverage.hpp"
+#include "../measures/ShortestPathConservation.hpp"
 #include "../measures/InvalidMeasure.hpp"
 #include "../measures/InducedConservedStructure.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
@@ -22,26 +21,26 @@
 #include "../measures/localMeasures/Graphlet.hpp"
 #include "../measures/localMeasures/GraphletLGraal.hpp"
 #include "../measures/localMeasures/GraphletCosine.hpp"
-#include "../measures/localMeasures/GraphletNorm.hpp"
 #include "../Alignment.hpp"
-#include "../arguments/GraphLoader.hpp"
+#include "../utils/Timer.hpp"
 #include "ClusterMode.hpp"
+
 
 const string Experiment::methodArgsFile = "experiments/methods.cnf";
 const string Experiment::datasetsFile = "experiments/datasets.cnf";
 
 void Experiment::run(ArgumentParser& args) {
-    if (args.strings["-outfolder"] == "") {
-        cout << "Specify an output folder to use using -outfolder" << endl;
-        exit(-1);
-    }
+	if (args.strings["-outfolder"] == "") {
+		cerr << "Specify an output folder to use using -outfolder" << endl;
+		exit(-1);
+	}
 
-    FileIO::checkFileExists(methodArgsFile);
-    FileIO::checkFileExists(datasetsFile);
+    checkFileExists(methodArgsFile);
+    checkFileExists(datasetsFile);
     experName = args.strings["-experiment"];
     experFolder = "experiments/"+experName+"/";
     experFile = experFolder+experName+".exp";
-    FileIO::checkFileExists(experFile);
+    checkFileExists(experFile);
 
     plainResultsFile = experFolder+experName+"PlainResults.txt";
     humanReadableResultsFile = experFolder+experName+"HumanReadableResults.txt";
@@ -75,14 +74,14 @@ void Experiment::initSubfolders(string projectFolder) {
     outsFolder = projectFolder+experFolder+"outs/";
     errsFolder = projectFolder+experFolder+"errs/";
 
-    FileIO::createFolder(resultsFolder);
-    FileIO::createFolder(outsFolder);
-    FileIO::createFolder(errsFolder);
-    FileIO::createFolder(scriptsFolder);
+    createFolder(resultsFolder);
+    createFolder(outsFolder);
+    createFolder(errsFolder);
+    createFolder(scriptsFolder);
 }
 
 void Experiment::initData() {
-    vector<vector<string>> data = FileIO::fileToWordsByLines(experFile);
+    vector<vector<string>> data = fileToStringsByLines(experFile);
     t = stod(data[0][0]);
     nSubs = stoi(data[1][0]);
     experArgs = data[2];
@@ -111,11 +110,11 @@ void Experiment::makeSubmissions(bool shouldSubmitToCluster) {
                 string cmd = createCommand(method, pair[0], pair[1], i, shouldSubmitToCluster);
                 string subId = getSubId(method, pair[0], pair[1], i);
                 string resultFile = resultsFolder+subId + ".out";
-                if (not FileIO::fileExists(resultFile)) {
-                    cout << "SUBMIT "+subId << endl;
+                if (not fileExists(resultFile)) {
+                    cerr << "SUBMIT "+subId << endl;
                     execWithoutPrintingErr(cmd);
                 } else {
-                    cout << "OMIT   "+subId << endl;
+                    cerr << "OMIT   "+subId << endl;
                 }
             }
         }
@@ -129,7 +128,7 @@ void Experiment::printSubmissions(bool shouldSubmitToCluster) {
                 string cmd = createCommand(method, pair[0], pair[1], i, shouldSubmitToCluster);
                 string subId = getSubId(method, pair[0], pair[1], i);
                 string resultFile = resultsFolder+subId + ".out";
-                if (not FileIO::fileExists(resultFile)) {
+                if (not fileExists(resultFile)) {
                     cout << "SUBMIT "+subId << endl;
                 } else {
                     cout << "OMIT   "+subId << endl;
@@ -146,7 +145,7 @@ bool Experiment::allRunsFinished() {
             for (uint i = 0; i < nSubs; i++) {
                 string subId = getSubId(method, pair[0], pair[1], i);
                 string resultFile = resultsFolder+subId+".out";
-                if (not FileIO::fileExists(resultFile)) {
+                if (not fileExists(resultFile)) {
                     return false;
                 }
             }
@@ -157,48 +156,47 @@ bool Experiment::allRunsFinished() {
 
 
 string Experiment::getSubId(string method, string G1Name, string G2Name, uint numSub) {
-    return method+"_"+G1Name+"_"+G2Name+"_"+to_string(numSub);
+    return method+"_"+G1Name+"_"+G2Name+"_"+intToString(numSub);
 }
 
 string Experiment::createCommand(string method, string G1Name, string G2Name, uint numSub, bool shouldSubmitToCluster) {
-    string command = "./sana ";
-    if(shouldSubmitToCluster) {
-        command += "-mode cluster -qmode normal";
-    } else {
-        command += "-mode normal";
-    }
+	string command = "./sana ";
+	if(shouldSubmitToCluster) {
+		command += "-mode cluster -qmode normal";
+	} else {
+		command += "-mode normal";
+	}
 
-    command += " -g1 " + G1Name + " -g2 " + G2Name;
-    command += " -tm " + to_string(t);
-    for (string arg: getMethodArgs(method)) command += " " + arg;
-    for (string arg: experArgs) command += " " + arg;
+	command += " -g1 " + G1Name + " -g2 " + G2Name;
+	command += " -t " + to_string(t);
+	for (string arg: getMethodArgs(method)) command += " " + arg;
+	for (string arg: experArgs) command += " " + arg;
 
-    string subId = getSubId(method, G1Name, G2Name, numSub);
-    command += " -o " + resultsFolder+subId;
+	string subId = getSubId(method, G1Name, G2Name, numSub);
+	command += " -o " + resultsFolder+subId;
 
-    if(shouldSubmitToCluster) {
-        command += " -qsuboutfile " + outsFolder+subId+".out";
-        command += " -qsuberrfile " + errsFolder+subId+".err";
-        command += " -qsubscriptfile " + scriptsFolder+subId+".sh";
-    }
+	if(shouldSubmitToCluster) {
+		command += " -qsuboutfile " + outsFolder+subId+".out";
+		command += " -qsuberrfile " + errsFolder+subId+".err";
+		command += " -qsubscriptfile " + scriptsFolder+subId+".sh";
+	}
 
-    return command;
+	return command;
 }
 
 void Experiment::loadGraphs(map<string, Graph>& graphs) {
-    cout << "Loading graphs...";
+    cerr << "Loading graphs...";
     Timer T;
     T.start();
 
     for (auto pair : networkPairs) {
-        for (string gName : pair) {
-            if (not graphs.count(gName)) {
-                string gFile = "networks/"+gName+"/"+gName+".gw";
-                graphs.insert({gName, GraphLoader::loadGraphFromFile(gName, gFile, false)});
+        for (string graphName : pair) {
+            if (graphs.count(graphName) == 0) {
+                graphs[graphName] = Graph::loadGraph(graphName);
             }
         }
     }
-    cout << "Experiment::loadGraphs done ("+T.elapsedString()+")" << endl;
+    cerr << "done ("+T.elapsedString()+")" << endl;
 }
 
 string Experiment::getResultId(string method, string G1Name, string G2Name,
@@ -213,7 +211,7 @@ double Experiment::getScore(string method, string G1Name, string G2Name,
     string key = getResultId(method, G1Name, G2Name, numSub, measure);
     if (resultMap.count(key) == 0) {
         throw runtime_error("Score not found for "+method+" "+
-            G1Name+" "+G2Name+" "+to_string(numSub)+" "+measure);
+            G1Name+" "+G2Name+" "+intToString(numSub)+" "+measure);
     }
     return resultMap[key];
 }
@@ -239,7 +237,8 @@ double Experiment::computeScore(string method, string G1Name,
     string subId = getSubId(method, G1Name, G2Name, numSub);
     string resultFile = resultsFolder+subId+".out";
 
-    bool NA = measure->getName() == "invalid" or not FileIO::fileExists(resultFile);
+    bool NA = measure->getName() == "invalid" or
+              not fileExists(resultFile);
     double score;
     if (NA) score = -1;
     else {
@@ -258,11 +257,11 @@ void Experiment::collectResults() {
     for (auto pair : networkPairs) {
         string G1Name = pair[0];
         string G2Name = pair[1];
-        Graph* G1 = &graphs.at(G1Name);
-        Graph* G2 = &graphs.at(G2Name);
+        Graph* G1 = &graphs[G1Name];
+        Graph* G2 = &graphs[G2Name];
         Timer T;
         T.start();
-        cout << "("+G1Name+", "+G2Name+") ";
+        cerr << "("+G1Name+", "+G2Name+") ";
 
         for (string measureName : measures) {
             Measure* measure = loadMeasure(G1, G2, measureName);
@@ -275,7 +274,7 @@ void Experiment::collectResults() {
             }
             delete measure;
         }
-        cout << " ("+T.elapsedString()+")" << endl;
+        cerr << " ("+T.elapsedString()+")" << endl;
     }
 }
 
@@ -287,7 +286,8 @@ void Experiment::saveResults() {
 }
 
 void Experiment::savePlainResults() {
-    ofstream ofs(plainResultsFile);
+    ofstream fout;
+    fout.open(plainResultsFile.c_str());
     for (string measure : measures) {
         for (auto pair : networkPairs) {
             string G1Name = pair[0];
@@ -295,9 +295,9 @@ void Experiment::savePlainResults() {
             for (string method : methods) {
                 for (uint numSub = 0; numSub < nSubs; numSub++) {
                     double score = getScore(method, G1Name, G2Name, numSub, measure);
-                    ofs << measure << " " << G1Name << " ";
-                    ofs << G2Name << " " << method << " ";
-                    ofs << numSub << " " << score << endl;
+                    fout << measure << " " << G1Name << " ";
+                    fout << G2Name << " " << method << " ";
+                    fout << numSub << " " << score << endl;
                 }
             }
         }
@@ -317,7 +317,7 @@ string doubleToPrettyString(double x) {
     return s;
 }
 
-void addAverageToLastRow(vector<vector<string>>& table) {
+void addAverageToLastRow(vector<vector<string> >& table) {
     table.push_back(vector<string> (table[0].size()));
     uint n = table.size();
     table[n-1][0] = "AVG";
@@ -367,19 +367,19 @@ void scoresToRankings(vector<string>& row) {
             scores[indices[i]] != scores[indices[i-1]]) {
             nextRank = i+1;
         }
-        row[indices[i]+2] = to_string(nextRank);
+        row[indices[i]+2] = intToString(nextRank);
     }
 }
 
 void Experiment::saveHumanReadableResults() {
-    ofstream ofs(humanReadableResultsFile);
+    ofstream fout(humanReadableResultsFile.c_str());
 
-    vector<vector<vector<string>> > tables;
+    vector<vector<vector<string> > > tables;
     for (uint i = 0; i < measures.size(); i++) {
-        vector<vector<string>> table(networkPairs.size()+1,
+        vector<vector<string> > table(networkPairs.size()+1,
             vector<string> (methods.size()+2));
 
-        ofs << "Measure: " << measures[i] << endl;
+        fout << "Measure: " << measures[i] << endl;
         table[0][0] = "G1";
         table[0][1] = "G2";
         for (uint j = 0; j < methods.size(); j++) {
@@ -398,37 +398,39 @@ void Experiment::saveHumanReadableResults() {
         }
         tables.push_back(table);
         addAverageToLastRow(table);
-        printTable(table, 1, ofs);
-        ofs << endl << endl;
+        printTable(table, 1, fout);
+        fout << endl << endl;
     }
 
-    ofs << endl << "=== rankings ===" << endl;
+    fout << endl << "=== rankings ===" << endl;
 
     for (uint i = 0; i < measures.size(); i++) {
-        vector<vector<string>> &table = tables[i];
-        ofs << "Measure: " << measures[i] << endl;
+        vector<vector<string> > &table = tables[i];
+        fout << "Measure: " << measures[i] << endl;
         for (uint j = 1; j < table.size(); j++) {
             scoresToRankings(table[j]);
         }
         addAverageToLastRow(table);
-        printTable(table, 1, ofs);
-        ofs << endl << endl;
+        printTable(table, 1, fout);
+        fout << endl << endl;
     }
+
+    fout.close();
 }
 
 void Experiment::saveResultsForPlots() {
-    ofstream ofs(forPlotResultsFile);
+    ofstream fout(forPlotResultsFile.c_str());
 
     //headers
     bool firstCol = true;
     for (string method : plotMethods) {
         for (string measure : plotMeasures) {
             if (firstCol) firstCol = false;
-            else ofs << ",";
-            ofs << experName+"_"+method+"_"+measure;
+            else fout << ",";
+            fout << experName+"_"+method+"_"+measure;
         }
     }
-    ofs << endl;
+    fout << endl;
 
     //data, one row per network pair
     for (auto pair : networkPairs) {
@@ -442,11 +444,11 @@ void Experiment::saveResultsForPlots() {
                     throw runtime_error("invalid score: "+to_string(score));
                 }
                 if (firstCol) firstCol = false;
-                else ofs << ",";
-                ofs << to_string(score);
+                else fout << ",";
+                fout << to_string(score);
             }
         }
-        ofs << endl;
+        fout << endl;
     }
 
     //averages
@@ -461,11 +463,11 @@ void Experiment::saveResultsForPlots() {
                 scoreSum += score;
             }
             if (firstCol) firstCol = false;
-            else ofs << ",";
-            ofs << scoreSum/networkPairs.size();
+            else fout << ",";
+            fout << scoreSum/networkPairs.size();
         }
     }
-    ofs << endl;
+    fout << endl;
 }
 
 string Experiment::getName() {
@@ -477,7 +479,7 @@ Experiment::Experiment() {
 }
 
 vector<string> Experiment::getMethodArgs(string method) {
-    vector<vector<string>> data = FileIO::fileToWordsByLines(methodArgsFile);
+    vector<vector<string>> data = fileToStringsByLines(methodArgsFile);
     for (uint i = 0; i < data.size(); i++) {
         if (data[i][0] == method) {
             data[i].erase(data[i].begin());
@@ -488,7 +490,7 @@ vector<string> Experiment::getMethodArgs(string method) {
 }
 
 vector<vector<string>> Experiment::getNetworkPairs(string dataset) {
-    vector<vector<string>> data = FileIO::fileToWordsByLines(datasetsFile);
+    vector<vector<string>> data = fileToStringsByLines(datasetsFile);
     for (uint i = 0; i < data.size(); i++) {
         if (data[i].size() == 1 and data[i][0] == dataset) {
             vector<vector<string>> res(0);
@@ -517,43 +519,39 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
         return new LargestCommonConnectedSubgraph(G1, G2);
     }
     if (name == "nodec") {
-        cout << "Warning: the weights of 'nodec' might be ";
-        cout << "different than the ones used in the experiment" << endl;
+        cerr << "Warning: the weights of 'nodec' might be ";
+        cerr << "different than the ones used in the experiment" << endl;
         return new NodeCount(G1, G2, {0.1, 0.25, 0.5, 0.15});
     }
     if (name == "edgec") {
-        cout << "Warning: the weights of 'edgec' might be ";
-        cout << "different than the ones used in the experiment" << endl;
+        cerr << "Warning: the weights of 'edgec' might be ";
+        cerr << "different than the ones used in the experiment" << endl;
         return new EdgeCount(G1, G2, {0.1, 0.25, 0.5, 0.15});
     }
-    uint maxGraphletSize = 5;
     if (name == "graphlet") {
-        return new Graphlet(G1, G2, maxGraphletSize);
+        return new Graphlet(G1, G2);
     }
     if (name == "graphletlgraal") {
-        return new GraphletLGraal(G1, G2, maxGraphletSize);
+        return new GraphletLGraal(G1, G2);
     }
-    if (name == "graphletcosine") {
-        return new GraphletCosine(G1, G2, maxGraphletSize);
-    }
-    if (name == "graphletnorm") {
-        return new GraphletNorm(G1, G2, maxGraphletSize);
+    if (name == "graphletcoseine") {
+    	return new GraphletCosine(G1, G2);
     }
     if (name == "wecgraphletlgraal") {
-        LocalMeasure* wecNodeSim = new GraphletLGraal(G1, G2, maxGraphletSize);
+        LocalMeasure* wecNodeSim = new GraphletLGraal(G1, G2);
         return new WeightedEdgeConservation(G1, G2, wecNodeSim);
     }
     if (name == "wecnodec") {
-        cout << "Warning: the weights of 'nodec' might be ";
-        cout << "different than the ones used in the experiment" << endl;
+        cerr << "Warning: the weights of 'nodec' might be ";
+        cerr << "different than the ones used in the experiment" << endl;
         LocalMeasure* wecNodeSim = new NodeCount(G1, G2, {0.1, 0.25, 0.5, 0.15});
         return new WeightedEdgeConservation(G1, G2, wecNodeSim);
     }
     if (name.size() == 3 and name[0] == 'g' and name[1] == 'o' and
         name[2] >= '1' and name[2] <= '9') {
         if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            cout << "Warning: the fraction of kept GO terms might be ";
-            cout << "different than the ones used in the experiment" << endl;
+            cerr << "Warning: the fraction of kept GO terms might be ";
+            cerr << "different than the ones used in the experiment" << endl;
             uint k = name[2] - '0';
             vector<double> weights(k, 0);
             weights[k-1] = 1;
@@ -562,17 +560,19 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
             return new InvalidMeasure();
         }
     }
-    if (name == "netgo") {
+    if (name == "gocov") {
         if (GoSimilarity::fulfillsPrereqs(G1, G2)) {
-            return new NetGO(G1, G2);
+            return new GoCoverage(G1, G2);
         } else {
             return new InvalidMeasure();
         }
     }
+    if (name == "shortestpath") {
+        return new ShortestPathConservation(G1, G2);
+    }
     if (name == "nc") {
         if (NodeCorrectness::fulfillsPrereqs(G1, G2)) {
-            auto alig = Alignment::correctMapping(*G1, *G2);
-            return new NodeCorrectness(alig.asVector());
+            return new NodeCorrectness(Alignment::correctMapping(*G1, *G2));
         } else {
             return new InvalidMeasure();
         }
@@ -715,7 +715,7 @@ void Experiment::loadResultMap(string experName) {
 
 void Experiment::initResults() {
     resultMap.clear(); //init the map empty
-    vector<vector<string>> data = FileIO::fileToWordsByLines(plainResultsFile);
+    vector<vector<string>> data = fileToStringsByLines(plainResultsFile);
     for (vector<string> line : data) {
         string method = line[3];
         string G1Name = line[1];
@@ -770,7 +770,7 @@ void Experiment::updateTopSeqScoreTableEntry(string method,
 
     string topSeqScoreTableFile = "topologySequenceScoreTable.cnf";
 
-    vector<vector<string>> table = FileIO::fileToWordsByLines(topSeqScoreTableFile);
+    vector<vector<string>> table = fileToStringsByLines(topSeqScoreTableFile);
     bool found = false;
     for (vector<string>& line : table) {
         if (line[0] == method and line[1] == G1Name and line[2] == G2Name) {
@@ -796,8 +796,8 @@ void Experiment::updateTopSeqScoreTableEntry(string method,
         } else throw runtime_error("invalid update type: "+updateType);
         table.push_back(newLine);
     }
-    ofstream ofs(topSeqScoreTableFile);
-    for (const auto& line : table) {
-        ofs<<line[0]<<" "<<line[1]<<" "<<line[2]<<" "<<line[3]<<" "<<line[4]<<endl;
+    ofstream fout(topSeqScoreTableFile.c_str());
+    for (vector<string> line : table) {
+        fout<<line[0]<<" "<<line[1]<<" "<<line[2]<<" "<<line[3]<<" "<<line[4]<<endl;
     }
 }

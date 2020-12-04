@@ -11,10 +11,10 @@ using namespace std;
 class RandomAligner: public Method {
 public:
 
-    RandomAligner(const Graph* G1, const Graph* G2);
+    RandomAligner(Graph* G1, Graph* G2);
     Alignment run();
-    void describeParameters(ostream& stream) const;
-    string fileNameSuffix(const Alignment& A) const;
+    void describeParameters(ostream& stream);
+    string fileNameSuffix(const Alignment& A);
 
 private:
 

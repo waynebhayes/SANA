@@ -3,7 +3,6 @@
 #include <utility>
 #include <iostream>
 #include <fstream>
-#include <iomanip>
 #include <sstream>
 #include <cstdlib>
 #include <stdexcept>
@@ -14,2132 +13,2102 @@
 #include <iomanip>
 #include <set>
 #include <cmath>
-#include <limits>
-#include <thread>
-#include <mutex>
 #include <cassert>
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "SANA.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
-#include "../measures/JaccardSimilarityScore.hpp"
-#include "../measures/InducedConservedStructure.hpp"
 #include "../measures/EdgeCorrectness.hpp"
-#include "../measures/EdgeDifference.hpp"
-#include "../measures/EdgeRatio.hpp"
-#include "../measures/SquaredEdgeScore.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
 #include "../measures/NodeCorrectness.hpp"
 #include "../measures/SymmetricEdgeCoverage.hpp"
 #include "../measures/localMeasures/Sequence.hpp"
-#include "../measures/EdgeExposure.hpp"
-#include "../measures/MultiS3.hpp"
-#include "../utils/utils.hpp"
-#include "../Report.hpp"
+#include "../utils/NormalDistribution.hpp"
+#include "../MultiAlignment.hpp"
 
 using namespace std;
 
-//static fields
-bool SANA::saveAligAndExitOnInterruption = false;
-bool SANA::saveAligAndContOnInterruption = false;
-uint SANA::INVALID_ACTIVE_COLOR_ID;
+SANA::SANA(Graph* G1, Graph* G2,
+        double TInitial, double TDecay, double t, MeasureCombination* MC, string& objectiveScore):
+            Method(G1, G2, "SANA_"+MC->toString())
+{
+    //data structures for the networks
+    n1 = G1->getNumNodes();
+    n2 = G2->getNumNodes();
+    g1Edges = G1->getNumEdges();
+    g2Edges = G2->getNumEdges();
+    score = objectiveScore;
 
-SANA::SANA(const Graph* G1, const Graph* G2,
-        double TInitial, double TDecay, double maxSeconds, long long int maxIterations, bool addHillClimbing,
-        MeasureCombination* MC, const string& scoreAggrStr, const Alignment& startA,
-        const string& outputFileName, const string& localScoresFileName):
-                Method(G1, G2, "SANA_"+MC->toString()),
-                startA(startA),
-                addHillClimbing(addHillClimbing),
-                TInitial(TInitial), TDecay(TDecay),
-                wasBadMove(false),
-                maxSeconds(maxSeconds),
-                maxIterations(maxIterations),
-                MC(MC),
-                outputFileName(outputFileName),
-                localScoresFileName(localScoresFileName) {
-    initTau();
-    n1 = G1->getNumNodes(), n2 = G2->getNumNodes();
-    g1Edges = G1->getNumEdges(), g2Edges = G2->getNumEdges();
-    g1WeightedEdges = G1->getTotalEdgeWeight(), g2WeightedEdges = G2->getTotalEdgeWeight();
-    pairsCount = n1 * (n1 + 1) / 2;
+    G1->getAdjMatrix(G1AdjMatrix);
+    G2->getAdjMatrix(G2AdjMatrix);
+    G1->getAdjLists(G1AdjLists);
+    G2->getAdjLists(G2AdjLists);
 
-    if      (scoreAggrStr == "sum")       scoreAggr = ScoreAggregation::sum;
-    else if (scoreAggrStr == "product")   scoreAggr = ScoreAggregation::product;
-    else if (scoreAggrStr == "inverse")   scoreAggr = ScoreAggregation::inverse;
-    else if (scoreAggrStr == "max")       scoreAggr = ScoreAggregation::max;
-    else if (scoreAggrStr == "min")       scoreAggr = ScoreAggregation::min;
-    else if (scoreAggrStr == "maxFactor") scoreAggr = ScoreAggregation::maxFactor;
-    else throw runtime_error("unknown score aggregation: "+scoreAggrStr);
 
     //random number generation
+    random_device rd;
     gen = mt19937(getRandomSeed());
+    G1RandomNode = uniform_int_distribution<>(0, n1-1);
+    uint G1UnLockedCount = n1 - G1->getLockedCount() -1;
+    G1RandomUnlockedNodeDist = uniform_int_distribution<>(0, G1UnLockedCount);
+    G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
+    G1RandomUnlockedGeneDist = uniform_int_distribution<>(0, G1->unlockedGeneCount - 1);
+    G1RandomUnlockedmiRNADist = uniform_int_distribution<>(0, G1->unlockedmiRNACount - 1);
     randomReal = uniform_real_distribution<>(0, 1);
 
-    //temperature schedule
-    if (maxIterations > 0 and maxSeconds > 0)
-        throw runtime_error("use only one of maxIterations or maxSeconds");
-    else if (maxIterations <= 0 and maxSeconds <= 0)
-        throw runtime_error("exactly one of maxIterations and maxSeconds must be > 0");
-    useIterations = maxIterations > 0;
 
+    //temperature schedule
+    this->TInitial = TInitial;
+    this->TDecay = TDecay;
+    minutes = t;
     initializedIterPerSecond = false;
-    pBadBuffer = vector<double> (PBAD_CIRCULAR_BUFFER_SIZE, 0);
+
+    //data structures for the solution space search
+    uint ramificationChange = n1*(n2-n1);
+    uint ramificationSwap = n1*(n1-1)/2;
+    uint totalRamification = ramificationSwap + ramificationChange;
+    changeProbability = (double) ramificationChange/totalRamification;
+    tau = vector<double> {0.99, 0.985, 0.96, 0.955, 0.95, 0.942, 0.939, 0.934, 0.928, 0.92, 0.918, 0.911, 0.906, 0.901, 0.896,
+               0.891, 0.885, 0.879, 0.873, 0.867, 0.86, 0.853, 0.846, 0.838, 0.83, 0.822, 0.81, 0.804, 0.794, 0.784,
+               0.774, 0.763, 0.752, 0.741, 0.728, 0.716, 0.703, 0.69, 0.676, 0.662, 0.647, 0.632, 0.616, 0.6, 0.584,
+               0.567, 0.549, 0.531, 0.514, 0.495, 0.477, 0.458, 0.438, 0.412, 0.4, 0.381, 0.361, 0.342, 0.322, 0.303,
+               0.284, 0.264, 0.246, 0.228, 0.21, 0.193, 0.177, 0.161, 0.145, 0.131, 0.117, 0.104, 0.092, 0.081, 0.07,
+               0.061, 0.052, 0.044, 0.0375, 0.031, 0.026, 0.0212, 0.0172, 0.0138, 0.0109, 0.0085, 0.0065, 0.005, 0.0037,
+               0.0027, 0.0019, 0.0014, 0.0005, 0.0001, 0.0000739, 0.0000342, 0.000008, 0.0000054, 0.000000739, 0.00000000359, 0.000000000734};
+
 
     //objective function
-    ecWeight  = MC->getWeight("ec");
-    edWeight  = MC->getWeight("ed");
-    erWeight  = MC->getWeight("er");
-    s3Weight  = MC->getWeight("s3");
-    jsWeight  = MC->getWeight("js");
-    icsWeight = MC->getWeight("ics");
+    this->MC = MC;
+    ecWeight = MC->getWeight("ec");
+    s3Weight = MC->getWeight("s3");
     secWeight = MC->getWeight("sec");
-    mecWeight = MC->getWeight("mec");
-    sesWeight = MC->getWeight("ses");
-    eeWeight  = MC->getWeight("ee");
-    ms3Weight = MC->getWeight("ms3");
-    try { wecWeight = MC->getWeight("wec"); }
-    catch(...) { wecWeight = 0; }
-    try { ewecWeight = MC->getWeight("ewec"); }
-    catch(...) { ewecWeight = 0; }
     try {
-        needNC = false;
-        ncWeight = MC->getWeight("nc");
-        Measure* nc = MC->getMeasure("nc");
-        trueAWithValidCountAppended = ((NodeCorrectness*) nc)->getMappingforNC();
-        needNC = true;
+        wecWeight = MC->getWeight("wec");
     } catch(...) {
-        ncWeight = 0;
-        trueAWithValidCountAppended = {static_cast<uint>(G2->getNumNodes()), 1};
+        wecWeight = 0;
     }
     localWeight = MC->getSumLocalWeight();
 
-    //indicate which variables need to be maintained incrementally
-    needAligEdges        = icsWeight > 0 or ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0 or mecWeight > 0;
-    needEd               = edWeight > 0; //edge difference
-    needEr               = erWeight > 0; //edge ratio
-    needSquaredAligEdges = sesWeight > 0; //SES
-    needExposedEdges     = eeWeight > 0 or MultiS3::denominator_type == MultiS3::ee_global; //EE; if needMS3, might use EE as denom
-    needMS3              = ms3Weight > 0;
-    needInducedEdges     = s3Weight > 0 or icsWeight > 0;
-    needJs               = jsWeight > 0;
-    needWec              = wecWeight > 0;
-    needEwec             = ewecWeight>0;
-    needSec              = secWeight > 0;
-    needLocal            = localWeight > 0;
-#ifndef MULTI_PAIRWISE
-    needSquaredAligEdges = false;
-    needExposedEdges     = false;
-    needMS3              = false;
-#endif
+
+    //restart scheme
+    restart = false;
+
+    //temperature decay dynamically
+    dynamic_tdecay = false;
+
+
+    //to evaluate EC incrementally
+    needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0;
+
+
+    //to evaluate S3 incrementally
+    needInducedEdges = s3Weight > 0;
+
+
+    //to evaluate WEC incrementally
+    needWec = wecWeight > 0;
+
+    //to evaluate SEC incrementally
+    needSec = secWeight > 0;
+
+
     if (needWec) {
-        Measure* wec                     = MC->getMeasure("wec");
-        LocalMeasure* m                  = ((WeightedEdgeConservation*) wec)->getNodeSimMeasure();
-        vector<vector<float>>* wecSimsP = m->getSimMatrix();
-        wecSims                          = (*wecSimsP);
+        Measure* wec = MC->getMeasure("wec");
+        LocalMeasure* m = ((WeightedEdgeConservation*) wec)->getNodeSimMeasure();
+        vector<vector<float> >* wecSimsP = m->getSimMatrix();
+        wecSims = vector<vector<float> > (n1, vector<float> (n2, 0));
+        for (uint i = 0; i < n1; i++) {
+            for (uint j = 0; j < n2; j++) {
+                wecSims[i][j] = (*wecSimsP)[i][j];
+            }
+        }
     }
+
+
+    //to evaluate local measures incrementally
+    needLocal = localWeight > 0;
     if (needLocal) {
-        sims              = MC->getAggregatedLocalSims();
-        localSimMatrixMap = MC->getLocalSimMap();
-        localWeight       = 1; //the values in the sim Matrix 'sims' have already been scaled by the weight
+        sims = MC->getAggregatedLocalSims();
+        localWeight = 1; //the values in the sim matrix 'sims'
+        //have already been scaled by the weight
     } else {
         localWeight = 0;
     }
 
-#ifdef CORES
-    coreScoreData = CoreScoreData(n1, n2);
-#endif
 
     //other execution options
-    dynamicTDecay         = false;
-    constantTemp          = false;
-    enableTrackProgress   = true;
-    iterationsPerStep     = 10000000;
-    avgEnergyInc          = -0.00001; //to track progress
+    constantTemp = false;
+    enableTrackProgress = true;
+    iterationsPerStep = 10000000;
 
-    // NODE COLOR SYSTEM initialization
-    assert(G1->numColors() <= G2->numColors());
-    const bool COL_DBG = true; //print stats about color/neighbor type probabilities
 
-    vector<uint> numSwapNeighborsByG1Color(G1->numColors(), 0);
-    vector<uint> numChangeNeighborsByG1Color(G1->numColors(), 0);
-    uint totalNbrCount = 0;
-    for (uint g1Id = 0; g1Id < G1->numColors(); g1Id++) {
-        string colName = G1->getColorName(g1Id);
-        if (not G2->hasColor(colName))
-            throw runtime_error("G1 nodes colored "+colName+" cannot be matched to any G2 nodes");
-        uint c1 = G1->numNodesWithColor(g1Id);
-        uint c2 = G2->numNodesWithColor(G2->getColorId(colName));
-        if (c1 > c2) throw runtime_error("there are "+to_string(c1)+" G1 nodes colored "
-                    +colName+" but only "+to_string(c2)+" such nodes in G2");  
-        uint numSwapNbrs = c1*(c1-1)/2, numChangeNbrs = c1*(c2-c1);
-        numSwapNeighborsByG1Color[g1Id] = numSwapNbrs;
-        numChangeNeighborsByG1Color[g1Id] = numChangeNbrs;
-        uint numNbrs = numSwapNbrs + numChangeNbrs;
-        totalNbrCount += numNbrs;
-        if (COL_DBG) {
-            cerr<<"color "<<colName<<" has "<<numSwapNbrs<<" swap nbrs and "
-                <<numChangeNbrs<<" change nbrs ("<<numNbrs<<" total)"<<endl;
-            if (numNbrs == 0) cerr<<"color "<<colName<<" is inactive"<<endl;
-        }
-    }
-    if (COL_DBG) cerr<<"alignments have "<<totalNbrCount<<" nbrs in total"<<endl;
-    if (totalNbrCount == 0) throw runtime_error(
-            "there is a unique valid alignment, so running SANA is pointless");
-
-    //init active color data structures
-    for (uint g1Id = 0; g1Id < G1->numColors(); g1Id++) {
-        uint numChangeNbrs = numChangeNeighborsByG1Color[g1Id];
-        uint numNbrs = numChangeNbrs + numSwapNeighborsByG1Color[g1Id];
-        if (numNbrs == 0) continue; //inactive color
-        double colorProb = numNbrs / (double) totalNbrCount;
-        double accumProb = colorProb +
-                (actColToAccumProbCutpoint.empty() ? 0 : actColToAccumProbCutpoint.back());
-        assert(accumProb <= 1 + 1e-14); // allow for a bit of numerical roundoff error
-        actColToAccumProbCutpoint.push_back(accumProb);
-        actColToChangeProb.push_back(numChangeNbrs/ (double) numNbrs);
-        actColToG1ColId.push_back(g1Id);
-    }
-    //due to rounding errors, the last number may not be exactly 1, so we correct it
-    actColToAccumProbCutpoint.back() = 1;
-    if (COL_DBG) {
-        cerr<<"Active colors:"<<endl;
-        vector<vector<string>> colTable;
-        colTable.push_back({"id","name","color P","accum P","change-P","swap-P"});
-        for (uint i = 0; i < actColToG1ColId.size(); i++) {
-            string name = G1->getColorName(actColToG1ColId[i]);
-            double colP = actColToAccumProbCutpoint[i] - (i>0 ? actColToAccumProbCutpoint[i-1] : 0);
-            colTable.push_back({to_string(i), name, to_string(colP), to_string(actColToAccumProbCutpoint[i]), 
-                                to_string(actColToChangeProb[i]), to_string(1-actColToChangeProb[i])});
-        }
-        printTable(colTable, 4, cerr);
-        cerr<<endl;
-    }
-
-    //init g2NodeToActColId. For each node, we do the following transformations:
-    //g2Node -> g2ColorId -> g1ColorId -> actColId
-    vector<uint> g2ToG1ColorIdMap = G2->myColorIdsToOtherGraphColorIds(*G1);
-    INVALID_ACTIVE_COLOR_ID = n1;
-    vector<uint> g1ColIdToActColId(G1->numColors(), INVALID_ACTIVE_COLOR_ID);
-    for (uint i = 0; i < actColToG1ColId.size(); i++) {
-        g1ColIdToActColId[actColToG1ColId[i]] = i;
-    }
-    g2NodeToActColId = vector<uint> (n2, INVALID_ACTIVE_COLOR_ID);
-    for (uint g2Node = 0; g2Node < n2; g2Node++) {
-        uint g2ColorId = G2->nodeColors[g2Node];
-        uint g1ColorId = g2ToG1ColorIdMap[g2ColorId];
-        if (g1ColorId == Graph::INVALID_COLOR_ID) continue; //no node in G1 has this color
-        g2NodeToActColId[g2Node] = g1ColIdToActColId[g1ColorId];
-    }
-    //things initialized in initDataStructures because they depend on the starting alignment
-    //they have the same size for every run, so we can allocate the size here
+    //this does not need to be initialized here,
+    //but the space has to be reserved in the
+    //stack. it is initialized properly before
+    //running the algorithm
     assignedNodesG2 = vector<bool> (n2);
-    actColToUnassignedG2Nodes = vector<vector<uint>> (actColToG1ColId.size());
+    unassignedNodesG2 = vector<ushort> (n2-n1);
+    A = vector<ushort> (n1);
+
+
+    //to track progress
+    //vector<double> eIncs = energyIncSample();
+    //avgEnergyInc = vectorMean(eIncs);
+    avgEnergyInc = -0.00001;
 }
 
-SANA::~SANA() {}
+SANA::SANA(Graph* G1, Graph* G2,
+        double TInitial, double TDecay, uint i, MeasureCombination* MC, string& objectiveScore):
+            Method(G1, G2, "SANA_"+MC->toString())
+{
+    //data structures for the networks
+    n1 = G1->getNumNodes();
+    n2 = G2->getNumNodes();
+    g1Edges = G1->getNumEdges();
+    g2Edges = G2->getNumEdges();
+    score = objectiveScore;
 
-//initialize data structures specific to the starting alignment
-//everything that is alignment-independent should be initialized in the
-//constructor instead
-//even for data structures initialized here, any space allocation for them
-//should be done in the constructor, not here, to avoid memory leaks
-void SANA::initDataStructures() {
-    iterationsPerformed = 0;
-    numPBadsInBuffer = pBadBufferSum = pBadBufferIndex = 0;
-    Alignment alig;
-    if (startA.size() != 0) alig = startA;
-    else alig = Alignment::randomColorRestrictedAlignment(*G1, *G2);
+    G1->getAdjMatrix(G1AdjMatrix);
+    G2->getAdjMatrix(G2AdjMatrix);
+    G1->getAdjLists(G1AdjLists);
+    G2->getAdjLists(G2AdjLists);
 
-    //initialize assignedNodesG2 (the size was already set in the constructor)
-    for (uint i = 0; i < n2; i++) assignedNodesG2[i] = false;
-    for (uint i = 0; i < n1; i++) assignedNodesG2[alig[i]] = true;
-    //initialize actColToUnassignedG2Nodes (the size was already set in the constructor)
-    for (uint i = 0; i < actColToUnassignedG2Nodes.size(); i++)
-        actColToUnassignedG2Nodes[i].clear();
-    for (uint g2Node = 0; g2Node < n2; g2Node++) {
-        if (assignedNodesG2[g2Node]) continue;
-        uint actColId = g2NodeToActColId[g2Node];
-        if (actColId != INVALID_ACTIVE_COLOR_ID) {
-            actColToUnassignedG2Nodes[actColId].push_back(g2Node);
+
+    //random number generation
+    random_device rd;
+    gen = mt19937(getRandomSeed());
+    G1RandomNode = uniform_int_distribution<>(0, n1-1);
+    uint G1UnLockedCount = n1 - G1->getLockedCount() -1;
+    G1RandomUnlockedNodeDist = uniform_int_distribution<>(0, G1UnLockedCount);
+    G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
+    G1RandomUnlockedGeneDist = uniform_int_distribution<>(0, G1->unlockedGeneCount - 1);
+    G1RandomUnlockedmiRNADist = uniform_int_distribution<>(0, G1->unlockedmiRNACount - 1);
+    randomReal = uniform_real_distribution<>(0, 1);
+
+
+    //temperature schedule
+    this->TInitial = TInitial;
+    this->TDecay = TDecay;
+    maxIterations = i;
+    initializedIterPerSecond = false;
+
+    //data structures for the solution space search
+    uint ramificationChange = n1*(n2-n1);
+    uint ramificationSwap = n1*(n1-1)/2;
+    uint totalRamification = ramificationSwap + ramificationChange;
+    changeProbability = (double) ramificationChange/totalRamification;
+    tau = vector<double> {0.99, 0.985, 0.96, 0.955, 0.95, 0.942, 0.939, 0.934, 0.928, 0.92, 0.918, 0.911, 0.906, 0.901, 0.896,
+               0.891, 0.885, 0.879, 0.873, 0.867, 0.86, 0.853, 0.846, 0.838, 0.83, 0.822, 0.81, 0.804, 0.794, 0.784,
+               0.774, 0.763, 0.752, 0.741, 0.728, 0.716, 0.703, 0.69, 0.676, 0.662, 0.647, 0.632, 0.616, 0.6, 0.584,
+               0.567, 0.549, 0.531, 0.514, 0.495, 0.477, 0.458, 0.438, 0.412, 0.4, 0.381, 0.361, 0.342, 0.322, 0.303,
+               0.284, 0.264, 0.246, 0.228, 0.21, 0.193, 0.177, 0.161, 0.145, 0.131, 0.117, 0.104, 0.092, 0.081, 0.07,
+               0.061, 0.052, 0.044, 0.0375, 0.031, 0.026, 0.0212, 0.0172, 0.0138, 0.0109, 0.0085, 0.0065, 0.005, 0.0037,
+               0.0027, 0.0019, 0.0014, 0.0005, 0.0001, 0.0000739, 0.0000342, 0.000008, 0.0000054, 0.000000739, 0.00000000359, 0.000000000734};
+
+
+    //objective function
+    this->MC = MC;
+    ecWeight = MC->getWeight("ec");
+    s3Weight = MC->getWeight("s3");
+    secWeight = MC->getWeight("sec");
+    try {
+        wecWeight = MC->getWeight("wec");
+    } catch(...) {
+        wecWeight = 0;
+    }
+    localWeight = MC->getSumLocalWeight();
+
+
+    //restart scheme
+    restart = false;
+
+
+    //to evaluate EC incrementally
+    needAligEdges = ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0;
+
+
+    //to evaluate S3 incrementally
+    needInducedEdges = s3Weight > 0;
+
+
+    //to evaluate WEC incrementally
+    needWec = wecWeight > 0;
+    if (needWec) {
+        Measure* wec = MC->getMeasure("wec");
+        LocalMeasure* m = ((WeightedEdgeConservation*) wec)->getNodeSimMeasure();
+        vector<vector<float> >* wecSimsP = m->getSimMatrix();
+        wecSims = vector<vector<float> > (n1, vector<float> (n2, 0));
+        for (uint i = 0; i < n1; i++) {
+            for (uint j = 0; j < n2; j++) {
+                wecSims[i][j] = (*wecSimsP)[i][j];
+            }
         }
     }
 
-    if (needAligEdges or needSec) aligEdges = alig.numAlignedEdges(*G1, *G2);
-    if (needEd) edSum = EdgeDifference::getEdgeDifferenceSum(G1, G2, alig);
-    if (needEr) erSum = EdgeRatio::getEdgeRatioSum(G1, G2, alig);
-    if (needSquaredAligEdges) squaredAligEdges =
-            ((SquaredEdgeScore*) MC->getMeasure("ses"))->numSquaredAlignedEdges(alig);
-    if (needExposedEdges) EdgeExposure::numer = 
-        EdgeExposure::numExposedEdges(alig, *G1, *G2);//- EdgeExposure::getMaxEdge();
-    if (needMS3) {
-        MultiS3::numer =
-            ((MultiS3*) MC->getMeasure("ms3"))->computeNumer(alig);
-        MultiS3::denom =
-            ((MultiS3*) MC->getMeasure("ms3"))->computeDenom(alig);
-    }
-    if (needInducedEdges) inducedEdges = G2->numEdgesInNodeInducedSubgraph(alig.asVector());
+
+    //to evaluate local measures incrementally
+    needLocal = localWeight > 0;
     if (needLocal) {
-        localScoreSum = 0;
-        for (uint i = 0; i < n1; i++) localScoreSum += sims[i][alig[i]];
-        localScoreSumMap.clear();
+        sims = MC->getAggregatedLocalSims();
+        localWeight = 1; //the values in the sim matrix 'sims'
+        //have already been scaled by the weight
+    } else {
+        localWeight = 0;
     }
-    if (needWec) {
-        Measure* wec    = MC->getMeasure("wec");
-        double wecScore = wec->eval(alig);
-        wecSum          = wecScore*2*g1Edges;
-    }
-    if (needJs) {
-        Measure* js = MC->getMeasure("js");
-        jsSum       = js->eval(alig);
-        alignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, alig);
-    }
-    if (needEwec) {
-        ewec    = (ExternalWeightedEdgeConservation*)(MC->getMeasure("ewec"));
-        ewecSum = ewec->eval(alig);
-    }
-    if (needNC) {
-        Measure* nc = MC->getMeasure("nc");
-        ncSum       = (nc->eval(alig))*trueAWithValidCountAppended.back(); 
-    }
-    currentScore = eval(alig);
-    A = alig.asVector();
-    timer.start();
+
+
+    //other execution options
+    constantTemp = false;
+    enableTrackProgress = true;
+    iterationsPerStep = 10000000;
+
+
+    //this does not need to be initialized here,
+    //but the space has to be reserved in the
+    //stack. it is initialized properly before
+    //running the algorithm
+    assignedNodesG2 = vector<bool> (n2);
+    unassignedNodesG2 = vector<ushort> (n2-n1);
+    A = vector<ushort> (n1);
+
+
+    //to track progress
+    //vector<double> eIncs = energyIncSample();
+    //avgEnergyInc = vectorMean(eIncs);
+    avgEnergyInc = -0.00001;
 }
 
+SANA::SANA(vector<Graph>* GV, Graph* SN,
+        double TInitial, double TDecay, double t, MeasureCombination* MC, string& objectiveScore):
+            Method("SANA_"+MC->toString()),graphs(GV), shadowNetwork(SN) {
+
+    //data structures for the networks
+    graphs = GV;
+    shadowNetwork = SN;
+    MSEC = MultiSymmetricEdgeCoverage(graphs,shadowNetwork,"msec");
+    CIQ = ConservedInteractionQuality(graphs,shadowNetwork,"CIQ");
+    needMWEC = true;
+    graphNodesSum = 0;
+    randomChoice = vector<short>(0);
+    RandomUnlockedNodeDists = vector<uniform_int_distribution<>>(0);
+    SNRandomUnassignedNodeDists = vector<uniform_int_distribution<>>(0);
+
+    for(ushort i = 0;i<GV->size();i++){
+        graphNodesSum+=(*GV)[i].getNumNodes();
+        RandomUnlockedNodeDists.push_back(uniform_int_distribution<>(0, (*GV)[i].getNumNodes()-1));
+        SNRandomUnassignedNodeDists.push_back(uniform_int_distribution<>(0, SN->getNumNodes()-(*GV)[i].getNumNodes()-1));
+        Alignment temp = Alignment::random((*GV)[i].getNumNodes(),SN->getNumNodes());
+        MA.push_back(temp.getMapping());
+        for(uint j =0;j<(*GV)[i].getNumNodes();j++){
+            randomChoice.push_back(i);
+        }
+    }
+    graphSelector = uniform_int_distribution<>(0,graphNodesSum-1);
+
+    score = objectiveScore;
+
+    //random number generation
+    random_device rd;
+    gen = mt19937(getRandomSeed());
+
+    /*cerr<<"check at SANA(vector<Graph>* GV, Graph* SN,"<<endl;
+    cerr<<"SN->getLockedCount()is "<<SN->getLockedCount()<<endl;
+
+    G1RandomNode = uniform_int_distribution<>(0, n1-1);
+    uint G1UnLockedCount = n1 - G1->getLockedCount() -1;
+    G1RandomUnlockedNodeDist = uniform_int_distribution<>(0, G1UnLockedCount);
+    G2RandomUnassignedNode = uniform_int_distribution<>(0, n2-n1-1);
+    G1RandomUnlockedGeneDist = uniform_int_distribution<>(0, G1->unlockedGeneCount - 1);
+    G1RandomUnlockedmiRNADist = uniform_int_distribution<>(0, G1->unlockedmiRNACount - 1);
+
+
+    moved to MultiSANAiteration()*/
+
+
+
+    //temperature schedule
+    this->TInitial = TInitial;
+    this->TDecay = TDecay;
+    minutes = t;
+    initializedIterPerSecond = false;
+
+    //data structures for the solution space search
+    uint ramificationChange = n1*(n2-n1);
+    uint ramificationSwap = n1*(n1-1)/2;
+    uint totalRamification = ramificationSwap + ramificationChange;
+    changeProbability = (double) ramificationChange/totalRamification;
+    tau = vector<double> {0.99, 0.985, 0.96, 0.955, 0.95, 0.942, 0.939, 0.934, 0.928, 0.92, 0.918, 0.911, 0.906, 0.901, 0.896,
+               0.891, 0.885, 0.879, 0.873, 0.867, 0.86, 0.853, 0.846, 0.838, 0.83, 0.822, 0.81, 0.804, 0.794, 0.784,
+               0.774, 0.763, 0.752, 0.741, 0.728, 0.716, 0.703, 0.69, 0.676, 0.662, 0.647, 0.632, 0.616, 0.6, 0.584,
+               0.567, 0.549, 0.531, 0.514, 0.495, 0.477, 0.458, 0.438, 0.412, 0.4, 0.381, 0.361, 0.342, 0.322, 0.303,
+               0.284, 0.264, 0.246, 0.228, 0.21, 0.193, 0.177, 0.161, 0.145, 0.131, 0.117, 0.104, 0.092, 0.081, 0.07,
+               0.061, 0.052, 0.044, 0.0375, 0.031, 0.026, 0.0212, 0.0172, 0.0138, 0.0109, 0.0085, 0.0065, 0.005, 0.0037,
+               0.0027, 0.0019, 0.0014, 0.0005, 0.0001, 0.0000739, 0.0000342, 0.000008, 0.0000054, 0.000000739, 0.00000000359, 0.000000000734};
+
+
+    //objective function
+    this->MC = MC;
+
+    //restart scheme
+    restart = false;
+
+    //temperature decay dynamically
+    dynamic_tdecay = false;
+
+    //other execution options
+    constantTemp = false;
+    enableTrackProgress = true;
+    iterationsPerStep = 1000000;
+
+
+
+    //to track progress
+    //vector<double> eIncs = energyIncSample();
+    //avgEnergyInc = vectorMean(eIncs);
+    avgEnergyInc = -0.00001;
+}
+
+
+SANA::~SANA() {
+}
+
+
+Alignment SANA::getStartingAlignment(){
+    if(G1->hasNodeTypes()){
+        Alignment randomAlig = Alignment::randomAlignmentWithNodeType(G1,G2);
+        randomAlig.reIndexBefore_Iterations(G1->getNodeTypes_ReIndexMap());
+        return randomAlig;
+    }
+    else if(lockFileName != ""){
+        Alignment randomAlig = Alignment::randomAlignmentWithLocking(G1,G2);
+        randomAlig.reIndexBefore_Iterations(G1->getLocking_ReIndexMap());
+        return randomAlig;
+    }
+    else{
+        return Alignment::random(n1, n2);
+    }
+}
+
+MultiAlignment SANA::getStartingMultiAlignment(){
+    cerr <<"check at MultiAlignment SANA::getStartingMultiAlignment() @ sana.cpp"<<endl;
+    vector<ushort> netWorkSizes = vector<ushort>(0);
+    for(ushort i =0;i< graphs->size();i++){
+        netWorkSizes.push_back((*graphs)[i].getNumNodes());
+    }
+    cerr <<"check at MultiAlignment SANA::getStartingMultiAlignment() before multiAlignment@ sana.cpp"<<endl;
+    return MultiAlignment::random(netWorkSizes, shadowNetwork->getNumNodes());
+}
+
+
+MultiAlignment SANA::runMA(){
+    /*if (restart) return runRestartPhases();
+    else {
+        long long unsigned int iter = 0;
+
+        if(maxIterations == 0){
+            return simpleRun(getStartingAlignment(), minutes*60, iter);
+        }else{
+            return simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter);
+        }
+    }*/
+
+    long long unsigned int iter = 0;
+
+    if(maxIterations == 0){
+        cerr <<"check before simplerun in runMA @ sana.cpp"<<endl;
+        return simpleRun(getStartingMultiAlignment(), minutes*60, iter);
+        cerr <<"check after simplerun in runMA @ sana.cpp"<<endl;
+    }else{
+        return simpleRun(getStartingMultiAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter);
+    }
+}
 
 Alignment SANA::run() {
-    initDataStructures();
-    setInterruptSignal();
+    if (restart) return runRestartPhases();
+    else {
+        long long unsigned int iter = 0;
 
-#ifndef MULTI_PAIRWISE
-    getIterPerSecond(); // this takes several seconds of CPU time; don't do it during multi-only-iterations.
-#endif
-    long long int maxIters = useIterations ? maxIterations
-                                           : (long long int) (getIterPerSecond()*maxSeconds);
-    double leeway = 2;
-    double maxSecondsWithLeeway = maxSeconds * leeway;
-
-    long long int iter;
-    for (iter = 0; iter <= maxIters; iter++) {
-        Temperature = temperatureFunction(iter, TInitial, TDecay);
-        SANAIteration();
-        if (saveAligAndExitOnInterruption) break;
-        if (saveAligAndContOnInterruption) printReportOnInterruption();
-        if (iter%iterationsPerStep == 0) {
-            trackProgress(iter, maxIters);
-            if (not useIterations and timer.elapsed() > maxSecondsWithLeeway
-                and currentScore-previousScore < 0.005) break;
-            previousScore = currentScore;
+        if(maxIterations == 0){
+            return simpleRun(getStartingAlignment(), minutes*60, iter);
+        }else{
+            return simpleRun(getStartingAlignment(), ((long long unsigned int)(maxIterations))*100000000, iter);
         }
     }
-    trackProgress(iter, maxIters);
-    cout<<"Performed "<<iter<<" total iterations\n";
-    if (addHillClimbing) performHillClimbing(10000000LL); //arbitrarily chosen, probably too big.
+}
 
-#ifdef CORES
-    Report::saveCoreScore(*G1, *G2, A, this, coreScoreData, outputFileName);
-#endif
+MultiAlignment SANA::RunAndPrintTime() {
+    cerr << "Start execution of " << getName() << endl;
+    Timer T;
+    T.start();
+    cerr <<"check before runMA @ sana.cpp"<<endl;
+    MultiAlignment A = runMA();
+    cerr <<"check after runMA @ sana.cpp"<<endl;
+    MAexecTime = T.elapsed();
+    //execTime = T.elapsed();
+    cerr << "Executed " << getName() << " in " << T.elapsedString() << endl;
 
+    // Re Index back to normal (Method #3 of locking)
+
+    /*if(G1->hasNodeTypes()){
+        G1->reIndexGraph(getReverseMap(G1->getNodeTypes_ReIndexMap()));
+        A.reIndexAfter_Iterations(G1->getNodeTypes_ReIndexMap());
+    }
+    // if locking is enabled but hasnodeType is not
+    else if(G1->getLockedCount() > 0){
+        G1->reIndexGraph(getReverseMap(G1->getLocking_ReIndexMap()));
+        A.reIndexAfter_Iterations(G1->getLocking_ReIndexMap());
+    }
+    checkLockingBeforeReport(A);
+    checkLockingBeforeReport(A);*/
     return A;
 }
 
 
-void SANA::performHillClimbing(long long int idleCountTarget) {
-    long long int iter = 0;
-    Temperature = 0;
-    numPBadsInBuffer = pBadBufferSum = pBadBufferIndex = 0; 
-
-    cout << "Beginning Final Pure Hill Climbing Stage" << endl;
-    Timer T;
-    T.start();
-    uint idleCount = 0;
-    while(idleCount < idleCountTarget) {
-        if (iter%iterationsPerStep == 0) trackProgress(iter);
-        double oldScore = currentScore;
-        SANAIteration();
-        if (abs(oldScore-currentScore) < 0.00001) ++idleCount;
-        else idleCount = 0;
-        ++iter;
-    }
-    trackProgress(iter);
-    cout<<"Hill climbing took "<<T.elapsedString()<<"s"<<endl;
+// Used for method #2 of locking
+inline ushort SANA::G1RandomUnlockedNode_Fast(){
+    ushort index = G1RandomUnlockedNodeDist(gen);
+    return unLockedNodesG1[index];
 }
 
-void SANA::describeParameters(ostream& sout) const {
+inline ushort SANA::G1RandomUnlockedNode(){
+    return G1RandomUnlockedNodeDist(gen); // method #3
+            //  return G1RandomUnlockedNode_Fast(); Method #2
+
+            // Method #1
+            //  ushort node;
+            //  do{
+            //      node =  G1RandomNode(gen);
+            //  }while(G1->isLocked(node));
+            //  return node;
+}
+
+// Gives a random unlocked nodes with the same type as source1
+inline ushort SANA::G1RandomUnlockedNode(uint source1){
+    if(!nodesHaveType){
+        return G1RandomUnlockedNodeDist(gen);
+    }
+    else{
+        bool isGene = source1 < (uint) G1->unlockedGeneCount;
+        if(isGene)
+            return G1RandomUnlockedGeneDist(gen);
+        else
+            return G1->unlockedGeneCount + G1RandomUnlockedmiRNADist(gen);
+    }
+}
+inline ushort SANA::G2RandomUnlockedNode(uint target1){
+    if(!nodesHaveType){
+        return G2RandomUnlockedNode_Fast(); // Method #2 and #3
+
+                //  Method #1
+                //  ushort node;
+                //  do{
+                //      node =  G2RandomUnassignedNode(gen);
+                //  }while(G2->isLocked(unassignedNodesG2[node]));
+                //  return node;
+    }
+    else
+    {
+        ushort node;
+        do{
+            node = G2RandomUnlockedNode_Fast(); // gives back unlocked G2 node
+        }while(G2->nodeTypes[target1] != G2->nodeTypes[unassignedNodesG2[node]]);
+        return node;
+    }
+}
+
+inline ushort SANA::G2RandomUnlockedNode_Fast(){
+    ushort node =  G2RandomUnassignedNode(gen);
+    return node;
+}
+
+
+void SANA::describeParameters(ostream& sout) {
     sout << "Temperature schedule:" << endl;
     sout << "T_initial: " << TInitial << endl;
     sout << "T_decay: " << TDecay << endl;
+
     sout << "Optimize: " << endl;
     MC->printWeights(sout);
-    if (useIterations) sout << "Max iterations: " << maxIterations << endl;
-    else sout << "Execution time: " << maxSeconds << "s" << endl;
+
+    if (maxIterations == 0){
+        sout << "Execution time: ";
+        if (restart) {sout << minutesNewAlignments + minutesPerCandidate*numCandidates + minutesFinalist;}
+        else {sout << minutes;}
+        sout << "m" << endl;
+    }else{
+        sout << "Planned Iterations Run: " << maxIterations << " sets of 100,000,000" << endl;
+        sout << "Total Iterations Run: " << iterationCount << endl;
+    }
+
+
+    if (restart) {
+        sout << "Restart scheme:" << endl;
+        sout << "- new alignments: " << minutesNewAlignments << "m" << endl;
+        sout << "- each candidate: " << minutesPerCandidate << "m" << endl;
+        sout << "- finalist: " << minutesFinalist << "m" << endl;
+        sout << "number candidates: " << numCandidates << endl;
+        sout << "number new alignments: " << newAlignmentsCount << endl;
+        sout << "iterations per new alignment: " << iterationsPerStep << endl;
+    }
 }
 
-string SANA::fileNameSuffix(const Alignment& Al) const {
-    return "_" + extractDecimals(eval(Al),3);
+string SANA::fileNameSuffix(const Alignment& A) {
+    return "_" + extractDecimals(eval(A),3);
 }
 
-double SANA::temperatureFunction(long long int iter, double TInitial, double TDecay) {
-    if (constantTemp) return TInitial;
-    double fraction;
-    if (useIterations) fraction = iter / (double) maxIterations;
-    else fraction = iter / (maxSeconds * getIterPerSecond());
-    return TInitial * exp(-TDecay * fraction);
+void SANA::enableRestartScheme(double minutesNewAlignments, uint iterationsPerStep, uint numCandidates, double minutesPerCandidate, double minutesFinalist) {
+    restart = true;
+    this->minutesNewAlignments = minutesNewAlignments;
+    this->iterationsPerStep = iterationsPerStep;
+    this->numCandidates = numCandidates;
+    this->minutesPerCandidate = minutesPerCandidate;
+    this->minutesFinalist = minutesFinalist;
+
+    // candidates = vector<Alignment> (numCandidates, Alignment::random(n1, n2));
+    candidates = vector<Alignment> (numCandidates, getStartingAlignment());
+    candidatesScores = vector<double> (numCandidates, 0);
+    for (uint i = 0; i < numCandidates; i++) {
+        candidatesScores[i] = eval(candidates[i]);
+    }
 }
 
-double SANA::acceptingProbability(double energyInc, double Temperature) {
-    return energyInc >= 0 ? 1 : exp(energyInc/Temperature);
+double SANA::temperatureFunction(double iter, double TInitial, double TDecay) {
+    return TInitialScaling * TInitial * (constantTemp ? 1 : exp(-TDecay*TDecayScaling*iter));
 }
 
-double SANA::incrementalMeanPBad() {
-    return pBadBufferSum/(double) numPBadsInBuffer;
+double SANA::acceptingProbability(double energyInc, double T) {
+    return energyInc >= 0 ? 1 : exp(energyInc/T);
 }
 
-double SANA::slowMeanPBad() {
-    double sum = 0;
-    for (int i = 0; i < numPBadsInBuffer; i++) sum += pBadBuffer[i];
-    return sum/(double) numPBadsInBuffer;
-}
+void SANA::initDataStructures(const Alignment& startA) {
+    A = startA.getMapping();
 
-double SANA::eval(const Alignment& Al) const { return MC->eval(Al); }
+    assignedNodesG2 = vector<bool> (n2, false);
+    for (uint i = 0; i < n1; i++) {
+        assignedNodesG2[A[i]] = true;
+    }
 
-void sigIntHandler(int s) {
-    string line;
-    int c = -1;
-    do {
-        cout<<"Select an option (0 - 3):"<<endl<<"  (0) Do nothing and continue"<<endl<<"  (1) Exit"<<endl
-            <<"  (2) Save Alignment and Exit"<<endl<<"  (3) Save Alignment and Continue"<<endl<<">> ";
-        cin >> c;
-        if (cin.eof()) exit(0);
-        if (cin.fail()) {
-            c = -1;
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    unassignedNodesG2 = vector<ushort> (n2-n1);
+    int j = 0;
+    for (uint i = 0; i < n2; i++) {
+        if (not assignedNodesG2[i]) {
+            unassignedNodesG2[j] = i;
+            j++;
         }
-        if      (c == 0) cout<<"Continuing..."<<endl;
-        else if (c == 1) exit(0);
-        else if (c == 2) SANA::saveAligAndExitOnInterruption = true;
-        else if (c == 3) SANA::saveAligAndContOnInterruption = true;
-    } while (c < 0 || c > 3);    
+    }
+
+    //  Init unlockedNodesG1
+    uint unlockedG1 = n1 - G1->getLockedCount();
+    unLockedNodesG1 = vector<ushort> (unlockedG1);
+    uint index = 0;
+    for(uint i = 0; i < n1; i++){
+        if(not G1->isLocked(i)){
+            unLockedNodesG1[index] = i;
+            index++;
+        }
+    }
+    assert(index == unlockedG1);
+    nodesHaveType = G1->hasNodeTypes();
+
+    if (needAligEdges or needSec) {
+        aligEdges = startA.numAlignedEdges(*G1, *G2);
+    }
+
+    if (needInducedEdges) {
+        inducedEdges = G2->numNodeInducedSubgraphEdges(A);
+    }
+
+    if (needLocal) {
+        localScoreSum = 0;
+        for (uint i = 0; i < n1; i++) {
+            localScoreSum += sims[i][A[i]];
+        }
+    }
+
+    if (needWec) {
+        Measure* wec = MC->getMeasure("wec");
+        double wecScore = wec->eval(A);
+        wecSum = wecScore*2*g1Edges;
+    }
+
+    currentScore = eval(startA);
+    timer.start();
 }
+
+void SANA::initDataStructures(const MultiAlignment& startMA) {
+    cerr<<"check at MultiAlignment sana::initDataStructure before currentScore = eval(startMA);"<<endl;
+    currentScore = eval(startMA);
+    cerr<<"check at MultiAlignment sana::initDataStructure after currentScore = eval(startMA);"<<endl;
+    MA = startMA.getMapping();
+    upAlign = startMA.getUpAlign();
+    numerator = MSEC.getNumerator(startMA);
+    cerr<<"numerator = "<<numerator<<endl;
+    denominator = MSEC.getDenominator(startMA);
+    CIQnumerator = CIQ.getNumerator(startMA);
+    CIQdenominator = CIQ.getDenominator(startMA);
+    cerr<<"denominator = "<<denominator<<endl;
+    //assert(currentScore == (double) numerator/denominator);
+    cerr<<"check at MultiAlignment sana::initDataStructure after assert(currentScore == numerator/denominator)"<<endl;
+    uint n1,n2;
+    n2 = upAlign[0].size();
+    assignedNodesG2Vector = vector<vector<bool>>(0);
+    unassignedNodesG2Vector = vector<vector<ushort>>(0);
+    shadowNetwork->getAdjMatrix(SNAdjMatrix);
+
+    AdjMatrices = vector<vector<vector<bool> >>(0);
+    cerr<<"check at MultiAlignment sana::initDataStructure before vector<vector<bool>> tempAdjMatrix;"<<endl;
+    vector<vector<bool>> tempAdjMatrix;
+    for (uint i = 0; i < (*graphs).size(); i++) {
+        (*graphs)[i].getAdjMatrix(tempAdjMatrix);
+        AdjMatrices.push_back(tempAdjMatrix);
+    }
+    cerr<<"check at MultiAlignment sana::initDataStructure before coverageMatrix = vector<vector<ushort>>(0);"<<endl;
+    coverageMatrix = vector<vector<ushort>>(0);
+    for (uint i = 0; i < MA.size(); i++) {
+		vector<ushort> temp = vector<ushort>(0);
+        for(uint j = 0;j < MA.size();j++){
+			if(i!=j){
+			    temp.push_back(CIQ.getWeightNumerator(upAlign,i,j));
+			}
+		}
+		coverageMatrix.push_back(temp);
+	}
+    cerr<<"check at MultiAlignment sana::initDataStructure before denominatorMatrix = vector<vector<ushort>>(0);"<<endl;
+    denominatorMatrix = vector<vector<ushort>>(0);
+    for (uint i = 0; i < MA.size(); i++) {
+		vector<ushort> temp = vector<ushort>(0);
+        for(uint j = 0;j < MA.size();j++){
+			if(i!=j){
+			    temp.push_back(CIQ.getWeightDenominator(upAlign,i,j));
+			}
+		}
+		denominatorMatrix.push_back(temp);
+	}
+
+    //initialized edgeLists for MSEC incremental evaluation
+    edgeLists = vector<vector<vector<ushort>>>(0);
+    vector<vector<ushort>> edgeList;
+    vector<ushort> temp;
+    for (uint i = 0; i < MA.size(); i++) {
+        edgeList = vector<vector<ushort>>(0);
+        for(uint j = 0;j < (*graphs)[i].getNumNodes();j++){
+            temp = vector<ushort>(0);
+            for(ushort k = 0;k < (*graphs)[i].getNumNodes();k++){
+                if(AdjMatrices[i][j][k]){
+                    temp.push_back(k);
+                }
+            }
+            edgeList.push_back(temp);
+        }
+        edgeLists.push_back(edgeList);
+    }
+
+
+    for (uint i = 0; i < MA.size(); i++) {
+        assignedNodesG2 = vector<bool> (upAlign[0].size(), false);//use assignedNodesG2 as temp variable, Mulitalign only
+        n1 = MA[i].size();
+        for (uint j = 0; j < n1; j++) {
+            assignedNodesG2[MA[i][j]] = true;
+        }
+        assignedNodesG2Vector.push_back(assignedNodesG2);
+        unassignedNodesG2 = vector<ushort> (n2-n1);
+        uint j = 0;
+        for (uint k = 0; k < n2; k++) {
+            if (not assignedNodesG2[k]) {
+                unassignedNodesG2[j] = k;
+                j++;
+            }
+        }
+        unassignedNodesG2Vector.push_back(unassignedNodesG2);
+        assert(j == (n2 - n1));
+    }
+    timer.start();
+    cerr<<"check at MultiAlignment sana::initDataStructure at the end"<<endl;
+}
+
+double SANA::eval(const Alignment& Al) {
+    return MC->eval(Al);
+}
+
+double SANA::eval(const MultiAlignment& Al) {
+
+    return MSEC.eval(Al);
+}
+
+double SANA::CIQeval(const MultiAlignment& Al) {
+
+    return CIQ.eval(Al);
+}
+
+double SANA::MCeval(const MultiAlignment& Al) {
+
+    return MC->evalMulti(Al);
+}
+
 void SANA::setInterruptSignal() {
-    saveAligAndExitOnInterruption = false;
+    interrupt = false;
     struct sigaction sigInt;
     sigInt.sa_handler = sigIntHandler;
     sigemptyset(&sigInt.sa_mask);
     sigInt.sa_flags = 0;
     sigaction(SIGINT, &sigInt, NULL);
 }
-void SANA::printReportOnInterruption() {
-    saveAligAndContOnInterruption = false; //reset value
-    string timestamp = string(currentDateTime()); //necessary to make it not const
-    std::replace(timestamp.begin(), timestamp.end(), ' ', '_');
-    string outFile = outputFileName+"_"+timestamp;
-    string localFile = localScoresFileName+"_"+timestamp;
-    Report::saveReport(*G1, *G2, A, *MC, this, outFile, true);
-    Report::saveLocalMeasures(*G1, *G2, A, *MC, this, localFile);
-#ifdef CORES
-    Report::saveCoreScore(*G1, *G2, A, this, coreScoreData, outputFileName);
-#endif
-    cout << "Alignment saved. SANA will now continue." << endl;
+
+Alignment SANA::simpleRun(const Alignment& startA, double maxExecutionSeconds,
+        long long unsigned int& iter) {
+
+    initDataStructures(startA);
+
+    setInterruptSignal();
+
+    for (; ; iter++) {
+        T = temperatureFunction(iter, TInitial, TDecay);
+        if (interrupt) {
+            return A;
+        }
+        if (iter%iterationsPerStep == 0) {
+            trackProgress(iter);
+            if (iter != 0 and timer.elapsed() > maxExecutionSeconds) {
+                return A;
+            }
+        } //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
+        SANAIteration();
+    }
+    return A; //dummy return to shut compiler warning
 }
+
+MultiAlignment SANA::simpleRun(const MultiAlignment& startA, double maxExecutionSeconds,
+        long long unsigned int& iter) {
+
+    initDataStructures(startA);
+    cerr<<"check at MultiAlignment sana::simpleRun after initdatastructure"<<endl;
+    setInterruptSignal();
+
+    for (; ; iter++) {
+        T = temperatureFunction(iter, TInitial, TDecay);
+        if (interrupt) {
+            cerr <<"check in simplerunwith iterrupt and before return upAlign@ sana.cpp"<<endl;
+            return MultiAlignment(MA,shadowNetwork->getNumNodes());
+        }
+        if (iter%iterationsPerStep == 0) {
+            //cerr <<"check in simplerun before trackProgress"<<endl;
+
+            trackProgress(iter);
+            if (iter != 0 and timer.elapsed() > maxExecutionSeconds) {
+                //cerr <<"check in simplerunwith at timelimit upAlign @ sana.cpp"<<endl;
+
+                return MultiAlignment(MA,shadowNetwork->getNumNodes());
+            }
+        } //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
+        /*if(iter%(iterationsPerStep/10)==0)  {
+			double realScore = CIQeval(MultiAlignment(MA,shadowNetwork->getNumNodes()));
+		    currentScore = realScore;
+		    CIQnumerator = CIQ.getNumerator(MultiAlignment(MA,shadowNetwork->getNumNodes()));
+		}*/
+
+        MultiSANAIteration();
+    }
+    return MultiAlignment(MA,shadowNetwork->getNumNodes()); //dummy return to shut compiler warning
+}
+
+Alignment SANA::simpleRun(const Alignment& startA, long long unsigned int maxExecutionIterations,
+        long long unsigned int& iter) {
+
+    initDataStructures(startA);
+
+    setInterruptSignal();
+
+    for (; ; iter++) {
+        T = temperatureFunction(iter, TInitial, TDecay);
+        if (interrupt) {
+            return A;
+        }
+        if (iter%iterationsPerStep == 0) {
+            trackProgress(iter);
+        }
+        if (iter != 0 and iter > maxExecutionIterations) {
+            return A;
+        }
+        iterationCount++; //This is somewhat redundant with iter, but this is specifically for counting total iterations in the entire SANA object.  If you want this changed, post a comment on one of Dillon's commits and he'll make it less redundant but he needs here for now.
+        SANAIteration();
+    }
+    return A; //dummy return to shut compiler warning
+}
+
 
 void SANA::SANAIteration() {
-    ++iterationsPerformed;
-    uint actColId = randActiveColorIdWeightedByNumNbrs();
-    double p = randomReal(gen);
-    if (p < actColToChangeProb[actColId]) {
-        performChange(actColId);
-    } else {
-        performSwap(actColId);
+    if (randomReal(gen) <= changeProbability) performChange();
+    else performSwap();
+}
+
+void SANA::MultiSANAIteration() {
+    //cerr<<"check at MultiSANAIteration()@sana.cpp"<<endl;
+    ushort randomIndex = graphSelector(gen);
+    randomIndex = randomChoice[randomIndex];
+    uint G1NodesNum = (*graphs)[randomIndex].getNumNodes();
+    uint G2NodesNum = shadowNetwork->getNumNodes();
+    uint ramificationChange = G1NodesNum*(G2NodesNum-G1NodesNum);
+    uint ramificationSwap = G1NodesNum*(G1NodesNum-1)/2;
+    uint totalRamification = ramificationSwap + ramificationChange;
+    changeProbability = (double) ramificationChange/totalRamification;
+
+    //int newAligEdges = -1; //dummy initialization to shut compiler warnings
+    //int newInducedEdges = -1; //dummy initialization to shut compiler warnings
+    //double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
+    //double newWecSum = -1; //dummy initialization to shut compiler warning
+    double oldScore = currentScore;
+    uint oldNumerator = numerator;
+    ushort empty = 0-1;
+
+    double oldCIQnumerator = CIQnumerator;
+
+
+/*    if(makeChange){
+        currentScore = newCurrentScore;*/
+    if (randomReal(gen) <= changeProbability){
+	//if(0){
+        //peform change
+        //cerr<<"perform change"<<endl;
+        ushort source = RandomUnlockedNodeDists[randomIndex](gen);
+        //cerr<<"source = "<<source<<endl;
+        ushort oldTarget = MA[randomIndex][source];
+        /*cerr<<"oldTarget ="<<oldTarget<<endl;
+        cerr<<"upAlign.size(): "<<upAlign.size()<<endl;
+        cerr<<"upAlign[randomIndex].size(): "<<upAlign[randomIndex].size()<<endl;
+        cerr<<"MA[randomIndex].size(): "<<MA[randomIndex].size()<<endl;*/
+        /*cerr<<"RandomUnlockedNodeDists.size()= "<<RandomUnlockedNodeDists.size()<<endl;
+        cerr<<"upAlign.size(): "<<upAlign.size()<<endl;
+        cerr<<"upAlign[randomIndex].size(): "<<upAlign[randomIndex].size()<<endl;
+        cerr<<"just before getting newTarget & newTargetIndex"<<endl;*/
+        ushort newTargetIndex = SNRandomUnassignedNodeDists[randomIndex](gen);//newTargetth empty slots
+        ushort newTarget = unassignedNodesG2Vector[randomIndex][newTargetIndex];
+        //bool makeChange = scoreComparison(source,oldTarget,newTarget,randomIndex);
+        bool makeChange = CIQscoreComparison(source,oldTarget,newTarget,randomIndex);
+        //cerr<<"check at MultiSANAIteration()@sana.cpp before if(makeChange)"<<endl;
+
+        if(makeChange&&(oldTarget!=newTarget)){
+            MA[randomIndex][source] = newTarget;
+            unassignedNodesG2Vector[randomIndex][newTargetIndex] = oldTarget;
+            upAlign[randomIndex][oldTarget] = empty;
+            upAlign[randomIndex][newTarget] = source;
+            /*if(numerator!= MSEC.getNumerator(MultiAlignment(MA,shadowNetwork->getNumNodes()))){
+                cerr<<"numerator after incremental eval = "<< numerator<<endl;
+                cerr<<"actual numerator ager incremental eval = "<<MSEC.getNumerator(MultiAlignment(MA,shadowNetwork->getNumNodes()))<<endl;
+            }*/
+        }
+        else{
+            currentScore = oldScore;
+            //numerator = oldNumerator;
+            CIQnumerator = oldCIQnumerator;
+        }
     }
-}
+    else{
+        //perform swap
+        //cerr<<"perform swap"<<endl;
+        ushort source1 =  RandomUnlockedNodeDists[randomIndex](gen);
+        //cerr<<"source1 = "<<source1<<endl;
+        ushort source2 =  RandomUnlockedNodeDists[randomIndex](gen);
+        //cerr<<"source2 = "<<source2<<endl;
+        ushort target1 = MA[randomIndex][source1], target2 = MA[randomIndex][source2];
+        //cerr<<"target1 ="<<target1<<endl;
+        //cerr<<"target2 ="<<target2<<endl;
+        //bool makeChange = scoreComparison(source1, source2, target1, target2, randomIndex);
+        bool makeChange = CIQscoreComparison(source1, source2, target1, target2, randomIndex);
+        /*cerr<<"upAlign.size(): "<<upAlign.size()<<endl;
+        cerr<<"upAlign[randomIndex].size(): "<<upAlign[randomIndex].size()<<endl;
+        cerr<<"MA[randomIndex].size(): "<<MA[randomIndex].size()<<endl;
+        cerr<<"unassignedNodesG2Vector[randomIndex].size(): "<<unassignedNodesG2Vector[randomIndex].size()<<endl;*/
+        if(makeChange&&(source1!=source2)){
 
-uint SANA::numActiveColors() const {
-    return actColToChangeProb.size();
-}
-
-uint SANA::randActiveColorIdWeightedByNumNbrs() {
-    if (numActiveColors() == 1) return 0; //optimized special case: monochromatic graphs
-    double p = randomReal(gen);
-    if (numActiveColors() == 2) //optimized special case: bichromatic graphs
-        return (p < actColToAccumProbCutpoint[0] ? 0 : 1);
-
-    //general case: use binary search to optimizie for the case with many active colors
-    auto iter = lower_bound(actColToAccumProbCutpoint.begin(), actColToAccumProbCutpoint.end(), p);
-    assert(iter != actColToAccumProbCutpoint.end());
-    return iter - actColToAccumProbCutpoint.begin();
-}
-
-uint SANA::randomG1NodeWithActiveColor(uint actColId) const {
-    uint g1ColId = actColToG1ColId[actColId];
-    uint randIndex = randInt(0, G1->nodeGroupsByColor[g1ColId].size()-1);
-    return G1->nodeGroupsByColor[g1ColId][randIndex];
-} 
-
-void SANA::performChange(uint actColId) {    
-    uint source = randomG1NodeWithActiveColor(actColId);
-    uint oldTarget = A[source];
-    uint numUnassigWithCol = actColToUnassignedG2Nodes[actColId].size();
-    uint unassignedVecIndex = randInt(0, numUnassigWithCol-1);
-    uint newTarget = actColToUnassignedG2Nodes[actColId][unassignedVecIndex];
-
-    assert(numUnassigWithCol > 0);
-    assert(oldTarget != newTarget);
-    // assert(G1->getColorName(G1->getNodeColor(source)) == G2->getColorName(G2->getNodeColor(oldTarget)));
-    // assert(G2->getNodeColor(newTarget) == G2->getNodeColor(oldTarget));
-
-    //added this dummy initialization to shut compiler warning -Nil
-   unsigned oldOldTargetDeg = 0, oldNewTargetDeg = 0, oldMs3Denom = 0, oldMs3Numer =0;
-
-    if (needMS3) {
-        oldOldTargetDeg = MultiS3::shadowDegree[oldTarget];
-        oldNewTargetDeg = MultiS3::shadowDegree[newTarget];
-        oldMs3Denom = MultiS3::denom;
-        oldMs3Numer = MultiS3::numer;
+            MA[randomIndex][source1] = target2;
+            MA[randomIndex][source2] = target1;
+            upAlign[randomIndex][target1] = source2;
+            upAlign[randomIndex][target2] = source1;
+            //sanity check
+            assert(MA[randomIndex][upAlign[randomIndex][target1]] == target1);
+            assert(MA[randomIndex][upAlign[randomIndex][target2]] == target2);
+            /*if(numerator!= MSEC.getNumerator(MultiAlignment(MA,shadowNetwork->getNumNodes()))){
+               cerr<<"numerator after incremental eval = "<< numerator<<endl;
+               cerr<<"actual numerator ager incremental eval = "<<MSEC.getNumerator(MultiAlignment(MA,shadowNetwork->getNumNodes()))<<endl;
+            }*/
+        }
+        else{
+            currentScore = oldScore;
+            //numerator = oldNumerator;
+            CIQnumerator = oldCIQnumerator;
+        }
     }
-    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newEdSum            = needEd ? edSum + edgeDifferenceIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newErSum            = needEr ? erSum + edgeRatioIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncChangeOp(source, oldTarget, newTarget) : -1;
-    int newInducedEdges        = needInducedEdges ? inducedEdges + inducedEdgesIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncChangeOp(sims, source, oldTarget, newTarget) : -1;
-    double newWecSum           = needWec ? wecSum + WECIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newJsSum            = needJs ? jsSum + JSIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newEwecSum          = needEwec ? ewecSum + EWECIncChangeOp(source, oldTarget, newTarget) : -1;
-    double newNcSum            = needNC ? ncSum + ncIncChangeOp(source, oldTarget, newTarget) : -1;
 
-    map<string, double> newLocalScoreSumMap;
+}
+
+void SANA::performChange() {
+    ushort source = G1RandomUnlockedNode();
+    ushort oldTarget = A[source];
+
+    uint newTargetIndex =  G2RandomUnlockedNode(oldTarget);
+    ushort newTarget = unassignedNodesG2[newTargetIndex];
+
+//  assert(!G1->isLocked(source));
+//  assert(!G2->isLocked(newTarget));
+
+//  bool G1Gene = source < G1->unlockedGeneCount;
+//  bool G2Gene =  G2->nodeTypes[newTarget] == "gene";
+//  assert((G1Gene && G2Gene) || (!G1Gene && !G2Gene));
+
+
+    int newAligEdges = -1; //dummy initialization to shut compiler warnings
+    if (needAligEdges or needSec) {
+        newAligEdges = aligEdges + aligEdgesIncChangeOp(source, oldTarget, newTarget);
+    }
+
+    int newInducedEdges = -1; //dummy initialization to shut compiler warnings
+    if (needInducedEdges) {
+        newInducedEdges = inducedEdges + inducedEdgesIncChangeOp(source, oldTarget, newTarget);
+    }
+
+    double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
     if (needLocal) {
-        newLocalScoreSumMap = map<string, double>(localScoreSumMap);
-        for (auto &item : newLocalScoreSumMap)
-            item.second += localScoreSumIncChangeOp(localSimMatrixMap[item.first], source, oldTarget, newTarget);
+        newLocalScoreSum = localScoreSum + localScoreSumIncChangeOp(source, oldTarget, newTarget);
     }
+
+    double newWecSum = -1; //dummy initialization to shut compiler warning
+    if (needWec) {
+        newWecSum = wecSum + WECIncChangeOp(source, oldTarget, newTarget);
+    }
+
 
     double newCurrentScore = 0;
-    double pBad = scoreComparison(newAligEdges, newInducedEdges,
-            newLocalScoreSum, newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum,
-            newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
-    bool makeChange = randomReal(gen) <= pBad;
-
-#ifdef CORES
-    // Statistics on the emerging core alignment.
-    // only update pBad if is nonzero; reuse previous nonzero pBad if the current one is zero.
-    uint betterHole = wasBadMove ? oldTarget : newTarget;
-
-    double meanPBad = incrementalMeanPBad(); // maybe we should use the *actual* pBad of *this* move?
-    if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = LOW_PBAD_LIMIT_FOR_CORES;
-
-    coreScoreData.incChangeOp(source, betterHole, pBad, meanPBad);
-#endif
+    bool makeChange = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum, newWecSum, newCurrentScore);
 
     if (makeChange) {
         A[source] = newTarget;
-        actColToUnassignedG2Nodes[actColId][unassignedVecIndex] = oldTarget;
+        unassignedNodesG2[newTargetIndex] = oldTarget;
         assignedNodesG2[oldTarget] = false;
         assignedNodesG2[newTarget] = true;
-        aligEdges                     = newAligEdges;
-        edSum                         = newEdSum;
-        erSum                         = newErSum;
-        inducedEdges                  = newInducedEdges;
-        localScoreSum                 = newLocalScoreSum;
-        wecSum                        = newWecSum;
-        ewecSum                       = newEwecSum;
-        ncSum                         = newNcSum;
-        if (needLocal) localScoreSumMap = newLocalScoreSumMap;
-        currentScore                  = newCurrentScore;
-        EdgeExposure::numer           = newExposedEdgesNumer;
-        squaredAligEdges              = newSquaredAligEdges;
-        MultiS3::numer                = newMS3Numer;
-    }
-    else if (needMS3) {
-        MultiS3::shadowDegree[oldTarget] = oldOldTargetDeg;
-        MultiS3::shadowDegree[newTarget] = oldNewTargetDeg;
-        MultiS3::denom = oldMs3Denom;
-        MultiS3::numer = oldMs3Numer;
+        aligEdges = newAligEdges;
+        inducedEdges = newInducedEdges;
+        localScoreSum = newLocalScoreSum;
+        wecSum = newWecSum;
+        currentScore = newCurrentScore;
     }
 }
 
-void SANA::performSwap(uint actColId) {
-    uint source1 = randomG1NodeWithActiveColor(actColId);
-    
-    uint source2;
-    for (uint i = 0; i < 100; i++) { //each attempt has >=50% chance of success
-        source2 = randomG1NodeWithActiveColor(actColId);
-        if (source1 != source2) break;
+void SANA::performSwap() {
+    ushort source1 =  G1RandomUnlockedNode();
+    ushort source2 =  G1RandomUnlockedNode(source1);
+    ushort target1 = A[source1], target2 = A[source2];
+
+//  if(!(source1 >= 0 and source1 < G1->getNumNodes()) || !(source2 >= 0 and source2 < G1->getNumNodes())){
+//      cerr << source1 << "   " << source2 << endl;
+//      cerr << G1->getNumNodes() << endl;
+//  }
+//  assert(source1 >= 0 and source1 < G1->getNumNodes());
+//  assert(source2 >= 0 and source2 < G1->getNumNodes());
+//
+//  bool s1Gene = source1 < G1->unlockedGeneCount;
+//    bool s2Gene = source2 < G1->unlockedGeneCount;
+//    if(not((s1Gene && s2Gene) || (!s1Gene && !s2Gene))){
+//        cerr << source1 << " " << source2 << endl;
+//        cerr << G1->unlockedGeneCount << "   " << G1->getNumNodes() << endl;
+//    }
+//    assert((s1Gene && s2Gene) || (!s1Gene && !s2Gene));
+
+
+    int newAligEdges = -1; //dummy initialization to shut compiler warnings
+    if (needAligEdges or needSec) {
+        newAligEdges = aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2);
     }
 
-    uint target1 = A[source1], target2 = A[source2];
-    
-    assert(source1 != source2);
-    assert(target1 != target2);
-    // assert(G1->getNodeColor(source1) == G1->getNodeColor(source2));
-    // assert(G2->getNodeColor(target1) == G2->getNodeColor(target2));
-    // assert(G1->getColorName(G1->getNodeColor(source1)) == G2->getColorName(G2->getNodeColor(target1)));
-
-    //added this dummy initialization to shut compiler warning -Nil
-    unsigned oldTarget1Deg = 0, oldTarget2Deg = 0, oldMs3Denom = 0;
-
-    if (needMS3) {
-        oldTarget1Deg = MultiS3::shadowDegree[target1];
-        oldTarget2Deg = MultiS3::shadowDegree[target2];
-        oldMs3Denom = MultiS3::denom;
-    }
-
-    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(source1, source2, target1, target2) : -1;
-    double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncSwapOp(source1, source2, target1, target2) : -1;
-    double newWecSum           = needWec ? wecSum + WECIncSwapOp(source1, source2, target1, target2) : -1;
-    double newJsSum            = needJs ? jsSum + JSIncSwapOp(source1, source2, target1, target2) : -1;
-    double newEwecSum          = needEwec ? ewecSum + EWECIncSwapOp(source1, source2, target1, target2) : -1;
-    double newNcSum            = needNC ? ncSum + ncIncSwapOp(source1, source2, target1, target2) : -1;
-    double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, source1, source2, target1, target2) : -1;
-    double newEdSum            = needEd ? edSum + edgeDifferenceIncSwapOp(source1, source2, target1, target2) : -1;
-    double newErSum            = needEr ? erSum + edgeRatioIncSwapOp(source1, source2, target1, target2) : -1;
-
-    map<string, double> newLocalScoreSumMap;
+    double newLocalScoreSum = -1; //dummy initialization to shut compiler warnings
     if (needLocal) {
-        newLocalScoreSumMap = map<string, double>(localScoreSumMap);
-        for (auto &item : newLocalScoreSumMap)
-            item.second += localScoreSumIncSwapOp(localSimMatrixMap[item.first], source1, source2, target1, target2);
+        newLocalScoreSum = localScoreSum + localScoreSumIncSwapOp(source1, source2, target1, target2);
+    }
+
+    double newWecSum = -1; //dummy initialization to shut compiler warning
+    if (needWec) {
+        newWecSum = wecSum + WECIncSwapOp(source1, source2, target1, target2);
     }
 
     double newCurrentScore = 0;
-    double pBad = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum,
-                newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges,
-                newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
-    bool makeChange = randomReal(gen) <= pBad;
-
-#ifdef CORES
-        // Statistics on the emerging core alignment.
-        // only update pBad if it's nonzero; reuse previous nonzero pBad if the current one is zero.
-        double meanPBad = incrementalMeanPBad(); // maybe we should use the *actual* pBad of *this* move?
-        if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = LOW_PBAD_LIMIT_FOR_CORES;
-
-        uint betterDest1 = wasBadMove ? target1 : target2;
-        uint betterDest2 = wasBadMove ? target2 : target1;
-
-        coreScoreData.incSwapOp(source1, source2, betterDest1, betterDest2, pBad, meanPBad);
-#endif
+    bool makeChange = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum, newCurrentScore);
 
     if (makeChange) {
-        A[source1]          = target2;
-        A[source2]          = target1;
-        aligEdges           = newAligEdges;
-        edSum               = newEdSum;
-        erSum               = newErSum;
-        localScoreSum       = newLocalScoreSum;
-        wecSum              = newWecSum;
-        ewecSum             = newEwecSum;
-        ncSum               = newNcSum;
-        currentScore        = newCurrentScore;
-        squaredAligEdges    = newSquaredAligEdges;
-        EdgeExposure::numer = newExposedEdgesNumer;
-        MultiS3::numer      = newMS3Numer;
-        if (needLocal) localScoreSumMap = newLocalScoreSumMap;
-    } else if (needMS3) {
-        MultiS3::shadowDegree[target1] = oldTarget1Deg;
-        MultiS3::shadowDegree[target2] = oldTarget2Deg;
-        MultiS3::denom = oldMs3Denom;
+        A[source1] = target2;
+        A[source2] = target1;
+        aligEdges = newAligEdges;
+        localScoreSum = newLocalScoreSum;
+        wecSum = newWecSum;
+        currentScore = newCurrentScore;
     }
 }
 
-// returns pBad
-double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
-        double newLocalScoreSum, double newWecSum, double newJsSum, double newNcSum, double& newCurrentScore,
-        double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newMS3Numer,
-        double newEdgeDifferenceSum, double newEdgeRatioSum) {
-    wasBadMove = false;
-    double pBad = 0;
+bool SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, double& newCurrentScore) {
+    bool makeChange = false;
 
-    switch (scoreAggr) {
-    case ScoreAggregation::sum:
-    {
-        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
-        newCurrentScore += edWeight * EdgeDifference::adjustSumToTargetScore(newEdgeDifferenceSum, pairsCount);
-        newCurrentScore += erWeight * EdgeRatio::adjustSumToTargetScore(newEdgeRatioSum, pairsCount);
-        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
-        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        newCurrentScore += localWeight * (newLocalScoreSum / n1);
-        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
-        newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ewecWeight * (newEwecSum);
-        newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
-#ifdef MULTI_PAIRWISE
-        newCurrentScore += mecWeight * (newAligEdges / (g1WeightedEdges + g2WeightedEdges));
-        newCurrentScore += sesWeight * newSquaredAligEdges / (double)SquaredEdgeScore::getDenom();
-        newCurrentScore += eeWeight * (1 - (newExposedEdgesNumer / (double)EdgeExposure::denom));
-         if (MultiS3::denominator_type==MultiS3::ee_global) MultiS3::denom = newExposedEdgesNumer;
-        newCurrentScore += ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)MultiS3::Normalization_factor;//(double)NUM_GRAPHS;
-#endif
-        energyInc = newCurrentScore - currentScore;
-        wasBadMove = energyInc < 0;
-        //using max and min here because with extremely low temps I was seeing invalid probabilities
-        //note: I did not make this change for the other types of ScoreAggregation::  -Nil
-        if (energyInc >= 0) pBad = 1.0;
-        else pBad = max(0.0, min(1.0, exp(energyInc / Temperature)));
-        break;
+    if(score == "sum") {
+        newCurrentScore += ecWeight * (newAligEdges/g1Edges);
+        newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+        newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
+        newCurrentScore += localWeight * (newLocalScoreSum/n1);
+        newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
+
+        energyInc = newCurrentScore-currentScore;
+        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
     }
-    case ScoreAggregation::product:
-    {
+    else if(score == "product") {
         newCurrentScore = 1;
-        newCurrentScore *= ecWeight * (newAligEdges / g1Edges);
-        newCurrentScore *= s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        newCurrentScore *= icsWeight * (newAligEdges / newInducedEdges);
-        newCurrentScore *= localWeight * (newLocalScoreSum / n1);
-        newCurrentScore *= secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        newCurrentScore *= wecWeight * (newWecSum / (2 * g1Edges));
-        newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore *= ncWeight * (newNcSum / trueAWithValidCountAppended.back());
-        energyInc = newCurrentScore - currentScore;
-        wasBadMove = energyInc < 0;
-        if (energyInc >= 0) pBad = 1;
-        else pBad = exp(energyInc / Temperature);
-        break;
-    }
-    case ScoreAggregation::max:
-    {
-        // this is a terrible way to compute the max; we should loop through all of them and figure out which is the biggest
-        // and in fact we haven't yet integrated icsWeight here yet, so assert so
-        assert(icsWeight == 0.0);
-        double deltaEnergy = max(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
-            s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
-            secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
-            max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-            max(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
+        newCurrentScore *= ecWeight * (newAligEdges/g1Edges);
+        newCurrentScore *= s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+        newCurrentScore *= localWeight * (newLocalScoreSum/n1);
+        newCurrentScore *= secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
+        newCurrentScore *= wecWeight * (newWecSum/(2*g1Edges));
 
-        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
-        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
-        newCurrentScore += localWeight * (newLocalScoreSum / n1);
-        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
-        newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
+        energyInc = newCurrentScore-currentScore;
+        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
+    }
+    else if(score == "max") {
+        double deltaEnergy = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
+                                     s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
+                                     secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
+                                 max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
+                                     wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+
+        newCurrentScore += ecWeight * (newAligEdges/g1Edges);
+        newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
+        newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+        newCurrentScore += localWeight * (newLocalScoreSum/n1);
+        newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 
         energyInc = newCurrentScore - currentScore;
-        wasBadMove = energyInc < 0;
-        if (deltaEnergy >= 0) pBad = 1;
-        else pBad = exp(energyInc / Temperature);
-        break;
+        makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(energyInc/T);
     }
-    case ScoreAggregation::min:
-    {
-        // see comment above in max
-        assert(icsWeight == 0.0);
-        double deltaEnergy = min(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
-            s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
-            secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
-            min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-            min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
+    else if(score == "min") {
+        double deltaEnergy = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
+                                     s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
+                                     secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
+                                 min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
+                                     wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
 
-        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
-        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
-        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        newCurrentScore += localWeight * (newLocalScoreSum / n1);
-        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
-        newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
-
-        energyInc = newCurrentScore - currentScore; //is this even used?
-        wasBadMove = deltaEnergy < 0;
-        if (deltaEnergy >= 0) pBad = 1;
-	else pBad = exp(energyInc / Temperature);
-        break;
-    }
-    case ScoreAggregation::inverse:
-    {
-        newCurrentScore += ecWeight / (newAligEdges / g1Edges);
-        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        newCurrentScore += s3Weight / (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        newCurrentScore += icsWeight / (newAligEdges / newInducedEdges);
-        newCurrentScore += localWeight / (newLocalScoreSum / n1);
-        newCurrentScore += wecWeight / (newWecSum / (2 * g1Edges));
-        newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ncWeight / (newNcSum / trueAWithValidCountAppended.back());
+        newCurrentScore += ecWeight * (newAligEdges/g1Edges);
+        newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+        newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
+        newCurrentScore += localWeight * (newLocalScoreSum/n1);
+        newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 
         energyInc = newCurrentScore - currentScore;
-        wasBadMove = energyInc < 0;
-        if (energyInc >= 0) pBad = 1;
-        else pBad = exp(energyInc / Temperature);
-        break;
+        makeChange = deltaEnergy >= 0 or randomReal(gen) <= exp(newCurrentScore/T);
     }
-    case ScoreAggregation::maxFactor:
-    {
-        assert(icsWeight == 0.0);
-        double maxScore = max(ncWeight*(newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
-            s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
-            secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
-            max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-            max(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
+    else if(score == "inverse") {
+        newCurrentScore += ecWeight/(newAligEdges/g1Edges);
+        newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
+        newCurrentScore += s3Weight/(newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+        newCurrentScore += localWeight/(newLocalScoreSum/n1);
+        newCurrentScore += wecWeight/(newWecSum/(2*g1Edges));
 
-        double minScore = min(ncWeight*(newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
-            s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
-            secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
-            min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-            min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
+        energyInc = newCurrentScore-currentScore;
+        makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
+    }
+    else if(score == "maxFactor") {
+        double maxScore = max(max(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),max(
+                                     s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
+                                     secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
+                              max(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
+                                     wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
 
-        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
-        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
-        newCurrentScore += localWeight * (newLocalScoreSum / n1);
-        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
-        newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
+        double minScore = min(min(ecWeight*(newAligEdges/g1Edges - aligEdges/g1Edges),min(
+                                     s3Weight*((newAligEdges/(g1Edges+newInducedEdges-newAligEdges) - (aligEdges/(g1Edges+inducedEdges-aligEdges)))),
+                                     secWeight*0.5*(newAligEdges/g1Edges - aligEdges/g1Edges + newAligEdges/g2Edges - aligEdges/g2Edges))),
+                              min(localWeight*((newLocalScoreSum/n1) - (localScoreSum)),
+                                     wecWeight*(newWecSum/(2*g1Edges) - wecSum/(2*g1Edges))));
+
+        newCurrentScore += ecWeight * (newAligEdges/g1Edges);
+        newCurrentScore += secWeight * (newAligEdges/g1Edges+newAligEdges/g2Edges)*0.5;
+        newCurrentScore += s3Weight * (newAligEdges/(g1Edges+newInducedEdges-newAligEdges));
+        newCurrentScore += localWeight * (newLocalScoreSum/n1);
+        newCurrentScore += wecWeight * (newWecSum/(2*g1Edges));
 
         energyInc = newCurrentScore - currentScore;
-        wasBadMove = maxScore < -1 * minScore;
-        if (maxScore >= -1 * minScore) pBad = 1;
-        else pBad = exp(energyInc / Temperature);
-        break;
+        makeChange = maxScore >= -1 * minScore or randomReal(gen) <= exp(energyInc/T);
     }
-    }
-
-    //if (wasBadMove && (iterationsPerformed % 512 == 0 || (iterationsPerformed % 32 == 0))) 
-    //the above will never be true in the case of iterationsPerformed never being changed so that it doesn't greatly
-    // slow down the program if for some reason iterationsPerformed doesn't need to be changed.
-    if (wasBadMove) { // I think Dillon was wrong above, just do it always - WH
-        if (numPBadsInBuffer == PBAD_CIRCULAR_BUFFER_SIZE) {
-            pBadBufferIndex = (pBadBufferIndex == PBAD_CIRCULAR_BUFFER_SIZE ? 0 : pBadBufferIndex);
-            pBadBufferSum -= pBadBuffer[pBadBufferIndex];
-            pBadBuffer[pBadBufferIndex] = pBad;
-        } else {
-            pBadBuffer[pBadBufferIndex] = pBad;
-            numPBadsInBuffer++;
-        }
-        pBadBufferSum += pBad;
-        pBadBufferIndex++;
-    }
-    return pBad;
+    return makeChange;
 }
+bool SANA::scoreComparison(ushort source,ushort oldTarget,ushort newTarget,ushort randomIndex){
+    //cerr<<"check at the beginning of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl;
+    ushort empty = 0-1;
+    ushort n1,n2;
+    n1 = oldTarget;
+    int balance = 0;
+    bool makeChange = false;
+    /*assert(upAlign[randomIndex].size()> n1);
+    assert(oldTarget != empty);
+    assert(upAlign[randomIndex][n1] == source);
+    cerr<<"check at the first for loop of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl*/;
+    for(ushort i =0;i<edgeLists[randomIndex][source].size();i++){
 
-int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    int res = 0;
-    if (G1->hasSelfLoop(source)) {
-        if (G2->hasSelfLoop(oldTarget)) res--;
-        if (G2->hasSelfLoop(newTarget)) res++;
-    }
-    for (uint nbr : G1->adjLists[source]) {
-        if (nbr != source) {
-            res -= G2->getEdgeWeight(oldTarget, A[nbr]);
-            res += G2->getEdgeWeight(newTarget, A[nbr]);
+        uint count = 0;
+        n2 = MA[randomIndex][edgeLists[randomIndex][source][i]];
+
+        assert((SNAdjMatrix.size()>n1) && (SNAdjMatrix.size()>n2));
+        assert(upAlign[randomIndex].size() > n2);
+        count+=SNAdjMatrix[n1][n2];
+
+        for (ushort j = 0; j < MA.size(); j++) {
+            if((upAlign[j][n1]!=empty)&&(upAlign[j][n2]!=empty)&&(j!= randomIndex)){
+
+                /*assert(AdjMatrices.size()>j);
+                assert(upAlign.size()>j);
+                assert(upAlign[j].size()>n1);
+                assert(upAlign[j].size()>n2);
+                cerr<<"AdjMatrices[j].size() = "<<AdjMatrices[j].size()<<endl;
+                cerr<<"upAlign[j][n1] = "<<upAlign[j][n1]<<endl;
+                cerr<<"upAlign[j][n2] "<<upAlign[j][n2]<<endl;
+                assert(AdjMatrices[j].size() > upAlign[j][n1]);
+                assert(AdjMatrices[j].size() > upAlign[j][n2]);*/
+                count+=AdjMatrices[j][upAlign[j][n1]][upAlign[j][n2]];
+            }
         }
-    }
-    return res;
-}
-
-int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-#ifdef FLOAT_WEIGHTS
-    return 0; //not applicable
-#else
-    int res = 0;
-    if (G1->hasSelfLoop(source1)) {
-        if (G2->hasSelfLoop(target1)) res--;
-        if (G2->hasSelfLoop(target2)) res++;
-    }
-    for (uint nbr : G1->adjLists[source1]) {
-        if (nbr != source1) {
-            res -= G2->getEdgeWeight(target1, A[nbr]);
-            res += G2->getEdgeWeight(target2, A[nbr]);
+        if (count == 1){
+            balance-=2;
+        }
+        else if(count > 1){
+            balance-=1;
         }
     }
-    if (G1->hasSelfLoop(source2)) {
-        if (G2->hasSelfLoop(target2)) res--;
-        if (G2->hasSelfLoop(target1)) res++;
-    }
-    for (uint nbr : G1->adjLists[source2]) {
-        if (nbr != source2) {
-            res -= G2->getEdgeWeight(target2, A[nbr]);
-            res += G2->getEdgeWeight(target1, A[nbr]);
+    n1 = newTarget;
+    //cerr<<"check at the second for loop of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl;
+    for(ushort i =0;i<edgeLists[randomIndex][source].size();i++){
+
+        uint count = 0;
+        n2 = MA[randomIndex][edgeLists[randomIndex][source][i]];
+        /*assert(upAlign[randomIndex].size() > n2);
+        assert(SNAdjMatrix.size()==SNAdjMatrix[0].size());
+        assert((SNAdjMatrix.size()>n1) && (SNAdjMatrix.size()>n2));*/
+        count+=SNAdjMatrix[n1][n2];
+        for (ushort j = 0; j < MA.size(); j++) {
+
+            if((upAlign[j][n1]!=empty)&&(upAlign[j][n2]!=empty)&&(j!= randomIndex)){
+                /*assert(AdjMatrices.size()>j);
+                assert(upAlign.size()>j);
+                assert(upAlign[j].size()>n1);
+                assert(upAlign[j].size()>n2);
+                assert(AdjMatrices[j].size() > upAlign[j][n1]);
+                assert(AdjMatrices[j].size() > upAlign[j][n2]);*/
+                count+=AdjMatrices[j][upAlign[j][n1]][upAlign[j][n2]];
+            }
+        }
+        if (count == 1){
+            balance+=2;
+        }
+        else if(count > 1){
+            balance+=1;
         }
     }
 
-    //address case swapping between adjacent nodes with adjacent images:
-#ifdef MULTI_PAIRWISE
-    //why set the least-significant bit to 0?
-    //this kind of bit manipulation needs a comment clarification -Nil
-    res += (-1 << 1) & (G1->getEdgeWeight(source1, source2) +
-                        G2->getEdgeWeight(target1, target2));
-#else
-    if (G1->hasEdge(source1, source2) and G2->hasEdge(target1, target2)) res += 2;
-#endif
+    energyInc = (double) balance/(denominator);
+    numerator+= balance;
+    currentScore = (double)numerator/denominator;
+    makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
 
-    return res;
-#endif // FLOAT_WEIGHTS
+    return makeChange;
 }
 
-static double getRatio(double w1, double w2) {
-    double r;
-    if (w1==0 && w2==0) r=1;
-    else if (abs(w1)<abs(w2)) r=w1/w2;
-    else r=w2/w1;
-    // At this point, r can be in [-1,1], but we want it [0,1], so add 1 and divide by 2
-    r = (r+1)/2;
-    assert(r>=0 && r<=1);
-    return r;
-}
+bool SANA::scoreComparison(ushort source1,ushort source2,ushort target1,ushort target2,ushort randomIndex){
+    ushort empty = 0-1;
+    ushort n1,n2;
+    n1 = target1;
+    int balance;
+    balance = 0;
+    assert(upAlign[randomIndex][n1] == source1);
+    assert(MA[randomIndex][source1] == target1);
+    assert(upAlign[randomIndex][target2] == source2);
+    assert(MA[randomIndex][source2] == target2);
 
-/* We swap the mapping of two nodes source1 and source2
- * We can first handle source1, then do the same with source2
- * Subtract old edge difference with edge (source1, target1)
- * Add new edge difference with edge (source1, target2) */
-double SANA::edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    if (source1 == source2) return 0;
-    // Handle source1
-    double edgeDifferenceIncDiff = 0;
-    double c = 0;
-    for (uint node2 : G1->adjLists[source1]) {
-        double y = -abs(G1->getEdgeWeight(source1, node2) - G2->getEdgeWeight(target1, A[node2])) - c;
-        double t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
+    bool makeChange = false;
+    //cerr<<"check at the first for loop of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl;
+    for(ushort i =0;i<edgeLists[randomIndex][source1].size();i++){
 
-        // Determine the new target node for node2
-        uint node2Target = 0;
-        if (node2 == source1) node2Target = target2;
-        else if (node2 == source2) node2Target = target1;
-        else node2Target = A[node2];
-
-        y = +abs(G1->getEdgeWeight(source1, node2) - G2->getEdgeWeight(target2, node2Target)) - c;
-        t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
-    }
-    // Handle source2
-    for (uint node2 : G1->adjLists[source2]) {
-        if (node2 == source1) continue;
-        double y = -abs(G1->getEdgeWeight(source2, node2) - G2->getEdgeWeight(target2, A[node2])) - c;
-        double t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
-
-        uint node2Target = (node2 == source2 ? target1 : A[node2]);
-        y = +abs(G1->getEdgeWeight(source2, node2) - G2->getEdgeWeight(target1, node2Target)) - c;
-        t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
-    }
-    return edgeDifferenceIncDiff;
-}
-
-double SANA::edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    if (source1 == source2) return 0;
-    double edgeRatioIncDiff = 0;
-    double c = 0;
-    // Subtract source1-target1, add source1-target2
-    for (uint node2 : G1->adjLists[source1]) {
-        double r = getRatio(G1->getEdgeWeight(source1, node2), G2->getEdgeWeight(target1, A[node2]));
-        double y = -r - c;
-        double t = edgeRatioIncDiff + y;
-        c = (t - edgeRatioIncDiff) - y;
-        edgeRatioIncDiff = t;
-
-        uint node2Target = 0;
-        if (node2 == source1) node2Target = target2;
-        else if (node2 == source2) node2Target = target1;
-        else node2Target = A[node2];
-
-        r = getRatio(G1->getEdgeWeight(source1, node2), G2->getEdgeWeight(target2, node2Target));
-        y = r - c;
-        t = edgeRatioIncDiff + y;
-        c = (t - edgeRatioIncDiff) - y;
-        edgeRatioIncDiff = t;
-    }
-   // Subtract source2-target2, add source2-target1
-   for (uint node2 : G1->adjLists[source2]) {
-        if (node2 == source1) continue;
-        double r = getRatio(G1->getEdgeWeight(source2, node2), G2->getEdgeWeight(target2, A[node2]));
-        double y = -r - c;
-        double t = edgeRatioIncDiff + y;
-        c = (t - edgeRatioIncDiff) - y;
-        edgeRatioIncDiff = t;
-
-        uint node2Target = (node2 == source2 ? target1 : A[node2]);
-        r = getRatio(G1->getEdgeWeight(source2, node2), G2->getEdgeWeight(target1, node2Target));
-        y = r - c;
-        t = edgeRatioIncDiff + y;
-        c = (t - edgeRatioIncDiff) - y;
-        edgeRatioIncDiff = t;
-    }
-    return edgeRatioIncDiff;
-}
-
-
-double SANA::edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    double edgeDifferenceIncDiff = 0;
-    double c = 0;
-    for (uint node2 : G1->adjLists[source]) {
-        double y = -abs(G1->getEdgeWeight(source, node2) - G2->getEdgeWeight(oldTarget, A[node2])) - c;
-        double t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
-
-        uint node2Target = node2 == source ? newTarget : A[node2];
-        y = +abs(G1->getEdgeWeight(source, node2) - G2->getEdgeWeight(newTarget, node2Target)) - c;
-        t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
-    }
-    return edgeDifferenceIncDiff;
-}
-
-double SANA::edgeRatioIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    double edgeRatioIncDiff = 0;
-    double c = 0;
-    for (uint node2 : G1->adjLists[source]) {
-        double r = getRatio(G1->getEdgeWeight(source, node2), G2->getEdgeWeight(oldTarget, A[node2]));
-        double y = -r - c;
-        double t = edgeRatioIncDiff + y;
-        c = (t - edgeRatioIncDiff) - y;
-        edgeRatioIncDiff = t;
-
-        uint node2Target = node2 == source ? newTarget : A[node2];
-        r = getRatio(G1->getEdgeWeight(source, node2), G2->getEdgeWeight(newTarget, node2Target));
-        y = r - c;
-        t = edgeRatioIncDiff + y;
-        c = (t - edgeRatioIncDiff) - y;
-        edgeRatioIncDiff = t;
-    }
-    return edgeRatioIncDiff;
-}
-
-// UGLY GORY HACK BELOW!! Sometimes the edgeVal is crazily wrong, like way above 1,000, when it
-// cannot possibly be greater than the number of networks we're aligning when MULTI_PAIRWISE is on.
-// It happens only rarely, so here I ask if the edgeVal is less than 1,000; if it's less than 1,000
-// then we assume it's OK, otherwise we just ignore this edge entirely and say the diff is 0.
-// Second problem: even if the edgeVal is correct, I couldn't seem to figure out the difference
-// between the value of this ladder and the ladder with one edge added or removed.  Mathematically
-// it should be edgeVal^2 - (edgeVal+1)^2 which is (2e + 1), but for some reason I had to make
-// it 2*(e+1).  That seemed to work better.  So yeah... big ugly hack.
-static int _edgeVal;
-#define SQRDIFF(i,j) ((_edgeVal=G2->getEdgeWeight(i, A[j])), 2*_edgeVal + 1)
-int SANA::squaredAligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    int res = 0;
-    for (uint nbr : G1->adjLists[source]) {
-        // Account for uint edges? Or assume smaller graph is edge value 1?
-        int diff = SQRDIFF(oldTarget, nbr);
-        // assert(fabs(diff)<1100);
-        res -= diff;// >0?diff:0;
-        diff = SQRDIFF(newTarget, nbr);
-        // assert(fabs(diff)<1100);
-        res += diff;// >0?diff:0;
-    }
-    return res;
-}
-
-int SANA::squaredAligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    int res = 0;
-    for (uint nbr : G1->adjLists[source1]) {
-        int diff = SQRDIFF(target1, nbr);
-        // assert(fabs(diff)<1100);
-        res -= diff;// >0?diff:0;
-        diff = SQRDIFF(target2, nbr);
-        if (target2 == A[nbr]) diff = 0;
-        // assert(fabs(diff)<1100);
-        res += diff;// >0?diff:0;
-    }
-    for (uint nbr : G1->adjLists[source2]) {
-        int diff = SQRDIFF(target2, nbr);
-        // assert(fabs(diff)<1100);
-        res -= diff;// >0?diff:0;
-        diff = SQRDIFF(target1, nbr);
-        if (target1 == A[nbr]) diff = 0;
-        // assert(fabs(diff)<1100);
-        res += diff;// >0?diff:0;
-    }
-    // How to do for squared?
-    // address case swapping between adjacent nodes with adjacent images:
-    if (G1->hasEdge(source1, source2) and G2->hasEdge(target1, target2))
-        res += 2 * SQRDIFF(target1,source2);
-    return res;
-}
-
-int SANA::exposedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    int res = 0;
-    for (uint nbr : G1->adjLists[source]) {
-        if (not G2->hasEdge(oldTarget, A[nbr])) --res;
-        if (not G2->hasEdge(newTarget, A[nbr])) ++res;
-    }
-    return res;
-}
-
-int SANA::exposedEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    int res = 0;
-    for (uint nbr : G1->adjLists[source1]) {
-        if (not G2->hasEdge(target1, A[nbr])) --res;
-        if (not G2->hasEdge(target2, A[nbr])) ++res;
-    }
-    for (uint nbr : G1->adjLists[source2]) {
-        if (not G2->hasEdge(target2, A[nbr])) --res;
-        if (not G2->hasEdge(target1, A[nbr])) ++res;
-    }
-    return res;
-}
-
-// Return the change in NUMERATOR of MS3
-int SANA::MS3IncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    switch (MultiS3::denominator_type) {
-        case MultiS3::rt_i:
-        {
-            uint neighbor;
-            const uint n1 = G1->getNumNodes();
-            const uint n2 = G2->getNumNodes();
-            vector<uint> whichPeg(n2, n1); // value of n1 represents not used
-            for (uint i = 0; i < n1; ++i){
-                whichPeg[A[i]] = i; // inverse of the alignment
-            }
-            uint n_num = G2->adjLists[oldTarget].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G2->adjLists[oldTarget][i];
-                if (whichPeg[neighbor]<n1){
-                    MultiS3::denom -= G2->getEdgeWeight(oldTarget,neighbor);
-                }
-            }
-             n_num = G2->adjLists[newTarget].size();
-             for (uint i =0; i < n_num; i++){
-                 neighbor = G2->adjLists[newTarget][i];
-                 if (whichPeg[neighbor]<n1 and neighbor != oldTarget){
-                     MultiS3::denom += G2->getEdgeWeight(newTarget,neighbor);
-                 }
-             }
-        }
-            break;
-            
-        case MultiS3::ee_i:
-        {
-            uint neighbor;
-            const uint n1 = G1->getNumNodes();
-            const uint n2 = G2->getNumNodes();
-            vector<uint> whichPeg(n2, n1); // value of n1 represents not used
-            for (uint i = 0; i < n1; ++i){
-                whichPeg[A[i]] = i; // inverse of the alignment
-            }
-            uint n_num = G2->adjLists[oldTarget].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G2->adjLists[oldTarget][i];
-                if (whichPeg[neighbor]<n1){
-                    MultiS3::denom--;
-                }
-            }
-            n_num = G1->adjLists[source].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G1->adjLists[source][i];
-                if (!G2->getEdgeWeight(A[neighbor],oldTarget)){
-                    MultiS3::denom--;
-                }
-                if (A[neighbor]!=newTarget and !G2->getEdgeWeight(A[neighbor],newTarget)){
-                    MultiS3::denom++;
-                }
-            }
-            n_num = G2->adjLists[newTarget].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G2->adjLists[newTarget][i];
-                if (whichPeg[neighbor]<n1 and source!=whichPeg[neighbor] ){
-                    MultiS3::denom++;
+        uint count = 0;
+        n2 = MA[randomIndex][edgeLists[randomIndex][source1][i]];
+        assert(SNAdjMatrix[n1].size() > n2);
+        count+=SNAdjMatrix[n1][n2];
+        for (ushort j = 0; j < MA.size(); j++) {
+            if((upAlign[j][n1]!=empty)&&(upAlign[j][n2]!=empty)&&(j != randomIndex)){
+                if(find(edgeLists[randomIndex][source2].begin(), edgeLists[randomIndex][source2].end(), edgeLists[randomIndex][source1][i]) == edgeLists[randomIndex][source2].end()){
+                    count+=AdjMatrices[j][upAlign[j][n1]][upAlign[j][n2]];
                 }
             }
         }
-            break;
-            
-        default:
-	{
-#if 0
-	    if (oldOldTargetDeg > 0 and !MultiS3::shadowDegree[oldTarget]) MultiS3::denom -= 1;
-            if (oldNewTargetDeg > 0 and !MultiS3::shadowDegree[newTarget]) MultiS3::denom += 1;
-#else
-	    uint neighbor;
-            const uint n1 = G1->getNumNodes();
-            const uint n2 = G2->getNumNodes();
-            vector<uint> whichPeg(n2, n1); // value of n1 represents not used
-            for (uint i = 0; i < n1; ++i){
-                whichPeg[A[i]] = i; // inverse of the alignment
-            }
-            uint n_num = G2->adjLists[oldTarget].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G2->adjLists[oldTarget][i];
-                if (whichPeg[neighbor]<n1){
-                    MultiS3::denom--;
+        if (count == 1){
+            balance-=2;
+        }
+        else if(count > 1){
+            balance-=1;
+        }
+    }
+    n1 = target2;
+    //assert(upAlign[randomIndex][n1] == source2);
+    //cerr<<"check at the second for loop of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl;
+    for(ushort i =0;i<edgeLists[randomIndex][source2].size();i++){
+
+        uint count = 0;
+        n2 = MA[randomIndex][edgeLists[randomIndex][source2][i]];
+
+        count+=SNAdjMatrix[n1][n2];
+        for (ushort j = 0; j < MA.size(); j++) {
+            if((upAlign[j][n1]!=empty)&&(upAlign[j][n2]!=empty)&&(j != randomIndex)){
+                if(find(edgeLists[randomIndex][source1].begin(), edgeLists[randomIndex][source1].end(), edgeLists[randomIndex][source2][i]) == edgeLists[randomIndex][source1].end()){
+                    count+=AdjMatrices[j][upAlign[j][n1]][upAlign[j][n2]];
                 }
             }
-            n_num = G1->adjLists[source].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G1->adjLists[source][i];
-                if (!G2->getEdgeWeight(A[neighbor],oldTarget)){
-                    MultiS3::denom--;
-                }
-                if (A[neighbor]!=newTarget and !G2->getEdgeWeight(A[neighbor],newTarget)){
-                    MultiS3::denom++;
+        }
+        if (count == 1){
+            balance-=2;
+        }
+        else if(count>1){
+            balance-=1;
+        }
+    }
+    //cerr<<"check at the third for loop of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl;
+    for(ushort i =0;i<edgeLists[randomIndex][source1].size();i++){
+
+        uint count = 0;
+        n2 = MA[randomIndex][edgeLists[randomIndex][source1][i]];
+        if(n2 == n1){
+            n2 = target1;
+        }
+
+        count+=SNAdjMatrix[n1][n2];
+        for (ushort j = 0; j < MA.size(); j++) {
+            if((upAlign[j][n1]!=empty)&&(upAlign[j][n2]!=empty)&&(j != randomIndex)){
+                if(find(edgeLists[randomIndex][source2].begin(), edgeLists[randomIndex][source2].end(), edgeLists[randomIndex][source1][i]) == edgeLists[randomIndex][source2].end()){
+                        count+=AdjMatrices[j][upAlign[j][n1]][upAlign[j][n2]];
                 }
             }
-            n_num = G2->adjLists[newTarget].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G2->adjLists[newTarget][i];
-                if (whichPeg[neighbor]<n1 and source!=whichPeg[neighbor] ){
-                    MultiS3::denom++;
+        }
+        if (count == 1){
+            balance+=2;
+        }
+        else if(count > 1){
+            balance+=1;
+        }
+    }
+    n1 = target1;
+    //cerr<<"check at the fourth for loop of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl;
+    for(ushort i =0;i<edgeLists[randomIndex][source2].size();i++){
+
+        uint count = 0;
+        n2 = MA[randomIndex][edgeLists[randomIndex][source2][i]];
+        if(n2 == n1){
+            n2 = target2;
+        }
+        count+=SNAdjMatrix[n1][n2];
+        for (ushort j = 0; j < MA.size(); j++) {
+            if((upAlign[j][n1]!=empty)&&(upAlign[j][n2]!=empty)&&(j != randomIndex)){
+                if(find(edgeLists[randomIndex][source1].begin(), edgeLists[randomIndex][source1].end(), edgeLists[randomIndex][source2][i]) == edgeLists[randomIndex][source1].end()){
+                    count+=AdjMatrices[j][upAlign[j][n1]][upAlign[j][n2]];
                 }
-            }  	    
-#endif
+            }
+        }
+        if (count == 1){
+            balance+=2;
+        }
+        else if(count > 1){
+            balance+=1;
+        }
+    }
+
+    energyInc = (double) balance/(denominator);
+    numerator+=balance;
+    currentScore = (double)numerator/denominator;
+    makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
+    return makeChange;
+}
+
+
+bool SANA::CIQscoreComparison(ushort source,ushort oldTarget,ushort newTarget,ushort randomIndex){
+    //cerr<<"check at the beginning of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl;
+    //ushort empty = 0-1;
+    ////////////////new version that will be completed later///////////
+    ushort n1,n2;
+    n1 = oldTarget;
+    n2 = newTarget;
+    bool makeChange = false;
+    double currentWeight,balance;
+    ushort tempdenominator,tempnumerator;
+    balance = 0;
+    ushort tempNode;
+    for(ushort i = 0;i<edgeLists[randomIndex][source].size();i++){
+		tempNode = MA[randomIndex][edgeLists[randomIndex][source][i]];
+		currentWeight = CIQ.weight(upAlign,n1,tempNode);
+		tempdenominator = CIQ.getWeightDenominator(upAlign,n1,tempNode);
+		tempnumerator = CIQ.getWeightNumerator(upAlign,n1,tempNode);
+		if(tempnumerator!=0){
+			tempdenominator -= 1;
+			tempnumerator -= 1;
+		}
+		tempnumerator = (tempnumerator > 1) ? tempnumerator*tempnumerator : 0 ;
+        balance += (double) tempnumerator/tempdenominator;
+        balance -= currentWeight;
 	}
-            break;
+
+    n1 = newTarget;
+    //cerr<<"check at the second for loop of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl;
+    for(ushort i = 0;i<edgeLists[randomIndex][source].size();i++){
+		tempNode = MA[randomIndex][edgeLists[randomIndex][source][i]];
+		currentWeight = CIQ.weight(upAlign,n2,tempNode);
+		tempdenominator = CIQ.getWeightDenominator(upAlign,n2,tempNode);
+		tempnumerator = CIQ.getWeightNumerator(upAlign,n2,tempNode);
+		if(tempnumerator!=0){
+			tempdenominator += 1;
+			tempnumerator += 1;
+		}
+		tempnumerator = (tempnumerator > 1) ? tempnumerator*tempnumerator : 0 ;
+        balance += (double) tempnumerator/tempdenominator;
+        balance -= currentWeight;
     }
-    switch (MultiS3::numerator_type){
-        case MultiS3::ra_i:
-        {
-            int res = 0, diff;
-            uint neighbor;
-            const uint n = G1->adjLists[source].size();
-            for (uint i = 0; i < n; ++i) {
-                neighbor = G1->adjLists[source][i];
-                diff = G2->getEdgeWeight(oldTarget,A[neighbor]) + 1;
-                res -= (diff==1?0:diff);
-                diff = G2->getEdgeWeight(newTarget,A[neighbor]) + 1;
-                res += (diff==1?0:diff);
-            }
-            return res;
-        }
-            break;
-    
-        case MultiS3::ra_global:
-        {
-            int res = 0;
-            int diff= 0;
-            uint neighbor;
-            const uint n = G1->adjLists[source].size();
-            for (uint i = 0; i < n; ++i) {
-                neighbor = G1->adjLists[source][i];
-                if (G1->getEdgeWeight(source,neighbor)>0){
-                    diff = G2->getEdgeWeight(oldTarget,A[neighbor]) + 1;
-                    if (diff <= 1){res -= 0;}
-                    else if (G2->getEdgeWeight(oldTarget,A[neighbor])>1){res --;}
-                    else{res-=2;}
 
-                    diff = G2->getEdgeWeight(newTarget,A[neighbor]) + 1;
-                    if (diff <= 1){res += 0;}
-                    else if (G2->getEdgeWeight(newTarget,A[neighbor])>1){res ++;}
-                    else{res+=2;}
-                }
-            }
-            return res;
-        }
-            break;
-        
-        case MultiS3::la_i:
-        {
-            int res = 0, diff;
-            uint neighbor;
-            const uint n = G1->adjLists[source].size();
-            bool ladder = false;
-            for (uint i = 0; i < n; ++i) {
-                neighbor = G1->adjLists[source][i];
-                diff = G2->getEdgeWeight(oldTarget,A[neighbor]) + 1;
+    energyInc = (double) balance/(CIQdenominator);
+    CIQnumerator+= balance;
+    currentScore = (double)CIQnumerator/CIQdenominator;
+    makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
 
-                ladder = (diff>1?true:false);
-                if (ladder){res -= 1;}
-                diff = G2->getEdgeWeight(newTarget,A[neighbor]) + 1;
+    return makeChange;
 
-                ladder = (diff>1?true:false);
-                if (ladder){res += 1;}
-            }
-            return res;
-        }
-            break;
-            
-        case MultiS3::la_global:
-        {
-            int res = 0;
-            int diff = 0;
-            uint neighbor = 0;
-            bool ladder = false;
-            const uint n = G1->adjLists[source].size();
-            for (uint i=0;i<n;i++){
-                neighbor = G1->adjLists[source][i];
-                if (G1->getEdgeWeight(neighbor,source)>0){
-                    diff = G2->getEdgeWeight(oldTarget,A[neighbor]) + 1;
-                            ladder = (diff > 1);
-                    if (ladder and G2->getEdgeWeight(oldTarget,A[neighbor])==1) {res --;}
-                    diff = G2->getEdgeWeight(newTarget,A[neighbor]) + 1;
-                    ladder = (diff > 1);
-                    if (ladder and G2->getEdgeWeight(newTarget,A[neighbor])==1) {res ++;}
-                }
-            }
-            return res;
-        }
-            break;
-            
-        default:
-        {
-            int res = 0;
-            //unsigned oldOldTargetDeg = MultiS3::shadowDegree[oldTarget];
-            //unsigned oldNewTargetDeg = MultiS3::shadowDegree[newTarget];
+    ////////////////////old deprecated part that will be removed soon///////////////////////////
+    /*ushort empty = 0-1;
+    ushort n1,n2;
+    n1 = oldTarget;
+    n2 = newTarget;
+    bool makeChange = false;
+    double tempdenominator,tempnumerator,currentWeight,balance;
+    balance = 0;*/
+    //MultiAlignment currentMA = MultiAlignment(MA,shadowNetwork->getNumNodes());
+    /*assert(upAlign[randomIndex].size()> n1);
+    assert(oldTarget != empty);
+    assert(upAlign[randomIndex][n1] == source);
+    cerr<<"check at the first for loop of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl*/;
 
-            if (G1->hasSelfLoop(source)) {
-                if (G2->hasSelfLoop(oldTarget)) --res;
-                if (G2->hasSelfLoop(newTarget)) ++res;
-            }
-            for (uint nbr : G1->adjLists[source]) {
-                if (nbr != source) {
-                    --MultiS3::shadowDegree[oldTarget];
-                    ++MultiS3::shadowDegree[newTarget];
-                    res -= G2->getEdgeWeight(oldTarget, A[nbr]);
-                    res += G2->getEdgeWeight(newTarget, A[nbr]);
-                }
-            }
+    /*for(ushort i =0;i<SNAdjMatrix.size();i++){
+		if((upAlign[randomIndex][i]!=empty)&&(n1!=i)&&(n2!=i)){
+			currentWeight = CIQ.weight(upAlign,n1,i);
+			tempdenominator = CIQ.getWeightDenominator(upAlign,n1,i);
+			tempnumerator = CIQ.getWeightNumerator(upAlign,n1,i);
+			if(tempnumerator!=0){
+			    tempdenominator -= 1;
+			    tempnumerator -= AdjMatrices[randomIndex][upAlign[randomIndex][n1]][upAlign[randomIndex][i]];
+			}
+			tempnumerator = (tempnumerator > 1) ? tempnumerator*tempnumerator : 0 ;
+            balance += tempnumerator/tempdenominator;
+            balance -= currentWeight;
+		}
+	}
 
-            return res;
-        }
-            break;
-    }
+    for(ushort i =0;i<SNAdjMatrix.size();i++){
+		if((upAlign[randomIndex][i]!=empty)&&(n1!=i)&&(n2!=i)){
+			currentWeight = CIQ.weight(upAlign,n2,i);
+			tempdenominator = CIQ.getWeightDenominator(upAlign,n2,i);
+			tempnumerator = CIQ.getWeightNumerator(upAlign,n2,i);
+			if(tempnumerator!=0){
+			    tempdenominator += 1;
+			    tempnumerator += AdjMatrices[randomIndex][upAlign[randomIndex][n1]][upAlign[randomIndex][i]];
+			}
+			tempnumerator = (tempnumerator > 1) ? tempnumerator*tempnumerator : 0 ;
+            balance += tempnumerator/tempdenominator;
+            balance -= currentWeight;
+		}
+	}
+
+
+
+    energyInc = (double) balance/CIQdenominator;
+    CIQnumerator += balance;
+    currentScore = (double)CIQnumerator/CIQdenominator;
+    makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
+
+    return makeChange;*/
 }
 
-// Return change in NUMERATOR only
-int SANA::MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    switch (MultiS3::denominator_type){
-          case MultiS3::rt_i:
-        {
-              uint neighbor;
-              const uint n1 = G1->getNumNodes();
-              const uint n2 = G2->getNumNodes();
-              vector<uint> whichPeg(n2, n1);
-              for (uint i = 0; i < n1; ++i){
-                  whichPeg[A[i]] = i;
-               }
+bool SANA::CIQscoreComparison(ushort source1,ushort source2,ushort target1,ushort target2,ushort randomIndex){
+    //cerr<<"check at the beginning of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl;
+    //ushort empty = 0-1;
+    /////////////////////////new part that will be completed soon//////////////////////
+    ushort n1,n2;
+    n1 = target1;
+    n2 = target2;
+    bool makeChange = false;
+    double currentWeight,balance;
+    ushort tempdenominator,tempnumerator;
+    balance = 0;
+    ushort tempNode;
+    for(ushort i = 0;i<edgeLists[randomIndex][source1].size();i++){
+		tempNode = MA[randomIndex][edgeLists[randomIndex][source1][i]];
+		if(tempNode != n2){
+		    currentWeight = CIQ.weight(upAlign,n1,tempNode);
+		    tempdenominator = CIQ.getWeightDenominator(upAlign,n1,tempNode);
+		    tempnumerator = CIQ.getWeightNumerator(upAlign,n1,tempNode);
+		    if(tempnumerator!=0){
+			    //tempdenominator -= 1;
+			    tempnumerator -= 1;
+		    }
+		    tempnumerator = (tempnumerator > 1) ? tempnumerator*tempnumerator : 0 ;
+            balance += (double) tempnumerator/tempdenominator;
+            balance -= currentWeight;
+		}
+	}
 
-              uint n_num = G2->adjLists[target1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[target1][i];
-                  if (whichPeg[neighbor]<n1){
-                      MultiS3::denom-=G2->getEdgeWeight(target1,neighbor);
-                  }
-              }
-              n_num = G1->adjLists[source1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G1->adjLists[source1][i];
-                  if (G1->getEdgeWeight(source1,neighbor)){
-                      MultiS3::denom--;
-                  }
-                  if (G1->getEdgeWeight(source1,neighbor)){
-                      MultiS3::denom++;
-                  }
-              }
-              n_num = G2->adjLists[target2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[target2][i];
-                  if (whichPeg[neighbor]<n1){
-                      MultiS3::denom+=G2->getEdgeWeight(target2,neighbor);
-                   }
-              }
-            
-              n_num = G2->adjLists[target2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[target2][i];
-                  if (whichPeg[neighbor]<n1 and neighbor != target1){
-                      MultiS3::denom-=G2->getEdgeWeight(target2,neighbor);
-                   }
-              }
-              n_num = G1->adjLists[source2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G1->adjLists[source2][i];
-                  if (G1->getEdgeWeight(source2,neighbor)  and source1 != neighbor){
-                      MultiS3::denom--;
-                  }
-                  if (neighbor!=source1 and G1->getEdgeWeight(source2,neighbor)){
-                      MultiS3::denom++;
-                  }
-              }
-              n_num = G2->adjLists[target1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[target1][i];
-                  if (neighbor != target2 and whichPeg[neighbor]<n1){
-                      MultiS3::denom+=G2->getEdgeWeight(target1,neighbor);
-                  }
-              }
-          }
-              break;
-          case MultiS3::ee_i:
-          {
-              uint neighbor;
-              const uint n1 = G1->getNumNodes();
-              const uint n2 = G2->getNumNodes();
-              vector<uint> whichPeg(n2, n1); // value of n1 represents not used
-              for (uint i = 0; i < n1; ++i){
-                  whichPeg[A[i]] = i; // inverse of the alignment
-              }
+    //cerr<<"check at the second for loop of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl;
+    for(ushort i = 0;i<edgeLists[randomIndex][source1].size();i++){
+		tempNode = MA[randomIndex][edgeLists[randomIndex][source1][i]];
+		if(tempNode != n2){
+		    currentWeight = CIQ.weight(upAlign,n2,tempNode);
+		    tempdenominator = CIQ.getWeightDenominator(upAlign,n2,tempNode);
+		    tempnumerator = CIQ.getWeightNumerator(upAlign,n2,tempNode);
+		    if(tempnumerator!=0){
+			    //tempdenominator += 1;
+			    tempnumerator += 1;
+		    }
+		    tempnumerator = (tempnumerator > 1) ? tempnumerator*tempnumerator : 0 ;
+            balance += (double) tempnumerator/tempdenominator;
+            balance -= currentWeight;
+		}
+    }
 
-              uint n_num = G2->adjLists[target1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[target1][i];
-                  if (whichPeg[neighbor]<n1 and neighbor!=target2 and G2->getEdgeWeight(neighbor,target1)){
-                      MultiS3::denom--;
-                  }
-              }
-              n_num = G1->adjLists[source1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G1->adjLists[source1][i];
-                    if (neighbor!=source2){
-                        if (!G2->getEdgeWeight(A[neighbor],target1)){
-                            MultiS3::denom--;
-                        }
-                        if (!G2->getEdgeWeight(A[neighbor],target2)){
-                            MultiS3::denom++;
-                        }
-                    }
-              }
+    for(ushort i = 0;i<edgeLists[randomIndex][source2].size();i++){
+		if(tempNode != n1){
+		    tempNode = MA[randomIndex][edgeLists[randomIndex][source2][i]];
+		    currentWeight = CIQ.weight(upAlign,n2,tempNode);
+		    tempdenominator = CIQ.getWeightDenominator(upAlign,n2,tempNode);
+		    tempnumerator = CIQ.getWeightNumerator(upAlign,n2,tempNode);
+		    if(tempnumerator!=0){
+			    //tempdenominator -= 1;
+			    tempnumerator -= 1;
+		    }
+		    tempnumerator = (tempnumerator > 1) ? tempnumerator*tempnumerator : 0 ;
+            balance += (double) tempnumerator/tempdenominator;
+            balance -= currentWeight;
+		}
+    }
 
-              n_num = G2->adjLists[target2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[target2][i];
-                  if (neighbor!=target1 and whichPeg[neighbor]<n1 and source1!=whichPeg[neighbor] and !G2->getEdgeWeight(neighbor,target2)){
-                      MultiS3::denom++;
-                  }
-              }
-              n_num = G2->adjLists[target2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[target2][i];
-                  if (neighbor!=target1 and whichPeg[neighbor]<n1 and !G2->getEdgeWeight(target2,neighbor)){
-                      MultiS3::denom--;
-                  }
-              }
-              
-              n_num = G1->adjLists[source2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G1->adjLists[source2][i];
-                  if (neighbor!=source1){
-                      if (!G2->getEdgeWeight(A[neighbor],target2)){
-                          MultiS3::denom--;
-                      }
-                      if (!G2->getEdgeWeight(A[neighbor],target1)){
-                          MultiS3::denom++;
-                      }
-                  }
-              }
-              n_num = G2->adjLists[target1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[target1][i];
-                  if ( G2->getEdgeWeight(target1,neighbor)>0 and whichPeg[neighbor]<n1 and neighbor!=target2 and source2!=whichPeg[neighbor]){
-                      MultiS3::denom++;
-                  }
-              }
-        }
-            break;
-	default:
-        {
-#if 0
-		if (oldTarget1Deg > 0 && !MultiS3::shadowDegree[target1]) MultiS3::denom -= 1;
-        	if (oldTarget2Deg > 0 && !MultiS3::shadowDegree[target2]) MultiS3::denom += 1;	
-#else
-	      uint neighbor;
-              const uint n1 = G1->getNumNodes();
-              const uint n2 = G2->getNumNodes();
-              vector<uint> whichPeg(n2, n1); // value of n1 represents not used
-              for (uint i = 0; i < n1; ++i){
-                  whichPeg[A[i]] = i; // inverse of the alignment
-              }
+    for(ushort i = 0;i<edgeLists[randomIndex][source2].size();i++){
+		if(tempNode != n1){
+		    tempNode = MA[randomIndex][edgeLists[randomIndex][source2][i]];
+		    currentWeight = CIQ.weight(upAlign,n1,tempNode);
+		    tempdenominator = CIQ.getWeightDenominator(upAlign,n1,tempNode);
+		    tempnumerator = CIQ.getWeightNumerator(upAlign,n1,tempNode);
+		    if(tempnumerator!=0){
+			    //tempdenominator += 1;
+			    tempnumerator += 1;
+		    }
+		    tempnumerator = (tempnumerator > 1) ? tempnumerator*tempnumerator : 0 ;
+            balance += (double) tempnumerator/tempdenominator;
+            balance -= currentWeight;
+		}
+	}
 
-              uint n_num = G2->adjLists[target1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[target1][i];
-                  if (whichPeg[neighbor]<n1 and neighbor!=target2 and G2->getEdgeWeight(neighbor,target1)){
-                      MultiS3::denom--;
-                  }
-              }
-              n_num = G1->adjLists[source1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G1->adjLists[source1][i];
-                    if (neighbor!=source2){
-                        if (!G2->getEdgeWeight(A[neighbor],target1)){
-                            MultiS3::denom--;
-                        }
-                        if (!G2->getEdgeWeight(A[neighbor],target2)){
-                            MultiS3::denom++;
-                        }
-                    }
-              }
+    /*for(ushort i = 0;i<edgeLists[randomIndex][source1].size();i++){
+		tempNode = MA[randomIndex][edgeLists[randomIndex][source1][i]];
+		miss = 1;
+		if(tempNode != n2){
+		    currentWeight = CIQ.weight(upAlign,n1,tempNode);
+		    tempdenominator = CIQ.getWeightDenominator(upAlign,n1,tempNode);
+		    tempnumerator = CIQ.getWeightNumerator(upAlign,n1,tempNode);
+		    for(ushort i = 0;i<edgeLists[randomIndex][source2].size();i++){
+				if (tempNode == edgeLists[randomIndex][source2][i]){
+					miss = 0;
+					break;
+				}
+			}
 
-              n_num = G2->adjLists[target2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[target2][i];
-                  if (neighbor!=target1 and whichPeg[neighbor]<n1 and source1!=whichPeg[neighbor] and !G2->getEdgeWeight(neighbor,target2)){
-                      MultiS3::denom++;
-                  }
-              }
-              n_num = G2->adjLists[target2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[target2][i];
-                  if (neighbor!=target1 and whichPeg[neighbor]<n1 and !G2->getEdgeWeight(target2,neighbor)){
-                      MultiS3::denom--;
-                  }
-              }
-              
-              n_num = G1->adjLists[source2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G1->adjLists[source2][i];
-                  if (neighbor!=source1){
-                      if (!G2->getEdgeWeight(A[neighbor],target2)){
-                          MultiS3::denom--;
-                      }
-                      if (!G2->getEdgeWeight(A[neighbor],target1)){
-                          MultiS3::denom++;
-                      }
-                  }
-              }
-              n_num = G2->adjLists[target1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[target1][i];
-                  if ( G2->getEdgeWeight(target1,neighbor)>0 and whichPeg[neighbor]<n1 and neighbor!=target2 and source2!=whichPeg[neighbor]){
-                      MultiS3::denom++;
-                  }
-              }
-#endif
-        }
+		    if(miss!=0){
+			    tempnumerator += 1;
+		        tempnumerator = (tempnumerator > 1) ? tempnumerator*tempnumerator : 0 ;
+                balance += (double) tempnumerator/tempdenominator;
+                balance -= currentWeight;
+		    }
+		}
+	}*/
 
-      }
-      switch (MultiS3::numerator_type){
-          case MultiS3::ra_i:
-          {
-              int res = 0, diff;
-              uint neighbor;
-              const uint n = G1->adjLists[source1].size();
-              uint i = 0;
-              for (; i < n; ++i) {
-                  neighbor = G1->adjLists[source1][i];
-                  diff = G2->getEdgeWeight(target1,A[neighbor]) + 1;
-                  res -= (diff==1?0:diff);
-                  diff = G2->getEdgeWeight(target2,A[neighbor]) + 1;
-                  if (target2==A[neighbor]){
-                      diff=0;
-                  }
+    energyInc = (double) balance/(CIQdenominator);
+    CIQnumerator+= balance;
+    currentScore = (double)CIQnumerator/CIQdenominator;
+    makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
 
-                  res += (diff==1?0:diff);
-              }
-              const uint m = G1->adjLists[source2].size();
-              for (i = 0; i < m; ++i) {
-                  neighbor = G1->adjLists[source2][i];
-                  diff = G2->getEdgeWeight(target2,A[neighbor])+ 1;
-                  res -= (diff==1?0:diff);
-                  diff = G2->getEdgeWeight(target1,A[neighbor]) + 1;
-                  if (target1==A[neighbor]){
-                      diff=0;
-                  }
+    return makeChange;
 
-                  res += (diff==1?0:diff);
-              }
-              if(G2->getEdgeWeight(target1,target2) and  G1->getEdgeWeight(source1,source2)) {
-                  diff = ( G2->getEdgeWeight(target1,A[source2]) + 1);
+    ///////////////////old deprecated part that will be removed soon//////////////////////////////
+    //cerr<<"check at the beginning of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl;
+    //assert(upAlign[randomIndex][target1] == source1);
+    //assert(MA[randomIndex][source1] == target1);
+    //assert(upAlign[randomIndex][target2] == source2);
+    //assert(MA[randomIndex][source2] == target2);
 
-                  res += 2*(diff==1?0:diff);
-              }
-              return res;
-          }
-              break;
-              
-          case MultiS3::ra_global:
-          {
-              int res = 0, diff;
-              uint neighbor;
-              const uint n = G1->adjLists[source1].size();
-              uint i = 0;
-              bool ladder = false;
-              for (; i < n; ++i) {
-                  neighbor = G1->adjLists[source1][i];
-                  if (G1->getEdgeWeight(neighbor,source1)>0){
-                      diff = G2->getEdgeWeight(target1,A[neighbor]) + 1;
-                      ladder = (diff>1?true:false);
-                      if (ladder){
-                          res--;
-                          if (G2->getEdgeWeight(target1,A[neighbor]) == 1){res--;}
-                      }
+    /*ushort empty = 0-1;
+    bool makeChange = false;
+    double tempdenominator,tempnumerator,balance,currentWeight;
+    balance = 0;
+    //MultiAlignment currentMA = MultiAlignment(MA,shadowNetwork->getNumNodes());*/
+    /*assert(upAlign[randomIndex].size()> n1);
+    assert(oldTarget != empty);
+    assert(upAlign[randomIndex][n1] == source);
+    cerr<<"check at the first for loop of SANA::scoreComparison(ushort source,... @sana.cpp"<<endl*/;
 
-                      diff = G2->getEdgeWeight(target2,A[neighbor]) + 1;
-                      if (target2!=A[neighbor]){
-                          if (diff==2){res+=2;}
-                          else if (diff>1){res++;}
-                      }
-                  }
-              }
-              if (G1->getEdgeWeight(source1,source2)==1){
-                  res++;
-                  if (G2->getEdgeWeight(target2,target1)==1){res++;}
-                  else if (G2->getEdgeWeight(target2,target1)==0){res--;}
-              }
-              
-              const uint m = G1->adjLists[source2].size();
-              for (i = 0; i < m; ++i) {
-                  neighbor = G1->adjLists[source2][i];
-                  if (G1->getEdgeWeight(neighbor,source2)>0){
-                      diff = G2->getEdgeWeight(target2,A[neighbor]) + 1;
 
-                      ladder = (diff>1?true:false);
-                      if (ladder and neighbor!=source1 and G2->getEdgeWeight(target2,A[neighbor])){
-                          res--;
-                          if (G2->getEdgeWeight(target2,A[neighbor]) == 1){res--;}
-                          }
-                      
-                      diff = G2->getEdgeWeight(target1,A[neighbor]) + 1;
-                      if (target1!=A[neighbor]){
-                          if (diff==2){res+=2;}
-                          else if (diff>1){res++;}
-                      }
-                  }
-              }
-              return res;
-          }
-              break;
-          case MultiS3::la_i:
-          {
-               int res = 0, diff;
-               uint neighbor;
-               const uint n = G1->adjLists[source1].size();
-               uint i = 0;
-               bool ladder = false;
-               for (; i < n; ++i) {
-                   neighbor = G1->adjLists[source1][i];
-                   diff = G2->getEdgeWeight(target1,A[neighbor]) + 1;
 
-                   ladder = (diff>1?true:false);
-                   diff = G2->getEdgeWeight(target2,A[neighbor]) + 1;
-                   if (target2==A[neighbor]){
-                       diff=0;
-                   }
+    /*for(ushort i =0;i<SNAdjMatrix.size();i++){
+		if((upAlign[randomIndex][i]!=empty)&&(target1!=i)&&(target2!=i)){
+			currentWeight = CIQ.weight(upAlign,target1,i);
+			tempdenominator = CIQ.getWeightDenominator(upAlign,target1,i);
+			tempnumerator = CIQ.getWeightNumerator(upAlign,target1,i);
 
-                   if (ladder and diff<=1){
-                       res--;
-                   }else if (not ladder and diff>1){
-                       res++;
-                   }
-               }
-               const uint m = G1->adjLists[source2].size();
-               for (i = 0; i < m; ++i) {
-                   neighbor = G1->adjLists[source2][i];
-                   diff = G2->getEdgeWeight(target2,A[neighbor]) + 1;
+			if(AdjMatrices[randomIndex][source1][upAlign[randomIndex][i]]&&(!AdjMatrices[randomIndex][source2][upAlign[randomIndex][i]])){
+				tempnumerator -= 1;
+			}
+			else if(AdjMatrices[randomIndex][source2][upAlign[randomIndex][i]]&&(!AdjMatrices[randomIndex][source1][upAlign[randomIndex][i]])){
+				tempnumerator += 1;
+			}
+			tempnumerator = (tempnumerator > 1) ? tempnumerator*tempnumerator : 0 ;
+			balance += tempnumerator/tempdenominator;
+            balance -= currentWeight;
+		}
+	}
 
-                   ladder = (diff>1?true:false);
-                   diff = G2->getEdgeWeight(target1,A[neighbor])+ 1;
-                   if (target1==A[neighbor]){
-                       diff=0;
-                   }
+    for(ushort i =0;i<SNAdjMatrix.size();i++){
+		if((upAlign[randomIndex][i]!=empty)&&(target1!=i)&&(target2!=i)){
+			currentWeight = CIQ.weight(upAlign,target2,i);
+			tempdenominator = CIQ.getWeightDenominator(upAlign,target2,i);
+			tempnumerator = CIQ.getWeightNumerator(upAlign,target2,i);
+			if(AdjMatrices[randomIndex][source1][upAlign[randomIndex][i]]&&(!AdjMatrices[randomIndex][source2][upAlign[randomIndex][i]])){
+				tempnumerator += 1;
+			}
+			else if(AdjMatrices[randomIndex][source2][upAlign[randomIndex][i]]&&(!AdjMatrices[randomIndex][source1][upAlign[randomIndex][i]])){
+				tempnumerator -= 1;
+			}
+			tempnumerator = (tempnumerator > 1) ? tempnumerator*tempnumerator : 0 ;
+			balance += tempnumerator/tempdenominator;
+            balance -= currentWeight;
+		}
+	}
 
-                   if (ladder and diff<=1){
-                       res--;
-                   }else if (not ladder and diff>1){
-                       res++;
-                   }
-               }
-               if(G2->getEdgeWeight(target1,target2) and G1->getEdgeWeight(source1,source2))
-               {
-                   diff = ( G2->getEdgeWeight(target1,A[source2]) + 1);
 
-                   res += 2*(diff>1?1:0);
-               }
-               return res;
-          }
-              break;
-          case MultiS3::la_global:
-          {
-              int res = 0, diff;
-              uint neighbor;
-              const uint n = G1->adjLists[source1].size();
-              uint i = 0;
-              bool ladder = false;
-              
-              for (; i < n; ++i) {
-                  neighbor = G1->adjLists[source1][i];
-                  if (G1->getEdgeWeight(neighbor,source1)>0){
-                      diff = G2->getEdgeWeight(target1,A[neighbor]) + 1;
+    energyInc = (double) balance/CIQdenominator;
+    CIQnumerator += balance;
+    currentScore = (double)CIQnumerator/CIQdenominator;
+    makeChange = (energyInc >= 0 or randomReal(gen) <= exp(energyInc/T));
 
-                      ladder = (diff>1?true:false);
-                      if (ladder and G2->getEdgeWeight(target1,A[neighbor]) == 1){res--;}
-                      if (target2!=A[neighbor] and G2->getEdgeWeight(target2,A[neighbor])==1){res++;}
-                  }
-              }
-              if (G2->getEdgeWeight(target2,A[source1])==1 and G1->getEdgeWeight(source1,source2)==1){res++;}
-              
-              const uint m = G1->adjLists[source2].size();
-              for (i = 0; i < m; ++i) {
-                  neighbor = G1->adjLists[source2][i];
-                  if (G1->getEdgeWeight(neighbor,source2)>0){
-                      diff = G2->getEdgeWeight(target2,A[neighbor]) + 1;
-
-                      ladder = (diff>1?true:false);
-                      if (ladder and neighbor!=source1 and G2->getEdgeWeight(target2,A[neighbor])== 1){res--;}
-                      if (target1!=A[neighbor] and G2->getEdgeWeight(target1,A[neighbor])==1 and neighbor!=source1){res++;}
-                  }
-              }
-              return res;
-          }
-              break;
-          default:
-          {
-              int res = 0;
-              //uint oldTarget1Deg = MultiS3::shadowDegree[target1];
-              //uint oldTarget2Deg = MultiS3::shadowDegree[target2];
-              if (G1->hasSelfLoop(source1)) {
-                  if (G2->hasSelfLoop(target1)) --res;
-                  if (G2->hasSelfLoop(target2)) ++res;
-              }
-              if (G1->hasSelfLoop(source2)) {
-                  if (G2->hasSelfLoop(target1)) --res;
-                  if (G2->hasSelfLoop(target2)) ++res;
-              }
-              for (uint nbr : G1->adjLists[source1]) {
-                  if (nbr != source1) {
-                      --MultiS3::shadowDegree[target1];
-                      ++MultiS3::shadowDegree[target2];
-                      res -= G2->getEdgeWeight(target1, A[nbr]);
-                      res += G2->getEdgeWeight(target2, A[nbr]);
-                  }
-              }
-              for (uint nbr : G1->adjLists[source2]) {
-                  if (nbr != source1) {
-                      --MultiS3::shadowDegree[target2];
-                      ++MultiS3::shadowDegree[target1];
-                      res -= G2->getEdgeWeight(target2, A[nbr]);
-                      res += G2->getEdgeWeight(target1, A[nbr]);
-                  }
-              }
-//              if (oldTarget1Deg > 0 && !MultiS3::shadowDegree[target1]) MultiS3::denom -= 1;
-//              if (oldTarget2Deg > 0 && !MultiS3::shadowDegree[target2]) MultiS3::denom += 1;
-              return res;
-
-          }
-              break;
-      }
+    return makeChange;*/
 }
 
-int SANA::inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
+
+int SANA::aligEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
     int res = 0;
-    for (uint nbr : G2->adjLists[oldTarget]) res -= assignedNodesG2[nbr];
-    for (uint nbr : G2->adjLists[newTarget]) res += assignedNodesG2[nbr];
-    res -= G2->getEdgeWeight(oldTarget, newTarget); //address case changing between adjacent nodes:
+    for (uint i = 0; i < G1AdjLists[source].size(); i++) {
+        ushort neighbor = G1AdjLists[source][i];
+        res -= G2AdjMatrix[oldTarget][A[neighbor]];
+        res += G2AdjMatrix[newTarget][A[neighbor]];
+    }
     return res;
 }
 
-double SANA::localScoreSumIncChangeOp(const vector<vector<float>>& sim, uint source, uint oldTarget, uint newTarget) {
-    return sim[source][newTarget] - sim[source][oldTarget];
+int SANA::aligEdgesIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
+    int res = 0;
+    for (uint i = 0; i < G1AdjLists[source1].size(); i++) {
+        ushort neighbor = G1AdjLists[source1][i];
+        res -= G2AdjMatrix[target1][A[neighbor]];
+        res += G2AdjMatrix[target2][A[neighbor]];
+    }
+    for (uint i = 0; i < G1AdjLists[source2].size(); i++) {
+        ushort neighbor = G1AdjLists[source2][i];
+        res -= G2AdjMatrix[target2][A[neighbor]];
+        res += G2AdjMatrix[target1][A[neighbor]];
+    }
+    //address case swapping between adjacent nodes with adjacent images:
+    res += 2*(G1AdjMatrix[source1][source2] & G2AdjMatrix[target1][target2]);
+    return res;
 }
 
-double SANA::localScoreSumIncSwapOp(const vector<vector<float>>& sim, uint source1, uint source2, uint target1, uint target2) {
-    return sim[source1][target2] - sim[source1][target1] + sim[source2][target1] - sim[source2][target2];
+int SANA::inducedEdgesIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+    int res = 0;
+    for (uint i = 0; i < G2AdjLists[oldTarget].size(); i++) {
+        ushort neighbor = G2AdjLists[oldTarget][i];
+        res -= assignedNodesG2[neighbor];
+    }
+    for (uint i = 0; i < G2AdjLists[newTarget].size(); i++) {
+        ushort neighbor = G2AdjLists[newTarget][i];
+        res += assignedNodesG2[neighbor];
+    }
+    //address case changing between adjacent nodes:
+    res -= G2AdjMatrix[oldTarget][newTarget];
+    return res;
 }
 
-double SANA::JSIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    if (jsWeight == 0) return 0;
-
-    //eval newJsSum
-    //update alignedByNode with source and source neighbours using oldTarget and newTarget
-
-    // eval for source from scratch
-    uint sourceOldAlingedEdges = alignedByNode[source];
-    uint sourceAlignedEdges = 0;
-    vector<uint> sourceNeighbours = G1->adjLists[source];
-    for (uint nbr : sourceNeighbours) {
-        uint neighbourAlignedTo = A[nbr]; 
-        sourceAlignedEdges += G2->getEdgeWeight(newTarget, neighbourAlignedTo);
-    }
-    alignedByNode[source] = sourceAlignedEdges;
-    //update newJsSum
-    uint sourceTotalEdges = sourceNeighbours.size();
-    double change = ((sourceAlignedEdges - sourceOldAlingedEdges)/(double)sourceTotalEdges);
-
-    // for each source neighbour update do iterative changes to the jsAlingedByNode vector
-    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
-    // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
-    //no changes other wise
-    for (uint nbr : sourceNeighbours) {
-        uint neighbourAlignedTo = A[nbr];
-        uint neighbourOldAlignedEdges = alignedByNode[nbr];
-        uint neighbourTotalEdges = G1->adjLists[nbr].size();
-        alignedByNode[nbr] -= G2->getEdgeWeight(oldTarget, neighbourAlignedTo);
-        alignedByNode[nbr] += G2->getEdgeWeight(newTarget, neighbourAlignedTo);
-        //update newJsSum
-        change += ((alignedByNode[nbr] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
-    }
-    return change;
+double SANA::localScoreSumIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
+    return sims[source][newTarget] - sims[source][oldTarget];
 }
 
-double SANA::JSIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    if (jsWeight == 0) return 0;
-
-    //eval swap as two sources and then loop neighbours
-
-    uint source1OldAlingedEdges = alignedByNode[source1];
-    uint source1AlignedEdges = 0;
-    vector<uint> source1Neighbours = G1->adjLists[source1];
-    uint source1TotalEdges = source1Neighbours.size();
-
-    uint source2OldAlingedEdges = alignedByNode[source2];
-    uint source2AlignedEdges = 0;
-    vector<uint> source2Neighbours = G1->adjLists[source2];
-    uint source2TotalEdges = source2Neighbours.size();
-
-    // eval for source1 from sratch
-    for (uint nbr : source1Neighbours) {
-        uint neighbourAlignedTo = A[nbr];
-        // if (G2->getEdgeWeight(target2, neighbourAlignedTo) == true) {
-        //     source1AlignedEdges += 1;
-        // }
-        source1AlignedEdges = G2->getEdgeWeight(target2, neighbourAlignedTo);
-    }
-    alignedByNode[source1] = source1AlignedEdges;
-
-    double change = ((source1AlignedEdges - source1OldAlingedEdges)/(double)source1TotalEdges);
-
-    //for each source neighbour update do iterative changes to the jsAlingedByNode vector
-    //in each update get the G2mapping of neighbour and then check if edge was aligned by
-    //oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
-    //increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
-    //no changes other wise
-    for (uint nbr : source1Neighbours) {
-        uint neighbourAlignedTo = A[nbr];
-        uint neighbourOldAlignedEdges = alignedByNode[nbr];
-        uint neighbourTotalEdges = G1->adjLists[nbr].size();
-        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), nbr) == source1Neighbours.end()) {
-            alignedByNode[nbr] -= G2->getEdgeWeight(target1, neighbourAlignedTo);
-            alignedByNode[nbr] += G2->getEdgeWeight(target2, neighbourAlignedTo);
-            //update newJsSum
-            change += ((alignedByNode[nbr] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
-        }
-    }
-
-    // eval for source2 from scratch
-    for (uint nbr : source2Neighbours) {
-        uint neighbourAlignedTo = A[nbr];
-        source2AlignedEdges += G2->getEdgeWeight(target1, neighbourAlignedTo);
-    }
-    alignedByNode[source2] = source2AlignedEdges;
-    change += ((source2AlignedEdges - source2OldAlingedEdges)/(double)source2TotalEdges);
-
-    // for each source neighbour update do iterative changes to the jsAlingedByNode vector
-    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldTarget to G2mapping and reduce score if newTarget to G2mapping doesnt exist
-    // increase score if oldTarget to G2 mapping edge didnt exist but newTarget to G2 mapping does
-    //no changes other wise
-    for (uint nbr : source2Neighbours) {
-        uint neighbourAlignedTo = A[nbr];
-        uint neighbourOldAlignedEdges = alignedByNode[nbr];
-        uint neighbourTotalEdges = G1->adjLists[nbr].size();
-        if (std::find (source1Neighbours.begin(), source1Neighbours.end(), nbr) == source1Neighbours.end()) {
-            alignedByNode[nbr] -= G2->getEdgeWeight(target2, neighbourAlignedTo);
-            alignedByNode[nbr] += G2->getEdgeWeight(target1, neighbourAlignedTo);
-            //update newJsSum
-            change += ((alignedByNode[nbr] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
-        }
-    }
-
-    //eval for common neighbours
-    vector<uint> source1source2commonneighbours(source1Neighbours.size() + source2Neighbours.size());
-    set_intersection(source1Neighbours.begin(), source1Neighbours.end(),
-                     source2Neighbours.begin(), source2Neighbours.end(),
-                     source1source2commonneighbours.begin());
-    return change;
+double SANA::localScoreSumIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
+    return sims[source1][target2] -
+            sims[source1][target1] +
+            sims[source2][target1] -
+            sims[source2][target2];
 }
 
-double SANA::WECIncChangeOp(uint source, uint oldTarget, uint newTarget) {
+double SANA::WECIncChangeOp(ushort source, ushort oldTarget, ushort newTarget) {
     double res = 0;
-    for (uint nbr : G1->adjLists[source]) {
-        if (G2->getEdgeWeight(oldTarget, A[nbr])) {
+    for (uint j = 0; j < G1AdjLists[source].size(); j++) {
+        ushort neighbor = G1AdjLists[source][j];
+        if (G2AdjMatrix[oldTarget][A[neighbor]]) {
             res -= wecSims[source][oldTarget];
-            res -= wecSims[nbr][A[nbr]];
+            res -= wecSims[neighbor][A[neighbor]];
         }
-        if (G2->getEdgeWeight(newTarget, A[nbr])) {
+        if (G2AdjMatrix[newTarget][A[neighbor]]) {
             res += wecSims[source][newTarget];
-            res += wecSims[nbr][A[nbr]];
+            res += wecSims[neighbor][A[neighbor]];
         }
     }
     return res;
 }
 
-double SANA::WECIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
+double SANA::WECIncSwapOp(ushort source1, ushort source2, ushort target1, ushort target2) {
     double res = 0;
-    for (uint nbr : G1->adjLists[source1]) {
-        if (G2->getEdgeWeight(target1, A[nbr])) {
+    for (uint j = 0; j < G1AdjLists[source1].size(); j++) {
+        ushort neighbor = G1AdjLists[source1][j];
+        if (G2AdjMatrix[target1][A[neighbor]]) {
             res -= wecSims[source1][target1];
-            res -= wecSims[nbr][A[nbr]];
+            res -= wecSims[neighbor][A[neighbor]];
         }
-        if (G2->getEdgeWeight(target2, A[nbr])) {
+        if (G2AdjMatrix[target2][A[neighbor]]) {
             res += wecSims[source1][target2];
-            res += wecSims[nbr][A[nbr]];
+            res += wecSims[neighbor][A[neighbor]];
         }
     }
-    for (uint nbr : G1->adjLists[source2]) {
-        if (G2->getEdgeWeight(target2, A[nbr])) {
+    for (uint j = 0; j < G1AdjLists[source2].size(); j++) {
+        ushort neighbor = G1AdjLists[source2][j];
+        if (G2AdjMatrix[target2][A[neighbor]]) {
             res -= wecSims[source2][target2];
-            res -= wecSims[nbr][A[nbr]];
+            res -= wecSims[neighbor][A[neighbor]];
         }
-        if (G2->getEdgeWeight(target1, A[nbr])) {
+        if (G2AdjMatrix[target1][A[neighbor]]) {
             res += wecSims[source2][target1];
-            res += wecSims[nbr][A[nbr]];
+            res += wecSims[neighbor][A[neighbor]];
         }
     }
-    if (G1->hasEdge(source1, source2) and G2->hasEdge(target1, target2)) {
+    //address case swapping between adjacent nodes with adjacent images:
+    if (G1AdjMatrix[source1][source2] and G2AdjMatrix[target1][target2]) {
         res += 2*wecSims[source1][target1];
         res += 2*wecSims[source2][target2];
     }
     return res;
 }
 
-double SANA::EWECIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    return EWECSimCombo(source, newTarget) - EWECSimCombo(source, oldTarget);
-}
-
-double SANA::EWECIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    double score = EWECSimCombo(source1, target2) + EWECSimCombo(source2, target1) 
-                 - EWECSimCombo(source1, target1) - EWECSimCombo(source2, target2);
-    if (G1->hasEdge(source1, source2) and G2->hasEdge(target1, target2)) {
-        score += ewec->getScore(ewec->getColIndex(target1, target2), 
-                                ewec->getRowIndex(source1, source2))/(g1Edges); //correcting for missed edges when swapping 2 adjacent pairs
-    }
-    return score;
-}
-
-double SANA::EWECSimCombo(uint source, uint target) {
-    double score = 0;
-    for (uint nbr : G1->adjLists[source]) {
-        if (G2->getEdgeWeight(target, A[nbr])) {
-            int e1 = ewec->getRowIndex(source, nbr);
-            int e2 = ewec->getColIndex(target, A[nbr]);
-            score+=ewec->getScore(e2,e1);
-        }
-    }
-    return score/(2*g1Edges);
-}
-
-int SANA::ncIncChangeOp(uint source, uint oldTarget, uint newTarget) {
-    int change = 0;
-    if (trueAWithValidCountAppended[source] == oldTarget) change -= 1;
-    if (trueAWithValidCountAppended[source] == newTarget) change += 1;
-    return change;
-}
-
-int SANA::ncIncSwapOp(uint source1, uint source2, uint target1, uint target2) {
-    int change = 0;
-    if (trueAWithValidCountAppended[source1] == target1) change -= 1;
-    if (trueAWithValidCountAppended[source2] == target2) change -= 1;
-    if (trueAWithValidCountAppended[source1] == target2) change += 1;
-    if (trueAWithValidCountAppended[source2] == target1) change += 1;
-    return change;
-}
-
-void SANA::trackProgress(long long int iter, long long int maxIters) {
-    if (!enableTrackProgress) return;
-    double fractionTime = maxIters == -1 ? 0 : iter/(double)maxIters;
-    double elapsedTime = timer.elapsed();
-    uint iterationsElapsed = iterationsPerformed-oldIterationsPerformed;
-    if (elapsedTime == 0) oldTimeElapsed = 0;
-    double ips = (iterationsElapsed/(elapsedTime-oldTimeElapsed));
-    oldTimeElapsed = elapsedTime;
-    oldIterationsPerformed = iterationsPerformed;
-    cout<<iter/iterationsPerStep<<" ("<<100*fractionTime<<"%,"<<elapsedTime<<"s): score = "<<currentScore;
-    cout<< " ips = "<<ips<<", P("<<Temperature<<") = "<<acceptingProbability(avgEnergyInc, Temperature);
-    cout<<", pBad = "<<incrementalMeanPBad()<<endl;
-
+void SANA::trackProgress(long long unsigned int i) {
+    if (not enableTrackProgress) return;
+    bool printDetails = false;//need to change back to false later
+    bool printScores = false;//need to change back to false later
     bool checkScores = true;
+    cerr << i/iterationsPerStep << " (" << timer.elapsed() << "s): score = " << currentScore;
+    cerr <<  " P(" << avgEnergyInc << ", " << T << ") = " << acceptingProbability(avgEnergyInc, T) << endl;
+    //cerr <<"CIQ score = "<<CIQeval(MultiAlignment(MA,shadowNetwork->getNumNodes()))<<endl;
+
+    if (not (printDetails or printScores or checkScores)) return;
+    Alignment Al(A);
+    //original one is commented out for testing sec
+    //if (printDetails) cerr << " (" << Al.numAlignedEdges(*G1, *G2) << ", " << G2->numNodeInducedSubgraphEdges(A) << ")";
+    if (printDetails) cerr << "Al.numAlignedEdges = " << Al.numAlignedEdges(*G1, *G2) << ", g1Edges = " <<g1Edges<< " ,g2Edges = "<<g2Edges<< endl;
+    if (printScores) {
+        SymmetricSubstructureScore S3(G1, G2);
+        EdgeCorrectness EC(G1, G2);
+        SymmetricEdgeCoverage SEC(G1,G2);
+        cerr << "S3: " << S3.eval(Al) << "  EC: " << EC.eval(Al) << "  SEC: " << SEC.eval(Al) <<endl;
+    }
+    /*if (checkScores) {
+        double realScore = eval(Al);
+        if (realScore-currentScore > 0.000001) {
+            cerr << "internal error: incrementally computed score (" << currentScore;
+            cerr << ") is not correct (" << realScore << ")" << endl;
+        }
+    }*/
+    //multisana only, need change back later
     if (checkScores) {
-        double realScore = eval(A);
-        if (fabs(realScore-currentScore) > 0.00001) {
-            cerr<<"internal error: incrementally computed score ("<<currentScore;
-            cerr<<") is not correct ("<<realScore<<")"<<endl;
+        //double realScore = eval(MultiAlignment(MA,shadowNetwork->getNumNodes()));
+        //double realScore = MCeval(MultiAlignment(MA,shadowNetwork->getNumNodes()));
+		double realScore = CIQeval(MultiAlignment(MA,shadowNetwork->getNumNodes()));
+        uint temp = 0-1;
+        if (abs(realScore-currentScore) > 0.000001) {
+            cerr << "internal error: incrementally computed score (" << currentScore;
+            cerr << ") is not correct (" << realScore << ")" << endl;
+            //cerr<<"current numerator = "<<numerator<<endl;
+            //cerr<<"current denominator = "<<denominator<<endl;
+            cerr<<"current CIQnumerator = "<<CIQnumerator<<endl;
+            cerr<<"current CIQdenominator = "<<CIQdenominator<<endl;
+            cerr<<"uint 0-1 = "<<temp<<endl;
             currentScore = realScore;
+            CIQnumerator = CIQ.getNumerator(MultiAlignment(MA,shadowNetwork->getNumNodes()));
         }
     }
 
-    //code for estimating dynamic TDecay. The dynamic method uses linear interpolation to obtain an
-    //an "ideal" P(bad) as a basis for SANA runs. If the current P(bad) is significantly different from 
-    //our "ideal" P(bad), then decay is either "sped up" or "slowed down"
-    if (dynamicTDecay) {
+    if (dynamic_tdecay) { // Code for estimating dynamic TDecay
+        //The dynamic method uses linear interpolation to obtain an
+        //an "ideal" P(bad) as a basis for SANA runs. If the current P(bad)
+        //is significantly different from out "ideal" P(bad), then decay is either
+        //"sped up" or "slowed down"
         int NSteps = 100;
-        double fractionTime = (timer.elapsed()/maxSeconds);
-        double lowIndex = floor(NSteps*fractionTime);
-        double highIndex = ceil(NSteps*fractionTime);
-        double betweenFraction = NSteps*fractionTime - lowIndex;
+        double fractional_time = (timer.elapsed()/(minutes*60));
+        double lowIndex = floor(NSteps*fractional_time);
+        double highIndex = ceil(NSteps*fractional_time);
+        double betweenFraction = NSteps*fractional_time - lowIndex;
         double PLow = tau[lowIndex];
         double PHigh = tau[highIndex];
+
         double PBetween = PLow + betweenFraction * (PHigh - PLow);
 
-        // if the ratio if off by more than a few percent, adjust.
-        double ratio = acceptingProbability(avgEnergyInc, Temperature) / PBetween;
-
-        //dynamicTDecayTime is never initialized, so I don't think this works
-        if (abs(1-ratio) >= .01 and
-            (ratio < 1 or dynamicTDecayTime > .2)) { //don't speed it up too soon
-            double shouldBe = -log(avgEnergyInc/(TInitial*log(PBetween)))/(dynamicTDecayTime);
-            if (dynamicTDecayTime == 0 or shouldBe != shouldBe or shouldBe <= 0)
-                shouldBe = TDecay * (ratio >= 0 ? ratio*ratio : 0.5);
-            cout<<"TDecay "<<TDecay<<" too ";
-            cout<<(ratio < 1 ? "fast" : "slow")<<" shouldBe "<<shouldBe;
-            TDecay = sqrt(TDecay * shouldBe); //geometric mean
-            cout<<"; try "<<TDecay<<endl;
-        }
+        if (abs(acceptingProbability(avgEnergyInc, T) - PBetween) >= .05)
+            TDecay = sqrt((TDecay)*((log(pow(10.0, -6.5) / TInitial)) / -minutes));
     }
 }
 
-void SANA::setTInitial(double t) { TInitial = t; }
-void SANA::setTFinal(double t) { TFinal = t; }
-void SANA::setTDecayFromTempRange() { TDecay = -log(TFinal/TInitial); }
-void SANA::setDynamicTDecay() { dynamicTDecay = true; }
+Alignment SANA::runRestartPhases() {
+    cerr << "new alignments phase" << endl;
+    Timer T;
+    T.start();
+    newAlignmentsCount = 0;
+    while (T.elapsed() < minutesNewAlignments*60) {
+        long long unsigned int iter = 0;
+        // Alignment A = simpleRun(Alignment::random(n1, n2), 0.0, iter);
+        Alignment A = simpleRun(getStartingAlignment(), 0.0, iter);
+        uint i = getLowestIndex();
+        double lowestScore = candidatesScores[i];
+        if (currentScore > lowestScore) {
+            candidates[i] = A;
+            candidatesScores[i] = currentScore;
+        }
+        newAlignmentsCount++;
+    }
+    cerr << "candidates phase" << endl;
+    vector<long long unsigned int> iters(numCandidates, iterationsPerStep);
+    for (uint i = 0; i < numCandidates; i++) {
+        candidates[i] = simpleRun(candidates[i], minutesPerCandidate*60, iters[i]);
+        candidatesScores[i] = currentScore;
+    }
+    cerr << "finalist phase" << endl;
+    uint i = getHighestIndex();
+    return simpleRun(candidates[i], minutesFinalist*60, iters[i]);
+}
+
+uint SANA::getLowestIndex() const {
+    double lowestScore = candidatesScores[0];
+    uint lowestIndex = 0;
+    for (uint i = 1; i < numCandidates; i++) {
+        if (candidatesScores[i] < lowestScore) {
+            lowestScore = candidatesScores[i];
+            lowestIndex = i;
+        }
+    }
+    return lowestIndex;
+}
+
+uint SANA::getHighestIndex() const {
+    double highestScore = candidatesScores[0];
+    uint highestIndex = 0;
+    for (uint i = 1; i < numCandidates; i++) {
+        if (candidatesScores[i] > highestScore) {
+            highestScore = candidatesScores[i];
+            highestIndex = i;
+        }
+    }
+    return highestIndex;
+}
+
+
+void SANA::setTemperatureScheduleAutomatically() {
+    setTInitialAutomatically();
+    setTDecayAutomatically();
+}
+
+void SANA::setTInitialAutomatically() {
+    TInitial = searchTInitial();
+}
+
+void SANA::setTDecayAutomatically() {
+    if(maxIterations == 0){
+        TDecay = searchTDecay(TInitial, minutes);
+    }else{
+        TDecay = searchTDecay(TInitial, maxIterations);
+    }
+
+}
+
+double SANA::searchTInitial() {
+    const double NUM_SAMPLES_RANDOM = 100;
+    const double HIGH_THRESHOLD_P = 0.999999;
+    const double LOW_THRESHOLD_P = 0.99;
+
+    cerr<<endl;
+    //find the threshold score between random and not random temperature
+    Timer T;
+    T.start();
+    cerr << "Computing distribution of scores of random alignments ";
+    vector<double> upperBoundKScores(NUM_SAMPLES_RANDOM);
+    for (uint i = 0; i < NUM_SAMPLES_RANDOM; i++) {
+        upperBoundKScores[i] = scoreRandom();
+    }
+    cerr << "(" <<  T.elapsedString() << ")" << endl;
+    NormalDistribution dist(upperBoundKScores);
+    double highThresholdScore = dist.quantile(HIGH_THRESHOLD_P);
+    double lowThresholdScore = dist.quantile(LOW_THRESHOLD_P);
+    cerr << "Mean: " << dist.getMean() << endl;
+    cerr << "sd: " << dist.getSD() << endl;
+    cerr << LOW_THRESHOLD_P << " of random runs have a score <= " << lowThresholdScore << endl;
+    cerr << HIGH_THRESHOLD_P << " of random runs have a score <= " << highThresholdScore << endl;
+
+    double lowerBoundTInitial = 0;
+    double upperBoundTInitial = 1;
+    while (not isRandomTInitial(upperBoundTInitial, highThresholdScore, lowThresholdScore)) {
+        cerr << endl;
+        upperBoundTInitial *= 2;
+    }
+    upperBoundTInitial *= 2;    // one more doubling just to be sure
+    cerr << endl;
+    if (upperBoundTInitial > 1) lowerBoundTInitial = upperBoundTInitial/4;
+
+    uint n1 = G1->getNumNodes();
+    uint n2 = G2->getNumNodes();
+    cerr << "Iterations per run: " << 10000.+100.*n1+10.*n2+n1*n2*0.1 << endl;
+
+    uint count = 0;
+    T.start();
+    while (fabs(lowerBoundTInitial - upperBoundTInitial)/lowerBoundTInitial > 0.05 and
+            count <= 10) {
+        //search in log space
+        double lowerBoundTInitialLog = log2(lowerBoundTInitial+1);
+        double upperBoundTInitialLog = log2(upperBoundTInitial+1);
+        double midTInitialLog = (lowerBoundTInitialLog+upperBoundTInitialLog)/2.;
+        double midTInitial = exp2(midTInitialLog)-1;
+
+        //we prefer false negatives (random scores classified as non-random)
+        //than false positives (non-random scores classified as random)
+        cerr << "Test " << count << " (" << T.elapsedString() << "): ";
+        count++;
+        if (isRandomTInitial(midTInitial, highThresholdScore, lowThresholdScore)) {
+            upperBoundTInitial = midTInitial;
+            cerr << " (random behavior)";
+        }
+        else {
+            lowerBoundTInitial = midTInitial;
+            cerr << " (NOT random behavior)";
+        }
+        cerr << " New range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
+    }
+    //return the top of the range
+    cerr << "Final range: (" << lowerBoundTInitial << ", " << upperBoundTInitial << ")" << endl;
+    cerr << "Final TInitial: " << upperBoundTInitial << endl;
+    return upperBoundTInitial;
+}
+
+//takes a random alignment, lets it run for a certain number
+//of iterations (ITERATIONS) with fixed temperature TInitial
+//and returns its score
+double SANA::scoreForTInitial(double TInitial) {
+    uint ITERATIONS = 10000.+100.*n1+10.*n2+n1*n2*0.1; //heuristic value
+
+    double oldIterationsPerStep = this->iterationsPerStep;
+    double oldTInitial = this->TInitial;
+    bool oldRestart = restart;
+
+    this->iterationsPerStep = ITERATIONS;
+    this->TInitial = TInitial;
+    constantTemp = true;
+    enableTrackProgress = false;
+    restart = false;
+
+    long long unsigned int iter = 0;
+    // simpleRun(Alignment::random(n1, n2), 0.0, iter);
+    simpleRun(getStartingAlignment(), 0.0, iter);
+    this->iterationsPerStep = oldIterationsPerStep;
+    this->TInitial = oldTInitial;
+    constantTemp = false;
+    enableTrackProgress = true;
+    restart = oldRestart;
+
+    return currentScore;
+}
+
+bool SANA::isRandomTInitial(double TInitial, double highThresholdScore, double lowThresholdScore) {
+    const double NUM_SAMPLES = 5;
+
+    double score = scoreForTInitial(TInitial);
+    cerr << "T_initial = " << TInitial << ", score = " << score;
+    //quick filter all the scores that are obviously not random
+    if (score > highThresholdScore) return false;
+    if (score < lowThresholdScore) return true;
+    //make sure that alignments that passed the first test are truly random
+    //(among NUM_SAMPLES runs, at least one of them has a p-value smaller than LOW_THRESHOLD_P)
+    for (uint i = 0; i < NUM_SAMPLES; i++) {
+        if (scoreForTInitial(TInitial) <= lowThresholdScore) return true;
+    }
+    return false;
+}
+
+double SANA::scoreRandom() {
+    //    return eval(Alignment::random(n1, n2));
+    return eval(Alignment::randomAlignmentWithLocking(G1,G2));
+}
+
+double SANA::searchSpaceSizeLog() {
+    //the search space size is (n2 choose n1) * n1!
+    //we use the stirling approximation
+    if (n2 == n1) return n1*log(n1)-n1;
+    return n2*log(n2)-(n2-n1)*log(n2-n1)-n1;
+}
+
+long long unsigned int SANA::hillClimbingIterations(long long unsigned int idleCountTarget) {
+    // Alignment startA = Alignment::random(n1, n2);
+    Alignment startA = getStartingAlignment();
+    long long unsigned int iter = 0;
+
+    cerr << "We consider that SANA has stagnated if it goes ";
+    cerr << idleCountTarget << " without improving" << endl;
+
+    initDataStructures(startA);
+    T = 0;
+    long long unsigned int idleCount = 0;
+    for (; ; iter++) {
+        if (iter%iterationsPerStep == 0) {
+            trackProgress(iter);
+        }
+        double oldScore = currentScore;
+        SANAIteration();
+        if (abs(oldScore-currentScore) < 0.00001) idleCount++;
+        else idleCount = 0;
+        if (idleCount == idleCountTarget) {
+            return  (iter+1) - idleCount;
+        }
+    }
+    return iter; //dummy return to shut compiler warning
+}
+
+double SANA::expectedNumAccEInc(double temp, const vector<double>& energyIncSample) {
+    double res = 0;
+    for (uint i = 0; i < energyIncSample.size(); i++) {
+        res += exp(energyIncSample[i]/temp);
+    }
+    return res;
+}
+
+//returns a sample of energy increments, with size equal to the number of iterations per second
+//after hill climbing
+vector<double> SANA::energyIncSample() {
+
+    initIterPerSecond(); //this runs HC, so it updates the values
+    //of A and currentScore (besides iterPerSecond)
+
+    double iter = iterPerSecond;
+    cout << "Hill climbing score: " << currentScore << endl;
+    //generate a sample of energy increments, with size equal to the number of iterations per second
+    vector<double> EIncs(0);
+    T = 0;
+    for (uint i = 0; i < iter; i++) {
+        SANAIteration();
+        if (energyInc < 0) {
+            EIncs.push_back(energyInc);
+        }
+    }
+    return EIncs;
+}
+
+double SANA::searchTDecay(double TInitial, double minutes) {
+
+    vector<double> EIncs = energyIncSample();
+    cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
+
+    //find the temperature epsilon such that the expected number of these energy samples accepted is 1
+    //by bisection, since the expected number is monotically increasing in epsilon
+
+    //upper bound and lower bound of x
+    uint N = EIncs.size();
+    double ESum = vectorSum(EIncs);
+    double EMin = vectorMin(EIncs);
+    double EMax = vectorMax(EIncs);
+    double x_left = abs(EMax)/log(N);
+    double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
+    cerr << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
+
+    const uint NUM_ITER = 100;
+    for (uint i = 0; i < NUM_ITER; i++) {
+        double x_mid = (x_left + x_right)/2;
+        double y = expectedNumAccEInc(x_mid, EIncs);
+        if (y < 1) x_left = x_mid;
+        else if (y > 1) x_right = x_mid;
+        else break;
+    }
+
+    double epsilon = (x_left + x_right)/2;
+    cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
+    cerr << "Final epsilon: " << epsilon << endl;
+    double iter_t = minutes*60*getIterPerSecond();
+
+    double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
+    cerr << "Final T_decay: " << lambda << endl;
+    return lambda;
+}
+
+double SANA::searchTDecay(double TInitial, uint iterations) {
+
+    vector<double> EIncs = energyIncSample();
+    cerr << "Total of " << EIncs.size() << " energy increment samples averaging " << vectorMean(EIncs) << endl;
+
+    //find the temperature epsilon such that the expected number of these energy samples accepted is 1
+    //by bisection, since the expected number is monotically increasing in epsilon
+
+    //upper bound and lower bound of x
+    uint N = EIncs.size();
+    double ESum = vectorSum(EIncs);
+    double EMin = vectorMin(EIncs);
+    double EMax = vectorMax(EIncs);
+    double x_left = abs(EMax)/log(N);
+    double x_right = min(abs(EMin)/log(N), abs(ESum)/(N*log(N)));
+    cerr << "Starting range: (" << x_left << ", " << x_right << ")" << endl;
+
+    const uint NUM_ITER = 100;
+    for (uint i = 0; i < NUM_ITER; i++) {
+        double x_mid = (x_left + x_right)/2;
+        double y = expectedNumAccEInc(x_mid, EIncs);
+        if (y < 1) x_left = x_mid;
+        else if (y > 1) x_right = x_mid;
+        else break;
+    }
+
+    double epsilon = (x_left + x_right)/2;
+    cerr << "Final range: (" << x_left << ", " << x_right << ")" << endl;
+    cerr << "Final epsilon: " << epsilon << endl;
+    long long unsigned int iter_t = (long long unsigned int)(iterations)*100000000;
+
+    double lambda = log((TInitial*TInitialScaling)/epsilon)/(iter_t*TDecayScaling);
+    cerr << "Final T_decay: " << lambda << endl;
+    return lambda;
+}
 
 double SANA::getIterPerSecond() {
-    if (not initializedIterPerSecond) initIterPerSecond();
+    if (not initializedIterPerSecond) {
+        initIterPerSecond();
+    }
     return iterPerSecond;
 }
 
 void SANA::initIterPerSecond() {
+    long long unsigned int iter = hillClimbingIterations(500000+searchSpaceSizeLog());
+    if (iter == 0) {
+        throw runtime_error("hill climbing stagnated after 0 iterations");
+    }
+    double res = iter/timer.elapsed();
+    cerr << "SANA does " << to_string(res) << " iterations per second" << endl;
+
     initializedIterPerSecond = true;
-    cout << "Determining iteration speed...." << endl;
-    double totalIps = 0.0;
-    int ipsListSize = 0;
-    if (ipsList.size() != 0) {
-        for (pair<double,double> ipsPair : ipsList) {
-            if (TFinal <= ipsPair.first && ipsPair.first <= TInitial) {
-                totalIps+=ipsPair.second;
-                ipsListSize+=1;
-            }
-        }
-        totalIps = totalIps / (double) ipsListSize;
-    } else {
-        cout << "Since temperature schedule is provided, ips will be "
-             << "calculated using constantTempIterations" << endl;
-        long long int iter = 1E6;
-        constantTempIterations(iter - 1);
-        double res = iter/timer.elapsed();
-        totalIps = res;
-    }
-    cout << "SANA does " << long(totalIps) << " iterations per second on average" << endl;
-    iterPerSecond = totalIps;
-
-    //what is this? can it be removed? -Nil
-    uint integralMin = maxSeconds/60.0;
-    string folder = "cache-pbad/"+MC->toString()+"/progress_"+to_string(integralMin)+"/";
-    string fileName = folder+G1->getName()+"_"+G2->getName()+"_0.csv";
-    ofstream ofs(fileName);
-    ofs<<"time,score,avgEnergyInc,Temperature,realTemp,pBad,lower,higher,timer"<<endl;
+    iterPerSecond = res;
 }
 
-void SANA::constantTempIterations(long long int iterTarget) {
-    initDataStructures();
-    long long int iter;
-    for (iter = 1; iter < iterTarget ; ++iter) {
-        if (iter%iterationsPerStep == 0) trackProgress(iter);
-        SANAIteration();
-    }
-    trackProgress(iter);
-}
-
-/* when we run sana at a fixed temp, scores generally go up
-(especially if the temp is low) until a point of "thermal equilibrium".
-This function should return the avg pBad at equilibrium.
-we keep track of the score every certain number of iterations
-if the score went down at least half the time,
-this suggests that the upward trend is over and we are at equilirbium
-once we know we are at equilibrium, we use the buffer of pbads to get an average pBad
-'logLevel' can be 0 (no output) 1 (logs result in cerr) or 2 (verbose/debug mode)*/
-double SANA::getPBad(double temp, double maxTimeInS, int logLevel) {
-    //new state for the run at fixed temperature
-    constantTemp = true;
-    Temperature = temp;
-    enableTrackProgress = false;
-
-    //note: this is a circular buffer that maintains scores sampled at intervals
-    vector<double> scoreBuffer;
-    //the larger 'numScores' is, the stronger evidence of reachign equilibrium. keep this value odd
-    const uint numScores = 11;
-    uint iter = 0;
-    uint sampleInterval = 10000;
-    bool reachedEquilibrium = false;
-    initDataStructures(); //this initializes the timer and resets the pBad buffer
-    bool verbose = (logLevel == 2); //print everything going on, for debugging purposes
-    uint verbose_i = 0;
-    if (verbose) cerr<<endl<<"****************************************"<<endl
-                     <<"starting search for pBad for temp = "<<temp<<endl;
-    while (not reachedEquilibrium) {
-        SANAIteration();
-        iter++;
-        if (iter%sampleInterval == 0) {
-            if (verbose) {
-                cerr<<verbose_i<<" score: "<<currentScore<<" (avg pBad: "
-                    <<slowMeanPBad()<<")"<<endl;
-                verbose_i++;
-            }
-            //circular buffer behavior
-            //(since the buffer is tiny, the cost of shifting everything is negligible)
-            scoreBuffer.push_back(currentScore);            
-            if (scoreBuffer.size() > numScores) scoreBuffer.erase(scoreBuffer.begin());
-            if (scoreBuffer.size() == numScores) {
-                //check if we are at eq:
-                //if the score went down more than up, it suggests we are at eq
-                uint scoreTrend = 0;
-                for (uint i = 0; i < numScores-1; i++) {
-                    if (scoreBuffer[i+1] < scoreBuffer[i]) scoreTrend--;
-                    if (scoreBuffer[i+1] > scoreBuffer[i]) scoreTrend++;
-                }
-                reachedEquilibrium = (scoreTrend <= 0);
-                if (verbose) {
-                    cerr<<"scoreTrend = "<<scoreTrend<<endl;
-                    if (reachedEquilibrium) {
-                        cerr<<endl<<"Reached equilibrium"<<endl<<"scoreBuffer:"<<endl;
-                        for (uint i = 0; i < scoreBuffer.size(); i++) cerr<<scoreBuffer[i]<<" ";
-                        cerr<<endl;
-                    }
-                }
-            }
-            if (timer.elapsed() > maxTimeInS) {
-                if (verbose) {
-                    cerr<<"ran out of time. scoreBuffer:"<<endl;
-                    for (uint i = 0; i < scoreBuffer.size(); i++) cerr<<scoreBuffer[i]<<endl;
-                    cerr<<endl;
-                }
-                break;
-            }
-        }
-    }
-    double pBadAvgAtEq = slowMeanPBad();
-    double nextIps = (double)iter / (double)timer.elapsed();
-    pair<double, double> nextPair (temp, nextIps);
-    ipsList.push_back(nextPair);
-    if (logLevel >= 1) {
-        cout<<"> getPBad("<<temp<<") = "<<pBadAvgAtEq<<" (score: "<<currentScore<<")";
-        if (reachedEquilibrium) cout<<" (time: "<<timer.elapsed()<<"s)";
-        else cout<<" (didn't detect eq. after "<<maxSeconds<<"s)";
-        cout<<" iterations = "<<iter<<", ips = "<<nextIps<<endl;
-        if (verbose) cerr<<"final result: "<<pBadAvgAtEq<<endl
-                         <<"****************************************"<<endl<<endl;
-    }
-
-    //restore normal execution state
-    constantTemp = false;
-    enableTrackProgress = true;
-    Temperature = TInitial;
-
-    return pBadAvgAtEq;
-}
-
-void SANA::initTau(void) {
-    /* tau = {
-    1.000, 0.985, 0.970, 0.960, 0.950, 0.942, 0.939, 0.934, 0.928, 0.920,
-    0.918, 0.911, 0.906, 0.901, 0.896, 0.891, 0.885, 0.879, 0.873, 0.867,
-    0.860, 0.853, 0.846, 0.838, 0.830, 0.822, 0.810, 0.804, 0.794, 0.784,
-    0.774, 0.763, 0.752, 0.741, 0.728, 0.716, 0.703, 0.690, 0.676, 0.662,
-    0.647, 0.632, 0.616, 0.600, 0.584, 0.567, 0.549, 0.531, 0.514, 0.495,
-    0.477, 0.458, 0.438, 0.412, 0.400, 0.381, 0.361, 0.342, 0.322, 0.303,
-    0.284, 0.264, 0.246, 0.228, 0.210, 0.193, 0.177, 0.161, 0.145, 0.131,
-    0.116, 0.104, 0.092, 0.081, 0.070, 0.061, 0.052, 0.044, 0.0375, 0.031,
-    0.026, 0.0212, 0.0172, 0.0138, 0.011, 0.008, 0.006, 0.005, 0.004, 0.003,
-    0.002, 0.001, 0.0003, 0.0001, 3e-5, 1e-6, 0, 0, 0, 0, 0}; */
-    tau = {0.996738, 0.994914, 0.993865, 0.974899, 0.977274, 0.980926, 0.97399,  0.970583, 0.967492, 0.962373,
-           0.953197, 0.954104, 0.951387, 0.953532, 0.948492, 0.939501, 0.939128, 0.932902, 0.912378, 0.896011,
-           0.89535,  0.88642,  0.874628, 0.856721, 0.855782, 0.838483, 0.820407, 0.784303, 0.771297, 0.751457,
-           0.735902, 0.676393, 0.633939, 0.604872, 0.53482,  0.456856, 0.446905, 0.377708, 0.337258, 3.04e-01,
-           0.280585, 0.240093, 1.95e-01, 1.57e-01, 1.21e-01, 1.00e-01, 8.04e-02, 5.95e-02, 4.45e-02, 3.21e-02,
-           1.81e-02, 1.82e-02, 1.12e-02, 7.95e-03, 4.82e-03, 3.73e-03, 2.11e-03, 1.41e-03, 9.69e-04, 6.96e-04,
-           5.48e-04, 4.20e-04, 4.00e-04, 3.50e-04, 3.10e-04, 2.84e-04, 2.64e-04, 1.19e-04, 8.16e-05, 7.22e-05,
-           6.16e-05, 4.46e-05, 3.36e-05, 2.66e-05, 1.01e-05, 9.11e-06, 4.09e-06, 3.96e-06, 3.43e-06, 3.12e-06,
-           2.46e-06, 2.02e-06, 1.85e-06, 1.72e-06, 1.10e-06, 9.13e-07, 8.65e-07, 8.21e-07, 7.26e-07, 6.25e-07,
-           5.99e-07, 5.42e-07, 8.12e-08, 4.16e-08, 6.56e-09, 9.124e-10, 6.1245e-10, 3.356e-10, 8.124e-11, 4.587e-11};
+void SANA::setDynamicTDecay() {
+    dynamic_tdecay = true;
 }

@@ -30,7 +30,7 @@ double GoAverage::eval(const Alignment& A) {
 
     string alignmentFile = G1Name+"_"+G2Name+"GoAverageAlignment.aln";
     ofstream outfile(alignmentFile);
-    A.writeEdgeList(*G1, *G2, outfile); //why is there I/O inside the eval function?? -Nil
+    A.writeEdgeList(G1, G2, outfile);
     outfile.close();
 
     string pairwiseScript = "go/pairwise.py";
@@ -42,18 +42,18 @@ double GoAverage::eval(const Alignment& A) {
 
     Timer t;
     t.start();
-    cout << "Executing " << pairwiseScript << endl;
+    cerr << "Executing " << pairwiseScript << endl;
     //python pairwise.py terms1.txt terms2.txt alignment.aln output.trm
     execPrintOutput("python "+pairwiseScript+" "+pairwiseScriptParameters);
-    cout << "Done (" << t.elapsedString() << ")" << endl;
+    cerr << "Done (" << t.elapsedString() << ")" << endl;
 
     string itgomScript = "go/itgom.py";
 
     t.start();
-    cout << "Executing " << itgomScript << endl;
+    cerr << "Executing " << itgomScript << endl;
     //python itgom.py term_pairs.trm
     execPrintOutput("python "+itgomScript+" "+pairwiseScriptOutputFile);
-    cout << "Done (" << t.elapsedString() << ")" << endl;
+    cerr << "Done (" << t.elapsedString() << ")" << endl;
 
     string simScript = "go/protein_pair_sim.py";
 
@@ -64,13 +64,14 @@ double GoAverage::eval(const Alignment& A) {
     simScriptParameters+=" "+alignmentFile+" "+itgomScriptOutputFile+" "+simScriptOutputFile;
 
     t.start();
-    cout << "Executing " << simScript << endl;
+    cerr << "Executing " << simScript << endl;
     //python protein_pair_sim.py terms1.txt terms2.txt alignment.aln file.sim output.txt
     string result = exec("python "+simScript+" "+simScriptParameters);
-    cout << "Done (" << t.elapsedString() << ")" << endl;
+    cerr << "Done (" << t.elapsedString() << ")" << endl;
 
     double score = stod(result);
 
     return score;
 }
 
+double GoAverage::eval(const MultiAlignment& MA){return 0;} //dummy declare

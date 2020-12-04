@@ -1,6 +1,4 @@
 #include "MIGRAALWrapper.hpp"
-#include "../../arguments/GraphLoader.hpp"
-#include "../../utils/FileIO.hpp"
 
 using namespace std;
 
@@ -9,18 +7,17 @@ const string CONVERTER      = "ncount";
 const string GHOSTBinary  = "MI-GRAAL";
 const string MIGRAALProgram = "./MI-GRAALRunner.py";
 
-MIGRAALWrapper::MIGRAALWrapper(const Graph* G1, const Graph* G2, string args): WrappedMethod(G1, G2, "MIGRAAL", args) {
-    wrappedDir = "wrappedAlgorithms/MI-GRAAL";
+MIGRAALWrapper::MIGRAALWrapper(Graph* G1, Graph* G2, string args): WrappedMethod(G1, G2, "MIGRAAL", args) {
+	wrappedDir = "wrappedAlgorithms/MI-GRAAL";
 }
 
 void MIGRAALWrapper::loadDefaultParameters() {
-    parameters = "-p 3";
+	parameters = "-p 3";
 }
 
-string MIGRAALWrapper::convertAndSaveGraph(const Graph* graph, string name) {
-    //note: this function does not add the ".gw" extension to "name" like other wrappers do -Nil
-    GraphLoader::saveInGWFormat(*graph, name);
-    return name;
+string MIGRAALWrapper::convertAndSaveGraph(Graph* graph, string name) {
+	graph->saveInGWFormatWithNames(name);
+	return name;
 }
 
 string MIGRAALWrapper::generateAlignment() {
@@ -34,14 +31,17 @@ string MIGRAALWrapper::generateAlignment() {
     return wrappedDir + "/" + alignmentTmpName + ".aln";
 }
 
-Alignment MIGRAALWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName) {
-    vector<string> words = FileIO::fileToWords(fileName);
-    vector<uint> mapping(G1->getNumNodes(), G2->getNumNodes());
+Alignment MIGRAALWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName) {
+    vector<string> words = fileToStrings(fileName);
+    vector<ushort> mapping(G1->getNumNodes(), G2->getNumNodes());
+    map<string, ushort> g1nodeMap = G1->getNodeNameToIndexMap();
+    map<string, ushort> g2nodeMap = G2->getNodeNameToIndexMap();
+
     for (uint i = 0; i < words.size(); i+=2) {
-        string node1 = words[i];
-        string node2 = words[i+1];
-        cout << node1 << " " << node2 << endl;
-        mapping[G1->getNameIndex(node1)] = G2->getNameIndex(node2);
+    	string node1 = words[i];
+    	string node2 = words[i+1];
+    	cout << node1 << " " << node2 << endl;
+        mapping[g1nodeMap[node1]] = g2nodeMap[node2];
     }
     return Alignment(mapping);
 }

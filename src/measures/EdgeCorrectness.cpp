@@ -1,8 +1,7 @@
 #include "EdgeCorrectness.hpp"
-#include <string>
 #include <vector>
 
-EdgeCorrectness::EdgeCorrectness(const Graph* G1, const Graph* G2) : Measure(G1, G2, "ec") {
+EdgeCorrectness::EdgeCorrectness(Graph* G1, Graph* G2) : Measure(G1, G2, "ec") {
 }
 
 EdgeCorrectness::~EdgeCorrectness() {
@@ -11,3 +10,5 @@ EdgeCorrectness::~EdgeCorrectness() {
 double EdgeCorrectness::eval(const Alignment& A) {
     return (double) A.numAlignedEdges(*G1, *G2)/G1->getNumEdges();
 }
+
+double EdgeCorrectness::eval(const MultiAlignment& MA){return 0;} //dummy declare

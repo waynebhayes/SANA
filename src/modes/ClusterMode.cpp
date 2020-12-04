@@ -1,7 +1,6 @@
 #include "ClusterMode.hpp"
 #include <iostream>
 #include "../utils/utils.hpp"
-#include "../utils/FileIO.hpp"
 #include "../arguments/modeSelector.hpp"
 
 using namespace std;
@@ -25,8 +24,8 @@ uint ClusterMode::getOArgValueIndex(const vector<string>& argv) {
 
 void ClusterMode::run(ArgumentParser& args) {
   if (args.strings["-outfolder"] == "") {
-      cout << "Specify an output folder to use" << endl;
-      exit(-1);
+	  cerr << "Specify an output folder to use" << endl;
+	  exit(-1);
   }
 
   scriptFileNameArg = args.strings["-qsubscriptfile"];
@@ -52,7 +51,7 @@ void ClusterMode::run(ArgumentParser& args) {
     int outFileIndex = getOArgValueIndex(args.originalArgv);
     for (int i = 0; i < submitCount; i++) {
       vector<string> vargs(args.originalArgv);
-      vargs[outFileIndex] += "_"+to_string(i+1);
+      vargs[outFileIndex] += "_"+intToString(i+1);
       submitToCluster(vargs, args.strings["-outfolder"]);
     }
   }
@@ -76,8 +75,9 @@ string ClusterMode::getScriptFileName() {
   if (scriptFileNameArg != "") {
     return scriptFileNameArg;
   }
-  string scriptFile = "tmp/submit.sh";
-  scriptFile = FileIO::addVersionNumIfFileAlreadyExists(scriptFile);
+  string scriptFile = "tmp/submit";
+  addUniquePostfixToFilename(scriptFile, ".sh");
+  scriptFile += ".sh";
   return scriptFile;
 }
 
@@ -87,9 +87,9 @@ string ClusterMode::makeScript(const vector<string>& argv, string dir) {
   //mode to be used in the cluster
   string qmode = getQModeArgValue(argv);
 
-  ofstream ofs(scriptFile);
-  ofs << "#!/bin/bash" << endl;
-  ofs << "cd " << dir << endl;
+  ofstream fout(scriptFile.c_str());
+  fout << "#!/bin/bash" << endl;
+  fout << "cd " << dir << endl;
 
   //add all the same arguments, but:
   //replace the value of -mode for the value of -qmode
@@ -102,14 +102,14 @@ string ClusterMode::makeScript(const vector<string>& argv, string dir) {
       i += 2;
     } else {
       if (argv[i] == "cluster") { //this is the original value of '-mode'
-        ofs << qmode << " ";
+        fout << qmode << " ";
       } else {
-        ofs << argv[i] << " ";
+        fout << argv[i] << " ";
       }
       ++i;     
     }
   }
-  ofs << endl;
+  fout << endl;
   return scriptFile;
 }
 
@@ -126,7 +126,7 @@ string ClusterMode::getQModeArgValue(const vector<string>& argv) {
   if (not found) {
     throw runtime_error("mandatory parameter -qmode in cluster mode missing");
   }
-  if (not modeSelector::validMode(qmode)) {
+  if (not validMode(qmode)) {
     throw runtime_error("invalid -qmode value: " + qmode);
   }
   if (qmode == "cluster") {

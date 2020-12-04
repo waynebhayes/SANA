@@ -8,9 +8,10 @@
 
 class WeightedEdgeConservation: public Measure {
 public:
-    WeightedEdgeConservation(const Graph* G1, const Graph* G2, LocalMeasure* m);
+    WeightedEdgeConservation(Graph* G1, Graph* G2, LocalMeasure* m);
     virtual ~WeightedEdgeConservation();
     double eval(const Alignment& A);
+    double eval(const MultiAlignment& MA); //dummy declare
     LocalMeasure* getNodeSimMeasure();
 private:
     LocalMeasure *nodeSim;

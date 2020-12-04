@@ -1,14 +1,13 @@
 #include "SANAPISWAPWrapper.hpp"
-#include "../../arguments/MethodSelector.hpp"
-#include "../../Report.hpp"
 
 using namespace std;
 
-SANAPISWAPWrapper::SANAPISWAPWrapper(const Graph* G1, const Graph* G2, ArgumentParser args, MeasureCombination M):
-            WrappedMethod(G1, G2, "SANAPISWAP", args.strings["-wrappedArgs"]){
+SANAPISWAPWrapper::SANAPISWAPWrapper(Graph* G1, Graph* G2, ArgumentParser args, MeasureCombination M): WrappedMethod(G1, G2, "SANAPISWAP", args.strings["-wrappedArgs"]){
     wrappedDir = "wrappedAlgorithms/PISWAP";
+    Graph1 = G1;
+    Graph2 = G2;
     this->M = M;
-    sanaMethod = MethodSelector::initSANA(*G1, *G2, args, this->M);
+    sanaMethod = (SANA*)(initSANA(*G1, *G2, args, this->M));
     
     string outfile = args.strings["-o"];
     int location = outfile.find_last_of("/");
@@ -18,14 +17,15 @@ SANAPISWAPWrapper::SANAPISWAPWrapper(const Graph* G1, const Graph* G2, ArgumentP
     double alpha = args.doubles["-alpha"];
     string wrappedArgs = args.strings["-wrappedArgs"];
 
-    piswapMethod = new PISwapWrapper(G1, G2, alpha, intermediateAlignment + ".align", wrappedArgs);
+    piswapMethod = new PISwapWrapper(Graph1, Graph2, alpha, intermediateAlignment + ".align", wrappedArgs);
 }
 
 Alignment SANAPISWAPWrapper::run(){
     Alignment A = sanaMethod->runAndPrintTime();
-    A.printDefinitionErrors(*G1, *G2);
-    assert(A.isCorrectlyDefined(*G1, *G2) and "Resulting alignment is not correctly defined");
-    Report::saveReport(*G1, *G2, A, M, sanaMethod, intermediateAlignment, true);
+    A.printDefinitionErrors(*Graph1, *Graph2);
+    assert(A.isCorrectlyDefined(*Graph1, *Graph2) and "Resulting alignment is not correctly defined");
+    saveReport(*Graph1, *Graph2, A, M, sanaMethod, intermediateAlignment);
+
     Alignment B = piswapMethod->runAndPrintTime();
     return B;
 }
@@ -34,7 +34,7 @@ void SANAPISWAPWrapper::loadDefaultParameters(){
 
 }
 
-string SANAPISWAPWrapper::convertAndSaveGraph(const Graph* graph, string name){
+string SANAPISWAPWrapper::convertAndSaveGraph(Graph* graph, string name){
     return "";
 }
 
@@ -42,7 +42,7 @@ string SANAPISWAPWrapper::generateAlignment(){
     return "";
 }
 
-Alignment SANAPISWAPWrapper::loadAlignment(const Graph* G1, const Graph* G2, string fileName){
+Alignment SANAPISWAPWrapper::loadAlignment(Graph* G1, Graph* G2, string fileName){
     return Alignment::empty();
 }
 

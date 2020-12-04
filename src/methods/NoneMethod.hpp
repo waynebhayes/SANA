@@ -7,11 +7,11 @@
 
 class NoneMethod : public Method {
 public:
-    NoneMethod(const Graph* G1, const Graph* G2, string startAName);
+    NoneMethod(Graph* G1, Graph* G2, string startAName);
     ~NoneMethod();
     Alignment run();
-    void describeParameters(ostream& stream) const;
-    string fileNameSuffix(const Alignment& A) const;
+    void describeParameters(ostream& stream);
+    string fileNameSuffix(const Alignment& A);
 private:
     Alignment A;
 };
