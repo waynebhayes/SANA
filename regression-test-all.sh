@@ -55,6 +55,12 @@ export EXE CORES REAL_CORES MAKE_CORES
 
 NUM_FAILS=0
 EXECS=`grep '^ifeq (' Makefile | sed -e 's/.*(//' -e 's/).*//' | grep -v MAIN | sort -u`
+rm -f parallel
+if not make parallel; then
+    warn "can't make parallel; using single-threaded shell instead"
+    echo "exec bash" > parallel; chmod +x parallel
+fi
+
 for EXT in $EXECS ''; do
     if [ "$EXT" = "" ]; then ext='' # no dot
     else ext=.`echo $EXT | tr A-Z a-z` # includes the dot
@@ -62,7 +68,7 @@ for EXT in $EXECS ''; do
     if $MAKE ; then
 	[ "$EXT" = "" ] || EXT="$EXT=1"
 	make $EXT clean
-	if not make -k -j$MAKE_CORES $EXT; then # "-k" mean "keep going even if some targets fail"
+	if not make -k -j$MAKE_CORES $EXT; then # "-k" means "keep going even if some targets fail"
 	    (( NUM_FAILS+=1000 ))
 	    warn "make '$EXT' failed"
 	fi

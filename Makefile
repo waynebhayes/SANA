@@ -172,7 +172,7 @@ OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
 .PHONY: depend clean test test_all regression_test
 
-all:    $(MAIN) argumentCSV NetGO parallel
+all:   parallel NetGO argumentCSV $(MAIN)
 
 ifeq ($(MAIN), error)
 error:
@@ -221,7 +221,7 @@ $(GTEST_OBJS):
 
 clean: #clear_cache
 	$(RM) -rf cache*  # mostly for pBad
-	$(RM) -rf $(OBJDIR)/src parallel.exe parallel $(MAIN).exe $(MAIN)
+	$(RM) -rf $(OBJDIR)/src $(MAIN).exe $(MAIN)
 	$(RM) -f src/arguments/argumentTable.csv src/utils/SANAversion.cpp
 	$(RM) -f *.exe.stackdump core.[0-9]* # core dumps on CYGWIN + Unix, respectively
 
