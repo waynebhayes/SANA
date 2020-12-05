@@ -11,6 +11,7 @@ PATH="$PATH:`pwd`/scripts"
 export PATH
 
 TMPDIR=/tmp/regression-test$$ # gets removed only if everything works
+trap "rm -rf $TMPDIR; exit" 0 1 2 3 15
 mkdir $TMPDIR
 
 OutputFile="$TMPDIR/regression-lock.$HOST.result"
@@ -54,10 +55,9 @@ cat $TMPDIR/networks.locking | while read Network1 Network2; do
 done
 
 echo encountered a total of $NUM_FAILS failures
-if [ "$NUM_FAILS" -eq 0 ]; then
-    /bin/rm -rf $TMPDIR
-else
+if [ "$NUM_FAILS" -ne 0 ]; then
     echo "$NUM_FAILS locks failed; results in directory $TMPDIR">&2
+    trap "exit" 0 1 2 3 15
 fi
 
 exit $NUM_FAILS
