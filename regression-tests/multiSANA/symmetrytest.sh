@@ -1,0 +1,10 @@
+./multiSANA -mode multi -multialign 2 HSapiens_inducedBy_MMusculus MMusculus_inducedBy_HSapiens -t 5
+./multiSANA -mode multi -multialign 2 HSapiens_inducedBy_MMusculus MMusculus_inducedBy_HSapiens -t 5
+./multiSANA -mode multi -multialign 2 MMusculus_inducedBy_HSapiens HSapiens_inducedBy_MMusculus -t 5
+./multiSANA -mode multi -multialign 2 MMusculus_inducedBy_HSapiens HSapiens_inducedBy_MMusculus -t 5
+./multiSANA -mode multi -multialign 2 MMusculus_inducedBy_RNorvegicus RNorvegicus_inducedBy_MMusculus -t 5
+./multiSANA -mode multi -multialign 2 MMusculus_inducedBy_RNorvegicus RNorvegicus_inducedBy_MMusculus -t 5
+./multiSANA -mode multi -multialign 2 RNorvegicus_inducedBy_MMusculus MMusculus_inducedBy_RNorvegicus -t 5
+./multiSANA -mode multi -multialign 2 RNorvegicus_inducedBy_MMusculus MMusculus_inducedBy_RNorvegicus -t 5
+./multiSANA -mode multi -multialign 2 MMusculus_inducedBy_HSapiens HSapiens_inducedBy_MMusculus -t 11
+./multiSANA -mode multi -multialign 2 MMusculus_inducedBy_HSapiens HSapiens_inducedBy_MMusculus -t 11
