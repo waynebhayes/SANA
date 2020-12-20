@@ -31,26 +31,29 @@ void LinearRegressionVintage::computeBoth(ScheduleMethod::Resources maxRes) {
     for(T_i = 0; T_i <= log10NumSteps; T_i++){
         log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
         pBadMap[pow(10,log_temp)] = getPBad(pow(10, log_temp));
-        // cout << T_i << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
+        //cout << T_i << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
     }
-    for (T_i=0; T_i <= log10NumSteps; T_i++){
-        log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
-        if(pBadMap[pow(10,log_temp)] > targetFinalPBad)
+    for (T_i=0; T_i <= log10NumSteps; T_i++) {
+        log_temp = log10LowTemp + T_i * (log10HighTemp - log10LowTemp) / log10NumSteps;
+        if (pBadMap[pow(10, log_temp)] > targetFinalPBad){
             break;
+        }
     }
 
     double binarySearchLeftEnd = log10LowTemp + (T_i-1)*(log10HighTemp-log10LowTemp)/log10NumSteps;
     double binarySearchRightEnd = log_temp;
     double mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
+
     cout << "Increasing sample density near TFinal. " << " range: (" << pow(10, binarySearchLeftEnd) << ", " << pow(10, binarySearchRightEnd) << ")" << endl;
-    for(int j = 0; j < 4; ++j) {
+    for(int j = 0; j < LinearRegression::minNumSamplesRequired; ++j) {
         double temperature = pow(10, mid);
         double probability = getPBad(temperature);
         pBadMap[temperature] = probability;
-        if(probability > targetFinalPBad) binarySearchRightEnd = mid;
+        if (probability > targetFinalPBad) binarySearchRightEnd = mid;
         else binarySearchLeftEnd = mid;
         mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
     }
+
     for (T_i = log10NumSteps; T_i >= 0; T_i--){
         log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
         if(pBadMap[pow(10,log_temp)] < targetInitialPBad)
@@ -61,7 +64,7 @@ void LinearRegressionVintage::computeBoth(ScheduleMethod::Resources maxRes) {
     binarySearchRightEnd = log10LowTemp + (T_i+1)*(log10HighTemp-log10LowTemp)/log10NumSteps;
     mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
     cout << "Increasing sample density near TInitial. " << "range: (" << pow(10, binarySearchLeftEnd) << ", " << pow(10, binarySearchRightEnd) << ")" << endl;
-    for(int j = 0; j < 4; ++j){
+    for(int j = 0; j < LinearRegression::minNumSamplesRequired; ++j){
         double temperature = pow(10, mid);
         double probability = getPBad(temperature);
         pBadMap[temperature] = probability;
@@ -70,7 +73,21 @@ void LinearRegressionVintage::computeBoth(ScheduleMethod::Resources maxRes) {
         mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
     }
 
+    unsigned int min_samples = LinearRegression::minNumSamplesRequired;
+    if (pBadMap.size() < min_samples) {
+        cout << "Increasing number of samples for linear regression\n";
+        double current_temperature = pow(10, mid);
+        double temperatureIncrease = current_temperature;
+        double temperatureDecrease = current_temperature;
 
+        while (pBadMap.size() < min_samples)
+        {
+            temperatureIncrease *= 1.1;
+            temperatureDecrease *= .9;
+            pBadMap[temperatureIncrease] = getPBad(temperatureIncrease);
+            pBadMap[temperatureDecrease] = getPBad(temperatureDecrease);
+        }
+    }
 
     LinearRegression::Model model = LinearRegression::bestFit(multimap<double, double> (pBadMap.begin(), pBadMap.end()));
     model.print();

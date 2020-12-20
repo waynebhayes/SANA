@@ -101,7 +101,7 @@ LinearRegression::Model LinearRegression::bestFit(const multimap<double, double>
     // bool dbg = false;
     // if(dbg)cerr<<endl<<endl<<"Searching for best 3-line L.R. model to fit tempToPBad"<<endl;
     int n = tempToPBad.size();
-    if (n <= 4) throw runtime_error("too few samples for regression");
+    if ((unsigned int)n <= LinearRegression::minNumSamplesRequired) throw runtime_error("too few samples for regression");
 
     // if(dbg)cerr<<"Using "<<n<<" samples and fitTempInLogSpace="<<fitTempInLogSpace<<endl;
     // if(dbg)cerr<<"Samples:"<<endl;
