@@ -33,9 +33,9 @@ void LinearRegressionVintage::computeBoth(ScheduleMethod::Resources maxRes) {
         pBadMap[pow(10,log_temp)] = getPBad(pow(10, log_temp));
         // cout << T_i << " temperature: " << pow(10, log_temp) << " pBad: " << pbadMap[log_temp] << " score: " << eval(*A) << endl;
     }
-    for (T_i=0; T_i <= log10NumSteps; T_i++) {
+    for (T_i=0; T_i <= log10NumSteps; T_i++){
         log_temp = log10LowTemp + T_i*(log10HighTemp-log10LowTemp)/log10NumSteps;
-        if (pBadMap[pow(10, log_temp)] > targetFinalPBad)
+        if(pBadMap[pow(10,log_temp)] > targetFinalPBad)
             break;
     }
 
