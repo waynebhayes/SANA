@@ -9,6 +9,7 @@ public:
     LinearRegressionModern();
 
     static constexpr auto NAME = "linear-regression-modern";
+    static const int EXTRA_SAMPLES = 4;
     virtual string getName() override { return NAME; }
 
     void setTargetInitialPBad(double pBad) override; 
