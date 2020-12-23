@@ -42,6 +42,7 @@ void LinearRegressionVintage::computeBoth(ScheduleMethod::Resources maxRes) {
     double binarySearchLeftEnd = log10LowTemp + (T_i-1)*(log10HighTemp-log10LowTemp)/log10NumSteps;
     double binarySearchRightEnd = log_temp;
     double mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
+    cout << "Increasing sample density near TFinal. " << " range: (" << pow(10, binarySearchLeftEnd) << ", " << pow(10, binarySearchRightEnd) << ")" << endl;
     for(int j = 0; j < LinearRegressionVintage::EXTRA_SAMPLES; ++j) {
         double temperature = pow(10, mid);
         double probability = getPBad(temperature);
