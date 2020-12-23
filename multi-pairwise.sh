@@ -285,6 +285,11 @@ if true; then # hard-coded as "true" but can be made "false" for debugging purpo
 	$CHMOD $OUTDIR
 	TRIES=`expr $TRIES + 1`
     done
+    STDOUT_PATTERN="$OUTDIR/.init/*.stdout"
+    STDOUT_FILES=( $STDOUT_PATTERN )
+    if grep -q 'Increasing number of samples for linear regression' ${STDOUT_FILES[0]} ; then
+        echo 'WARNING: temerature search interval ends computed to be identical.';
+    fi
 else
     echo 'name	tinitial	tfinal	tdecay' | tee $OUTDIR/.init/schedule.tsv
     ls "$@" | awk '{file=$0;gsub(".*/",""); gsub(".el$",""); gsub(".gw$","");printf "%s	40	1e-10	5\n",$1}' | tee -a $OUTDIR/.init/schedule.tsv
