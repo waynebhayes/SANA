@@ -43,7 +43,7 @@ void LinearRegressionVintage::computeBoth(ScheduleMethod::Resources maxRes) {
     double binarySearchRightEnd = log_temp;
     double mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
     cout << "Increasing sample density near TFinal. " << " range: (" << pow(10, binarySearchLeftEnd) << ", " << pow(10, binarySearchRightEnd) << ")" << endl;
-    for(int j = 0; j < 4; ++j) {
+    for(int j = 0; j < LinearRegressionVintage::EXTRA_SAMPLES; ++j) {
         double temperature = pow(10, mid);
         double probability = getPBad(temperature);
         pBadMap[temperature] = probability;
@@ -61,7 +61,7 @@ void LinearRegressionVintage::computeBoth(ScheduleMethod::Resources maxRes) {
     binarySearchRightEnd = log10LowTemp + (T_i+1)*(log10HighTemp-log10LowTemp)/log10NumSteps;
     mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
     cout << "Increasing sample density near TInitial. " << "range: (" << pow(10, binarySearchLeftEnd) << ", " << pow(10, binarySearchRightEnd) << ")" << endl;
-    for(int j = 0; j < 4; ++j){
+    for(int j = 0; j < LinearRegressionVintage::EXTRA_SAMPLES; ++j){
         double temperature = pow(10, mid);
         double probability = getPBad(temperature);
         pBadMap[temperature] = probability;
@@ -70,7 +70,20 @@ void LinearRegressionVintage::computeBoth(ScheduleMethod::Resources maxRes) {
         mid = (binarySearchRightEnd + binarySearchLeftEnd) / 2;
     }
 
-
+    unsigned int minSamples = LinearRegression::MIN_NUM_SAMPLES_REQUIRED;
+    // this is true when the upper and lower temperature bounds are equal, causing only one sample to be taken. This is insufficient for Linear Regression.
+    if (pBadMap.size() < minSamples) {
+        cout << "Increasing number of samples for linear regression\n";
+        double currentTemperature = pow(10, mid);
+        double temperatureIncrease = currentTemperature;
+        double temperatureDecrease = currentTemperature;
+        while (pBadMap.size() < minSamples) {
+            temperatureIncrease *= 1.1;
+            temperatureDecrease *= .9;
+            pBadMap[temperatureIncrease] = getPBad(temperatureIncrease);
+            pBadMap[temperatureDecrease] = getPBad(temperatureDecrease);
+        }
+    }
 
     LinearRegression::Model model = LinearRegression::bestFit(multimap<double, double> (pBadMap.begin(), pBadMap.end()));
     model.print();

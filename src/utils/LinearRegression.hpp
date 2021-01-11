@@ -48,6 +48,7 @@ public:
 
     static Model bestFit(const multimap<double, double>& tempToPBad,
                                 bool fitTempInLogSpace = true, bool fixLineHeights = false);
+    static unsigned int const MIN_NUM_SAMPLES_REQUIRED = 4;
 private:
     static double rangeSum(const vector<double> &v, int index1, int index2);
     static Line linearLeastSquares(double xSum, double ySum, double xySum, double xxSum, int n);
