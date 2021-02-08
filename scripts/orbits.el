@@ -12,7 +12,9 @@ Orbits, and the nodes therein, are listed in no particular order.
 #DREADNAUT=/scratch/preserve/extra2/preserve/nauty/nauty26r12/dreadnaut
 DREADNAUT=/home/sana/bin/dreadnaut
 
-die() { echo "FATAL ERROR: $@" >&2; exit 1
+NL='
+'
+die() { echo "echo $USAGE${NL}FATAL ERROR: $@" >&2; exit 1
 }
 [ $# -eq 1 ] || die "expecting exactly one filename, an edgelist"
 
