@@ -79,7 +79,10 @@ vector<double> Importance::getImportances(const Graph& G) {
 
     uint n = G.getNumNodes();
     vector<vector<double>> edgeWeights(n, vector<double> (n, 0));
-    for (const auto& edge : *(G.getEdgeList())) edgeWeights[edge[0]][edge[1]] = 1;
+    for (const auto& edge : *(G.getEdgeList())) {
+        edgeWeights[edge[0]][edge[1]] = 1;
+        edgeWeights[edge[1]][edge[0]] = 1;
+    }
 
     vector<double> nodeWeights(n, 0);
 
@@ -109,8 +112,9 @@ vector<double> Importance::getImportances(const Graph& G) {
                 for (uint j = i+1; j < adjLists[u].size(); j++) {
                     uint v2 = adjLists[u][j];
                     double numNeighbors = adjLists[u].size();
-                    edgeWeights[v1][v2] +=
-                        uWeight/((numNeighbors*(numNeighbors-1))/2.0);
+                    double edgeWeightInc = uWeight/((numNeighbors*(numNeighbors-1))/2.0);
+                    edgeWeights[v1][v2] += edgeWeightInc;
+                    edgeWeights[v2][v1] += edgeWeightInc;
                 }
             }
         }
