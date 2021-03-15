@@ -64,9 +64,9 @@ NAME2ID='
 	{for(i=1;i<=NF;i++) printf "%s ",Expand($i)}' |
     tr ';' "$NL" |
     awk "ARGIND==1{$NAME2ID}"'
-	 ARGIND==2{ # read from the pipe on stdin
+	 ARGIND==2 && NF{ # read from the pipe on stdin
 	    # The following ensures there are no leading or trailing spaces
 	    printf "%s", name[$1]; for(i=2;i<=NF;i++) printf " %s", name[$i]
 	    print ""
-    }' $TMP - # the single hyphen specifies that the second "file" is awk's standard input (from the pipe)
-
+    }' $TMP -  |# the single hyphen specifies that the second "file" is awk's standard input (from the pipe)
+    awk '{printf "%d\t%s\n", NF, $0}' | sort -nr | awk 'BEGIN{printf "orbitSize\tmembers\n"}{print}'
