@@ -54,7 +54,8 @@ echo "Using $MAKE_CORES cores to make and $CORES cores for regression tests"
 export EXE CORES REAL_CORES MAKE_CORES
 
 NUM_FAILS=0
-EXECS=`grep '^ifeq (' Makefile | sed -e 's/.*(//' -e 's/).*//' | grep -v MAIN | sort -u`
+EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v 'MAIN|[<>]'`
+[ `echo $EXECS | newlines | wc -l` -eq `echo $EXECS | newlines | sort -u | wc -l` ] || die "<$EXECS> contains duplicates"
 rm -f parallel
 if not make parallel; then
     warn "can't make parallel; using single-threaded shell instead"

@@ -170,12 +170,7 @@ uint MultiS3::computeNumer(const Alignment& A) const {
             for (const auto& edge: *(G1->getEdgeList()))
             {
                 node1 = edge[0], node2 = edge[1];
-                if(MultiS3::numerator_type == MultiS3::ra_i){
-                    // numerator is ra_i
-                    if   (G2->getEdgeWeight(A[node1],A[node2]) >= 1){
-                        ret += G2->getEdgeWeight(A[node1],A[node2]) + 1; // +1 because G1 was pruned out of G2
-                    }
-                }
+		ret += G2->getEdgeWeight(A[node1],A[node2]); // do NOT include the edge in G1
             }
         }
             break;
@@ -184,11 +179,7 @@ uint MultiS3::computeNumer(const Alignment& A) const {
             for (const auto& edge: *(G1->getEdgeList()))
             {
                 node1 = edge[0], node2 = edge[1];
-                if (MultiS3::numerator_type == MultiS3::la_i){
-                    if (G2->getEdgeWeight(A[node1],A[node2]) >= 1){
-                        ret += 1;               // +1 because it is a ladder
-                    }
-                }
+		if(G2->getEdgeWeight(A[node1],A[node2])>0) ++ret;
             }
         }
             break;
@@ -196,17 +187,14 @@ uint MultiS3::computeNumer(const Alignment& A) const {
         {
             const uint n1 = G1->getNumNodes();
             const uint n2 = G2->getNumNodes();
-            vector<uint> reverse_A = vector<uint> (n2,n1);// value of n1 represents not used
+            vector<uint> inverse_A = vector<uint> (n2,n1);// value of n1 represents not used
             for(uint i=0; i< n1; i++){
-                reverse_A[A[i]] = i;
+                inverse_A[A[i]] = i;
             }
             for (const auto& edge: *(G2->getEdgeList())){
                 node1 = edge[0], node2 = edge[1];
-                if (MultiS3::numerator_type == MultiS3::la_global){
-                    if ((G2->getEdgeWeight(node1,node2) > 1) or (reverse_A[node1] < n1 and reverse_A[node2] < n1 and G2->getEdgeWeight(node1,node2) + G1->getEdgeWeight(reverse_A[node1],reverse_A[node2]) > 1)){
-                        ret += 1; // +1 because G1 was pruned out of G2
-                    }
-                }
+		if ((G2->getEdgeWeight(node1,node2) > 1) or (inverse_A[node1] < n1 and inverse_A[node2] < n1 and G2->getEdgeWeight(node1,node2) + G1->getEdgeWeight(inverse_A[node1],inverse_A[node2]) > 1))
+		    ++ret;
             }
         }
             break;
@@ -214,19 +202,16 @@ uint MultiS3::computeNumer(const Alignment& A) const {
         {
             const uint n1 = G1->getNumNodes();
             const uint n2 = G2->getNumNodes();
-            vector<uint> reverse_A = vector<uint> (n2,n1);// value of n1 represents not used
+            vector<uint> inverse_A = vector<uint> (n2,n1);// value of n1 represents not used
             for(uint i=0; i< n1; i++){
-                reverse_A[A[i]] = i;
+                inverse_A[A[i]] = i;
             }
             for (const auto& edge: *(G2->getEdgeList())){
                 node1 = edge[0], node2 = edge[1];
-                if (MultiS3::numerator_type == MultiS3::ra_global){
-                    ret += G2->getEdgeWeight(node1,node2) > 1 ? G2->getEdgeWeight(node1,node2) : 0;
-                    if (reverse_A[node1] < n1 and reverse_A[node2] < n1 and G2->getEdgeWeight(node1,node2) > 0 and G1->getEdgeWeight(reverse_A[node1],reverse_A[node2]) == 1){
-                        ret += G2->getEdgeWeight(node1,node2) > 1 ? 1:2;
-                        // +1 because G1 was pruned out of G2
-                    }
-                }
+		ret += G2->getEdgeWeight(node1,node2) > 1 ? G2->getEdgeWeight(node1,node2) : 0;
+		if (inverse_A[node1] < n1 and inverse_A[node2] < n1 and G2->getEdgeWeight(node1,node2) > 0 and G1->getEdgeWeight(inverse_A[node1],inverse_A[node2]) == 1){
+		    ret += (G2->getEdgeWeight(node1,node2) > 1);
+		}
             }
         }
             break;
@@ -243,8 +228,6 @@ uint MultiS3::computeNumer(const Alignment& A) const {
     }
     
     return ret;
-    
-    
     
 #else
     return 0;
@@ -266,17 +249,9 @@ uint MultiS3::computeDenom(const Alignment& A) const {
         case MultiS3::rt_i:
         {
             for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j){
-                bool exposed = (whichPeg[i] < n1 && whichPeg[j] < n1 && G1->getEdgeWeight(whichPeg[i],whichPeg[j]) > 0);
-                if(!exposed && whichPeg[i] < n1 && whichPeg[j] < n1 && G2->getEdgeWeight(i,j) > 0){
-                    exposed = true;
-                }
-                if(exposed and MultiS3::denominator_type == MultiS3::rt_i){
-                    if(whichPeg[i] < n1 && whichPeg[j] < n1){
-                        ret += G1->getEdgeWeight(whichPeg[i],whichPeg[j]) + G2->getEdgeWeight(i,j);
-                    }
-                    else{
-                        ret += G2->getEdgeWeight(i,j);
-                    }
+                bool inLadder = (whichPeg[i] < n1 && whichPeg[j] < n1); // && G1->getEdgeWeight(whichPeg[i],whichPeg[j]) > 0);
+                if(inLadder){
+		    ret += G2->getEdgeWeight(i,j) + G1->getEdgeWeight(whichPeg[i],whichPeg[j]);
                 }
             }
         }
@@ -288,7 +263,7 @@ uint MultiS3::computeDenom(const Alignment& A) const {
                 if(!exposed && whichPeg[i] < n1 && whichPeg[j] < n1 && G2->getEdgeWeight(i,j) > 0){
                     exposed = true;
                 }
-                if(exposed and MultiS3::denominator_type == MultiS3::ee_i) ret++;
+                if(exposed)ret++;
             }
         }
             break;
@@ -299,7 +274,7 @@ uint MultiS3::computeDenom(const Alignment& A) const {
                 if(!exposed && whichPeg[i] < n1 && whichPeg[j] < n1 && G1->getEdgeWeight(whichPeg[i],whichPeg[j]) > 0){
                     exposed = true;
                 }
-                if(exposed and MultiS3::denominator_type == MultiS3::ee_global) ret++;
+                if(exposed) ret++;
             }
         }
             break;
@@ -310,7 +285,7 @@ uint MultiS3::computeDenom(const Alignment& A) const {
                 if(!exposed && whichPeg[i] < n1 && whichPeg[j] < n1 && G1->getEdgeWeight(whichPeg[i],whichPeg[j]) > 0){
                     exposed = true;
                 }
-                if(exposed and MultiS3::denominator_type == MultiS3::rt_global){
+                if(exposed){
                     if (whichPeg[i] < n1 && whichPeg[j] < n1){
                         ret += G1->getEdgeWeight(whichPeg[i],whichPeg[j]) + G2->getEdgeWeight(i,j);
                     }else{

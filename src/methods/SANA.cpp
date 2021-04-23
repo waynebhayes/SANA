@@ -61,9 +61,9 @@ SANA::SANA(const Graph* G1, const Graph* G2,
                 outputFileName(outputFileName),
                 localScoresFileName(localScoresFileName) {
     initTau();
-    n1 = G1->getNumNodes(), n2 = G2->getNumNodes();
-    g1Edges = G1->getNumEdges(), g2Edges = G2->getNumEdges();
-    g1WeightedEdges = G1->getTotalEdgeWeight(), g2WeightedEdges = G2->getTotalEdgeWeight();
+    n1 = G1->getNumNodes(); n2 = G2->getNumNodes();
+    g1Edges = G1->getNumEdges(); g2Edges = G2->getNumEdges();
+    g1WeightedEdges = G1->getTotalEdgeWeight(); g2WeightedEdges = G2->getTotalEdgeWeight();
     pairsCount = n1 * (n1 + 1) / 2;
 
     if      (scoreAggrStr == "sum")       scoreAggr = ScoreAggregation::sum;
@@ -825,8 +825,8 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 int SANA::aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget) {
     int res = 0;
     if (G1->hasSelfLoop(source)) {
-        if (G2->hasSelfLoop(oldTarget)) res--;
-        if (G2->hasSelfLoop(newTarget)) res++;
+        if (G2->hasSelfLoop(oldTarget)) res-=G2->getEdgeWeight(oldTarget, oldTarget);
+        if (G2->hasSelfLoop(newTarget)) res+=G2->getEdgeWeight(newTarget, newTarget);
     }
     for (uint nbr : G1->adjLists[source]) {
         if (nbr != source) {
@@ -843,8 +843,8 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
 #else
     int res = 0;
     if (G1->hasSelfLoop(source1)) {
-        if (G2->hasSelfLoop(target1)) res--;
-        if (G2->hasSelfLoop(target2)) res++;
+        if (G2->hasSelfLoop(target1)) res-=G2->getEdgeWeight(target1, target1);
+        if (G2->hasSelfLoop(target2)) res+=G2->getEdgeWeight(target2, target2);
     }
     for (uint nbr : G1->adjLists[source1]) {
         if (nbr != source1) {
@@ -853,8 +853,8 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
         }
     }
     if (G1->hasSelfLoop(source2)) {
-        if (G2->hasSelfLoop(target2)) res--;
-        if (G2->hasSelfLoop(target1)) res++;
+        if (G2->hasSelfLoop(target2)) res-=G2->getEdgeWeight(target2, target2);
+        if (G2->hasSelfLoop(target1)) res+=G2->getEdgeWeight(target1, target1);
     }
     for (uint nbr : G1->adjLists[source2]) {
         if (nbr != source2) {
@@ -863,7 +863,7 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
         }
     }
 
-    //address case swapping between adjacent nodes with adjacent images:
+    //address the case where we are swapping between adjacent nodes with adjacent images:
 #ifdef MULTI_PAIRWISE
     //why set the least-significant bit to 0?
     //this kind of bit manipulation needs a comment clarification -Nil
@@ -872,7 +872,6 @@ int SANA::aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint targ
 #else
     if (G1->hasEdge(source1, source2) and G2->hasEdge(target1, target2)) res += 2;
 #endif
-
     return res;
 #endif // FLOAT_WEIGHTS
 }
