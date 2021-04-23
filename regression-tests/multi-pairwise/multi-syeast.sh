@@ -18,7 +18,7 @@ PATH="`pwd`/scripts:$PATH"
 export PATH
 DIR=`mktemp -d /tmp/syeast.XXXXXXXXX`
 MINSUM=0.25
-MEASURE="-ms3 1 -ms3_type 1"
+MEASURE="-mec 1" #"-ms3 1 -ms3_type 1"
  trap "/bin/rm -rf $DIR" 0 1 2 3 15
 if [ `hostname` = Jenkins ]; then
     ITERS=256; minutes=0.1
