@@ -80,9 +80,9 @@ if $RUN; then
     EXTs='.static .sparse' # plus the empty extension
     echo "$nets" | hawk 'BEGIN{split("'"$EXTs"'",EXTs); EXTs[0]=""}
 	{net[NR-1]=$NF}
-	END{totalRuns=choose(NR,2);
+	END{run=totalRuns=choose(NR,2);
 	    for(i=NR-2;i>=0;i--)for(j=NR-1;j>=i+1;j--){
-		whichExt=int(run++/totalRuns*length(EXTs));
+		whichExt=int(--run/totalRuns*length(EXTs));
 		printf "echo Running %s-%s; \"'"$EXE"'%s\" -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],EXTs[whichExt],net[i],net[j],net[i],net[j],net[i],net[j];
 	    }
 	}' | eval $PARALLEL
