@@ -1086,122 +1086,16 @@ int SANA::exposedEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
 
 // Return the change in NUMERATOR of MS3
 int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
-    switch (MultiS3::denominator_type) {
-        case MultiS3::rt_i:
-        {
-            uint neighbor;
-            const uint n1 = G1->getNumNodes();
-            const uint n2 = G2->getNumNodes();
-            vector<uint> whichPeg(n2, n1); // value of n1 represents not used
-            for (uint i = 0; i < n1; ++i){
-                whichPeg[A[i]] = i; // inverse of the alignment
-            }
-            uint n_num = G2->adjLists[oldHole].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G2->adjLists[oldHole][i];
-                if (whichPeg[neighbor]<n1){
-                    MultiS3::denom -= G2->getEdgeWeight(oldHole,neighbor);
-                }
-            }
-             n_num = G2->adjLists[newHole].size();
-             for (uint i =0; i < n_num; i++){
-                 neighbor = G2->adjLists[newHole][i];
-                 if (whichPeg[neighbor]<n1 and neighbor != oldHole){
-                     MultiS3::denom += G2->getEdgeWeight(newHole,neighbor);
-                 }
-             }
-        }
-            break;
-            
-        case MultiS3::ee_i:
-        {
-            uint neighbor;
-            const uint n1 = G1->getNumNodes();
-            const uint n2 = G2->getNumNodes();
-            vector<uint> whichPeg(n2, n1); // value of n1 represents not used
-            for (uint i = 0; i < n1; ++i){
-                whichPeg[A[i]] = i; // inverse of the alignment
-            }
-            uint n_num = G2->adjLists[oldHole].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G2->adjLists[oldHole][i];
-                if (whichPeg[neighbor]<n1){
-                    MultiS3::denom--;
-                }
-            }
-            n_num = G1->adjLists[peg].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G1->adjLists[peg][i];
-                if (!G2->getEdgeWeight(A[neighbor],oldHole)){
-                    MultiS3::denom--;
-                }
-                if (A[neighbor]!=newHole and !G2->getEdgeWeight(A[neighbor],newHole)){
-                    MultiS3::denom++;
-                }
-            }
-            n_num = G2->adjLists[newHole].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G2->adjLists[newHole][i];
-                if (whichPeg[neighbor]<n1 and peg!=whichPeg[neighbor] ){
-                    MultiS3::denom++;
-                }
-            }
-        }
-            break;
-            
-        default:
-	{
-#if 0
-	    if (oldOldHoleDeg > 0 and !MultiS3::shadowDegree[oldHole]) MultiS3::denom -= 1;
-            if (oldNewHoleDeg > 0 and !MultiS3::shadowDegree[newHole]) MultiS3::denom += 1;
-#else
-	    uint neighbor;
-            const uint n1 = G1->getNumNodes();
-            const uint n2 = G2->getNumNodes();
-            vector<uint> whichPeg(n2, n1); // value of n1 represents not used
-            for (uint i = 0; i < n1; ++i){
-                whichPeg[A[i]] = i; // inverse of the alignment
-            }
-            uint n_num = G2->adjLists[oldHole].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G2->adjLists[oldHole][i];
-                if (whichPeg[neighbor]<n1){
-                    MultiS3::denom--;
-                }
-            }
-            n_num = G1->adjLists[peg].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G1->adjLists[peg][i];
-                if (!G2->getEdgeWeight(A[neighbor],oldHole)){
-                    MultiS3::denom--;
-                }
-                if (A[neighbor]!=newHole and !G2->getEdgeWeight(A[neighbor],newHole)){
-                    MultiS3::denom++;
-                }
-            }
-            n_num = G2->adjLists[newHole].size();
-            for (uint i =0; i < n_num; i++){
-                neighbor = G2->adjLists[newHole][i];
-                if (whichPeg[neighbor]<n1 and peg!=whichPeg[neighbor] ){
-                    MultiS3::denom++;
-                }
-            }  	    
-#endif
-	}
-            break;
-    }
+    uint pegNeigh, holeNeigh, diff;
     switch (MultiS3::numerator_type){
         case MultiS3::ra_i:
         {
-            int res = 0, diff;
-            uint neighbor;
+            int res = 0;
             const uint n = G1->adjLists[peg].size();
             for (uint i = 0; i < n; ++i) {
-                neighbor = G1->adjLists[peg][i];
-                diff = G2->getEdgeWeight(oldHole,A[neighbor]) + 1;
-                res -= (diff==1?0:diff);
-                diff = G2->getEdgeWeight(newHole,A[neighbor]) + 1;
-                res += (diff==1?0:diff);
+                pegNeigh = G1->adjLists[peg][i];
+                res -= G2->getEdgeWeight(oldHole,A[pegNeigh]);
+                res += G2->getEdgeWeight(newHole,A[pegNeigh]);
             }
             return res;
         }
@@ -1210,20 +1104,18 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
         case MultiS3::ra_global:
         {
             int res = 0;
-            int diff= 0;
-            uint neighbor;
             const uint n = G1->adjLists[peg].size();
             for (uint i = 0; i < n; ++i) {
-                neighbor = G1->adjLists[peg][i];
-                if (G1->getEdgeWeight(peg,neighbor)>0){
-                    diff = G2->getEdgeWeight(oldHole,A[neighbor]) + 1;
+                pegNeigh = G1->adjLists[peg][i];
+                if (G1->getEdgeWeight(peg,pegNeigh)>0){
+                    diff = G2->getEdgeWeight(oldHole,A[pegNeigh]) + 1;
                     if (diff <= 1){res -= 0;}
-                    else if (G2->getEdgeWeight(oldHole,A[neighbor])>1){res --;}
+                    else if (G2->getEdgeWeight(oldHole,A[pegNeigh])>1){res --;}
                     else{res-=2;}
 
-                    diff = G2->getEdgeWeight(newHole,A[neighbor]) + 1;
+                    diff = G2->getEdgeWeight(newHole,A[pegNeigh]) + 1;
                     if (diff <= 1){res += 0;}
-                    else if (G2->getEdgeWeight(newHole,A[neighbor])>1){res ++;}
+                    else if (G2->getEdgeWeight(newHole,A[pegNeigh])>1){res ++;}
                     else{res+=2;}
                 }
             }
@@ -1233,17 +1125,16 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
         
         case MultiS3::la_i:
         {
-            int res = 0, diff;
-            uint neighbor;
+            int res = 0;
             const uint n = G1->adjLists[peg].size();
             bool ladder = false;
             for (uint i = 0; i < n; ++i) {
-                neighbor = G1->adjLists[peg][i];
-                diff = G2->getEdgeWeight(oldHole,A[neighbor]) + 1;
+                pegNeigh = G1->adjLists[peg][i];
+                diff = G2->getEdgeWeight(oldHole,A[pegNeigh]) + 1;
 
                 ladder = (diff>1?true:false);
                 if (ladder){res -= 1;}
-                diff = G2->getEdgeWeight(newHole,A[neighbor]) + 1;
+                diff = G2->getEdgeWeight(newHole,A[pegNeigh]) + 1;
 
                 ladder = (diff>1?true:false);
                 if (ladder){res += 1;}
@@ -1255,19 +1146,17 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
         case MultiS3::la_global:
         {
             int res = 0;
-            int diff = 0;
-            uint neighbor = 0;
             bool ladder = false;
             const uint n = G1->adjLists[peg].size();
             for (uint i=0;i<n;i++){
-                neighbor = G1->adjLists[peg][i];
-                if (G1->getEdgeWeight(neighbor,peg)>0){
-                    diff = G2->getEdgeWeight(oldHole,A[neighbor]) + 1;
+                pegNeigh = G1->adjLists[peg][i];
+                if (G1->getEdgeWeight(pegNeigh,peg)>0){
+                    diff = G2->getEdgeWeight(oldHole,A[pegNeigh]) + 1;
                             ladder = (diff > 1);
-                    if (ladder and G2->getEdgeWeight(oldHole,A[neighbor])==1) {res --;}
-                    diff = G2->getEdgeWeight(newHole,A[neighbor]) + 1;
+                    if (ladder and G2->getEdgeWeight(oldHole,A[pegNeigh])==1) {res --;}
+                    diff = G2->getEdgeWeight(newHole,A[pegNeigh]) + 1;
                     ladder = (diff > 1);
-                    if (ladder and G2->getEdgeWeight(newHole,A[neighbor])==1) {res ++;}
+                    if (ladder and G2->getEdgeWeight(newHole,A[pegNeigh])==1) {res ++;}
                 }
             }
             return res;
@@ -1277,8 +1166,8 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
         default:
         {
             int res = 0;
-            //unsigned oldOldHoleDeg = MultiS3::shadowDegree[oldHole];
-            //unsigned oldNewHoleDeg = MultiS3::shadowDegree[newHole];
+            //unsigned oldoldHoleDeg = MultiS3::shadowDegree[oldHole];
+            //unsigned oldnewHoleDeg = MultiS3::shadowDegree[newHole];
 
             if (G1->hasSelfLoop(peg)) {
                 if (G2->hasSelfLoop(oldHole)) --res;
@@ -1297,244 +1186,128 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
         }
             break;
     }
+    const uint n1 = G1->getNumNodes();
+    const uint n2 = G2->getNumNodes();
+    vector<uint> whichPeg(n2, n1); // value of n1 represents not used
+    switch (MultiS3::denominator_type) {
+        case MultiS3::rt_i:
+        {
+            for (uint i = 0; i < n1; ++i){
+                whichPeg[A[i]] = i; // inverse of the alignment
+            }
+            uint n_num = G2->adjLists[oldHole].size();
+            for (uint i =0; i < n_num; i++){
+                holeNeigh = G2->adjLists[oldHole][i];
+                if (whichPeg[holeNeigh]<n1) {
+		    assert(holeNeigh != newHole);
+                    MultiS3::denom -= G2->getEdgeWeight(oldHole,holeNeigh);
+		}
+            }
+	    n_num = G2->adjLists[newHole].size();
+	    for (uint i =0; i < n_num; i++){
+		holeNeigh = G2->adjLists[newHole][i];
+		if (whichPeg[holeNeigh]<n1) {
+		    assert(holeNeigh != oldHole);
+		    MultiS3::denom += G2->getEdgeWeight(newHole,holeNeigh);
+		}
+	    }
+	}
+	    break;
+            
+        case MultiS3::ee_i:
+        {
+            for (uint i = 0; i < n1; ++i){
+                whichPeg[A[i]] = i; // inverse of the alignment
+            }
+            uint n_num = G2->adjLists[oldHole].size();
+            for (uint i =0; i < n_num; i++){
+                holeNeigh = G2->adjLists[oldHole][i];
+                if (whichPeg[holeNeigh]<n1){
+                    MultiS3::denom--;
+                }
+            }
+            n_num = G1->adjLists[peg].size();
+            for (uint i =0; i < n_num; i++){
+                pegNeigh = G1->adjLists[peg][i];
+                if (!G2->getEdgeWeight(A[pegNeigh],oldHole)){
+                    MultiS3::denom--;
+                }
+                if (A[pegNeigh]!=newHole and !G2->getEdgeWeight(A[pegNeigh],newHole)){
+                    MultiS3::denom++;
+                }
+            }
+            n_num = G2->adjLists[newHole].size();
+            for (uint i =0; i < n_num; i++){
+                holeNeigh = G2->adjLists[newHole][i];
+                if (whichPeg[holeNeigh]<n1 and peg!=whichPeg[holeNeigh] ){
+                    MultiS3::denom++;
+                }
+            }
+        }
+            break;
+            
+        default:
+	{
+#if 0
+	    if (oldoldHoleDeg > 0 and !MultiS3::shadowDegree[oldHole]) MultiS3::denom -= 1;
+            if (oldnewHoleDeg > 0 and !MultiS3::shadowDegree[newHole]) MultiS3::denom += 1;
+#else
+            for (uint i = 0; i < n1; ++i){
+                whichPeg[A[i]] = i; // inverse of the alignment
+            }
+            uint n_num = G2->adjLists[oldHole].size();
+            for (uint i =0; i < n_num; i++){
+                holeNeigh = G2->adjLists[oldHole][i];
+                if (whichPeg[holeNeigh]<n1){
+                    MultiS3::denom--;
+                }
+            }
+            n_num = G1->adjLists[peg].size();
+            for (uint i =0; i < n_num; i++){
+                pegNeigh = G1->adjLists[peg][i];
+                if (!G2->getEdgeWeight(A[pegNeigh],oldHole)){
+                    MultiS3::denom--;
+                }
+                if (A[pegNeigh]!=newHole and !G2->getEdgeWeight(A[pegNeigh],newHole)){
+                    MultiS3::denom++;
+                }
+            }
+            n_num = G2->adjLists[newHole].size();
+            for (uint i =0; i < n_num; i++){
+                holeNeigh = G2->adjLists[newHole][i];
+                if (whichPeg[holeNeigh]<n1 and peg!=whichPeg[holeNeigh] ){
+                    MultiS3::denom++;
+                }
+            }  	    
+#endif
+	}
+            break;
+    }
 }
 
 // Return change in NUMERATOR only
 int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
-    switch (MultiS3::denominator_type){
-          case MultiS3::rt_i:
-        {
-              uint neighbor;
-              const uint n1 = G1->getNumNodes();
-              const uint n2 = G2->getNumNodes();
-              vector<uint> whichPeg(n2, n1);
-              for (uint i = 0; i < n1; ++i){
-                  whichPeg[A[i]] = i;
-               }
-
-              uint n_num = G2->adjLists[hole1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[hole1][i];
-                  if (whichPeg[neighbor]<n1){
-                      MultiS3::denom-=G2->getEdgeWeight(hole1,neighbor);
-                  }
-              }
-              n_num = G1->adjLists[peg1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G1->adjLists[peg1][i];
-                  if (G1->getEdgeWeight(peg1,neighbor)){
-                      MultiS3::denom--;
-                  }
-                  if (G1->getEdgeWeight(peg1,neighbor)){
-                      MultiS3::denom++;
-                  }
-              }
-              n_num = G2->adjLists[hole2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[hole2][i];
-                  if (whichPeg[neighbor]<n1){
-                      MultiS3::denom+=G2->getEdgeWeight(hole2,neighbor);
-                   }
-              }
-            
-              n_num = G2->adjLists[hole2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[hole2][i];
-                  if (whichPeg[neighbor]<n1 and neighbor != hole1){
-                      MultiS3::denom-=G2->getEdgeWeight(hole2,neighbor);
-                   }
-              }
-              n_num = G1->adjLists[peg2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G1->adjLists[peg2][i];
-                  if (G1->getEdgeWeight(peg2,neighbor)  and peg1 != neighbor){
-                      MultiS3::denom--;
-                  }
-                  if (neighbor!=peg1 and G1->getEdgeWeight(peg2,neighbor)){
-                      MultiS3::denom++;
-                  }
-              }
-              n_num = G2->adjLists[hole1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[hole1][i];
-                  if (neighbor != hole2 and whichPeg[neighbor]<n1){
-                      MultiS3::denom+=G2->getEdgeWeight(hole1,neighbor);
-                  }
-              }
-          }
-              break;
-          case MultiS3::ee_i:
-          {
-              uint neighbor;
-              const uint n1 = G1->getNumNodes();
-              const uint n2 = G2->getNumNodes();
-              vector<uint> whichPeg(n2, n1); // value of n1 represents not used
-              for (uint i = 0; i < n1; ++i){
-                  whichPeg[A[i]] = i; // inverse of the alignment
-              }
-
-              uint n_num = G2->adjLists[hole1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[hole1][i];
-                  if (whichPeg[neighbor]<n1 and neighbor!=hole2 and G2->getEdgeWeight(neighbor,hole1)){
-                      MultiS3::denom--;
-                  }
-              }
-              n_num = G1->adjLists[peg1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G1->adjLists[peg1][i];
-                    if (neighbor!=peg2){
-                        if (!G2->getEdgeWeight(A[neighbor],hole1)){
-                            MultiS3::denom--;
-                        }
-                        if (!G2->getEdgeWeight(A[neighbor],hole2)){
-                            MultiS3::denom++;
-                        }
-                    }
-              }
-
-              n_num = G2->adjLists[hole2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[hole2][i];
-                  if (neighbor!=hole1 and whichPeg[neighbor]<n1 and peg1!=whichPeg[neighbor] and !G2->getEdgeWeight(neighbor,hole2)){
-                      MultiS3::denom++;
-                  }
-              }
-              n_num = G2->adjLists[hole2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[hole2][i];
-                  if (neighbor!=hole1 and whichPeg[neighbor]<n1 and !G2->getEdgeWeight(hole2,neighbor)){
-                      MultiS3::denom--;
-                  }
-              }
-              
-              n_num = G1->adjLists[peg2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G1->adjLists[peg2][i];
-                  if (neighbor!=peg1){
-                      if (!G2->getEdgeWeight(A[neighbor],hole2)){
-                          MultiS3::denom--;
-                      }
-                      if (!G2->getEdgeWeight(A[neighbor],hole1)){
-                          MultiS3::denom++;
-                      }
-                  }
-              }
-              n_num = G2->adjLists[hole1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[hole1][i];
-                  if ( G2->getEdgeWeight(hole1,neighbor)>0 and whichPeg[neighbor]<n1 and neighbor!=hole2 and peg2!=whichPeg[neighbor]){
-                      MultiS3::denom++;
-                  }
-              }
-        }
-            break;
-	default:
-        {
-#if 0
-		if (oldHole1Deg > 0 && !MultiS3::shadowDegree[hole1]) MultiS3::denom -= 1;
-        	if (oldHole2Deg > 0 && !MultiS3::shadowDegree[hole2]) MultiS3::denom += 1;	
-#else
-	      uint neighbor;
-              const uint n1 = G1->getNumNodes();
-              const uint n2 = G2->getNumNodes();
-              vector<uint> whichPeg(n2, n1); // value of n1 represents not used
-              for (uint i = 0; i < n1; ++i){
-                  whichPeg[A[i]] = i; // inverse of the alignment
-              }
-
-              uint n_num = G2->adjLists[hole1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[hole1][i];
-                  if (whichPeg[neighbor]<n1 and neighbor!=hole2 and G2->getEdgeWeight(neighbor,hole1)){
-                      MultiS3::denom--;
-                  }
-              }
-              n_num = G1->adjLists[peg1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G1->adjLists[peg1][i];
-                    if (neighbor!=peg2){
-                        if (!G2->getEdgeWeight(A[neighbor],hole1)){
-                            MultiS3::denom--;
-                        }
-                        if (!G2->getEdgeWeight(A[neighbor],hole2)){
-                            MultiS3::denom++;
-                        }
-                    }
-              }
-
-              n_num = G2->adjLists[hole2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[hole2][i];
-                  if (neighbor!=hole1 and whichPeg[neighbor]<n1 and peg1!=whichPeg[neighbor] and !G2->getEdgeWeight(neighbor,hole2)){
-                      MultiS3::denom++;
-                  }
-              }
-              n_num = G2->adjLists[hole2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[hole2][i];
-                  if (neighbor!=hole1 and whichPeg[neighbor]<n1 and !G2->getEdgeWeight(hole2,neighbor)){
-                      MultiS3::denom--;
-                  }
-              }
-              
-              n_num = G1->adjLists[peg2].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G1->adjLists[peg2][i];
-                  if (neighbor!=peg1){
-                      if (!G2->getEdgeWeight(A[neighbor],hole2)){
-                          MultiS3::denom--;
-                      }
-                      if (!G2->getEdgeWeight(A[neighbor],hole1)){
-                          MultiS3::denom++;
-                      }
-                  }
-              }
-              n_num = G2->adjLists[hole1].size();
-              for (uint i =0; i < n_num; i++){
-                  neighbor = G2->adjLists[hole1][i];
-                  if ( G2->getEdgeWeight(hole1,neighbor)>0 and whichPeg[neighbor]<n1 and neighbor!=hole2 and peg2!=whichPeg[neighbor]){
-                      MultiS3::denom++;
-                  }
-              }
-#endif
-        }
-
-      }
+      uint pegNeigh, holeNeigh, diff;
       switch (MultiS3::numerator_type){
           case MultiS3::ra_i:
           {
-              int res = 0, diff;
-              uint neighbor;
+              int res = 0;
               const uint n = G1->adjLists[peg1].size();
-              uint i = 0;
-              for (; i < n; ++i) {
-                  neighbor = G1->adjLists[peg1][i];
-                  diff = G2->getEdgeWeight(hole1,A[neighbor]) + 1;
-                  res -= (diff==1?0:diff);
-                  diff = G2->getEdgeWeight(hole2,A[neighbor]) + 1;
-                  if (hole2==A[neighbor]){
-                      diff=0;
-                  }
-
-                  res += (diff==1?0:diff);
+              uint i;
+              for (i = 0; i < n; ++i) {
+                  pegNeigh = G1->adjLists[peg1][i];
+                  if (pegNeigh!=peg2) {
+		      res -= G2->getEdgeWeight(hole1,A[pegNeigh]);
+		      res += G2->getEdgeWeight(hole2,A[pegNeigh]);
+		  }
               }
               const uint m = G1->adjLists[peg2].size();
               for (i = 0; i < m; ++i) {
-                  neighbor = G1->adjLists[peg2][i];
-                  diff = G2->getEdgeWeight(hole2,A[neighbor])+ 1;
-                  res -= (diff==1?0:diff);
-                  diff = G2->getEdgeWeight(hole1,A[neighbor]) + 1;
-                  if (hole1==A[neighbor]){
-                      diff=0;
-                  }
-
-                  res += (diff==1?0:diff);
-              }
-              if(G2->getEdgeWeight(hole1,hole2) and  G1->getEdgeWeight(peg1,peg2)) {
-                  diff = ( G2->getEdgeWeight(hole1,A[peg2]) + 1);
-
-                  res += 2*(diff==1?0:diff);
+                  pegNeigh = G1->adjLists[peg2][i];
+                  if (pegNeigh!=peg1) {
+		      res -= G2->getEdgeWeight(hole2,A[pegNeigh]);
+		      res += G2->getEdgeWeight(hole1,A[pegNeigh]);
+		  }
               }
               return res;
           }
@@ -1542,23 +1315,22 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               
           case MultiS3::ra_global:
           {
-              int res = 0, diff;
-              uint neighbor;
+              int res = 0;
               const uint n = G1->adjLists[peg1].size();
               uint i = 0;
               bool ladder = false;
               for (; i < n; ++i) {
-                  neighbor = G1->adjLists[peg1][i];
-                  if (G1->getEdgeWeight(neighbor,peg1)>0){
-                      diff = G2->getEdgeWeight(hole1,A[neighbor]) + 1;
+                  pegNeigh = G1->adjLists[peg1][i];
+                  if (G1->getEdgeWeight(pegNeigh,peg1)>0){
+                      diff = G2->getEdgeWeight(hole1,A[pegNeigh]) + 1;
                       ladder = (diff>1?true:false);
                       if (ladder){
                           res--;
-                          if (G2->getEdgeWeight(hole1,A[neighbor]) == 1){res--;}
+                          if (G2->getEdgeWeight(hole1,A[pegNeigh]) == 1){res--;}
                       }
 
-                      diff = G2->getEdgeWeight(hole2,A[neighbor]) + 1;
-                      if (hole2!=A[neighbor]){
+                      diff = G2->getEdgeWeight(hole2,A[pegNeigh]) + 1;
+                      if (hole2!=A[pegNeigh]){
                           if (diff==2){res+=2;}
                           else if (diff>1){res++;}
                       }
@@ -1572,18 +1344,18 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               
               const uint m = G1->adjLists[peg2].size();
               for (i = 0; i < m; ++i) {
-                  neighbor = G1->adjLists[peg2][i];
-                  if (G1->getEdgeWeight(neighbor,peg2)>0){
-                      diff = G2->getEdgeWeight(hole2,A[neighbor]) + 1;
+                  pegNeigh = G1->adjLists[peg2][i];
+                  if (G1->getEdgeWeight(pegNeigh,peg2)>0){
+                      diff = G2->getEdgeWeight(hole2,A[pegNeigh]) + 1;
 
                       ladder = (diff>1?true:false);
-                      if (ladder and neighbor!=peg1 and G2->getEdgeWeight(hole2,A[neighbor])){
+                      if (ladder and pegNeigh!=peg1 and G2->getEdgeWeight(hole2,A[pegNeigh])){
                           res--;
-                          if (G2->getEdgeWeight(hole2,A[neighbor]) == 1){res--;}
+                          if (G2->getEdgeWeight(hole2,A[pegNeigh]) == 1){res--;}
                           }
                       
-                      diff = G2->getEdgeWeight(hole1,A[neighbor]) + 1;
-                      if (hole1!=A[neighbor]){
+                      diff = G2->getEdgeWeight(hole1,A[pegNeigh]) + 1;
+                      if (hole1!=A[pegNeigh]){
                           if (diff==2){res+=2;}
                           else if (diff>1){res++;}
                       }
@@ -1594,18 +1366,17 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               break;
           case MultiS3::la_i:
           {
-               int res = 0, diff;
-               uint neighbor;
+               int res = 0;
                const uint n = G1->adjLists[peg1].size();
                uint i = 0;
                bool ladder = false;
                for (; i < n; ++i) {
-                   neighbor = G1->adjLists[peg1][i];
-                   diff = G2->getEdgeWeight(hole1,A[neighbor]) + 1;
+                   pegNeigh = G1->adjLists[peg1][i];
+                   diff = G2->getEdgeWeight(hole1,A[pegNeigh]) + 1;
 
                    ladder = (diff>1?true:false);
-                   diff = G2->getEdgeWeight(hole2,A[neighbor]) + 1;
-                   if (hole2==A[neighbor]){
+                   diff = G2->getEdgeWeight(hole2,A[pegNeigh]) + 1;
+                   if (hole2==A[pegNeigh]){
                        diff=0;
                    }
 
@@ -1617,12 +1388,12 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
                }
                const uint m = G1->adjLists[peg2].size();
                for (i = 0; i < m; ++i) {
-                   neighbor = G1->adjLists[peg2][i];
-                   diff = G2->getEdgeWeight(hole2,A[neighbor]) + 1;
+                   pegNeigh = G1->adjLists[peg2][i];
+                   diff = G2->getEdgeWeight(hole2,A[pegNeigh]) + 1;
 
                    ladder = (diff>1?true:false);
-                   diff = G2->getEdgeWeight(hole1,A[neighbor])+ 1;
-                   if (hole1==A[neighbor]){
+                   diff = G2->getEdgeWeight(hole1,A[pegNeigh])+ 1;
+                   if (hole1==A[pegNeigh]){
                        diff=0;
                    }
 
@@ -1643,33 +1414,32 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               break;
           case MultiS3::la_global:
           {
-              int res = 0, diff;
-              uint neighbor;
+              int res = 0;
               const uint n = G1->adjLists[peg1].size();
               uint i = 0;
               bool ladder = false;
               
               for (; i < n; ++i) {
-                  neighbor = G1->adjLists[peg1][i];
-                  if (G1->getEdgeWeight(neighbor,peg1)>0){
-                      diff = G2->getEdgeWeight(hole1,A[neighbor]) + 1;
+                  pegNeigh = G1->adjLists[peg1][i];
+                  if (G1->getEdgeWeight(pegNeigh,peg1)>0){
+                      diff = G2->getEdgeWeight(hole1,A[pegNeigh]) + 1;
 
                       ladder = (diff>1?true:false);
-                      if (ladder and G2->getEdgeWeight(hole1,A[neighbor]) == 1){res--;}
-                      if (hole2!=A[neighbor] and G2->getEdgeWeight(hole2,A[neighbor])==1){res++;}
+                      if (ladder and G2->getEdgeWeight(hole1,A[pegNeigh]) == 1){res--;}
+                      if (hole2!=A[pegNeigh] and G2->getEdgeWeight(hole2,A[pegNeigh])==1){res++;}
                   }
               }
               if (G2->getEdgeWeight(hole2,A[peg1])==1 and G1->getEdgeWeight(peg1,peg2)==1){res++;}
               
               const uint m = G1->adjLists[peg2].size();
               for (i = 0; i < m; ++i) {
-                  neighbor = G1->adjLists[peg2][i];
-                  if (G1->getEdgeWeight(neighbor,peg2)>0){
-                      diff = G2->getEdgeWeight(hole2,A[neighbor]) + 1;
+                  pegNeigh = G1->adjLists[peg2][i];
+                  if (G1->getEdgeWeight(pegNeigh,peg2)>0){
+                      diff = G2->getEdgeWeight(hole2,A[pegNeigh]) + 1;
 
                       ladder = (diff>1?true:false);
-                      if (ladder and neighbor!=peg1 and G2->getEdgeWeight(hole2,A[neighbor])== 1){res--;}
-                      if (hole1!=A[neighbor] and G2->getEdgeWeight(hole1,A[neighbor])==1 and neighbor!=peg1){res++;}
+                      if (ladder and pegNeigh!=peg1 and G2->getEdgeWeight(hole2,A[pegNeigh])== 1){res--;}
+                      if (hole1!=A[pegNeigh] and G2->getEdgeWeight(hole1,A[pegNeigh])==1 and pegNeigh!=peg1){res++;}
                   }
               }
               return res;
@@ -1678,8 +1448,8 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
           default:
           {
               int res = 0;
-              //uint oldHole1Deg = MultiS3::shadowDegree[hole1];
-              //uint oldHole2Deg = MultiS3::shadowDegree[hole2];
+              //uint oldhole1Deg = MultiS3::shadowDegree[hole1];
+              //uint oldhole2Deg = MultiS3::shadowDegree[hole2];
               if (G1->hasSelfLoop(peg1)) {
                   if (G2->hasSelfLoop(hole1)) --res;
                   if (G2->hasSelfLoop(hole2)) ++res;
@@ -1704,13 +1474,171 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
                       res += G2->getEdgeWeight(hole1, A[nbr]);
                   }
               }
-//              if (oldHole1Deg > 0 && !MultiS3::shadowDegree[hole1]) MultiS3::denom -= 1;
-//              if (oldHole2Deg > 0 && !MultiS3::shadowDegree[hole2]) MultiS3::denom += 1;
+//              if (oldhole1Deg > 0 && !MultiS3::shadowDegree[hole1]) MultiS3::denom -= 1;
+//              if (oldhole2Deg > 0 && !MultiS3::shadowDegree[hole2]) MultiS3::denom += 1;
               return res;
 
           }
               break;
       }
+    const uint n1 = G1->getNumNodes();
+    const uint n2 = G2->getNumNodes();
+    vector<uint> whichPeg(n2, n1);
+    switch (MultiS3::denominator_type){
+      case MultiS3::rt_i:
+        {
+              for (uint i = 0; i < n1; ++i){
+                  whichPeg[A[i]] = i;
+              }
+
+              uint n_num = G2->adjLists[hole1].size();
+              for (uint i=0; i < n_num; i++){
+                  holeNeigh = G2->adjLists[hole1][i];
+                  if (holeNeigh!=hole2 && whichPeg[holeNeigh]<n1){
+                      MultiS3::denom-=G2->getEdgeWeight(hole1,holeNeigh);
+                      MultiS3::denom+=G2->getEdgeWeight(hole2,holeNeigh);
+                  }
+              }
+              n_num = G2->adjLists[hole2].size();
+              for (uint i =0; i < n_num; i++){
+                  holeNeigh = G2->adjLists[hole2][i];
+                  if (holeNeigh != hole1 && whichPeg[holeNeigh]<n1){
+                      MultiS3::denom-=G2->getEdgeWeight(hole2,holeNeigh);
+                      MultiS3::denom+=G2->getEdgeWeight(hole1,holeNeigh);
+                   }
+              }
+          }
+              break;
+          case MultiS3::ee_i:
+          {
+              for (uint i = 0; i < n1; ++i){
+                  whichPeg[A[i]] = i; // inverse of the alignment
+              }
+
+              uint n_num = G2->adjLists[hole1].size();
+              for (uint i =0; i < n_num; i++){
+                  holeNeigh = G2->adjLists[hole1][i];
+                  if (whichPeg[holeNeigh]<n1 and holeNeigh!=hole2 and G2->getEdgeWeight(holeNeigh,hole1)){
+                      MultiS3::denom--;
+                  }
+              }
+              n_num = G1->adjLists[peg1].size();
+              for (uint i =0; i < n_num; i++){
+                  pegNeigh = G1->adjLists[peg1][i];
+                    if (pegNeigh!=peg2){
+                        if (!G2->getEdgeWeight(A[pegNeigh],hole1)){
+                            MultiS3::denom--;
+                        }
+                        if (!G2->getEdgeWeight(A[pegNeigh],hole2)){
+                            MultiS3::denom++;
+                        }
+                    }
+              }
+
+              n_num = G2->adjLists[hole2].size();
+              for (uint i =0; i < n_num; i++){
+                  holeNeigh = G2->adjLists[hole2][i];
+                  if (holeNeigh!=hole1 and whichPeg[holeNeigh]<n1 and peg1!=whichPeg[holeNeigh] and !G2->getEdgeWeight(holeNeigh,hole2)){
+                      MultiS3::denom++;
+                  }
+              }
+              n_num = G2->adjLists[hole2].size();
+              for (uint i =0; i < n_num; i++){
+                  holeNeigh = G2->adjLists[hole2][i];
+                  if (holeNeigh!=hole1 and whichPeg[holeNeigh]<n1 and !G2->getEdgeWeight(hole2,holeNeigh)){
+                      MultiS3::denom--;
+                  }
+              }
+              
+              n_num = G1->adjLists[peg2].size();
+              for (uint i =0; i < n_num; i++){
+                  pegNeigh = G1->adjLists[peg2][i];
+                  if (pegNeigh!=peg1){
+                      if (!G2->getEdgeWeight(A[pegNeigh],hole2)){
+                          MultiS3::denom--;
+                      }
+                      if (!G2->getEdgeWeight(A[pegNeigh],hole1)){
+                          MultiS3::denom++;
+                      }
+                  }
+              }
+              n_num = G2->adjLists[hole1].size();
+              for (uint i =0; i < n_num; i++){
+                  holeNeigh = G2->adjLists[hole1][i];
+                  if ( G2->getEdgeWeight(hole1,holeNeigh)>0 and whichPeg[holeNeigh]<n1 and holeNeigh!=hole2 and peg2!=whichPeg[holeNeigh]){
+                      MultiS3::denom++;
+                  }
+              }
+        }
+            break;
+	default:
+        {
+#if 0
+		if (oldhole1Deg > 0 && !MultiS3::shadowDegree[hole1]) MultiS3::denom -= 1;
+        	if (oldhole2Deg > 0 && !MultiS3::shadowDegree[hole2]) MultiS3::denom += 1;	
+#else
+              for (uint i = 0; i < n1; ++i){
+                  whichPeg[A[i]] = i; // inverse of the alignment
+              }
+
+              uint n_num = G2->adjLists[hole1].size();
+              for (uint i =0; i < n_num; i++){
+                  holeNeigh = G2->adjLists[hole1][i];
+                  if (whichPeg[holeNeigh]<n1 and holeNeigh!=hole2 and G2->getEdgeWeight(holeNeigh,hole1)){
+                      MultiS3::denom--;
+                  }
+              }
+              n_num = G1->adjLists[peg1].size();
+              for (uint i =0; i < n_num; i++){
+                  pegNeigh = G1->adjLists[peg1][i];
+                    if (pegNeigh!=peg2){
+                        if (!G2->getEdgeWeight(A[pegNeigh],hole1)){
+                            MultiS3::denom--;
+                        }
+                        if (!G2->getEdgeWeight(A[pegNeigh],hole2)){
+                            MultiS3::denom++;
+                        }
+                    }
+              }
+
+              n_num = G2->adjLists[hole2].size();
+              for (uint i =0; i < n_num; i++){
+                  holeNeigh = G2->adjLists[hole2][i];
+                  if (holeNeigh!=hole1 and whichPeg[holeNeigh]<n1 and peg1!=whichPeg[holeNeigh] and !G2->getEdgeWeight(holeNeigh,hole2)){
+                      MultiS3::denom++;
+                  }
+              }
+              n_num = G2->adjLists[hole2].size();
+              for (uint i =0; i < n_num; i++){
+                  holeNeigh = G2->adjLists[hole2][i];
+                  if (holeNeigh!=hole1 and whichPeg[holeNeigh]<n1 and !G2->getEdgeWeight(hole2,holeNeigh)){
+                      MultiS3::denom--;
+                  }
+              }
+              
+              n_num = G1->adjLists[peg2].size();
+              for (uint i =0; i < n_num; i++){
+                  pegNeigh = G1->adjLists[peg2][i];
+                  if (pegNeigh!=peg1){
+                      if (!G2->getEdgeWeight(A[pegNeigh],hole2)){
+                          MultiS3::denom--;
+                      }
+                      if (!G2->getEdgeWeight(A[pegNeigh],hole1)){
+                          MultiS3::denom++;
+                      }
+                  }
+              }
+              n_num = G2->adjLists[hole1].size();
+              for (uint i =0; i < n_num; i++){
+                  holeNeigh = G2->adjLists[hole1][i];
+                  if ( G2->getEdgeWeight(hole1,holeNeigh)>0 and whichPeg[holeNeigh]<n1 and holeNeigh!=hole2 and peg2!=whichPeg[holeNeigh]){
+                      MultiS3::denom++;
+                  }
+              }
+#endif
+        }
+
+    }
 }
 
 int SANA::inducedEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
@@ -1733,33 +1661,33 @@ double SANA::JSIncChangeOp(uint peg, uint oldHole, uint newHole) {
     if (jsWeight == 0) return 0;
 
     //eval newJsSum
-    //update alignedByNode with peg and peg neighbours using oldHole and newHole
+    //update alignedByNode with peg and peg neighbors using oldHole and newHole
 
     // eval for peg from scratch
     uint pegOldAlingedEdges = alignedByNode[peg];
     uint pegAlignedEdges = 0;
-    vector<uint> pegNeighbours = G1->adjLists[peg];
-    for (uint nbr : pegNeighbours) {
-        uint neighbourAlignedTo = A[nbr]; 
-        pegAlignedEdges += G2->getEdgeWeight(newHole, neighbourAlignedTo);
+    vector<uint> pegNeighbors = G1->adjLists[peg];
+    for (uint nbr : pegNeighbors) {
+        uint neighborAlignedTo = A[nbr]; 
+        pegAlignedEdges += G2->getEdgeWeight(newHole, neighborAlignedTo);
     }
     alignedByNode[peg] = pegAlignedEdges;
     //update newJsSum
-    uint pegTotalEdges = pegNeighbours.size();
+    uint pegTotalEdges = pegNeighbors.size();
     double change = ((pegAlignedEdges - pegOldAlingedEdges)/(double)pegTotalEdges);
 
-    // for each peg neighbour update do iterative changes to the jsAlingedByNode vector
-    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldHole to G2mapping and reduce score if newHole to G2mapping doesnt exist
+    // for each peg neighbor update do iterative changes to the jsAlingedByNode vector
+    // in each update get the G2mapping of neighbor and then check if edge was aligned by oldHole to G2mapping and reduce score if newHole to G2mapping doesnt exist
     // increase score if oldHole to G2 mapping edge didnt exist but newHole to G2 mapping does
     //no changes other wise
-    for (uint nbr : pegNeighbours) {
-        uint neighbourAlignedTo = A[nbr];
-        uint neighbourOldAlignedEdges = alignedByNode[nbr];
-        uint neighbourTotalEdges = G1->adjLists[nbr].size();
-        alignedByNode[nbr] -= G2->getEdgeWeight(oldHole, neighbourAlignedTo);
-        alignedByNode[nbr] += G2->getEdgeWeight(newHole, neighbourAlignedTo);
+    for (uint nbr : pegNeighbors) {
+        uint neighborAlignedTo = A[nbr];
+        uint neighborOldAlignedEdges = alignedByNode[nbr];
+        uint neighborTotalEdges = G1->adjLists[nbr].size();
+        alignedByNode[nbr] -= G2->getEdgeWeight(oldHole, neighborAlignedTo);
+        alignedByNode[nbr] += G2->getEdgeWeight(newHole, neighborAlignedTo);
         //update newJsSum
-        change += ((alignedByNode[nbr] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+        change += ((alignedByNode[nbr] - neighborOldAlignedEdges)/(double)neighborTotalEdges);
     }
     return change;
 }
@@ -1767,76 +1695,76 @@ double SANA::JSIncChangeOp(uint peg, uint oldHole, uint newHole) {
 double SANA::JSIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     if (jsWeight == 0) return 0;
 
-    //eval swap as two pegs and then loop neighbours
+    //eval swap as two pegs and then loop neighbors
 
     uint peg1OldAlingedEdges = alignedByNode[peg1];
     uint peg1AlignedEdges = 0;
-    vector<uint> peg1Neighbours = G1->adjLists[peg1];
-    uint peg1TotalEdges = peg1Neighbours.size();
+    vector<uint> peg1Neighbors = G1->adjLists[peg1];
+    uint peg1TotalEdges = peg1Neighbors.size();
 
     uint peg2OldAlingedEdges = alignedByNode[peg2];
     uint peg2AlignedEdges = 0;
-    vector<uint> peg2Neighbours = G1->adjLists[peg2];
-    uint peg2TotalEdges = peg2Neighbours.size();
+    vector<uint> peg2Neighbors = G1->adjLists[peg2];
+    uint peg2TotalEdges = peg2Neighbors.size();
 
     // eval for peg1 from sratch
-    for (uint nbr : peg1Neighbours) {
-        uint neighbourAlignedTo = A[nbr];
-        // if (G2->getEdgeWeight(hole2, neighbourAlignedTo) == true) {
+    for (uint nbr : peg1Neighbors) {
+        uint neighborAlignedTo = A[nbr];
+        // if (G2->getEdgeWeight(hole2, neighborAlignedTo) == true) {
         //     peg1AlignedEdges += 1;
         // }
-        peg1AlignedEdges = G2->getEdgeWeight(hole2, neighbourAlignedTo);
+        peg1AlignedEdges = G2->getEdgeWeight(hole2, neighborAlignedTo);
     }
     alignedByNode[peg1] = peg1AlignedEdges;
 
     double change = ((peg1AlignedEdges - peg1OldAlingedEdges)/(double)peg1TotalEdges);
 
-    //for each peg neighbour update do iterative changes to the jsAlingedByNode vector
-    //in each update get the G2mapping of neighbour and then check if edge was aligned by
+    //for each peg neighbor update do iterative changes to the jsAlingedByNode vector
+    //in each update get the G2mapping of neighbor and then check if edge was aligned by
     //oldHole to G2mapping and reduce score if newHole to G2mapping doesnt exist
     //increase score if oldHole to G2 mapping edge didnt exist but newHole to G2 mapping does
     //no changes other wise
-    for (uint nbr : peg1Neighbours) {
-        uint neighbourAlignedTo = A[nbr];
-        uint neighbourOldAlignedEdges = alignedByNode[nbr];
-        uint neighbourTotalEdges = G1->adjLists[nbr].size();
-        if (std::find (peg1Neighbours.begin(), peg1Neighbours.end(), nbr) == peg1Neighbours.end()) {
-            alignedByNode[nbr] -= G2->getEdgeWeight(hole1, neighbourAlignedTo);
-            alignedByNode[nbr] += G2->getEdgeWeight(hole2, neighbourAlignedTo);
+    for (uint nbr : peg1Neighbors) {
+        uint neighborAlignedTo = A[nbr];
+        uint neighborOldAlignedEdges = alignedByNode[nbr];
+        uint neighborTotalEdges = G1->adjLists[nbr].size();
+        if (std::find (peg1Neighbors.begin(), peg1Neighbors.end(), nbr) == peg1Neighbors.end()) {
+            alignedByNode[nbr] -= G2->getEdgeWeight(hole1, neighborAlignedTo);
+            alignedByNode[nbr] += G2->getEdgeWeight(hole2, neighborAlignedTo);
             //update newJsSum
-            change += ((alignedByNode[nbr] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+            change += ((alignedByNode[nbr] - neighborOldAlignedEdges)/(double)neighborTotalEdges);
         }
     }
 
     // eval for peg2 from scratch
-    for (uint nbr : peg2Neighbours) {
-        uint neighbourAlignedTo = A[nbr];
-        peg2AlignedEdges += G2->getEdgeWeight(hole1, neighbourAlignedTo);
+    for (uint nbr : peg2Neighbors) {
+        uint neighborAlignedTo = A[nbr];
+        peg2AlignedEdges += G2->getEdgeWeight(hole1, neighborAlignedTo);
     }
     alignedByNode[peg2] = peg2AlignedEdges;
     change += ((peg2AlignedEdges - peg2OldAlingedEdges)/(double)peg2TotalEdges);
 
-    // for each peg neighbour update do iterative changes to the jsAlingedByNode vector
-    // in each update get the G2mapping of neighbour and then check if edge was aligned by oldHole to G2mapping and reduce score if newHole to G2mapping doesnt exist
+    // for each peg neighbor update do iterative changes to the jsAlingedByNode vector
+    // in each update get the G2mapping of neighbor and then check if edge was aligned by oldHole to G2mapping and reduce score if newHole to G2mapping doesnt exist
     // increase score if oldHole to G2 mapping edge didnt exist but newHole to G2 mapping does
     //no changes other wise
-    for (uint nbr : peg2Neighbours) {
-        uint neighbourAlignedTo = A[nbr];
-        uint neighbourOldAlignedEdges = alignedByNode[nbr];
-        uint neighbourTotalEdges = G1->adjLists[nbr].size();
-        if (std::find (peg1Neighbours.begin(), peg1Neighbours.end(), nbr) == peg1Neighbours.end()) {
-            alignedByNode[nbr] -= G2->getEdgeWeight(hole2, neighbourAlignedTo);
-            alignedByNode[nbr] += G2->getEdgeWeight(hole1, neighbourAlignedTo);
+    for (uint nbr : peg2Neighbors) {
+        uint neighborAlignedTo = A[nbr];
+        uint neighborOldAlignedEdges = alignedByNode[nbr];
+        uint neighborTotalEdges = G1->adjLists[nbr].size();
+        if (std::find (peg1Neighbors.begin(), peg1Neighbors.end(), nbr) == peg1Neighbors.end()) {
+            alignedByNode[nbr] -= G2->getEdgeWeight(hole2, neighborAlignedTo);
+            alignedByNode[nbr] += G2->getEdgeWeight(hole1, neighborAlignedTo);
             //update newJsSum
-            change += ((alignedByNode[nbr] - neighbourOldAlignedEdges)/(double)neighbourTotalEdges);
+            change += ((alignedByNode[nbr] - neighborOldAlignedEdges)/(double)neighborTotalEdges);
         }
     }
 
-    //eval for common neighbours
-    vector<uint> peg1peg2commonneighbours(peg1Neighbours.size() + peg2Neighbours.size());
-    set_intersection(peg1Neighbours.begin(), peg1Neighbours.end(),
-                     peg2Neighbours.begin(), peg2Neighbours.end(),
-                     peg1peg2commonneighbours.begin());
+    //eval for common neighbors
+    vector<uint> peg1peg2commonneighbors(peg1Neighbors.size() + peg2Neighbors.size());
+    set_intersection(peg1Neighbors.begin(), peg1Neighbors.end(),
+                     peg2Neighbors.begin(), peg2Neighbors.end(),
+                     peg1peg2commonneighbors.begin());
     return change;
 }
 

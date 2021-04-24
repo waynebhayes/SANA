@@ -147,24 +147,28 @@ private:
     double edgeDifferenceIncChangeOp(uint peg, uint oldHole, uint newHole);
     double edgeDifferenceIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
     double edgeRatioIncChangeOp(uint peg, uint oldHole, uint newHole);
-    double edgeRatioIncSwapOp(uint peg1, uint peg2, uint node1, uint node2);
+    double edgeRatioIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
 
     // to evaluate SES incrementally
     bool needSquaredAligEdges;
     int squaredAligEdges;
     int squaredAligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole);
-    int squaredAligEdgesIncSwapOp(uint peg1, uint Peg2, uint node1, uint node2);
+    int squaredAligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
 
-	// to evaluate EE incrementally
+    // to evaluate EE incrementally
     bool needExposedEdges;
     int exposedEdgesIncChangeOp(uint peg, uint oldHole, uint newHole);
-    int exposedEdgesIncSwapOp(uint peg1, uint Peg2, uint node1, uint node2);
+    int exposedEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
     
     // to evaluate MS3 incrementally
     bool needMS3;
-    int MS3Numer;
+    int MS3Numer,
+	multiER, // ER=|ER_i| where ER_i = edges in G with at least one rung in its tower, other than itself
+	multiEL, // EL=|EL_i| where EL_i = complement of ER_i wrt E_i, ie., lonely edges in G
+	multinER, // nER_i = non-edges (ie., node pairs with no edge) in G that have at least one aligned rung outside G
+	multinEnR; // nEnR_i = non-edges in G that have no aligned rungs.
     int MS3IncChangeOp(uint peg, uint oldHole, uint newHole);
-    int MS3IncSwapOp(uint peg1, uint Peg2, uint node1, uint node2);
+    int MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
 
     //to evaluate SEC incrementally
     bool needSec;

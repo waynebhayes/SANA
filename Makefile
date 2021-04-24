@@ -27,7 +27,7 @@ ifeq ($(FLOAT), 1)
 endif
 
 ifeq ($(STATIC), 1)
-    CXXFLAGS := $(CXXFLAGS) -Bstatic #-static for some versions of gcc
+    CXXFLAGS := $(CXXFLAGS) -static #-Bstatic for some versions of gcc
     MAIN := $(MAIN).static
 endif
 

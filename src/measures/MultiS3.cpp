@@ -251,7 +251,7 @@ uint MultiS3::computeDenom(const Alignment& A) const {
             for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j){
                 bool inLadder = (whichPeg[i] < n1 && whichPeg[j] < n1); // && G1->getEdgeWeight(whichPeg[i],whichPeg[j]) > 0);
                 if(inLadder){
-		    ret += G2->getEdgeWeight(i,j) + G1->getEdgeWeight(whichPeg[i],whichPeg[j]);
+		    ret += G2->getEdgeWeight(i,j); // + G1->getEdgeWeight(whichPeg[i],whichPeg[j]);
                 }
             }
         }
