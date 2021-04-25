@@ -75,9 +75,14 @@ nets="`echo RNorvegicus SPombe CElegans MMusculus SCerevisiae AThaliana DMelanog
 export Networks_count=`echo $nets | wc -w`
 #Biogrid_network="$nets" #`echo $nets | newlines | sed 's/$/.el/' | (cd networks; xargs ls -Sr) | sed 's/\.el$//'`
 
+case `uname` in
+    Darwin) ;; # static compilation doesn't work on MacOS
+    *) EXTs='.static';;
+esac
+
 if $RUN; then
     [ -x "$EXE" ] || die "can't find executable '$EXE'"
-    EXTs='.static .sparse' # plus the empty extension
+    EXTs=".gdb $EXTS .sparse" # list executables from slowest to fastest; they'll be used in reverse order (empty extension is logically last in this list but will be added only inside the awk script)
     echo "$nets" | hawk 'BEGIN{split("'"$EXTs"'",EXTs); EXTs[0]=""}
 	{net[NR-1]=$NF}
 	END{run=totalRuns=choose(NR,2);

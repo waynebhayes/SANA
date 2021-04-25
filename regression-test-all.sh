@@ -53,8 +53,12 @@ MAKE_CORES=`expr $REAL_CORES - 1`
 echo "Using $MAKE_CORES cores to make and $CORES cores for regression tests"
 export EXE CORES REAL_CORES MAKE_CORES
 
+case `uname` in
+Darwin) NOSTATIC='|STATIC' ;; # don't try to make -static on MacOS--it doesn't work
+esac
+
 NUM_FAILS=0
-EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v 'MAIN|[<>]'`
+EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v "MAIN|[<>]$NOSTATIC"`
 [ `echo $EXECS | newlines | wc -l` -eq `echo $EXECS | newlines | sort -u | wc -l` ] || die "<$EXECS> contains duplicates"
 rm -f parallel
 if not make parallel; then
