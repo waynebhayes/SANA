@@ -24,7 +24,8 @@ esac
 
 USAGE="USAGE: $0 [ -make ] [ -x SANA_EXE ] [ list of tests to run, defaults to regression-tests/*/*.sh ]"
 
-PATH=`pwd`:`pwd`/scripts:$PATH
+CWD=`pwd`
+PATH="$CWD:$CWD/scripts:$CWD/NetGO:$PATH"
 export PATH
 
 if [ ! -x NetGO/NetGO.awk ]; then
