@@ -7,15 +7,14 @@ uint NUM_GRAPHS;
 double MultiS3::Normalization_factor = 2;
 uint MultiS3::denom = 1;
 uint MultiS3::numer = 1;
+MultiS3::NumeratorType MultiS3::numerator_type;
+MultiS3::DenominatorType MultiS3::denominator_type;
 double MultiS3::_type = 0;
 bool MultiS3::degreesInit = false;
 vector<uint> MultiS3::shadowDegree;
 
-unsigned MultiS3::numerator_type   = 0; // 0 for default version of ms3
-unsigned MultiS3::denominator_type = 0;
 
-
-MultiS3::MultiS3(const Graph* G1, const Graph* G2, int _numerator_type, int _denominator_type) : Measure(G1, G2, "ms3") {
+MultiS3::MultiS3(const Graph* G1, const Graph* G2, NumeratorType _numerator_type, DenominatorType _denominator_type) : Measure(G1, G2, "ms3") {
 #ifdef MULTI_PAIRWISE
     extern char *getetv(char*);
     char *s = getenv((char*)"NUM_GRAPHS");
@@ -32,16 +31,17 @@ MultiS3::MultiS3(const Graph* G1, const Graph* G2, int _numerator_type, int _den
     
     cout<<"MultiS3: numer_type = ";
     switch(numerator_type){
-        case MultiS3::ra_i:
+	case numer_default:
+        case ra_i:
             cout<<"ra_i"<<endl;
             break;
-        case MultiS3::la_i:
+        case la_i:
             cout<<"la_i"<<endl;
             break;
-        case MultiS3::la_global:
+        case la_global:
             cout<<"la_global"<<endl;
             break;
-        case MultiS3::ra_global:
+        case ra_global:
             cout<<"ra_global"<<endl;
             break;
         default:
@@ -50,16 +50,20 @@ MultiS3::MultiS3(const Graph* G1, const Graph* G2, int _numerator_type, int _den
     
     cout<<"MultiS3: denom_type = ";
     switch(denominator_type){
-        case MultiS3::rt_i:
+	case denom_default:
+        case rt_i:
             cout<<"rt_i"<<endl;
             break;
-        case MultiS3::ee_i:
+        case mre_i:
+            cout<<"mre_i"<<endl;
+            break;
+        case ee_i:
             cout<<"ee_i"<<endl;
             break;
-        case MultiS3::ee_global:
+        case ee_global:
             cout<<"ee_global"<<endl;
             break;
-        case MultiS3::rt_global:
+        case rt_global:
             cout<<"rt_global"<<endl;
             break;
         default:
@@ -85,68 +89,73 @@ void MultiS3::setDenom(const Alignment& A) {
 void MultiS3::getNormalizationFactor() const {
 #ifdef MULTI_PAIRWISE
     double factor_denom = 0;
-    uint node1, node2;
-    switch (MultiS3::denominator_type) {
-        case MultiS3::rt_i: 
+    uint peg1, peg2;
+    switch (denominator_type) {
+	default:
+	case denom_default:
+        case mre_i: 
+        case rt_i: 
         {
             /*for (const auto& edge: *(G2->getEdgeList()))
             {
-                node1 = edge[0], node2 = edge[1];
-                factor_denom += G2->getEdgeWeight(node1,node2) + 1;
+                peg1 = edge[0], peg2 = edge[1];
+                factor_denom += G2->getEdgeWeight(peg1,peg2) + 1;
             }*/
             factor_denom = G1->getEdgeList()->size() * NUM_GRAPHS;
         }
             break;
-        case MultiS3::ee_i:
+        case ee_i:
         {
             factor_denom = G2->getEdgeList()->size() + G1->getEdgeList()->size();
         }
             break;
-        case MultiS3::ee_global:
+        case ee_global:
         {
             factor_denom = G2->getEdgeList()->size() + G1->getEdgeList()->size();
         }
             break;
-        case MultiS3::rt_global:
+        case rt_global:
         {
             for (const auto& edge: *(G2->getEdgeList()))
             {
-                node1 = edge[0], node2 = edge[1];
-                factor_denom += G2->getEdgeWeight(node1,node2) + 1;
+                peg1 = edge[0], peg2 = edge[1];
+                factor_denom += G2->getEdgeWeight(peg1,peg2) + 1;
             }
         }
             break;
     }
     //cout << "Factor denom is "<< factor_denom << endl;
-    switch (MultiS3::numerator_type){
-        case MultiS3::ra_i:
+    switch (numerator_type){
+	default:
+	case numer_default:
+        case ra_i:
         {
             Normalization_factor = G1->getEdgeList()->size() * NUM_GRAPHS / factor_denom;
         }
             break;
-        case MultiS3::la_i:
+        case la_i:
         {
             Normalization_factor = G1->getEdgeList()->size() / factor_denom;
         }
             break;
-        case MultiS3::la_global:
+        case la_global:
         {
             int temp_max = 0;
             for (const auto& edge: *(G2->getEdgeList()))
             {
-                node1 = edge[0], node2 = edge[1];
-                temp_max = G2->getEdgeWeight(node1,node2) + 1 > temp_max ? G2->getEdgeWeight(node1,node2) + 1 : temp_max;
+                peg1 = edge[0], peg2 = edge[1];
+                temp_max = G2->getEdgeWeight(peg1,peg2) + 1 > temp_max ? G2->getEdgeWeight(peg1,peg2) + 1 : temp_max;
             }
             Normalization_factor = temp_max * G2->getEdgeList()->size() / factor_denom / 2;
         }
             break;
-        case MultiS3::ra_global:
+        case ra_global:
         {
             int temp_max = 0;
             for (const auto& edge: *(G2->getEdgeList()))
             {
-                node1 = edge[0], node2 = edge[1];
-                temp_max = G2->getEdgeWeight(node1,node2) + 1 > temp_max ? G2->getEdgeWeight(node1,node2) + 1 : temp_max;
+                peg1 = edge[0], peg2 = edge[1];
+                temp_max = G2->getEdgeWeight(peg1,peg2) + 1 > temp_max ? G2->getEdgeWeight(peg1,peg2) + 1 : temp_max;
             }
             Normalization_factor = temp_max * G2->getEdgeList()->size() / factor_denom;
         }
@@ -162,28 +171,29 @@ return;
 uint MultiS3::computeNumer(const Alignment& A) const {
 #ifdef MULTI_PAIRWISE
     uint ret = 0;
-    uint node1, node2;
+    uint peg1, peg2;
 
-    switch (MultiS3::numerator_type){
-        case MultiS3::ra_i:
+    switch (numerator_type){
+	case numer_default:
+        case ra_i:
         {
             for (const auto& edge: *(G1->getEdgeList()))
             {
-                node1 = edge[0], node2 = edge[1];
-		ret += G2->getEdgeWeight(A[node1],A[node2]); // do NOT include the edge in G1
+                peg1 = edge[0], peg2 = edge[1];
+		ret += G2->getEdgeWeight(A[peg1],A[peg2]); // do NOT include the edge in G1
             }
         }
             break;
-        case MultiS3::la_i:
+        case la_i:
         {
             for (const auto& edge: *(G1->getEdgeList()))
             {
-                node1 = edge[0], node2 = edge[1];
-		if(G2->getEdgeWeight(A[node1],A[node2])>0) ++ret;
+                peg1 = edge[0], peg2 = edge[1];
+		if(G2->getEdgeWeight(A[peg1],A[peg2])>0) ++ret;
             }
         }
             break;
-        case MultiS3::la_global:
+        case la_global:
         {
             const uint n1 = G1->getNumNodes();
             const uint n2 = G2->getNumNodes();
@@ -192,13 +202,13 @@ uint MultiS3::computeNumer(const Alignment& A) const {
                 inverse_A[A[i]] = i;
             }
             for (const auto& edge: *(G2->getEdgeList())){
-                node1 = edge[0], node2 = edge[1];
-		if ((G2->getEdgeWeight(node1,node2) > 1) or (inverse_A[node1] < n1 and inverse_A[node2] < n1 and G2->getEdgeWeight(node1,node2) + G1->getEdgeWeight(inverse_A[node1],inverse_A[node2]) > 1))
+                peg1 = edge[0], peg2 = edge[1];
+		if ((G2->getEdgeWeight(peg1,peg2) > 1) or (inverse_A[peg1] < n1 and inverse_A[peg2] < n1 and G2->getEdgeWeight(peg1,peg2) + G1->getEdgeWeight(inverse_A[peg1],inverse_A[peg2]) > 1))
 		    ++ret;
             }
         }
             break;
-        case MultiS3::ra_global:
+        case ra_global:
         {
             const uint n1 = G1->getNumNodes();
             const uint n2 = G2->getNumNodes();
@@ -207,10 +217,10 @@ uint MultiS3::computeNumer(const Alignment& A) const {
                 inverse_A[A[i]] = i;
             }
             for (const auto& edge: *(G2->getEdgeList())){
-                node1 = edge[0], node2 = edge[1];
-		ret += G2->getEdgeWeight(node1,node2) > 1 ? G2->getEdgeWeight(node1,node2) : 0;
-		if (inverse_A[node1] < n1 and inverse_A[node2] < n1 and G2->getEdgeWeight(node1,node2) > 0 and G1->getEdgeWeight(inverse_A[node1],inverse_A[node2]) == 1){
-		    ret += (G2->getEdgeWeight(node1,node2) > 1);
+                peg1 = edge[0], peg2 = edge[1];
+		ret += G2->getEdgeWeight(peg1,peg2) > 1 ? G2->getEdgeWeight(peg1,peg2) : 0;
+		if (inverse_A[peg1] < n1 and inverse_A[peg2] < n1 and G2->getEdgeWeight(peg1,peg2) > 0 and G1->getEdgeWeight(inverse_A[peg1],inverse_A[peg2]) == 1){
+		    ret += (G2->getEdgeWeight(peg1,peg2) > 1);
 		}
             }
         }
@@ -219,8 +229,8 @@ uint MultiS3::computeNumer(const Alignment& A) const {
         {
             for (const auto& edge: *(G1->getEdgeList()))
             {
-               node1 = edge[0], node2 = edge[1];
-               ret += G2->getEdgeWeight(A[node1],A[node2]) + 1; // +1 because G1 was pruned out of G2
+               peg1 = edge[0], peg2 = edge[1];
+               ret += G2->getEdgeWeight(A[peg1],A[peg2]) + 1; // +1 because G1 was pruned out of G2
                //cerr << "numerator_type not specified, Using default numerator." << endl;
             }
         }
@@ -238,25 +248,56 @@ uint MultiS3::computeDenom(const Alignment& A) const {
     uint ret = 0;
 #ifdef MULTI_PAIRWISE
     
-    //uint node1, node2;
     const uint n1 = G1->getNumNodes();
     const uint n2 = G2->getNumNodes();
     vector<uint> whichPeg(n2, n1); // element equal to n1 represents not used/aligned
     for (uint i = 0; i < n1; ++i){
         whichPeg[A[i]] = i; // inverse of the alignment
     }
-    switch (MultiS3::denominator_type){
-        case MultiS3::rt_i:
+    switch (denominator_type){
+	case numer_default:
+        case mre_i:
+        case rt_i:
         {
+	    uint ER_i = 0; // edges(rungs) = edges in G1 that have at least one associated rung 
+	    uint EL_i = 0; // edges(lonely) = complement of ER_i wrt E_i = lonely edges = edges with zero associated rungs
+	    uint RA_i = 0; // number of actual rungs associated with those in ER_i.
+	    uint RU_i = 0; // number of rungs under non-edges in G_i.
+
+	    for (const auto& edge : *(G1->getEdgeList())) {
+                uint peg1 = edge[0], peg2 = edge[1];
+		uint shadowWeight = G2->getEdgeWeight(A[peg1],A[peg2]);
+		if(shadowWeight == 0) ++EL_i;
+		else {
+		    ++ER_i;
+		    RA_i+=shadowWeight;
+		}
+            }
+	    assert(ER_i + EL_i == G1->getNumEdges());
+
             for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j){
                 bool inLadder = (whichPeg[i] < n1 && whichPeg[j] < n1); // && G1->getEdgeWeight(whichPeg[i],whichPeg[j]) > 0);
+		uint shadowWeight = G2->getEdgeWeight(i,j);
                 if(inLadder){
-		    ret += G2->getEdgeWeight(i,j); // + G1->getEdgeWeight(whichPeg[i],whichPeg[j]);
-                }
+		    ret += shadowWeight; // + G1->getEdgeWeight(whichPeg[i],whichPeg[j]);
+		    if(!G1->hasEdge(whichPeg[i],whichPeg[j])) RU_i += shadowWeight;
+		}
             }
+	    assert(ret == RU_i + RA_i);
+	    RU_i = 0; // recompute below and use the fact that ret and RA_i haven't been touched...
+
+	    uint ret2 = 0;
+            for (uint i = 0; i < n1; ++i) for (uint j = 0; j < i; ++j){
+		uint shadowWeight = G2->getEdgeWeight(A[i],A[j]);
+		ret2 += shadowWeight;
+		if(!G1->hasEdge(i,j)) RU_i += shadowWeight;
+            }
+	    assert(RU_i == ret - RA_i);
+	    assert(ret2 == ret);
+	    if(denominator_type == mre_i) ret = (NUM_GRAPHS)*ER_i + EL_i + RU_i;
         }
             break;
-        case MultiS3::ee_i:
+        case ee_i:
         {
             for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j){
                 bool exposed = (whichPeg[i] < n1 && whichPeg[j] < n1 && G1->getEdgeWeight(whichPeg[i],whichPeg[j]) > 0);
@@ -267,7 +308,7 @@ uint MultiS3::computeDenom(const Alignment& A) const {
             }
         }
             break;
-        case MultiS3::ee_global:
+        case ee_global:
         {
             for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j){
                 bool exposed = (G2->getEdgeWeight(i,j) > 0);
@@ -278,7 +319,7 @@ uint MultiS3::computeDenom(const Alignment& A) const {
             }
         }
             break;
-        case MultiS3::rt_global:
+        case rt_global:
         {
             for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j){
                 bool exposed = (G2->getEdgeWeight(i,j) > 0);

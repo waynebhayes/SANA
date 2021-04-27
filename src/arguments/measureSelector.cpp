@@ -171,30 +171,33 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
 	m = new EdgeExposure(&G1, &G2);
     M.addMeasure(m, getWeight("ee", G1, G2, args));
     
-    int _numerator_type,_denominator_type;
+    MultiS3::NumeratorType _numerator_type;
+    MultiS3::DenominatorType _denominator_type;
     if (args.strings["-ms3_numer"] == "default"){
-        _numerator_type = 0;}
+        _numerator_type = MultiS3::numer_default;}
     else if (args.strings["-ms3_numer"] == "ra_i"){
-        _numerator_type = 1;}
+        _numerator_type = MultiS3::ra_i;}
     else if (args.strings["-ms3_numer"] == "la_i"){
-        _numerator_type = 2;}
+        _numerator_type = MultiS3::la_i;}
     else if (args.strings["-ms3_numer"] == "la_global"){
-        _numerator_type = 3;}
+        _numerator_type = MultiS3::la_global;}
     else if (args.strings["-ms3_numer"] == "ra_global"){
-        _numerator_type = 4;}
-    else {_numerator_type = 0;}
+        _numerator_type = MultiS3::ra_global;}
+    else {_numerator_type = MultiS3::numer_default;}
 
     if (args.strings["-ms3_denom"] == "default"){
-        _denominator_type = 0;}
+        _denominator_type = MultiS3::denom_default;}
     else if (args.strings["-ms3_denom"] == "rt_i"){
-        _denominator_type = 1;}
+        _denominator_type = MultiS3::rt_i;}
+    else if (args.strings["-ms3_denom"] == "mre_i"){
+        _denominator_type = MultiS3::mre_i;}
     else if (args.strings["-ms3_denom"] == "ee_i"){
-        _denominator_type = 2;}
+        _denominator_type = MultiS3::ee_i;}
     else if (args.strings["-ms3_denom"] == "ee_global"){
-        _denominator_type = 3;}
+        _denominator_type = MultiS3::ee_global;}
     else if (args.strings["-ms3_denom"] == "rt_global"){
-        _denominator_type = 4;}
-    else {_denominator_type = 0;}
+        _denominator_type = MultiS3::rt_global;}
+    else {_denominator_type = MultiS3::denom_default;}
 
     m = new MultiS3(&G1, &G2, _numerator_type, _denominator_type);
     

@@ -9,10 +9,14 @@
 
 extern uint NUM_GRAPHS;
 
-
 class MultiS3 : public Measure {
 public:
-    MultiS3(const  Graph* G1, const Graph* G2, int _numerator_type, int _denominator_type);
+    enum NumeratorType{numer_default, ra_i, la_i, la_global, ra_global};
+    enum DenominatorType{denom_default, rt_i, mre_i, ee_i, ee_global, rt_global};
+    static NumeratorType numerator_type;
+    static DenominatorType denominator_type;
+
+    MultiS3(const  Graph* G1, const Graph* G2, NumeratorType _numerator_type, DenominatorType _denominator_type);
     virtual ~MultiS3();
     double eval(const Alignment& A);
     static vector<uint> shadowDegree; // sum of neighboring edge weights including G1
@@ -23,28 +27,14 @@ public:
     uint computeDenom(const Alignment& A) const;
     void getNormalizationFactor() const;
 
-    //these don't belong here, they should be members in SANA -Nil
+    //these don't belong here, they should be members in SANA -Nil (Not sure I agree, these are MS3 specific -WH)
     static uint numer, denom; // used for inc eval
     static double Normalization_factor;
     static double _type; //0 default ; 1 ee
-    static unsigned numerator_type,denominator_type;
 
 private:
     static void initDegrees(const Alignment& A, const Graph& G1, const Graph& G2);
     static bool degreesInit;
-
-public:
-    static const unsigned _default = 0;
-    //numerator type
-    static const unsigned ra_i = 1;
-    static const unsigned la_i = 2;
-    static const unsigned la_global = 3;
-    static const unsigned ra_global = 4;
-    //denominator type
-    static const unsigned rt_i = 1;
-    static const unsigned ee_i = 2;
-    static const unsigned ee_global = 3;
-    static const unsigned rt_global = 4;
 };
 #endif
 
