@@ -5,8 +5,7 @@
 
 uint NUM_GRAPHS;
 double MultiS3::Normalization_factor = 2;
-uint MultiS3::denom = 1;
-uint MultiS3::numer = 1;
+uint MultiS3::denom = 1, MultiS3::numer = 1, MultiS3::EL_i=0, MultiS3::ER_i=0, MultiS3::RA_i=0, MultiS3::RU_i=0;
 MultiS3::NumeratorType MultiS3::numerator_type;
 MultiS3::DenominatorType MultiS3::denominator_type;
 double MultiS3::_type = 0;
@@ -255,45 +254,53 @@ uint MultiS3::computeDenom(const Alignment& A) const {
     switch (denominator_type){
 	case numer_default:
         case mre_i:
-        case rt_i: // NOTE: We compute all things two ways and ensure they both give the same answer
+        case rt_i: // NOTE: We compute all things THREE ways and ensure they both give the same answer
         {
-	    uint ret1, ret2; // two different ways of computing it;
-	    ret1=ret2=0;
-	    uint ER_i = 0; // edges(rungs) = edges in G1 that have at least one associated rung 
-	    uint EL_i = 0; // edges(lonely) = complement of ER_i wrt E_i = lonely edges = edges with zero associated rungs
-	    uint RA_i = 0; // number of actual rungs associated with those in ER_i.
+	    uint ret0, ret1, ret2; // two different ways of computing it;
+	    ret0=ret1=ret2=0;
+	    ER_i = 0; // edges(rungs) = edges in G1 that have at least one associated rung 
+	    EL_i = 0; // edges(lonely) = complement of ER_i wrt E_i = lonely edges = edges with zero associated rungs
+	    RA_i = 0; // number of actual rungs associated with those in ER_i.
 	    uint RU_i1 = 0; // number of rungs under non-edges in G_i.
 	    uint RU_i2 = 0; // number of rungs under non-edges in G_i.
 
 	    // METHOD 1: loop through all node pairs in G2 (EXPENSIVE!), and ignore non-edges above in G1.
-            for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j){
-                bool inLadder = (whichPeg[i] < n1 && whichPeg[j] < n1); // && G1->getEdgeWeight(whichPeg[i],whichPeg[j]) > 0);
-                if(inLadder){
+            for (uint i = 0; i < n2; ++i) if(whichPeg[i] < n1) {
+		ret0 += G2->getTotalWeight(i);
+		for (uint j = 0; j < n2; ++j) { // need j to past i to properly compute ret0 for unaligned pegs
 		    uint shadowWeight = G2->getEdgeWeight(i,j);
-		    ret1 += shadowWeight; // + G1->getEdgeWeight(whichPeg[i],whichPeg[j]);
-		    if(!G1->hasEdge(whichPeg[i],whichPeg[j])) RU_i1 += shadowWeight;
-		}
-            }
-
-	    // METHOD 2: loop only through all node pairs in G1 (less expensive assuming n1<n2)
-            for (uint i = 0; i < n1; ++i) for (uint j = 0; j < i; ++j){
-		uint shadowWeight = G2->getEdgeWeight(A[i],A[j]);
-		ret2 += shadowWeight;
-		if(G1->hasEdge(i,j)) {
-		    if(shadowWeight == 0) ++EL_i;
-		    else {
-			++ER_i;
-			RA_i+=shadowWeight;
+		    if(whichPeg[j] == n1) ret0 -= shadowWeight;
+		    else if(j<i) {
+			ret1 += shadowWeight; // + G1->getEdgeWeight(whichPeg[i],whichPeg[j]);
+			if(!G1->hasEdge(whichPeg[i],whichPeg[j])) RU_i1 += shadowWeight;
 		    }
 		}
-		else RU_i2 += shadowWeight;
             }
+	    assert(ret0 % 2 == 0); ret0 /= 2; // every edge was counted twice
+	    assert(ret0 == ret1);
+
+	    // METHOD 2: loop only through all node pairs in G1 (less expensive assuming n1<n2)
+            for (uint i = 0; i < n1; ++i) {
+		for (uint j = 0; j < i; ++j){
+		    uint shadowWeight = G2->getEdgeWeight(A[i],A[j]);
+		    ret2 += shadowWeight;
+		    if(G1->hasEdge(i,j)) {
+			if(shadowWeight == 0) ++EL_i;
+			else {
+			    ++ER_i;
+			    RA_i+=shadowWeight;
+			}
+		    }
+		    else RU_i2 += shadowWeight;
+		}
+	    }
 	    assert(ret1 == ret2);
 	    assert(RU_i1 == RU_i2);
 	    assert(ER_i + EL_i == G1->getNumEdges());
 	    assert(ret1 == RU_i1 + RA_i);
+	    RU_i = RU_i1;
 	    if(denominator_type == mre_i) ret = (NUM_GRAPHS)*ER_i + EL_i + RU_i1;
-	    else ret = ret1;
+	    else ret = ret2;
         }
 	break;
         case ee_i:

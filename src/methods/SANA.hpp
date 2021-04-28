@@ -76,7 +76,7 @@ private:
     double g1Edges, g2Edges; //stored as double because they appear in division
     uint pairsCount; // number of combinations of (g1_node_x, g1_node_y) including
                      // a pair that includes the same node (g1_node_x, g1_node_x)
-    double g1WeightedEdges, g2WeightedEdges;
+    double g1TotalWeight, g2TotalWeight;
 
     //random number generation
     mt19937 gen;
@@ -162,6 +162,7 @@ private:
     
     // to evaluate MS3 incrementally
     bool needMS3;
+    vector<uint> totalWeightInducedOnG1; // total weight of shadow node induced only on the aligned edges of G1.
     int MS3Numer,
 	multiER, // |ER_i| where ER_i = edges in G with at least one rung in its tower, other than itself
 	multiEL, // |EL_i| where EL_i = complement of ER_i wrt E_i, ie., lonely edges in G
@@ -296,7 +297,6 @@ private:
     vector<uint> g2NodeToActColId;
     static uint INVALID_ACTIVE_COLOR_ID; //arbitrary value bigger than any valid active color id
  
-
 
     friend class Ameur; //it needs to read the PBad buffer
     friend class StatisticalTest;

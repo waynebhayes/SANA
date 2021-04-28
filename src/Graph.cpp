@@ -60,6 +60,7 @@ Graph::Graph(const string& graphName, const string& optionalFilePath,
 
     adjLists.resize(numNodes);
     adjMatrix = Matrix<EDGE_T>(numNodes);
+    totalWeight = vector<double>(numNodes, 0.0);
     totalEdgeWeight = 0;
     for (uint i = 0; i < edgeList.size(); i++) {
         uint node1 = edgeList[i][0], node2 = edgeList[i][1];
@@ -75,6 +76,8 @@ Graph::Graph(const string& graphName, const string& optionalFilePath,
         if (adjMatrix[node1][node2] != 0 or adjMatrix[node2][node1] != 0)
             throw runtime_error("repeated edge in edge list passed to graph constructor");
         adjMatrix[node1][node2] = adjMatrix[node2][node1] = weight;
+	totalWeight[node1] += weight;
+	totalWeight[node2] += weight;
         totalEdgeWeight += weight;
     }
     initColorDataStructs(partialNodeColorPairs);
@@ -530,6 +533,7 @@ bool Graph::isWellDefined() const {
     //adjMatrix is symmetric and the sum of edges weights equals totalEdgeWeight
     uint numEdgesInAdjMat = 0;
     double adjMatSum = 0;
+    vector<double> nodeSum = vector<double>(n, 0.0);
     for (uint i = 0; i < n; i++) {
         for (uint j = 0; j <= i; j++) {
             if (adjMatrix.get(i, j) != adjMatrix.get(j, i))
@@ -537,11 +541,15 @@ bool Graph::isWellDefined() const {
             if (hasEdge(i,j)) {
                 numEdgesInAdjMat++;
                 adjMatSum += getEdgeWeight(i,j);
+		nodeSum[i] += getEdgeWeight(i,j);
+		nodeSum[j] += getEdgeWeight(i,j);
             }
         }
     }
     if (adjMatSum != totalEdgeWeight)
         ss<<"totalEdgeWeight attribute is "<<totalEdgeWeight<<" but the edges in adjMatrix add up to "<<adjMatSum<<endl;
+    for (uint i = 0; i < n; i++) if(nodeSum[i] != totalWeight[i])
+        ss<<"totalWeight["<<i<<"] attribute is "<<totalWeight[i]<<" but the in adjMatrix add up to "<<nodeSum[i]<<endl;
 
     //edgeList: all entries appear in adjMatrix, are not repeated, and every entry in adj matrix is in edge list
     if (edgeList.size() != numEdgesInAdjMat)
