@@ -19,7 +19,7 @@ export PATH
 DIR=`mktemp -d /tmp/syeast.XXXXXXXXX`
 MINSUM=0.25
 #MEASURE="-ms3 1 -ms3_type 1" # the one that's been used for years
- MEASURE="-ms3 1 -ms3_numer ra_i -ms3_denom rt_i" # new MS3 with (almost) fixed ra_i
+ MEASURE="-ms3 1 -ms3_numer ra_i -ms3_denom mre_i" # new MS3 with fixed numer + denom
 #MEASURE="-mec 1" # this one has always worked well
  trap "/bin/rm -rf $DIR" 0 1 2 3 15
 if [ `hostname` = Jenkins ]; then
@@ -45,6 +45,6 @@ echo "iter	NC2	NC3	NC4"
 for m in `ls -rt *s/??/multiAlign.tsv`; do echo `dirname $m; for i in 2 3 4; do gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)if(K[i]>='$i')print}' $m | wc -l; done`; done | sed 's/ /	/'
 echo "And now the Multi-NC, or MNC, measure, of the final alignment"
 echo 'k	number	MNC'
-gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)++nc[K[i]]}END{for(i=2;i<=NF;i++){for(j=i+1;j<=NF;j++)nc[i]+=nc[j];printf "%d\t%d\t%.3f\n",i,nc[i],nc[i]/NR}}' `ls -rt *s/??/multiAlign.tsv | tail -1` | tee $DIR/MNC.txt
+gawk '{delete K;for(i=1;i<=NF;i++)if($i!="_")++K[$i];for(i in K)++nc[K[i]]}END{for(i=2;i<=NF;i++){for(j=i+1;j<=NF;j++)nc[i]+=nc[j];printf "%d\t%d\t%.3f\n",i,nc[i],nc[i]/NR}}' `ls -rt *s/??/multiAlign.tsv | tail -1` | tee $DIR/MNC.txt
 echo "Check MNC are high enough: k=2,3,4 => 0.25,0.15,0.05, or sum >= $MINSUM"
 gawk 'BEGIN{code=0}{k=$1;expect=(0.45-k/10);sum+=$3;if($3<expect)code=1}END{if(sum>'$MINSUM')code=0; exit(code)}' $DIR/MNC.txt || die "MNC failed"
