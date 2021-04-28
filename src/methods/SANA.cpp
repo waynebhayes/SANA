@@ -275,10 +275,8 @@ void SANA::initDataStructures() {
     if (needExposedEdges) EdgeExposure::numer = 
         EdgeExposure::numExposedEdges(alig, *G1, *G2);//- EdgeExposure::getMaxEdge();
     if (needMS3) {
-        MultiS3::numer =
-            ((MultiS3*) MC->getMeasure("ms3"))->computeNumer(alig);
-        MultiS3::denom =
-            ((MultiS3*) MC->getMeasure("ms3"))->computeDenom(alig);
+        MultiS3::numer = ((MultiS3*) MC->getMeasure("ms3"))->computeNumer(alig);
+        MultiS3::denom = ((MultiS3*) MC->getMeasure("ms3"))->computeDenom(alig);
     }
     if (needInducedEdges) inducedEdges = G2->numEdgesInNodeInducedSubgraph(alig.asVector());
     if (needLocal) {
@@ -1087,23 +1085,21 @@ int SANA::exposedEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
 // Return the change in NUMERATOR of MS3
 int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
     uint pegNeigh, holeNeigh, diff;
+    int res = 0;
     switch (MultiS3::numerator_type){
         case MultiS3::ra_i:
         {
-            int res = 0;
             const uint n = G1->adjLists[peg].size();
             for (uint i = 0; i < n; ++i) {
                 pegNeigh = G1->adjLists[peg][i];
                 res -= G2->getEdgeWeight(oldHole,A[pegNeigh]);
                 res += G2->getEdgeWeight(newHole,A[pegNeigh]);
             }
-            return res;
         }
-            break;
+	break;
     
         case MultiS3::ra_global:
         {
-            int res = 0;
             const uint n = G1->adjLists[peg].size();
             for (uint i = 0; i < n; ++i) {
                 pegNeigh = G1->adjLists[peg][i];
@@ -1119,13 +1115,11 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
                     else{res+=2;}
                 }
             }
-            return res;
         }
-            break;
+	break;
         
         case MultiS3::la_i:
         {
-            int res = 0;
             const uint n = G1->adjLists[peg].size();
             bool ladder = false;
             for (uint i = 0; i < n; ++i) {
@@ -1139,13 +1133,11 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
                 ladder = (diff>1?true:false);
                 if (ladder){res += 1;}
             }
-            return res;
         }
-            break;
+	break;
             
         case MultiS3::la_global:
         {
-            int res = 0;
             bool ladder = false;
             const uint n = G1->adjLists[peg].size();
             for (uint i=0;i<n;i++){
@@ -1159,13 +1151,11 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
                     if (ladder and G2->getEdgeWeight(newHole,A[pegNeigh])==1) {res ++;}
                 }
             }
-            return res;
         }
-            break;
+	break;
             
         default:
         {
-            int res = 0;
             //unsigned oldoldHoleDeg = MultiS3::shadowDegree[oldHole];
             //unsigned oldnewHoleDeg = MultiS3::shadowDegree[newHole];
 
@@ -1181,11 +1171,10 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
                     res += G2->getEdgeWeight(newHole, A[nbr]);
                 }
             }
-
-            return res;
         }
-            break;
+	break;
     }
+
     const uint n1 = G1->getNumNodes();
     const uint n2 = G2->getNumNodes();
     vector<uint> whichPeg(n2, n1); // value of n1 represents not used
@@ -1212,7 +1201,7 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
 		}
 	    }
 	}
-	    break;
+	break;
             
         case MultiS3::ee_i:
         {
@@ -1244,7 +1233,7 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
                 }
             }
         }
-            break;
+	break;
             
         default:
 	{
@@ -1281,8 +1270,9 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
             }  	    
 #endif
 	}
-            break;
+	break;
     }
+    return res;
 }
 
 // Return change in NUMERATOR only

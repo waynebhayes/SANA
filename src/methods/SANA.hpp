@@ -163,10 +163,10 @@ private:
     // to evaluate MS3 incrementally
     bool needMS3;
     int MS3Numer,
-	multiER, // ER=|ER_i| where ER_i = edges in G with at least one rung in its tower, other than itself
-	multiEL, // EL=|EL_i| where EL_i = complement of ER_i wrt E_i, ie., lonely edges in G
-	multinER, // nER_i = non-edges (ie., node pairs with no edge) in G that have at least one aligned rung outside G
-	multinEnR; // nEnR_i = non-edges in G that have no aligned rungs.
+	multiER, // |ER_i| where ER_i = edges in G with at least one rung in its tower, other than itself
+	multiEL, // |EL_i| where EL_i = complement of ER_i wrt E_i, ie., lonely edges in G
+	multiRU, // |RU_i| where RU_i = rungs under non-edges in G
+	multiRA; // |RA_i| where RA_i = rungs under edges, ie rungs under edges in ER_i.
     int MS3IncChangeOp(uint peg, uint oldHole, uint newHole);
     int MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
 

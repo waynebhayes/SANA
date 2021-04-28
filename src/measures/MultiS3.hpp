@@ -27,7 +27,9 @@ public:
     uint computeDenom(const Alignment& A) const;
     void getNormalizationFactor() const;
 
-    //these don't belong here, they should be members in SANA -Nil (Not sure I agree, these are MS3 specific -WH)
+    //these don't belong here, they should be members in SANA -Nil
+    // WH: Not sure I agree, these are MS3 specific... OTOH measure *values* are associated with a specific alignment,
+    // and putting these in *either* SANA:: or here breaks when there are multiple Alignment instances.
     static uint numer, denom; // used for inc eval
     static double Normalization_factor;
     static double _type; //0 default ; 1 ee
