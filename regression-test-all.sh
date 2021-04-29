@@ -34,7 +34,7 @@ if [ ! -x NetGO/NetGO.awk ]; then
     [ -x NetGO/NetGO.awk ] || die "Still can't find NetGO"
 fi
 
-EXE=./sana
+EXE="${EXE:=./sana}"
 MAKE=false
 while [ $# -gt -0 ]; do
     case "$1" in
