@@ -538,7 +538,9 @@ void SANA::performChange(uint actColId) {
     double pBad = scoreComparison(newAligEdges, newInducedEdges,
             newLocalScoreSum, newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum,
             newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
-    bool makeChange = randomReal(gen) <= pBad;
+    bool makeChange;
+    if(newCurrentScore == currentScore) makeChange = false; // if it ain't broke, don't fix it
+    else makeChange = randomReal(gen) < pBad;
 
 #ifdef CORES
     // Statistics on the emerging core alignment.
@@ -633,7 +635,9 @@ void SANA::performSwap(uint actColId) {
     double pBad = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum,
                 newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges,
                 newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
-    bool makeChange = randomReal(gen) <= pBad;
+    bool makeChange;
+    if(newCurrentScore == currentScore) makeChange = false; // if it ain't broke, don't fix it
+    else makeChange = randomReal(gen) < pBad;
 
 #ifdef CORES
         // Statistics on the emerging core alignment.
@@ -700,10 +704,6 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        //using max and min here because with extremely low temps I was seeing invalid probabilities
-        //note: I did not make this change for the other types of ScoreAggregation::  -Nil
-        if (energyInc >= 0) pBad = 1.0;
-        else pBad = max(0.0, min(1.0, exp(energyInc / Temperature)));
         break;
     }
     case ScoreAggregation::product:
@@ -719,8 +719,6 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore *= ncWeight * (newNcSum / trueAWithValidCountAppended.back());
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        if (energyInc >= 0) pBad = 1;
-        else pBad = exp(energyInc / Temperature);
         break;
     }
     case ScoreAggregation::max:
@@ -728,7 +726,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         // this is a terrible way to compute the max; we should loop through all of them and figure out which is the biggest
         // and in fact we haven't yet integrated icsWeight here yet, so assert so
         assert(icsWeight == 0.0);
-        double deltaEnergy = max(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
+        double energyInc = max(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
@@ -745,15 +743,13 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        if (deltaEnergy >= 0) pBad = 1;
-        else pBad = exp(energyInc / Temperature);
         break;
     }
     case ScoreAggregation::min:
     {
         // see comment above in max
         assert(icsWeight == 0.0);
-        double deltaEnergy = min(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
+        double energyInc = min(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
@@ -769,9 +765,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
 
         energyInc = newCurrentScore - currentScore; //is this even used?
-        wasBadMove = deltaEnergy < 0;
-        if (deltaEnergy >= 0) pBad = 1;
-	else pBad = exp(energyInc / Temperature);
+        wasBadMove = energyInc < 0;
         break;
     }
     case ScoreAggregation::inverse:
@@ -787,8 +781,6 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
-        if (energyInc >= 0) pBad = 1;
-        else pBad = exp(energyInc / Temperature);
         break;
     }
     case ScoreAggregation::maxFactor:
@@ -817,11 +809,14 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = maxScore < -1 * minScore;
-        if (maxScore >= -1 * minScore) pBad = 1;
-        else pBad = exp(energyInc / Temperature);
         break;
     }
     }
+    //using max and min here because with extremely low temps I was seeing invalid probabilities
+    //note: I did not make this change for the other types of ScoreAggregation::  -Nil
+    //note2: I moved it down here to apply to all ScoreAggregation methods - WH
+    if (energyInc >= 0) pBad = 1.0;
+    else pBad = max(0.0, min(1.0, exp(energyInc / Temperature)));
 
     //if (wasBadMove && (iterationsPerformed % 512 == 0 || (iterationsPerformed % 32 == 0))) 
     //the above will never be true in the case of iterationsPerformed never being changed so that it doesn't greatly
