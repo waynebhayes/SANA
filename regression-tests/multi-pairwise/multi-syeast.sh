@@ -42,7 +42,7 @@ cd $DIR/.. && tar zxf $DIR.tgz
 cd $DIR
 echo "Now check NC values: below are the number of times the multiple alignment contains k correctly matching nodes, k=2,3,4:"
 echo "iter	NC2	NC3	NC4"
-for m in `ls -rt *s/??/multiAlign.tsv`; do echo `dirname $m; for i in 2 3 4; do gawk '{delete K;for(i=1;i<=NF;i++)++K[$i];for(i in K)if(K[i]>='$i')print}' $m | wc -l; done`; done | sed 's/ /	/'
+for m in `ls -rt *s/??/multiAlign.tsv`; do echo `dirname $m; for i in 2 3 4; do gawk '{delete K;for(i=1;i<=NF;i++)if($i!="_")++K[$i];for(i in K)if(K[i]>='$i')print}' $m | wc -l; done`; done | sed 's/ /	/'
 echo "And now the Multi-NC, or MNC, measure, of the final alignment"
 echo 'k	number	MNC'
 gawk '{delete K;for(i=1;i<=NF;i++)if($i!="_")++K[$i];for(i in K)++nc[K[i]]}END{for(i=2;i<=NF;i++){for(j=i+1;j<=NF;j++)nc[i]+=nc[j];printf "%d\t%d\t%.3f\n",i,nc[i],nc[i]/NR}}' `ls -rt *s/??/multiAlign.tsv | tail -1` | tee $DIR/MNC.txt
