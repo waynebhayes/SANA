@@ -87,22 +87,24 @@ STDBUF=''
 if which stdbuf >/dev/null; then
     STDBUF='stdbuf -oL -eL'
 fi
+
 if [ $# -eq 0 ]; then
     set regression-tests/*/*.sh
 fi
+
 for r
 do
     REG_DIR=`dirname "$r"`
     NEW_FAILS=0
     export REG_DIR
-    echo --- running test $r ---
-    if eval $STDBUF "$r"; then # force output and error to be line buffered
+    echo --- running test "'$r'" ---
+    if eval $STDBUF $r; then # force output and error to be line buffered
 	:
     else
 	NEW_FAILS=$?
 	(( NUM_FAILS+=$NEW_FAILS ))
     fi
-    echo --- test $r incurred $NEW_FAILS failures, cumulative failures is $NUM_FAILS ---
+    echo --- test "'$r'" incurred $NEW_FAILS failures, cumulative failures is $NUM_FAILS ---
 done
 echo Total number of failures: $NUM_FAILS
 (echo $NUM_FAILS; git log -1 --format=%at) > git-at
