@@ -46,10 +46,10 @@ do
 	denom+=thisDenom;
 	#print thisNumer, thisDenom, $0
     }
-    END{for(i=2;i<=NF;i++){
-	    for(j=i+1;j<=NF;j++)nc[i]+=nc[j];
-	    printf "%d\t%d\t%.3f\n",i,nc[i],nc[i]/NR
-	}
-	printf "%g = %d/%d [final MNC for %s]\n", numer/denom, numer, denom, FILENAME
+    END{
+	for(i=2;i<=NF;i++) for(j=i+1;j<=NF;j++)nc[i]+=nc[j];
+	printf "%g = %d/%d [%s]", numer/denom, numer, denom, FILENAME
+	for(i=NF;i>=2;i--) printf "\t>=%d %d (%.3f)",i,nc[i],nc[i]/NR
+	print ""
     }' "$i"
 done
