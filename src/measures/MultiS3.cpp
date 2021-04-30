@@ -299,8 +299,10 @@ uint MultiS3::computeDenom(const Alignment& A) const {
 	    assert(ER_i + EL_i == G1->getNumEdges());
 	    assert(ret1 == RU_i1 + RA_i);
 	    RU_i = RU_i1;
-	    if(denominator_type == mre_i) ret = (NUM_GRAPHS)*ER_i + EL_i + RU_i1;
+	    uint MRE = (NUM_GRAPHS)*ER_i + EL_i + RU_i1;
+	    if(denominator_type == mre_i) ret = MRE;
 	    else ret = ret2;
+	    cerr << "numer " << numer << " ra_i " << RA_i << " rt_i " << ret2 << " mre_i " << MRE << '\n';
         }
 	break;
         case ee_i:
