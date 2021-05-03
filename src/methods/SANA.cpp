@@ -539,7 +539,7 @@ void SANA::performChange(uint actColId) {
             newLocalScoreSum, newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum,
             newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
     bool makeChange;
-    if(newCurrentScore == currentScore) makeChange = false; // if it ain't broke, don't fix it
+    //if(newCurrentScore == currentScore) makeChange = false; // if it ain't broke, don't fix it
     else makeChange = randomReal(gen) < pBad;
 
 #ifdef CORES
@@ -636,7 +636,7 @@ void SANA::performSwap(uint actColId) {
                 newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges,
                 newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
     bool makeChange;
-    if(newCurrentScore == currentScore) makeChange = false; // if it ain't broke, don't fix it
+    //if(newCurrentScore == currentScore) makeChange = false; // if it ain't broke, don't fix it
     else makeChange = randomReal(gen) < pBad;
 
 #ifdef CORES
