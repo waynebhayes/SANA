@@ -278,10 +278,11 @@ void SANA::initDataStructures() {
     if (needMS3) {
         MultiS3::numer = ((MultiS3*) MC->getMeasure("ms3"))->computeNumer(alig);
         MultiS3::denom = ((MultiS3*) MC->getMeasure("ms3"))->computeDenom(alig);
-	multiEL = MultiS3::EL_i;
-	multiER = MultiS3::ER_i;
-	multiRU = MultiS3::RU_i;
-	multiRA = MultiS3::RA_i;
+	EL_k = MultiS3::EL_k;
+	ER_k = MultiS3::ER_k;
+	RU_k = MultiS3::RU_k;
+	RA_k = MultiS3::RA_k;
+	RO_k = MultiS3::RO_k;
 	for (uint i = 0; i < n1; i++) {
 	    totalWeightInducedOnG1[alig[i]] = 0;
 	    for(uint j=0;j<n1;j++) if(i!=j) {
@@ -1103,7 +1104,7 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
     uint pegNeigh, holeNeigh, diff;
     int res = 0;
     switch (MultiS3::numerator_type){
-        case MultiS3::ra_i:
+        case MultiS3::ra_k:
         {
             const uint n = G1->adjLists[peg].size();
             for (uint i = 0; i < n; ++i) {
@@ -1134,7 +1135,7 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
         }
 	break;
         
-        case MultiS3::la_i:
+        case MultiS3::la_k:
         {
             const uint n = G1->adjLists[peg].size();
             bool ladder = false;
@@ -1195,8 +1196,8 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
     const uint n2 = G2->getNumNodes();
     vector<uint> whichPeg(n2, n1); // value of n1 represents not used
     switch (MultiS3::denominator_type) {
-        case MultiS3::mre_i:
-        case MultiS3::rt_i:
+        case MultiS3::mre_k:
+        case MultiS3::rt_k:
         {
             for (uint i = 0; i < n1; ++i){
 		// inverse of the alignment--but this is stupidly EXPENSIVE to do for every proposed move!
@@ -1226,7 +1227,7 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
 	}
 	break;
             
-        case MultiS3::ee_i:
+        case MultiS3::ee_k:
         {
             for (uint i = 0; i < n1; ++i){
                 whichPeg[A[i]] = i; // inverse of the alignment
@@ -1302,7 +1303,7 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
 int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
       uint pegNeigh, holeNeigh, diff;
       switch (MultiS3::numerator_type){
-          case MultiS3::ra_i:
+          case MultiS3::ra_k:
           {
               int res = 0;
               const uint n = G1->adjLists[peg1].size();
@@ -1377,7 +1378,7 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               return res;
           }
               break;
-          case MultiS3::la_i:
+          case MultiS3::la_k:
           {
                int res = 0;
                const uint n = G1->adjLists[peg1].size();
@@ -1498,7 +1499,7 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     const uint n2 = G2->getNumNodes();
     vector<uint> whichPeg(n2, n1);
     switch (MultiS3::denominator_type){
-      case MultiS3::rt_i:
+      case MultiS3::rt_k:
         {
               for (uint i = 0; i < n1; ++i){
                   whichPeg[A[i]] = i;
@@ -1522,7 +1523,7 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               }
           }
               break;
-          case MultiS3::ee_i:
+          case MultiS3::ee_k:
           {
               for (uint i = 0; i < n1; ++i){
                   whichPeg[A[i]] = i; // inverse of the alignment

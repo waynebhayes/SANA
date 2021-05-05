@@ -164,10 +164,11 @@ private:
     bool needMS3;
     vector<uint> totalWeightInducedOnG1; // total weight of shadow node induced only on the aligned edges of G1.
     int MS3Numer,
-	multiER, // |ER_i| where ER_i = edges in G with at least one rung in its tower, other than itself
-	multiEL, // |EL_i| where EL_i = complement of ER_i wrt E_i, ie., lonely edges in G
-	multiRU, // |RU_i| where RU_i = rungs under non-edges in G
-	multiRA; // |RA_i| where RA_i = rungs under edges, ie rungs under edges in ER_i.
+	ER_k, // |ER_k| where ER_k = edges in G with at least one rung in its tower, other than itself
+	EL_k, // |EL_k| where EL_k = complement of ER_k wrt E_k, ie., lonely edges in G
+	RU_k, // |RU_k| where RU_k = rungs under non-edges in G
+	RA_k, // |RA_k| where RA_k = rungs under edges, ie rungs under edges in ER_k.
+	RO_k; // |RO_k| where RO_k = rungs outside, ie rungs with at least one endpoint not under a peg.
     int MS3IncChangeOp(uint peg, uint oldHole, uint newHole);
     int MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
 

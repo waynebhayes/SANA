@@ -5,7 +5,7 @@
 
 uint NUM_GRAPHS;
 double MultiS3::Normalization_factor = 2;
-uint MultiS3::denom = 1, MultiS3::numer = 1, MultiS3::EL_i=0, MultiS3::ER_i=0, MultiS3::RA_i=0, MultiS3::RU_i=0;
+uint MultiS3::denom=1, MultiS3::numer=1, MultiS3::EL_k=0, MultiS3::ER_k=0, MultiS3::RA_k=0, MultiS3::RU_k=0, MultiS3::RO_k=0;
 MultiS3::NumeratorType MultiS3::numerator_type;
 MultiS3::DenominatorType MultiS3::denominator_type;
 double MultiS3::_type = 0;
@@ -31,11 +31,11 @@ MultiS3::MultiS3(const Graph* G1, const Graph* G2, NumeratorType _numerator_type
     cout<<"MultiS3: numer_type = ";
     switch(numerator_type){
 	case numer_default:
-        case ra_i:
-            cout<<"ra_i"<<endl;
+        case ra_k:
+            cout<<"ra_k"<<endl;
             break;
-        case la_i:
-            cout<<"la_i"<<endl;
+        case la_k:
+            cout<<"la_k"<<endl;
             break;
         case la_global:
             cout<<"la_global"<<endl;
@@ -50,14 +50,14 @@ MultiS3::MultiS3(const Graph* G1, const Graph* G2, NumeratorType _numerator_type
     cout<<"MultiS3: denom_type = ";
     switch(denominator_type){
 	case denom_default:
-        case rt_i:
-            cout<<"rt_i"<<endl;
+        case rt_k:
+            cout<<"rt_k"<<endl;
             break;
-        case mre_i:
-            cout<<"mre_i"<<endl;
+        case mre_k:
+            cout<<"mre_k"<<endl;
             break;
-        case ee_i:
-            cout<<"ee_i"<<endl;
+        case ee_k:
+            cout<<"ee_k"<<endl;
             break;
         case ee_global:
             cout<<"ee_global"<<endl;
@@ -92,8 +92,8 @@ void MultiS3::getNormalizationFactor() const {
     switch (denominator_type) {
 	default:
 	case denom_default:
-        case mre_i: 
-        case rt_i: 
+        case mre_k: 
+        case rt_k: 
         {
             /*for (const auto& edge: *(G2->getEdgeList()))
             {
@@ -103,7 +103,7 @@ void MultiS3::getNormalizationFactor() const {
             factor_denom = G1->getEdgeList()->size() * NUM_GRAPHS;
         }
             break;
-        case ee_i:
+        case ee_k:
         {
             factor_denom = G2->getEdgeList()->size() + G1->getEdgeList()->size();
         }
@@ -127,12 +127,12 @@ void MultiS3::getNormalizationFactor() const {
     switch (numerator_type){
 	default:
 	case numer_default:
-        case ra_i:
+        case ra_k:
         {
             Normalization_factor = G1->getEdgeList()->size() * NUM_GRAPHS / factor_denom;
         }
             break;
-        case la_i:
+        case la_k:
         {
             Normalization_factor = G1->getEdgeList()->size() / factor_denom;
         }
@@ -174,7 +174,7 @@ uint MultiS3::computeNumer(const Alignment& A) const {
 
     switch (numerator_type){
 	case numer_default:
-        case ra_i:
+        case ra_k:
         {
             for (const auto& edge: *(G1->getEdgeList()))
             {
@@ -183,7 +183,7 @@ uint MultiS3::computeNumer(const Alignment& A) const {
             }
         }
             break;
-        case la_i:
+        case la_k:
         {
             for (const auto& edge: *(G1->getEdgeList()))
             {
@@ -253,16 +253,16 @@ uint MultiS3::computeDenom(const Alignment& A) const {
     }
     switch (denominator_type){
 	case numer_default:
-        case mre_i:
-        case rt_i: // NOTE: We compute all things THREE ways and ensure they both give the same answer
+        case mre_k:
+        case rt_k: // NOTE: We compute all things THREE ways and ensure they both give the same answer
         {
 	    uint ret0, ret1, ret2; // two different ways of computing it;
 	    ret0=ret1=ret2=0;
-	    ER_i = 0; // edges(rungs) = edges in G1 that have at least one associated rung 
-	    EL_i = 0; // edges(lonely) = complement of ER_i wrt E_i = lonely edges = edges with zero associated rungs
-	    RA_i = 0; // number of actual rungs associated with those in ER_i.
-	    uint RU_i1 = 0; // number of rungs under non-edges in G_i.
-	    uint RU_i2 = 0; // number of rungs under non-edges in G_i.
+	    ER_k = 0; // edges(rungs) = edges in G1 that have at least one associated rung 
+	    EL_k = 0; // edges(lonely) = complement of ER_k wrt E_k = lonely edges = edges with zero associated rungs
+	    RA_k = 0; // number of actual rungs associated with those in ER_k.
+	    uint RU_k1 = 0; // number of rungs under non-edges in G_k.
+	    uint RU_k2 = 0; // number of rungs under non-edges in G_k.
 
 	    // METHOD 1: loop through all node pairs in G2 (EXPENSIVE!), and ignore non-edges above in G1.
             for (uint i = 0; i < n2; ++i) if(whichPeg[i] < n1) {
@@ -272,7 +272,7 @@ uint MultiS3::computeDenom(const Alignment& A) const {
 		    if(whichPeg[j] == n1) ret0 -= shadowWeight;
 		    else if(j<i) {
 			ret1 += shadowWeight; // + G1->getEdgeWeight(whichPeg[i],whichPeg[j]);
-			if(!G1->hasEdge(whichPeg[i],whichPeg[j])) RU_i1 += shadowWeight;
+			if(!G1->hasEdge(whichPeg[i],whichPeg[j])) RU_k1 += shadowWeight;
 		    }
 		}
             }
@@ -285,27 +285,27 @@ uint MultiS3::computeDenom(const Alignment& A) const {
 		    uint shadowWeight = G2->getEdgeWeight(A[i],A[j]);
 		    ret2 += shadowWeight;
 		    if(G1->hasEdge(i,j)) {
-			if(shadowWeight == 0) ++EL_i;
+			if(shadowWeight == 0) ++EL_k;
 			else {
-			    ++ER_i;
-			    RA_i+=shadowWeight;
+			    ++ER_k;
+			    RA_k+=shadowWeight;
 			}
 		    }
-		    else RU_i2 += shadowWeight;
+		    else RU_k2 += shadowWeight;
 		}
 	    }
 	    assert(ret1 == ret2);
-	    assert(RU_i1 == RU_i2);
-	    assert(ER_i + EL_i == G1->getNumEdges());
-	    assert(ret1 == RU_i1 + RA_i);
-	    RU_i = RU_i1;
-	    uint MRE = (NUM_GRAPHS)*ER_i + EL_i + RU_i1;
-	    if(denominator_type == mre_i) ret = MRE;
+	    assert(RU_k1 == RU_k2);
+	    assert(ER_k + EL_k == G1->getNumEdges());
+	    assert(ret1 == RU_k1 + RA_k);
+	    RU_k = RU_k1;
+	    uint MRE = (NUM_GRAPHS)*ER_k + EL_k + RU_k1;
+	    if(denominator_type == mre_k) ret = MRE;
 	    else ret = ret2;
-	    cerr << "numer " << numer << " ra_i " << RA_i << " rt_i " << ret2 << " mre_i " << MRE << '\n';
+	    cerr << "numer " << numer << " ra_k " << RA_k << " rt_k " << ret2 << " mre_k " << MRE << '\n';
         }
 	break;
-        case ee_i:
+        case ee_k:
         {
             for (uint i = 0; i < n2; ++i) for (uint j = 0; j < i; ++j){
                 bool exposed = (whichPeg[i] < n1 && whichPeg[j] < n1 && G1->getEdgeWeight(whichPeg[i],whichPeg[j]) > 0);

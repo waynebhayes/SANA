@@ -175,10 +175,10 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
     MultiS3::DenominatorType _denominator_type;
     if (args.strings["-ms3_numer"] == "default"){
         _numerator_type = MultiS3::numer_default;}
-    else if (args.strings["-ms3_numer"] == "ra_i"){
-        _numerator_type = MultiS3::ra_i;}
-    else if (args.strings["-ms3_numer"] == "la_i"){
-        _numerator_type = MultiS3::la_i;}
+    else if (args.strings["-ms3_numer"] == "ra_k"){
+        _numerator_type = MultiS3::ra_k;}
+    else if (args.strings["-ms3_numer"] == "la_k"){
+        _numerator_type = MultiS3::la_k;}
     else if (args.strings["-ms3_numer"] == "la_global"){
         _numerator_type = MultiS3::la_global;}
     else if (args.strings["-ms3_numer"] == "ra_global"){
@@ -187,12 +187,12 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
 
     if (args.strings["-ms3_denom"] == "default"){
         _denominator_type = MultiS3::denom_default;}
-    else if (args.strings["-ms3_denom"] == "rt_i"){
-        _denominator_type = MultiS3::rt_i;}
-    else if (args.strings["-ms3_denom"] == "mre_i"){
-        _denominator_type = MultiS3::mre_i;}
-    else if (args.strings["-ms3_denom"] == "ee_i"){
-        _denominator_type = MultiS3::ee_i;}
+    else if (args.strings["-ms3_denom"] == "rt_k"){
+        _denominator_type = MultiS3::rt_k;}
+    else if (args.strings["-ms3_denom"] == "mre_k"){
+        _denominator_type = MultiS3::mre_k;}
+    else if (args.strings["-ms3_denom"] == "ee_k"){
+        _denominator_type = MultiS3::ee_k;}
     else if (args.strings["-ms3_denom"] == "ee_global"){
         _denominator_type = MultiS3::ee_global;}
     else if (args.strings["-ms3_denom"] == "rt_global"){

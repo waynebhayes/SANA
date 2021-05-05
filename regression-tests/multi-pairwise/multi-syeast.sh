@@ -19,7 +19,7 @@ export PATH
 DIR=`mktemp -d /tmp/syeast.XXXXXXXXX`
 MINSUM=0.25
 #MEASURE="-ms3 1 -ms3_type 1" # the one that's been used for years
- MEASURE="-ms3 1 -ms3_numer ra_i -ms3_denom mre_i" # new MS3 with fixed numer + denom
+ MEASURE="-ms3 1 -ms3_numer ra_k -ms3_denom mre_k" # new MS3 with fixed numer + denom
 #MEASURE="-mec 1" # this one has always worked well
  trap "/bin/rm -rf $DIR" 0 1 2 3 15
 if [ `hostname` = Jenkins ]; then
