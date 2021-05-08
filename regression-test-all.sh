@@ -75,10 +75,12 @@ for EXT in $EXECS ''; do
 	[ "$EXT" = "" ] || EXT="$EXT=1"
 	make $EXT clean
 	if not make -k -j$MAKE_CORES $EXT; then # "-k" means "keep going even if some targets fail"
-	    (( NUM_FAILS+=1000 ))
 	    warn "make '$EXT' failed"
+	    if [ "$ext" == .static ]; then warn "ignoring failure of make '$EXT'";
+	    else (( NUM_FAILS+=1000 ));
+	    fi
 	fi
-	[ $NUM_FAILS -gt 0 ] && warn "Cumulative NUM_FAILS is $NUM_FAILS"
+	warn "Cumulative number of compile failures is `expr $NUM_FAILS / 1000`"
     fi
     [ -x sana$ext ] || warn "sana$ext doesn't exist; did you forget to pass the '-make' option?"
 done
