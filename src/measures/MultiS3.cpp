@@ -257,7 +257,7 @@ uint MultiS3::computeDenom(const Alignment& A) const {
 	    RA_k = 0; // number of actual rungs associated with those in ER_k.
 	    RO_k = 0; // number of rungs outside the alignment (ie., at least one peg isn't in a hole)
 #if 0
-	    // METHOD 1 (EXPENSIVE!): loop through all node pairs in G2, and ignore non-edges above in G1.
+	    // METHOD 0 (EXPENSIVE!): loop through all node pairs in G2, and ignore non-edges above in G1.
 	    // need all pairs, not just j<i, to properly count some of these things
             for (uint i = 0; i < n2; ++i) for (uint j = 0; j < n2; ++j) if(i!=j) {
 		assert(whichPeg[i]<=n1 && whichPeg[j]<=n1); 
@@ -284,14 +284,13 @@ uint MultiS3::computeDenom(const Alignment& A) const {
             for (uint i = 0; i < n2; ++i) {
 		assert(whichPeg[i] <= n1); 
 		uint weight_i = G2->getTotalWeight(i);
-		if(whichPeg[i] == n1) RO_k += weight_i; // rungs(outside)=rungs with at least one end above an empty hole.
-		else {
-		    ret0 += weight_i;
-		    for (uint j = 0; j < n2; ++j) { // need j to past i to properly compute ret0 for unaligned pegs
-			uint shadowWeight = G2->getEdgeWeight(i,j);
-			assert(whichPeg[j] <= n1);
+		if(whichPeg[i] < n1) ret0 += weight_i;
+		for (uint j = 0; j < n2; ++j) if(i!=j) { // need j to past i to properly compute ret0 for unaligned pegs
+		    uint shadowWeight = G2->getEdgeWeight(i,j);
+		    assert(whichPeg[j] <= n1);
+		    if(whichPeg[i] == n1 || whichPeg[j]==n1) RO_k += shadowWeight;
+		    if(whichPeg[i]<n1) {
 			if(whichPeg[j] == n1) {
-			    ++RO_k;
 			    ret0 -= shadowWeight;
 			} else if(j<i) {
 			    ret1 += shadowWeight; // + G1->getEdgeWeight(whichPeg[i],whichPeg[j]);
@@ -302,7 +301,7 @@ uint MultiS3::computeDenom(const Alignment& A) const {
             }
 	    assert(ret0 % 2 == 0); ret0 /= 2; assert(ret0 == ret1); // every edge was counted twice
 	    assert(ret0 == ret1);
-	    //assert(RO_k % 2 == 0); RO_k /= 2; // every outside rung was counted twice
+	    assert(RO_k % 2 == 0); RO_k /= 2; // every outside rung was counted twice
 
 	    // METHOD 2(cheaper): loop only through all node pairs in G1
 	    RO_k2 = G2->getTotalEdgeWeight();
@@ -322,16 +321,14 @@ uint MultiS3::computeDenom(const Alignment& A) const {
 		    else RU_k2 += shadowWeight;
 		}
 	    }
-	    //assert(RO_k2 % 2 == 0); RO_k2 /= 2; // every outside rung was counted twice
 	    assert(ret1 == ret2);
 	    assert(RU_k1 == RU_k2);
+	    RU_k = RU_k1;
 	    assert(ER_k + EL_k == G1->getNumEdges());
 	    assert(ret1 == RU_k1 + RA_k);
-	    fprintf(stderr, "total [%g] - RA [%d] - RU [%d] = %g [supposed to be RO] RO=%d RO2=%d\n",
-		G2->getTotalEdgeWeight(), RA_k, RU_k, G2->getTotalEdgeWeight()-RA_k-RU_k, RO_k, RO_k2);
-	    //assert(RA_k + RU_k + RO_k == G2->getTotalEdgeWeight());
-	    //if(RO_k2 != RO_k) {cerr << "\nRO_k " << RO_k << " RO_k2 " << RO_k2 << '\n'; assert(RO_k2 == RO_k);}
-	    RU_k = RU_k1;
+	    //fprintf(stderr, "total [%g] - RA [%d] - RU [%d] = %g [supposed to be RO] EL %d RO %d RO2 %d\n", G2->getTotalEdgeWeight(), RA_k, RU_k, G2->getTotalEdgeWeight()-RA_k-RU_k, EL_k, RO_k, RO_k2);
+	    assert(RO_k == RO_k2);
+	    assert(RA_k + RU_k + RO_k == G2->getTotalEdgeWeight());
 	    uint MRE = (NUM_GRAPHS)*ER_k + EL_k + RU_k1;
 	    if(denominator_type == mre_k) ret = MRE;
 	    else ret = ret2;
