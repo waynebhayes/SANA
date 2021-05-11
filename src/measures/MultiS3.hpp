@@ -9,6 +9,8 @@
 
 extern uint NUM_GRAPHS;
 
+static const uint MAX_N2=100000;
+
 class MultiS3 : public Measure {
 public:
     enum NumeratorType{numer_default, ra_k, la_k, la_global, ra_global};
@@ -30,7 +32,8 @@ public:
     //these don't belong here, they should be members in SANA -Nil
     // WH: Not sure I agree, these are MS3 specific... OTOH measure *values* are associated with a specific alignment,
     // and putting these in *either* SANA:: or here breaks when there are multiple Alignment instances.
-    static uint numer, denom, ER_k, EL_k, RA_k, RU_k, RO_k; // used for inc eval
+    static uint numer, denom, ER_k, EL_k, RA_k, RU_k, RO_k; // computed from scratch; compare to incremental values in SANA.cpp
+    static vector<uint> totalInducedWeight; // total weight of shadow node induced only on the aligned edges of G1.
     static double Normalization_factor;
     static double _type; //0 default ; 1 ee
 

@@ -236,7 +236,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     //things initialized in initDataStructures because they depend on the starting alignment
     //they have the same size for every run, so we can allocate the size here
     assignedNodesG2 = vector<bool> (n2);
-    totalWeightInducedOnG1 = vector<uint> (n2,0);
+    totalInducedWeight = vector<uint> (n2,0);
     actColToUnassignedG2Nodes = vector<vector<uint>> (actColToG1ColId.size());
 }
 
@@ -284,15 +284,15 @@ void SANA::initDataStructures() {
 	RA_k = MultiS3::RA_k;
 	RO_k = MultiS3::RO_k;
 	for (uint i = 0; i < n1; i++) {
-	    totalWeightInducedOnG1[alig[i]] = 0;
+	    totalInducedWeight[alig[i]] = 0;
 	    for(uint j=0;j<n1;j++) if(i!=j) {
 		assert(alig[i]>=0 && alig[i] < n2);
 		assert(alig[j]>=0 && alig[j] < n2);
 		assert(G2->getEdgeWeight(alig[i], alig[j]) == G2->getEdgeWeight(alig[j], alig[i]));
-		totalWeightInducedOnG1[alig[i]] += G2->getEdgeWeight(alig[i], alig[j]);
+		totalInducedWeight[alig[i]] += G2->getEdgeWeight(alig[i], alig[j]);
 	    }
 	}
-	for (uint i = 0; i < n1; i++){assert(totalWeightInducedOnG1[alig[i]] <= G2->totalWeight[alig[i]]);}
+	for (uint i = 0; i < n1; i++){assert(totalInducedWeight[alig[i]] <= G2->totalWeight[alig[i]]);}
     }
     if (needInducedEdges) inducedEdges = G2->numEdgesInNodeInducedSubgraph(alig.asVector());
     if (needLocal) {
@@ -507,11 +507,11 @@ void SANA::performChange(uint actColId) {
     // assert(G2->getNodeColor(newHole) == G2->getNodeColor(oldHole));
 
     //added this dummy initialization to shut compiler warning -Nil
-   unsigned oldOldHoleDeg = 0, oldNewHoleDeg = 0, oldMs3Denom = 0, oldMs3Numer =0;
+   unsigned saveOldHoleDeg = 0, saveNewHoleDeg = 0, oldMs3Denom = 0, oldMs3Numer =0;
 
     if (needMS3) {
-        oldOldHoleDeg = MultiS3::shadowDegree[oldHole];
-        oldNewHoleDeg = MultiS3::shadowDegree[newHole];
+        saveOldHoleDeg = MultiS3::shadowDegree[oldHole];
+        saveNewHoleDeg = MultiS3::shadowDegree[newHole];
         oldMs3Denom = MultiS3::denom;
         oldMs3Numer = MultiS3::numer;
     }
@@ -574,8 +574,8 @@ void SANA::performChange(uint actColId) {
         MultiS3::numer                = newMS3Numer;
     }
     else if (needMS3) {
-        MultiS3::shadowDegree[oldHole] = oldOldHoleDeg;
-        MultiS3::shadowDegree[newHole] = oldNewHoleDeg;
+        MultiS3::shadowDegree[oldHole] = saveOldHoleDeg;
+        MultiS3::shadowDegree[newHole] = saveNewHoleDeg;
         MultiS3::denom = oldMs3Denom;
         MultiS3::numer = oldMs3Numer;
     }
@@ -1195,19 +1195,20 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
     const uint n1 = G1->getNumNodes();
     const uint n2 = G2->getNumNodes();
     vector<uint> whichPeg(n2, n1); // value of n1 represents not used
+    for (uint i = 0; i < n1; ++i){
+	// inverse of the alignment--but this is stupidly EXPENSIVE to do for every proposed move!
+	// Instead, we should have an inverse alignment stored simultaneously, and have it updated
+	// either explicitly or automatically using overload of the array operator. There is also
+	// a reverse() member function but that'll be equally expensive. It should be stored and
+	// incrementally updated and checked periodically just like we check incremental scores.
+	whichPeg[A[i]] = i;
+    }
+    assert(whichPeg[newHole] == n1); // hole should be empty
+
     switch (MultiS3::denominator_type) {
         case MultiS3::mre_k:
         case MultiS3::rt_k:
         {
-            for (uint i = 0; i < n1; ++i){
-		// inverse of the alignment--but this is stupidly EXPENSIVE to do for every proposed move!
-		// Instead, we should have an inverse alignment stored simultaneously, and have it updated
-		// either explicitly or automatically using overload of the array operator. There is also
-		// a reverse() member function but that'll be equally expensive. It should be stored and
-		// incrementally updated and checked periodically just like we check incremental scores.
-                whichPeg[A[i]] = i;
-            }
-	    assert(whichPeg[newHole] == n1); // hole should be empty
             uint numNeigh = G2->adjLists[oldHole].size();
             for (uint i = 0; i < numNeigh; i++){
                 holeNeigh = G2->adjLists[oldHole][i];
@@ -1229,9 +1230,6 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
             
         case MultiS3::ee_k:
         {
-            for (uint i = 0; i < n1; ++i){
-                whichPeg[A[i]] = i; // inverse of the alignment
-            }
             uint numNeigh = G2->adjLists[oldHole].size();
             for (uint i =0; i < numNeigh; i++){
                 holeNeigh = G2->adjLists[oldHole][i];
@@ -1265,9 +1263,6 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
 	    if (oldoldHoleDeg > 0 and !MultiS3::shadowDegree[oldHole]) MultiS3::denom -= 1;
             if (oldnewHoleDeg > 0 and !MultiS3::shadowDegree[newHole]) MultiS3::denom += 1;
 #else
-            for (uint i = 0; i < n1; ++i){
-                whichPeg[A[i]] = i; // inverse of the alignment
-            }
             uint numNeigh = G2->adjLists[oldHole].size();
             for (uint i =0; i < numNeigh; i++){
                 holeNeigh = G2->adjLists[oldHole][i];
@@ -1498,13 +1493,10 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     const uint n1 = G1->getNumNodes();
     const uint n2 = G2->getNumNodes();
     vector<uint> whichPeg(n2, n1);
+    for (uint i = 0; i < n1; ++i) whichPeg[A[i]] = i; // inverse of the alignment
     switch (MultiS3::denominator_type){
       case MultiS3::rt_k:
         {
-              for (uint i = 0; i < n1; ++i){
-                  whichPeg[A[i]] = i;
-              }
-
               uint numNeigh = G2->adjLists[hole1].size();
               for (uint i=0; i < numNeigh; i++){
                   holeNeigh = G2->adjLists[hole1][i];
@@ -1525,10 +1517,6 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               break;
           case MultiS3::ee_k:
           {
-              for (uint i = 0; i < n1; ++i){
-                  whichPeg[A[i]] = i; // inverse of the alignment
-              }
-
               uint numNeigh = G2->adjLists[hole1].size();
               for (uint i =0; i < numNeigh; i++){
                   holeNeigh = G2->adjLists[hole1][i];
@@ -1591,10 +1579,6 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
 		if (oldhole1Deg > 0 && !MultiS3::shadowDegree[hole1]) MultiS3::denom -= 1;
         	if (oldhole2Deg > 0 && !MultiS3::shadowDegree[hole2]) MultiS3::denom += 1;	
 #else
-              for (uint i = 0; i < n1; ++i){
-                  whichPeg[A[i]] = i; // inverse of the alignment
-              }
-
               uint numNeigh = G2->adjLists[hole1].size();
               for (uint i =0; i < numNeigh; i++){
                   holeNeigh = G2->adjLists[hole1][i];
@@ -1651,7 +1635,6 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               }
 #endif
         }
-
     }
 }
 

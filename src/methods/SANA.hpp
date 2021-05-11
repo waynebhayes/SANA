@@ -162,12 +162,12 @@ private:
     
     // to evaluate MS3 incrementally
     bool needMS3;
-    vector<uint> totalWeightInducedOnG1; // total weight of shadow node induced only on the aligned edges of G1.
+    vector<uint> totalInducedWeight; // total weight of shadow node induced only on the aligned edges of G1.
     int MS3Numer,
 	ER_k, // |ER_k| where ER_k = edges in G with at least one rung in its tower, other than itself
 	EL_k, // |EL_k| where EL_k = complement of ER_k wrt E_k, ie., lonely edges in G
-	RU_k, // |RU_k| where RU_k = rungs under non-edges in G
 	RA_k, // |RA_k| where RA_k = rungs under edges, ie rungs under edges in ER_k.
+	RU_k, // |RU_k| where RU_k = rungs under non-edges in G
 	RO_k; // |RO_k| where RO_k = rungs outside, ie rungs with at least one endpoint not under a peg.
     int MS3IncChangeOp(uint peg, uint oldHole, uint newHole);
     int MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
