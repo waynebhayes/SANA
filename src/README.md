@@ -1,13 +1,14 @@
-STYLE GUIDE
+# STYLE GUIDE
+by Nil Mamano
 
 Please read before doing a pull request.
 
-# Consistency
+## Consistency
 
 - Be consistent with the existing code. Before editing something, take a look around and follow the style used in that file and similar files.
 - Since the codebase has a mix of styles, this rule often conflicts with the ones below. You may either conform to the local code, or pay it forward and refactor it.
 
-# Extend, do not modify
+## Extend, do not modify
 
 - New features should be built in a way such that they *use* the existing code rather than *modify* it as much as possible.
 * Especially, try not to modify the core classes like Graph and Alignment. Avoid "polluting" the core classes. Don't add anything to those classes that is specific to a new feature.
@@ -15,7 +16,7 @@ Bad example:
 Alignment::multiS3Numerator(const Graph& G1, const Graph& G2)
 This function is specific to multiS3 measure, so it doesn't belong in the Alignment class.
 
-# Simplicity
+## Simplicity
 
 - Prefer "functional" methods without side-effects.
 
@@ -23,7 +24,7 @@ This function is specific to multiS3 measure, so it doesn't belong in the Alignm
 
 - Do not shy away from low-level boiler plate code. There are many features that can make the code more concise: optional parameters, overloading function signatures, implicit conversions, default implementations for virtual functions, and so on. However, having to write extra low-level boilerplate code is often better than short code that is clever but harder to understand.
 
-# Write readable code.
+## Write readable code.
 
 - Goal: A first-time reader should be able to follow the code. 
 
@@ -32,7 +33,7 @@ This function is specific to multiS3 measure, so it doesn't belong in the Alignm
 - Start function names for functions that return bool with a verb like "is" or "has".
 -Name functions that simply return something that is already computed within a class like "getX". Do not name a function "getX" if it does some elaborate computation. 
 
-# Naming conventions
+## Naming conventions
 
 - Use descriptive variable names. The narrower the scope, the shorter the name (e.g., a loop index variable can be named 'i').
 
@@ -45,7 +46,7 @@ This function is specific to multiS3 measure, so it doesn't belong in the Alignm
 * Variables returned by functions are usually named 'res' (short for 'result').
 * Graphs are called G1 and G2, and their sizes are called n1 and n2, and so on. Look up how things are called in existing parts of the code, and follow that.
 
-# Classes / Object-oriented programming (OOP)
+## Classes / Object-oriented programming (OOP)
 
 - Try to keep the state of classes small. Try to make classes where it is not easy to reach an incoherent state.
 
@@ -54,11 +55,11 @@ This function is specific to multiS3 measure, so it doesn't belong in the Alignm
 - Prefer composition over inheritance.
 Polymorphism and advanced OOP features usually result in brief code, but are harder to maintain and follow. In this trade-off, brevity is not nearly as important as maintainability. Inheritance is already in use in certain parts of the codebase, and may be appropriate in new cases, but keep the trade-off in mind. If you are considering extending the codebase in a way that relies heavily on polymorphism, Google "composition vs inheritance" and read on the discussion around the topic and the alternatives.
 
-# Code duplication
+## Code duplication
 
 - Do not duplicate code. This should be obvious but has been abused a lot: if you need to adapt a function/class to do something slightly different. Do not simply copy paste it and change a few lines. Factor the common things out into their own function or functions. More than 5 lines that are exactly the same in different places should be a red flag.
 
-# Arbitrary conventions (for consistency)
+## Arbitrary conventions (for consistency)
 
 - Indentation is 4 spaces (not tabs). Set your editor to emit spaces when clicking "tab".
 - Preprocessor commands should not be indented (they should touch the left margin). Same with private/public tags in class headers.
@@ -72,7 +73,7 @@ instead of "if (mySet.find(x) != mySet.end())" (the two have the same effect).
 - Do not implement one-liner functions in headers. All implementations go in the cpp file, no matter how short.
 - Do not write "void" when a function does not take any parameters. Just write "()".
 
-# White space
+## White space
 
 - Do not overuse vertical whitespace (having to scroll all the time worsens readability).
 * One space between functions.
@@ -96,7 +97,7 @@ if (...) {
 Open bracket for a function also goes on the same line as the function name.
 In-line bodies are OK for single-statement if's / for's as long as the line length does not exceed its surroundings.
 
-# Comments
+## Comments
 
 - Comments are meant to help the reader, not:
 * Enable or disable features
@@ -111,7 +112,7 @@ Do not leave dead code commented out *without* a note indicating why the code.
 
 - When updating code, update associated comments. When moving code around, don't forget associated comments.
 
-# Constness
+## Const-ness
 
 - Specify const-ness wherever applicable, including:
 * Class methods that do not modify the class
@@ -119,7 +120,7 @@ Do not leave dead code commented out *without* a note indicating why the code.
 * Pointer parameters when the content will not be modified should be passed as const pointers
 * Prefer modern C++11 features over older/C-style features. At the same time, do not use features newer than C++11, as the code is compiled with the C++11 standard.
 
-# C features
+## C features
 
 - Use STL data structures and algorithms when available
 * std::string over char*
@@ -133,7 +134,7 @@ Do not leave dead code commented out *without* a note indicating why the code.
 * Use templates over type macros
 * Use comment blocks /* */ over #if 0 #endif
 
-# Passing parameters
+## Passing parameters
 
 - By default, pass small parameters (like numbers) by value and large parameters (like vectors) by const reference. Exceptions:
 * Short strings should be passed by const reference if they are not modified.
@@ -142,7 +143,7 @@ Do not leave dead code commented out *without* a note indicating why the code.
 - Do not use macros to modify the number of parameters of functions.
 If some parameters only apply when a specific macro is defined, consider defining a separate function or making those parameters optional by giving them default values.
 
-# Returning values
+## Returning values
 
 - By default, return types should be
 * By value if the result is something that is computed "on the fly" within the function (even if they are large objects like vectors or strings). In particular, it is not necessary for the caller to initialize the "result" vector in the calling scope and pass it by reference to the callee. 
@@ -153,7 +154,7 @@ vector<uint> Graph::getNodesAround(uint node, uint maxDist) const;
 const vector<string>* Graph::getNodeNames() const;
 //a large data structure that is part of the Graph class
 
-# Error handling
+## Error handling
 
 - Asserts and errors have different purposes.
 * Use asserts within a fuction to validate that the function does what it is intended to do. Asserts should never fire in a bug-free code. Do not use asserts to validate parts of the system you have no control over. E.g., do not use it to validate the input parameters to a function. Asserts are enabled in debug mode but removed for efficiency in the "production" version.
@@ -163,18 +164,18 @@ assert(X and "message");
 * Keep the exception system minimalistic. Do not use other types of error than runtime_error. Do not catch errors, let them terminate the program. Error-handling logic can add arbitrary amounts of complexity. Simply treat runtime_errors as a way to crash the program with a meaningful message and call stack trace.
 * Do not use system exit to terminate the program when there is an error. Use throw runitme_error.
 
-# Scoping
+## Scoping
 
 - Declare variables as in the deepest scope where they are used, and as close as possible to their initialization. Initialize them in the declaration when possible. In particular, do not declare them at the beginning of functions as it is done in C.
 - Avoid using extern variables as a mechanism to pass variables between files. It is better to explicitly pass the values around as function parameters.
 - Do not pollute the global namespace with functions. By default, every function in a class' CPP file should be declared inside the class. Auxiliary functions can be declared static inside the class. When a class is not appropriate, use a namespace.
 
-# Headers
+## Headers
 
 - When a class needs to include a header, avoid duplicating the include in the source and header. Include it in the source file when possible (e.g., if a method takes a vector as an input, then vector needs to be included in the header, but if vectors are only used locally inside the methods' implementations, then vector can go only in the source).
 - Use header guards instead of pragma once.
 
-# Efficiency notes
+## Efficiency notes
 
 - When filling a long vector, if the size is known before hand:
 1) Initialize it empty 2) Reserve the size using .reserve() 3) Fill it using push_back (or emplace_back, if you know the difference and it is more appropriate).
@@ -186,14 +187,14 @@ assert(X and "message");
 
 - Do not use map and set if the ordering of the elements does not matter. Use unordered_map and unordered_set instead. Do not use unordered_map when the key set is the set of indices from 0 to n-1. Use a vector instead. 
 
-# Tech debt
+## Tech debt
 
 When making changes, pay it forward and reduce technical debt instead of adding to it (Google technical debt).
 
-# Closing remarks
+## Closing remarks
 
 For inspiration, take a loot at the Graph class, which adheres closely to the style guide.
 In case of doubt regarding something not specified here, find a comprehensive list of good practices here:
 https://google.github.io/styleguide/cppguide.html
 This guide is partly based on the one above by Google, but tailored to the current code base. 
-Report corrections or mistakes to Nil M.
+Report corrections or mistakes to Nil Mamano.
