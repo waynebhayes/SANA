@@ -198,3 +198,11 @@ In case of doubt regarding something not specified here, find a comprehensive li
 https://google.github.io/styleguide/cppguide.html
 This guide is partly based on the one above by Google, but tailored to the current code base. 
 Report corrections or mistakes to Nil Mamano.
+	
+	
+--------------------------------------------
+# Remaining TODO LIST for SANA 2.0 refactor
+1- Move the incremental evaluation logic to each Measure, and use runtime polymorphism to run the appropriate logic for the "active" measures included in MeasureCombination. There is a very nice way to do this incrementally and safely. Start with one measure, say, EC, and add the new logic without removing the existing one. Then, assert at the end of each iteration that the old and new logics coincide. If they do (e.g, across the test suite), the old logic can be safely removed. This can be done measure by measure until SANA is cleaned up. Our other email chain on the subject can serve as basis for the design philosophy to follow to do this.  
+
+2- Insert virtual dummy nodes to handle yin-yang problem in pairwise alignment. Of course, it is always possible to add dummy nodes manually or use multi pairwise with just 2 graphs. The advantage of doing it natively would be efficiency, as it is possibly to not waste time swapping between dummy nodes and still sample neighbor solutions uniformly. However, I don't like that this feature introduces a new concept to the SANA class (virtual dummy nodes) and makes it more complex. For this reason, I wanted to implement (1) before doing this.
+
