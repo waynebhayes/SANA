@@ -203,7 +203,7 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
 
     cout << "Total time for loading graphs (" << T.elapsedString() << ")" << endl;
 
-    if (args.bools["-skip-graph-validation"])
+    if (args.bools["-skip-graph-validation"] || args.bools["-multi-iteration-only"])
 	cout << "Skipping graph validation\n";
     else {
         T.start();
