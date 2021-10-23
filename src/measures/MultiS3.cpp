@@ -168,7 +168,7 @@ return;
 uint MultiS3::computeNumer(const Alignment& A) const {
 #ifdef MULTI_PAIRWISE
     uint ret = 0;
-    uint peg1, peg2;
+    uint peg1, peg2, hole1, hole2;
 
     switch (numerator_type){
 	case numer_default:
