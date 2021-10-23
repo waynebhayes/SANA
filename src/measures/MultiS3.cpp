@@ -199,8 +199,8 @@ uint MultiS3::computeNumer(const Alignment& A) const {
                 inverse_A[A[i]] = i;
             }
             for (const auto& edge: *(G2->getEdgeList())){
-                peg1 = edge[0], peg2 = edge[1];
-		if ((G2->getEdgeWeight(peg1,peg2) > 1) or (inverse_A[peg1] < n1 and inverse_A[peg2] < n1 and G2->getEdgeWeight(peg1,peg2) + G1->getEdgeWeight(inverse_A[peg1],inverse_A[peg2]) > 1))
+                hole1 = edge[0], hole2 = edge[1];
+		if ((G2->getEdgeWeight(hole1,hole2) > 1) or (inverse_A[hole1] < n1 and inverse_A[hole2] < n1 and G2->getEdgeWeight(hole1,hole2) + G1->getEdgeWeight(inverse_A[hole1],inverse_A[hole2]) > 1))
 		    ++ret;
             }
         }
@@ -214,10 +214,10 @@ uint MultiS3::computeNumer(const Alignment& A) const {
                 inverse_A[A[i]] = i;
             }
             for (const auto& edge: *(G2->getEdgeList())){
-                peg1 = edge[0], peg2 = edge[1];
-		ret += G2->getEdgeWeight(peg1,peg2) > 1 ? G2->getEdgeWeight(peg1,peg2) : 0;
-		if (inverse_A[peg1] < n1 and inverse_A[peg2] < n1 and G2->getEdgeWeight(peg1,peg2) > 0 and G1->getEdgeWeight(inverse_A[peg1],inverse_A[peg2]) == 1){
-		    ret += (G2->getEdgeWeight(peg1,peg2) > 1);
+                hole1 = edge[0], hole2 = edge[1];
+		ret += G2->getEdgeWeight(hole1,hole2) > 1 ? G2->getEdgeWeight(hole1,hole2) : 0;
+		if (inverse_A[hole1] < n1 and inverse_A[hole2] < n1 and G2->getEdgeWeight(hole1,hole2) > 0 and G1->getEdgeWeight(inverse_A[hole1],inverse_A[hole2]) == 1){
+		    ret += (G2->getEdgeWeight(hole1,hole2) > 1);
 		}
             }
         }

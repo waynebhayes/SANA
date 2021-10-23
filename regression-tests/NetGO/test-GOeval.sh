@@ -10,6 +10,8 @@ gunzip < regression-tests/NetGO/MMHS1ec_60.align.gz > regression-tests/NetGO/MMH
 if GOeval.sh -ebm -pa MM HS $DIR/MMusculus-3.4.164.el $DIR/HSapiens-3.4.164.el $DIR/go.obo $DIR/gene2go regression-tests/NetGO/MMHS1ec_60.align | fgrep -v '***' | tee $DIR/GOeval.out | diff -b - <(unxz < regression-tests/NetGO/GOeval.MMHS.correct.xz); then
     : # do nothing, success
 else
+    EXIT_CODE="$?"
     echo "failed; see $DIR for output" >&2
     trap "" 0 1 2 3 15
+    exit "$EXIT_CODE"
 fi

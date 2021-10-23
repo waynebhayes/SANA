@@ -164,7 +164,7 @@ private:
     bool needMS3;
     vector<uint> totalInducedWeight; // total weight of shadow node induced only on the aligned edges of G1.
     int MS3Numer,
-	ER_k, // |ER_k| where ER_k = edges in G with at least one rung in its tower, other than itself
+	ER_k, // |ER_k| where ER_k = non-lonely edges in G_k, ie., there's at least one rung in its tower other than itself
 	EL_k, // |EL_k| where EL_k = complement of ER_k wrt E_k, ie., lonely edges in G
 	RA_k, // |RA_k| where RA_k = rungs under edges, ie rungs under edges in ER_k.
 	RU_k, // |RU_k| where RU_k = rungs under non-edges in G
