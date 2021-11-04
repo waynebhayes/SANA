@@ -57,10 +57,14 @@ export EXE CORES REAL_CORES MAKE_CORES
 NUM_FAILS=0
 EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v "MAIN|[<>]"`
 [ `echo $EXECS | newlines | wc -l` -eq `echo $EXECS | newlines | sort -u | wc -l` ] || die "<$EXECS> contains duplicates"
-rm -f parallel
-if not make parallel; then
+export PARALLEL_EXE=/tmp/parallel.$$
+trap "/bin/rm -f parallel $PARALLEL_EXE" 0 1 2 3 15
+rm -f parallel $PARALLEL_EXE
+if make parallel; then
+    mv parallel $PARALLEL_EXE
+else
     warn "can't make parallel; using single-threaded shell instead"
-    echo "exec bash" > parallel; chmod +x parallel
+    echo 'if [ $1 = -s ]; then shift 2; fi; shift; exec bash' > $PARALLEL_EXE; chmod +x $PARALLEL_EXE
 fi
 
 for EXT in $EXECS ''; do
@@ -92,7 +96,7 @@ fi
 
 for r
 do
-    REG_DIR=`dirname "$r"`
+    REG_DIR=`dirname $r | head -1`
     NEW_FAILS=0
     export REG_DIR
     echo --- running test "'$r'" ---

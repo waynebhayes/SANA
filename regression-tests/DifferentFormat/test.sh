@@ -23,7 +23,7 @@ for network in $NETS; do
     for type in $TYPES; do
 	echo "'$EXE' -s3 1 -t 1 -fg1 '$file.el' -fg2 '$file.$type' -o '$file' &> '${file}_$type.progress'"
     done
-done | ./parallel -s /bin/bash $CORES
+done | $PARALLEL_EXE $CORES
 status=$?
 echo -n "Out of `ls $REG_DIR/*.progress|wc -l` tries, numSuccesses was "
 cat $REG_DIR/*.progress | fgrep -c 'Saving report as '

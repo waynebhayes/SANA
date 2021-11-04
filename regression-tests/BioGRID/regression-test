@@ -1,6 +1,8 @@
 #!/bin/bash
-PARALLEL="./parallel -s bash $CORES"  # run in parallel on jenkins
-#PARALLEL=bash # if you don't have the parallel program
+PARALLEL_EXE=${PARALLEL_EXE:?"PARALLEL_EXE must be set"}
+CORES=${CORES:?"CORES must be set"}
+PARALLEL_CMD="$PARALLEL_EXE -s bash $CORES"  # run in parallel on jenkins
+
 echo "CORES is $CORES" >&2
 NUM_FAILS=0
 
@@ -90,7 +92,7 @@ if $RUN; then
 		whichExt=int(--run/totalRuns*length(EXTs));
 		printf "echo Running %s-%s; \"'"$EXE"'%s\" -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],EXTs[whichExt],net[i],net[j],net[i],net[j],net[i],net[j];
 	    }
-	}' | eval $PARALLEL
+	}' | eval $PARALLEL_CMD
     (( NUM_FAILS+=$? ))
 fi
 
