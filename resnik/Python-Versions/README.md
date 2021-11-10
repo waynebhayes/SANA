@@ -1,4 +1,4 @@
-# Why are these files here? REWARD: $100
+# Why are these files here? (REWARD: $100 for 1 year stability, $1,000 for decade-long stability)
 
 These files are various old versions--going back to 2016--meant to compute the similarity score, based on GO terms, between pairs of proteins. The first version was written on July 1st 2016.... and stopped working by the end of the month. The second one was written near the end of July... and worked for a few more months. Since that time, at least a few times a year, some student has had to update this script because _the code just keeps breaking even when I make no changes_.  This is just one example of Python codes written for me by my students that never work for more than a few months.
 
