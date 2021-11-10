@@ -35,6 +35,7 @@ if [ ! -x NetGO/NetGO.awk ]; then
 fi
 
 EXE="${EXE:=./sana}"
+SANA_DIR="${SANA_DIR:=`/bin/pwd`}"
 MAKE=false
 while [ $# -gt -0 ]; do
     case "$1" in
@@ -52,7 +53,7 @@ CORES=$REAL_CORES
 MAKE_CORES=`expr $REAL_CORES - 1`
 [ `hostname` = Jenkins ] && MAKE_CORES=2 # only use 2 cores to make on Jenkins
 echo "Using $MAKE_CORES cores to make and $CORES cores for regression tests"
-export EXE CORES REAL_CORES MAKE_CORES
+export EXE SANA_DIR CORES REAL_CORES MAKE_CORES
 
 NUM_FAILS=0
 EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v "MAIN|[<>]"`
