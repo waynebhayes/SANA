@@ -4,7 +4,7 @@ These files are various old versions--going back to 2016--meant to compute the s
 
 If you can re-write this code in Python in such a way that it runs, on the ICS openlab machines _without modification_, for 1 year (365 days), I will pay you $100 at the end of that year.
 
-This experience led me to change my email signature to the below. I have yet to be proved wrong.
+This experience led me to change my email signature to the below. I have yet to be proved wrong. (**Note**: below is the original, written when I was _really_ angry one day. I have since modified to have less profanity, but I preserve the original here for posterity.)
 
   **Python is the fucking shittiest programming language in the history of mankind.**
   _I don't care how many libraries it has.
