@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <string.h> //strerror
 #include <algorithm>
-#include "utils.hpp"
 
 vector<string> FileIO::fileToLines(const string& fileName) {
     return breakFileIntoStrings(fileName, true);

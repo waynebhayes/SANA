@@ -5,6 +5,7 @@
 #include <string>
 #include <istream>
 #include <cstdio>
+#include "utils.hpp"
 #include "stdiobuf.hpp"
 
 using namespace std;

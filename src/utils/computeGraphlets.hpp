@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <vector>
+#include "utils.hpp"
 
 namespace computeGraphletsSource {
 

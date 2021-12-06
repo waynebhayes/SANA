@@ -1101,8 +1101,9 @@ int SANA::exposedEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
 
 // Return the change in NUMERATOR of MS3
 int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
-    uint pegNeigh, holeNeigh, diff;
     int res = 0;
+#if MULTI_PAIRWISE // We still need the prototpye but gut the function if it's not actually needed
+    uint pegNeigh, holeNeigh, diff;
     switch (MultiS3::numerator_type){
         case MultiS3::ra_k:
         {
@@ -1291,16 +1292,18 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
 	}
 	break;
     }
+#endif // MULTI_PAIRWISE
     return res;
 }
 
 // Return change in NUMERATOR only
 int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
+      int res = 0;
+#if MULTI_PAIRWISE
       uint pegNeigh, holeNeigh, diff;
       switch (MultiS3::numerator_type){
           case MultiS3::ra_k:
           {
-              int res = 0;
               const uint n = G1->adjLists[peg1].size();
               uint i;
               for (i = 0; i < n; ++i) {
@@ -1324,7 +1327,6 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               
           case MultiS3::ra_global:
           {
-              int res = 0;
               const uint n = G1->adjLists[peg1].size();
               uint i = 0;
               bool ladder = false;
@@ -1375,7 +1377,6 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               break;
           case MultiS3::la_k:
           {
-               int res = 0;
                const uint n = G1->adjLists[peg1].size();
                uint i = 0;
                bool ladder = false;
@@ -1423,7 +1424,6 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               break;
           case MultiS3::la_global:
           {
-              int res = 0;
               const uint n = G1->adjLists[peg1].size();
               uint i = 0;
               bool ladder = false;
@@ -1456,7 +1456,6 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               break;
           default:
           {
-              int res = 0;
               //uint oldhole1Deg = MultiS3::shadowDegree[hole1];
               //uint oldhole2Deg = MultiS3::shadowDegree[hole2];
               if (G1->hasSelfLoop(peg1)) {
@@ -1636,6 +1635,8 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
 #endif
         }
     }
+#endif // MULTI_PAIRWISE
+    return res;
 }
 
 int SANA::inducedEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
