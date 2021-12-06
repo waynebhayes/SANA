@@ -30,7 +30,7 @@ export PATH
 
 if [ ! -x NetGO/NetGO.awk ]; then
     echo "you need the submodule NetGO; trying to get it now" >&2
-    (git submodule init && git submodule update && cd NetGO && git checkout master && git pull) || die "failed to get NetGO"
+    (git submodule init && git submodule update && cd NetGO && git checkout master && (git pull||exit 0)) || die "failed to get NetGO"
     [ -x NetGO/NetGO.awk ] || die "Still can't find NetGO"
 fi
 
@@ -56,7 +56,7 @@ echo "Using $MAKE_CORES cores to make and $CORES cores for regression tests"
 export EXE SANA_DIR CORES REAL_CORES MAKE_CORES
 
 NUM_FAILS=0
-EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v "MAIN|[<>]"`
+export EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v "MAIN|[<>]"`
 [ `echo $EXECS | newlines | wc -l` -eq `echo $EXECS | newlines | sort -u | wc -l` ] || die "<$EXECS> contains duplicates"
 export PARALLEL_EXE=/tmp/parallel.$$
 trap "/bin/rm -f parallel $PARALLEL_EXE" 0 1 2 3 15
@@ -81,7 +81,7 @@ for EXT in $EXECS ''; do
 	    else (( NUM_FAILS+=1000 ));
 	    fi
 	fi
-	warn "Cumulative number of compile failures is `expr $NUM_FAILS / 1000`"
+	[ $NUM_FAILS -eq 0 ] || warn "cumulative number of compile failures is `expr $NUM_FAILS / 1000`"
     fi
     [ -x sana$ext ] || warn "sana$ext doesn't exist; did you forget to pass the '-make' option?"
 done
