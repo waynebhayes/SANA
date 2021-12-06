@@ -101,7 +101,7 @@ do
     NEW_FAILS=0
     export REG_DIR
     echo --- running test "'$r'" ---
-    if eval $STDBUF $r; then # force output and error to be line buffered
+    if eval time $STDBUF $r; then # force output and error to be line buffered
 	:
     else
 	NEW_FAILS=$?
