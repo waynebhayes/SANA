@@ -53,11 +53,11 @@ CORES=$REAL_CORES
 MAKE_CORES=`expr $REAL_CORES - 1`
 [ `hostname` = Jenkins ] && MAKE_CORES=2 # only use 2 cores to make on Jenkins
 echo "Using $MAKE_CORES cores to make and $CORES cores for regression tests"
-export EXE SANA_DIR CORES REAL_CORES MAKE_CORES
 
 NUM_FAILS=0
 export EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v "MAIN|[<>]"`
 [ `echo $EXECS | newlines | wc -l` -eq `echo $EXECS | newlines | sort -u | wc -l` ] || die "<$EXECS> contains duplicates"
+
 export PARALLEL_EXE=/tmp/parallel.$$
 trap "/bin/rm -f parallel $PARALLEL_EXE" 0 1 2 3 15
 rm -f parallel $PARALLEL_EXE
@@ -68,7 +68,8 @@ else
     echo 'if [ $1 = -s ]; then shift 2; fi; shift; exec bash' > $PARALLEL_EXE; chmod +x $PARALLEL_EXE
 fi
 
-for EXT in $EXECS ''; do
+WORKING_EXECS='' #TAB separated full names of executables
+for EXT in '' $EXECS; do
     if [ "$EXT" = "" ]; then ext='' # no dot
     else ext=.`echo $EXT | tr A-Z a-z` # includes the dot
     fi
@@ -83,8 +84,14 @@ for EXT in $EXECS ''; do
 	fi
 	[ $NUM_FAILS -eq 0 ] || warn "cumulative number of compile failures is `expr $NUM_FAILS / 1000`"
     fi
-    [ -x sana$ext ] || warn "sana$ext doesn't exist; did you forget to pass the '-make' option?"
+    if [ -x sana$ext ]; then
+	WORKING_EXECS="${WORKING_EXECS}sana$ext$TAB"
+    else
+	warn "sana$ext doesn't exist; did you forget to pass the '-make' option?"
+    fi
 done
+WORKING_EXECS=`echo "$WORKING_EXECS" | sed 's/	$//'` # delete training TAB
+export EXE SANA_DIR CORES REAL_CORES MAKE_CORES EXECS WORKING_EXECS
 
 STDBUF=''
 if which stdbuf >/dev/null; then

@@ -5,11 +5,16 @@ MAIN = sana
 
 #you can give these on Make's command line, eg "SPARSE=1" or "FLOAT=1" or "MULTI=1"
 #all can be mixed and matched except FLOAT and MULTI
-#These should be listed roughly in order of how fast they run (fastest first)
+#These should be listed roughly in order of how fast they run (fastest first, with the empty extension "sana" assumed fastest)
 
 ifeq ($(STATIC), 1)
     CXXFLAGS := $(CXXFLAGS) -static #-Bstatic for some versions of gcc
     MAIN := $(MAIN).static
+endif
+
+ifeq ($(CORES), 1)
+    CXXFLAGS := $(CXXFLAGS) -DCORES
+    MAIN := $(MAIN).cores
 endif
 
 ifeq ($(SPARSE), 1)
@@ -22,11 +27,6 @@ ifeq ($(GDB), 1)
     MAIN := $(MAIN).gdb
 else
     CXXFLAGS := $(CXXFLAGS) -O3 # always turn on optimization if not debugging
-endif
-
-ifeq ($(CORES), 1)
-    CXXFLAGS := $(CXXFLAGS) -DCORES
-    MAIN := $(MAIN).cores
 endif
 
 ## Below here are not "normal" pairwise SANA executables

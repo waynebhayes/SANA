@@ -77,22 +77,16 @@ nets=`echo RNorvegicus SPombe CElegans MMusculus SCerevisiae AThaliana DMelanoga
 export Networks_count=`echo $nets | wc -w`
 #Biogrid_network="$nets" #`echo $nets | newlines | sed 's/$/.el/' | (cd networks; xargs ls -Sr) | sed 's/\.el$//'`
 
-NO_STATIC=''
-case `uname` in
-    Darwin) NO_STATIC='|STATIC' ;;
-esac
-export EXTs
-
 if $RUN; then
     [ -x "$EXE" ] || die "can't find executable '$EXE'"
-    EXTs="$EXTs "`echo $EXECS | newlines | egrep -v "MULTI|FLOAT$NO_STATIC" | tr A-Z a-z | fmt -999` # empty extension will be added only inside the awk script
-    echo sana extensions: "''" $EXTs >&2
-    echo "$nets" | newlines | awk 'BEGIN{split("'"$EXTs"'",EXTs); for(i in EXTs)EXTs[i]="."EXTs[i]; EXTs[0]=""}
+    EXECS=`echo "$WORKING_EXECS" | newlines | egrep -vi "MULTI|FLOAT" | tr A-Z a-z | fmt -999`
+    echo sana executables: "$EXECS" >&2
+    echo "$nets" | newlines | awk 'BEGIN{split("'"$EXECS"'",EXECS)}
 	{net[NR-1]=$NF}
 	END{run=totalRuns=(NR-1)*NR/2;
 	    for(i=0;i<=NR-2;i++)for(j=i+1;j<=NR-1;j++){
-		whichExt=int(--run/totalRuns*length(EXTs));
-		printf "echo Running '"$EXE"'%s on %s-%s; \"'"$EXE"'%s\" -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",EXTs[whichExt],net[i],net[j],EXTs[whichExt],net[i],net[j],net[i],net[j],net[i],net[j];
+		whichExec=1+int(--run/totalRuns*length(EXECS));
+		printf "echo Running %s on %s-%s; ./%s -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",EXECS[whichExec],net[i],net[j],EXECS[whichExec],net[i],net[j],net[i],net[j],net[i],net[j];
 	    }
 	}' | revlines | eval $PARALLEL_CMD
     (( NUM_FAILS+=$? ))
