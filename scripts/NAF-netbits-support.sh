@@ -29,7 +29,7 @@ net2=$2
 shift 2
 
 [ $# -eq 100 ] || die "expecting 100 alignment files"
-[ `ls "$@" | wc -l` -eq 100 ] || die "expecting 100 alignment files"
+[ `ls -d "$@" | fgrep -c .align` -eq 100 ] || die "expecting 100 alignment files"
 
 for i; do
     case "$i" in
@@ -40,16 +40,16 @@ for i; do
     [ -f $b.resnik.NOSEQ ] || die "expecting $b.resnik.NOSEQ to exist"
 done
 
-( echo 'NAF	u	v	Resnik'; sort *.resnik.NOSEQ | uniq -c | sort -nr | sed 's/max	//' -e 's/^  *//' -e 's/ /	/g') > NAF-uv-resnik.NOSEQ.tsv 
+( echo 'NAF	u	v	Resnik'; sort [A-Z][A-Z][A-Z][A-Z][0-9]*_60.resnik.NOSEQ | uniq -c | sort -nr | sed 's/max	//' -e 's/^  *//' -e 's/ /	/g') > NAF-uv-resnik.NOSEQ.tsv
 
 NAFs=`awkcel '{print NAF}' NAF-uv-resnik.NOSEQ.tsv | uniq`
 
 for N in $NAFs; do
-    awkcel 'NAF>='$N'{printf "%s,%s\n",u,v}' NAF-uv-resnik.NOSEQ.tsv | # get the list of aligned pairs above NAF threshold
+    awk 'NR>1&&$1>='$N'{printf "%s,%s\n",$2,$3}' NAF-uv-resnik.NOSEQ.tsv | # get the list of aligned pairs above NAF threshold
 	tee /tmp/NAF.$N.nodes |
 	awk '{printf "\t%s\t\n",$0}' | # add leading and trailing tabs to isolate them for fgrep...
 	fgrep -l -f - *.ccs-el.tt | sed 's/\.tt$//' | # get rid of the .tt extension to cat only the ccs-el files...
-	xargs cat > /tmp/NAF.$N.el # use "cat", not "sort -u", because we want to know how many times an edge SUPPORTs a NAF
+	xargs cat > /tmp/NAF.$N.el # use "cat", not "sort -u", to count edges, including dups, that support a NAF-aligned pair
     count_el=`induce /tmp/NAF.$N.nodes /tmp/NAF.$N.el | # get the NAF-induced subgraph on the multi-edged network
 	count.el -`
     echo $N $count_el |
