@@ -5,7 +5,7 @@ warn() { echo "WARNING: $@" >&2
 }
 
 TMP=/tmp/stdout2scores.$$
-trap "/bin/rm -f $TMP $TMP.?; exit" 0 1 2 3 15
+ trap "/bin/rm -f $TMP $TMP.?; exit" 0 1 2 3 15
 echo "$@" > $TMP.0
 
 for i

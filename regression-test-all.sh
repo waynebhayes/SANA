@@ -59,7 +59,7 @@ export EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -
 [ `echo $EXECS | newlines | wc -l` -eq `echo $EXECS | newlines | sort -u | wc -l` ] || die "<$EXECS> contains duplicates"
 
 export PARALLEL_EXE=/tmp/parallel.$$
-trap "/bin/rm -f parallel $PARALLEL_EXE" 0 1 2 3 15
+ trap "/bin/rm -f parallel $PARALLEL_EXE" 0 1 2 3 15
 rm -f parallel $PARALLEL_EXE
 if make parallel; then
     mv parallel $PARALLEL_EXE

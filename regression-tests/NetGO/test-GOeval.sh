@@ -1,6 +1,6 @@
 #!/bin/bash
 TMPDIR=/tmp/GOeval.$$
-trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
+ trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
 /bin/rm -rf $TMPDIR
 mkdir -p $TMPDIR
 cp -p go/Entrez/2018/09/*.gz $TMPDIR && gunzip $TMPDIR/*.gz

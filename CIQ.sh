@@ -5,7 +5,7 @@ USAGE="$0 [-V] <multi-align file with K columns> <list of exactly K networks in 
 VERBOSE=0
 
 TMPDIR=/tmp/CIQ$$
-trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
+ trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
 mkdir $TMPDIR
 
 case "$1" in

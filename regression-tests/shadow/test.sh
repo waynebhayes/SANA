@@ -2,7 +2,7 @@
 die() { echo "FATAL ERROR: $@" >&2; exit 1
 }
 TMPDIR=/tmp/regression-shadow.$$
-trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
+ trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
 [ -x "$EXE.multi" ] || die "can't find executable '$EXE.multi'"
 

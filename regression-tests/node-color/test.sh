@@ -7,7 +7,7 @@ die() { echo "$@" >&2; exit 1
 }
 [ -x "$EXE" ] || die "can't find executable '$EXE'"
 TMPDIR=/tmp/regression-col.$$
-trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
+ trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
 
 echo "Two of the following (no more, no less) should fail" >&2
