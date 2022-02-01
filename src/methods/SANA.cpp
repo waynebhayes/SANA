@@ -45,7 +45,6 @@ using namespace std;
 bool SANA::saveAligAndExitOnInterruption = false;
 bool SANA::saveAligAndContOnInterruption = false;
 uint SANA::INVALID_ACTIVE_COLOR_ID;
-
 SANA::SANA(const Graph* G1, const Graph* G2,
         double TInitial, double TDecay, double maxSeconds, long long int maxIterations, bool addHillClimbing,
         MeasureCombination* MC, const string& scoreAggrStr, const Alignment& startA,
@@ -278,6 +277,7 @@ void SANA::initDataStructures() {
     if (needMS3) {
         MultiS3::numer = ((MultiS3*) MC->getMeasure("ms3"))->computeNumer(alig);
         MultiS3::denom = ((MultiS3*) MC->getMeasure("ms3"))->computeDenom(alig);
+        ((MultiS3*) MC->getMeasure("ms3"))->prefillInducedNeighborRungs(alig.asVector());
 	EL_k = MultiS3::EL_k;
 	ER_k = MultiS3::ER_k;
 	RU_k = MultiS3::RU_k;
@@ -588,6 +588,7 @@ void SANA::performChange(uint actColId) {
 }
 
 void SANA::performSwap(uint actColId) {
+
     uint peg1 = randomG1NodeWithActiveColor(actColId);
     
     uint peg2;
@@ -1099,6 +1100,28 @@ int SANA::exposedEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     return res;
 }
 
+int SANA::MS3VariantHelper(const uint peg, const uint hole, bool departs){
+    int res = 0;
+    uint s = hole; // shadow node that u is departing
+    if (departs)
+        assert(hole == A[peg]);
+    else
+        assert(hole != A[peg]);
+    vector<uint> whichPeg(n2, n1); // value of n1 represents not used
+    uint numNeigh = G1->adjLists[peg].size();
+    int factor = departs? -1 : 1;
+    for (uint i = 0; i < numNeigh; ++i){ // for all of u's neighbor
+        uint v = G1->adjLists[peg][i];
+        int W = G2->getEdgeWeight(s,A[v]); // get edge weight of edge between s and u's neighbor's shadow node
+        if (W>0) {
+            res += (factor * (W+1)); // subtract this weight from numerator
+            // +1 because it is non lonely
+            //MultiS3::inducedNeighborRungs[A[v]] += (factor * W); //update total induced weight
+        }
+    }
+    return res;
+}
+
 // Return the change in NUMERATOR of MS3
 int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
     int res = 0;
@@ -1171,7 +1194,13 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
             }
         }
 	break;
-            
+	    case MultiS3::ms3_var_num:
+	    {
+            res += MS3VariantHelper(peg, oldHole, true);
+            res += MS3VariantHelper(peg, newHole, false);
+	    }
+    break;
+
         default:
         {
             //unsigned oldoldHoleDeg = MultiS3::shadowDegree[oldHole];
@@ -1257,6 +1286,24 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
             }
         }
 	break;
+	    case MultiS3::ms3_var_dem:
+	    {
+            int oldEdgeWeights = 0;
+            for ( uint nbr : *(G2->getAdjList(oldHole))) {
+                if (whichPeg[nbr] != n1){
+                    oldEdgeWeights += G2->getEdgeWeight(oldHole, nbr);
+                }
+            }
+            int newEdgeWeights = 0;
+            for ( uint nbr : *(G2->getAdjList(newHole))) {
+                if (whichPeg[nbr] != n1 and nbr != oldHole) {
+                    newEdgeWeights += G2->getEdgeWeight(newHole, nbr);
+                }
+            }
+            MultiS3::denom -= oldEdgeWeights;
+            MultiS3::denom += newEdgeWeights;
+        }
+    break;
             
         default:
 	{
@@ -1292,7 +1339,11 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
 	}
 	break;
     }
+<<<<<<< HEAD
 #endif // MULTI_PAIRWISE
+=======
+    //cerr << "total change to num = " << res << endl;
+>>>>>>> (2021-Nov-01): Yet another variation on MS3, this one seems easier to explain: aligning G_i to the (pruned) shadow network, the score MS^3_i for G_i is
     return res;
 }
 
@@ -1301,6 +1352,7 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
       int res = 0;
 #if MULTI_PAIRWISE
       uint pegNeigh, holeNeigh, diff;
+      int res = 0;
       switch (MultiS3::numerator_type){
           case MultiS3::ra_k:
           {
@@ -1454,6 +1506,36 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               return res;
           }
               break;
+          case MultiS3::ms3_var_num:
+          {
+              assert(res == 0);
+              int res2 = 0;
+              for (uint nbr : G1->adjLists[peg1]){
+                  if (nbr == peg2) {continue;} // if edge between peg1 and peg2 ignore so we don't double count
+                  int old_shadow_weight = G2->getEdgeWeight(A[peg1],A[nbr]);
+                  int new_shadow_weight = G2->getEdgeWeight(hole2,A[nbr]);
+
+                  if (old_shadow_weight > 0) {
+                      res -= old_shadow_weight + 1;
+                  }
+                  if (new_shadow_weight > 0) {
+                      res += new_shadow_weight + 1;
+                  }
+              }
+              for (uint nbr : G1->adjLists[peg2]){
+                  if (nbr == peg1) {continue;} // if edge between peg1 and peg2 ignore so we don't double count
+                  int old_shadow_weight = G2->getEdgeWeight(A[peg2],A[nbr]);
+                  int new_shadow_weight = G2->getEdgeWeight(hole1, A[nbr]);
+
+                  if (old_shadow_weight > 0) {
+                      res -= old_shadow_weight + 1;
+                  }
+                  if (new_shadow_weight > 0) {
+                      res += new_shadow_weight + 1;
+                  }
+              }
+          }
+          break;
           default:
           {
               //uint oldhole1Deg = MultiS3::shadowDegree[hole1];
@@ -1572,6 +1654,10 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               }
         }
             break;
+        case MultiS3::ms3_var_dem: {
+            // do nothing
+        }
+        break;
 	default:
         {
 #if 0
@@ -1634,8 +1720,12 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
               }
 #endif
         }
+        break;
     }
+<<<<<<< HEAD
 #endif // MULTI_PAIRWISE
+=======
+>>>>>>> (2021-Nov-01): Yet another variation on MS3, this one seems easier to explain: aligning G_i to the (pruned) shadow network, the score MS^3_i for G_i is
     return res;
 }
 
