@@ -23,8 +23,8 @@ notNOT() { grep -v '	NOT	' "$@"
 }
 
 TMPDIR=/tmp/GOpredict.$$
-trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 15
-trap "trap '' 0 1 2 15; echo TMPDIR is $TMPDIR >&2; exit 1" 3
+ trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 15
+ trap "trap '' 0 1 2 15; echo TMPDIR is $TMPDIR >&2; exit 1" 3
 mkdir $TMPDIR || die "Hmmm, $TMPDIR could not make $TMPDIR"
 
 ALLOW_ALL=false

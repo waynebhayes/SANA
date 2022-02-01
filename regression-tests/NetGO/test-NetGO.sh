@@ -2,7 +2,7 @@
 DIR=/tmp/NetGO.$$
 /bin/rm -rf $DIR
 mkdir -p $DIR
-trap "/bin/rm -rf $DIR; exit" 0 1 2 3 15
+ trap "/bin/rm -rf $DIR; exit" 0 1 2 3 15
 cp -p go/Entrez/2018/09/*.gz $DIR
 gunzip $DIR/*.gz
 echo Testing NetGO on regression-tests/multi-pairwise/BioGRID-100x1-dir300-multiAlign.tsv.xz

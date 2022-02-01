@@ -11,7 +11,7 @@ PATH="$PATH:`pwd`/scripts"
 export PATH
 
 TMPDIR=/tmp/regression-test$$ # gets removed only if everything works
-trap "rm -rf $TMPDIR; exit" 0 1 2 3 15
+ trap "rm -rf $TMPDIR; exit" 0 1 2 3 15
 mkdir $TMPDIR
 
 OutputFile="$TMPDIR/regression-lock.$HOST.result"

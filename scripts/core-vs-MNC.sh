@@ -4,7 +4,7 @@ die() { echo "$@" >&2; exit 1
 }
 [ -d "$1" ] || die "first arg must be directory name of the run"
 TMP="$1/MNC"
-trap "/bin/rm -rf $TMP; exit" 0 1 2 3 15
+ trap "/bin/rm -rf $TMP; exit" 0 1 2 3 15
 mkdir -p $TMP
 cd $1
 cat *s/??/multiAlign.tsv | sort -S1G | uniq -c | awk '{delete K; for(i=2;i<=NF;i++)++K[$i];delete K["_"];biggest=0;for(i in K)if(K[i]>biggest)biggest=K[i];print $1,biggest}' > "$TMP/bigs" & # get this running so pearson will be fast later

@@ -103,7 +103,7 @@ lss() {
 }
 
 TMPDIR=/tmp/multi-pairwise.$$
-trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
+ trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
 mkdir -p $TMPDIR
 
 VERBOSE=
