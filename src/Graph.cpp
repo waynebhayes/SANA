@@ -60,6 +60,7 @@ Graph::Graph(const string& graphName, const string& optionalFilePath,
 
     adjLists.resize(numNodes);
     adjMatrix = Matrix<EDGE_T>(numNodes);
+    totalWeight = vector<double>(numNodes, 0.0);
     totalEdgeWeight = 0;
     for (uint i = 0; i < edgeList.size(); i++) {
         uint node1 = edgeList[i][0], node2 = edgeList[i][1];
@@ -75,6 +76,8 @@ Graph::Graph(const string& graphName, const string& optionalFilePath,
         if (adjMatrix[node1][node2] != 0 or adjMatrix[node2][node1] != 0)
             throw runtime_error("repeated edge in edge list passed to graph constructor");
         adjMatrix[node1][node2] = adjMatrix[node2][node1] = weight;
+	totalWeight[node1] += weight;
+	totalWeight[node2] += weight;
         totalEdgeWeight += weight;
     }
     initColorDataStructs(partialNodeColorPairs);
@@ -449,20 +452,25 @@ void Graph::debugPrint() const {
     cerr<<"adjLists size: "<<adjLists.size()<<endl;
     cerr<<"neighbor lists sizes: ";
     for(uint i = 0; i < min(adjLists.size(), MAX_LEN); i++) cerr<<adjLists[i].size()<<' ';
-    if (MAX_LEN < adjLists.size()) cerr<<"..."; cerr<<endl;
+    if (MAX_LEN < adjLists.size()) cerr<<"...";
+    cerr<<endl;
+
     cerr<<"adjLists[0]: ";
     for (uint i = 0; i < min(adjLists[0].size(), MAX_LEN); i++) cerr<<adjLists[0][i]<<' ';
-    if (MAX_LEN < adjLists[0].size()) cerr<<"..."; cerr<<endl;
+    if (MAX_LEN < adjLists[0].size()) cerr<<"...";
+    cerr<<endl;
 
     cerr<<"adjMatrix size: "<<adjMatrix.size()<<endl;
 
     cerr<<"nodeNames (size "<<nodeNames.size()<<"): ";
     for (uint i = 0; i < min(nodeNames.size(), MAX_LEN); i++) cerr<<nodeNames[i]<<' ';
-    if (MAX_LEN < nodeNames.size()) cerr<<"..."; cerr<<endl;
+    if (MAX_LEN < nodeNames.size()) cerr<<"...";
+    cerr<<endl;
 
     cerr<<"nodeColors (size "<<nodeColors.size()<<"): ";
     for (uint i = 0; i < min(nodeColors.size(), MAX_LEN); i++) cerr<<nodeColors[i]<<' ';
-    if (MAX_LEN < nodeColors.size()) cerr<<"..."; cerr<<endl;
+    if (MAX_LEN < nodeColors.size()) cerr<<"...";
+    cerr<<endl;
 
     cerr<<"nodeNameToIndexMap (size "<<nodeNameToIndexMap.size()<<"): ";
     uint kvi = 0;
@@ -474,22 +482,26 @@ void Graph::debugPrint() const {
 
     cerr<<"edge list (size "<<edgeList.size()<<"): ";
     for (uint i = 0; i < min(edgeList.size(), MAX_LEN); i++) cerr<<'{'<<edgeList[i][0]<<", "<<edgeList[i][1]<<"} ";
-    if (MAX_LEN < edgeList.size()) cerr<<"..."; cerr<<endl;
+    if (MAX_LEN < edgeList.size()) cerr<<"...";
+    cerr<<endl;
 
     cerr<<"totalEdgeWeight: "<<totalEdgeWeight<<endl;
-
     auto CCs = connectedComponents();
     cerr<<"Number of CCs: "<<CCs.size()<<endl;
     cerr<<"CC sizes: ";
     for(uint i = 0; i < min(CCs.size(), MAX_LEN); i++) cerr<<CCs[i].size()<<' ';
-    if (MAX_LEN < CCs.size()) cerr<<"..."; cerr<<endl;
+    if (MAX_LEN < CCs.size()) cerr<<"...";
+    cerr<<endl;
+
     cerr<<"CCs[0]: ";
     for (uint i = 0; i < min(CCs[0].size(), MAX_LEN); i++) cerr<<CCs[0][i]<<' ';
-    if (MAX_LEN < CCs[0].size()) cerr<<"..."; cerr<<endl;
+    if (MAX_LEN < CCs[0].size()) cerr<<"...";
+    cerr<<endl;
 
     cerr<<"colorNames (size "<<colorNames.size()<<"): ";
     for (uint i = 0; i < min(colorNames.size(), MAX_LEN); i++) cerr<<colorNames[i]<<' ';
-    if (MAX_LEN < colorNames.size()) cerr<<"..."; cerr<<endl;
+    if (MAX_LEN < colorNames.size()) cerr<<"...";
+    cerr<<endl;
 
     cerr<<"colorNameToId (size "<<colorNameToId.size()<<"): ";
     kvi = 0;
@@ -502,11 +514,13 @@ void Graph::debugPrint() const {
     cerr<<"nodeGroupsByColor size: "<<nodeGroupsByColor.size()<<endl;
     cerr<<"color group sizes: ";
     for(uint i = 0; i < min(nodeGroupsByColor.size(), MAX_LEN); i++) cerr<<nodeGroupsByColor[i].size()<<' ';
-    if (MAX_LEN < nodeGroupsByColor.size()) cerr<<"..."; cerr<<endl;
+    if (MAX_LEN < nodeGroupsByColor.size()) cerr<<"...";
+    cerr<<endl;
+
     cerr<<"nodeGroupsByColor[0]: ";
     for (uint i = 0; i < min(nodeGroupsByColor[0].size(), MAX_LEN); i++) cerr<<nodeGroupsByColor[0][i]<<' ';
-    if (MAX_LEN < nodeGroupsByColor[0].size()) cerr<<"..."; cerr<<endl;
-    cerr<<endl;
+    if (MAX_LEN < nodeGroupsByColor[0].size()) cerr<<"...";
+    cerr<<endl; cerr<<endl;
 }
 
 bool Graph::isWellDefined() const {
@@ -530,6 +544,7 @@ bool Graph::isWellDefined() const {
     //adjMatrix is symmetric and the sum of edges weights equals totalEdgeWeight
     uint numEdgesInAdjMat = 0;
     double adjMatSum = 0;
+    vector<double> nodeSum = vector<double>(n, 0.0);
     for (uint i = 0; i < n; i++) {
         for (uint j = 0; j <= i; j++) {
             if (adjMatrix.get(i, j) != adjMatrix.get(j, i))
@@ -537,11 +552,15 @@ bool Graph::isWellDefined() const {
             if (hasEdge(i,j)) {
                 numEdgesInAdjMat++;
                 adjMatSum += getEdgeWeight(i,j);
+		nodeSum[i] += getEdgeWeight(i,j);
+		nodeSum[j] += getEdgeWeight(i,j);
             }
         }
     }
     if (adjMatSum != totalEdgeWeight)
         ss<<"totalEdgeWeight attribute is "<<totalEdgeWeight<<" but the edges in adjMatrix add up to "<<adjMatSum<<endl;
+    for (uint i = 0; i < n; i++) if(nodeSum[i] != totalWeight[i])
+        ss<<"totalWeight["<<i<<"] attribute is "<<totalWeight[i]<<" but the in adjMatrix add up to "<<nodeSum[i]<<endl;
 
     //edgeList: all entries appear in adjMatrix, are not repeated, and every entry in adj matrix is in edge list
     if (edgeList.size() != numEdgesInAdjMat)

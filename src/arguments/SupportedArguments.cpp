@@ -151,8 +151,8 @@ vector<array<string, 6>> supportedArguments = {
     { "-ee", "double", "0", "Weight of EE", "The weight of the Edge Exposure Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ms3", "double", "0", "Weight of MS3", "The weight of the Multi Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ms3_type", "double", "0", "type of MS3", "some description", "0" },
-    { "-ms3_numer", "string", "default", "numerator MS3", "Chioces are: default, ra_i, la_i, la_global, ra_global", "0" },
-    { "-ms3_denom", "string", "default", "denominator MS3", "Choices are: default, rt_i, ee_i, ee_global, rt_global", "0" },
+    { "-ms3_numer", "string", "default", "numerator MS3", "Chioces are: default, ra_k, la_k, la_global, ra_global", "0" },
+    { "-ms3_denom", "string", "default", "denominator MS3", "Choices are: default, rt_k, mre_k, ee_k, ee_global, rt_global", "0" },
     { "End Objective Function Specification and Weight. Combine with \"-objfuntype x\"", "", "banner", "", "", "0" },
     //-------------------END Objective Function Tyoe Specifications----------------------
 

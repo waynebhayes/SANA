@@ -12,7 +12,9 @@ Orbits, and the nodes therein, are listed in no particular order.
 #DREADNAUT=/scratch/preserve/extra2/preserve/nauty/nauty26r12/dreadnaut
 DREADNAUT=/home/sana/bin/dreadnaut
 
-die() { echo "FATAL ERROR: $@" >&2; exit 1
+NL='
+'
+die() { echo "echo $USAGE${NL}FATAL ERROR: $@" >&2; exit 1
 }
 [ $# -eq 1 ] || die "expecting exactly one filename, an edgelist"
 
@@ -62,9 +64,9 @@ NAME2ID='
 	{for(i=1;i<=NF;i++) printf "%s ",Expand($i)}' |
     tr ';' "$NL" |
     awk "ARGIND==1{$NAME2ID}"'
-	 ARGIND==2{ # read from the pipe on stdin
+	 ARGIND==2 && NF{ # read from the pipe on stdin
 	    # The following ensures there are no leading or trailing spaces
 	    printf "%s", name[$1]; for(i=2;i<=NF;i++) printf " %s", name[$i]
 	    print ""
-    }' $TMP - # the single hyphen specifies that the second "file" is awk's standard input (from the pipe)
-
+    }' $TMP -  |# the single hyphen specifies that the second "file" is awk's standard input (from the pipe)
+    awk '{printf "%d\t%s\n", NF, $0}' | sort -nr | awk 'BEGIN{printf "orbitSize\tmembers\n"}{print}'

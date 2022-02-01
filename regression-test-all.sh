@@ -24,16 +24,18 @@ esac
 
 USAGE="USAGE: $0 [ -make ] [ -x SANA_EXE ] [ list of tests to run, defaults to regression-tests/*/*.sh ]"
 
-PATH=`pwd`:`pwd`/scripts:$PATH
+CWD=`pwd`
+PATH="$CWD:$CWD/scripts:$CWD/NetGO:$PATH"
 export PATH
 
 if [ ! -x NetGO/NetGO.awk ]; then
     echo "you need the submodule NetGO; trying to get it now" >&2
-    (git submodule init && git submodule update && cd NetGO && git checkout master && git pull) || die "failed to get NetGO"
+    (git submodule init && git submodule update && cd NetGO && git checkout master && (git pull||exit 0)) || die "failed to get NetGO"
     [ -x NetGO/NetGO.awk ] || die "Still can't find NetGO"
 fi
 
-EXE=./sana
+EXE="${EXE:=./sana}"
+SANA_DIR="${SANA_DIR:=`/bin/pwd`}"
 MAKE=false
 while [ $# -gt -0 ]; do
     case "$1" in
@@ -51,17 +53,23 @@ CORES=$REAL_CORES
 MAKE_CORES=`expr $REAL_CORES - 1`
 [ `hostname` = Jenkins ] && MAKE_CORES=2 # only use 2 cores to make on Jenkins
 echo "Using $MAKE_CORES cores to make and $CORES cores for regression tests"
-export EXE CORES REAL_CORES MAKE_CORES
 
 NUM_FAILS=0
-EXECS=`grep '^ifeq (' Makefile | sed -e 's/.*(//' -e 's/).*//' | grep -v MAIN | sort -u`
-rm -f parallel
-if not make parallel; then
+export EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v "MAIN|[<>]"`
+[ `echo $EXECS | newlines | wc -l` -eq `echo $EXECS | newlines | sort -u | wc -l` ] || die "<$EXECS> contains duplicates"
+
+export PARALLEL_EXE=/tmp/parallel.$$
+ trap "/bin/rm -f parallel $PARALLEL_EXE" 0 1 2 3 15
+rm -f parallel $PARALLEL_EXE
+if make parallel; then
+    mv parallel $PARALLEL_EXE
+else
     warn "can't make parallel; using single-threaded shell instead"
-    echo "exec bash" > parallel; chmod +x parallel
+    echo 'if [ $1 = -s ]; then shift 2; fi; shift; exec bash' > $PARALLEL_EXE; chmod +x $PARALLEL_EXE
 fi
 
-for EXT in $EXECS ''; do
+WORKING_EXECS='' #TAB separated full names of executables
+for EXT in '' $EXECS; do
     if [ "$EXT" = "" ]; then ext='' # no dot
     else ext=.`echo $EXT | tr A-Z a-z` # includes the dot
     fi
@@ -69,34 +77,44 @@ for EXT in $EXECS ''; do
 	[ "$EXT" = "" ] || EXT="$EXT=1"
 	make $EXT clean
 	if not make -k -j$MAKE_CORES $EXT; then # "-k" means "keep going even if some targets fail"
-	    (( NUM_FAILS+=1000 ))
 	    warn "make '$EXT' failed"
+	    if [ "$ext" == .static ]; then warn "ignoring failure of make '$EXT'";
+	    else (( NUM_FAILS+=1000 ));
+	    fi
 	fi
-	[ $NUM_FAILS -gt 0 ] && warn "Cumulative NUM_FAILS is $NUM_FAILS"
+	[ $NUM_FAILS -eq 0 ] || warn "cumulative number of compile failures is `expr $NUM_FAILS / 1000`"
     fi
-    [ -x sana$ext ] || warn "sana$ext doesn't exist; did you forget to pass the '-make' option?"
+    if [ -x sana$ext ]; then
+	WORKING_EXECS="${WORKING_EXECS}sana$ext$TAB"
+    else
+	warn "sana$ext doesn't exist; did you forget to pass the '-make' option?"
+    fi
 done
+WORKING_EXECS=`echo "$WORKING_EXECS" | sed 's/	$//'` # delete training TAB
+export EXE SANA_DIR CORES REAL_CORES MAKE_CORES EXECS WORKING_EXECS
 
 STDBUF=''
 if which stdbuf >/dev/null; then
     STDBUF='stdbuf -oL -eL'
 fi
+
 if [ $# -eq 0 ]; then
     set regression-tests/*/*.sh
 fi
+
 for r
 do
-    REG_DIR=`dirname "$r"`
+    REG_DIR=`dirname $r | head -1`
     NEW_FAILS=0
     export REG_DIR
-    echo --- running test $r ---
-    if eval $STDBUF "$r"; then # force output and error to be line buffered
+    echo --- running test "'$r'" ---
+    if eval time $STDBUF $r; then # force output and error to be line buffered
 	:
     else
 	NEW_FAILS=$?
 	(( NUM_FAILS+=$NEW_FAILS ))
     fi
-    echo --- test $r incurred $NEW_FAILS failures, cumulative failures is $NUM_FAILS ---
+    echo --- test "'$r'" incurred $NEW_FAILS failures, cumulative failures is $NUM_FAILS ---
 done
 echo Total number of failures: $NUM_FAILS
 (echo $NUM_FAILS; git log -1 --format=%at) > git-at

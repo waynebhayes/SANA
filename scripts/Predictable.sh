@@ -29,8 +29,8 @@ die() { (echo "$USAGE"; echo "FATAL ERROR: $@") >&2; exit 1
 }
 
 TMPDIR=/tmp/PIP.$$
-trap "/bin/rm -rf $TMPDIR" 0 1 2 15
-trap "TMPDIR is $TMPDIR" 3
+ trap "/bin/rm -rf $TMPDIR" 0 1 2 15
+ trap "TMPDIR is $TMPDIR" 3
 mkdir -p $TMPDIR
 
 EVC_EGREP='.' # matches anything

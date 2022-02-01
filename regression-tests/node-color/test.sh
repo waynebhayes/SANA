@@ -1,12 +1,13 @@
 #!/bin/bash
 CORES=${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}
-PARALLEL="./parallel -s bash $CORES"
-echo "PARALLEL is '$PARALLEL'" >&2
+PARALLEL_EXE=${PARALLEL_EXE:?"PARALLEL_EXE must be set"}
+PARALLEL_CMD="$PARALLEL_EXE -s bash $CORES"
+echo "PARALLEL_CMD is '$PARALLEL_CMD'" >&2
 die() { echo "$@" >&2; exit 1
 }
 [ -x "$EXE" ] || die "can't find executable '$EXE'"
 TMPDIR=/tmp/regression-col.$$
-trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
+ trap "/bin/rm -rf $TMPDIR" 0 1 2 3 15
 mkdir $TMPDIR
 
 echo "Two of the following (no more, no less) should fail" >&2
@@ -62,9 +63,9 @@ echo "Two of the following (no more, no less) should fail" >&2
     # v2 w3 
     # v3 w2
     # v7 w7
-) | eval $PARALLEL
+) | eval $PARALLEL_CMD
 NUM_FAILS=$?
-echo "'$PARALLEL' exited with $NUM_FAILS"
+echo "'$PARALLEL_CMD' exited with $NUM_FAILS"
 if egrep -w 'E|M|N|NSP1|NSP10|NSP11|NSP12|NSP13|NSP14|NSP15|NSP2|NSP4|NSP5|NSP5_C145A|NSP6|NSP7|NSP8|NSP9|ORF10|ORF3A|ORF3B|ORF6|ORF7A|ORF8|ORF9B|PROTEIN14|S' $TMPDIR/covid.align | grep EN; then
     echo "ERROR: covid.el TO ITSELF WITH covid.col HAD ERRONEOUS COLOR ALIGNMENTS" >&2
     (( ++NUM_FAILS ))

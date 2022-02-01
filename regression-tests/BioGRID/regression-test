@@ -1,6 +1,8 @@
 #!/bin/bash
-PARALLEL="./parallel -s bash $CORES"  # run in parallel on jenkins
-#PARALLEL=bash # if you don't have the parallel program
+PARALLEL_EXE=${PARALLEL_EXE:?"PARALLEL_EXE must be set"}
+CORES=${CORES:?"CORES must be set"}
+PARALLEL_CMD="$PARALLEL_EXE -s bash $CORES"  # run in parallel on jenkins
+
 echo "CORES is $CORES" >&2
 NUM_FAILS=0
 
@@ -70,14 +72,23 @@ NL='
 # Alphabetical order--not particularly useful
 #nets='AThaliana CElegans DMelanogaster HSapiens MMusculus RNorvegicus SCerevisiae SPombe'
 
-# ordered by size in number of nodes
-nets="`echo RNorvegicus SPombe CElegans MMusculus SCerevisiae AThaliana DMelanogaster HSapiens | newlines`"
+# order them smallest-to-largest by number of nodes
+nets=`echo RNorvegicus SPombe CElegans MMusculus SCerevisiae AThaliana DMelanogaster HSapiens`
 export Networks_count=`echo $nets | wc -w`
 #Biogrid_network="$nets" #`echo $nets | newlines | sed 's/$/.el/' | (cd networks; xargs ls -Sr) | sed 's/\.el$//'`
 
 if $RUN; then
     [ -x "$EXE" ] || die "can't find executable '$EXE'"
-    echo "$nets" | awk '{net[NR-1]=$NF}END{for(i=NR-2;i>=0;i--)for(j=NR-1;j>=i+1;j--) printf "echo Running %s-%s; \"'"$EXE"'\" -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
+    EXECS=`echo "$WORKING_EXECS" | newlines | egrep -vi "MULTI|FLOAT" | tr A-Z a-z | fmt -999`
+    echo sana executables: "$EXECS" >&2
+    echo "$nets" | newlines | awk 'BEGIN{split("'"$EXECS"'",EXECS)}
+	{net[NR-1]=$NF}
+	END{run=totalRuns=(NR-1)*NR/2;
+	    for(i=0;i<=NR-2;i++)for(j=i+1;j<=NR-1;j++){
+		whichExec=1+int(--run/totalRuns*length(EXECS));
+		printf "echo Running %s on %s-%s; ./%s -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",EXECS[whichExec],net[i],net[j],EXECS[whichExec],net[i],net[j],net[i],net[j],net[i],net[j];
+	    }
+	}' | revlines | eval $PARALLEL_CMD
     (( NUM_FAILS+=$? ))
 fi
 
@@ -87,8 +98,8 @@ printf "%-30s | %-20s$NL" "Networks Pair" "Iterations Speed" >> $OutputFile
 for i in $(seq 1 $((Networks_count - 1)));do
     for j in $(seq $((i + 1)) $Networks_count); do
 	if [ "$i" -lt "$j" ]; then
-	    Network1=`echo "$nets" | awk 'NR=='$i'{print}'`
-	    Network2=`echo "$nets" | awk 'NR=='$j'{print}'`
+	    Network1=`echo "$nets" | newlines | awk 'NR=='$i'{print}'`
+	    Network2=`echo "$nets" | newlines | awk 'NR=='$j'{print}'`
 	    progress="$OutputDir/$Network1-$Network2.progress"
 	    cIt=`grep -o "[0-9]*.[0-9]* iterations per second" $progress | awk '{print $1}' | sort -u`
 	    Iterations="$Iterations $cIt"
@@ -108,8 +119,8 @@ PrintTestScores()
     printf "%-30s | %-20s$NL" "Networks Pair" "$1 score" >> $OutputFile
     for i in $(seq 1 $((Networks_count - 1)));do
         for j in $(seq $((i + 1)) $Networks_count); do
-            Network1=`echo "$nets" | awk 'NR=='$i'{print}'`
-            Network2=`echo "$nets" | awk 'NR=='$j'{print}'`
+            Network1=`echo "$nets" | newlines | awk 'NR=='$i'{print}'`
+            Network2=`echo "$nets" | newlines | awk 'NR=='$j'{print}'`
             progress="$OutputDir/$Network1-$Network2.out"
             Score=`grep -o "^$1: 0.[0-9]\+$" $progress | awk '{print $2}' | sort -u`
             Scores=$Scores" "$Score

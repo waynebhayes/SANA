@@ -1,6 +1,6 @@
 #!/bin/sh
 TMP=/tmp/AUPR.$$
-trap "/bin/rm -f $TMP.*; exit" 0 1 2 3 15
+ trap "/bin/rm -f $TMP.*; exit" 0 1 2 3 15
 USAGE="
 $0 [-predictOnly thresh ] [-A 0|1] [-R RT] [-S ST] [-G1 network.el] [-G2 network.el ] c1 c2 TruthFile ScoreFile [resnikFile] [seqSimFile] [complexesFile]
 

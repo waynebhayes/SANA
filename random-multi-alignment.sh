@@ -29,7 +29,7 @@ OUTDIR="$1"; shift
 [ -d "$OUTDIR" ] || die "first argument must be name of output directory, and it must already exist"
 
 TMPDIR=/tmp/multi-pairwise-random$$
-trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
+ trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
 mkdir $TMPDIR
 GROUP=''
 

@@ -1,4 +1,4 @@
-# Graph Class Documentation for future developers
+# Graph Class Documentation for future developers (written by Nil Mamano)
 Graph objects are immutable. Once a graph is constructed, there is no function that allows you to modify its data structures, i.e., every single method is const-qualified and there are no setters*. The reason for this is that the internal data structures interact in non-trivial ways and it'd be hard to keep them consistent.
 
 (* There is one exception where it is possible to reinitialize the color system after the graph has been constructed, but I regret it already so let's pretend that's not an option.)

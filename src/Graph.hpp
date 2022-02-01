@@ -90,6 +90,7 @@ public:
     uint getNameIndex(const string& nodeName) const { return nodeNameToIndexMap.at(nodeName); } //reverse of getNodeName
     uint getNumNbrs(uint node) const { return adjLists[node].size(); }
     double getTotalEdgeWeight() const { return totalEdgeWeight; }
+    double getTotalWeight(uint node) const { return totalWeight[node]; }
     bool hasSelfLoop(uint node) const { return adjMatrix.get(node, node) != 0; }
     
     //large data structures are returned as const pointers
@@ -161,6 +162,7 @@ private:
     //each edge has a weight in the range of type EDGE_T, but their sum may be beyond that range
     //double can contain the sum of EDGE_T values for any EDGE_T.
     double totalEdgeWeight;
+    vector<double> totalWeight; // total weight (degree for boolean edges) of each node.
 
     //data structures for the color system
     vector<uint> nodeColors; //node index to color index

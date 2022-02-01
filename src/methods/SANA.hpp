@@ -76,7 +76,7 @@ private:
     double g1Edges, g2Edges; //stored as double because they appear in division
     uint pairsCount; // number of combinations of (g1_node_x, g1_node_y) including
                      // a pair that includes the same node (g1_node_x, g1_node_x)
-    double g1WeightedEdges, g2WeightedEdges;
+    double g1TotalWeight, g2TotalWeight;
 
     //random number generation
     mt19937 gen;
@@ -138,33 +138,39 @@ private:
     //to evaluate EC incrementally
     bool needAligEdges;
     int aligEdges;
-    int aligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
-    int aligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
+    int aligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole);
+    int aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
 
     // to evaluate ED (edge difference score) incrementally
     bool needEd, needEr;
     double edSum, erSum;
-    double edgeDifferenceIncChangeOp(uint source, uint oldTarget, uint newTarget);
-    double edgeDifferenceIncSwapOp(uint source1, uint source2, uint target1, uint target2);
-    double edgeRatioIncChangeOp(uint source, uint oldTarget, uint newTarget);
-    double edgeRatioIncSwapOp(uint source1, uint source2, uint target1, uint target2);
+    double edgeDifferenceIncChangeOp(uint peg, uint oldHole, uint newHole);
+    double edgeDifferenceIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
+    double edgeRatioIncChangeOp(uint peg, uint oldHole, uint newHole);
+    double edgeRatioIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
 
     // to evaluate SES incrementally
     bool needSquaredAligEdges;
     int squaredAligEdges;
-    int squaredAligEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
-    int squaredAligEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
+    int squaredAligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole);
+    int squaredAligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
 
-	// to evaluate EE incrementally
+    // to evaluate EE incrementally
     bool needExposedEdges;
-    int exposedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
-    int exposedEdgesIncSwapOp(uint source1, uint source2, uint target1, uint target2);
+    int exposedEdgesIncChangeOp(uint peg, uint oldHole, uint newHole);
+    int exposedEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
     
     // to evaluate MS3 incrementally
     bool needMS3;
-    int MS3Numer;
-    int MS3IncChangeOp(uint source, uint oldTarget, uint newTarget);
-    int MS3IncSwapOp(uint source1, uint source2, uint target1, uint target2);
+    vector<uint> totalInducedWeight; // total weight of shadow node induced only on the aligned edges of G1.
+    int MS3Numer,
+	ER_k, // |ER_k| where ER_k = non-lonely edges in G_k, ie., there's at least one rung in its tower other than itself
+	EL_k, // |EL_k| where EL_k = complement of ER_k wrt E_k, ie., lonely edges in G
+	RA_k, // |RA_k| where RA_k = rungs under edges, ie rungs under edges in ER_k.
+	RU_k, // |RU_k| where RU_k = rungs under non-edges in G
+	RO_k; // |RO_k| where RO_k = rungs outside, ie rungs with at least one endpoint not under a peg.
+    int MS3IncChangeOp(uint peg, uint oldHole, uint newHole);
+    int MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
 
     //to evaluate SEC incrementally
     bool needSec;
@@ -175,36 +181,36 @@ private:
     int inducedEdges = -1; // This variable must be initialized as non-zero since it's passed
                            // to scoreComparison in performSwap as "newInducedEdges" which could
                            // make computation go wrong.
-    int inducedEdgesIncChangeOp(uint source, uint oldTarget, uint newTarget);
+    int inducedEdgesIncChangeOp(uint peg, uint oldHole, uint newHole);
 
     //to evaluate nc incrementally
     bool needNC;
     int ncSum;
     vector<uint> trueAWithValidCountAppended;
-    int ncIncChangeOp(uint source, uint oldTarget, uint newTarget);
-    int ncIncSwapOp(uint source1, uint source2, uint target1, uint target2);
+    int ncIncChangeOp(uint peg, uint oldHole, uint newHole);
+    int ncIncSwapOp(uint peg1, uint Peg2, uint node1, uint node2);
 
     //to evaluate wec incrementally
     bool needWec;
     double wecSum;
     vector<vector<float>> wecSims;
-    double WECIncChangeOp(uint source, uint oldTarget, uint newTarget);
-    double WECIncSwapOp(uint source1, uint source2, uint target1, uint target2);
+    double WECIncChangeOp(uint peg, uint oldHole, uint newHole);
+    double WECIncSwapOp(uint peg1, uint Peg2, uint node1, uint node2);
 
     //to evaluate js incrementally
     bool needJs;
     double jsSum;
     vector<uint> alignedByNode;
-    double JSIncChangeOp(uint source, uint oldTarget, uint newTarget);
-    double JSIncSwapOp(uint source1, uint source2, uint target1, uint target2);
+    double JSIncChangeOp(uint peg, uint oldHole, uint newHole);
+    double JSIncSwapOp(uint peg1, uint Peg2, uint node1, uint node2);
 
     //to evaluate ewec incrementally
     bool needEwec;
     ExternalWeightedEdgeConservation* ewec;
     double ewecSum;
-    double EWECIncChangeOp(uint source, uint oldTarget, uint newTarget);
-    double EWECIncSwapOp(uint source1, uint source2, uint target1, uint target2);
-    double EWECSimCombo(uint source, uint target);
+    double EWECIncChangeOp(uint peg, uint oldHole, uint newHole);
+    double EWECIncSwapOp(uint peg1, uint Peg2, uint node1, uint node2);
+    double EWECSimCombo(uint peg, uint node);
 
     //to evaluate local measures incrementally
     bool needLocal;
@@ -219,8 +225,8 @@ private:
 #endif
 
     map<string, vector<vector<float>>> localSimMatrixMap;
-    double localScoreSumIncChangeOp(const vector<vector<float>>& sim, uint source, uint oldTarget, uint newTarget);
-    double localScoreSumIncSwapOp(const vector<vector<float>>& sim, uint source1, uint source2, uint target1, uint target2);
+    double localScoreSumIncChangeOp(const vector<vector<float>>& sim, uint peg, uint oldHole, uint newHole);
+    double localScoreSumIncSwapOp(const vector<vector<float>>& sim, uint peg1, uint Peg2, uint node1, uint node2);
 
     //other execution options
     bool constantTemp; //tempertare does not decrease as a function of iteration
@@ -280,7 +286,7 @@ private:
     //2. an operation between change and swap is chosen randomly weighted by their number of neighbors
     vector<double> actColToChangeProb;
 
-    //3. the source node (or pair of source nodes, for a swap) are chosen randomly from G1 among the
+    //3. the peg node (or pair of Peg nodes, for a swap) are chosen randomly from G1 among the
     //nodes of the chosen color
     uint randomG1NodeWithActiveColor(uint actColId) const;
     vector<uint> actColToG1ColId; //to implement step 3.
@@ -292,7 +298,6 @@ private:
     vector<uint> g2NodeToActColId;
     static uint INVALID_ACTIVE_COLOR_ID; //arbitrary value bigger than any valid active color id
  
-
 
     friend class Ameur; //it needs to read the PBad buffer
     friend class StatisticalTest;

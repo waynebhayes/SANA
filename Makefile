@@ -5,16 +5,31 @@ MAIN = sana
 
 #you can give these on Make's command line, eg "SPARSE=1" or "FLOAT=1" or "MULTI=1"
 #all can be mixed and matched except FLOAT and MULTI
+#These should be listed roughly in order of how fast they run (fastest first, with the empty extension "sana" assumed fastest)
 
-ifeq ($(SPARSE), 1)
-    CXXFLAGS := $(CXXFLAGS) -DSPARSE
-    MAIN := $(MAIN).sparse
+ifeq ($(STATIC), 1)
+    CXXFLAGS := $(CXXFLAGS) -static #-Bstatic for some versions of gcc
+    MAIN := $(MAIN).static
 endif
 
 ifeq ($(CORES), 1)
     CXXFLAGS := $(CXXFLAGS) -DCORES
     MAIN := $(MAIN).cores
 endif
+
+ifeq ($(SPARSE), 1)
+    CXXFLAGS := $(CXXFLAGS) -DSPARSE
+    MAIN := $(MAIN).sparse
+endif
+
+ifeq ($(GDB), 1)
+    CXXFLAGS := $(CXXFLAGS) -ggdb
+    MAIN := $(MAIN).gdb
+else
+    CXXFLAGS := $(CXXFLAGS) -O3 # always turn on optimization if not debugging
+endif
+
+## Below here are not "normal" pairwise SANA executables
 
 ifeq ($(MULTI), 1)
     CXXFLAGS := $(CXXFLAGS) -DMULTI_PAIRWISE
@@ -24,18 +39,6 @@ endif
 ifeq ($(FLOAT), 1)
     CXXFLAGS := $(CXXFLAGS) -DFLOAT_WEIGHTS
     MAIN := $(MAIN).float
-endif
-
-ifeq ($(STATIC), 1)
-    CXXFLAGS := $(CXXFLAGS) -Bstatic #-static for some versions of gcc
-    MAIN := $(MAIN).static
-endif
-
-ifeq ($(GDB), 1)
-    CXXFLAGS := $(CXXFLAGS) -ggdb
-    MAIN := $(MAIN).gdb
-else
-    CXXFLAGS := $(CXXFLAGS) -O3
 endif
 
 ######## THIS ONE MUST BE LAST to ensure "MAIN=error" when an incompatible combination occurs ##################
@@ -242,7 +245,7 @@ optnetalign:
 NetGO: /dev/null # always make
 	git submodule init
 	git submodule update
-	(cd NetGO && git checkout master && git pull)
+	(cd NetGO && git checkout master && (git pull || exit 0)) # don't let network connectivity cause failure
 
 parallel: src/parallel.c
 	gcc -o parallel src/parallel.c
