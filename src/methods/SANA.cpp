@@ -277,7 +277,7 @@ void SANA::initDataStructures() {
     if (needMS3) {
         MultiS3::numer = ((MultiS3*) MC->getMeasure("ms3"))->computeNumer(alig);
         MultiS3::denom = ((MultiS3*) MC->getMeasure("ms3"))->computeDenom(alig);
-        ((MultiS3*) MC->getMeasure("ms3"))->prefillInducedNeighborRungs(alig.asVector());
+        //((MultiS3*) MC->getMeasure("ms3"))->prefillInducedNeighborRungs(alig.asVector());
 	EL_k = MultiS3::EL_k;
 	ER_k = MultiS3::ER_k;
 	RU_k = MultiS3::RU_k;
@@ -1339,17 +1339,12 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
 	}
 	break;
     }
-<<<<<<< HEAD
 #endif // MULTI_PAIRWISE
-=======
-    //cerr << "total change to num = " << res << endl;
->>>>>>> (2021-Nov-01): Yet another variation on MS3, this one seems easier to explain: aligning G_i to the (pruned) shadow network, the score MS^3_i for G_i is
     return res;
 }
 
 // Return change in NUMERATOR only
 int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
-      int res = 0;
 #if MULTI_PAIRWISE
       uint pegNeigh, holeNeigh, diff;
       int res = 0;
@@ -1509,7 +1504,6 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
           case MultiS3::ms3_var_num:
           {
               assert(res == 0);
-              int res2 = 0;
               for (uint nbr : G1->adjLists[peg1]){
                   if (nbr == peg2) {continue;} // if edge between peg1 and peg2 ignore so we don't double count
                   int old_shadow_weight = G2->getEdgeWeight(A[peg1],A[nbr]);
@@ -1722,10 +1716,7 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
         }
         break;
     }
-<<<<<<< HEAD
 #endif // MULTI_PAIRWISE
-=======
->>>>>>> (2021-Nov-01): Yet another variation on MS3, this one seems easier to explain: aligning G_i to the (pruned) shadow network, the score MS^3_i for G_i is
     return res;
 }
 
