@@ -7,7 +7,6 @@ uint NUM_GRAPHS;
 double MultiS3::Normalization_factor = 2;
 uint MultiS3::denom=1, MultiS3::numer=1, MultiS3::EL_k=0, MultiS3::ER_k=0, MultiS3::RA_k=0, MultiS3::RU_k=0, MultiS3::RO_k=0;
 vector<uint> MultiS3::totalInducedWeight(MAX_N2,0);
-vector<uint> MultiS3::inducedNeighborRungs(MAX_N2,0);
 MultiS3::NumeratorType MultiS3::numerator_type;
 MultiS3::DenominatorType MultiS3::denominator_type;
 double MultiS3::_type = 0;
@@ -45,9 +44,6 @@ MultiS3::MultiS3(const Graph* G1, const Graph* G2, NumeratorType _numerator_type
         case ra_global:
             cout<<"ra_global"<<endl;
             break;
-        case ms3_var_num:
-            cout<<"ms3_var_num"<<endl;
-            break;
         default:
             cout<<"default"<<endl;
     }
@@ -70,9 +66,6 @@ MultiS3::MultiS3(const Graph* G1, const Graph* G2, NumeratorType _numerator_type
         case rt_global:
             cout<<"rt_global"<<endl;
             break;
-        case ms3_var_dem:
-            cout<<"ms3_var_dem"<<endl;
-            break;
         default:
             cout<<"default"<<endl;
     }
@@ -83,23 +76,6 @@ MultiS3::MultiS3(const Graph* G1, const Graph* G2, NumeratorType _numerator_type
 }
 
 MultiS3::~MultiS3() {}
-
-void MultiS3::prefillInducedNeighborRungs(const Alignment& A) {
-    const uint n1 = G1->getNumNodes();
-    const uint n2 = G2->getNumNodes();
-    vector<uint> whichPeg(n2, n1); // element equal to n1 represents not used/aligned
-    for (uint i = 0; i < n1; ++i){
-        whichPeg[A[i]] = i; // inverse of the alignment
-    }
-    for (uint i = 0; i < n2; ++i){
-        inducedNeighborRungs[i] = 0;
-        for (uint nbr : *(G2->getAdjList(i))) {
-            if (whichPeg[nbr] != n1) {
-                inducedNeighborRungs[i] += G2->getEdgeWeight(i, nbr);
-            }
-        }
-    }
-}
 
 void MultiS3::setDenom(const Alignment& A) {
     denom = 0;
@@ -246,17 +222,6 @@ uint MultiS3::computeNumer(const Alignment& A) const {
             }
         }
             break;
-        case ms3_var_num:
-        {
-            for (const auto& edge: *(G1->getEdgeList())) // for every edge in G1
-            {
-                peg1 = edge[0], peg2 = edge[1];
-                uint shadowWeight = G2->getEdgeWeight(A[peg1],A[peg2]);
-                if (shadowWeight > 0) { // if non-lonely
-                    ret += shadowWeight + 1; }  // +1 is the edge in e_i that was pruned out of G2
-            }
-        }
-            break;
         default:
         {
             for (const auto& edge: *(G1->getEdgeList()))
@@ -268,6 +233,7 @@ uint MultiS3::computeNumer(const Alignment& A) const {
         }
             break;
     }
+    
     return ret;
 #else
     return 0;
@@ -397,19 +363,7 @@ uint MultiS3::computeDenom(const Alignment& A) const {
             }
         }
             break;
-        case ms3_var_dem:
-        {
-            assert(ret == 0);
-            ret = G1->getEdgeList()->size(); // add number of edges in e_i
-            uint n1 = G1->getNumNodes();
-            for (uint i = 0; i < n1; ++i){
-               for (uint j = i+1; j < n1; ++j){
-                   ret += G2->getEdgeWeight(A[i], A[j]);
-               }
-            }
-        }
-            break;
-            default:
+        default:
         {
 #if 0	    //const uint n1 = G1->getNumNodes();
 	    if (not degreesInit) initDegrees(A, *G1, *G2);
@@ -444,15 +398,11 @@ double MultiS3::eval(const Alignment& A) {
 
 //    if (_type==1) denom = EdgeExposure::numExposedEdges(A, *G1, *G2);
 //    else if (_type==0) setDenom(A);
-    int correctDenom = computeDenom(A);
-    int correctNumer = computeNumer(A);
-    if(correctNumer != ((int)numer)) {
-        cerr<<"inc eval MS3 numer wrong: should be "<<correctNumer<<" but is "<<numer << ". Difference " << correctNumer - ((int)numer) << endl;
+    denom = computeDenom(A);
+    uint correctNumer = computeNumer(A);
+    if(correctNumer != numer) {
+        cerr<<"inc eval MS3numer wrong: should be "<<correctNumer<<" but is "<<numer<<endl;
         numer = correctNumer;
-    }
-    if(correctDenom != ((int)denom)) {
-        cerr<<"inc eval MS3 denom wrong: should be "<<correctDenom<<" but is "<<denom<< ". Difference " << correctDenom - ((int)denom) << endl;
-        denom = correctDenom;
     }
     return ((double) numer) / denom / Normalization_factor;//NUM_GRAPHS;
 #else

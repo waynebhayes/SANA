@@ -182,9 +182,7 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
     else if (args.strings["-ms3_numer"] == "la_global"){
         _numerator_type = MultiS3::la_global;}
     else if (args.strings["-ms3_numer"] == "ra_global"){
-        _numerator_type = MultiS3::ra_global; }
-    else if (args.strings["-ms3_numer"] == "ms3_var_num"){
-        _numerator_type = MultiS3::ms3_var_num; }
+        _numerator_type = MultiS3::ra_global;}
     else {_numerator_type = MultiS3::numer_default;}
 
     if (args.strings["-ms3_denom"] == "default"){
@@ -199,8 +197,6 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
         _denominator_type = MultiS3::ee_global;}
     else if (args.strings["-ms3_denom"] == "rt_global"){
         _denominator_type = MultiS3::rt_global;}
-    else if (args.strings["-ms3_denom"] == "ms3_var_dem"){
-        _denominator_type = MultiS3::ms3_var_dem; }
     else {_denominator_type = MultiS3::denom_default;}
 
     m = new MultiS3(&G1, &G2, _numerator_type, _denominator_type);
