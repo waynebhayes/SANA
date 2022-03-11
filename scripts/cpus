@@ -11,16 +11,16 @@ while [ $# -gt 0 ]; do
     case "$1" in
     -[Vv]*) VERBOSE=true; shift;;
     available) uptime > $TMPDIR/uptime
-	load=`cat $TMPDIR/uptime | sed 's/.*load averages*://' | newlines |
-	    hawk '{load=MAX(load,$1)}END{printf "%g\n", load}'`
-	$VERBOSE && (cat $TMPDIR/uptime; echo Max Load is $load) >&2
+	load=`cat $TMPDIR/uptime | sed 's/.*load averages*://' -e 's/,//g' | newlines |
+	    awk 'BEGIN{load=999999}{if(1*$1<load)load=1*$1}END{printf "%d\n", load}'`
+	$VERBOSE && (cat $TMPDIR/uptime; echo load is $load) >&2
 	shift
 	;;
     *) die "unknown option '$1'" ;;
     esac
 done
 
-output(){ [ -f $TMPDIR/cpus ] && hawk '{cpus=$1; printf "%d\n", MAX(cpus-'"$load"',0)}' $TMPDIR/cpus && exit 0; }
+output(){ [ -f $TMPDIR/cpus ] && awk '{cpus=$1; av=(cpus-'"$load"'); printf "%d\n", (av<0)?0:av}' $TMPDIR/cpus && exit 0; }
 
 # Most Linux machines:
 lscpu >$TMPDIR/lscpu 2>/dev/null &&
