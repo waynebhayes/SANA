@@ -1,19 +1,32 @@
 #!/bin/sh
-TMP=/tmp/cpus.$$
-trap "/bin/rm -f $TMP; exit" 0 1 2 3 15
+TMPDIR=/tmp/cpus.$$
+trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
+mkdir $TMPDIR
+
+load=0
+case $1 in
+available) uptime | tee $TMPDIR/uptime
+    load=`cat $TMPDIR/uptime | sed 's/.*load averages*://' | 
+	hawk '{load=MAX(load,$1)}END{printf "%d\n", load}'`
+    echo load is $load
+	;;
+esac
+
+output(){ [ -f $TMPDIR/cpus ] && parse "`cat $TMPDIR/cpus`-$load" 2>/dev/null && exit 0; }
 
 # Most Linux machines:
-lscpu >$TMP 2>/dev/null && awk '/^CPU[(s)]*:/{cpus=$NF}END{if(cpus)print cpus; else exit 1}' $TMP && exit
+lscpu >$TMPDIR/lscpu 2>/dev/null &&
+    awk '/^CPU[(s)]*:/{cpus=$NF}END{if(cpus)print cpus; else exit 1}' $TMPDIR/lscpu > $TMPDIR/cpus && output
 
 # MacOS:
-([ `arch` = Darwin -o `uname` = Darwin ] || uname -a | grep Darwin >/dev/null) && sysctl -n hw.ncpu && exit
+([ `arch` = Darwin -o `uname` = Darwin ] || uname -a | grep Darwin >/dev/null) &&
+    sysctl -n hw.ncpu > $TMPDIR/cpus && output
 
 # Cygwin:
 case `arch` in
 CYGWIN*) grep -c '^processor[ 	]*:' /proc/cpuinfo; exit ;;
 *) if [ -d /dev/cpu -a ! -f /dev/cpu/microcode ]; then
-    ls -F /dev/cpu | fgrep -c
-    exit
+    ls -F /dev/cpu | fgrep -c > $TMPDIR/cpus && output
    fi
     ;;
 esac
