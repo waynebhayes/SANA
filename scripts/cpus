@@ -5,10 +5,9 @@ mkdir $TMPDIR
 
 load=0
 case $1 in
-available) uptime | tee $TMPDIR/uptime
+available) uptime > $TMPDIR/uptime
     load=`cat $TMPDIR/uptime | sed 's/.*load averages*://' | 
 	hawk '{load=MAX(load,$1)}END{printf "%d\n", load}'`
-    echo load is $load
 	;;
 esac
 
