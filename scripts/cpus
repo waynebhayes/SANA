@@ -3,15 +3,24 @@ TMPDIR=/tmp/cpus.$$
 trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
 mkdir $TMPDIR
 
-load=0
-case $1 in
-available) uptime > $TMPDIR/uptime
-    load=`cat $TMPDIR/uptime | sed 's/.*load averages*://' | 
-	hawk '{load=MAX(load,$1)}END{printf "%d\n", load}'`
-	;;
-esac
+die(){ echo "$USAGE${NL}FATAL ERROR in $BASENAME:" "$@" >&2; exit 1; }
 
-output(){ [ -f $TMPDIR/cpus ] && parse "`cat $TMPDIR/cpus`-$load" 2>/dev/null && exit 0; }
+load=0
+VERBOSE=false
+while [ $# -gt 0 ]; do
+    case "$1" in
+    -[Vv]*) VERBOSE=true; shift;;
+    available) uptime > $TMPDIR/uptime
+	load=`cat $TMPDIR/uptime | sed 's/.*load averages*://' | newlines |
+	    hawk '{load=MAX(load,$1)}END{printf "%g\n", load}'`
+	$VERBOSE && (cat $TMPDIR/uptime; echo Max Load is $load) >&2
+	shift
+	;;
+    *) die "unknown option '$1'" ;;
+    esac
+done
+
+output(){ [ -f $TMPDIR/cpus ] && hawk '{cpus=$1; printf "%d\n", MAX(cpus-'"$load"',0)}' $TMPDIR/cpus && exit 0; }
 
 # Most Linux machines:
 lscpu >$TMPDIR/lscpu 2>/dev/null &&
