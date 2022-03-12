@@ -1,26 +1,29 @@
 #!/bin/sh
 TMPDIR=/tmp/cpus.$$
+MY_CPUS_USED=/tmp/last-cpus-avail-of-$USER
 trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
 mkdir $TMPDIR
 
 die(){ echo "$USAGE${NL}FATAL ERROR in $BASENAME:" "$@" >&2; exit 1; }
 
 load=0
+myload=0
+[ -f $MY_CPUS_USED ] && myload=`cat $MY_CPUS_USED`
 VERBOSE=false
 while [ $# -gt 0 ]; do
     case "$1" in
     -[Vv]*) VERBOSE=true; shift;;
-    available) uptime > $TMPDIR/uptime
+    avail*) uptime > $TMPDIR/uptime
 	load=`cat $TMPDIR/uptime | sed 's/.*load averages*://' -e 's/,//g' | newlines |
 	    awk 'BEGIN{load=999999}{if(1*$1<load)load=1*$1}END{printf "%d\n", load}'`
-	$VERBOSE && (cat $TMPDIR/uptime; echo load is $load) >&2
+	$VERBOSE && (cat $TMPDIR/uptime; echo $load is uptime load, and my avail was most recently $myload) >&2
 	shift
 	;;
     *) die "unknown option '$1'" ;;
     esac
 done
 
-output(){ [ -f $TMPDIR/cpus ] && awk '{cpus=$1; av=(cpus-'"$load"'); printf "%d\n", (av<0)?0:av}' $TMPDIR/cpus && exit 0; }
+output(){ [ -f $TMPDIR/cpus ] && awk '{cpus=$1; av=(cpus-int('"$load"')+0*int('"$myload"')); printf "%d\n", (av<0)?0:av}' $TMPDIR/cpus | tee $MY_CPUS_USED && exit 0; }
 
 # Most Linux machines:
 lscpu >$TMPDIR/lscpu 2>/dev/null &&
