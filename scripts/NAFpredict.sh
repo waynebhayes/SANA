@@ -22,6 +22,8 @@ die(){ echo "$USAGE">&2; echo "$@" >&2; exit 1
 notNOT() { grep -v '	NOT	' "$@"
 }
 
+EXEDIR=`dirname $0`
+
 TMPDIR=/tmp/GOpredict.$$
  trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 15
  trap "trap '' 0 1 2 15; echo TMPDIR is $TMPDIR >&2; exit 1" 3
@@ -66,7 +68,7 @@ for g in allGO NOSEQ; do
 done
 
 echo $EVC_SEQ | newlines | awk '{printf "\t%s\t\n",$0}' > $TMPDIR/EVC_SEQ # sequence evidence codes
-cat "$seqSim" > $TMPDIR/seqSim # in case it's a named pipe, we need to store it
+cat "$seqSim" > $TMPDIR/seqSim # in case it's a pipe, we need to store it
 
 # Annotations that are already known for the target species at time t1:
 grep "^$tax2	" $GO1.allGO | cut -f1-3 | sort -u >$TMPDIR/GO1.tax2.allGO.1-3
@@ -81,7 +83,7 @@ PGO2="$GO2" # Argument representing GO2 for Predictable.sh script
 if $ALLOW_ALL; then
     PGO2=NONE # Predictable.sh will not restrict based on validatable annotations
 fi
-./Predictable.sh -GO1freq $GO1freq -gene2go $GENE2GO $tax1 $tax2 $GO1 $PGO2 $G2 | # Predictable-in-principle, with SOURCE evidence codes
+$EXEDIR/Predictable.sh -GO1freq $GO1freq -gene2go $GENE2GO $tax1 $tax2 $GO1 $PGO2 $G2 | # Predictable-in-principle, with SOURCE evidence codes
     tee $TMPDIR/Predictable.Vable | # validatable=(predictable-in-principle annotations) \INTERSECT (actual annotations in GO2)
     fgrep -v -f $TMPDIR/GO1.tax2.allGO.1-3 | # remove predictions already known in target species at earlier date
     fgrep -v -f $TMPDIR/GO2.tax2.SEQ.1-3 | # remove sequence-based annotations discovered by later date
