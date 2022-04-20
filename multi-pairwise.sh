@@ -162,6 +162,7 @@ shift 6
 # Ensure it's >= 0
 [ $THREADS -ge 0 ] || die "threads '$THREADS' must be a non-negative integer"
 
+PARALLEL_EXE=${PARALLEL_EXE:="$EXEDIR/parallel"}
 if head -1 "$PARALLEL_EXE" | grep -a 'exec bash' >/dev/null; then
     warn "parallel executable is bash; setting theads to 1"
     THREADS=1
