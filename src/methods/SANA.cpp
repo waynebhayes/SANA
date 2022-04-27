@@ -37,8 +37,10 @@
 #include "../measures/EdgeExposure.hpp"
 #include "../measures/MultiS3.hpp"
 #include "../utils/utils.hpp"
+#if LIBWAYNE
 #include "../utils/Misc.hpp"
 #include "../utils/Stats.hpp"
+#endif
 #include "../Report.hpp"
 
 using namespace std;
@@ -338,7 +340,9 @@ Alignment SANA::run() {
     double leeway = 2;
     double maxSecondsWithLeeway = maxSeconds * leeway;
 
+#if LIBWAYNE
     STAT *s = StatAlloc(0, 0, 0, false, false);
+#endif
     long long int iter;
     for (iter = 0; iter <= maxIters; iter++) {
         Temperature = temperatureFunction(float(iter)/maxIters, TInitial, TDecay);
