@@ -75,6 +75,8 @@ UTILS_SRC = 								\
 	src/utils/computeGraphlets.cpp                            	\
 	src/utils/ComputeGraphletsWrapper.cpp				\
 	src/utils/Matrix.cpp						\
+	src/utils/Misc.cpp						\
+	src/utils/Stats.cpp						\
 	src/utils/SANAversion.cpp
 
 ARGUMENTS_SRC = 							\

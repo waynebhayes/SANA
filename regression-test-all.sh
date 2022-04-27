@@ -65,7 +65,7 @@ if make parallel; then
     mv parallel $PARALLEL_EXE
 else
     warn "can't make parallel; using single-threaded shell instead"
-    echo 'if [ $1 = -s ]; then shift 2; fi; shift; exec bash' > $PARALLEL_EXE; chmod +x $PARALLEL_EXE
+    echo 'if [ "$1" = -s ]; then shift 2; fi; shift; exec bash' > $PARALLEL_EXE; chmod +x $PARALLEL_EXE
 fi
 
 WORKING_EXECS='' #TAB separated full names of executables

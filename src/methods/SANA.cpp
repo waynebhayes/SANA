@@ -37,6 +37,8 @@
 #include "../measures/EdgeExposure.hpp"
 #include "../measures/MultiS3.hpp"
 #include "../utils/utils.hpp"
+#include "../utils/Misc.hpp"
+#include "../utils/Stats.hpp"
 #include "../Report.hpp"
 
 using namespace std;
@@ -336,9 +338,10 @@ Alignment SANA::run() {
     double leeway = 2;
     double maxSecondsWithLeeway = maxSeconds * leeway;
 
+    STAT *s = StatAlloc(0, 0, 0, false, false);
     long long int iter;
     for (iter = 0; iter <= maxIters; iter++) {
-        Temperature = temperatureFunction(iter, TInitial, TDecay);
+        Temperature = temperatureFunction(float(iter)/maxIters, TInitial, TDecay);
         SANAIteration();
         if (saveAligAndExitOnInterruption) break;
         if (saveAligAndContOnInterruption) printReportOnInterruption();
@@ -396,11 +399,13 @@ string SANA::fileNameSuffix(const Alignment& Al) const {
     return "_" + extractDecimals(eval(Al),3);
 }
 
-double SANA::temperatureFunction(long long int iter, double TInitial, double TDecay) {
+double SANA::temperatureFunction(double fraction, double TInitial, double TDecay) {
     if (constantTemp) return TInitial;
+#if 0
     double fraction;
     if (useIterations) fraction = iter / (double) maxIterations;
     else fraction = iter / (maxSeconds * getIterPerSecond());
+#endif
     return TInitial * exp(-TDecay * fraction);
 }
 

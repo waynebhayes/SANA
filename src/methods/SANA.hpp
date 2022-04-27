@@ -100,7 +100,7 @@ private:
     double dynamicTDecayTime;
 
     double Temperature; //shouldn't be capitalized
-    double temperatureFunction(long long int iter, double TInitial, double TDecay);
+    double temperatureFunction(double fractionalTime, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double Temperature);
 
 
