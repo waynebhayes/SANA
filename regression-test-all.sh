@@ -49,7 +49,7 @@ done
 
 REAL_CORES=`cpus 2>/dev/null | awk '{print 1*$1}'`
 [ "$REAL_CORES" -gt 0 ] || die "can't figure out how many cores this machine has"
-CORES=$REAL_CORES
+CORES=`expr $REAL_CORES - 1`
 MAKE_CORES=`expr $REAL_CORES - 1`
 [ `hostname` = Jenkins ] && MAKE_CORES=2 # only use 2 cores to make on Jenkins
 echo "Using $MAKE_CORES cores to make and $CORES cores for regression tests"
