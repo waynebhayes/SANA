@@ -16,6 +16,10 @@
 #include <unistd.h>
 #include <regex>
 
+#ifdef MULTI_MPI
+#include "Alignment.hpp" // I think?
+#endif
+
 using namespace std;
 
 //static attributes
@@ -129,6 +133,16 @@ void Graph::initColorDataStructs(const vector<array<string, 2>>& partialNodeColo
         nodeGroupsByColor[nodeColors[i]].push_back(i);
     }    
 }
+
+#ifdef MULTI_MPI
+EDGE_T getEdgeWeight(uint node1, uint node2) const { // { return adjMatrix.get(node1, node2); }
+    int hasEdge = 0; // will be 1 if we discover G1 has an aligned edge above (node1,node2)
+    if (*this is G2, then we're going to need the Alignment of G1 to G2, so we can query
+    if there's an edge in G1 aligned over the node1 and node2 given as parameters)
+	hasEdge = 1;
+    return adjMatrix.get(node1, node2) - hasEdge;
+}
+#endif
 
 Graph Graph::nodeInducedSubgraph(const vector<uint>& nodes) const {
     uint oldN = getNumNodes();

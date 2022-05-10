@@ -133,7 +133,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     needEwec             = ewecWeight>0;
     needSec              = secWeight > 0;
     needLocal            = localWeight > 0;
-#ifndef MULTI_PAIRWISE
+#if !defined(MULTI_PAIRWISE) && !defined(MULTI_MPI)
     needSquaredAligEdges = false;
     needExposedEdges     = false;
     needMS3              = false;
@@ -332,7 +332,7 @@ Alignment SANA::run() {
     initDataStructures();
     setInterruptSignal();
 
-#ifndef MULTI_PAIRWISE
+#ifndef MULTI_PAIRWISE // note we DO want to know the speed when doing MPI
     getIterPerSecond(); // this takes several seconds of CPU time; don't do it during multi-only-iterations.
 #endif
     long long int maxIters = useIterations ? maxIterations
@@ -705,7 +705,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore += jsWeight * (newJsSum);
         newCurrentScore += ewecWeight * (newEwecSum);
         newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
-#ifdef MULTI_PAIRWISE
+#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
         newCurrentScore += mecWeight * (newAligEdges / (g1TotalWeight + g2TotalWeight));
         newCurrentScore += sesWeight * newSquaredAligEdges / (double)SquaredEdgeScore::getDenom();
         newCurrentScore += eeWeight * (1 - (newExposedEdgesNumer / (double)EdgeExposure::denom));
@@ -888,7 +888,7 @@ int SANA::aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     }
 
     //address the case where we are swapping between adjacent nodes with adjacent images:
-#ifdef MULTI_PAIRWISE
+#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
     //why set the least-significant bit to 0?
     //this kind of bit manipulation needs a comment clarification -Nil
     res += (-1 << 1) & (G1->getEdgeWeight(peg1, peg2) +
@@ -1111,7 +1111,7 @@ int SANA::exposedEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
 // Return the change in NUMERATOR of MS3
 int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
     int res = 0;
-#if MULTI_PAIRWISE // We still need the prototpye but gut the function if it's not actually needed
+#if MULTI_PAIRWISE || MULTI_MPI // We still need the prototpye but gut the function if it's not actually needed
     uint pegNeigh, holeNeigh, diff;
     switch (MultiS3::numerator_type){
         case MultiS3::ra_k:
@@ -1308,7 +1308,7 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
 // Return change in NUMERATOR only
 int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
       int res = 0;
-#if MULTI_PAIRWISE
+#if MULTI_PAIRWISE || MULTI_MPI
       uint pegNeigh, holeNeigh, diff;
       switch (MultiS3::numerator_type){
           case MultiS3::ra_k:

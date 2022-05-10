@@ -9,7 +9,7 @@ MAIN = sana
 
 ifeq ($(MPI), 1)
     CC = mpicxx
-    CXXFLAGS := $(CXXFLAGS) #-Bstatic for some versions of gcc
+    CXXFLAGS := $(CXXFLAGS) -DMULTI_MPI #-Bstatic for some versions of gcc
     MAIN := $(MAIN).mpi
 else
     CC = $(MY_CC)

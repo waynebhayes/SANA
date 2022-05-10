@@ -174,7 +174,7 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     }
 
 #ifdef MULTI_PAIRWISE
-    //prune G1 from G2
+    //prune G1 from G2 (G2 is the shadow network)
     string nodeMapFile = args.strings["-startalignment"];
     if (nodeMapFile == "") throw runtime_error("argument -startalignment not provided");
     cout << "Starting to prune using " << nodeMapFile << endl;
@@ -184,6 +184,10 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     Alignment A = Alignment::loadEdgeList(G1, G2, nodeMapFile);
     vector<uint> G1ToG2Map = A.asVector();
     G2 = pruneG1FromG2(G1, G2, G1ToG2Map);
+#elif MULTI_MPI
+    // DO NOT prune G1 from G2 because that's going to be done on-the-fly in the MPI version.
+    string nodeMapFile = args.strings["-startalignment"];
+    if (nodeMapFile != "") throw runtime_error("argument -startalignment should not be provided when using MULTI_MPI");
 #endif
 
     double rewiredFraction1 = args.doubles["-rewire1"];
@@ -601,7 +605,7 @@ array<vector<array<string, 2>>, 2> GraphLoader::nodeColorListsFromCommonNames(
 
 Graph GraphLoader::pruneG1FromG2(const Graph& G1, const Graph& G2, const vector<uint>& G1ToG2NodeMap) {
 #ifndef MULTI_PAIRWISE
-    throw runtime_error("prunning only implemented for multi pairwise");
+    throw runtime_error("pruning only implemented for multi pairwise");
 #else
     if (G1ToG2NodeMap.size() != G1.getNumNodes())
         throw runtime_error("G1ToG2NodeMap size ("+to_string(G1ToG2NodeMap.size())+
