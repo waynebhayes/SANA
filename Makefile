@@ -1,4 +1,4 @@
-CC = g++
+MY_CC = g++
 CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -pthread #-pg -fno-inline
 
 MAIN = sana
@@ -6,6 +6,14 @@ MAIN = sana
 #you can give these on Make's command line, eg "SPARSE=1" or "FLOAT=1" or "MULTI=1"
 #all can be mixed and matched except FLOAT and MULTI
 #These should be listed roughly in order of how fast they run (fastest first, with the empty extension "sana" assumed fastest)
+
+ifeq ($(MPI), 1)
+    CC = mpicxx
+    CXXFLAGS := $(CXXFLAGS) #-Bstatic for some versions of gcc
+    MAIN := $(MAIN).mpi
+else
+    CC = $(MY_CC)
+endif
 
 ifeq ($(STATIC), 1)
     CXXFLAGS := $(CXXFLAGS) -static #-Bstatic for some versions of gcc
