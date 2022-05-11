@@ -56,10 +56,10 @@ echo "Using $MAKE_CORES cores to make and $CORES cores for regression tests"
 
 NUM_FAILS=0
 export EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v "MAIN|[<>]"`
-[ `echo $EXECS | newlines | wc -l` -eq `echo $EXECS | newlines | sort -u | wc -l` ] || die "<$EXECS> contains duplicates"
+[ `echo $EXECS | newlines | wc -l` -eq `echo $EXECS | newlines | sort -u | wc -l` ] || die "Internal error: list of EXECS <$EXECS> contains duplicates"
 
 export PARALLEL_EXE=/tmp/parallel.$$
- trap "/bin/rm -f parallel $PARALLEL_EXE" 0 1 2 3 15
+ trap "/bin/rm -f parallel $PARALLEL_EXE; exit" 0 1 2 3 15
 rm -f parallel $PARALLEL_EXE
 if make parallel; then
     mv parallel $PARALLEL_EXE
@@ -71,26 +71,35 @@ fi
 WORKING_EXECS='' #TAB separated full names of executables
 for EXT in '' $EXECS; do
     if [ "$EXT" = "" ]; then ext='' # no dot
-    else ext=.`echo $EXT | tr A-Z a-z` # includes the dot
+    else
+	ext=.`echo $EXT | tr A-Z a-z` # includes the dot
+	if [ "$EXT" = MPI ] && not which mpicxx > /dev/null; then
+	    warn "skipping $EXT (sana$ext) because mpicxx could not be found"
+	    continue
+	fi
     fi
     if $MAKE ; then
+	echo "Attempting to make sana$ext"
 	[ "$EXT" = "" ] || EXT="$EXT=1"
-	make $EXT clean
-	if not make -k -j$MAKE_CORES $EXT; then # "-k" means "keep going even if some targets fail"
-	    warn "make '$EXT' failed"
+	make $EXT clean > sana$ext.make.log 2>&1
+	if not make -k -j$MAKE_CORES $EXT >> sana$ext.make.log 2>&1; then # "-k" means "keep going even if some targets fail"
+	    warn "make '$EXT' failed; see 'sana$ext.make.log' for details"
 	    if [ "$ext" == .static ]; then warn "ignoring failure of make '$EXT'";
 	    else (( NUM_FAILS+=1000 ));
 	    fi
+	    
 	fi
 	[ $NUM_FAILS -eq 0 ] || warn "cumulative number of compile failures is `expr $NUM_FAILS / 1000`"
     fi
-    if [ -x sana$ext ]; then
+    # skip multi and float since they will be tested separately below
+    if [ "$ext" = .multi -o "$ext" = .float ] || ./sana$ext -itm 1 -s3 1 -g1 yeast -g2 human -tinitial 1 -tdecay 1 >/dev/null 2>&1; then
 	WORKING_EXECS="${WORKING_EXECS}sana$ext$TAB"
     else
-	warn "sana$ext doesn't exist; did you forget to pass the '-make' option?"
+	warn "removing executable sana$ext because it either failed to make or failed a trivial test"
+	rm -f sana$ext
     fi
 done
-WORKING_EXECS=`echo "$WORKING_EXECS" | sed 's/	$//'` # delete training TAB
+WORKING_EXECS=`echo "$WORKING_EXECS" | sed 's/	$//'` # delete trailing TAB
 export EXE SANA_DIR CORES REAL_CORES MAKE_CORES EXECS WORKING_EXECS
 
 STDBUF=''
