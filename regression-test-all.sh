@@ -84,12 +84,12 @@ for EXT in '' $EXECS; do
 	make $EXT clean > sana$ext.make.log 2>&1
 	if not make -k -j$MAKE_CORES $EXT >> sana$ext.make.log 2>&1; then # "-k" means "keep going even if some targets fail"
 	    warn "make '$EXT' failed; see 'sana$ext.make.log' for details"
-	    if [ "$ext" == .static ]; then warn "ignoring failure of make '$EXT'";
-	    else (( NUM_FAILS+=1000 ));
+	    if echo "$ext" "$EXT" | egrep -i 'static|mpi' >/dev/null; then warn "ignoring failure of make '$EXT'";
+	    else (( ++NUM_FAILS ));
 	    fi
 	    
 	fi
-	[ $NUM_FAILS -eq 0 ] || warn "cumulative number of compile failures is `expr $NUM_FAILS / 1000`"
+	[ $NUM_FAILS -eq 0 ] || warn "cumulative number of compile failures is $NUM_FAILS"
     fi
     # skip multi and float since they will be tested separately below
     if [ "$ext" = .multi -o "$ext" = .float ] || ./sana$ext -itm 1 -s3 1 -g1 yeast -g2 human -tinitial 1 -tdecay 1 >/dev/null 2>&1; then
@@ -99,6 +99,7 @@ for EXT in '' $EXECS; do
 	rm -f sana$ext
     fi
 done
+(( NUM_FAILS *= 1000 ))
 WORKING_EXECS=`echo "$WORKING_EXECS" | sed 's/	$//'` # delete trailing TAB
 export EXE SANA_DIR CORES REAL_CORES MAKE_CORES EXECS WORKING_EXECS
 
