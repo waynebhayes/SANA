@@ -59,14 +59,19 @@ export EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -
 [ `echo $EXECS | newlines | wc -l` -eq `echo $EXECS | newlines | sort -u | wc -l` ] || die "Internal error: list of EXECS <$EXECS> contains duplicates"
 
 export PARALLEL_EXE=/tmp/parallel.$$
- trap "/bin/rm -f parallel $PARALLEL_EXE; exit" 0 1 2 3 15
-rm -f parallel $PARALLEL_EXE
-if make parallel; then
-    mv parallel $PARALLEL_EXE
+ trap "exit" 0 1 2 3 15
+if (echo echo hello | ./parallel 1 | grep '^hello$') >/dev/null 2>&1; then
+    :
 else
-    warn "can't make parallel; using single-threaded shell instead"
-    echo 'if [ "$1" = -s ]; then shift 2; fi; shift; exec bash' > $PARALLEL_EXE; chmod +x $PARALLEL_EXE
+    rm -f parallel $PARALLEL_EXE
+    if make parallel; then
+	:
+    else
+	warn "can't make parallel; using single-threaded shell instead"
+	echo 'if [ "$1" = -s ]; then shift 2; fi; shift; exec bash' > parallel
+    fi
 fi
+cp -p parallel $PARALLEL_EXE; chmod +x parallel $PARALLEL_EXE
 
 WORKING_EXECS='' #TAB separated full names of executables
 for EXT in '' $EXECS; do
@@ -79,10 +84,12 @@ for EXT in '' $EXECS; do
 	fi
     fi
     if $MAKE ; then
-	echo "Attempting to make sana$ext"
+	echo -n "Attempting to make sana$ext... "
 	[ "$EXT" = "" ] || EXT="$EXT=1"
 	make $EXT clean > sana$ext.make.log 2>&1
-	if not make -k -j$MAKE_CORES $EXT >> sana$ext.make.log 2>&1; then # "-k" means "keep going even if some targets fail"
+	if make -k -j$MAKE_CORES $EXT >> sana$ext.make.log 2>&1; then # "-k" means "keep going even if some targets fail"
+	    echo "SUCCESS!"
+	else
 	    warn "make '$EXT' failed; see 'sana$ext.make.log' for details"
 	    if echo "$ext" "$EXT" | egrep -i 'static|mpi' >/dev/null; then warn "ignoring failure of make '$EXT'";
 	    else (( ++NUM_FAILS ));
