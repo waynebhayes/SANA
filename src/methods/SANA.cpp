@@ -1357,7 +1357,6 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
       int res = 0;
 #if MULTI_PAIRWISE || MULTI_MPI
       uint pegNeigh, holeNeigh, diff;
-      int res = 0;
       switch (MultiS3::numerator_type){
           case MultiS3::ra_k:
           {
