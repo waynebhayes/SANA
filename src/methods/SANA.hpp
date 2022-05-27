@@ -171,7 +171,7 @@ private:
 	RO_k; // |RO_k| where RO_k = rungs outside, ie rungs with at least one endpoint not under a peg.
     int MS3IncChangeOp(uint peg, uint oldHole, uint newHole);
     int MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
-
+    int MS3VariantHelper(const uint peg, const uint hole, bool departs);
     //to evaluate SEC incrementally
     bool needSec;
     double secSum;
