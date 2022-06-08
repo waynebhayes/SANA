@@ -8,7 +8,7 @@ MultiEdgeCorrectness::~MultiEdgeCorrectness() {
 }
 
 double MultiEdgeCorrectness::eval(const Alignment& A) {
-#ifdef MULTI_PAIRWISE
+#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
     return (double) A.numAlignedEdges(*G1, *G2)/(G2->getTotalEdgeWeight() + G1->getTotalEdgeWeight());
 #else
     return 1;

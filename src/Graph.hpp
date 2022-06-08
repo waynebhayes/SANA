@@ -19,10 +19,10 @@
 using namespace std;
 
 //EDGE_T: macro specifying the type of the edge weights
-#ifdef MULTI_PAIRWISE
+#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
   #ifdef FLOAT_WEIGHTS
     #define EDGE_T float
-    #error currently, multi_pairwise is not designed for float edges
+    #error currently, MULTI_* is not designed for float edges
   #else
     #define EDGE_T unsigned char //change to unsigned short for >256 networks
   #endif

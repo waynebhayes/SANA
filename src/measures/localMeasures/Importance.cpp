@@ -70,7 +70,7 @@ void Importance::normalizeImportances(vector<double>& v) {
 }
 
 vector<double> Importance::getImportances(const Graph& G) {
-#ifdef MULTI_PAIRWISE
+#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
     throw runtime_error("Importance not implemented in multi pairwise mode");
 #endif
 #ifdef FLOAT_WEIGHTS
