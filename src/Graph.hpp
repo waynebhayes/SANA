@@ -16,6 +16,10 @@
 #include "computeGraphlets.hpp"
 #include "utils/Matrix.hpp"
 
+#ifdef MULTI_MPI
+class Alignment;
+#endif
+
 using namespace std;
 
 //EDGE_T: macro specifying the type of the edge weights
@@ -152,6 +156,12 @@ public:
     //after constructing or modifying a graph
     bool isWellDefined() const;
     void debugPrint() const; //print info about the internal state of graph
+
+#ifdef MULTI_MPI
+    bool hasWeights;
+    Graph *otherGraph;
+    Alignment *alignment;
+#endif
 
 private:
     string name, filePath;

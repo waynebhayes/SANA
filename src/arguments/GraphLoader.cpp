@@ -53,6 +53,12 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     auto futureG2 = async(&loadGraphFromFile, g2Name, g2File, g2HasWeights);
     Graph G1 = futureG1.get();
     Graph G2 = futureG2.get();
+#ifdef MULTI_MPI
+    G1.hasWeights = g1HasWeights;
+    G2.hasWeights = g2HasWeights;
+    G1.otherGraph = &G2;
+    G2.otherGraph = &G1;
+#endif
     cout << "Loading graph files took " << T.elapsedString() << endl <<endl;
 
     if (G1.getNumNodes() > G2.getNumNodes())
