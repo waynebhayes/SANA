@@ -90,6 +90,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
 
     initializedIterPerSecond = false;
     pBadBuffer = vector<double> (PBAD_CIRCULAR_BUFFER_SIZE, 0);
+    stationary = vector<uint> (n1, 0);
 
     //objective function
     ecWeight  = MC->getWeight("ec");
@@ -327,6 +328,7 @@ void SANA::initDataStructures() {
     timer.start();
 }
 
+bool _reallyRunning;
 
 Alignment SANA::run() {
     initDataStructures();
@@ -344,6 +346,7 @@ Alignment SANA::run() {
     STAT *s = StatAlloc(0, 0, 0, false, false);
 #endif
     long long int iter;
+    _reallyRunning=true;
     for (iter = 0; iter <= maxIters; iter++) {
         Temperature = temperatureFunction(float(iter)/maxIters, TInitial, TDecay);
         SANAIteration();
@@ -497,14 +500,41 @@ uint SANA::randActiveColorIdWeightedByNumNbrs() {
     return iter - actColToAccumProbCutpoint.begin();
 }
 
-uint SANA::randomG1NodeWithActiveColor(uint actColId) const {
+uint SANA::randomG1NodeWithActiveColor(uint actColId, bool dynamic) const {
     uint g1ColId = actColToG1ColId[actColId];
+#define DYN_NODE_PROB 1
+#if DYN_NODE_PROB
+    static bool _init;
+    static uint totalDegree, pickArrayNum, *pickNodeArray, *numPickEntries, prevIndex;
+    if(_reallyRunning && dynamic){
+	if(!_init) {
+	    cerr << "PICK_NODE_ARARY INIT STUFF" << endl;
+	    assert(g1ColId == 0); // FIXME: only handling one color for now.
+	    numPickEntries = (uint*)calloc(sizeof(uint),G1->getNumNodes());
+	    for(int i=0; i<G1->getNumNodes(); i++) totalDegree += (numPickEntries[i] = G1->adjLists[i].size());
+	    totalDegree *= 2;
+	    pickNodeArray = (uint*)calloc(sizeof(uint),totalDegree);
+	    for(int i=0; i<G1->getNumNodes(); i++) for(int j=0;j<G1->adjLists[i].size();j++) pickNodeArray[pickArrayNum++]=i;
+	    _init = true;
+	}
+	int prevNode = pickNodeArray[prevIndex];
+#define MAX_STATIONARY 999
+	if(stationary[prevNode] >= MAX_STATIONARY && numPickEntries[prevNode] > 1) { // Nuke one entry for the one that was a good move
+	    //printf("%d=>%d ", prevNode, numPickEntries[prevNode]);
+	    --numPickEntries[prevNode];
+	    pickNodeArray[prevIndex] = pickNodeArray[--pickArrayNum]; // move last entry in array to prevIndex position
+	}
+	uint randIndex = randInt(0, pickArrayNum-1);
+	assert(0 <= randIndex && randIndex < pickArrayNum);
+	return pickNodeArray[prevIndex = randIndex];
+    }
+#endif
     uint randIndex = randInt(0, G1->nodeGroupsByColor[g1ColId].size()-1);
     return G1->nodeGroupsByColor[g1ColId][randIndex];
 } 
 
 void SANA::performChange(uint actColId) {
-    uint peg = randomG1NodeWithActiveColor(actColId);
+    uint peg = randomG1NodeWithActiveColor(actColId, true);
     uint oldHole = A[peg];
     uint numUnassigWithCol = actColToUnassignedG2Nodes[actColId].size();
     uint unassignedVecIndex = randInt(0, numUnassigWithCol-1);
@@ -551,6 +581,11 @@ void SANA::performChange(uint actColId) {
     bool makeChange;
     //if(newCurrentScore == currentScore) makeChange = false; else // if it ain't broke, don't fix it
     makeChange = randomReal(gen) < pBad;
+    if(makeChange) stationary[peg]=0;
+    else {
+	if(stationary[peg] > MAX_STATIONARY) stationary[peg]=0;
+	++stationary[peg];
+    }
 
 #ifdef CORES
     // Statistics on the emerging core alignment.
@@ -598,17 +633,14 @@ void SANA::performChange(uint actColId) {
 
 void SANA::performSwap(uint actColId) {
 
-    uint peg1 = randomG1NodeWithActiveColor(actColId);
-    
+    uint peg1 = randomG1NodeWithActiveColor(actColId, true);
     uint peg2;
     for (uint i = 0; i < 100; i++) { //each attempt has >=50% chance of success
-        peg2 = randomG1NodeWithActiveColor(actColId);
+        peg2 = randomG1NodeWithActiveColor(actColId, false);
         if (peg1 != peg2) break;
     }
-
-    uint hole1 = A[peg1], hole2 = A[peg2];
-    
     assert(peg1 != peg2);
+    uint hole1 = A[peg1], hole2 = A[peg2];
     assert(hole1 != hole2);
     // assert(G1->getNodeColor(peg1) == G1->getNodeColor(peg2));
     // assert(G2->getNodeColor(hole1) == G2->getNodeColor(hole2));
@@ -649,6 +681,12 @@ void SANA::performSwap(uint actColId) {
     bool makeChange;
     //if(newCurrentScore == currentScore) makeChange = false; else // if it ain't broke, don't fix it
     makeChange = randomReal(gen) < pBad;
+    if(makeChange) stationary[peg1]=stationary[peg2]=0;
+    else {
+	if(stationary[peg1]>MAX_STATIONARY) stationary[peg1]=0;
+	if(stationary[peg2]>MAX_STATIONARY) stationary[peg2]=0;
+	++stationary[peg1]; ++stationary[peg2];
+    }
 
 #ifdef CORES
         // Statistics on the emerging core alignment.
@@ -2019,8 +2057,9 @@ void SANA::initIterPerSecond() {
         }
         totalIps = totalIps / (double) ipsListSize;
     } else {
+        Temperature = TInitial;
         cout << "Since temperature schedule is provided, ips will be "
-             << "calculated using constantTempIterations" << endl;
+             << "calculated using constantTempIterations at temperature " << Temperature << endl;
         long long int iter = 1E6;
         constantTempIterations(iter - 1);
         double res = iter/timer.elapsed();

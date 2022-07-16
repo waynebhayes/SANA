@@ -47,7 +47,7 @@ while [ $# -gt -0 ]; do
 done
 [ -x "$EXE" -o "$MAKE" = true ] || die "Executable '$EXE' must exist or you must specify -make"
 
-REAL_CORES=`cpus 2>/dev/null | awk '{print 1*$1}'`
+REAL_CORES=`(cpus 2>/dev/null || echo 1) | awk '{print 1*$1}'`
 [ "$REAL_CORES" -gt 0 ] || die "can't figure out how many cores this machine has"
 CORES=`expr $REAL_CORES - 1`
 MAKE_CORES=`expr $REAL_CORES - 1`

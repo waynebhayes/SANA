@@ -137,7 +137,7 @@ public:
     uint getNodeColor(uint node) const;
     uint numColors() const;
     
-    //functions that is part of SANA's main loop. Defined here to allow inlining
+    //functions that are part of SANA's main loop. Defined here to allow inlining
     uint numNodesWithColor(uint colorId) const { return nodeGroupsByColor.at(colorId).size(); }
     const vector<uint>* getNodesWithColor(uint colorId) const { return &nodeGroupsByColor.at(colorId); }
     static const string DEFAULT_COLOR_NAME; 

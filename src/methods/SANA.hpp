@@ -70,6 +70,7 @@ private:
 
     //store whether or not most recent move was bad
     bool wasBadMove;
+    vector<uint> stationary;
 
     //data structures for the networks
     uint n1, n2;
@@ -288,7 +289,7 @@ private:
 
     //3. the peg node (or pair of Peg nodes, for a swap) are chosen randomly from G1 among the
     //nodes of the chosen color
-    uint randomG1NodeWithActiveColor(uint actColId) const;
+    uint randomG1NodeWithActiveColor(uint actColId, bool biased) const;
     vector<uint> actColToG1ColId; //to implement step 3.
 
     //4. same with target nodes
