@@ -511,14 +511,14 @@ uint SANA::randomG1NodeWithActiveColor(uint actColId, bool dynamic) const {
 	    cerr << "PICK_NODE_ARARY INIT STUFF" << endl;
 	    assert(g1ColId == 0); // FIXME: only handling one color for now.
 	    numPickEntries = (uint*)calloc(sizeof(uint),G1->getNumNodes());
-	    for(int i=0; i<G1->getNumNodes(); i++) totalDegree += (numPickEntries[i] = G1->adjLists[i].size());
+	    for(uint i=0; i<G1->getNumNodes(); i++) totalDegree += (numPickEntries[i] = G1->adjLists[i].size());
 	    totalDegree *= 2;
 	    pickNodeArray = (uint*)calloc(sizeof(uint),totalDegree);
-	    for(int i=0; i<G1->getNumNodes(); i++) for(int j=0;j<G1->adjLists[i].size();j++) pickNodeArray[pickArrayNum++]=i;
+	    for(uint i=0; i<G1->getNumNodes(); i++) for(uint j=0;j<G1->adjLists[i].size();j++) pickNodeArray[pickArrayNum++]=i;
 	    _init = true;
 	}
 	int prevNode = pickNodeArray[prevIndex];
-#define MAX_STATIONARY 999
+#define MAX_STATIONARY 1
 	if(stationary[prevNode] >= MAX_STATIONARY && numPickEntries[prevNode] > 1) { // Nuke one entry for the one that was a good move
 	    //printf("%d=>%d ", prevNode, numPickEntries[prevNode]);
 	    --numPickEntries[prevNode];
