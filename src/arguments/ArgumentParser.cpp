@@ -7,7 +7,7 @@ using namespace std;
 
 ArgumentParser::ArgumentParser(int argc, char* argv[]) {
     if(argc == 1) {
-	cout << "Usage: ./sana [OPTION] [ARG(S)] [OPTION] [ARG(S)]..." << endl
+	cout << "Usage: " << argv[0] << " [OPTION] [ARG(S)] [OPTION] [ARG(S)]..." << endl
              << "Try './sana --help' or './sana -h' for more information." << endl;
         exit(0);
     }
@@ -92,6 +92,7 @@ ArgumentParser::ArgumentParser(int argc, char* argv[]) {
 
 void ArgumentParser::writeArguments() {
     cout << "=== Parsed arguments ===" << endl;
+    cout << "Executable name: " << originalArgv[0] << endl;
     for (auto kv : strings) {
         if (kv.second != "") cout << kv.first << ": " << kv.second << '\t';
     }
