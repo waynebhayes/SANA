@@ -500,13 +500,19 @@ uint SANA::randActiveColorIdWeightedByNumNbrs() {
     return iter - actColToAccumProbCutpoint.begin();
 }
 
+static uint MAX_STATIONARY = 999999999;
+
 uint SANA::randomG1NodeWithActiveColor(uint actColId, bool dynamic) const {
     uint g1ColId = actColToG1ColId[actColId];
-#define DYN_NODE_PROB 1
-#if DYN_NODE_PROB
+    static char *MAX_ST;
+    if(MAX_STATIONARY == 999999999) {
+	MAX_ST = getenv("MAX_STATIONARY");
+       	if(MAX_ST) MAX_STATIONARY = (uint)atoi(MAX_ST);
+	else MAX_STATIONARY = 0;
+    }
     static bool _init;
     static uint totalDegree, pickArrayNum, *pickNodeArray, *numPickEntries, prevIndex;
-    if(_reallyRunning && dynamic){
+    if(MAX_STATIONARY && _reallyRunning && dynamic){
 	if(!_init) {
 	    cerr << "PICK_NODE_ARARY INIT STUFF" << endl;
 	    assert(g1ColId == 0); // FIXME: only handling one color for now.
@@ -518,7 +524,6 @@ uint SANA::randomG1NodeWithActiveColor(uint actColId, bool dynamic) const {
 	    _init = true;
 	}
 	int prevNode = pickNodeArray[prevIndex];
-#define MAX_STATIONARY 1
 	if(stationary[prevNode] >= MAX_STATIONARY && numPickEntries[prevNode] > 1) { // Nuke one entry for the one that was a good move
 	    //printf("%d=>%d ", prevNode, numPickEntries[prevNode]);
 	    --numPickEntries[prevNode];
@@ -528,7 +533,6 @@ uint SANA::randomG1NodeWithActiveColor(uint actColId, bool dynamic) const {
 	assert(0 <= randIndex && randIndex < pickArrayNum);
 	return pickNodeArray[prevIndex = randIndex];
     }
-#endif
     uint randIndex = randInt(0, G1->nodeGroupsByColor[g1ColId].size()-1);
     return G1->nodeGroupsByColor[g1ColId][randIndex];
 } 
