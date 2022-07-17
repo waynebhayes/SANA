@@ -171,4 +171,5 @@ if [ $NUM_FAILS -gt 0 -o "$OutputDir" != /tmp/regression-test$$ ]; then
     echo "$OutputDir not erased due to failures or analysis-only" >&2
     trap "exit" 0
 fi
+trap "exit" 0; echo "not erasing $OutputDir for long-term testing"
 exit $NUM_FAILS
