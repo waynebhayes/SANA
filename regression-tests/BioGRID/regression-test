@@ -81,15 +81,17 @@ if $RUN; then
     [ -x "$EXE" ] || die "can't find executable '$EXE'"
     EXECS=`echo "$WORKING_EXECS" | newlines | egrep -vi "MULTI|FLOAT" | tr A-Z a-z | fmt -999`
     echo sana executables: "$EXECS" >&2
-    echo "$nets" | newlines | awk '{printf "count.el networks/%s.el\n",$0}' | sh | sed 's,networks/,,' -e 's/\.el$//' | awk '
-	BEGIN{split("'"$EXECS"'",EXECS)}
-	{edges[NR-1]=$2; net[NR-1]=$NF}
-	END{run=totalRuns=(NR-1)*NR/2;
-	    for(i=0;i<=NR-2;i++)for(j=i+1;j<=NR-1;j++){
-		whichExec=1+int(--run/totalRuns*length(EXECS));
-		printf "%d\techo Running %s on %s-%s; ./%s -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",edges[i]+edges[j],EXECS[whichExec],net[i],net[j],EXECS[whichExec],net[i],net[j],net[i],net[j],net[i],net[j];
+    echo "$nets" | newlines | awk '{printf "count.el networks/%s.el\n",$0}' | sh | sed 's,networks/,,' -e 's/\.el$//' |
+	awk '{n[NR-1]=$1; m[NR-1]=$2; net[NR-1]=$NF}
+	    END{for(i=0;i<=NR-2;i++)for(j=i+1;j<=NR-1;j++) # see regression-test.timing.7z for justification of this runtime
+		printf "%ld %s %s\n",log(m[i]*m[j])+log(n[i]*n[j]),net[i],net[j]}' |
+	sort -n | awk 'BEGIN{split("'"$EXECS"'",EXECS)}
+	    {net1[NR-1]=$2; net2[NR-1]=$3}
+	    END{run=totalRuns=NR;
+		for(i=0;i<NR;i++){ whichExec=1+int(--run/totalRuns*length(EXECS));
+		    printf "echo Running %s on %s-%s; ./%s -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",EXECS[whichExec],net1[i],net2[i],EXECS[whichExec],net1[i],net2[i],net1[i],net2[i],net1[i],net2[i];
 	    }
-	}' | sort -nr | cut -f2- | eval $PARALLEL_CMD
+	}' | revlines | eval $PARALLEL_CMD
     (( NUM_FAILS+=$? ))
 fi
 
