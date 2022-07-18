@@ -81,7 +81,7 @@ if $RUN; then
     [ -x "$EXE" ] || die "can't find executable '$EXE'"
     EXECS=`echo "$WORKING_EXECS" | newlines | egrep -vi "MULTI|FLOAT" | tr A-Z a-z | fmt -999`
     echo sana executables: "$EXECS" >&2
-    echo "$nets" | newlines | awk '{printf "count.el networks/%s.el\n",$0}' | sh | sed 's,networks/,,' -e 's/\.el$//' |
+    echo "$nets" | newlines | awk '{printf "count.el networks/%s.el\n",$0}' | sh | sed -e 's,networks/,,' -e 's/\.el$//' |
 	awk '{n[NR-1]=$1; m[NR-1]=$2; net[NR-1]=$NF}
 	    END{for(i=0;i<=NR-2;i++)for(j=i+1;j<=NR-1;j++) # see regression-test.timing.7z for justification of this runtime
 		printf "%ld %s %s\n",log(m[i]*m[j])+log(n[i]*n[j]),net[i],net[j]}' |

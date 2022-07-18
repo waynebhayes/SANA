@@ -1,4 +1,4 @@
-#ifndef NATAILEWRAPPER_HPP
+#ifndef NATALIEWRAPPER_HPP
 #define NATALIEWRAPPER_HPP
 
 #include "WrappedMethod.hpp"
