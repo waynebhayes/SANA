@@ -1,4 +1,4 @@
-#!/python
+#!/bin/python2
 import sys
 import operator
 import Bio.Entrez as BE
