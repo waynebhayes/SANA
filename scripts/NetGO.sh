@@ -9,7 +9,7 @@ Output: the same line, preceded by K(C) (not necessarily in the same order), and
 
 die() { echo "$@" >&2; exit 1
 }
-die "This one kinda words, but shouldn't be used. Use the official one: NetGO.awk in the NetGO sub-repo."
+die "This one kinda works, but shouldn't be used. Use the official one: NetGO.awk in the NetGO sub-repo."
 minW=0
 minK=0
 minA=0

@@ -4,7 +4,7 @@ die(){ (echo "$USAGE"; echo "FATAL ERROR: $@")>&2; exit 1; }
 warn(){ (echo "WARNING: $@")>&2; }
 not(){ if eval "$@"; then return 1; else return 0; fi; }
 newlines(){ awk '{for(i=1; i<=NF;i++)print $i}' "$@"; }
-parse(){ awk "BEGIN{print $@}" </dev/null; }
+parse(){ gawk "BEGIN{print $@}" </dev/null; }
 
 # generally useful Variables
 NL='
