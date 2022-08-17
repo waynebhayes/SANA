@@ -33,13 +33,13 @@ NUM_LOCK=100 # number of nodes to lock
 echo -n "Creating random lock files; "
 echo -n > $TMPDIR/networks.locking
 echo "$nets" |
-    awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "%s %s\n",net[i],net[j]}' | while read g1 g2
+    gawk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "%s %s\n",net[i],net[j]}' | while read g1 g2
     do
 	echo $g1 $g2 >> $TMPDIR/networks.locking
 	paste <(cat networks/$g1.el | newlines | sort -u | randomizeLines | head -$NUM_LOCK) <(cat networks/$g2.el | newlines | sort -u | randomizeLines | head -$NUM_LOCK) > $TMPDIR/$g1-$g2.lock
     done
 echo "running lock test."
-echo "$nets" | awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; \"'"$EXE"'\" -t 1 -s3 1 -g1 %s -g2 %s -lock '$TMPDIR'/%s-%s.lock -o '$TMPDIR'/%s-%s > '$TMPDIR'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL_CMD
+echo "$nets" | gawk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; \"'"$EXE"'\" -t 1 -s3 1 -g1 %s -g2 %s -lock '$TMPDIR'/%s-%s.lock -o '$TMPDIR'/%s-%s > '$TMPDIR'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL_CMD
 PARA_EXIT=$?
 echo "'$PARALLEL_CMD' returned $PARA_EXIT; current NUM_FAILS is $NUM_FAILS"
 
