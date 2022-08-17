@@ -1,16 +1,26 @@
 \documentclass[]{article}
 \usepackage{hyperref}
 \usepackage{verbatim}
+\usepackage{fullpage}
 \usepackage[normalem]{ulem}
 
 %opening
-\title{SANA software}
-\author{Nil Mamano}
+\title{SANA: {\it Simulated Annealing Network Aligner}: Documentation}
+\date{June 30, 2016}
+\author{Contributors: Nil Mamano, Evan Palmer, Trenton Coleman}
 
 \begin{document}
 
 \maketitle
 
+\begin{quote}
+{\bf NOTE:} The last substantial change to this document was on {\bf June 30, 2016};
+although most of it is still correct, SANA has seen substantial changes / updates / improvements since then.
+Some of them are documented in the README.md in the SANA repo at https://github.com/waynebhayes/SANA, and some
+can be found in the SANA tutorial (DOI: 10.1007/978-1-4939-9873-9\_18, available also in this repo).
+
+ - Wayne B. Hayes, August 2022.
+\end{quote}
 
 \part{SANA User Manual} % Main appendix title
 
@@ -433,6 +443,7 @@ Moreover, in HubAlign the $\alpha$ parameter has the opposite meaning as usual (
 The files \texttt{Experiment.*pp}, \texttt{ParameterEstimation.*pp}, \texttt{AlphaEstimation.*pp}, and \texttt{ComplementaryProteins.*pp} are not described because they are complicated and serve very specific purposes.
 
 \subsection{Modes}
+\begin{itemize}
 \item \texttt{AnalysisMode.*pp}
 
 \item \texttt{ClusterMode.*pp} Used in submission to cluster.
@@ -442,6 +453,7 @@ The files \texttt{Experiment.*pp}, \texttt{ParameterEstimation.*pp}, \texttt{Alp
 \item \texttt{NormalMode.*pp} Default mode used in running
 
 \item \texttt{SimilarityMode.*pp} Used in creating similarity files.
+\end{itemize}
 
 \subsection{Main program}
 
