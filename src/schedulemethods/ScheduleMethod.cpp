@@ -76,7 +76,7 @@ double ScheduleMethod::computeTempForPBad(double targetPBad, ScheduleMethod::Res
 }
 
 double ScheduleMethod::sGetPBad(double temp, double sampleTime) {
-    double res = sana->getPBad(temp, sampleTime);
+    double res = sana->getEquilibriumPBadAtTemp(temp, sampleTime);
     allTempToPBad.insert({temp, res});
     return res;
 }

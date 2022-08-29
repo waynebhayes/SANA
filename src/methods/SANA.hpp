@@ -41,7 +41,7 @@ public:
     //requires TInitial and TFinal to be already initialized
     void setTDecayFromTempRange();
 
-    double getPBad(double temp, double maxTimeInS = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
+    double getEquilibriumPBadAtTemp(double temp, double maxTimeInS = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
     list<pair<double, double>> ipsList;
 
 private:
