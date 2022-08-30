@@ -1,10 +1,10 @@
 #ifndef LINEARREGRESSIONMODERN_HPP
 #define LINEARREGRESSIONMODERN_HPP
 
-#include "ScheduleMethod.hpp"
+#include "GoldilocksMethod.hpp"
 
-/* New Linear Regression implementation better integrated with the other schedule methods */
-class LinearRegressionModern : public ScheduleMethod {
+/* New Linear Regression implementation better integrated with the other goldilocks methods */
+class LinearRegressionModern : public GoldilocksMethod {
 public:
     LinearRegressionModern();
 

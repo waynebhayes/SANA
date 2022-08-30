@@ -1,36 +1,36 @@
 #include <iostream>
 #include <assert.h> 
 
-#include "ScheduleMethod.hpp"
+#include "GoldilocksMethod.hpp"
 #include "../utils/Timer.hpp"
 #include "../utils/LinearRegression.hpp"
 
 using namespace std;
 
 //initialization of static members
-multimap<double, double> ScheduleMethod::allTempToPBad = multimap<double, double> (); 
-SANA* ScheduleMethod::sana = nullptr;
-double ScheduleMethod::DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1 = 1; // represents 0.99
-double ScheduleMethod::DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0 = 10; // represents 1e-10
-double ScheduleMethod::DEFAULT_TARGET_INITIAL_PBAD = (1-pow(10,-DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1));
-double ScheduleMethod::DEFAULT_TARGET_FINAL_PBAD = pow(10,-DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0);
-double ScheduleMethod::DEFAULT_ERROR_TOL_DIGITS = 0.9; // as a fraction of digits in the last place from the above.
-double ScheduleMethod::DEFAULT_SAMPLE_TIME = 1;
+multimap<double, double> GoldilocksMethod::allTempToPBad = multimap<double, double> (); 
+SANA* GoldilocksMethod::sana = nullptr;
+double GoldilocksMethod::DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1 = 1; // represents 0.99
+double GoldilocksMethod::DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0 = 10; // represents 1e-10
+double GoldilocksMethod::DEFAULT_TARGET_INITIAL_PBAD = (1-pow(10,-DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1));
+double GoldilocksMethod::DEFAULT_TARGET_FINAL_PBAD = pow(10,-DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0);
+double GoldilocksMethod::DEFAULT_ERROR_TOL_DIGITS = 0.9; // as a fraction of digits in the last place from the above.
+double GoldilocksMethod::DEFAULT_SAMPLE_TIME = 1;
 
 
-ScheduleMethod::ScheduleMethod():
+GoldilocksMethod::GoldilocksMethod():
     targetInitialPBad(DEFAULT_TARGET_INITIAL_PBAD), targetFinalPBad(DEFAULT_TARGET_FINAL_PBAD),
     errorTol(DEFAULT_ERROR_TOL_DIGITS), sampleTime(DEFAULT_SAMPLE_TIME),
     tempToPBad(),
     TIniRes(0, 0.0), TFinRes(0, 0.0) {
 
     if (sana == nullptr) {
-        throw runtime_error("call ScheduleMethod::setSana() before initializing any schedule methods");
+        throw runtime_error("call GoldilocksMethod::setSana() before initializing any goldilocks methods");
     }
 
 }
 
-double ScheduleMethod::computeTInitial(ScheduleMethod::Resources maxRes) {
+double GoldilocksMethod::computeTInitial(GoldilocksMethod::Resources maxRes) {
     cout << endl << "Computing TInitial via method " << getName() << endl;
     int currSamples = tempToPBad.size();
     Timer T;
@@ -45,12 +45,12 @@ double ScheduleMethod::computeTInitial(ScheduleMethod::Resources maxRes) {
     return TInitial;
 }
 
-void ScheduleMethod::vComputeTInitial(ScheduleMethod::Resources maxRes) {
+void GoldilocksMethod::vComputeTInitial(GoldilocksMethod::Resources maxRes) {
     TInitial = computeTempForPBad(targetInitialPBad, maxRes);
 }
 
 
-double ScheduleMethod::computeTFinal(ScheduleMethod::Resources maxRes) {
+double GoldilocksMethod::computeTFinal(GoldilocksMethod::Resources maxRes) {
     cout << endl << "Computing TFinal via method " << getName() << endl;
     int currSamples = tempToPBad.size();
     Timer T;
@@ -67,27 +67,27 @@ double ScheduleMethod::computeTFinal(ScheduleMethod::Resources maxRes) {
     return TFinal;
 }
 
-void ScheduleMethod::vComputeTFinal(ScheduleMethod::Resources maxRes) {
+void GoldilocksMethod::vComputeTFinal(GoldilocksMethod::Resources maxRes) {
     TFinal = computeTempForPBad(targetFinalPBad, maxRes);
 }
 
-double ScheduleMethod::computeTempForPBad(double targetPBad, ScheduleMethod::Resources maxRes) {
+double GoldilocksMethod::computeTempForPBad(double targetPBad, GoldilocksMethod::Resources maxRes) {
     throw runtime_error("functionality not implemented for this method");
 }
 
-double ScheduleMethod::sGetPBad(double temp, double sampleTime) {
+double GoldilocksMethod::sGetPBad(double temp, double sampleTime) {
     double res = sana->getEquilibriumPBadAtTemp(temp, sampleTime);
     allTempToPBad.insert({temp, res});
     return res;
 }
 
-double ScheduleMethod::getPBad(double temp) {
+double GoldilocksMethod::getPBad(double temp) {
     double res = sGetPBad(temp, sampleTime);
     tempToPBad.insert({temp, res});
     return res;
 }
 
-double ScheduleMethod::targetRangeMin(double targetPBad, double errorTol) {
+double GoldilocksMethod::targetRangeMin(double targetPBad, double errorTol) {
     int digits;
     if(targetPBad < 0.5) // assume it's tFinal;
 	digits = DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0;
@@ -95,7 +95,7 @@ double ScheduleMethod::targetRangeMin(double targetPBad, double errorTol) {
 	digits = DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1;
     return targetPBad - errorTol*pow(10,-digits); // eg 0.99 + 0.5 * 0.01
 }
-double ScheduleMethod::targetRangeMax(double targetPBad, double errorTol) {
+double GoldilocksMethod::targetRangeMax(double targetPBad, double errorTol) {
     int digits;
     if(targetPBad < 0.5) // assume it's tFinal;
 	digits = DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0;
@@ -103,24 +103,24 @@ double ScheduleMethod::targetRangeMax(double targetPBad, double errorTol) {
 	digits = DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1;
     return targetPBad + errorTol*pow(10,-digits); // eg 0.99 + 0.5 * 0.01
 }
-double ScheduleMethod::distToTargetRange(double pBad, double targetPBad, double errorTol) {
+double GoldilocksMethod::distToTargetRange(double pBad, double targetPBad, double errorTol) {
     if (isAboveTargetRange(pBad, targetPBad, errorTol))
         return pBad-targetRangeMax(targetPBad, errorTol);
     if (isBelowTargetRange(pBad, targetPBad, errorTol))
         return targetRangeMin(targetPBad, errorTol)-pBad;
     return 0;
 }
-bool ScheduleMethod::isBelowTargetRange(double pBad, double targetPBad, double errorTol) {
+bool GoldilocksMethod::isBelowTargetRange(double pBad, double targetPBad, double errorTol) {
     return pBad < targetRangeMin(targetPBad, errorTol);
 }
-bool ScheduleMethod::isAboveTargetRange(double pBad, double targetPBad, double errorTol) {
+bool GoldilocksMethod::isAboveTargetRange(double pBad, double targetPBad, double errorTol) {
     return pBad > targetRangeMax(targetPBad, errorTol);
 }
-bool ScheduleMethod::isWithinTargetRange(double pBad, double targetPBad, double errorTol) {
+bool GoldilocksMethod::isWithinTargetRange(double pBad, double targetPBad, double errorTol) {
     return !isBelowTargetRange(pBad, targetPBad, errorTol) &&
            !isAboveTargetRange(pBad, targetPBad, errorTol);
 }
-void ScheduleMethod::printTargetRange(double targetPBad, double errorTol) {
+void GoldilocksMethod::printTargetRange(double targetPBad, double errorTol) {
     cout << "(" << targetRangeMin(targetPBad,errorTol) << ", " << targetRangeMax(targetPBad,errorTol) << ")";
 }
 
@@ -134,7 +134,7 @@ a pBad that bounds 'targetPBad' above or below. More precisely,
 - if 'nextAbove' is false, it retuns the largest such temp that gives rise to a pBad below 'targetPBad'
 higher 'base' -> quicker search, but more coarse bound; defaults to 10.
 */
-double ScheduleMethod::doublingMethod(double targetPBad, bool nextAbove, double base) {
+double GoldilocksMethod::doublingMethod(double targetPBad, bool nextAbove, double base) {
     
     //use as starting value the temp in the tempToPBad map that has a closest pBad to the target pBad
     //if the map is empty, just start with 1
@@ -191,7 +191,7 @@ double ScheduleMethod::doublingMethod(double targetPBad, bool nextAbove, double 
     }
 }
 
-double ScheduleMethod::pBadBinarySearch(double targetPBad, ScheduleMethod::Resources maxRes) {
+double GoldilocksMethod::pBadBinarySearch(double targetPBad, GoldilocksMethod::Resources maxRes) {
     Timer T;
     T.start();
     int startSamples = tempToPBad.size();
@@ -325,7 +325,7 @@ double ScheduleMethod::pBadBinarySearch(double targetPBad, ScheduleMethod::Resou
 }
 
 
-double ScheduleMethod::sTempWithClosestPBad(double targetPBad, const multimap<double,double>& tempToPBad,
+double GoldilocksMethod::sTempWithClosestPBad(double targetPBad, const multimap<double,double>& tempToPBad,
                 double atLeastTemp, double atMostTemp) {
     
     if (tempToPBad.size() < 1) throw runtime_error("no entries in tempToPBad map");
@@ -347,11 +347,11 @@ double ScheduleMethod::sTempWithClosestPBad(double targetPBad, const multimap<do
     return bestTemp;
 }
 
-double ScheduleMethod::tempWithClosestPBad(double targetPBad, double atLeastTemp, double atMostTemp) const {
+double GoldilocksMethod::tempWithClosestPBad(double targetPBad, double atLeastTemp, double atMostTemp) const {
     return sTempWithClosestPBad(targetPBad, tempToPBad, atLeastTemp, atMostTemp);
 }
 
-double ScheduleMethod::sTempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad, bool fixLineHeights) {
+double GoldilocksMethod::sTempWithBestLRFit(double targetPBad, const multimap<double,double>& tempToPBad, bool fixLineHeights) {
     bool dbg = false;
     if (dbg) cerr << "Finding the temp that fits best the pBad " << targetPBad << endl;
     if (dbg) cerr << "tempToPBad map has " << tempToPBad.size() << " samples" << endl;
@@ -383,11 +383,11 @@ double ScheduleMethod::sTempWithBestLRFit(double targetPBad, const multimap<doub
     return res;
 }
 
-double ScheduleMethod::tempWithBestLRFit(double targetPBad, bool fixLineHeights) const {
+double GoldilocksMethod::tempWithBestLRFit(double targetPBad, bool fixLineHeights) const {
     return sTempWithBestLRFit(targetPBad, tempToPBad, fixLineHeights);
 }
 
-void ScheduleMethod::populatePBadCurve() {
+void GoldilocksMethod::populatePBadCurve() {
     const double HIGH_PBAD_LIMIT = 0.999999;
     const double LOW_PBAD_LIMIT = 1e-14;
     double highTemp = doublingMethod(HIGH_PBAD_LIMIT, false);
@@ -401,7 +401,7 @@ void ScheduleMethod::populatePBadCurve() {
     }
 }
 
-void ScheduleMethod::printScheduleStatistics() {
+void GoldilocksMethod::printGoldilocksStatistics() {
     cout << "TInitial found in " << TIniRes.runtime << "s for target pBad " << targetInitialPBad << ": " << endl;
     sGetPBad(TInitial, sampleTime);
     cout << "TFinal found in " << TFinRes.runtime << "s for target pBad " << targetFinalPBad << ": " << endl;
@@ -410,6 +410,6 @@ void ScheduleMethod::printScheduleStatistics() {
     cout << endl;
 }
 
-ScheduleMethod::Resources ScheduleMethod::totalResources() {
+GoldilocksMethod::Resources GoldilocksMethod::totalResources() {
     return Resources(TIniRes.numSamples + TFinRes.numSamples, TIniRes.runtime + TFinRes.runtime);
 }

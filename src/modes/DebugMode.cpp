@@ -13,7 +13,7 @@
 #include "../measures/localMeasures/GoSimilarity.hpp"
 #include "../methods/Method.hpp"
 #include "../methods/SANA.hpp"
-#include "../schedulemethods/LinearRegressionVintage.hpp"
+#include "../goldilocksmethods/LinearRegressionVintage.hpp"
 #include "../Graph.hpp"
 #include "../Alignment.hpp"
 #include "../complementaryProteins.hpp"

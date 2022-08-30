@@ -1,5 +1,5 @@
-#ifndef SCHEDULEMETHOD_HPP
-#define SCHEDULEMETHOD_HPP
+#ifndef GOLDILOCKSMETHOD_HPP
+#define GOLDILOCKSMETHOD_HPP
 
 #include <string>
 #include <iostream>
@@ -11,7 +11,7 @@
 
 using namespace std;
 
-class ScheduleMethod {
+class GoldilocksMethod {
 
 public:
 
@@ -27,12 +27,12 @@ public:
         Resources(double t, int n) =delete;
     };
 
-    //single, static SANA for all schedule methods
-    //call setSana before initializing any schedule method
-    static void setSana(SANA *const sana) { ScheduleMethod::sana = sana; }
+    //single, static SANA for all goldilocks methods
+    //call setSana before initializing any goldilocks method
+    static void setSana(SANA *const sana) { GoldilocksMethod::sana = sana; }
 
-    ScheduleMethod();
-    virtual ~ScheduleMethod() =default;
+    GoldilocksMethod();
+    virtual ~GoldilocksMethod() =default;
 
     virtual string getName() =0;
 
@@ -56,7 +56,7 @@ public:
     void setSampleTime(double t) { sampleTime = t; }
 
     //prints and other info collection
-    void printScheduleStatistics();
+    void printGoldilocksStatistics();
     static void printTargetRange(double targetPBad, double errorTol);
     Resources totalResources(); //resources used between computeTInitial & computeTFinal
 
@@ -95,7 +95,7 @@ protected:
     double TInitial, TFinal; //results of computeTInitial and computeTFinal
 
 
-    //auxiliary functions used by several schedule methods:
+    //auxiliary functions used by several goldilocks methods:
 
     //wrapper around sana->getPBad that saves the result in tempToPBad
     double getPBad(double temp);
@@ -125,7 +125,7 @@ private:
                                         bool fixLineHeights);
 
     //stuff for comparison for paper:
-    friend void scheduleMethodComparison(SANA *const sana);
+    friend void goldilocksMethodComparison(SANA *const sana);
     friend NormalDistribution getPBadDis(double temp, int numSamples, double sampleTime);
 
     //union of the tempToPBad maps of all the methods

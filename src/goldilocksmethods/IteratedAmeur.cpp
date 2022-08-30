@@ -14,7 +14,7 @@ using namespace std;
 //this converges to the temperature that gives rise to that pbad at equilibrium
 //step size should be <= 1
 //with bigger step sizes, there may be a "bounce back and forth" effect:
-double IteratedAmeur::computeTempForPBad(double targetPBad, ScheduleMethod::Resources maxRes) {
+double IteratedAmeur::computeTempForPBad(double targetPBad, GoldilocksMethod::Resources maxRes) {
     //configuration
     double stepSize = 0.6;
     double startTempGuess = 1;

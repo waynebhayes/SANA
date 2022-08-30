@@ -24,9 +24,9 @@
 #include "../methods/wrappers/SANAPISWAPWrapper.hpp"
 #include "../methods/wrappers/CytoGEDEVOWrapper.hpp"
 
-#include "../schedulemethods/ScheduleMethod.hpp"
-#include "../schedulemethods/scheduleUtils.hpp"
-#include "../schedulemethods/LinearRegressionVintage.hpp"
+#include "../goldilocksmethods/GoldilocksMethod.hpp"
+#include "../goldilocksmethods/goldilocksUtils.hpp"
+#include "../goldilocksmethods/LinearRegressionVintage.hpp"
 
 using namespace std;
 
@@ -91,16 +91,16 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
         ArgumentParser& args, MeasureCombination& M, string startAligName) {
     string TIniArg = args.strings["-tinitial"];
     string TDecayArg = args.strings["-tdecay"];
-    string scheduleMethodName = args.strings["-schedulemethod"];
+    string goldilocksMethodName = args.strings["-goldilocksmethod"];
 
-    //this is a special argument value that does a comparison between all temperature schedule methods
-    //made for the purpose of running the experiments for the paper on the tempertaure schedule
-    if (scheduleMethodName == "comparison") {
+    //this is a special argument value that does a comparison between all temperature goldilocks methods
+    //made for the purpose of running the experiments for the paper on the tempertaure goldilocks
+    if (goldilocksMethodName == "comparison") {
         Alignment startAlig;
         if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
         SANA sana(&G1, &G2, 0, 0, 0, 0, 0, &M, 
                   args.strings["-combinedScoreAs"], startAlig, "", "");
-        scheduleMethodComparison(&sana);
+        goldilocksMethodComparison(&sana);
         exit(0);
     }
 
@@ -140,21 +140,21 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
         startAlig, args.strings["-o"], args.strings["-localScoresFile"]);
 
     if (useMethodForTIni or useMethodForTDecay) {
-        if (scheduleMethodName == "auto" ) { //if user uses 'auto', choose for them
-            scheduleMethodName = LinearRegressionVintage::NAME;
+        if (goldilocksMethodName == "auto" ) { //if user uses 'auto', choose for them
+            goldilocksMethodName = LinearRegressionVintage::NAME;
         }
-        ScheduleMethod::setSana(sana);
-        auto scheduleMethod = getScheduleMethod(scheduleMethodName);
-        scheduleMethod->setSampleTime(2);
-        ScheduleMethod::Resources maxRes(60, 200.0); //#samples, seconds
+        GoldilocksMethod::setSana(sana);
+        auto goldilocksMethod = getGoldilocksMethod(goldilocksMethodName);
+        goldilocksMethod->setSampleTime(2);
+        GoldilocksMethod::Resources maxRes(60, 200.0); //#samples, seconds
         if (useMethodForTIni) {
-            sana->setTInitial(scheduleMethod->computeTInitial(maxRes));
+            sana->setTInitial(goldilocksMethod->computeTInitial(maxRes));
         }
         if (useMethodForTDecay) {
-            sana->setTFinal(scheduleMethod->computeTFinal(maxRes));
+            sana->setTFinal(goldilocksMethod->computeTFinal(maxRes));
             sana->setTDecayFromTempRange();
         }
-        scheduleMethod->printScheduleStatistics();
+        goldilocksMethod->printGoldilocksStatistics();
     }
     if (args.bools["-dynamictdecay"]) sana->setDynamicTDecay();
     return sana;

@@ -1,9 +1,9 @@
 #ifndef PBADBINARYSEARCH_HPP
 #define PBADBINARYSEARCH_HPP
 
-#include "ScheduleMethod.hpp"
+#include "GoldilocksMethod.hpp"
 
-class PBadBinarySearch : public ScheduleMethod {
+class PBadBinarySearch : public GoldilocksMethod {
 public:
     PBadBinarySearch() =default;
 

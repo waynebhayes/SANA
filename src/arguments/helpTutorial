@@ -46,7 +46,7 @@ SANA takes in one of four kinds of arguments for each option:
 			
 More examples on using SANA:
  ./sana -tinitial 0.7 -tdecay 2
-	Slower temperature schedule
+	Slower temperature goldilocks
 
  ./sana -restart -tnew 20 -iterperstep 30000000 -numcand 15 -tcand 2 -tfin 10
 	Restart scheme. One hour total execution time. UPDATE: Restart Scheme

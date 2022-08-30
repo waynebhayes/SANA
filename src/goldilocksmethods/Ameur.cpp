@@ -6,7 +6,7 @@
 
 using namespace std;
 
-double Ameur::computeTempForPBad(double pBad, ScheduleMethod::Resources maxRes) {
+double Ameur::computeTempForPBad(double pBad, GoldilocksMethod::Resources maxRes) {
     //this method ignores max resources
     double startTempGuess = 1;
     double unused; //set by reference in call below

@@ -22,7 +22,7 @@ void srand48(long seedval);	/* seed the lower 32 bits of 48 */
 /*
 ** Seed all 48 bits, and return pointer to the 48 bits we replaced.
 */
-unsigned short *seed48(unsigned short seed16v[3]);
+unsigned short *seed48(unsigned short seed16v[3]); // 3 elements
 
 
 /*
@@ -38,7 +38,7 @@ long krand48(unsigned short *xsubi, unsigned short m);
 
 long mrand48(void);
 
-void lcong48(unsigned short param[7]);
+void lcong48(unsigned short param[7]); // 7 elements
 /*-----*/
 double erand48(unsigned short X[3]);
 long irand48(unsigned short m);
@@ -48,9 +48,6 @@ long nrand48(unsigned short X[3]);
 long mrand48(void);
 long jrand48(unsigned short X[3]);
 void srand48(long seedval);
-unsigned short *seed48(unsigned short seed16v[3]);
-void lcong48(unsigned short param[7]);
-
 #endif  /* _RAND48_H */
 #ifdef __cplusplus
 } // end extern "C"

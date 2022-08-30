@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void IteratedLinearRegression::computeBoth(ScheduleMethod::Resources maxRes) {
+void IteratedLinearRegression::computeBoth(GoldilocksMethod::Resources maxRes) {
     Timer T; 
     T.start();
     int startSamples = tempToPBad.size();

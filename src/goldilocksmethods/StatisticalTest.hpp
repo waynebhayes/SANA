@@ -3,14 +3,14 @@
 
 #include <vector>
 
-#include "ScheduleMethod.hpp"
+#include "GoldilocksMethod.hpp"
 
 using namespace std;
 
 /* Nil's old statistical-test based method.
 NOTE: It does NOT target specific pBads.
 Instead, it finds start and end temps using other criteria */
-class StatisticalTest : public ScheduleMethod {
+class StatisticalTest : public GoldilocksMethod {
 public:
     StatisticalTest() =default;
 

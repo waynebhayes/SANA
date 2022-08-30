@@ -77,7 +77,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     gen = mt19937(getRandomSeed());
     randomReal = uniform_real_distribution<>(0, 1);
 
-    //temperature schedule
+    //temperature goldilocks
     if (maxIterations > 0 and maxSeconds > 0)
         throw runtime_error("use only one of maxIterations or maxSeconds");
     else if (maxIterations <= 0 and maxSeconds <= 0)
@@ -330,8 +330,8 @@ void SANA::initDataStructures() {
 bool _reallyRunning;
 
 Alignment SANA::run() {
-    // return runUsingIterations();
-    return runUsingConfidenceIntervals();
+    return runUsingIterations();
+    // return runUsingConfidenceIntervals();
 }
 
 Alignment SANA::runUsingIterations() {
@@ -507,7 +507,7 @@ void SANA::performHillClimbing(long long int idleCountTarget) {
 }
 
 void SANA::describeParameters(ostream& sout) const {
-    sout << "Temperature schedule:" << endl;
+    sout << "Temperature goldilocks:" << endl;
     sout << "T_initial: " << TInitial << endl;
     sout << "T_decay: " << TDecay << endl;
     sout << "Optimize: " << endl;
@@ -2180,7 +2180,7 @@ void SANA::initIterPerSecond() {
         totalIps = totalIps / (double) ipsListSize;
     } else {
         Temperature = TInitial;
-        cout << "Since temperature schedule is provided, ips will be "
+        cout << "Since temperature goldilocks is provided, ips will be "
              << "calculated using constantTempIterations at temperature " << Temperature << endl;
         long long int iter = 1E6;
         constantTempIterations(iter - 1);

@@ -6,30 +6,30 @@
 using namespace std;
 
 LinearRegressionModern::LinearRegressionModern():
-    ScheduleMethod(), alreadyComputed(false) {}
+    GoldilocksMethod(), alreadyComputed(false) {}
 
 void LinearRegressionModern::setTargetInitialPBad(double pBad) {
-    ScheduleMethod::setTargetInitialPBad(pBad);
+    GoldilocksMethod::setTargetInitialPBad(pBad);
     alreadyComputed = false;
 }
 void LinearRegressionModern::setTargetFinalPBad(double pBad) {
-    ScheduleMethod::setTargetFinalPBad(pBad);
+    GoldilocksMethod::setTargetFinalPBad(pBad);
     alreadyComputed = false;
 }
 
-void LinearRegressionModern::vComputeTInitial(ScheduleMethod::Resources maxRes) {
+void LinearRegressionModern::vComputeTInitial(GoldilocksMethod::Resources maxRes) {
     if (alreadyComputed) return;
     computeBoth(maxRes); 
     alreadyComputed = true;  
 }
 
-void LinearRegressionModern::vComputeTFinal(ScheduleMethod::Resources maxRes) {
+void LinearRegressionModern::vComputeTFinal(GoldilocksMethod::Resources maxRes) {
     if (alreadyComputed) return;
     computeBoth(maxRes); 
     alreadyComputed = true;  
 }
 
-void LinearRegressionModern::computeBoth(ScheduleMethod::Resources maxRes) {
+void LinearRegressionModern::computeBoth(GoldilocksMethod::Resources maxRes) {
     Timer T; 
     T.start();
     int startSamples = tempToPBad.size();
@@ -38,8 +38,8 @@ void LinearRegressionModern::computeBoth(ScheduleMethod::Resources maxRes) {
     populatePBadCurve();
 
     int remainingSamples = maxRes.numSamples-(tempToPBad.size()-startSamples);
-    ScheduleMethod::Resources remRes(remainingSamples, maxRes.runtime - T.elapsed());
-    ScheduleMethod::Resources halfRemRes(remRes.numSamples/2, remRes.runtime/2);
+    GoldilocksMethod::Resources remRes(remainingSamples, maxRes.runtime - T.elapsed());
+    GoldilocksMethod::Resources halfRemRes(remRes.numSamples/2, remRes.runtime/2);
 
     cout << "Increasing density near TInitial" << endl;
     pBadBinarySearch(targetInitialPBad, halfRemRes);

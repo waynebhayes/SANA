@@ -150,16 +150,16 @@ METHOD_WRAPPERS_SRC =    						\
 	src/methods/wrappers/SANAPISWAPWrapper.cpp			\
 	src/methods/wrappers/CytoGEDEVOWrapper.cpp			
 
-SCHEDULEMETHODS_SRC =   							\
-	src/schedulemethods/Ameur.cpp 					\
-	src/schedulemethods/IteratedAmeur.cpp    				\
-	src/schedulemethods/LinearRegressionModern.cpp  					\
-	src/schedulemethods/LinearRegressionVintage.cpp 					\
-	src/schedulemethods/PBadBinarySearch.cpp   				\
-	src/schedulemethods/ScheduleMethod.cpp    					\
-	src/schedulemethods/scheduleUtils.cpp 					\
-	src/schedulemethods/StatisticalTest.cpp  	\
-	src/schedulemethods/IteratedLinearRegression.cpp		
+GOLDILOCKSMETHODS_SRC =   							\
+	src/goldilocksmethods/Ameur.cpp 					\
+	src/goldilocksmethods/IteratedAmeur.cpp    				\
+	src/goldilocksmethods/LinearRegressionModern.cpp  					\
+	src/goldilocksmethods/LinearRegressionVintage.cpp 					\
+	src/goldilocksmethods/PBadBinarySearch.cpp   				\
+	src/goldilocksmethods/GoldilocksMethod.cpp    					\
+	src/goldilocksmethods/goldilocksUtils.cpp 					\
+	src/goldilocksmethods/StatisticalTest.cpp  	\
+	src/goldilocksmethods/IteratedLinearRegression.cpp		
 
 MODES_SRC = 								\
 	src/modes/AlphaEstimation.cpp 					\
@@ -179,7 +179,7 @@ OTHER_SRC = 							\
 	src/main.cpp                                        	\
 	src/Report.cpp
 
-SRCS = $(METHODS_SRC) $(OTHER_SRC) $(UTILS_SRC) $(MEASURES_SRCS) $(METHOD_WRAPPERS_SRC) $(SCHEDULEMETHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC)
+SRCS = $(METHODS_SRC) $(OTHER_SRC) $(UTILS_SRC) $(MEASURES_SRCS) $(METHOD_WRAPPERS_SRC) $(GOLDILOCKSMETHODS_SRC) $(ARGUMENTS_SRC) $(MODES_SRC)
 OBJDIR = _objs
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 

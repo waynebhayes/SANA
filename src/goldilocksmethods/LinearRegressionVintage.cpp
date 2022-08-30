@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void LinearRegressionVintage::computeBoth(ScheduleMethod::Resources maxRes) {
+void LinearRegressionVintage::computeBoth(GoldilocksMethod::Resources maxRes) {
     //resources are ignored for this method to preserve original logic
 
     const double HIGH_PBAD_LIMIT = 0.99999;

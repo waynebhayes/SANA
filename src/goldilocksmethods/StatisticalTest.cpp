@@ -114,7 +114,7 @@ double StatisticalTest::scoreForTemp(double temp) {
 //find the temperature TFinal such that the expected number of accepted transitions
 //near a local minimum is 1 per second
 //by bisection, since the expected number is monotically increasing in TFinal
-void StatisticalTest::vComputeTFinal(ScheduleMethod::Resources maxRes) {
+void StatisticalTest::vComputeTFinal(GoldilocksMethod::Resources maxRes) {
     //this method ignores max resources
 
     //get a sample of negative EIncs seen during a second of runtime near local minima

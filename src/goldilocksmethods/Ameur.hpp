@@ -3,13 +3,13 @@
 
 #include <vector>
 
-#include "ScheduleMethod.hpp"
+#include "GoldilocksMethod.hpp"
 
 using namespace std;
 
 /* Method from the paper "computing the initial temperature of simulated annealing" 
 by Walid Ben-Ameur et al */
-class Ameur : public ScheduleMethod {
+class Ameur : public GoldilocksMethod {
 public:
     Ameur() = default;
 

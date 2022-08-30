@@ -1,8 +1,8 @@
 #include <vector>
 #include <memory>
 
-#include "scheduleUtils.hpp"
-#include "ScheduleMethod.hpp"
+#include "goldilocksUtils.hpp"
+#include "GoldilocksMethod.hpp"
 #include "LinearRegression.hpp"
 #include "LinearRegressionVintage.hpp"
 #include "LinearRegressionModern.hpp"
@@ -14,7 +14,7 @@
 
 using namespace std;
 
-unique_ptr<ScheduleMethod> getScheduleMethod(string name) {
+unique_ptr<GoldilocksMethod> getGoldilocksMethod(string name) {
     if (name == LinearRegressionVintage::NAME) 
         return unique_ptr<LinearRegressionVintage>(new LinearRegressionVintage());
     if (name == LinearRegressionModern::NAME)  
@@ -29,13 +29,13 @@ unique_ptr<ScheduleMethod> getScheduleMethod(string name) {
         return unique_ptr<StatisticalTest>(new StatisticalTest());
     if (name == IteratedLinearRegression::NAME)
         return unique_ptr<IteratedLinearRegression>(new IteratedLinearRegression());
-    throw runtime_error("schedule method "+name+" not found");
+    throw runtime_error("goldilocks method "+name+" not found");
 }
 
-void scheduleMethodComparison(SANA *const sana) {
+void goldilocksMethodComparison(SANA *const sana) {
 
     //customizable parameters
-    ScheduleExpParams params;
+    GoldilocksExpParams params;
 
     params.testedMethodNames = {
         LinearRegressionVintage::NAME, 
@@ -57,7 +57,7 @@ void scheduleMethodComparison(SANA *const sana) {
             //we compute a normal distribution of this many samples
 
 
-    ScheduleMethod::setSana(sana);
+    GoldilocksMethod::setSana(sana);
 
     vector<vector<string>> table;
     table.push_back({"Method",
@@ -69,7 +69,7 @@ void scheduleMethodComparison(SANA *const sana) {
     T.start();
     for (string methodName : params.testedMethodNames) {
         for (int i = 0; i < params.runsPerMethod; i++) {
-            auto method = getScheduleMethod(methodName);
+            auto method = getGoldilocksMethod(methodName);
             method->setTargetInitialPBad(params.targetInitialPBad);
             method->setTargetFinalPBad(params.targetFinalPBad);
             method->setSampleTime(params.sampleTime);
@@ -81,9 +81,9 @@ void scheduleMethodComparison(SANA *const sana) {
             double TInitial, TFinal;
             if (uniTime) {
                 TInitial = method->computeTInitial(params.maxResources);
-                TFinal = method->computeTFinal(ScheduleMethod::Resources(0, 0.0));
+                TFinal = method->computeTFinal(GoldilocksMethod::Resources(0, 0.0));
             } else {
-                ScheduleMethod::Resources halfMaxRes(params.maxResources.numSamples/2, 
+                GoldilocksMethod::Resources halfMaxRes(params.maxResources.numSamples/2, 
                                                      params.maxResources.runtime/2);
                 TInitial = method->computeTInitial(halfMaxRes);
                 TFinal = method->computeTFinal(halfMaxRes);
@@ -109,7 +109,7 @@ void scheduleMethodComparison(SANA *const sana) {
 
                 int popSamples = method->tempToPBad.size()-startSamples;
                 double popTime = T2.elapsed();
-                ScheduleMethod::Resources totalRes = method->totalResources();
+                GoldilocksMethod::Resources totalRes = method->totalResources();
                 totalRes.numSamples += popSamples;
                 totalRes.runtime += popTime;
 
@@ -117,7 +117,7 @@ void scheduleMethodComparison(SANA *const sana) {
                 double TFinFitOverBS = method->tempWithBestLRFit(params.targetFinalPBad);
                 vector<string> row2 = formatMethodData(params, "LR-over-BS", true,
                             TIniFitOverBS, TFinFitOverBS,
-                            ScheduleMethod::Resources(0, 0.0), ScheduleMethod::Resources(0, 0.0), totalRes);
+                            GoldilocksMethod::Resources(0, 0.0), GoldilocksMethod::Resources(0, 0.0), totalRes);
 
                 table.push_back(row2);
 
@@ -131,18 +131,18 @@ void scheduleMethodComparison(SANA *const sana) {
     double totalTime = T.elapsed();
 
     double overallBestFitTIni = 
-        ScheduleMethod::sTempWithBestLRFit(params.targetInitialPBad, ScheduleMethod::allTempToPBad, false);
+        GoldilocksMethod::sTempWithBestLRFit(params.targetInitialPBad, GoldilocksMethod::allTempToPBad, false);
     double overallBestFitTFin =
-        ScheduleMethod::sTempWithBestLRFit(params.targetFinalPBad, ScheduleMethod::allTempToPBad, false);
-    ScheduleMethod::Resources overallRes(ScheduleMethod::allTempToPBad.size(), totalTime);
+        GoldilocksMethod::sTempWithBestLRFit(params.targetFinalPBad, GoldilocksMethod::allTempToPBad, false);
+    GoldilocksMethod::Resources overallRes(GoldilocksMethod::allTempToPBad.size(), totalTime);
 
     vector<string> finalRow = formatMethodData(params, "overall-LR", true,
                 overallBestFitTIni, overallBestFitTFin,
-                ScheduleMethod::Resources(0, 0.0), ScheduleMethod::Resources(0, 0.0), overallRes);
+                GoldilocksMethod::Resources(0, 0.0), GoldilocksMethod::Resources(0, 0.0), overallRes);
 
     table.push_back(finalRow);
 
-    auto model = LinearRegression::bestFit(ScheduleMethod::allTempToPBad);
+    auto model = LinearRegression::bestFit(GoldilocksMethod::allTempToPBad);
     cout << "Linear Regression model of all the samples:" << endl;
     model.print();    
 
@@ -153,15 +153,15 @@ void scheduleMethodComparison(SANA *const sana) {
     cout << "=================================================" << endl;
     cout << endl;
 
-    cout << "Automatic Temperature Schedule Comparison" << endl;
+    cout << "Automatic Temperature Goldilocks Comparison" << endl;
     cout << "Max samples: " << params.maxResources.numSamples;
     cout << " Max time: " << params.maxResources.runtime << endl;
     cout << "Sample time: " << params.sampleTime << endl;
 
     cout << "Target Initial PBad: " << params.targetInitialPBad << " range ";
-    ScheduleMethod::printTargetRange(params.targetInitialPBad, params.errorTol);
+    GoldilocksMethod::printTargetRange(params.targetInitialPBad, params.errorTol);
     cout << endl << "Target Final PBad:   " << params.targetFinalPBad << " range ";
-    ScheduleMethod::printTargetRange(params.targetFinalPBad, params.errorTol);
+    GoldilocksMethod::printTargetRange(params.targetFinalPBad, params.errorTol);
     cout << endl << endl;
 
     printTable(table, 1, cout);
@@ -173,9 +173,9 @@ void scheduleMethodComparison(SANA *const sana) {
     cout << endl;
 }
 
-vector<string> formatMethodData(const ScheduleExpParams& params, string name, bool hasUnifiedRuntime,
-                double TInitial, double TFinal, ScheduleMethod::Resources TIniRes,
-                ScheduleMethod::Resources TFinRes, ScheduleMethod::Resources totalRes) {
+vector<string> formatMethodData(const GoldilocksExpParams& params, string name, bool hasUnifiedRuntime,
+                double TInitial, double TFinal, GoldilocksMethod::Resources TIniRes,
+                GoldilocksMethod::Resources TFinRes, GoldilocksMethod::Resources totalRes) {
 
     cerr << endl << "Getting PBad distributions on the found temperatures" << endl;
     NormalDistribution TIniPBadDis = getPBadDis(TInitial,
@@ -183,9 +183,9 @@ vector<string> formatMethodData(const ScheduleExpParams& params, string name, bo
     NormalDistribution TFinPBadDis = getPBadDis(TFinal,
             params.numValidationSamples, params.sampleTime);
 
-    bool TIniSuccess = ScheduleMethod::isWithinTargetRange(TIniPBadDis.getMean(),
+    bool TIniSuccess = GoldilocksMethod::isWithinTargetRange(TIniPBadDis.getMean(),
             params.targetInitialPBad, params.errorTol);
-    bool TFinSuccess = ScheduleMethod::isWithinTargetRange(TFinPBadDis.getMean(),
+    bool TFinSuccess = GoldilocksMethod::isWithinTargetRange(TFinPBadDis.getMean(),
             params.targetFinalPBad, params.errorTol);
 
     double TIniPBadAccuracy = TIniPBadDis.getMean()/params.targetInitialPBad;
@@ -223,7 +223,7 @@ vector<string> formatMethodData(const ScheduleExpParams& params, string name, bo
 NormalDistribution getPBadDis(double temp, int numSamples, double sampleTime) {
     vector<double> samples;
     for (int i = 0; i < numSamples; i++) {
-        samples.push_back(ScheduleMethod::sGetPBad(temp, sampleTime));
+        samples.push_back(GoldilocksMethod::sGetPBad(temp, sampleTime));
     } 
     return NormalDistribution(samples);
 }

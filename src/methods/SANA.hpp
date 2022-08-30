@@ -56,7 +56,7 @@ private:
     bool addHillClimbing; //for post-run hill climbing
     void performHillClimbing(long long int idleCountTarget);
 
-    //temperature schedule
+    //temperature goldilocks
     double TInitial, TFinal, TDecay;
 
     //circular pBad buffer
