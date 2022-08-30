@@ -5,6 +5,7 @@ die() { echo "$USAGE" >&2; echo "FATAL ERROR: $@" >&2; exit 1
 
 SEQ=false
 FORCE=false
+export SANA_TOLERANCE=0 # SANA now uses a tolerance by default, but tons of regression tests require time or iterations
 
 USAGE="USAGE: $0 [-seq <ialpha_digit>] [-f] otherAligner g1 g2"
 ialpha=0

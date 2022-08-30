@@ -26,6 +26,8 @@ export PATH
 echo() { /bin/echo "$@" # shell's built-in echo is broken on MacOS
 }
 
+export SANA_TOLERANCE=0 # turn off new default tolerance, and use time / iterations as in old code
+
 MAX_TRIES=3
 TIME_VERBOSE=-v
 NOBUF='stdbuf -o 0 -e 0'

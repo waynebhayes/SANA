@@ -27,6 +27,7 @@ USAGE="USAGE: $0 [ -make ] [ -x SANA_EXE ] [ list of tests to run, defaults to r
 CWD=`pwd`
 PATH="$CWD:$CWD/scripts:$CWD/NetGO:$PATH"
 export PATH
+export SANA_TOLERANCE=0 # SANA now uses a tolerance by default, but tons of regression tests require time or iterations
 
 if [ ! -x NetGO/NetGO.awk ]; then
     echo "you need the submodule NetGO; trying to get it now" >&2

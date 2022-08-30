@@ -83,6 +83,14 @@ void MethodSelector::validateTimeOrIterLimit(ArgumentParser& args) {
            it = args.doubles["-it"], itk = args.doubles["-itk"],
            itm = args.doubles["-itm"], itb = args.doubles["-itb"],
            tol = args.doubles["-tolerance"];
+    if(tol>0) {
+	char *s_tol = getenv("SANA_TOLERANCE");
+	if(s_tol) {
+	    cerr << "WARNING: replacing tolerance "<<tol<<" with SANA_TOLERANCE (string "<<s_tol<<", double ";
+	    tol = args.doubles["-tolerance"] = stod(s_tol);
+	    cerr << tol << ")" << endl;
+	}
+    }
     uint execLimitArgCount = (t>0)+(ts>0)+(tm>0)+(it>0)+(itk>0)+(itm>0)+(itb>0)+(tol>0);
     if (execLimitArgCount != 1)
         throw runtime_error("exactly one of '-tolerance', '-t', -ts', '-tm', '-it', '-itk', '-itm', '-itb' must be >0");
