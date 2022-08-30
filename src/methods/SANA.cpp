@@ -412,26 +412,41 @@ Alignment SANA::runUsingConfidenceIntervals() {
 	    SANAIteration();
 	    StatAddSample(scoreBatch, currentScore);
 	    StatAddSample(pBadBatch, movePbad);
-	    if(StatSampleSize(scoreBatch) == batchSize)
-	    {
+	    if(StatSampleSize(scoreBatch) == batchSize) {
 		StatAddSample(scoreBatchMeans, StatMean(scoreBatch));
 		StatAddSample(pBadBatchMeans, StatMean(pBadBatch));
 		StatReset(scoreBatch); StatReset(pBadBatch);
 		++batch;
 
-		if(StatSampleSize(scoreBatchMeans)>=3){ 
+		if(StatSampleSize(scoreBatchMeans)>=30){
 		    double scoreInterval, pBadInterval;
 		    scoreInterval = pBadInterval = fabs(precision);
 		    if(precision<0){scoreInterval *= StatMean(scoreBatchMeans); pBadInterval *= StatMean(pBadBatchMeans);}
 		    if( fabs(StatConfInterval(scoreBatchMeans, confidence)) < scoreInterval &&
 			fabs(StatConfInterval(pBadBatchMeans,  confidence)) < pBadInterval     ) satisfied = true;
-		    else if(StatSampleSize(scoreBatchMeans) >= 15000 && StatMean(scoreBatchMeans)>previousScore && tauStep > 1e-3) {
-			printf(" ----> %d batches, resetting tau; old tauStep %g;", StatSampleSize(scoreBatchMeans), tauStep);
-			tau -= tauStep;
-			tauStep /= StatSampleSize(scoreBatchMeans)/10000.0;
-			tau += tauStep;
-			printf(" new tauStep %g; new tau %g\n", tauStep, tau);
-			StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
+		    else if(StatSampleSize(scoreBatchMeans) >= 15000) {
+			static int lastBatchCount;
+			// Note that you don't HAVE to make tauStep a lot smaller; in regions where the score is increasing
+			// dramatically, it's enough to reset the batch system... because if you don't reset it, the low
+			// scores at the beginning of this temperature force a HUGE number of batches to be needed before
+			// the batchMeans align.
+			if(StatMean(scoreBatchMeans)>previousScore) { // do nothing other than reset the batches
+			    printf(" &&&&> %d batches, batchMeanScore %g is increasing; ",
+				StatSampleSize(scoreBatchMeans), StatMean(scoreBatchMeans));
+			    previousScore = StatMean(scoreBatchMeans);
+			    printf("reset batches\n"); StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
+			    lastBatchCount = 0;
+			} else if(tauStep>1e-3 && StatSampleSize(scoreBatchMeans) >= 15000+lastBatchCount) {
+			    printf(" ----> %d batches, score %g decreased; try reducing tauStep from %g",
+				StatSampleSize(scoreBatchMeans), StatMean(scoreBatchMeans), tauStep);
+			    //tau -= tauStep;
+			    tauStep *= 0.666;
+			    if(tauStep < 1e-3) tauStep = 1e-3;
+			    //tau += tauStep;
+			    printf(" to %g\n", tauStep); //, tau);
+			    lastBatchCount = StatSampleSize(scoreBatchMeans);
+			    //printf("reset batches\n"); StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
+			}
 		    }
 		}
 	    }
@@ -439,17 +454,18 @@ Alignment SANA::runUsingConfidenceIntervals() {
 	assert(satisfied);
 	trackProgress(batch, tau, StatSampleSize(scoreBatchMeans), StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
 	if(tauStep < 0.01) {
-	    if(StatSampleSize(scoreBatchMeans) <= 10000) {
+	    if(StatSampleSize(scoreBatchMeans) < 15000) {
 		printf(" +++++> %d batches, tau %g old tauStep %g", StatSampleSize(scoreBatchMeans), tau, tauStep);
-		tauStep /= StatSampleSize(scoreBatchMeans)/30000.0;
+		tauStep *= 3;
 		if(tauStep > 0.01) tauStep = 0.01;
 		printf(" new tauStep %g\n", tauStep);
 	    }
-	    else if(StatMean(scoreBatchMeans) + 0.02 < previousScore) {
-		printf(" *****> score not increasing enough; old tauStep %g", tauStep);
+	    else if(StatMean(scoreBatchMeans) + 0.00 < previousScore) {
+		printf(" !!!!!> score %g is stuck below previous %g; skip region by increasing tauStep from %g",
+		    StatMean(scoreBatchMeans), previousScore, tauStep);
 		tauStep *= 10; // if the score is not increasing... skip this region
 		if(tauStep > 0.01) tauStep = 0.01;
-		printf(" new tauStep %g\n", tauStep);
+		printf(" to %g\n", tauStep);
 	    }
 	}
 	previousScore = StatMean(scoreBatchMeans);
