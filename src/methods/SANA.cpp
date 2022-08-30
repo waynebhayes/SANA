@@ -330,8 +330,8 @@ void SANA::initDataStructures() {
 bool _reallyRunning;
 
 Alignment SANA::run() {
-    return runUsingIterations();
-    // return runUsingConfidenceIntervals();
+    // return runUsingIterations();
+    return runUsingConfidenceIntervals();
 }
 
 Alignment SANA::runUsingIterations() {
