@@ -20,6 +20,7 @@ vector<string> defaultArguments = {
 "-goldilocksmethod auto",
 "-mode normal",
 "-method sana",
+"-tolerance 0.05",
 "-s3 0",
 "-js 0",
 "-lgraaliter 1000",
@@ -71,6 +72,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-th", "double", "", "Runtime in hours", "The number of hours to run SANA. Must be non-zero, no upper limit.", "1" },
     { "-it", "double", "", "Max iterations", "The number of SANA iterations to run. Must be non-zero, no upper limit.", "1" },
     { "-itk", "double", "", "Max iterations in thousands", "The number of SANA iterations, in thousands. Must be non-zero, no upper limit.", "1" },
+    { "-tolerance", "double", "", "Target tolerance for optimal objective", "Attempt to optimize the final value of the objective to within this tolerance of the optimal solution. Default 0.03; values below 0.01 not recommended due to runtime.", "1" },
     { "-itm", "double", "", "Max iterations in millions", "The number of SANA iterations, in millions. Must be non-zero, no upper limit.", "1" },
     { "-itb", "double", "", "Max iterations in billions", "The number of SANA iterations, in billions. Must be non-zero, no upper limit.", "1" },
     { "-pathmap1", "intS", "", "Path Map G1", "Allows mapping a path in G1 to an edge in G2, as if the path were a single edge in G2. Implemented by raising the adjacency list to this power (an integer).", "1" },
@@ -253,10 +255,12 @@ void SupportedArguments::validateAndAddArguments(){
     for(uint i = 1; i < supportedArguments.size(); ++i){
         if(supportedArguments[i][2] == "banner") continue;
 
-        if(supportedArguments[i][0] == "") throw runtime_error("Option: #"+to_string(i+1)+" is empty for the Option field. Please specify the Option name in the supportedArguments.cpp file.");
-        if(supportedArguments[i][1] == "") throw runtime_error("Option: #"+to_string(i+1)+" is empty for the Type field. Please specify the Option Type in the supportedArguments.cpp file.");
-        if(supportedArguments[i][3] == "") throw runtime_error("Option: #"+to_string(i+1)+" is empty for the Title field. Please specify the Option Title in the supportedArguments.cpp file.");
-        if(supportedArguments[i][4] == "") throw runtime_error("Option: #"+to_string(i+1)+" is empty for the Description field. Please specify the Option description in the supportedArguments.cpp file.");
+        if(supportedArguments[i].size() != 6) throw runtime_error("Option: #"+to_string(i+1)+" should have exactly 6 fields. Please check in the SupportedArguments.cpp file.");
+
+        if(supportedArguments[i][0] == "") throw runtime_error("Option: #"+to_string(i+1)+" is empty for the Option field. Please specify the Option name in the SupportedArguments.cpp file.");
+        if(supportedArguments[i][1] == "") throw runtime_error("Option: #"+to_string(i+1)+" is empty for the Type field. Please specify the Option Type in the SupportedArguments.cpp file.");
+        if(supportedArguments[i][3] == "") throw runtime_error("Option: #"+to_string(i+1)+" is empty for the Title field. Please specify the Option Title in the SupportedArguments.cpp file.");
+        if(supportedArguments[i][4] == "") throw runtime_error("Option: #"+to_string(i+1)+" is empty for the Description field. Please specify the Option description in the SupportedArguments.cpp file.");
         
         if(supportedArguments[i][1] == "string" || supportedArguments[i][1] == "intS" || supportedArguments[i][1] == "dblS")
             stringArgs.push_back(supportedArguments[i][0]);

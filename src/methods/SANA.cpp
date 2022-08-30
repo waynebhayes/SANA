@@ -46,8 +46,8 @@ bool SANA::saveAligAndExitOnInterruption = false;
 bool SANA::saveAligAndContOnInterruption = false;
 uint SANA::INVALID_ACTIVE_COLOR_ID;
 SANA::SANA(const Graph* G1, const Graph* G2,
-        double TInitial, double TDecay, double maxSeconds, long long int maxIterations, bool addHillClimbing,
-        MeasureCombination* MC, const string& scoreAggrStr, const Alignment& startA,
+        double TInitial, double TDecay, double maxSeconds, long long int maxIterations, double tolerance,
+	bool addHillClimbing, MeasureCombination* MC, const string& scoreAggrStr, const Alignment& startA,
         const string& outputFileName, const string& localScoresFileName):
                 Method(G1, G2, "SANA_"+MC->toString()),
                 startA(startA),
@@ -56,6 +56,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
                 wasBadMove(false),
                 maxSeconds(maxSeconds),
                 maxIterations(maxIterations),
+		tolerance(tolerance),
                 MC(MC),
                 outputFileName(outputFileName),
                 localScoresFileName(localScoresFileName) {
@@ -78,7 +79,11 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     randomReal = uniform_real_distribution<>(0, 1);
 
     //temperature goldilocks
-    if (maxIterations > 0 and maxSeconds > 0)
+    if (tolerance > 0) {
+	if (maxIterations > 0 or maxSeconds > 0)
+	    throw runtime_error("to use iterations or time, first set \"-tolerance 0\" on the command line (NOT RECOMMENDED!)");
+    }
+    else if (maxIterations > 0 and maxSeconds > 0)
         throw runtime_error("use only one of maxIterations or maxSeconds");
     else if (maxIterations <= 0 and maxSeconds <= 0)
         throw runtime_error("exactly one of maxIterations and maxSeconds must be > 0");
@@ -330,8 +335,10 @@ void SANA::initDataStructures() {
 bool _reallyRunning;
 
 Alignment SANA::run() {
-    return runUsingIterations();
-    // return runUsingConfidenceIntervals();
+    if(tolerance > 0)
+	return runUsingConfidenceIntervals();
+    else
+	return runUsingIterations();
 }
 
 Alignment SANA::runUsingIterations() {
@@ -381,17 +388,16 @@ Alignment SANA::runUsingConfidenceIntervals() {
 #ifndef MULTI_PAIRWISE // note we DO want to know the speed when doing MPI
     getIterPerSecond(); // this takes several seconds of CPU time; don't do it during multi-only-iterations.
 #endif
-
-    getIterPerSecond(); // FIXME: does this need to be called?
-
     iterationsPerStep = 1; // this code doesn't use "steps"
     // FIXME: make all of these changeable on the command line
     int batch=0, batchSize = 1000;
     double tau, tauStep = 0.01; // dynamically made smaller or bigger as necessary
-    //double precision = 0.0005, confidence = 0.99999; // negative precision means 1%, not 0.01 absolute.
-    double precision = 0.0003, confidence = 1-pow(precision, 1.5); // gives about the same as the above.
-    printf("SANA::runUsingConfidenceIntervals Parameters: batchSize %d confidence %g precision %g\n",
-	batchSize, confidence, precision);
+    double accuracy = tolerance * (tauStep), confidence = 1-pow(accuracy, 1.5); // gives about the same as the above.
+    if(confidence < 0.9999) confidence = 0.9999; // doesn't add much CPU to increase confidence.
+
+    bool verbose = true;
+    if(verbose) printf("SANA::runUsingConfidenceIntervals Parameters: batchSize %d confidence %g tolerance per step %g\n",
+	batchSize, confidence, accuracy);
 
 #if LIBWAYNE
     STAT *scoreBatch = StatAlloc(0, 0.0, 0.0, false, false);
@@ -402,7 +408,9 @@ Alignment SANA::runUsingConfidenceIntervals() {
 #error "Need LIBWAYNE to be true for batch system"
 #endif
     _reallyRunning=true;
+    long int lastBatchCount=0;
     for (tau = 0; tau <= 1; tau += tauStep) {
+	int batchesPerTemperature = 0;
         Temperature = temperatureFunction(tau, TInitial, TDecay);
 	// Now the "inner loop"
 	Boolean satisfied = false;
@@ -417,64 +425,62 @@ Alignment SANA::runUsingConfidenceIntervals() {
 		StatAddSample(scoreBatchMeans, StatMean(scoreBatch));
 		StatAddSample(pBadBatchMeans, StatMean(pBadBatch));
 		StatReset(scoreBatch); StatReset(pBadBatch);
-		++batch;
+		++batch; ++batchesPerTemperature;
 
 		if(StatSampleSize(scoreBatchMeans)>=30){
 		    double scoreInterval, pBadInterval;
-		    scoreInterval = pBadInterval = fabs(precision);
-		    if(precision<0){scoreInterval *= StatMean(scoreBatchMeans); pBadInterval *= StatMean(pBadBatchMeans);}
+		    scoreInterval = pBadInterval = fabs(accuracy);
+		    if(accuracy<0){scoreInterval *= StatMean(scoreBatchMeans); pBadInterval *= StatMean(pBadBatchMeans);}
 		    if( fabs(StatConfInterval(scoreBatchMeans, confidence)) < scoreInterval &&
 			fabs(StatConfInterval(pBadBatchMeans,  confidence)) < pBadInterval     ) satisfied = true;
 		    else if(StatSampleSize(scoreBatchMeans) >= 15000) {
-			static int lastBatchCount;
 			// Note that you don't HAVE to make tauStep a lot smaller; in regions where the score is increasing
 			// dramatically, it's enough to reset the batch system... because if you don't reset it, the low
 			// scores at the beginning of this temperature force a HUGE number of batches to be needed before
 			// the batchMeans align.
 			if(StatMean(scoreBatchMeans)>previousScore) { // do nothing other than reset the batches
-			    printf(" &&&&> %d batches, batchMeanScore %g is increasing; ",
+			    if(verbose) printf(" &&&&> %d batches, batchMeanScore %g is increasing; ",
 				StatSampleSize(scoreBatchMeans), StatMean(scoreBatchMeans));
 			    previousScore = StatMean(scoreBatchMeans);
-			    printf("reset batches\n"); StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
-			    lastBatchCount = 0;
+			    if(verbose) printf("reset batches\n");
+			    lastBatchCount = 0; StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
 			} else if(tauStep>1e-3 && StatSampleSize(scoreBatchMeans) >= 15000+lastBatchCount) {
-			    printf(" ----> %d batches, score %g decreased; reduce next tauStep from %g",
-				StatSampleSize(scoreBatchMeans), StatMean(scoreBatchMeans), tauStep);
+			    if(verbose) printf(" ----> %d batches, score %g decreased at tau %g; reduce tauStep from %g",
+				StatSampleSize(scoreBatchMeans), StatMean(scoreBatchMeans), tau, tauStep);
 			    tau -= tauStep;
 			    tauStep *= 0.666;
 			    if(tauStep < 1e-3) tauStep = 1e-3;
 			    tau += tauStep;
-			    printf(" to %g\n", tauStep); //, tau);
+			    if(verbose) printf(" to %g and backtrack to tau %g\n", tauStep, tau);
 			    lastBatchCount = StatSampleSize(scoreBatchMeans);
-			    //printf("reset batches\n"); StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
 			}
 		    }
 		}
 	    }
 	}
 	assert(satisfied);
-	trackProgress(batch, tau, StatSampleSize(scoreBatchMeans), StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
+	trackProgress(batch, tau, batchesPerTemperature, StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
 	if(tauStep < 0.01) {
 	    if(StatSampleSize(scoreBatchMeans) < 15000) {
-		printf(" +++++> %d batches, tau %g old tauStep %g", StatSampleSize(scoreBatchMeans), tau, tauStep);
+		if(verbose) printf(" +++++> %d batches, tau %g old tauStep %g", StatSampleSize(scoreBatchMeans), tau, tauStep);
 		tauStep *= 3;
 		if(tauStep > 0.01) tauStep = 0.01;
-		printf(" new tauStep %g\n", tauStep);
+		if(verbose) printf(" new tauStep %g\n", tauStep);
 	    }
 	    else if(StatMean(scoreBatchMeans) + 0.00 < previousScore) {
-		printf(" !!!!!> score %g is stuck below previous %g; skip region by increasing tauStep from %g",
+		if(verbose) printf(" !!!!!> score %g is stuck below previous %g; skip region by increasing tauStep from %g",
 		    StatMean(scoreBatchMeans), previousScore, tauStep);
 		tauStep *= 10; // if the score is not increasing... skip this region
 		if(tauStep > 0.01) tauStep = 0.01;
-		printf(" to %g\n", tauStep);
+		if(verbose) printf(" to %g\n", tauStep);
 	    }
 	}
 	previousScore = StatMean(scoreBatchMeans);
 	StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
 	StatReset(energyIncStats);
     }
-    trackProgress(batch, tau);
-    cout<<"Performed "<<batch<<" batches\n";
+    cout<<"Performed "<<batch<<" total batches\n";
+    trackProgress(batch, tau, batch, StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
     if (addHillClimbing) performHillClimbing(10000000LL); //arbitrarily chosen, probably too big.
 
 #ifdef CORES

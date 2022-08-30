@@ -81,10 +81,11 @@ Method* MethodSelector::initMethod(const Graph& G1, const Graph& G2, ArgumentPar
 void MethodSelector::validateTimeOrIterLimit(ArgumentParser& args) {
     double ts = args.doubles["-ts"], tm = args.doubles["-tm"], t = args.doubles["-t"],
            it = args.doubles["-it"], itk = args.doubles["-itk"],
-           itm = args.doubles["-itm"], itb = args.doubles["-itb"];
-    uint execLimitArgCount = (t>0)+(ts>0)+(tm>0)+(it>0)+(itk>0)+(itm>0)+(itb>0);
+           itm = args.doubles["-itm"], itb = args.doubles["-itb"],
+           tol = args.doubles["-tolerance"];
+    uint execLimitArgCount = (t>0)+(ts>0)+(tm>0)+(it>0)+(itk>0)+(itm>0)+(itb>0)+(tol>0);
     if (execLimitArgCount != 1)
-        throw runtime_error("exactly one of '-t', -ts', '-tm', '-it', '-itk', '-itm', '-itb' must be >0");
+        throw runtime_error("exactly one of '-tolerance', '-t', -ts', '-tm', '-it', '-itk', '-itm', '-itb' must be >0");
 }
 
 SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2, 
@@ -98,7 +99,7 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
     if (goldilocksMethodName == "comparison") {
         Alignment startAlig;
         if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
-        SANA sana(&G1, &G2, 0, 0, 0, 0, 0, &M, 
+        SANA sana(&G1, &G2, 0.0, 0.0, 0, 0, 0.0, 0, &M, 
                   args.strings["-combinedScoreAs"], startAlig, "", "");
         goldilocksMethodComparison(&sana);
         exit(0);
@@ -121,7 +122,7 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
     validateTimeOrIterLimit(args);
     double ts = args.doubles["-ts"], tm = args.doubles["-tm"], t = args.doubles["-t"],
            it = args.doubles["-it"], itk = args.doubles["-itk"],
-           itm = args.doubles["-itm"], itb = args.doubles["-itb"];
+           itm = args.doubles["-itm"], itb = args.doubles["-itb"], tolerance = args.doubles["-tolerance"];
     double maxSeconds = 0;
     long long int maxIterations = 0;
     if (t > 0) maxSeconds = 60*t;
@@ -131,11 +132,14 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
     if (itk > 0) maxIterations = (long long int) (itk * 1e3);
     if (itm > 0) maxIterations = (long long int) (itm * 1e6);
     if (itb > 0) maxIterations = (long long int) (itb * 1e9);
+    if(tolerance < 0.01) cerr << "Warning: requested tolerance ("<<tolerance<<") is below 0.01; may cause excessive runtime\n";
+    if(tolerance > 0.5) cerr << "Warning: large requested tolerance ("<<tolerance<<") may result in unusually bad solution\n";
 
     Alignment startAlig;
     if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
 
-    SANA* sana = new SANA(&G1, &G2, TInitial, TDecay, maxSeconds, maxIterations,
+    SANA* sana = new SANA(&G1, &G2,
+	TInitial, TDecay, maxSeconds, maxIterations, tolerance,
         args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"],
         startAlig, args.strings["-o"], args.strings["-localScoresFile"]);
 

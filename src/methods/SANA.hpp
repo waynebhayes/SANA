@@ -27,7 +27,8 @@ using namespace std;
 class SANA: public Method {
 
 public:
-    SANA(const Graph* G1, const Graph* G2, double TInitial, double TDecay, double maxSeconds, long long maxIterations,
+    SANA(const Graph* G1, const Graph* G2,
+	double TInitial, double TDecay, double maxSeconds, long long maxIterations, double tolerance,
         bool addHillClimbing, MeasureCombination* MC, const string& scoreAggrStr,
         const Alignment& optionalStartAlig, const string& outputFileName, const string& localScoresFileName);
     ~SANA();
@@ -95,6 +96,7 @@ private:
     bool useIterations;
     double maxSeconds;
     long long int maxIterations;
+    double tolerance;
 
     uint iterationsPerformed = 0;
     uint oldIterationsPerformed = 0;
