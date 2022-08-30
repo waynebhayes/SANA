@@ -388,7 +388,8 @@ Alignment SANA::runUsingConfidenceIntervals() {
     // FIXME: make all of these changeable on the command line
     int batch=0, batchSize = 1000;
     double tau, tauStep = 0.01; // dynamically made smaller or bigger as necessary
-    double confidence = 0.99999, precision = 0.0003; // negative precision means 1%, not 0.01 absolute.
+    //double precision = 0.0005, confidence = 0.99999; // negative precision means 1%, not 0.01 absolute.
+    double precision = 0.0003, confidence = 1-pow(precision, 1.5); // gives about the same as the above.
     printf("SANA::runUsingConfidenceIntervals Parameters: batchSize %d confidence %g precision %g\n",
 	batchSize, confidence, precision);
 
@@ -439,10 +440,10 @@ Alignment SANA::runUsingConfidenceIntervals() {
 			} else if(tauStep>1e-3 && StatSampleSize(scoreBatchMeans) >= 15000+lastBatchCount) {
 			    printf(" ----> %d batches, score %g decreased; reduce next tauStep from %g",
 				StatSampleSize(scoreBatchMeans), StatMean(scoreBatchMeans), tauStep);
-			    //tau -= tauStep;
+			    tau -= tauStep;
 			    tauStep *= 0.666;
 			    if(tauStep < 1e-3) tauStep = 1e-3;
-			    //tau += tauStep;
+			    tau += tauStep;
 			    printf(" to %g\n", tauStep); //, tau);
 			    lastBatchCount = StatSampleSize(scoreBatchMeans);
 			    //printf("reset batches\n"); StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);

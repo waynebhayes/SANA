@@ -10,7 +10,7 @@ using namespace std;
 //initialization of static members
 multimap<double, double> ScheduleMethod::allTempToPBad = multimap<double, double> (); 
 SANA* ScheduleMethod::sana = nullptr;
-double ScheduleMethod::DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1 = 2; // represents 0.99
+double ScheduleMethod::DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1 = 1; // represents 0.99
 double ScheduleMethod::DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0 = 10; // represents 1e-10
 double ScheduleMethod::DEFAULT_TARGET_INITIAL_PBAD = (1-pow(10,-DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1));
 double ScheduleMethod::DEFAULT_TARGET_FINAL_PBAD = pow(10,-DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0);
