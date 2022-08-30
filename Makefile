@@ -1,5 +1,5 @@
 MY_CC = g++
-CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -pthread #-pg -fno-inline
+CXXFLAGS = -I "src/utils" "-DLIBWAYNE=1" -U__STRICT_ANSI__ -Wall -std=c++11 -pthread #-pg -fno-inline
 
 MAIN = sana
 
@@ -83,6 +83,8 @@ UTILS_SRC = 								\
 	src/utils/computeGraphlets.cpp                            	\
 	src/utils/ComputeGraphletsWrapper.cpp				\
 	src/utils/Matrix.cpp						\
+	src/utils/Stats.cpp						\
+	src/utils/Misc.cpp						\
 	src/utils/SANAversion.cpp
 
 ARGUMENTS_SRC = 							\

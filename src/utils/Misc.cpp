@@ -23,7 +23,7 @@ extern "C" {
 #include <unistd.h>
 /*#include <../ucbinclude/sys/rusage.h>*/
 
-#include "misc.h"
+#include "Misc.hpp"
 
 const foint ABSTRACT_ERROR = {0xDEADBEEF};
 

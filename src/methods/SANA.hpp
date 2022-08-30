@@ -16,6 +16,10 @@
 #include "../utils/randomSeed.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 #include "../measures/CoreScore.hpp"
+#if LIBWAYNE
+#include "../utils/Misc.hpp"
+#include "../utils/Stats.hpp"
+#endif
 
 using namespace std;
 
@@ -29,6 +33,8 @@ public:
     ~SANA();
 
     Alignment run();
+    Alignment runUsingIterations();
+    Alignment runUsingConfidenceIntervals();
     void describeParameters(ostream& stream) const;
     string fileNameSuffix(const Alignment& A) const;
     
@@ -59,6 +65,7 @@ private:
     int numPBadsInBuffer;
     int pBadBufferIndex;
     double pBadBufferSum;
+    double movePbad; // pBad of the current move.
 
     //may incorrect probabilities (even negative) if the pbads in the buffer are small enough
     //due to accumulated precision errors of adding and subtracting tiny values from pBadBufferSum
@@ -232,12 +239,15 @@ private:
     //other execution options
     bool constantTemp; //tempertare does not decrease as a function of iteration
     bool enableTrackProgress; //shows output periodically
-    void trackProgress(long long int iter, long long int maxIter = -1);
+    void trackProgress(long long int iter, double fractionTime, int batches=0, double batchScore=0, double batchPbad=0);
     double avgEnergyInc;
 
     double currentScore;
     double previousScore;
     double energyInc;
+#if LIBWAYNE
+    STAT *energyIncStats;
+#endif
     void SANAIteration();
     void performChange(uint activeColorId);
     void performSwap(uint activeColorId);

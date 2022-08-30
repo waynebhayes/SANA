@@ -37,10 +37,6 @@
 #include "../measures/EdgeExposure.hpp"
 #include "../measures/MultiS3.hpp"
 #include "../utils/utils.hpp"
-#if LIBWAYNE
-#include "../utils/Misc.hpp"
-#include "../utils/Stats.hpp"
-#endif
 #include "../Report.hpp"
 
 using namespace std;
@@ -162,6 +158,9 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     enableTrackProgress   = true;
     iterationsPerStep     = 10000000;
     avgEnergyInc          = -0.00001; //to track progress
+#if LIBWAYNE
+    energyIncStats = StatAlloc(0, 0.0, 0.0, false, false);
+#endif
 
     // NODE COLOR SYSTEM initialization
     assert(G1->numColors() <= G2->numColors());
@@ -331,20 +330,21 @@ void SANA::initDataStructures() {
 bool _reallyRunning;
 
 Alignment SANA::run() {
+    return runUsingIterations();
+    // return runUsingConfidenceIntervals();
+}
+
+Alignment SANA::runUsingIterations() {
     initDataStructures();
     setInterruptSignal();
 
 #ifndef MULTI_PAIRWISE // note we DO want to know the speed when doing MPI
     getIterPerSecond(); // this takes several seconds of CPU time; don't do it during multi-only-iterations.
 #endif
-    long long int maxIters = useIterations ? maxIterations
-                                           : (long long int) (getIterPerSecond()*maxSeconds);
+    long long int maxIters = useIterations ? maxIterations : (long long int) (getIterPerSecond()*maxSeconds);
     double leeway = 2;
     double maxSecondsWithLeeway = maxSeconds * leeway;
 
-#if LIBWAYNE
-    STAT *s = StatAlloc(0, 0, 0, false, false);
-#endif
     long long int iter;
     _reallyRunning=true;
     for (iter = 0; iter <= maxIters; iter++) {
@@ -353,14 +353,111 @@ Alignment SANA::run() {
         if (saveAligAndExitOnInterruption) break;
         if (saveAligAndContOnInterruption) printReportOnInterruption();
         if (iter%iterationsPerStep == 0) {
-            trackProgress(iter, maxIters);
+            trackProgress(iter, float(iter)/maxIters);
             if (not useIterations and timer.elapsed() > maxSecondsWithLeeway
                 and currentScore-previousScore < 0.005) break;
             previousScore = currentScore;
+#if LIBWAYNE
+	    StatReset(energyIncStats);
+#endif
         }
     }
-    trackProgress(iter, maxIters);
+    trackProgress(iter, float(iter)/maxIters);
     cout<<"Performed "<<iter<<" total iterations\n";
+    if (addHillClimbing) performHillClimbing(10000000LL); //arbitrarily chosen, probably too big.
+
+#ifdef CORES
+    Report::saveCoreScore(*G1, *G2, A, this, coreScoreData, outputFileName);
+#endif
+
+    return A;
+}
+
+
+Alignment SANA::runUsingConfidenceIntervals() {
+    initDataStructures();
+    setInterruptSignal();
+
+#ifndef MULTI_PAIRWISE // note we DO want to know the speed when doing MPI
+    getIterPerSecond(); // this takes several seconds of CPU time; don't do it during multi-only-iterations.
+#endif
+
+    getIterPerSecond(); // FIXME: does this need to be called?
+
+    iterationsPerStep = 1; // this code doesn't use "steps"
+    // FIXME: make all of these changeable on the command line
+    int batch=0, batchSize = 1000;
+    double tau, tauStep = 0.01; // dynamically made smaller or bigger as necessary
+    double confidence = 0.99999, precision = 0.0005; // negative precision means 1%, not 0.01 absolute.
+    printf("SANA::runUsingConfidenceIntervals Parameters: batchSize %d confidence %g precision %g\n",
+	batchSize, confidence, precision);
+
+#if LIBWAYNE
+    STAT *scoreBatch = StatAlloc(0, 0.0, 0.0, false, false);
+    STAT *scoreBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
+    STAT *pBadBatch = StatAlloc(0, 0.0, 0.0, false, false);
+    STAT *pBadBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
+#else
+#error "Need LIBWAYNE to be true for batch system"
+#endif
+    _reallyRunning=true;
+    for (tau = 0; tau <= 1; tau += tauStep) {
+        Temperature = temperatureFunction(tau, TInitial, TDecay);
+	// Now the "inner loop"
+	Boolean satisfied = false;
+	while(!satisfied) {
+	    if (saveAligAndExitOnInterruption) break;
+	    if (saveAligAndContOnInterruption) printReportOnInterruption();
+
+	    SANAIteration();
+	    StatAddSample(scoreBatch, currentScore);
+	    StatAddSample(pBadBatch, movePbad);
+	    if(StatSampleSize(scoreBatch) == batchSize)
+	    {
+		StatAddSample(scoreBatchMeans, StatMean(scoreBatch));
+		StatAddSample(pBadBatchMeans, StatMean(pBadBatch));
+		StatReset(scoreBatch); StatReset(pBadBatch);
+		++batch;
+
+		if(StatSampleSize(scoreBatchMeans)>=3){ 
+		    double scoreInterval, pBadInterval;
+		    scoreInterval = pBadInterval = fabs(precision);
+		    if(precision<0){scoreInterval *= StatMean(scoreBatchMeans); pBadInterval *= StatMean(pBadBatchMeans);}
+		    if( fabs(StatConfInterval(scoreBatchMeans, confidence)) < scoreInterval &&
+			fabs(StatConfInterval(pBadBatchMeans,  confidence)) < pBadInterval     ) satisfied = true;
+		    else if(StatSampleSize(scoreBatchMeans) >= 15000 && StatMean(scoreBatchMeans)>previousScore && tauStep > 1e-3) {
+			printf(" ----> %d batches, resetting tau; old tauStep %g;", StatSampleSize(scoreBatchMeans), tauStep);
+			tau -= tauStep;
+			tauStep /= StatSampleSize(scoreBatchMeans)/10000.0;
+			tau += tauStep;
+			printf(" new tauStep %g; new tau %g\n", tauStep, tau);
+			StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
+		    }
+		}
+	    }
+	}
+	assert(satisfied);
+	trackProgress(batch, tau, StatSampleSize(scoreBatchMeans), StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
+	if(tauStep < 0.01) {
+	    if(StatSampleSize(scoreBatchMeans) <= 10000) {
+		printf(" +++++> %d batches, tau %g old tauStep %g", StatSampleSize(scoreBatchMeans), tau, tauStep);
+		tauStep /= StatSampleSize(scoreBatchMeans)/30000.0;
+		if(tauStep > 0.01) tauStep = 0.01;
+		printf(" new tauStep %g\n", tauStep);
+	    }
+	    else if(StatMean(scoreBatchMeans) + 0.02 < previousScore) {
+		printf(" *****> score not increasing enough; old tauStep %g", tauStep);
+		tauStep *= 10; // if the score is not increasing... skip this region
+		if(tauStep > 0.01) tauStep = 0.01;
+		printf(" new tauStep %g\n", tauStep);
+	    }
+	}
+	previousScore = StatMean(scoreBatchMeans);
+	StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
+	StatReset(energyIncStats);
+    }
+    trackProgress(batch, tau);
+    cout<<"Performed "<<batch<<" batches\n";
     if (addHillClimbing) performHillClimbing(10000000LL); //arbitrarily chosen, probably too big.
 
 #ifdef CORES
@@ -381,14 +478,14 @@ void SANA::performHillClimbing(long long int idleCountTarget) {
     T.start();
     uint idleCount = 0;
     while(idleCount < idleCountTarget) {
-        if (iter%iterationsPerStep == 0) trackProgress(iter);
+        if (iter%iterationsPerStep == 0) trackProgress(iter, float(iter)/idleCountTarget);
         double oldScore = currentScore;
         SANAIteration();
         if (abs(oldScore-currentScore) < 0.00001) ++idleCount;
         else idleCount = 0;
         ++iter;
     }
-    trackProgress(iter);
+    trackProgress(iter, float(iter)/idleCountTarget);
     cout<<"Hill climbing took "<<T.elapsedString()<<"s"<<endl;
 }
 
@@ -779,11 +876,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         // this is a terrible way to compute the max; we should loop through all of them and figure out which is the biggest
         // and in fact we haven't yet integrated icsWeight here yet, so assert so
         assert(icsWeight == 0.0);
-        double energyInc = max(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
-            s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
-            secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
-            max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-            max(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
+        // double energyInc = max(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max( s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))), secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))), max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)), max(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
@@ -802,11 +895,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
     {
         // see comment above in max
         assert(icsWeight == 0.0);
-        double energyInc = min(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min(
-            s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
-            secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
-            min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
-            min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
+        //double energyInc = min(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min( s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))), secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))), min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)), min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
         newCurrentScore += ecWeight * (newAligEdges / g1Edges);
         newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
@@ -817,7 +906,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore += jsWeight * (newJsSum);
         newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
 
-        energyInc = newCurrentScore - currentScore; //is this even used?
+        energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
         break;
     }
@@ -865,6 +954,10 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         break;
     }
     }
+#if LIBWAYNE
+    StatAddSample(energyIncStats, energyInc);
+    avgEnergyInc = StatMean(energyIncStats);
+#endif
     //using max and min here because with extremely low temps I was seeing invalid probabilities
     //note: I did not make this change for the other types of ScoreAggregation::  -Nil
     //note2: I moved it down here to apply to all ScoreAggregation methods - WH
@@ -886,7 +979,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         pBadBufferSum += pBad;
         pBadBufferIndex++;
     }
-    return pBad;
+    return (movePbad = pBad);
 }
 
 int SANA::aligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
@@ -1984,19 +2077,27 @@ int SANA::ncIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     return change;
 }
 
-void SANA::trackProgress(long long int iter, long long int maxIters) {
+void SANA::trackProgress(long long int iter, double fractionTime, int batches, double batchScore, double batchPbad) {
     if (!enableTrackProgress) return;
-    double fractionTime = maxIters == -1 ? 0 : iter/(double)maxIters;
     double elapsedTime = timer.elapsed();
     uint iterationsElapsed = iterationsPerformed-oldIterationsPerformed;
     if (elapsedTime == 0) oldTimeElapsed = 0;
     double ips = (iterationsElapsed/(elapsedTime-oldTimeElapsed));
     oldTimeElapsed = elapsedTime;
     oldIterationsPerformed = iterationsPerformed;
+#if USE_CPP_COUT
     cout<<iter/iterationsPerStep<<" ("<<100*fractionTime<<"%,"<<elapsedTime<<"s): score = "<<currentScore;
     cout<< " ips = "<<ips<<", P("<<Temperature<<") = "<<acceptingProbability(avgEnergyInc, Temperature);
-    cout<<", pBad = "<<incrementalMeanPBad()<<" eq. " << getEquilibriumPBadAtTemp(Temperature) <<endl;
-
+    cout<<", pBad = "<<incrementalMeanPBad();
+    if(batches) cout << " " << batches << " bSc " << batchScore;
+    cout << endl;
+#else
+    printf("%ld (%.5g%%,%.1fs): score = %.3g ips = %.2g, P(%.3g) = %.3g, pBad = %.3g",
+	long(iter/iterationsPerStep), 100*fractionTime, elapsedTime, currentScore, ips, Temperature,
+	acceptingProbability(avgEnergyInc, Temperature), incrementalMeanPBad());
+    if(batches) printf(" batches %d bSc %.3g", batches, batchScore);
+    printf("\n");
+#endif
     bool checkScores = true;
     if (checkScores) {
         double realScore = eval(A);
@@ -2084,10 +2185,10 @@ void SANA::constantTempIterations(long long int iterTarget) {
     initDataStructures();
     long long int iter;
     for (iter = 1; iter < iterTarget ; ++iter) {
-        if (iter%iterationsPerStep == 0) trackProgress(iter);
+        if (iter%iterationsPerStep == 0) trackProgress(iter, float(iter)/iterTarget);
         SANAIteration();
     }
-    trackProgress(iter);
+    trackProgress(iter, float(iter)/iterTarget);
 }
 
 /* when we run sana at a fixed temp, scores generally go up
