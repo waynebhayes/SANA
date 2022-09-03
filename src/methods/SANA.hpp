@@ -81,7 +81,7 @@ private:
     vector<uint> stationary;
 
     //data structures for the networks
-    uint n1, n2;
+    uint n1, n2, m1, m2;
     double g1Edges, g2Edges; //stored as double because they appear in division
     uint pairsCount; // number of combinations of (g1_node_x, g1_node_y) including
                      // a pair that includes the same node (g1_node_x, g1_node_x)

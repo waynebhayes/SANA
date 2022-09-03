@@ -134,14 +134,14 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
     double maxSeconds = 0;
     long long int maxIterations = 0;
     if (t > 0) maxSeconds = 60*t;
-    if (ts > 0) maxSeconds = ts;
-    if (tm > 0) maxSeconds = 60*tm;
-    if (it > 0) maxIterations = (long long int) it;
-    if (itk > 0) maxIterations = (long long int) (itk * 1e3);
-    if (itm > 0) maxIterations = (long long int) (itm * 1e6);
-    if (itb > 0) maxIterations = (long long int) (itb * 1e9);
-    if(tolerance < 0.01) cerr << "Warning: requested tolerance ("<<tolerance<<") is below 0.01; may cause excessive runtime\n";
-    if(tolerance > 0.5) cerr << "Warning: large requested tolerance ("<<tolerance<<") may result in unusually bad solution\n";
+    else if (ts > 0) maxSeconds = ts;
+    else if (tm > 0) maxSeconds = 60*tm;
+    else if (it > 0) maxIterations = (long long int) it;
+    else if (itk > 0) maxIterations = (long long int) (itk * 1e3);
+    else if (itm > 0) maxIterations = (long long int) (itm * 1e6);
+    else if (itb > 0) maxIterations = (long long int) (itb * 1e9);
+    else if(tolerance < 0.01) cerr << "Warning: requested tolerance ("<<tolerance<<") is below 0.01; may cause excessive runtime\n";
+    else if(tolerance > 0.5) cerr << "Warning: large requested tolerance ("<<tolerance<<") may result in unusually bad solution\n";
 
     Alignment startAlig;
     if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);

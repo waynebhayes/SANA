@@ -62,6 +62,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
                 localScoresFileName(localScoresFileName) {
     initTau();
     n1 = G1->getNumNodes(); n2 = G2->getNumNodes();
+    m1 = G1->getNumEdges(); m2 = G2->getNumEdges();
     g1Edges = G1->getNumEdges(); g2Edges = G2->getNumEdges();
     g1TotalWeight = G1->getTotalEdgeWeight(); g2TotalWeight = G2->getTotalEdgeWeight();
     pairsCount = n1 * (n1 + 1) / 2;
@@ -381,23 +382,31 @@ Alignment SANA::runUsingIterations() {
 }
 
 
+// All of these are purely heuristic
+#define MAX_TAU_STEP 0.01
+#define MIN_TAU_STEP 0.001
+#define BATCH_SIZE sqrt(n1*n2)
+#define MIN_BATCHES 30
+#define HAPPY_BATCHES (m1+m2)
+#define MIN_CONFIDENCE 0.9999
+
 Alignment SANA::runUsingConfidenceIntervals() {
     initDataStructures();
     setInterruptSignal();
 
-#ifndef MULTI_PAIRWISE // note we DO want to know the speed when doing MPI
+#if 0 //ifndef MULTI_PAIRWISE // note we DO want to know the speed when doing MPI
     getIterPerSecond(); // this takes several seconds of CPU time; don't do it during multi-only-iterations.
 #endif
     iterationsPerStep = 1; // this code doesn't use "steps"
     // FIXME: make all of these changeable on the command line
-    int batch=0, batchSize = 1000;
-    double tau, tauStep = 0.01; // dynamically made smaller or bigger as necessary
-    double accuracy = tolerance * (tauStep), confidence = 1-pow(accuracy, 1.5); // gives about the same as the above.
-    if(confidence < 0.9999) confidence = 0.9999; // doesn't add much CPU to increase confidence.
+    int batch=0, batchSize = BATCH_SIZE;
+    double tau, tauStep = MAX_TAU_STEP; // dynamically made smaller or bigger as necessary
+    double tolPerStep = fabs(tolerance) * (tauStep), confidence = 1-pow(tolPerStep, 1.5); // gives about the same as the above.
+    if(confidence < MIN_CONFIDENCE) confidence = MIN_CONFIDENCE; // doesn't add much CPU to increase confidence.
 
     bool verbose = true;
     if(verbose) printf("SANA::runUsingConfidenceIntervals Parameters: batchSize %d confidence %g tolerance per step %g\n",
-	batchSize, confidence, accuracy);
+	batchSize, confidence, tolPerStep);
 
 #if LIBWAYNE
     STAT *scoreBatch = StatAlloc(0, 0.0, 0.0, false, false);
@@ -421,38 +430,39 @@ Alignment SANA::runUsingConfidenceIntervals() {
 	    SANAIteration();
 	    StatAddSample(scoreBatch, currentScore);
 	    StatAddSample(pBadBatch, movePbad);
-	    if(StatSampleSize(scoreBatch) == batchSize) {
+	    if(StatNumSamples(scoreBatch) == batchSize) {
+		++batch; ++batchesPerTemperature;
 		StatAddSample(scoreBatchMeans, StatMean(scoreBatch));
 		StatAddSample(pBadBatchMeans, StatMean(pBadBatch));
 		StatReset(scoreBatch); StatReset(pBadBatch);
-		++batch; ++batchesPerTemperature;
 
-		if(StatSampleSize(scoreBatchMeans)>=30){
+		if(StatNumSamples(scoreBatchMeans)>=MIN_BATCHES){
 		    double scoreInterval, pBadInterval;
-		    scoreInterval = pBadInterval = fabs(accuracy);
-		    if(accuracy<0){scoreInterval *= StatMean(scoreBatchMeans); pBadInterval *= StatMean(pBadBatchMeans);}
-		    if( fabs(StatConfInterval(scoreBatchMeans, confidence)) < scoreInterval &&
-			fabs(StatConfInterval(pBadBatchMeans,  confidence)) < pBadInterval     ) satisfied = true;
-		    else if(StatSampleSize(scoreBatchMeans) >= 15000) {
+		    // We should divide by two since StatConfInterval is 1-tailed, but half it again to be conservative
+		    scoreInterval = pBadInterval = tolPerStep/4;
+		    if(tolerance<0){scoreInterval *= StatMean(scoreBatchMeans); pBadInterval *= StatMean(pBadBatchMeans);}
+		    if( StatConfInterval(scoreBatchMeans, confidence) < scoreInterval &&
+			StatConfInterval(pBadBatchMeans,  confidence) < pBadInterval     ) satisfied = true;
+		    else if(StatNumSamples(scoreBatchMeans) >= HAPPY_BATCHES) {
 			// Note that you don't HAVE to make tauStep a lot smaller; in regions where the score is increasing
 			// dramatically, it's enough to reset the batch system... because if you don't reset it, the low
 			// scores at the beginning of this temperature force a HUGE number of batches to be needed before
 			// the batchMeans align.
 			if(StatMean(scoreBatchMeans)>previousScore) { // do nothing other than reset the batches
 			    if(verbose) printf(" &&&&> %d batches, batchMeanScore %g is increasing; ",
-				StatSampleSize(scoreBatchMeans), StatMean(scoreBatchMeans));
+				StatNumSamples(scoreBatchMeans), StatMean(scoreBatchMeans));
 			    previousScore = StatMean(scoreBatchMeans);
 			    if(verbose) printf("reset batches\n");
 			    lastBatchCount = 0; StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
-			} else if(tauStep>1e-3 && StatSampleSize(scoreBatchMeans) >= 15000+lastBatchCount) {
+			} else if(tauStep>MIN_TAU_STEP && StatNumSamples(scoreBatchMeans) >= HAPPY_BATCHES+lastBatchCount) {
 			    if(verbose) printf(" ----> %d batches, score %g decreased at tau %g; reduce tauStep from %g",
-				StatSampleSize(scoreBatchMeans), StatMean(scoreBatchMeans), tau, tauStep);
-			    tau -= tauStep;
+				StatNumSamples(scoreBatchMeans), StatMean(scoreBatchMeans), tau, tauStep);
+			    // tau -= tauStep;
 			    tauStep *= 0.666;
-			    if(tauStep < 1e-3) tauStep = 1e-3;
-			    tau += tauStep;
+			    if(tauStep < MIN_TAU_STEP) tauStep = MIN_TAU_STEP;
+			    // tau += tauStep;
 			    if(verbose) printf(" to %g and backtrack to tau %g\n", tauStep, tau);
-			    lastBatchCount = StatSampleSize(scoreBatchMeans);
+			    lastBatchCount = StatNumSamples(scoreBatchMeans);
 			}
 		    }
 		}
@@ -460,18 +470,18 @@ Alignment SANA::runUsingConfidenceIntervals() {
 	}
 	assert(satisfied);
 	trackProgress(batch, tau, batchesPerTemperature, StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
-	if(tauStep < 0.01) {
-	    if(StatSampleSize(scoreBatchMeans) < 15000) {
-		if(verbose) printf(" +++++> %d batches, tau %g old tauStep %g", StatSampleSize(scoreBatchMeans), tau, tauStep);
+	if(tauStep < MAX_TAU_STEP) {
+	    if(StatNumSamples(scoreBatchMeans) < HAPPY_BATCHES) {
+		if(verbose) printf(" +++++> %d batches, tau %g old tauStep %g", StatNumSamples(scoreBatchMeans), tau, tauStep);
 		tauStep *= 3;
-		if(tauStep > 0.01) tauStep = 0.01;
+		if(tauStep > MAX_TAU_STEP) tauStep = MAX_TAU_STEP;
 		if(verbose) printf(" new tauStep %g\n", tauStep);
 	    }
 	    else if(StatMean(scoreBatchMeans) + 0.00 < previousScore) {
 		if(verbose) printf(" !!!!!> score %g is stuck below previous %g; skip region by increasing tauStep from %g",
 		    StatMean(scoreBatchMeans), previousScore, tauStep);
 		tauStep *= 10; // if the score is not increasing... skip this region
-		if(tauStep > 0.01) tauStep = 0.01;
+		if(tauStep > MAX_TAU_STEP) tauStep = MAX_TAU_STEP;
 		if(verbose) printf(" to %g\n", tauStep);
 	    }
 	}

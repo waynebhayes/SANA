@@ -380,8 +380,8 @@ double StatGeomMean(STAT*s)
 
 double StatVariance(STAT*s)
 {
-    /* unbiased estimator, Law & Kelton eqn 4.4 */
-    return (s->sum2 - s->sum*s->sum / s->n) / (s->n - 1);
+    /* unbiased estimator, Law & Kelton eqn 4.4; take ABS since if it's zero then roundoff sometimes makes it negative */
+    return fabs(s->sum2 - s->sum*s->sum / s->n) / (s->n - 1);
 }
 
 double StatGeomVariance(STAT*s)

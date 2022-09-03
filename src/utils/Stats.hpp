@@ -33,7 +33,7 @@ double StatStdDev(STAT*);   /* just the square root of the variance */
 double StatGeomStdDev(STAT*);
 double StatSkew(STAT*);  /* measure of assymetry of the distribution */
 double StatGeomSkew(STAT*);
-#define StatSampleSize(s) ((s)->n)
+#define StatNumSamples(s) ((s)->n)
 int *StatHistogram(STAT*);	/* non-cumulative histogram */
 int *StatCumulativeHistogram(STAT*);
 
