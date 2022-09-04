@@ -438,8 +438,7 @@ Alignment SANA::runUsingConfidenceIntervals() {
 
 		if(StatNumSamples(scoreBatchMeans)>=MIN_BATCHES){
 		    double scoreInterval, pBadInterval;
-		    // We should divide by two since StatConfInterval is 1-tailed, but half it again to be conservative
-		    scoreInterval = pBadInterval = tolPerStep/4;
+		    scoreInterval = pBadInterval = tolPerStep/2; // divide by two since StatConfInterval is 1-tailed.
 		    if(tolerance<0){scoreInterval *= StatMean(scoreBatchMeans); pBadInterval *= StatMean(pBadBatchMeans);}
 		    if( StatConfInterval(scoreBatchMeans, confidence) < scoreInterval &&
 			StatConfInterval(pBadBatchMeans,  confidence) < pBadInterval     ) satisfied = true;
