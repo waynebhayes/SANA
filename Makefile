@@ -1,5 +1,5 @@
 MY_CC = g++
-CXXFLAGS = -static -I "src/utils" "-DLIBWAYNE=1" -Wall -std=c++11 -pthread #-U__STRICT_ANSI__ -pg -fno-inline
+CXXFLAGS = -I "src/utils" "-DLIBWAYNE=1" -Wall -std=c++11 -pthread #-U__STRICT_ANSI__ -pg -fno-inline
 
 MAIN = sana
 
