@@ -386,7 +386,7 @@ Alignment SANA::runUsingIterations() {
 #define BATCH_SIZE sqrt(n1*n2)
 #define MIN_BATCHES 30
 #define HAPPY_BATCHES (int)(m1+m2) // shut compiler up about uint/int comparison
-#define MIN_CONFIDENCE 0.9999
+#define MIN_CONFIDENCE 0.99999
 #define TOL_SAFETY_MARGIN 1.04 // empirically I've seen final objective values up to 3.3% below tolerance, so reduce it by 4%.
 
 Alignment SANA::runUsingConfidenceIntervals() {
