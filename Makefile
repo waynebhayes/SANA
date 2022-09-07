@@ -1,5 +1,8 @@
+ARCH=$(shell uname -a | awk '{if(/CYGWIN/){V="CYGWIN"}else if(/Darwin/){V="Darwin"}else if(/Linux/){V="Linux"}}END{if(V){print V;exit}else{print "unknown OS" > "/dev/stderr"; exit 1}}')
+ARCH_FLAGS=$(shell ($(GCC) -v 2>&1; uname -a) | awk '/CYGWIN/{print "-U__STRICT_ANSI__"}')
+
 MY_CC = g++
-CXXFLAGS = -I "src/utils" "-DLIBWAYNE=1" -Wall -std=c++11 -pthread #-U__STRICT_ANSI__ -pg -fno-inline
+CXXFLAGS = -I "src/utils" "-DLIBWAYNE=1" -Wall -std=c++11 -pthread $(ARCH_FLAGS) #-pg -fno-inline
 
 MAIN = sana
 
