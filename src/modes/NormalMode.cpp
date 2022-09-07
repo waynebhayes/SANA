@@ -14,7 +14,7 @@ void NormalMode::run(ArgumentParser& args) {
 
     //before loading graphs, check that the user did not forget to provide the execution time/iter
     //this is just to detect this common mistake early
-    if (args.strings["-method"] == "sana") MethodSelector::validateTimeOrIterLimit(args);
+    if (args.strings["-method"] == "sana") MethodSelector::validateRunTimeSpec(args);
 
     pair<Graph, Graph> graphs = GraphLoader::initGraphs(args);
     Graph G1 = graphs.first;
@@ -29,8 +29,8 @@ void NormalMode::run(ArgumentParser& args) {
     assert(A.isCorrectlyDefined(G1, G2) and "Resulting alignment is not correctly defined");
 
     string fileName = args.strings["-o"];
-    bool longReport = (args.bools["-multi-iteration-only"] ? false : true);
-    Report::saveReport(G1, G2, A, M, method, fileName, longReport);
+    bool multi_iter_only = (args.bools["-multi-iteration-only"] ? true : false);
+    Report::saveReport(G1, G2, A, M, method, fileName, !multi_iter_only);
     Report::saveLocalMeasures(G1, G2, A, M, method, args.strings["-localScoresFile"]);
     delete method;
 }

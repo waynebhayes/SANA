@@ -346,9 +346,6 @@ Alignment SANA::runUsingIterations() {
     initDataStructures();
     setInterruptSignal();
 
-#ifndef MULTI_PAIRWISE // note we DO want to know the speed when doing MPI
-    getIterPerSecond(); // this takes several seconds of CPU time; don't do it during multi-only-iterations.
-#endif
     long long int maxIters = useIterations ? maxIterations : (long long int) (getIterPerSecond()*maxSeconds);
     double leeway = 2;
     double maxSecondsWithLeeway = maxSeconds * leeway;
@@ -388,16 +385,14 @@ Alignment SANA::runUsingIterations() {
 #define MIN_TAU_STEP 0.001
 #define BATCH_SIZE sqrt(n1*n2)
 #define MIN_BATCHES 30
-#define HAPPY_BATCHES (m1+m2)
+#define HAPPY_BATCHES (int)(m1+m2) // shut compiler up about uint/int comparison
 #define MIN_CONFIDENCE 0.9999
 
 Alignment SANA::runUsingConfidenceIntervals() {
     initDataStructures();
     setInterruptSignal();
 
-#if 0 //ifndef MULTI_PAIRWISE // note we DO want to know the speed when doing MPI
-    getIterPerSecond(); // this takes several seconds of CPU time; don't do it during multi-only-iterations.
-#endif
+    if(!multi_iteration_only) getIterPerSecond(); // avoid wasting several seconds of CPU time
     iterationsPerStep = 1; // this code doesn't use "steps"
     // FIXME: make all of these changeable on the command line
     int batch=0, batchSize = BATCH_SIZE;
@@ -2180,6 +2175,7 @@ void SANA::setTInitial(double t) { TInitial = t; }
 void SANA::setTFinal(double t) { TFinal = t; }
 void SANA::setTDecayFromTempRange() { TDecay = -log(TFinal/TInitial); }
 void SANA::setDynamicTDecay() { dynamicTDecay = true; }
+void SANA::setMultiOnly() { multi_iteration_only = true; }
 
 double SANA::getIterPerSecond() {
     if (not initializedIterPerSecond) initIterPerSecond();

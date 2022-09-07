@@ -15,7 +15,7 @@ public:
 static Method* initMethod(const Graph& G1, const Graph& G2, ArgumentParser& args, MeasureCombination& M);
 
 
-static void validateTimeOrIterLimit(ArgumentParser& args);
+static void validateRunTimeSpec(ArgumentParser& args);
 
 private:
 

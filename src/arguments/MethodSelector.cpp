@@ -78,7 +78,7 @@ Method* MethodSelector::initMethod(const Graph& G1, const Graph& G2, ArgumentPar
     throw runtime_error("Error: unknown method '" + name + "'");
 }
 
-void MethodSelector::validateTimeOrIterLimit(ArgumentParser& args) {
+void MethodSelector::validateRunTimeSpec(ArgumentParser& args) {
     double ts = args.doubles["-ts"], tm = args.doubles["-tm"], t = args.doubles["-t"],
            it = args.doubles["-it"], itk = args.doubles["-itk"],
            itm = args.doubles["-itm"], itb = args.doubles["-itb"],
@@ -127,7 +127,7 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
         catch (...) { throw runtime_error("invalid -tinitial argument: "+TDecayArg); }
     }
 
-    validateTimeOrIterLimit(args);
+    validateRunTimeSpec(args);
     double ts = args.doubles["-ts"], tm = args.doubles["-tm"], t = args.doubles["-t"],
            it = args.doubles["-it"], itk = args.doubles["-itk"],
            itm = args.doubles["-itm"], itb = args.doubles["-itb"], tolerance = args.doubles["-tolerance"];
@@ -169,6 +169,7 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
         goldilocksMethod->printGoldilocksStatistics();
     }
     if (args.bools["-dynamictdecay"]) sana->setDynamicTDecay();
+    if (args.bools["-multi-iteration-only"]) sana->setMultiOnly();
     return sana;
 }
 
