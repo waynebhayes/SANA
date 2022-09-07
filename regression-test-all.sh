@@ -46,7 +46,6 @@ while [ $# -gt -0 ]; do
     *) break;;
     esac
 done
-[ -x "$EXE" -o "$MAKE" = true ] || die "Executable '$EXE' must exist or you must specify -make"
 
 REAL_CORES=`(cpus 2>/dev/null || echo 1) | awk '{print 1*$1}'`
 [ "$REAL_CORES" -gt 0 ] || die "can't figure out how many cores this machine has"
@@ -99,12 +98,13 @@ for EXT in '' $EXECS; do
 	fi
 	[ $NUM_FAILS -eq 0 ] || warn "cumulative number of compile failures is $NUM_FAILS"
     fi
+    #[ -x "$EXE" ] || die "Executable '$EXE' must exist or you must specify -make"
     # skip multi and float since they will be tested separately below
     if [ "$ext" = .multi -o "$ext" = .float ] || ./sana$ext -itm 1 -s3 1 -g1 yeast -g2 human -tinitial 1 -tdecay 1 >/dev/null 2>&1; then
 	WORKING_EXECS="${WORKING_EXECS}sana$ext$TAB"
     else
-	warn "removing executable sana$ext because it either failed to make or failed a trivial test"
-	rm -f sana$ext
+	warn "executable sana$ext failed a trivial test"
+	#rm -f sana$ext
     fi
 done
 (( NUM_FAILS *= 1000 ))

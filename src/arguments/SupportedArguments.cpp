@@ -20,7 +20,7 @@ vector<string> defaultArguments = {
 "-goldilocksmethod auto",
 "-mode normal",
 "-method sana",
-"-tolerance 0.05",
+"-tolerance 0.1",
 "-s3 0",
 "-js 0",
 "-lgraaliter 1000",

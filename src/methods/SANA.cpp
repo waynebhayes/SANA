@@ -2296,7 +2296,7 @@ double SANA::getEquilibriumPBadAtTemp(double temp, double maxTimeInS, int logLev
     double nextIps = (double)iter / (double)timer.elapsed();
     pair<double, double> nextPair (temp, nextIps);
     ipsList.push_back(nextPair);
-    if (logLevel >= 2) {
+    if (logLevel >= 0) {
         cout<<"> getEquilibriumPBadAtTemp("<<temp<<") = "<<pBadAvgAtEq<<" (score: "<<currentScore<<")";
         if (reachedEquilibrium) cout<<" (time: "<<timer.elapsed()<<"s)";
         else cout<<" (didn't detect eq. after "<<maxSeconds<<"s)";
