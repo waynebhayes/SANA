@@ -387,6 +387,7 @@ Alignment SANA::runUsingIterations() {
 #define MIN_BATCHES 30
 #define HAPPY_BATCHES (int)(m1+m2) // shut compiler up about uint/int comparison
 #define MIN_CONFIDENCE 0.9999
+#define TOL_SAFETY_MARGIN 1.04 // empirically I've seen final objective values up to 3.3% below tolerance, so reduce it by 4%.
 
 Alignment SANA::runUsingConfidenceIntervals() {
     initDataStructures();
@@ -398,7 +399,8 @@ Alignment SANA::runUsingConfidenceIntervals() {
     int batch=0, batchSize = BATCH_SIZE;
     double tau, tauStep = MAX_TAU_STEP; // dynamically made smaller or bigger as necessary
     assert(tolerance > 0);
-    double tolPerStep = tolerance * (tauStep), confidence = 1-pow(tolPerStep, 1.5); // gives about the same as the above.
+    double tolPerStep = tolerance * (tauStep) / TOL_SAFETY_MARGIN;
+    double confidence = 1-pow(tolPerStep, 1.5); // empirically works well.
     if(confidence < MIN_CONFIDENCE) confidence = MIN_CONFIDENCE; // doesn't add much CPU to increase confidence.
 
     bool verbose = true;
