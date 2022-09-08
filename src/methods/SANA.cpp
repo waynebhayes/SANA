@@ -387,7 +387,7 @@ Alignment SANA::runUsingIterations() {
 #define MIN_BATCHES 30
 #define HAPPY_BATCHES (int)(m1+m2) // shut compiler up about uint/int comparison
 #define MIN_CONFIDENCE 0.99999
-#define TOL_SAFETY_MARGIN 1.04 // empirically I've seen final objective values up to 3.3% below tolerance, so reduce it by 4%.
+#define TOL_SAFETY_MARGIN 1.07 // empirically this seems to cut failure rates to below 5%.
 
 Alignment SANA::runUsingConfidenceIntervals() {
     initDataStructures();
