@@ -34,7 +34,7 @@ lscpu >$TMPDIR/lscpu 2>/dev/null &&
     sysctl -n hw.ncpu > $TMPDIR/cpus && output
 
 # Cygwin:
-if (arch; uname -i) | grep CYGWIN >/dev/null; then
+if (arch; uname -a) | grep CYGWIN >/dev/null; then
     grep -c '^processor[ 	]*:' /proc/cpuinfo
 elif [ -d /dev/cpu -a ! -f /dev/cpu/microcode ]; then
     ls -F /dev/cpu | fgrep -c > $TMPDIR/cpus && output
