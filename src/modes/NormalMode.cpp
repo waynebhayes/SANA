@@ -24,6 +24,11 @@ void NormalMode::run(ArgumentParser& args) {
     measureSelector::initMeasures(M, G1, G2, args); 
     Method* method;
     method = MethodSelector::initMethod(G1, G2, args, M);
+    // TODO: use future and async to create a bunch of alignments simultaneously (see arguments/graphLoader for an example)
+    // something like this:
+    // auto futureA[number]; for(i=0; i<number; i++) futureA[i] = async(method->runAndPrintTime().....); A[i].get();
+    // and then either: pick the best one and output only that... OR
+    // go through all of them and produce a "Network Alignment Frequency" for all pairs of aligned nodes.
     Alignment A = method->runAndPrintTime();
     A.printDefinitionErrors(G1,G2);
     assert(A.isCorrectlyDefined(G1, G2) and "Resulting alignment is not correctly defined");
