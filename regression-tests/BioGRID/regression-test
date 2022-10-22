@@ -161,7 +161,7 @@ if [ ! -z "$CompareFile" ]; then
 	echo "" # finish the "echo -n" line above
 	errorDif=`parse "$errorDif/$EXTRA_MARGIN"`
         errorDif=`parse "ABS($errorDif)" | awk '{printf "%.16f\n",$1}'`
-        if echo nothing | awk "$errorDif > $ErrorMargin{exit 1}"; then
+        if echo nothing | awk "$errorDif > $ErrorMargin{exit 0}END{exit 1}"; then # remember in bash 0=true
             touch $OutputDir/failed
 	    echo "$name failed error margin: ($newItem - $baseItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
 	    (( ++NUM_FAILS ))
