@@ -4,7 +4,13 @@ Note: when cloning, you should get the submodules too, using:
 
     git clone --recurse-submodules https://github.com/waynebhayes/SANA
 
-To ensure everything compiles and runs fine, and perform a full regression test of everything (it could take several hours but is highly recommended), run:
+SANA has been tested on Windows, Mac, and Linux using GCC/G++ versions 5, 7, and 9; for some reason it fails to compile under GCC 11.
+
+If you are running under Windows, including CYGWIN (but probably not under WSL), be sure git is not converting end-of-line characters using
+
+    git config --global core.autocrlf false
+
+Once you've cloned SANA, ensured it's not changing LF to CRLF, and ensured you're using a supported compiler, perform a full regression test using the following command. Note that it may take several hours to complete.
 
     ./regression-test-all.sh -make
 
