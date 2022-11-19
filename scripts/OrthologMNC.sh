@@ -25,6 +25,7 @@ TMPDIR=`mktemp -d /tmp/$BASENAME.XXXXXX`
  trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15 # call trap "" N to remove the trap for signal N
 
 #################### END OF SKELETON, ADD YOUR CODE BELOW THIS LINE
+[ $# -eq 2 ] || die "expecting 2 arguments"
 
 awk '
     FNR==1{next} # skip header line
