@@ -33,7 +33,10 @@ vector<string> defaultArguments = {
 "-sec 0",
 "-maxGraphletSize 4",
 "-ms3_numer default",
-"-ms3_denom default"
+"-ms3_denom default", 
+"-parallelTotalAlign 1", 
+"-parallelBatch 1", 
+"-parallelReportAll 0"
 };
 
 //This file contains every argument supported by SANA contained basically inside an array, each element in the array contains 6 fields.
@@ -84,6 +87,9 @@ vector<array<string, 6>> supportedArguments = {
     { "-rewire2", "double", "0", "Add rewiring noise to G2", "If set greater than 0, the corresponding fraction of edges in G2 is randomly rewired.", "0" },
     { "-fcolor1", "string", "", "File with colors for nodes in G1", "Option to assign colors to the nodes of G1 and enforce that only nodes with the same color can be matched. Format: empty string to disable this option (all nodes get a default color), or a string representing the file containing the node colors", "0" },
     { "-fcolor2", "string", "", "File with colors for nodes in G2", "Option to assign colors to the nodes of G2 and enforce that only nodes with the same color can be matched. Format: empty string to disable this option (all nodes get a default color), or a string representing the file containing the node colors", "0" },
+    { "-parallelTotalAlign", "intD", "", "Number of Alignments", "Option indicates the total number of alignments to run. Default value will be 1.", "0"}, 
+    { "-parallelBatch", "intD", "", "Number of Simultaneous Alignments", "Option indicates the number of alignments to run simultaneously. Default value will be 1.", "0"}, 
+    { "-parallelReportAll", "intD", "", "Report", "Option indicates whether the user wants the report of only the best alignment or all alignments. Default value would be 0", "0"}, 
     { "End General Options", "", "banner", "", "", "0" },
     //---------------------------------END GENERAL---------------------------------------
 
