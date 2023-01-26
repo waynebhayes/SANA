@@ -14,6 +14,7 @@ void NormalMode::run(ArgumentParser& args) {
 
     //before loading graphs, check that the user did not forget to provide the execution time/iter
     //this is just to detect this common mistake early
+    //just a try
     if (args.strings["-method"] == "sana") MethodSelector::validateRunTimeSpec(args);
 
     pair<Graph, Graph> graphs = GraphLoader::initGraphs(args);
