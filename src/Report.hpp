@@ -18,6 +18,13 @@ static void saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
 static void saveLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A,
     const MeasureCombination& M, const Method* method, const string& localMeasureFile);
 
+static void reportAll(const Graph& G1, const Graph& G2, const Alignment& A,const MeasureCombination& M, 
+    const Method* method, const string& baseName, ofstream& alignOfs, ofstream& outOfs, bool longVersion, int num);
+static string getFileName(const string& reportFileName, const Graph& G1, const Graph& G2, const Method* method, const Alignment& A, const string& type);
+static void saveAllLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A, const MeasureCombination& M,
+    const Method* method, ofstream& localMeasureOfs, const string& fileName, int num);
+
+
 /*Some pair of nodes dubbed as "core alignment" appear to have greater affinity
   for aligning with each other as opposed to other nodes. We've tried to
   measure this affinity across iterations by assigning scores based on

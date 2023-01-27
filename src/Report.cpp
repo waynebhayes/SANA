@@ -251,3 +251,157 @@ void Report::printGraphStats(const Graph& G, uint numCCsToPrint, ofstream& ofs) 
     }
     ofs << endl << endl;
 }
+
+string Report::getFileName(const string& reportFileName, const Graph& G1, const Graph& G2, const Method* method, const Alignment& A, const string& type) {
+    return formattedFileName(reportFileName, type, G1.getName(), G2.getName(), method, A);
+}
+
+void Report::reportAll(const Graph& G1, const Graph& G2, const Alignment& A,
+    const MeasureCombination& M, const Method* method, const string& baseName, ofstream& alignOfs, ofstream& outOfs, bool longVersion, int num) {
+    Timer T;
+    T.start();
+
+    cout << "Saving alignment "<<  to_string(num) << " in edge list format in \"" << baseName + ".align" << "\"" << endl;
+    // saveAlignmentAsEdgeList(A, G1, G2, aligFileName);
+    vector<uint> g1ColorIds;
+    g1ColorIds.reserve(G1.numColors());
+    for (uint colId = 0; colId < G1.numColors(); colId++) g1ColorIds.push_back(colId);
+    sort(g1ColorIds.begin(), g1ColorIds.end(), [&G1](const uint& id1, const uint& id2) {
+        return G1.numNodesWithColor(id1) < G1.numNodesWithColor(id2);
+        });
+    alignOfs << "This is alignment " + to_string(num) << endl;
+    for (uint colId : g1ColorIds) {
+        for (uint node : *(G1.getNodesWithColor(colId))) {
+            alignOfs << G1.getNodeName(node) << "\t" << G2.getNodeName(A[node]) << endl;
+        }
+    }
+    alignOfs << endl;
+
+    cout << "Saving " << "alignment " + to_string(num) << " report in \"" << baseName + ".out" << "\"" << endl;
+    outOfs << "This is alignment " + to_string(num) << endl;
+    for (uint i = 0; i < A.size(); i++) outOfs << A[i] << " ";
+    outOfs << endl;
+    outOfs << endl << currentDateTime() << endl;
+    outOfs << "Seed: " << getRandomSeed() << endl;
+
+    const uint numCCsToPrint = 3;
+    outOfs << endl;
+    outOfs << "G1: " << G1.getName() << endl;
+    if (longVersion) printGraphStats(G1, numCCsToPrint, outOfs);
+    outOfs << "G2: " << G2.getName() << endl;
+    if (longVersion) printGraphStats(G2, numCCsToPrint, outOfs);
+    if (method != NULL) {
+        outOfs << "Method: " << method->getName() << endl;
+        method->describeParameters(outOfs);
+        outOfs << "Actual execution time = " << method->getExecTime() << "s" << endl;
+    }
+
+    if (not longVersion) {
+        cout << "Took " << T.elapsed() << " seconds to save the alignment and report." << endl;
+        return;
+    }
+
+    Timer T2;
+    T2.start();
+    outOfs << endl << "Scores:" << endl;
+    M.printMeasures(A, outOfs);
+    outOfs << endl;
+    if (M.containsMeasure("nc")) {
+        auto NC = M.getMeasure("nc");
+        auto ncByColors = ((NodeCorrectness*)NC)->evalByColor(A, G1, G2);
+        if (ncByColors.size() > 1) {
+            outOfs << "NC by color:" << endl;
+            for (auto p : ncByColors) {
+                outOfs << p.first << ": " << p.second << endl;
+            }
+            outOfs << endl;
+        }
+    }
+    cout << "Writing scores done (" << T2.elapsedString() << ")" << endl;
+
+    Timer T3;
+    T3.start();
+    outOfs << "Common subgraph:" << endl;
+    Graph CS = G1.graphIntersection(G2, *(A.getVector()));
+    printGraphStats(CS, numCCsToPrint, outOfs);
+    auto CCs = CS.connectedComponents();
+    uint numCCs = CCs.size();
+    int tableRows = min((uint)5, numCCs) + 2;
+    vector<vector<string>> table(tableRows, vector<string>(9));
+    table[0][0] = "Graph"; table[0][1] = "n"; table[0][2] = "m"; table[0][3] = "alig-edges";
+    table[0][4] = "indu-edges"; table[0][5] = "EC";
+    table[0][6] = "ICS"; table[0][7] = "S3"; table[0][8] = "JS";
+
+    table[1][0] = "G1"; table[1][1] = to_string(G1.getNumNodes()); table[1][2] = to_string(G1.getNumEdges());
+    table[1][3] = to_string(A.numAlignedEdges(G1, G2)); table[1][4] = to_string(G2.numEdgesInNodeInducedSubgraph(A.asVector()));
+    table[1][5] = to_string(M.eval("ec", A));
+    table[1][6] = to_string(M.eval("ics", A)); table[1][7] = to_string(M.eval("s3", A)); table[1][8] = to_string(M.eval("js", A));
+
+    for (int i = 0; i < tableRows - 2; i++) {
+        Graph H = CS.nodeInducedSubgraph(CCs[i]);
+        Alignment newA(CCs[i]);
+        newA.compose(A);
+        table[i + 2][0] = "CCS_" + to_string(i); table[i + 2][1] = to_string(H.getNumNodes());
+        table[i + 2][2] = to_string(H.getNumEdges());
+        table[i + 2][3] = to_string(newA.numAlignedEdges(H, G2));
+        table[i + 2][4] = to_string(G2.numEdgesInNodeInducedSubgraph(newA.asVector()));
+        EdgeCorrectness ec(&H, &G2);
+        table[i + 2][5] = to_string(ec.eval(newA));
+        InducedConservedStructure ics(&H, &G2);
+        table[i + 2][6] = to_string(ics.eval(newA));
+        SymmetricSubstructureScore s3(&H, &G2);
+        table[i + 2][7] = to_string(s3.eval(newA));
+        JaccardSimilarityScore js(&H, &G2);
+        table[i + 2][8] = to_string(js.eval(newA));
+    }
+
+    outOfs << "Common connected subgraphs:" << endl;
+    printTable(table, 2, outOfs);
+    outOfs << endl;
+    cout << "Writing table done (" << T3.elapsedString() << ")" << endl;
+
+    const bool PRINT_CCS = true;
+    if (PRINT_CCS) {
+        const uint EDGE_COUNT_DIST = 0;
+        for (uint j = 0; j < numCCs; j++) {
+            outOfs << "CCS_" << j << " Alignment, local (distance 1 to " << EDGE_COUNT_DIST << ") edge counts and s3 score" << endl;
+            const vector<uint>& nodes = CCs[j];
+            if (nodes.size() < 2) break;
+            for (uint i = 0; i < nodes.size(); i++) {
+                outOfs << G1.getNodeName(nodes[i]) << '\t' << G2.getNodeName(A[nodes[i]]);
+                for (uint d = 1; d <= EDGE_COUNT_DIST; d++) {
+                    uint fullCount = 0;
+                    vector<uint> V1 = G1.numEdgesAroundByLayers(nodes[i], d);
+                    for (uint j = 0; j < d; j++) fullCount += V1[j];
+                    outOfs << '\t' << fullCount;
+                    fullCount = 0;
+                    vector<uint> V2 = G2.numEdgesAroundByLayers(A[nodes[i]], d);
+                    for (uint j = 0; j < d; j++) fullCount += V2[j];
+                    outOfs << '\t' << fullCount;
+                    vector<uint> localNodes(G1.nodesAround(nodes[i], d));
+                    Graph H = CS.nodeInducedSubgraph(localNodes);
+                    Alignment localA(localNodes);
+                    localA.compose(A);
+                    SymmetricSubstructureScore s3(&H, &G2);
+                    outOfs << '\t' << to_string(s3.eval(localA));
+                }
+                outOfs << endl;
+            }
+        }
+    }
+    outOfs << endl;
+    cout << "Took " << T.elapsed() << " seconds to save the alignment and report." << endl;
+}
+
+void Report::saveAllLocalMeasures(const Graph& G1, const Graph& G2, const Alignment& A,const MeasureCombination& M, 
+    const Method* method, ofstream& localMeasureOfs, const string& fileName, int num) {
+    Timer T;
+    T.start();
+    if (M.getSumLocalWeight() <= 0) { 
+        cout << "No local measures provided, not writing local scores file." << endl;
+        return;
+    }
+    cout << "Saving alignment " << to_string(num) << "\'s local measure in \"" << fileName << "\"" << endl;
+    M.writeLocalScores(localMeasureOfs, G1, G2, A);
+    cout << "Took " << T.elapsed() << " seconds to save the alignment and scores." << endl;
+}
