@@ -1,4 +1,5 @@
 #!/bin/bash
+$CI && exit 0 # takes too long for continuous integration
 TMPDIR=/tmp/GOeval.$$
  trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 3 15
 /bin/rm -rf $TMPDIR
