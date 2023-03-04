@@ -154,7 +154,7 @@ if [ ! -z "$CompareFile" ]; then
         baseItem=`echo -e $BaseAverages | awk '{print $'$i'}'`
         newItem=`echo -e $NewAverages | awk '{print $'$i'}'`
         name=`echo -e $Names | awk '{print $'$i'}'`
-        errorDif=`parse "($newItem - $baseItem)/$baseItem"`
+        errorDif=`echo "($newItem - $baseItem)/$baseItem"|bc -l`
 	EXTRA_MARGIN=1
 	echo -n "$name: ($newItem - $baseItem)/$baseItem, changeFrac: $errorDif, margin $ErrorMargin" >&2
 	case $name in
@@ -164,8 +164,8 @@ if [ ! -z "$CompareFile" ]; then
 	    ;;
 	esac
 	echo "" # finish the "echo -n" line above
-	errorDif=`parse "$errorDif/$EXTRA_MARGIN"`
-        errorDif=`parse "ABS($errorDif)" | awk '{printf "%.16f\n",$1}'`
+	errorDif=`echo "$errorDif/$EXTRA_MARGIN"|bc -l`
+        errorDif=`echo "($errorDif)" | bc -l | awk 'function ABS(x){if(x<0)x=-x; return x} {printf "%.16f\n",ABS($1)}'`
         if echo nothing | awk "$errorDif > $ErrorMargin{exit 0}END{exit 1}"; then # remember in bash 0=true
             touch $OutputDir/failed
 	    echo "$name failed error margin: ($newItem - $baseItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2

@@ -9,7 +9,7 @@ case $# in
 0) set - -;; # read the standard input if there's no arguments
 esac
 
-DOS2UNIX='{sub("","")}'
+DOS2UNIX='{sub(0xD,"")}' # 0xD is ASCII 13, carriage-return
 for i
 do
     case "$i" in
