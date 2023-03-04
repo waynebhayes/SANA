@@ -6,6 +6,8 @@ not(){ if eval "$@"; then return 1; else return 0; fi; }
 newlines(){ awk '{for(i=1; i<=NF;i++)print $i}' "$@"; }
 parse(){ gawk "BEGIN{print $@}" </dev/null; }
 
+[ "$CI" = true ] || export CI=false
+
 # generally useful Variables
 NL='
 '
@@ -49,8 +51,13 @@ done
 
 REAL_CORES=`(cpus 2>/dev/null || echo 1) | awk '{print 1*$1}'`
 [ "$REAL_CORES" -gt 0 ] || die "can't figure out how many cores this machine has"
-CORES=`expr $REAL_CORES - 1`
-MAKE_CORES=`expr $REAL_CORES - 1`
+if "$CI"; then
+    CORES=$REAL_CORES
+    MAKE_CORES=$REAL_CORES
+else
+    CORES=`expr $REAL_CORES - 1`
+    MAKE_CORES=`expr $REAL_CORES - 1`
+fi
 [ `hostname` = Jenkins ] && MAKE_CORES=2 # only use 2 cores to make on Jenkins
 echo "Using $MAKE_CORES cores to make and $CORES cores for regression tests"
 

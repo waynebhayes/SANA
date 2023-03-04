@@ -91,7 +91,12 @@ if $RUN; then
 		for(i=0;i<NR;i++){ whichExec=1+int(--run/totalRuns*length(EXECS));
 		    printf "echo Running %s on %s-%s; ./%s -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",EXECS[whichExec],net1[i],net2[i],EXECS[whichExec],net1[i],net2[i],net1[i],net2[i],net1[i],net2[i];
 	    }
-	}' | revlines | eval $PARALLEL_CMD
+	}' |
+	if [ "$CI" = true ]; then #continuous integration: run each EXEC on only the smallest pair of networks
+	    awk '!seen[$3]{print; seen[$3]=1}'
+	else
+	    cat
+	fi | revlines | eval $PARALLEL_CMD
     (( NUM_FAILS+=$? ))
 fi
 
