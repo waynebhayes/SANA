@@ -88,9 +88,9 @@ double getAlpha(const Graph& G1, const Graph& G2, ArgumentParser& args) {
 
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableDoubleMeasures = {
-        "ec","ed","er","s3","js","ics","tc","sec","wec","nodec","noded","edgec","edged", "go","importance",
-        "sequence","graphlet","graphletlgraal", "graphletcosine", "graphletnorm", "spc", "nc","mec", "ewec",
-        "ses", "ee", "ms3"
+        "ec", "ec1", "ec2", "ed","er","s3","js","ics","tc","sec","wec","nodec","noded","edgec","edged", "go",
+        "importance", "sequence","graphlet","graphletlgraal", "graphletcosine", "graphletnorm", "spc", "nc",
+        "mec", "ewec", "ses", "ee", "ms3"
     };
     double total = 0;
     for (uint i = 0; i < optimizableDoubleMeasures.size(); i++)
@@ -154,8 +154,11 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
     bool detRep = args.bools["-detailedreport"];
 
     Measure *m;
-    m = new EdgeCorrectness(&G1, &G2);
+    m = new EdgeCorrectness(&G1, &G2, 1);
     M.addMeasure(m, getWeight("ec", G1, G2, args));
+    M.addMeasure(m, getWeight("ec1", G1, G2, args));
+    m = new EdgeCorrectness(&G1, &G2, 2);
+    M.addMeasure(m, getWeight("ec2", G1, G2, args));
     m = new EdgeDifference(&G1, &G2);
     M.addMeasure(m, getWeight("ed", G1, G2, args));
     m = new JaccardSimilarityScore(&G1, &G2);
