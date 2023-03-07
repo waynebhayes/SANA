@@ -152,7 +152,7 @@ void AlphaEstimation::computeAlphas() {
                 topMeasure = new WeightedEdgeConservation(&graphs.at(g1Name), &graphs.at(g2Name), m);
             }
             else if (methodName == "HubAlign") topMeasure = new Importance(&graphs.at(g1Name), &graphs.at(g2Name));
-            else if (methodName == "SANA_EC") topMeasure = new EdgeCorrectness(&graphs.at(g1Name), &graphs.at(g2Name));
+            else if (methodName == "SANA_EC") topMeasure = new EdgeCorrectness(&graphs.at(g1Name), &graphs.at(g2Name), 1);
             else /*if (methodName == "sanas3")*/ topMeasure = new SymmetricSubstructureScore(&graphs.at(g1Name), &graphs.at(g2Name));
 
             if (methodName.substr(0,4) == "SANA") {

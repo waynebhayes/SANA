@@ -4,11 +4,12 @@
 
 class EdgeCorrectness: public Measure {
 public:
-    EdgeCorrectness(const Graph* G1, const Graph* G2);
+    EdgeCorrectness(const Graph* G1, const Graph* G2, int graphNum);
     virtual ~EdgeCorrectness();
     double eval(const Alignment& A);
 
 private:
+    int denominatorGraph;
 
 };
 

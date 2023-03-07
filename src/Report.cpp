@@ -96,7 +96,7 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
         table[i+2][2] = to_string(H.getNumEdges());
         table[i+2][3] = to_string(newA.numAlignedEdges(H, G2));
         table[i+2][4] = to_string(G2.numEdgesInNodeInducedSubgraph(newA.asVector()));
-        EdgeCorrectness ec(&H, &G2);
+        EdgeCorrectness ec(&H, &G2, 1);
         table[i+2][5] = to_string(ec.eval(newA));
         InducedConservedStructure ics(&H, &G2);
         table[i+2][6] = to_string(ics.eval(newA));
@@ -345,7 +345,7 @@ void Report::reportAll(const Graph& G1, const Graph& G2, const Alignment& A,
         table[i + 2][2] = to_string(H.getNumEdges());
         table[i + 2][3] = to_string(newA.numAlignedEdges(H, G2));
         table[i + 2][4] = to_string(G2.numEdgesInNodeInducedSubgraph(newA.asVector()));
-        EdgeCorrectness ec(&H, &G2);
+        EdgeCorrectness ec(&H, &G2, 1);
         table[i + 2][5] = to_string(ec.eval(newA));
         InducedConservedStructure ics(&H, &G2);
         table[i + 2][6] = to_string(ics.eval(newA));

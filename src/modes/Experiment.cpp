@@ -507,8 +507,11 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
     if (name == "s3") {
         return new SymmetricSubstructureScore(G1, G2);
     }
-    if (name == "ec") {
-        return new EdgeCorrectness(G1, G2);
+    if (name == "ec" || name == "ec1") {
+        return new EdgeCorrectness(G1, G2, 1);
+    }
+    if (name == "ec2") {
+        return new EdgeCorrectness(G1, G2, 2);
     }
     if (name == "ics") {
         return new InducedConservedStructure(G1, G2);

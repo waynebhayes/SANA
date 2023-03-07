@@ -130,6 +130,8 @@ vector<array<string, 6>> supportedArguments = {
     //--------------------Objective Function Type Specifications-------------------------
     { "", "objectives-simple", "banner", "", "Objective Function Specification and Weight. Combine with \"-objfuntype x\"", "0" },
     { "-ec", "double", "0", "Weight of EC", "The weight of the Edge Coverage (aka Edge Conservation or Edge Correctness) in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-ec1", "double", "0", "Weight of EC1", "Synonym for -ec", "1" },
+    { "-ec2", "double", "0", "Weight of EC2", "Similar to -ec, but with edge count of graph 2 as denominator", "1" },
     { "-s3", "double", "1", "Weight of S3", "The weight of the Symmetric Substructer Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-js", "double", "1", "Weight of JS", "The weight of the Jaccard Similarity in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ics", "double", "0", "Weight of ICS", "The weight of the Induced Conserved Structure in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
