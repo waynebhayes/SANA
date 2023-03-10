@@ -107,7 +107,8 @@ for EXT in '' $EXECS; do
     fi
     #[ -x "$EXE" ] || die "Executable '$EXE' must exist or you must specify -make"
     # skip multi and float since they will be tested separately below
-    if [ "$ext" = .multi -o "$ext" = .float ] || ./sana$ext -itm 1 -s3 1 -g1 yeast -g2 human -tinitial 1 -tdecay 1 >/dev/null 2>&1; then
+    [ "$ext" = .multi -o "$ext" = .float ] && continue
+    if ./sana$ext -tol 0 -itm 1 -s3 1 -g1 yeast -g2 human -tinitial 1 -tdecay 1 >/dev/null 2>&1; then
 	WORKING_EXECS="${WORKING_EXECS}sana$ext$TAB"
     else
 	warn "executable sana$ext failed a trivial test"
@@ -117,6 +118,8 @@ done
 (( NUM_FAILS *= 1000 ))
 WORKING_EXECS=`echo "$WORKING_EXECS" | sed 's/	$//'` # delete trailing TAB
 export EXE SANA_DIR CORES REAL_CORES MAKE_CORES EXECS WORKING_EXECS
+
+echo WORKING EXECUTABLES: ${WORKING_EXECS:?"${NL}FATAL ERROR: cannot continue since there are no working pairwise executables!$NL(with the possible exception of float)"}
 
 STDBUF=''
 if which stdbuf >/dev/null; then
