@@ -18,12 +18,12 @@ Once you've cloned SANA, ensured it's not changing LF to CRLF, and ensured you'r
 This is the Simulating Annealing Network Aligner, designed originally to align protein-protein interaction (PPI) networks, but now is able to align arbitrary undirected graphs, weighted on unweighted.
 It can produce near-optimal alignments of PPI-sized networks in about an hour, and it has been used to successfully align networks with up to 100,000 nodes and 100 million edges (though those alignments take about a week of CPU to complete).
 
-For slightly out-of-date details, consult our original paper: https://doi.org/10.1093/bioinformatics/btx090
-A tutorial introduction is available at https://arxiv.org/abs/1911.10133
+For slightly out-of-date details, consult our original paper: https://doi.org/10.1093/bioinformatics/btx090.
 
-If you want to do development on SANA, you should read the the following documents:
-    src/STYLE_GUIDE.txt - how to integrate your code into SANA seamlessly
-    doc/addingMeasures/README.md - how to add a new measure to SANA
+A tutorial introduction is available at https://link.springer.com/protocol/10.1007/978-1-4939-9873-9_18.
+
+If you want to do development on SANA, you should consider browsing the [doc directory](https://github.com/waynebhayes/SANA/tree/SANA2/doc).
+Of particular use are the [STYLE_GUIDE](https://github.com/waynebhayes/SANA/tree/SANA2/src#readme), and the guide to [adding new measures](https://github.com/waynebhayes/SANA/blob/SANA2/doc/addingMeasures/README.md).
     
 ## Specifying the measure to optimize, and the runtime to choose.
 You will note that the above tutorial is out-of-date. In particular, SANA now *demands* that you specify both the objective(s) to optimize (eg., EC, S^3, etc.), as well as the amount of time to spend optimizing it (-t XXX argument, where XXX is in minutes). 
