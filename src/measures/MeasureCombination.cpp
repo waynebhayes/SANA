@@ -8,7 +8,7 @@
 
 MeasureCombination::MeasureCombination(){}
 MeasureCombination::~MeasureCombination() {
-  for(auto m: measures) delete m;
+  // for(auto m: measures) delete m; // this code is causing a segfault
 }
 double MeasureCombination::eval(const Alignment& A) const {
     uint n = measures.size();
