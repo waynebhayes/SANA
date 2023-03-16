@@ -24,7 +24,8 @@ notNOT() { grep -v '	NOT	' "$@"
 
 EXEDIR=`dirname $0`
 
-TMPDIR=/tmp/GOpredict.$$
+[ "$MYTMP" ] || MYTMP=`for i in /scratch/preserve/wayne /var/tmp/wayne /tmp/wayne; do mkdir -p $i && break; done; echo $i`
+TMPDIR=$MYTMP/GOpredict.$$
  trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 15
  trap "trap '' 0 1 2 15; echo TMPDIR is $TMPDIR >&2; exit 1" 3
 mkdir $TMPDIR || die "Hmmm, $TMPDIR could not make $TMPDIR"

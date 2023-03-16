@@ -28,7 +28,8 @@ NOTE: the evidence code that is output is the SOURCE (ie., predicting) evidence 
 die() { (echo "$USAGE"; echo "FATAL ERROR: $@") >&2; exit 1
 }
 
-TMPDIR=/tmp/PIP.$$
+[ "$MYTMP" ] || MYTMP=`for i in /scratch/preserve/wayne /var/tmp/wayne /tmp/wayne; do mkdir -p $i && break; done; echo $i`
+TMPDIR=$MYTMP/PIP.$$
  trap "/bin/rm -rf $TMPDIR" 0 1 2 15
  trap "TMPDIR is $TMPDIR" 3
 mkdir -p $TMPDIR
