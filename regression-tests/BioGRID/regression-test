@@ -89,7 +89,7 @@ if $RUN; then
 	    {net1[NR-1]=$2; net2[NR-1]=$3}
 	    END{run=totalRuns=NR;
 		for(i=0;i<NR;i++){ whichExec=1+int(--run/totalRuns*length(EXECS));
-		    printf "echo Running %s on %s-%s; ./%s -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",EXECS[whichExec],net1[i],net2[i],EXECS[whichExec],net1[i],net2[i],net1[i],net2[i],net1[i],net2[i];
+		    printf "echo Running %s on %s-%s; ./%s -tolerance 0 -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",EXECS[whichExec],net1[i],net2[i],EXECS[whichExec],net1[i],net2[i],net1[i],net2[i],net1[i],net2[i];
 	    }
 	}' |
 	if [ "$CI" = true ]; then #continuous integration: run each EXEC on only the smallest pair of networks

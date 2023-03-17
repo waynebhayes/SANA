@@ -22,7 +22,7 @@ while [ $TRIES -gt 0 ]; do
 	file="$REG_DIR/$network"
 	# Run SANA to align the graph to itself
 	echo "Aligning network $network" >&2
-	echo "'$EXE.float' -t 5 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
+	echo "'$EXE.float' -tolerance 0 -t 5 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
     done | eval $PARALLEL_CMD
     PARA_STATUS=$?
 

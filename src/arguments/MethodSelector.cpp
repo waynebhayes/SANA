@@ -82,19 +82,20 @@ void MethodSelector::validateRunTimeSpec(ArgumentParser& args) {
     double ts = args.doubles["-ts"], tm = args.doubles["-tm"], t = args.doubles["-t"],
            it = args.doubles["-it"], itk = args.doubles["-itk"],
            itm = args.doubles["-itm"], itb = args.doubles["-itb"],
-           tol = args.doubles["-tolerance"]; // defaults to 0.1 if not specified
+           tol = args.doubles["-tolerance"];
+
     if(tol>0) {
 	char *s_tol = getenv("SANA_TOLERANCE");
 	if(s_tol) {
 	    cerr << "WARNING: forcibly replacing tolerance "<<tol<<" with SANA_TOLERANCE (string "<<s_tol<<", double ";
-	    tol = args.doubles["-tolerance"] = stod(s_tol);
+	    tol = args.doubles["-tol"] = stod(s_tol);
 	    cerr << tol << ")" << endl;
 	}
     }
     uint execLimitArgCount = (t>0)+(ts>0)+(tm>0)+(it>0)+(itk>0)+(itm>0)+(itb>0)+(tol>0);
     if (execLimitArgCount != 1) {
 	if(tol)
-	    throw runtime_error("\nIt looks like you have specified an explicit run time or iteration without setting tolerance to zero\nthis is NOT recommended. You MUST explicitly set tolerance to zero for this to work");
+	    throw runtime_error("\nIt looks like you have specified an explicit run time or iteration count without setting tolerance to zero\nthis is NOT recommended. You MUST explicitly set tolerance to zero using \"-tolerance 0\" for this to work");
 	else
 	    throw runtime_error("exactly one of '-tolerance', '-t', -ts', '-tm', '-it', '-itk', '-itm', '-itb' must be >0");
     }

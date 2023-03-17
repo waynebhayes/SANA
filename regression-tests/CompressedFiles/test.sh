@@ -13,9 +13,9 @@ echo "" > $REG_DIR/test2.align
 NUM_FAILS=0
 
 echo "Test 1: Testing compressed edgelists AThaliana.el.bz2 and MMusculus.el.gz"
-"$EXE" -s3 1 -t 1 -fg1 "$REG_DIR/MMusculus.el.gz" -fg2 "$REG_DIR/AThaliana.el.bz2" -o "$REG_DIR/test1" &> "$REG_DIR/test1.progress" &
+"$EXE" -s3 1 -tolerance 0 -t 1 -fg1 "$REG_DIR/MMusculus.el.gz" -fg2 "$REG_DIR/AThaliana.el.bz2" -o "$REG_DIR/test1" &> "$REG_DIR/test1.progress" &
 echo "Test 2: Testing compressed edgelists AThaliana.el.gz and yeast-reduced-wayne.gw.gz"
-"$EXE" -s3 1 -t 1 -fg1 "$REG_DIR/yeast-reduced-wayne.gw.gz" -fg2 "$REG_DIR/AThaliana.el.gz" -o "$REG_DIR/test2" &> "$REG_DIR/test2.progress"
+"$EXE" -s3 1 -tolerance 0 -t 1 -fg1 "$REG_DIR/yeast-reduced-wayne.gw.gz" -fg2 "$REG_DIR/AThaliana.el.gz" -o "$REG_DIR/test2" &> "$REG_DIR/test2.progress"
 
 wait
 

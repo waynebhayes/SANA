@@ -75,7 +75,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-th", "double", "", "Runtime in hours", "The number of hours to run SANA. Must be non-zero, no upper limit.", "1" },
     { "-it", "double", "", "Max iterations", "The number of SANA iterations to run. Must be non-zero, no upper limit.", "1" },
     { "-itk", "double", "", "Max iterations in thousands", "The number of SANA iterations, in thousands. Must be non-zero, no upper limit.", "1" },
-    { "-tolerance", "double", "", "Target tolerance for optimal objective", "Attempt to optimize the final value of the objective to within this tolerance of the optimal solution. Default 0.03; values below 0.01 not recommended due to runtime.", "1" },
+    { "-tolerance", "double", "", "Target tolerance for optimal objective", "Attempt to optimize the final value of the objective to within this tolerance of the optimal solution. Values below 0.01 not recommended due to runtime.", "1" },
     { "-itm", "double", "", "Max iterations in millions", "The number of SANA iterations, in millions. Must be non-zero, no upper limit.", "1" },
     { "-itb", "double", "", "Max iterations in billions", "The number of SANA iterations, in billions. Must be non-zero, no upper limit.", "1" },
     { "-pathmap1", "intS", "", "Path Map G1", "Allows mapping a path in G1 to an edge in G2, as if the path were a single edge in G2. Implemented by raising the adjacency list to this power (an integer).", "1" },
