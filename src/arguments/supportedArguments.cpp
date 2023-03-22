@@ -227,7 +227,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-bipartite", "bool", "", "TITLE", "DESCRIPTION", "0" },
     { "-multipartite", "double", "", "TITLE", "DESCRIPTION", "0" },
     { "-balance-all", "bool", "", "TITLE", "DESCRIPTION", "0" },
-    { "-usingIterations", "bool", "", "TITLE", "DESCRIPTION", "0" },
+    { "-usingIterations", "bool", "false", "Iters instead of minutes", "Makes the -t option specify tot iterations (in million) rather than minutes", "0" },
     { "-add-hill-climbing", "bool", "", "TITLE", "DESCRIPTION", "0" },
     { "-netgo", "double", "", "NetGo", "DESCRIPTION", "0" }
      //-------------------------------END UNDEFINED--------------------------------------
