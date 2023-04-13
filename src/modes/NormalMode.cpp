@@ -62,8 +62,9 @@ void NormalMode::run(ArgumentParser& args) {
 
     double bestScore = -1 * numeric_limits<double>::infinity();
     Alignment A;
-    Method* method;
+    Method* method = methodList[0];
 
+    assert(length>0);
     for (int i = 0; i < length; i++) {
         if (M.eval(alignmentList[i]) > bestScore) {
             A = alignmentList[i];
@@ -78,6 +79,7 @@ void NormalMode::run(ArgumentParser& args) {
     string fileName = args.strings["-o"];
     bool multi_iter_only = (args.bools["-multi-iteration-only"] ? true : false);
 
+    // FIXME: just assume it's true but print the BEST one FIRST
     if (reportAll == 0) {
         Report::saveReport(G1, G2, A, M, method, fileName, !multi_iter_only);
         Report::saveLocalMeasures(G1, G2, A, M, method, args.strings["-localScoresFile"]);
@@ -98,7 +100,7 @@ void NormalMode::run(ArgumentParser& args) {
 
         for (int i = 0; i < length; i++) {
             Report::reportAll(G1, G2, alignmentList[i], M, methodList[i], baseName, alignOfs, outOfs, !multi_iter_only, i + 1);
-            Report::saveAllLocalMeasures(G1, G2, A, M, method, localMeasureOfs, args.strings["-localScoresFile"], i + 1);
+            Report::saveAllLocalMeasures(G1, G2, A, M, methodList[i], localMeasureOfs, args.strings["-localScoresFile"], i + 1);
         }
     }
 

@@ -90,7 +90,7 @@ private:
     double g1TotalWeight, g2TotalWeight;
 
     //random number generation
-    mt19937 gen;
+    mt19937 gen; // note this will be a different stream for each thread (a good thing!)
     uniform_real_distribution<> randomReal;
 
     //execution time is delimited by either maxSeconds or maxIterations
