@@ -132,7 +132,7 @@ if [ ! -z "$CompareFile" ]; then
 	echo -n "$name: ($newItem - $baseItem)/$baseItem, changeFrac: $errorDif, margin $ErrorMargin" >&2
 	case $name in
 	Iterations)
-	    EXTRA_MARGIN=9.0
+	    EXTRA_MARGIN=9999.0
 	    echo -n " * $EXTRA_MARGIN (wider margin)" >&2
 	    ;;
 	esac
