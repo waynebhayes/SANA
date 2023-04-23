@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 PARALLEL_EXE=${PARALLEL_EXE:?"PARALLEL_EXE must be set"}
 CORES=${CORES:?"CORES must be set"}
 PARALLEL_CMD="$PARALLEL_EXE -s bash $CORES"  # run in parallel on jenkins
@@ -99,6 +99,8 @@ if $RUN; then
 	fi | revlines | eval $PARALLEL_CMD
     (( NUM_FAILS+=$? ))
 fi
+
+(( NUM_FAILS+=28-`ls $OutputDir/*.progress | wc -l` ))
 
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
