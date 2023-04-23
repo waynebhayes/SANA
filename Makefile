@@ -2,7 +2,7 @@ CC = g++
 
 #CXXFLAGS = -I "src/utils" -Wall -fno-inline -O2 -std=c++11 -g3
 #CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DMULTI_PAIRWISE #-pg -ggdb -Bstatic #-static
- CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -pthread #-ggdb -DMULTI_PAIRWISE #-DCORES #-DUSE_CACHED_FILES #-DSPARSE -ggdb #-pg
+ CXXFLAGS = -I "src/utils" -Wall -std=c++11 -O3 -pthread #-U__STRICT_ANSI__ #-ggdb -DMULTI_PAIRWISE #-DCORES #-DUSE_CACHED_FILES #-DSPARSE -ggdb #-pg
 
 ifeq ($(SPARSE), 1)
 CXXFLAGS := $(CXXFLAGS) -DSPARSE
