@@ -1,5 +1,5 @@
-#!/bin/bash -x
-set -e
+#!/bin/bash
+
 CORES=`cores 2>/dev/null || echo 4`
 PARALLEL="./parallel -s bash $CORES"  # run in parallel on jenkins
 #PARALLEL=bash # if you don't have the parallel program
@@ -11,15 +11,14 @@ die() { echo "ERROR: $@" >&2; exit 1
 PATH="$PATH:`pwd`/scripts"
 export PATH
 
-TMPDIR=/tmp/regression-test$$
-trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 15
-trap "echo interrupt; see $TMPDIR" 3
-mkdir $TMPDIR
+TMPDIR=`mktemp -d /tmp/regression-test.XXXXXX`
+ trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 15
+ trap "echo interrupt; see $TMPDIR" 3
 
-OutputFile="$TMPDIR/regression-test.result"
+OutputDir="$TMPDIR"
+OutputFile="$OutputDir/regression-test.result"
 ErrorMargin="0.04"
 #echo "WARNING: temporarily set error margin way too big while core scores are being tested"
-OutputDir="$TMPDIR"
 CompareFile=""
 
 while getopts "b:e:o:c:" opt; do
@@ -63,8 +62,9 @@ NL='
 
 [ -x ./sana ] || die "can't find ./sana executable"
 
-# Alphabetical order--not particularly useful
-#nets='AThaliana CElegans DMelanogaster HSapiens MMusculus RNorvegicus SCerevisiae SPombe'
+# Find out the speed of this machine so we can scale the runtime properly to get repeatable results.
+SPEED=`./sana -s3 1 -g1 RNorvegicus -g2 SPombe -t 0 2>&1 | awk '/getPBad/{++n;s+=$NF}END{print s/n/1e6}'`
+echo "This host is about a factor $SPEED the speed of the original SANA Jenkins server"
 
 # ordered by size in number of nodes
 nets="`echo RNorvegicus SPombe CElegans MMusculus SCerevisiae AThaliana DMelanogaster HSapiens | newlines`"
@@ -89,14 +89,14 @@ for i in $(seq 1 $((Networks_count - 1)));do
     done
 done
 
-(( NUM_FAILS+=28-`ls $OutputDir/*.progress | wc -l` ))
+PRG=`ls $OutputDir/*.progress | wc -l`
+NUM_FAILS=`expr $NUM_FAILS + '(' 28 '-' "$PRG" ')' `
 
 IterationsAvg=`echo $Iterations | tr " " "$NL" | awk '{s+=$1}END{print s/NR}'`
 IterationsAvg=`printf "%f" $IterationsAvg`
 printf "Iterations /s Average: %s \n" "$IterationsAvg" >> $OutputFile
 
-PrintTestScores()
-{
+PrintTestScores() {
     Scores=""
     printf "Checking %s score$NL" $1 >> $OutputFile
     printf "%-30s | %-20s$NL" "Networks Pair" "$1 score" >> $OutputFile
