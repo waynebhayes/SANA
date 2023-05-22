@@ -113,7 +113,7 @@ for i in $(seq 1 $((Networks_count - 1)));do
 	    Network1=`echo $nets | awk '{print $'$i'}'`
 	    Network2=`echo $nets | awk '{print $'$j'}'`
 	    progress="$OutputDir/$Network1-$Network2.progress"
-	    cIt=`grep -o "[0-9]*.[0-9]* iterations per second" $progress | awk '{print $1}' | sort -u`
+	    cIt=`awk '/, ips = /{sum+=$NF;n++}END{print sum/n}' $progress`
 	    Iterations="$Iterations $cIt"
 	    printf "%-30s | %-20s$NL" "$Network1-$Network2" "$cIt" >> $OutputFile
 	fi
@@ -134,7 +134,7 @@ PrintTestScores()
             Network1=`echo "$nets" | newlines | awk 'NR=='$i'{print}'`
             Network2=`echo "$nets" | newlines | awk 'NR=='$j'{print}'`
             progress="$OutputDir/$Network1-$Network2.out"
-            Score=`grep -o "^$1: 0.[0-9]\+$" $progress | awk '{print $2}' | sort -u`
+            Score=`awk "/^$1: /"'{print $NF; exit}' $progress`
             Scores=$Scores" "$Score
             printf "%-30s | %-20s$NL" "$Network1-$Network2" "$Score" >> $OutputFile
         done
