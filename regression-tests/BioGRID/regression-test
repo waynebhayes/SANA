@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 PARALLEL_EXE=${PARALLEL_EXE:?"PARALLEL_EXE must be set"}
 CORES=${CORES:?"CORES must be set"}
 PARALLEL_CMD="$PARALLEL_EXE -s bash $CORES"  # run in parallel on jenkins
@@ -12,8 +12,9 @@ die() { echo "ERROR: $@" >&2; exit 1
 PATH="$PATH:`pwd`/scripts"
 export PATH
 
+TMPDIR=`mktemp -d /tmp/regression-test.XXXXXX`
 # Both these may be changed below with optional arguments
-OutputDir=/tmp/regression-test$$
+OutputDir="$TMPDIR"
 OutputFile=NONE # will be set below either by argument or in OutputDir
 
 ErrorMargin="0.04"
@@ -100,7 +101,8 @@ if $RUN; then
     (( NUM_FAILS+=$? ))
 fi
 
-(( NUM_FAILS+=28-`ls $OutputDir/*.progress | wc -l` ))
+PRG=`ls $OutputDir/*.progress | wc -l`
+NUM_FAILS=`expr $NUM_FAILS + '(' 28 '-' "$PRG" ')'`
 
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
