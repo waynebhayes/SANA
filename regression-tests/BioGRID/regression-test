@@ -102,7 +102,7 @@ if $RUN; then
 fi
 
 PRG=`ls $OutputDir/*.progress | wc -l`
-NUM_FAILS=`expr $NUM_FAILS + '(' 28 '-' "$PRG" ')'`
+NUM_FAILS=`expr $NUM_FAILS + '(' 28 '-' $PRG ')'`
 
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
@@ -110,8 +110,8 @@ printf "%-30s | %-20s$NL" "Networks Pair" "Iterations Speed" >> $OutputFile
 for i in $(seq 1 $((Networks_count - 1)));do
     for j in $(seq $((i + 1)) $Networks_count); do
 	if [ "$i" -lt "$j" ]; then
-	    Network1=`echo "$nets" | newlines | awk 'NR=='$i'{print}'`
-	    Network2=`echo "$nets" | newlines | awk 'NR=='$j'{print}'`
+	    Network1=`echo $nets | awk '{print $'$i'}'`
+	    Network2=`echo $nets | awk '{print $'$j'}'`
 	    progress="$OutputDir/$Network1-$Network2.progress"
 	    cIt=`grep -o "[0-9]*.[0-9]* iterations per second" $progress | awk '{print $1}' | sort -u`
 	    Iterations="$Iterations $cIt"
@@ -146,7 +146,7 @@ PrintTestScores()
 }
 
 SCORES="ec ics s3 lccs sec"
-for score in `echo $SCORES | tr ' ' "$NL" `; do
+for score in $SCORES; do
     PrintTestScores $score
 done
 
