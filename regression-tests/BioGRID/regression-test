@@ -167,12 +167,12 @@ if [ ! -z "$CompareFile" ]; then
 	    echo -n " (no longer tracking iteration speed)" >&2
 	    ;;
 	esac
-	echo "" # finish the "echo -n" line above
 	errorDif=`echo "$errorDif/$EXTRA_MARGIN"|bc -l`
         errorDif=`echo "($errorDif)" | bc -l | awk 'function ABS(x){if(x<0)x=-x; return x} {printf "%.16f\n",ABS($1)}'`
-        if echo nothing | awk "$errorDif > $ErrorMargin{exit 0}END{exit 1}"; then # remember in bash 0=true
+	echo " ABS(changeFrac)=$errorDif" >&2
+        if awk "BEGIN{if(1*$errorDif > 1*$ErrorMargin)exit 0;else exit 1;}"; then # remember in bash 0=true
             touch $OutputDir/failed
-	    echo "$name failed error margin: ($newItem - $baseItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
+	    echo "$name failed error margin: ($newItem - $baseItem)/$baseItem has error difference '$errorDif > $ErrorMargin'" >&2
 	    (( ++NUM_FAILS ))
         fi
     done
