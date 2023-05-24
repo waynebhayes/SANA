@@ -364,7 +364,7 @@ if $ARCHIVE; then
     echo "Archiving to '$OUTDIR.$ZIP_EXT'"
     DO=`dirname "$OUTDIR"`
     BO=`basename "$OUTDIR"`
-    (set -x; cd "$DO" && eval $ZIP $ZIP_ADD "$BO.$ZIP_EXT" "$BO" && /bin/rm -rf "$BO"; set +x)
+    (cd "$DO" && eval $ZIP $ZIP_ADD "$BO.$ZIP_EXT" "$BO" && /bin/rm -rf "$BO")
 fi
 chmod -R go+rX $OUTDIR*
 
