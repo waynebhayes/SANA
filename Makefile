@@ -18,26 +18,26 @@ else
     CC = $(MY_CC)
 endif
 
+ifeq ($(SPARSE), 1) # this one should be listed first so largest networks are run using SPARSE
+    CXXFLAGS := $(CXXFLAGS) -DSPARSE
+    MAIN := $(MAIN).sparse
+endif
+
 ifeq ($(STATIC), 1)
     CXXFLAGS := $(CXXFLAGS) -static #-Bstatic for some versions of gcc
     MAIN := $(MAIN).static
 endif
 
-ifeq ($(CORES), 1)
-    CXXFLAGS := $(CXXFLAGS) -DCORES
-    MAIN := $(MAIN).cores
-endif
-
-ifeq ($(SPARSE), 1)
-    CXXFLAGS := $(CXXFLAGS) -DSPARSE
-    MAIN := $(MAIN).sparse
-endif
-
-ifeq ($(GDB), 1)
+ifeq ($(GDB), 1) # this one should be second-last since the debugging ones run slowly and should be used on smallish networks.
     CXXFLAGS := $(CXXFLAGS) -ggdb
     MAIN := $(MAIN).gdb
 else
     CXXFLAGS := $(CXXFLAGS) -O3 # always turn on optimization if not debugging
+endif
+
+ifeq ($(CORES), 1) # CORES should be listed last to ensure it's used on the smallest networks during regression tests.
+    CXXFLAGS := $(CXXFLAGS) -DCORES
+    MAIN := $(MAIN).cores
 endif
 
 ## Below here are not "normal" pairwise SANA executables

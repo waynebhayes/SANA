@@ -117,6 +117,14 @@ for EXT in '' $EXECS; do
 done
 (( NUM_FAILS *= 1000 ))
 WORKING_EXECS=`echo "$WORKING_EXECS" | sed 's/	$//'` # delete trailing TAB
+
+# Now sort them so sana.sparse is first and sana.cores is last, to minimize memory usage
+WORKING_EXECS=`echo "$WORKING_EXECS" | newlines |
+    awk 'BEGIN{n=0; done["sana.sparse"]=1; list[++n]="sana.sparse"}
+	!done[$0]{done[$0]=1; if($0!="sana.cores")list[++n]=$0;}
+	END{if(done["sana.cores"]) list[++n]="sana.cores";
+	    for(i=1;i<=n;i++) print list[i]}'`
+
 export EXE SANA_DIR CORES REAL_CORES MAKE_CORES EXECS WORKING_EXECS
 
 echo WORKING EXECUTABLES: ${WORKING_EXECS:?"${NL}FATAL ERROR: cannot continue since there are no working pairwise executables!$NL(with the possible exception of float)"}
