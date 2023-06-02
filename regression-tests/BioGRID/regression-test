@@ -43,7 +43,7 @@ while getopts "d:b:e:o:c:n" opt; do
     c)
         CompareFile=$OPTARG
         ;;
-    \?) 
+    \?)
         echo "Invalid option: -$OPTARG" >&2
         exit 1
         ;;
@@ -70,13 +70,8 @@ fi
 NL='
 '
 
-# Alphabetical order--not particularly useful
-#nets='AThaliana CElegans DMelanogaster HSapiens MMusculus RNorvegicus SCerevisiae SPombe'
-
-# order them smallest-to-largest by number of nodes
+# order networks smallest-to-largest by number of nodes (may be pruned to smaller list if $CI is true; see below)
 nets=`echo RNorvegicus SPombe CElegans MMusculus SCerevisiae AThaliana DMelanogaster HSapiens`
-export Networks_count=`echo $nets | wc -w`
-#Biogrid_network="$nets" #`echo $nets | newlines | sed 's/$/.el/' | (cd networks; xargs ls -Sr) | sed 's/\.el$//'`
 
 if $RUN; then
     [ -x "$EXE" ] || die "can't find executable '$EXE'"
@@ -93,32 +88,29 @@ if $RUN; then
 		    printf "echo Running %s on %s-%s; ./%s -tolerance 0 -itm 300 -s3 1 -g1 %s -g2 %s -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",EXECS[whichExec],net1[i],net2[i],EXECS[whichExec],net1[i],net2[i],net1[i],net2[i],net1[i],net2[i];
 	    }
 	}' |
-	if [ "$CI" = true ]; then #continuous integration: run each EXEC on only the smallest pair of networks
+	if "$CI"; then # continuous integration: run each EXEC on only the smallest pair of networks
 	    awk '!seen[$3]{print; seen[$3]=1}'
 	else
 	    cat
-	fi | revlines | eval $PARALLEL_CMD
+	fi | revlines | tee $TMPDIR/runs.txt | eval $PARALLEL_CMD
     (( NUM_FAILS+=$? ))
 fi
+# now get the list of networks taht were actually run (may be smaller due to $CI)
+network_pairs=`sed 's/;.*//' $TMPDIR/runs.txt | sed 's/.* on //'`
 
 PRG=`ls $OutputDir/*.progress | wc -l`
-NUM_FAILS=`expr $NUM_FAILS + '(' 28 '-' $PRG ')'`
+NUM_FAILS=`expr $NUM_FAILS + '(' `wc -l < $TMPDIR/runs.txt` '-' $PRG ')'`
 
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
 printf "%-30s | %-20s$NL" "Networks Pair" "Iterations Speed" >> $OutputFile
-for i in $(seq 1 $((Networks_count - 1)));do
-    for j in $(seq $((i + 1)) $Networks_count); do
-	if [ "$i" -lt "$j" ]; then
-	    Network1=`echo $nets | awk '{print $'$i'}'`
-	    Network2=`echo $nets | awk '{print $'$j'}'`
-	    progress="$OutputDir/$Network1-$Network2.progress"
-	    cIt=`awk '/, ips = /{sum+=$NF;n++}END{print sum/n}' $progress`
-	    Iterations="$Iterations $cIt"
-	    printf "%-30s | %-20s$NL" "$Network1-$Network2" "$cIt" >> $OutputFile
-	fi
+echo $network_pairs | newlines |
+    while read pair; do
+	progress="$OutputDir/$pair.progress"
+	cIt=`awk '/, ips = /{sum+=$NF;n++}END{print sum/n}' $progress`
+	Iterations="$Iterations $cIt"
+	printf "%-30s | %-20s$NL" "$pair" "$cIt" >> $OutputFile
     done
-done
 
 IterationsAvg=`echo $Iterations | tr " " "$NL" | awk '{s+=$1}END{print s/NR}'`
 IterationsAvg=`printf "%f" $IterationsAvg`
@@ -129,16 +121,13 @@ PrintTestScores()
     Scores=""
     printf "Checking %s score$NL" $1 >> $OutputFile
     printf "%-30s | %-20s$NL" "Networks Pair" "$1 score" >> $OutputFile
-    for i in $(seq 1 $((Networks_count - 1)));do
-        for j in $(seq $((i + 1)) $Networks_count); do
-            Network1=`echo "$nets" | newlines | awk 'NR=='$i'{print}'`
-            Network2=`echo "$nets" | newlines | awk 'NR=='$j'{print}'`
-            progress="$OutputDir/$Network1-$Network2.out"
-            Score=`awk "/^$1: /"'{print $NF; exit}' $progress`
-            Scores=$Scores" "$Score
-            printf "%-30s | %-20s$NL" "$Network1-$Network2" "$Score" >> $OutputFile
-        done
-    done
+    echo $network_pairs | newlines |
+	while read pair; do
+	    progress="$OutputDir/$pair.out"
+	    Score=`awk "/^$1: /"'{print $NF; exit}' $progress`
+	    Scores=$Scores" "$Score
+	    printf "%-30s | %-20s$NL" "$pair" "$Score" >> $OutputFile
+	done
 
     ScoresAvg=`echo $Scores | tr " " "$NL" | awk '{s+=$1}END{print s/NR}'`
     ScoresAvg=`printf "%f" $ScoresAvg`
@@ -170,7 +159,10 @@ if [ ! -z "$CompareFile" ]; then
 	errorDif=`echo "$errorDif/$EXTRA_MARGIN"|bc -l`
         errorDif=`echo "($errorDif)" | bc -l | awk 'function ABS(x){if(x<0)x=-x; return x} {printf "%.16f\n",ABS($1)}'`
 	echo " ABS(changeFrac)=$errorDif" >&2
-        if awk "BEGIN{if(1*$errorDif > 1*$ErrorMargin)exit 0;else exit 1;}"; then # remember in bash 0=true
+	# don't check margin when doing continuous integration
+        if $CI || awk "BEGIN{if(1*$errorDif > 1*$ErrorMargin)exit 1;else exit 0;}"; then # remember in bash 0=true
+	    : # either success, or $CI in which case we don't check
+	else
             touch $OutputDir/failed
 	    echo "$name failed error margin: ($newItem - $baseItem)/$baseItem has error difference '$errorDif > $ErrorMargin'" >&2
 	    (( ++NUM_FAILS ))

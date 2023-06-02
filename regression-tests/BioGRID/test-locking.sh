@@ -24,35 +24,43 @@ NL='
 
 [ -x "$EXE" ] || die "can't find executable '$EXE'"
 
-# ordered by size in number of nodes
-nets="`echo RNorvegicus SPombe CElegans MMusculus SCerevisiae AThaliana DMelanogaster HSapiens | newlines`"
-export Networks_count=`echo $nets | wc -w`
+# ordered by size in number of nodes, then put the list of pairs into file networks.locking
+nets="RNorvegicus SPombe CElegans MMusculus SCerevisiae AThaliana DMelanogaster HSapiens"
+echo "$nets" | newlines |
+    gawk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "%s %s\n",net[i],net[j]}' |
+    if $CI; then head -$CORES; else cat; fi > $TMPDIR/networks.locking
 
 NUM_FAILS=0
 NUM_LOCK=100 # number of nodes to lock
 echo -n "Creating random lock files; "
-echo -n > $TMPDIR/networks.locking
-echo "$nets" |
-    gawk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "%s %s\n",net[i],net[j]}' | while read g1 g2
-    do
-	echo $g1 $g2 >> $TMPDIR/networks.locking
-	paste <(cat networks/$g1.el | newlines | sort -u | randomizeLines | head -$NUM_LOCK) <(cat networks/$g2.el | newlines | sort -u | randomizeLines | head -$NUM_LOCK) > $TMPDIR/$g1-$g2.lock
-    done
+cat $TMPDIR/networks.locking |
+	while read g1 g2
+	do
+	    paste <(cat networks/$g1.el | newlines | sort -u | randomizeLines | head -$NUM_LOCK) <(cat networks/$g2.el | newlines | sort -u | randomizeLines | head -$NUM_LOCK) > $TMPDIR/$g1-$g2.lock
+	done
 echo "running lock test."
-echo "$nets" | gawk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; \"'"$EXE"'\" -tolerance 0 -t 1 -s3 1 -g1 %s -g2 %s -lock '$TMPDIR'/%s-%s.lock -o '$TMPDIR'/%s-%s > '$TMPDIR'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | if [ "$CI" = true ]; then head -$CORES; else cat; fi | eval $PARALLEL_CMD
+
+cat $TMPDIR/networks.locking |
+    gawk '{printf "echo Running %s-%s; \"'"$EXE"'\" -tolerance 0 -t 1 -s3 1 -g1 %s -g2 %s -lock '$TMPDIR'/%s-%s.lock -o '$TMPDIR'/%s-%s > '$TMPDIR'/%s-%s.progress 2>&1\n",$1,$2,$1,$2,$1,$2,$1,$2,$1,$2}' | tee $TMPDIR/runs.txt | eval $PARALLEL_CMD
+
 PARA_EXIT=$?
 echo "'$PARALLEL_CMD' returned $PARA_EXIT; current NUM_FAILS is $NUM_FAILS"
 
 (( NUM_FAILS+=$PARA_EXIT ))
 
 echo "Checking SANA Locking Mechanism" | tee -a $OutputFile
-cat $TMPDIR/networks.locking | while read Network1 Network2; do
-    if [[ `grep -c -x -f "$TMPDIR/$Network1-$Network2.lock" "$TMPDIR/$Network1-$Network2.align"` -ne $NUM_LOCK ]]; then
-	touch $TMPDIR/failed
-	echo "LOCKING FAILED on $TMPDIR/$Network1-$Network2" >&2
-        (( ++NUM_FAILS ))
+echo 0 > $TMPDIR/failed
+cat $TMPDIR/networks.locking |
+    while read Network1 Network2; do
+	grep -c -x -f "$TMPDIR/$Network1-$Network2.lock" "$TMPDIR/$Network1-$Network2.align"
+    done |
+    if awk "$NUM_LOCK"'!=$1{++errors}END{exit errors}'; then :
+    else
+        errors=$?
+	echo "LOCKING FAILED in $errors network pairs" >&2
+	echo $errors > $TMPDIR/failed
     fi
-done
+(( NUM_FAILS+=`cat $TMPDIR/failed` ))
 
 echo encountered a total of $NUM_FAILS failures
 if [ "$NUM_FAILS" -ne 0 ]; then
