@@ -99,7 +99,7 @@ fi
 network_pairs=`sed 's/;.*//' $TMPDIR/runs.txt | sed 's/.* on //'`
 
 PRG=`ls $OutputDir/*.progress | wc -l`
-NUM_FAILS=`expr $NUM_FAILS + '(' `wc -l < $TMPDIR/runs.txt` '-' $PRG ')'`
+NUM_FAILS=$(expr $NUM_FAILS + '(' $(wc -l < $TMPDIR/runs.txt) '-' $PRG ')')
 
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
