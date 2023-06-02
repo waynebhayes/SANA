@@ -7,6 +7,7 @@ newlines(){ awk '{for(i=1; i<=NF;i++)print $i}' "$@"; }
 parse(){ gawk "BEGIN{print $@}" </dev/null; }
 
 [ "$CI" = true ] || export CI=false
+echo "CI is $CI" >&2
 
 # generally useful Variables
 NL='
@@ -49,6 +50,7 @@ while [ $# -gt -0 ]; do
     esac
 done
 
+set -x
 REAL_CORES=`(cpus 2>/dev/null || echo 1) | awk '{print 1*$1}'`
 [ "$REAL_CORES" -gt 0 ] || die "can't figure out how many cores this machine has"
 if "$CI"; then
@@ -59,6 +61,7 @@ else
     MAKE_CORES=`expr $REAL_CORES - 1`
 fi
 [ `hostname` = Jenkins ] && MAKE_CORES=2 # only use 2 cores to make on Jenkins
+set +x
 echo "Using $MAKE_CORES cores to make and $CORES cores for regression tests"
 
 NUM_FAILS=0
