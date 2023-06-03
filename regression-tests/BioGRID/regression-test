@@ -103,36 +103,29 @@ network_pairs=`sed 's/;.*//' $OutputDir/runs.txt | sed 's/.* on //'`
 PRG=`ls $OutputDir/*.progress | wc -l`
 NUM_FAILS=$(expr $NUM_FAILS + '(' $(wc -l < $OutputDir/runs.txt) '-' $PRG ')')
 
-Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
 printf "%-30s | %-20s$NL" "Networks Pair" "Iterations Speed" >> $OutputFile
 echo $network_pairs | newlines |
     while read pair; do
 	progress="$OutputDir/$pair.progress"
 	cIt=`awk '/, ips = /{sum+=$NF;n++}END{print sum/n}' $progress`
-	Iterations="$Iterations $cIt"
 	printf "%-30s | %-20s$NL" "$pair" "$cIt" >> $OutputFile
-    done
-IterationsAvg=`echo $Iterations | tr " " "$NL" | awk '{s+=$1}END{print s/NR}'`
-IterationsAvg=`printf "%f" $IterationsAvg`
-printf "Iterations /s Average: %s \n" "$IterationsAvg" >> $OutputFile
+	echo $cIt
+    done | awk '{for(i=1;i<=NF;i++)if($i){s+=$i;n++}}END{printf "Iterations /s Average: %f \n", s/n}' > $OutputFile.tmp
+cat $OutputFile.tmp >> $OutputFile
 
 PrintTestScores()
 {
-    Scores=""
     printf "Checking %s score$NL" $1 >> $OutputFile
     printf "%-30s | %-20s$NL" "Networks Pair" "$1 score" >> $OutputFile
     echo $network_pairs | newlines |
 	while read pair; do
 	    progress="$OutputDir/$pair.out"
 	    Score=`awk "/^$1: /"'{print $NF; exit}' $progress`
-	    Scores=$Scores" "$Score
 	    printf "%-30s | %-20s$NL" "$pair" "$Score" >> $OutputFile
-	done
-
-    ScoresAvg=`echo $Scores | tr " " "$NL" | awk '{s+=$1}END{print s/NR}'`
-    ScoresAvg=`printf "%f" $ScoresAvg`
-    printf "$1 Score Average: %s$NL" "$ScoresAvg" >> $OutputFile
+	    echo $Score
+	done | awk '{for(i=1;i<=NF;i++)if($i){s+=$i;n++}}END{printf "'"$1"' Score Average: %f\n", s/n}' > $OutputFile.tmp
+    cat $OutputFile.tmp >> $OutputFile
 }
 
 SCORES="ec ics s3 lccs sec"
