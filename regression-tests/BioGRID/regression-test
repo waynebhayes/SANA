@@ -12,9 +12,8 @@ die() { echo "ERROR: $@" >&2; exit 1
 PATH="$PATH:`pwd`/scripts"
 export PATH
 
-TMPDIR=`mktemp -d /tmp/regression-test.XXXXXX`
 # Both these may be changed below with optional arguments
-OutputDir="$TMPDIR"
+OutputDir=NONE
 OutputFile=NONE # will be set below either by argument or in OutputDir
 
 ErrorMargin="0.04"
@@ -54,10 +53,13 @@ while getopts "d:b:e:o:c:n" opt; do
     esac
 done
 
+if [ "$OutputDir" = NONE ]; then
+    OutputDir=`mktemp -d /tmp/regression-test.XXXXXX`
+fi
 if [ "$OutputFile" = NONE ]; then
     OutputFile="$OutputDir/regression-test.result"
 fi
-trap "/bin/rm -rf $OutputDir; exit" 0 1 2 3 15
+#trap "/bin/rm -rf $OutputDir; exit" 0 1 2 3 15
 mkdir -p $OutputDir || die "couldn't create OutputDir $OutputDir"
 
 > "$OutputFile" # create empty file
@@ -92,14 +94,14 @@ if $RUN; then
 	    awk '!seen[$3]{print; seen[$3]=1}'
 	else
 	    cat
-	fi | revlines | tee $TMPDIR/runs.txt | eval $PARALLEL_CMD
+	fi | revlines | tee $OutputDir/runs.txt | eval $PARALLEL_CMD
     (( NUM_FAILS+=$? ))
 fi
 # now get the list of networks taht were actually run (may be smaller due to $CI)
-network_pairs=`sed 's/;.*//' $TMPDIR/runs.txt | sed 's/.* on //'`
+network_pairs=`sed 's/;.*//' $OutputDir/runs.txt | sed 's/.* on //'`
 
 PRG=`ls $OutputDir/*.progress | wc -l`
-NUM_FAILS=$(expr $NUM_FAILS + '(' $(wc -l < $TMPDIR/runs.txt) '-' $PRG ')')
+NUM_FAILS=$(expr $NUM_FAILS + '(' $(wc -l < $OutputDir/runs.txt) '-' $PRG ')')
 
 Iterations=""
 echo "Checking Iterations Speed" >> $OutputFile
@@ -111,7 +113,6 @@ echo $network_pairs | newlines |
 	Iterations="$Iterations $cIt"
 	printf "%-30s | %-20s$NL" "$pair" "$cIt" >> $OutputFile
     done
-
 IterationsAvg=`echo $Iterations | tr " " "$NL" | awk '{s+=$1}END{print s/NR}'`
 IterationsAvg=`printf "%f" $IterationsAvg`
 printf "Iterations /s Average: %s \n" "$IterationsAvg" >> $OutputFile
