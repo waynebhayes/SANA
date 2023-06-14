@@ -13,9 +13,10 @@ SANA* GoldilocksMethod::sana = nullptr;
 
 // After several years of observations, it seems that starting with pBad = 0.99 results in too much wasted time at the
 // beginning of the anneal... basically we spin in randomness for about the first 40% of the run time. It appears that
-// using initial pBad of about 0.95 gets us up to that 40% mark, where we spin our tires only briefly. Thus, we've
-// changed the 0.99 (DIGITS_FORM_1 = 2) to 0.95 (DIGITS_FROM_1 = 1.3).
-double GoldilocksMethod::DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1 = 1; // represents ~0.95
+// using initial pBad of about 0.90 gets us up to the previous 40% mark at about 20%, so less spinning of tires. Thus,
+// we've changed the 0.99 (DIGITS_FORM_1 = 2) to 0.90 (DIGITS_FROM_1 = 1). In fact maybe even 0.8 (pBad=0.85) or
+// 0.7 (pBad 0.80) is OK, though I'm worried about cutting it a bit too close.
+double GoldilocksMethod::DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1 = 1; // represents 0.9
 double GoldilocksMethod::DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0 = 12; // represents 1e-12
 double GoldilocksMethod::DEFAULT_TARGET_INITIAL_PBAD = (1-pow(10,-DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1));
 double GoldilocksMethod::DEFAULT_TARGET_FINAL_PBAD = pow(10,-DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0);
