@@ -106,8 +106,8 @@ for EXT in '' $EXECS; do
 	[ $NUM_FAILS -eq 0 ] || warn "cumulative number of compile failures is $NUM_FAILS"
     fi
     #[ -x "$EXE" ] || die "Executable '$EXE' must exist or you must specify -make"
-    # skip multi and float since they will be tested separately below
-    [ "$ext" = .multi -o "$ext" = .float ] && continue
+    # skip mpi, multi and float since they will be tested separately below
+    [ "$ext" = .multi -o "$ext" = .float -o "$ext" = .mpi ] && continue
     if ./sana$ext -tolerance 0 -itm 1 -s3 1 -g1 yeast -g2 human -tinitial 1 -tdecay 1 >/dev/null 2>&1; then
 	WORKING_EXECS="${WORKING_EXECS}sana$ext$TAB"
     else
