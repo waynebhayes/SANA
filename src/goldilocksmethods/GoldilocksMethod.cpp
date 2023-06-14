@@ -10,8 +10,13 @@ using namespace std;
 //initialization of static members
 multimap<double, double> GoldilocksMethod::allTempToPBad = multimap<double, double> (); 
 SANA* GoldilocksMethod::sana = nullptr;
-double GoldilocksMethod::DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1 = 2; // represents 0.99
-double GoldilocksMethod::DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0 = 10; // represents 1e-10
+
+// After several years of observations, it seems that starting with pBad = 0.99 results in too much wasted time at the
+// beginning of the anneal... basically we spin in randomness for about the first 40% of the run time. It appears that
+// using initial pBad of about 0.95 gets us up to that 40% mark, where we spin our tires only briefly. Thus, we've
+// changed the 0.99 (DIGITS_FORM_1 = 2) to 0.95 (DIGITS_FROM_1 = 1.3).
+double GoldilocksMethod::DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1 = 1; // represents ~0.95
+double GoldilocksMethod::DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0 = 12; // represents 1e-12
 double GoldilocksMethod::DEFAULT_TARGET_INITIAL_PBAD = (1-pow(10,-DEFAULT_TARGET_INITIAL_PBAD_DIGITS_FROM_1));
 double GoldilocksMethod::DEFAULT_TARGET_FINAL_PBAD = pow(10,-DEFAULT_TARGET_FINAL_PBAD_DIGITS_FROM_0);
 double GoldilocksMethod::DEFAULT_ERROR_TOL_DIGITS = 0.9; // as a fraction of digits in the last place from the above.
