@@ -90,7 +90,7 @@ for i in $(seq 1 $((Networks_count - 1)));do
 done
 
 PRG=`ls $OutputDir/*.progress | wc -l`
-NUM_FAILS=`expr $NUM_FAILS + '(' 28 '-' "$PRG" ')' `
+NUM_FAILS=`expr $NUM_FAILS + '(' 28 - $PRG ')'`
 
 IterationsAvg=`echo $Iterations | tr " " "$NL" | awk '{s+=$1}END{print s/NR}'`
 IterationsAvg=`printf "%f" $IterationsAvg`
@@ -151,7 +151,7 @@ fi
 
 echo encountered a total of $NUM_FAILS failures
 
-if [ "$NUM_FAILS" -gt 0 ]; then
+if [ $NUM_FAILS -gt 0 ]; then
     trap "echo 'errors; see $TMPDIR'" 0 1 2 3 15
 fi
 exit $NUM_FAILS
