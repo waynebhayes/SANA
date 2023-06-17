@@ -29,8 +29,10 @@ int main(int argc, char* argv[]) {
 	Mode* mode = modeSelector::selectMode(args);
 	mode->run(args);
 	delete mode;
+	return 0;
     }
     catch( const std::exception & ex ) {
        cerr << ex.what() << endl;
+       return 1;
     }
 }
