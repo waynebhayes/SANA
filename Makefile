@@ -255,7 +255,7 @@ depend: $(SRCS)
 optnetalign:
 	cd wrappedAlgorithms/OptNetAlign/src; $(MAKE) optnetalignubuntu; chmod +x optnetalign; cp optnetalign ../
 
-NetGO: /dev/null # always make
+NetGO:
 	git submodule init
 	git submodule update
 	(cd NetGO && git checkout master && (git pull || exit 0)) # don't let network connectivity cause failure
