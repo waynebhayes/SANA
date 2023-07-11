@@ -385,7 +385,7 @@ Alignment SANA::runUsingIterations() {
 #define MIN_TAU_STEP 0.001
 #define BATCH_SIZE sqrt(n1*n2)
 #define MIN_BATCHES 30
-#define HAPPY_BATCHES (int)(m1+m2) // shut compiler up about uint/int comparison
+#define HAPPY_BATCHES MIN(10000, (int)(m1+m2))
 #define MIN_CONFIDENCE 0.99999
 #define TOL_SAFETY_MARGIN 1.07 // empirically this seems to cut failure rates to below 5%.
 
@@ -451,8 +451,10 @@ Alignment SANA::runUsingConfidenceIntervals() {
 			// Reset the batch system if the score is increasing steadily, otherwise it can't "converge" without
 			// an ENORMOUS number of batches to compensate for the "bias" that occurs in early batches.
 			if(StatMean(scoreBatchMeans) > previousScore) { // adding + tolPerSstep/2 seems too much.
-			    if(verbose) printf(" ++++> %d batches, batchMeanScore %g is increasing; reset batches\n",
-				StatNumSamples(scoreBatchMeans), StatMean(scoreBatchMeans));
+			    if(verbose)
+				printf(" ++++> temp %.4g, batchMeanScore %.3f (pBad %.3g) still increasing after %d batches; reset batches and continue\n",
+				Temperature, StatMean(scoreBatchMeans),
+				StatConfInterval(pBadBatchMeans,  confidence), StatNumSamples(scoreBatchMeans));
 			    previousScore = StatMean(scoreBatchMeans);
 			    lastBatchCount = 0; StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
 			} else if(tauStep>MIN_TAU_STEP && StatNumSamples(scoreBatchMeans) >= HAPPY_BATCHES+lastBatchCount) {
