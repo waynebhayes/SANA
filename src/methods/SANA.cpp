@@ -458,10 +458,11 @@ Alignment SANA::runUsingConfidenceIntervals() {
 			    previousScore = StatMean(scoreBatchMeans);
 			    lastBatchCount = 0; StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
 			} else if(tauStep>MIN_TAU_STEP && StatNumSamples(scoreBatchMeans) >= HAPPY_BATCHES+lastBatchCount) {
-			    if(verbose) printf(" ----> %d batches, score %g decreased at tau %g; reduce next tauStep from %g",
-				StatNumSamples(scoreBatchMeans), StatMean(scoreBatchMeans), tau, tauStep);
+			    if(verbose)
+				printf(" ----> %d batches, avg score %g decreased at tau %g; reduce next tauStep from %g",
+				    StatNumSamples(scoreBatchMeans), StatMean(scoreBatchMeans), tau, tauStep);
 			    // tau -= tauStep;
-			    tauStep *= 0.666;
+			    tauStep *= 2.0/3.0;
 			    if(tauStep < MIN_TAU_STEP) tauStep = MIN_TAU_STEP;
 			    // tau += tauStep;
 			    if(verbose) printf(" to %g and backtrack to tau %g\n", tauStep, tau);
@@ -613,8 +614,10 @@ void SANA::SANAIteration() {
     double p = randomReal(gen);
     if (p < actColToChangeProb[actColId]) {
         performChange(actColId);
+	assert(!isnan(currentScore));
     } else {
         performSwap(actColId);
+	assert(!isnan(currentScore));
     }
 }
 
@@ -716,6 +719,7 @@ void SANA::performChange(uint actColId) {
     double pBad = scoreComparison(newAligEdges, newInducedEdges,
             newLocalScoreSum, newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum,
             newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
+    assert(!isnan(newCurrentScore));
     bool makeChange;
     //if(newCurrentScore == currentScore) makeChange = false; else // if it ain't broke, don't fix it
     makeChange = randomReal(gen) < pBad;
@@ -871,23 +875,23 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
     switch (scoreAggr) {
     case ScoreAggregation::sum:
     {
-        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
-        newCurrentScore += edWeight * EdgeDifference::adjustSumToTargetScore(newEdgeDifferenceSum, pairsCount);
-        newCurrentScore += erWeight * EdgeRatio::adjustSumToTargetScore(newEdgeRatioSum, pairsCount);
-        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
-        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        newCurrentScore += localWeight * (newLocalScoreSum / n1);
-        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
-        newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ewecWeight * (newEwecSum);
-        newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
+        newCurrentScore += ecWeight?ecWeight * (newAligEdges / g1Edges):0;
+        newCurrentScore += edWeight?edWeight * EdgeDifference::adjustSumToTargetScore(newEdgeDifferenceSum, pairsCount):0;
+        newCurrentScore += erWeight?erWeight * EdgeRatio::adjustSumToTargetScore(newEdgeRatioSum, pairsCount):0;
+        newCurrentScore += s3Weight?s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
+        newCurrentScore += icsWeight?icsWeight * (newAligEdges / newInducedEdges):0;
+        newCurrentScore += secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
+        newCurrentScore += localWeight?localWeight * (newLocalScoreSum / n1):0;
+        newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
+        newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
+        newCurrentScore += ewecWeight?ewecWeight * (newEwecSum):0;
+        newCurrentScore += ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
 #if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
-        newCurrentScore += mecWeight * (newAligEdges / (g1TotalWeight + g2TotalWeight));
-        newCurrentScore += sesWeight * newSquaredAligEdges / (double)SquaredEdgeScore::getDenom();
-        newCurrentScore += eeWeight * (1 - (newExposedEdgesNumer / (double)EdgeExposure::denom));
-         if (MultiS3::denominator_type==MultiS3::ee_global) MultiS3::denom = newExposedEdgesNumer;
-        newCurrentScore += ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)MultiS3::Normalization_factor;//(double)NUM_GRAPHS;
+        newCurrentScore += mecWeight?mecWeight * (newAligEdges / (g1TotalWeight + g2TotalWeight)):0;
+        newCurrentScore += sesWeight?sesWeight * newSquaredAligEdges / (double)SquaredEdgeScore::getDenom():0;
+        newCurrentScore += eeWeight?eeWeight * (1 - (newExposedEdgesNumer / (double)EdgeExposure::denom)):0;
+	if (MultiS3::denominator_type==MultiS3::ee_global) MultiS3::denom = newExposedEdgesNumer;
+        newCurrentScore += ms3Weight?ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)MultiS3::Normalization_factor;//(double)NUM_GRAPHS:0;
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -896,14 +900,14 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
     case ScoreAggregation::product:
     {
         newCurrentScore = 1;
-        newCurrentScore *= ecWeight * (newAligEdges / g1Edges);
-        newCurrentScore *= s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        newCurrentScore *= icsWeight * (newAligEdges / newInducedEdges);
-        newCurrentScore *= localWeight * (newLocalScoreSum / n1);
-        newCurrentScore *= secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        newCurrentScore *= wecWeight * (newWecSum / (2 * g1Edges));
-        newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore *= ncWeight * (newNcSum / trueAWithValidCountAppended.back());
+        newCurrentScore *= ecWeight?ecWeight * (newAligEdges / g1Edges):0;
+        newCurrentScore *= s3Weight?s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
+        newCurrentScore *= icsWeight?icsWeight * (newAligEdges / newInducedEdges):0;
+        newCurrentScore *= localWeight?localWeight * (newLocalScoreSum / n1):0;
+        newCurrentScore *= secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
+        newCurrentScore *= wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
+        newCurrentScore *= jsWeight?jsWeight * (newJsSum):0;
+        newCurrentScore *= ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
         break;
@@ -915,14 +919,14 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         assert(icsWeight == 0.0);
         // double energyInc = max(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max( s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))), secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))), max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)), max(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
-        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
-        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
-        newCurrentScore += localWeight * (newLocalScoreSum / n1);
-        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
-        newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
+        newCurrentScore += ecWeight?ecWeight * (newAligEdges / g1Edges):0;
+        newCurrentScore += secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
+        newCurrentScore += s3Weight?s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
+        newCurrentScore += icsWeight?icsWeight * (newAligEdges / newInducedEdges):0;
+        newCurrentScore += localWeight?localWeight * (newLocalScoreSum / n1):0;
+        newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
+        newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
+        newCurrentScore += ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -934,14 +938,14 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         assert(icsWeight == 0.0);
         //double energyInc = min(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min( s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))), secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))), min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)), min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
-        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
-        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
-        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        newCurrentScore += localWeight * (newLocalScoreSum / n1);
-        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
-        newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
+        newCurrentScore += ecWeight?ecWeight * (newAligEdges / g1Edges):0;
+        newCurrentScore += s3Weight?s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
+        newCurrentScore += icsWeight?icsWeight * (newAligEdges / newInducedEdges):0;
+        newCurrentScore += secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
+        newCurrentScore += localWeight?localWeight * (newLocalScoreSum / n1):0;
+        newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
+        newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
+        newCurrentScore += ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -949,14 +953,14 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
     }
     case ScoreAggregation::inverse:
     {
-        newCurrentScore += ecWeight / (newAligEdges / g1Edges);
-        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        newCurrentScore += s3Weight / (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        newCurrentScore += icsWeight / (newAligEdges / newInducedEdges);
-        newCurrentScore += localWeight / (newLocalScoreSum / n1);
-        newCurrentScore += wecWeight / (newWecSum / (2 * g1Edges));
-        newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ncWeight / (newNcSum / trueAWithValidCountAppended.back());
+        newCurrentScore += ecWeight?ecWeight / (newAligEdges / g1Edges):0;
+        newCurrentScore += secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
+        newCurrentScore += s3Weight?s3Weight / (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
+        newCurrentScore += icsWeight?icsWeight / (newAligEdges / newInducedEdges):0;
+        newCurrentScore += localWeight?localWeight / (newLocalScoreSum / n1):0;
+        newCurrentScore += wecWeight?wecWeight / (newWecSum / (2 * g1Edges)):0;
+        newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
+        newCurrentScore += ncWeight?ncWeight / (newNcSum / trueAWithValidCountAppended.back()):0;
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
@@ -977,14 +981,14 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
             min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
             min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
-        newCurrentScore += ecWeight * (newAligEdges / g1Edges);
-        newCurrentScore += secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5;
-        newCurrentScore += s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
-        newCurrentScore += icsWeight * (newAligEdges / newInducedEdges);
-        newCurrentScore += localWeight * (newLocalScoreSum / n1);
-        newCurrentScore += wecWeight * (newWecSum / (2 * g1Edges));
-        newCurrentScore += jsWeight * (newJsSum);
-        newCurrentScore += ncWeight * (newNcSum / trueAWithValidCountAppended.back());
+        newCurrentScore += ecWeight?ecWeight * (newAligEdges / g1Edges):0;
+        newCurrentScore += secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
+        newCurrentScore += s3Weight?s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
+        newCurrentScore += icsWeight?icsWeight * (newAligEdges / newInducedEdges):0;
+        newCurrentScore += localWeight?localWeight * (newLocalScoreSum / n1):0;
+        newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
+        newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
+        newCurrentScore += ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
 
         energyInc = newCurrentScore - currentScore;
         wasBadMove = maxScore < -1 * minScore;
