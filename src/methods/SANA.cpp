@@ -891,7 +891,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges,
         newCurrentScore += sesWeight?sesWeight * newSquaredAligEdges / (double)SquaredEdgeScore::getDenom():0;
         newCurrentScore += eeWeight?eeWeight * (1 - (newExposedEdgesNumer / (double)EdgeExposure::denom)):0;
 	if (MultiS3::denominator_type==MultiS3::ee_global) MultiS3::denom = newExposedEdgesNumer;
-        newCurrentScore += ms3Weight?ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)MultiS3::Normalization_factor;//(double)NUM_GRAPHS:0;
+        newCurrentScore += ms3Weight ? ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)MultiS3::Normalization_factor:0;//(double)NUM_GRAPHS;
 #endif
         energyInc = newCurrentScore - currentScore;
         wasBadMove = energyInc < 0;
