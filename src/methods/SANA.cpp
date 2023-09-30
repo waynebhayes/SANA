@@ -614,10 +614,10 @@ void SANA::SANAIteration() {
     double p = randomReal(gen);
     if (p < actColToChangeProb[actColId]) {
         performChange(actColId);
-	assert(!isnan(currentScore));
+	assert(!std::isnan(currentScore));
     } else {
         performSwap(actColId);
-	assert(!isnan(currentScore));
+	assert(!std::isnan(currentScore));
     }
 }
 
@@ -719,7 +719,7 @@ void SANA::performChange(uint actColId) {
     double pBad = scoreComparison(newAligEdges, newInducedEdges,
             newLocalScoreSum, newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum,
             newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum);
-    assert(!isnan(newCurrentScore));
+    assert(!std::isnan(newCurrentScore));
     bool makeChange;
     //if(newCurrentScore == currentScore) makeChange = false; else // if it ain't broke, don't fix it
     makeChange = randomReal(gen) < pBad;
