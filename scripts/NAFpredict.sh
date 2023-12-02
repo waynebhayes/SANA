@@ -25,10 +25,10 @@ notNOT() { grep -v '	NOT	' "$@"
 EXEDIR=`dirname $0`
 
 [ "$MYTMP" ] || MYTMP=`for i in /scratch/preserve/NAFpredict.$$ /var/tmp/NAFpredict.$$ /tmp/NAFpredict.$$; do mkdir -p $i && break; done 2>/dev/null; echo $i`
-TMPDIR=$MYTMP
+TMPDIR=$MYTMP/NAFpredict.$$
  trap "/bin/rm -rf $TMPDIR; exit" 0 1 2 15
  trap "trap '' 0 1 2 15; echo TMPDIR is $TMPDIR >&2; exit 1" 3
-mkdir $TMPDIR || die "Hmmm, $TMPDIR could not make $TMPDIR"
+mkdir -p $TMPDIR || die "Hmmm, $TMPDIR could not make $TMPDIR"
 
 ALLOW_ALL=false
 GO1freq=2000000000 # big enough for default...
