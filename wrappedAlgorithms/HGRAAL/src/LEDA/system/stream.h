@@ -21,7 +21,7 @@
 #include <LEDA/internal/PREAMBLE.h>
 #endif
 
-
+#include <stdio.h>
 #include <LEDA/system/basic.h>
 #include <LEDA/internal/std/iostream.h>
 #include <LEDA/internal/std/fstream.h>
@@ -164,6 +164,7 @@ struct cmd_istream : public istream
   }
 
   void close() { 
+    extern int pclose(FILE*);
     if (!rdbuf()->close() || !pclose(_f)) 
       setstate(std::ios_base::failbit); 
   }
@@ -240,6 +241,7 @@ struct cmd_ostream : public ostream
   }
 
   void close() { 
+    extern int pclose(FILE*);
     if (!rdbuf()->close() || !pclose(_f)) 
       setstate(std::ios_base::failbit); 
   }

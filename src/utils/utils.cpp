@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <stdio.h>
 #include "utils.hpp"
 #include "randomSeed.hpp"
 
@@ -175,6 +176,7 @@ vector<string> fileToStrings(const string& fileName, bool asLines) {
     return result;
 }
 
+extern int pclose(FILE*);
 void closeFile(FILE* fp, const bool& isPiped)
 {
     if(isPiped)
