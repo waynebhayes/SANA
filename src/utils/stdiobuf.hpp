@@ -1,14 +1,11 @@
 // This class is needed to convert a C-style FILE* to a C++-style stream to make
 // popen compatible with the large portions of SANA that use C++ to read files
-#include <stdio.h>
 #include <streambuf>
 
 #ifndef STDIOBUF_HPP
 #define STDIOBUF_HPP
 
 #define BUFFER_SIZE 10240
-
-extern int pclose(FILE*);
 
 class stdiobuf : public std::streambuf
 {

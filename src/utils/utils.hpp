@@ -3,7 +3,6 @@
 #include <vector>
 #include <map>
 #include <ostream>
-#include <stdio.h>
 #include "stdiobuf.hpp"
 using namespace std;
 

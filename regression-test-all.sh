@@ -30,9 +30,7 @@ done
 
 export SANA_EXE
 CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
-echo "Found $CORES real cores/cpus"
-CORES=`expr $CORES - 1`
-echo "USing $CORES cores for make"
+echo "Found $CORES cores/cpus"
 if $MAKE ; then
     for ext in sparse multi ''; do
 	if [ `hostname` = Jenkins ]; then

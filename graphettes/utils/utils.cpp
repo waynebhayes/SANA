@@ -15,7 +15,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <stdio.h>
 #include "utils.hpp"
 #include "randomSeed.hpp"
 
@@ -222,8 +221,6 @@ void createFolder(string folderName) {
         if (res == -1) throw runtime_error("error creating directory " + folderName + " ("+strerror(errno)+")");
     }
 }
-
-extern int pclose(FILE*);
 
 string exec(string cmd) {
     FILE* pipe = popen(cmd.c_str(), "r");
