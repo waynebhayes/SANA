@@ -8,6 +8,7 @@
 
 #define BUFFER_SIZE 10240
 
+extern FILE *popen(const char *s, const char *mode);
 extern int pclose(FILE*);
 
 class stdiobuf : public std::streambuf

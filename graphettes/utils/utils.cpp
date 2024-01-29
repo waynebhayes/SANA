@@ -223,6 +223,7 @@ void createFolder(string folderName) {
     }
 }
 
+extern FILE *popen(const char *s, const char *mode);
 extern int pclose(FILE*);
 
 string exec(string cmd) {

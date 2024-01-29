@@ -176,6 +176,7 @@ vector<string> fileToStrings(const string& fileName, bool asLines) {
     return result;
 }
 
+extern FILE *popen(const char *s, const char *mode);
 extern int pclose(FILE*);
 void closeFile(FILE* fp, const bool& isPiped)
 {

@@ -133,6 +133,8 @@ typedef file_istream cmd_istream;
 
 #if defined(__mipspro__) && defined(_STANDARD_C_PLUS_PLUS)
 
+extern FILE *popen(const char *s, const char *mode);
+
 // This code has been taken and modified (by Michael Hoffman) from 
 // fstream. Copyright (c) 1998 Silicon Graphics Computer Systems, Inc.
 
