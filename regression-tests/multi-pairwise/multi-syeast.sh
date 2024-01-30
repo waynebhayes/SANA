@@ -18,9 +18,10 @@ PATH="`pwd`/scripts:$PATH"
 export PATH
 DIR=`mktemp -d /tmp/syeast.XXXXXXXXX`
 MINSUM=0.25
-#MEASURE="-ms3 1 -ms3_type 1" # the one that's been used for years
- MEASURE="-ms3 1 -ms3_numer ra_k -ms3_denom mre_k" # new MS3 with fixed numer + denom
-#MEASURE="-mec 1" # this one has always worked well
+#MEASURE="-ms3 1 -ms3_type 0" # old type 0, used for years, not sure which type (0 or 1) works better
+#MEASURE="-ms3 1 -ms3_type 1" # old type 1, used for years, not sure which type (0 or 1) works better
+#MEASURE="-ms3 1 -ms3_numer ra_k -ms3_denom mre_k" # new MS3 with fixed numer + denom BUT FAILS FREQUENTLY
+ MEASURE="-mec 1" # new multi-EC, seems to work well
  trap "/bin/rm -rf $DIR" 0 1 2 3 15
 if $CI; then
     ITERS=20; minutes=0.1 # needs to finish fast
