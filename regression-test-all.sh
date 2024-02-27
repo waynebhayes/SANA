@@ -50,16 +50,23 @@ while [ $# -gt -0 ]; do
 done
 
 REAL_CORES=`(cpus 2>/dev/null || echo 1) | awk '{print 1*$1}'`
+MAX_THREADS=`(cpus -t 2>/dev/null || echo 1) | awk '{print 1*$1}'`
+echo "Machine has $REAL_CORES real cores and $MAX_THREADS total threads"
 [ "$REAL_CORES" -gt 0 ] || die "can't figure out how many cores this machine has"
 if "$CI"; then
     CORES=$REAL_CORES
     MAKE_CORES=$REAL_CORES
 else
-    CORES=`expr $REAL_CORES - 1`
-    MAKE_CORES=`expr $REAL_CORES - 1`
+    if [ $MAX_THREADS -gt $REAL_CORES ]; then
+	CORES=`expr $MAX_THREADS \* 3 / 4`
+	MAKE_CORES=$CORES
+    else
+	CORES=`expr $REAL_CORES - 1`
+	MAKE_CORES=`expr $REAL_CORES - 1`
+    fi
 fi
 [ `hostname` = Jenkins ] && MAKE_CORES=2 # only use 2 cores to make on Jenkins
-echo "Using $MAKE_CORES cores to make and $CORES cores for regression tests"
+echo "Using $MAKE_CORES threads to make and $CORES threads for regression tests"
 
 NUM_FAILS=0
 export EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v "MAIN|[<>]"`
