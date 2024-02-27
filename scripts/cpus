@@ -11,8 +11,10 @@ load=0
 [ -f $MY_CPUS_USED ] && myload=`cat $MY_CPUS_USED`
 echo "$myload" | grep '^[0-9][0-9]*$' >/dev/null || myload=0
 VERBOSE=false
+THREADS=false
 while [ $# -gt 0 ]; do
     case "$1" in
+    -[Tt]*) THREADS=true; shift;; # count threads instead of physical cores
     -[Vv]*) VERBOSE=true; shift;;
     avail*) uptime > $TMPDIR/uptime
 	load=`cat $TMPDIR/uptime | sed 's/.*load averages*://' -e 's/,//g' | newlines |
@@ -23,6 +25,15 @@ while [ $# -gt 0 ]; do
     *) die "unknown option '$1'" ;;
     esac
 done
+
+if [ -f /proc/cpuinfo ]; then
+    if $THREADS; then
+	grep -c '^processor[ 	]*:' /proc/cpuinfo
+    else
+	grep '^cpu cores[ 	]*:' /proc/cpuinfo | uniq | awk '{print $NF}END{exit(NR-1)}' || die "incorrect parsing of /proc/cpuinfo"
+    fi
+    exit 0
+fi
 
 output(){ [ -f $TMPDIR/cpus ] && awk '{cpus=$1; av=(cpus-int('"$load"')+0*int('"$myload"')); printf "%d\n", (av<0)?0:av}' $TMPDIR/cpus | tee $MY_CPUS_USED && exit 0; }
 
@@ -36,7 +47,7 @@ lscpu >$TMPDIR/lscpu 2>/dev/null &&
 
 # Cygwin:
 if (arch; uname -a) | grep CYGWIN >/dev/null; then
-    grep -c '^processor[ 	]*:' /proc/cpuinfo
+    die "shouldn't get here since CYGWIN has /proc/cpuinfo" #grep '^cpu cores[ 	]*:' /proc/cpuinfo | uniq | awk '{print $NF}'
 elif [ -d /dev/cpu -a ! -f /dev/cpu/microcode ]; then
     ls -F /dev/cpu | fgrep -c > $TMPDIR/cpus && output
 else
