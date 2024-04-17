@@ -54,12 +54,14 @@ hawk 'ARGIND<=2{edge[ARGIND][$1][$2]=edge[ARGIND][$2][$1]=V[ARGIND][$1]=V[ARGIND
 		for(u2 in NAF[u1]) if(NAF[u1][u2]>0) { # for each of its aligned proteins from species 2
 		    if(!(g1 in edge[2][u2])) { # if u2 is NOT annotated with g1 at T0...
 			ASSERT(!tpgT[0][2][u2][g1]);
+			printf "%d %s\t%s\t%s", NAF[u1][u2],'$tax2',p,g
 			++predicted;
 			predict[u2][g1] += NAF[u1][u2];
 			if(tpgT[1][2][u2][g1]) { #... but it IS at T1
-			    printf "%d %s\t%s\t%s\tvalidated\n", NAF[u1][u2],'$tax2',p,g
+			    printf "\tvalidated", NAF[u1][u2],'$tax2',p,g
 			    ++validated;
 			}
+			print ""
 		    }
 		}
 	    }
