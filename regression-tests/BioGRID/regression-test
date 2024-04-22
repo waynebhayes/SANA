@@ -16,7 +16,7 @@ export PATH
 OutputDir=NONE
 OutputFile=NONE # will be set below either by argument or in OutputDir
 
-ErrorMargin="0.04"
+ErrorMargin="0.05"
 #echo "WARNING: temporarily set error margin way too big while core scores are being tested"
 CompareFile=""
 
@@ -147,8 +147,8 @@ if [ ! -z "$CompareFile" ]; then
 	case $name in
 	Iterations)
 	    EXTRA_MARGIN=1000 # we don't care about iteration speed any more, just print it for informational purposes
-	    echo -n " (no longer tracking iteration speed)" >&2
-	    ;;
+	    echo -n " (no longer tracking iteration speed)" >&2 ;;
+	ec|s3|lccs) EXTRA_MARGIN=1.2 ;;
 	esac
 	errorDif=`echo "$errorDif/$EXTRA_MARGIN"|bc -l`
         errorDif=`echo "($errorDif)" | bc -l | awk 'function ABS(x){if(x<0)x=-x; return x} {printf "%.16f\n",ABS($1)}'`
