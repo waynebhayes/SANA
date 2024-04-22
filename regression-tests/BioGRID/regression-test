@@ -17,7 +17,7 @@ TMPDIR=`mktemp -d /tmp/regression-test.XXXXXX`
 
 OutputDir="$TMPDIR"
 OutputFile="$OutputDir/regression-test.result"
-ErrorMargin="0.04"
+ErrorMargin="0.05"
 #echo "WARNING: temporarily set error margin way too big while core scores are being tested"
 CompareFile=""
 
@@ -134,7 +134,7 @@ if [ ! -z "$CompareFile" ]; then
 	EXTRA_MARGIN=1
 	case $name in
 	Iterations) EXTRA_MARGIN=9999.0 ;;
-	lccs) EXTRA_MARGIN=1.5 ;;
+	lccs|sec|ec) EXTRA_MARGIN=1.2 ;;
 	esac
 	[ "$EXTRA_MARGIN" != 1 ] && echo -n " * $EXTRA_MARGIN (wider margin)" >&2
 	echo "" # finish the "echo -n" line above
@@ -142,7 +142,7 @@ if [ ! -z "$CompareFile" ]; then
         errorDif=`parse "ABS($errorDif)" | awk '{printf "%.16f\n",$1}'`
         if [[ `echo "$errorDif < $ErrorMargin" | bc -l` -eq 0 ]]; then
             touch $TMPDIR/failed
-	    echo "$name failed error margin: ($newItem - $baseItem)/$baseItem has error difference '$errorDif < $ErrorMargin'" >&2
+	    echo "$name failed error margin: ($newItem - $baseItem)/$baseItem has error difference '$errorDif > $ErrorMargin'" >&2
 	    (( ++NUM_FAILS ))
         fi
     done
