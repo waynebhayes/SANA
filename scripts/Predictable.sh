@@ -49,7 +49,8 @@ while true; do
 done
 
 [ $# -eq 5 ] || die "expecting exactly 4 arguments after options"
-tax1=$1; tax2=$2
+echo "$1" "$2" | fgrep '|' && die "sorry, $0 doesn't yet support multiple species"
+tax1="$1"; tax2="$2"
 GO1=$3; GO2=$4; 
 G2=$5
 if [ "$GO2" = NONE ]; then
