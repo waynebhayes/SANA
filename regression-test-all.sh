@@ -33,6 +33,7 @@ CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 echo "Found $CORES real cores/cpus"
 CORES=`expr $CORES - 1`
 echo "Using $CORES cores for parallel"
+export CORES
 if $MAKE ; then
     for ext in sparse multi ''; do
 	if [ `hostname` = Jenkins ]; then

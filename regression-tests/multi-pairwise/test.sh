@@ -7,7 +7,7 @@ SANA_MULTI="${SANA_EXE:=./sana}.multi"
 [ -x "$SANA_MULTI" ] || die "can't find $SANA_MULTI executable"
 PATH="`pwd`/scripts:$PATH"
 export PATH
-CORES=`cpus 2>/dev/null || echo 4`
+CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 DIR=`mktemp -d /tmp/syeast.XXXXXXXXX`
 MINSUM=0.25
 MEASURE="-ms3 1 -ms3_type 0"
