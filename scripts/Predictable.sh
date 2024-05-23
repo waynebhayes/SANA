@@ -1,5 +1,5 @@
 #!/bin/bash
-USAGE="USAGE: $0 [-evc 'egrep-expr' ] [-gene2go (allGO|NOSEQ|...)] [ -GO1freq k ] tax1 tax2 GO1 GO2 G2.el
+USAGE="USAGE: $0 [-evc 'egrep-expr' ] [-gene2go (allGO|NOSEQ|...)] [ -GO1freq k ] 'tax1a|tax1b...' 'tax2a|tax2b...' GO1 GO2 G2.el
     where GO1 and GO2 are paths to gene2go files WITHOUT the allGO or NOSEQ extension
 Purpose: produce the list of 'predictable-in-principle' (protein,GO) annotations for species tax2: this is simply the
     Cartesian product of
@@ -9,6 +9,8 @@ Purpose: produce the list of 'predictable-in-principle' (protein,GO) annotations
     the GO1 file, applied to all proteins from species2's G2 network---ie., the size of this set is the denominator of 'Recall'.
     If GO2 is 'NONE', then the Cartesian product is not so restricted. THIS IS NOT RECOMMENDED, because the above Cartesian
     product, unrestricted, is HUGE (bascally |V2| * |GOterms in tax2|).
+  NOTE: tax1 and tax2 can be egrep-like regular expressions, intended to allow for the fact that some species have multiple
+    taxonomic IDs.
 
 Options:
     -GO1freq k: remove GO terms with frequencies above k (ie., restrict to GO terms with higher specificity]
@@ -49,7 +51,7 @@ while true; do
 done
 
 [ $# -eq 5 ] || die "expecting exactly 4 arguments after options"
-echo "$1" "$2" | fgrep '|' && die "sorry, $0 doesn't yet support multiple species"
+#echo "$1" "$2" | fgrep '|' && die "sorry, $0 doesn't yet support multiple species"
 tax1="$1"; tax2="$2"
 GO1=$3; GO2=$4; 
 G2=$5
@@ -79,11 +81,14 @@ getSeqFree() {
 }
 
 # The ultimate source of our predictions: from the source species at the earlier time
-grep "^$tax1	" $GO1.$GENE2GO | cut -f1-5,8 > $TMPDIR/GO1.tax1.$GENE2GO.1-5,8
+egrep "^($tax1)	" $GO1.$GENE2GO | cut -f1-5,8 > $TMPDIR/GO1.tax1.$GENE2GO.1-5,8
 
 # The most basic set of Predictable-in-Principle 
-    awk 'BEGIN{tax2='$tax2'} # Vable means "validatable", ie., is among the set we are trying to predict at time t2
-	ARGIND==1 && NF && $1==tax2{Vable[$2][$3]=$4} # if GO2 is NONE, this never gets executed and Vable will not exist
+    awk 'BEGIN{tax1st="'"$tax1"'";tax2st="'"$tax2"'";
+	    n1=split(tax1st, tax1A,"|"); for(i in tax1A) ++tax1[tax1A[i]];
+	    n2=split(tax2st, tax2A,"|"); for(i in tax2A) ++tax2[tax2A[i]];
+	} # Vable means "validatable", ie., is among the set we are trying to predict at time t2
+	ARGIND==1 && NF && ($1 in tax2){Vable[$2][$3]=$4} # if GO2 is NONE, this never gets executed and Vable will not exist
 	ARGIND==2{V2[$1]=V2[$2]=1;next} # get list of nodes at earlier date in target species
 	ARGIND==3{++GO1freq[$3];GO1tax1[$3][$4]=1;Cat[$3]=$NF} # term,evCode,Category from source species, earlier date
 	END{
@@ -91,7 +96,8 @@ grep "^$tax1	" $GO1.$GENE2GO | cut -f1-5,8 > $TMPDIR/GO1.tax1.$GENE2GO.1-5,8
 	    for(p in V2)for(g in GO1tax1)if(g in GO1freq && GO1freq[g] < '$GO1freq')for(e in GO1tax1[g])
 		# if not filtering on validatable, or if annotation (p,g) is validatable:
 		if(!isarray(Vable) || (p in Vable && g in Vable[p]))
-		    printf "%d\t%s\t%s\t%s\t%s\n",tax2,p,g,e,Cat[g]
+		    for(t in tax2)
+			printf "%d\t%s\t%s\t%s\t%s\n",t,p,g,e,Cat[g]
 		    # Would could be even more specific here and when we copy a GO term from p1\in V1 to p2\in V2,
 		    # we list *only* the (GO,evc) pairs assigned to p1, rather than all (GO,evc) pairs seen across all of V1.
 		    # But that would require changing our whole code. Thus, NOT NOW!
