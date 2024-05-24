@@ -30,7 +30,7 @@ NOTE: the evidence code that is output is the SOURCE (ie., predicting) evidence 
 die() { (echo "$USAGE"; echo "FATAL ERROR: $@") >&2; exit 1
 }
 
-[ "$MYTMP" ] || MYTMP=`for i in /scratch/preserve/$USER /var/tmp/$USER /tmp/$USER; do mkdir -p $i && break; done; echo $i`
+[ "$MYTMP" ] || MYTMP=`for i in /scratch/preserve/$USER /var/tmp/$USER /tmp/$USER; do mkdir -p $i && break; done 2>/dev/null; echo $i`
 TMPDIR=$MYTMP/PIP.$$
  trap "/bin/rm -rf $TMPDIR" 0 1 2 15
  trap "TMPDIR is $TMPDIR" 3
@@ -60,43 +60,46 @@ if [ "$GO2" = NONE ]; then
     touch $GO2.allGO $GO2.NOSEQ $GO2.SEQ
 fi
 
-SEQ="(IBA|IEA|IGC|ISA|ISM|ISO|ISS|RCA)" # egrep expression matching all sequence-based evidence codes
+SEQ="IBA|IEA|IGC|ISA|ISM|ISO|ISS|RCA" # egrep expression matching all sequence-based evidence codes
 
 # Get rid of annoying NOT lines...
 notNOT() { fgrep -v '	NOT	' "$@"
 }
 # This script returns all annotation lines for species $1 from gene2go file $2.allGO that used ANY sequence evidence
 getSeqSupp() {
-    grep "^$1	" $2.allGO | # extract all annotations from our target species (except "NOT")
-    egrep "	$SEQ	" | # extract those that were supported by ANY sequence evidence code
-    cut -f1-5,8
+    egrep "^($1)	" $2.allGO | # extract all annotations from our target species (except "NOT")
+	egrep "	($SEQ)	" | # extract those that were supported by ANY sequence evidence code
+	cut -f1-5,8
 }
 # Opposite of the above: list of annotation lines for species $1 from gene2go files $2 that had NO sequence evidence codes
 getSeqFree() {
-    getSeqSupp $1 $2 | # extract sequence-supported annotations for species 1 from gene2go file $2
-    cut -f1-3 | # just the relevant columns
-    fgrep -v -f - $2.NOSEQ | # remove sequence-supported annotations from NOSEQ, even those with non-sequence evidence
-    grep "^$1	" | # extract our target species, returning only those annotations that had NO sequence evidence whatsoever
-    cut -f1-5,8
+    getSeqSupp "$1" "$2" | # extract sequence-supported annotations for species 1 from gene2go file $2
+	cut -f1-3 | # just the relevant columns
+	fgrep -v -f - $2.NOSEQ | # remove sequence-supported annotations from NOSEQ, even those with non-sequence evidence
+	egrep "^($1)	" | # extract target species, returning only annotations that had NO sequence evidence whatsoever
+	cut -f1-5,8
 }
 
 # The ultimate source of our predictions: from the source species at the earlier time
 egrep "^($tax1)	" $GO1.$GENE2GO | cut -f1-5,8 > $TMPDIR/GO1.tax1.$GENE2GO.1-5,8
 
 # The most basic set of Predictable-in-Principle 
-    awk 'BEGIN{tax1st="'"$tax1"'";tax2st="'"$tax2"'";
+    gawk 'BEGIN{tax1st="'"$tax1"'";tax2st="'"$tax2"'";
 	    n1=split(tax1st, tax1A,"|"); for(i in tax1A) ++tax1[tax1A[i]];
 	    n2=split(tax2st, tax2A,"|"); for(i in tax2A) ++tax2[tax2A[i]];
-	} # Vable means "validatable", ie., is among the set we are trying to predict at time t2
-	ARGIND==1 && NF && ($1 in tax2){Vable[$2][$3]=$4} # if GO2 is NONE, this never gets executed and Vable will not exist
+	}
+	ARGIND==1 && NF && ($1 in tax2){
+	    # Vable means "validatable", ie., is among the set we are trying to predict at time t2
+	    ++Vable[$2][$3][$1][$4] # if GO2 is NONE, this never gets executed and Vable will not exist
+	}
 	ARGIND==2{V2[$1]=V2[$2]=1;next} # get list of nodes at earlier date in target species
 	ARGIND==3{++GO1freq[$3];GO1tax1[$3][$4]=1;Cat[$3]=$NF} # term,evCode,Category from source species, earlier date
 	END{
 	    # predictable annotation if node is in earlier target network and earlier source network has such a GO term
-	    for(p in V2)for(g in GO1tax1)if(g in GO1freq && GO1freq[g] < '$GO1freq')for(e in GO1tax1[g])
+	    for(p in V2) for(g in GO1tax1) if(g in GO1freq && GO1freq[g] < '$GO1freq') for(e in GO1tax1[g])
 		# if not filtering on validatable, or if annotation (p,g) is validatable:
 		if(!isarray(Vable) || (p in Vable && g in Vable[p]))
-		    for(t in tax2)
+		    for(t in Vable[p][g]) if(e in Vable[p][g][t])
 			printf "%d\t%s\t%s\t%s\t%s\n",t,p,g,e,Cat[g]
 		    # Would could be even more specific here and when we copy a GO term from p1\in V1 to p2\in V2,
 		    # we list *only* the (GO,evc) pairs assigned to p1, rather than all (GO,evc) pairs seen across all of V1.
