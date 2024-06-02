@@ -17,11 +17,11 @@ if [ ! -f NetGO/awkcel ]; then
 fi
 
 SANA_EXE=./sana
-MAKE=false
+DO_MAKE=false
 while true; do
     case "$1" in
-    -make) MAKE=true; shift;;
-    -x) [ -x "$2" -o "$MAKE" = true ] || die "unknown argument '$2'"
+    -make) DO_MAKE=true; shift;;
+    -x) [ -x "$2" -o "$DO_MAKE" = true ] || die "unknown argument '$2'"
 	SANA_EXE="$2"; shift 2;;
     -*) die "unknown option '$1";;
     *) break;;
@@ -33,13 +33,14 @@ CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
 echo "Found $CORES real cores/cpus"
 CORES=`expr $CORES - 1`
 echo "Using $CORES cores for parallel"
+export MAKE="make -j$CORES"
 export CORES
-if $MAKE ; then
+if $DO_MAKE ; then
     for ext in sparse multi ''; do
 	if [ `hostname` = Jenkins ]; then
-	    make clean; make $ext -j2 || die "make '$ext' failed"
+	    make clean; $MAKE $ext -j2 || die "make '$ext' failed"
 	else
-	    make clean; make $ext -j$CORES || die "make '$ext' failed"
+	    make clean; $MAKE $ext -j$CORES || die "make '$ext' failed"
 	fi
 	# We only want a "." separator if the extension is non-null
 	if [ "$ext" = "" ]; then dot=""; else dot="."; fi

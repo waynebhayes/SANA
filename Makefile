@@ -189,7 +189,7 @@ test: $(OBJDIR)/test/$(tg).o $(GTEST_OBJS) $(TEST_DEPENDS)
 	./$(OBJDIR)/$(tg)
 
 $(GTEST_OBJS):
-	cd test/gtest && make
+	cd test/gtest && $(MAKE)
 
 clean: #clear_cache
 	$(RM) -rf cache*  # mostly for pBad

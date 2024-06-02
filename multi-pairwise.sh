@@ -13,7 +13,7 @@ MAX_TRIES=10
 TIME_VERBOSE=-v
 NOBUF='stdbuf -o 0 -e 0'
 case `arch` in
-Darwin) TIME_VERBOSE=-l
+*Darwin*|*arm64*) TIME_VERBOSE=-l
 	NOBUF=''
 	;;
 esac
