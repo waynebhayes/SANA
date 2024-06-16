@@ -42,8 +42,7 @@ lscpu >$TMPDIR/lscpu 2>/dev/null &&
     awk '/^CPU[(s)]*:/{cpus=$NF}END{if(cpus)print cpus; else exit 1}' $TMPDIR/lscpu > $TMPDIR/cpus && output
 
 # MacOS:
-([ `arch` = Darwin -o `uname` = Darwin ] || uname -a | grep Darwin >/dev/null) &&
-    sysctl -n hw.ncpu > $TMPDIR/cpus && output
+(arch;uname -a) | egrep 'Darwin|arm64' >/dev/null && sysctl -n hw.ncpu > $TMPDIR/cpus && output
 
 # Cygwin:
 if (arch; uname -a) | grep CYGWIN >/dev/null; then
