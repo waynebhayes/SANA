@@ -16,7 +16,7 @@ if [ ! -f NetGO/awkcel ]; then
     [ -f NetGO/awkcel ] || die "Still can't find NetGO"
 fi
 
-SANA_EXE=./sana
+SANA_EXE=./sana1.1
 DO_MAKE=false
 while true; do
     case "$1" in
@@ -44,10 +44,10 @@ if $DO_MAKE ; then
 	fi
 	# We only want a "." separator if the extension is non-null
 	if [ "$ext" = "" ]; then dot=""; else dot="."; fi
-	if [ -x sana$dot$ext ]; then
-	    [ "./sana$dot$ext" != "$SANA_EXE$dot$ext" ] && mv -f "sana$dot$ext" "$SANA_EXE$dot$ext"
+	if [ -x $SANA_EXE$dot$ext ]; then
+	    [ "./$SANA_EXE$dot$ext" != "$SANA_EXE$dot$ext" ] && mv -f "$SANA_EXE$dot$ext" "$SANA_EXE$dot$ext"
 	else
-	    die "could not create executable 'sana$dot$ext'"
+	    die "could not create executable '$SANA_EXE$dot$ext'"
 	fi
     done
 fi

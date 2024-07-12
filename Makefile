@@ -1,4 +1,5 @@
 CC = g++
+SANA_VER=1.1
 
 #CXXFLAGS = -I "src/utils" -Wall -fno-inline -O2 -std=c++11 -g3
 #CXXFLAGS = -I "src/utils" -U__STRICT_ANSI__ -Wall -std=c++11 -O3 -DMULTI_PAIRWISE #-pg -ggdb -Bstatic #-static
@@ -141,8 +142,8 @@ SRCS = $(METHODS_SRC) $(OTHER_SRC) $(UTILS_SRC) $(MEASURES_SRCS) $(METHOD_WRAPPE
 OBJDIR = _objs
 OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.cpp=.o))
 
-#MAIN = sana_dbg
-MAIN = sana
+#MAIN = sana_dbg$(SANA_VER)
+MAIN = sana$(SANA_VER)
 
 .PHONY: depend clean test test_all regression_test
 
@@ -216,11 +217,11 @@ NetGO:
 
 multi:
 	$(MAKE) 'MULTI=1'
-	mv sana sana.multi
+	mv $(MAIN) $(MAIN).multi
 
 sparse:
 	$(MAKE) 'SPARSE=1'
-	mv sana sana.sparse
+	mv $(MAIN) $(MAIN).sparse
 
 createShadow: scripts/createShadowCpp/createShadow
 	mv scripts/createShadowCpp/createShadow .

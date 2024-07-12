@@ -27,7 +27,7 @@ fi
 NL='
 '
 
-[ -x ./sana ] || die "can't find ./sana executable"
+[ -x $SANA_EXE ] || die "can't find $SANA_EXE executable"
 
 # ordered by size in number of nodes
 nets="`echo RNorvegicus SPombe CElegans MMusculus SCerevisiae AThaliana DMelanogaster HSapiens | newlines`"
@@ -44,7 +44,7 @@ echo "$nets" |
 	paste <(cat networks/$g1.el | newlines | sort -u | randomizeLines | head -$NUM_LOCK) <(cat networks/$g2.el | newlines | sort -u | randomizeLines | head -$NUM_LOCK) > $OutputDir/$g1-$g2.lock
     done
 echo "running lock test."
-echo "$nets" | awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; ./sana -t 1 -s3 1 -g1 %s -g2 %s -lock '$OutputDir'/%s-%s.lock -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
+echo "$nets" | awk '{net[NR-1]=$NF}END{for(i=0;i<NR;i++)for(j=i+1;j<NR;j++) printf "echo Running %s-%s; $SANA_EXE -t 1 -s3 1 -g1 %s -g2 %s -lock '$OutputDir'/%s-%s.lock -o '$OutputDir'/%s-%s > '$OutputDir'/%s-%s.progress 2>&1\n",net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j],net[i],net[j]}' | eval $PARALLEL
 echo "Checking SANA Locking Mechanism" | tee -a $OutputFile
 cat $OutputDir/networks.locking | while read Network1 Network2; do
     if [[ `grep -c -x -f "$OutputDir/$Network1-$Network2.lock" "$OutputDir/$Network1-$Network2.align"` -ne $NUM_LOCK ]]; then
