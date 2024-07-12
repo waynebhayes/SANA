@@ -29,8 +29,8 @@ while true; do
 done
 
 export SANA_EXE
-CORES=${CORES:=`cpus 2>/dev/null || echo 4`}
-echo "Found $CORES real cores/cpus"
+CORES=${CORES:=`cpus -t 2>/dev/null || echo 4`}
+echo "Found $CORES threaded cores/cpus"
 CORES=`expr $CORES - 1`
 echo "Using $CORES cores for parallel"
 export MAKE="make -j$CORES"
@@ -62,7 +62,7 @@ do
     NEW_FAILS=0
     export REG_DIR
     echo --- running test $r ---
-    if "$r"; then
+    if time "$r"; then
 	:
     else
 	NEW_FAILS=$?
