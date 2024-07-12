@@ -1082,6 +1082,7 @@ static double getRatio(double w1, double w2) {
     if (w1==0 && w2==0) r=1;
     else if (abs(w1)<abs(w2)) r=w1/w2;
     else r=w2/w1;
+    assert(r>0.0);
     // At this point, r can be in [-1,1], but we want it [0,1], so add 1 and divide by 2
     r = (r+1)/2;
     assert(r>=0 && r<=1);
