@@ -1138,7 +1138,7 @@ double SANA::edgeRatioIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     // Subtract peg1-hole1, add peg1-hole2
     for (uint node2 : G1->adjLists[peg1]) {
         double r = getRatio(G1->getEdgeWeight(peg1, node2), G2->getEdgeWeight(hole1, A[node2]));
-        double y = -r - c;
+        double y = -r - c; // the next 3 lines use some "magic" to recover double precision sums of single precision variables
         double t = edgeRatioIncDiff + y;
         c = (t - edgeRatioIncDiff) - y;
         edgeRatioIncDiff = t;

@@ -26,7 +26,7 @@ double EdgeRatio::getEdgeRatioSum(const Graph *G1, const Graph *G2, const Alignm
     for (const auto& edge : *(G1->getEdgeList())) {
       uint node1 = edge[0], node2 = edge[1];
       double r = getRatio(G1->getEdgeWeight(node1, node2), G2->getEdgeWeight(A[node1], A[node2]));
-      double y = r - c;
+      double y = r - c; // the following few lines implement a high-precision sum that avoids most roundoff problems
       double t = edgeRatioSum + y;
       c = (t - edgeRatioSum) - y;
       edgeRatioSum = t;
@@ -43,7 +43,7 @@ double EdgeRatio::adjustSumToTargetScore(double edgeRatioSum, uint pairsCount) {
 double EdgeRatio::getRatio(double w1, double w2) {
     if (w1 == 0 and w2 == 0) return 1;
     double r = (abs(w1) < abs(w2) ? w1/w2 : w2/w1);
-    //At this point, r is in [-1,1], but we want it in [0,1], so add 1 and divide by 2
+    // At this point, r is in [-1,1], but we want it in [0,1], so add 1 and divide by 2
     r = (r+1)/2;
     assert(r >= 0 and r <= 1);
     return r;
