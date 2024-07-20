@@ -22,7 +22,7 @@ ErrorMargin="0.04"
 NL='
 '
 
-[ -x "$EXE" ] || die "can't find executable '$EXE'"
+[ -x "$SANA_EXE" ] || die "can't find executable '$SANA_EXE'"
 
 # ordered by size in number of nodes, then put the list of pairs into file networks.locking
 nets="RNorvegicus SPombe CElegans MMusculus SCerevisiae AThaliana DMelanogaster HSapiens"
@@ -41,7 +41,7 @@ cat $TMPDIR/networks.locking |
 echo "running lock test."
 
 cat $TMPDIR/networks.locking |
-    gawk '{printf "echo Running %s-%s; \"'"$EXE"'\" -tolerance 0 -t 1 -s3 1 -g1 %s -g2 %s -lock '$TMPDIR'/%s-%s.lock -o '$TMPDIR'/%s-%s > '$TMPDIR'/%s-%s.progress 2>&1\n",$1,$2,$1,$2,$1,$2,$1,$2,$1,$2}' | tee $TMPDIR/runs.txt | eval $PARALLEL_CMD
+    gawk '{printf "echo Running %s-%s; \"'"$SANA_EXE"'\" -tolerance 0 -t 1 -s3 1 -g1 %s -g2 %s -lock '$TMPDIR'/%s-%s.lock -o '$TMPDIR'/%s-%s > '$TMPDIR'/%s-%s.progress 2>&1\n",$1,$2,$1,$2,$1,$2,$1,$2,$1,$2}' | tee $TMPDIR/runs.txt | eval $PARALLEL_CMD
 
 PARA_EXIT=$?
 echo "'$PARALLEL_CMD' returned $PARA_EXIT; current NUM_FAILS is $NUM_FAILS"

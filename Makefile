@@ -4,7 +4,8 @@ ARCH_FLAGS=$(shell ($(GCC) -v 2>&1; uname -a) | awk '/CYGWIN/{print "-U__STRICT_
 MY_CC = g++
 CXXFLAGS = -I "src/utils" "-DLIBWAYNE=1" -Wall -std=c++11 -pthread $(ARCH_FLAGS) #-pg -fno-inline
 
-MAIN = sana
+SANA_VER=2.0
+MAIN = sana$(SANA_VER)
 
 #you can give these on Make's command line, eg "SPARSE=1" or "FLOAT=1" or "MULTI=1"
 #all can be mixed and matched except FLOAT and MULTI

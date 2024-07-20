@@ -10,7 +10,7 @@ echo "PARALLEL_CMD is '$PARALLEL_CMD'" >&2
 
 REG_DIR=`pwd`/regression-tests/EdgeRatio
 [ -d "$REG_DIR" ] || die "should be run from top-level directory of the SANA repo"
-[ -x "$EXE.float" ] || die "can't find executable '$EXE.float'"
+[ -x "$SANA_EXE.float" ] || die "can't find executable '$SANA_EXE.float'"
 (cd "$REG_DIR" && /bin/rm -f *.align *.out *.progress)
 
 nets="150 WMean_con WMean_ocd"
@@ -22,7 +22,7 @@ while [ $TRIES -gt 0 ]; do
 	file="$REG_DIR/$network"
 	# Run SANA to align the graph to itself
 	echo "Aligning network $network" >&2
-	echo "'$EXE.float' -tolerance 0 -t 5 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
+	echo "'$SANA_EXE.float' -tolerance 0 -t 5 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
     done | eval $PARALLEL_CMD
     PARA_STATUS=$?
 

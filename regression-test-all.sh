@@ -37,8 +37,9 @@ if [ ! -x NetGO/NetGO.awk ]; then
     [ -x NetGO/NetGO.awk ] || die "Still can't find NetGO"
 fi
 
-EXE="${EXE:=./sana}"
-SANA_DIR="${SANA_DIR:=`/bin/pwd`}"
+export SANA_VER=2.0
+export SANA_EXE="${SANA_EXE:=./sana$SANA_VER}"
+export SANA_DIR="${SANA_DIR:=`/bin/pwd`}"
 MAKE=false
 while [ $# -gt -0 ]; do
     case "$1" in
@@ -93,18 +94,18 @@ for EXT in '' $EXECS; do
     else
 	ext=.`echo $EXT | tr A-Z a-z` # includes the dot
 	if [ "$EXT" = MPI ] && not which mpicxx > /dev/null; then
-	    warn "skipping $EXT (sana$ext) because mpicxx could not be found"
+	    warn "skipping $EXT ($SANA_EXE$ext) because mpicxx could not be found"
 	    continue
 	fi
     fi
     if $MAKE ; then
-	echo -n "Attempting to make sana$ext... "
+	echo -n "Attempting to make $SANA_EXE$ext... "
 	[ "$EXT" = "" ] || EXT="$EXT=1"
-	make $EXT clean > sana$ext.make.log 2>&1
-	if make -k -j$MAKE_CORES $EXT >> sana$ext.make.log 2>&1; then # "-k" means "keep going even if some targets fail"
+	make $EXT clean > $SANA_EXE$ext.make.log 2>&1
+	if make -k -j$MAKE_CORES $EXT >> $SANA_EXE$ext.make.log 2>&1; then # "-k" means "keep going even if some targets fail"
 	    echo "SUCCESS!"
 	else
-	    warn "make '$EXT' failed; see 'sana$ext.make.log' for details"
+	    warn "make '$EXT' failed; see '$SANA_EXE$ext.make.log' for details"
 	    if echo "$ext" "$EXT" | egrep -i 'static|mpi' >/dev/null; then warn "ignoring failure of make '$EXT'";
 	    else (( ++NUM_FAILS ));
 	    fi
@@ -115,11 +116,11 @@ for EXT in '' $EXECS; do
     #[ -x "$EXE" ] || die "Executable '$EXE' must exist or you must specify -make"
     # skip mpi, multi and float since they will be tested separately below
     [ "$ext" = .multi -o "$ext" = .float -o "$ext" = .mpi ] && continue
-    if ./sana$ext -tolerance 0 -itm 1 -s3 1 -g1 yeast -g2 human -tinitial 1 -tdecay 1 >/dev/null 2>&1; then
-	WORKING_EXECS="${WORKING_EXECS}sana$ext$TAB"
+    if ./$SANA_EXE$ext -tolerance 0 -itm 1 -s3 1 -g1 yeast -g2 human -tinitial 1 -tdecay 1 >/dev/null 2>&1; then
+	WORKING_EXECS="${WORKING_EXECS}$SANA_EXE$ext$TAB"
     else
-	warn "executable sana$ext failed a trivial test"
-	#rm -f sana$ext
+	warn "executable $SANA_EXE$ext failed a trivial test"
+	#rm -f $SANA_EXE$ext
     fi
 done
 (( NUM_FAILS *= 1000 ))
@@ -127,12 +128,12 @@ WORKING_EXECS=`echo "$WORKING_EXECS" | sed 's/	$//'` # delete trailing TAB
 
 # Now sort them so sana.sparse is first and sana.cores is last, to minimize memory usage
 WORKING_EXECS=`echo "$WORKING_EXECS" | newlines |
-    awk 'BEGIN{n=0; done["sana.sparse"]=1; list[++n]="sana.sparse"}
-	!done[$0]{done[$0]=1; if($0!="sana.cores")list[++n]=$0;}
-	END{if(done["sana.cores"]) list[++n]="sana.cores";
+    awk 'BEGIN{n=0; done["'$SANA_EXE'.sparse"]=1; list[++n]="'$SANA_EXE'.sparse"}
+	!done[$0]{done[$0]=1; if($0!="'$SANA_EXE'.cores")list[++n]=$0;}
+	END{if(done["'$SANA_EXE'.cores"]) list[++n]="'$SANA_EXE'.cores";
 	    for(i=1;i<=n;i++) print list[i]}'`
 
-export EXE SANA_DIR CORES REAL_CORES MAKE_CORES EXECS WORKING_EXECS
+export SANA_EXE SANA_DIR CORES REAL_CORES MAKE_CORES EXECS WORKING_EXECS
 
 echo WORKING EXECUTABLES: ${WORKING_EXECS:?"${NL}FATAL ERROR: cannot continue since there are no working pairwise executables!$NL(with the possible exception of float)"}
 

@@ -76,7 +76,7 @@ NL='
 nets=`echo RNorvegicus SPombe CElegans MMusculus SCerevisiae AThaliana DMelanogaster HSapiens`
 
 if $RUN; then
-    [ -x "$EXE" ] || die "can't find executable '$EXE'"
+    [ -x "$SANA_EXE" ] || die "can't find executable '$SANA_EXE'"
     EXECS=`echo "$WORKING_EXECS" | newlines | tr A-Z a-z | fmt -999`
     echo sana executables: "$EXECS" >&2
     echo "$nets" | newlines | awk '{printf "count.el networks/%s.el\n",$0}' | sh | sed -e 's,networks/,,' -e 's/\.el$//' |
