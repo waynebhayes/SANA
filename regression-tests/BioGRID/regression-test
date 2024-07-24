@@ -83,7 +83,7 @@ if $RUN; then
 	awk '{n[NR-1]=$1; m[NR-1]=$2; net[NR-1]=$NF}
 	    END{for(i=0;i<=NR-2;i++)for(j=i+1;j<=NR-1;j++) # see regression-test.timing.7z for justification of this runtime
 		printf "%ld %s %s\n",log(m[i]*m[j])+log(n[i]*n[j]),net[i],net[j]}' |
-	sort -n | awk 'BEGIN{split("'"$EXECS"'",EXECS)}
+	sort -n | awk 'BEGIN{split(ENVIRON["EXECS"],EXECS)}
 	    {net1[NR-1]=$2; net2[NR-1]=$3}
 	    END{run=totalRuns=NR;
 		for(i=0;i<NR;i++){ whichExec=1+int(--run/totalRuns*length(EXECS));
