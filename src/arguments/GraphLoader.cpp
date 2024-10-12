@@ -12,6 +12,7 @@
 #include "../utils/Timer.hpp"
 #include "../utils/FileIO.hpp"
 #include "../Alignment.hpp"
+#include "ArgumentParser.hpp"
 
 using namespace std;
 
@@ -272,6 +273,9 @@ Graph GraphLoader::loadGraphFromFile(const string& graphName, const string& file
     string format = fileName.substr(fileName.find_last_of('.')+1);
     string uncompressedFileExt = FileIO::getUncompressedFileExtension(fileName);
 
+    if (erFlag and (format != "elw")){
+           throw runtime_error("GraphLoader does not support format '"+format+"' for the er measure");
+    }
     if (loadWeights and (format == "gml" or format == "lgf" or format == "xml" or format == "csv"))
         throw runtime_error("GraphLoader does not support weights for format '"+format+"'");
     //for dbg:
