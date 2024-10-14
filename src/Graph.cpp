@@ -60,6 +60,7 @@ Graph::Graph(const string& graphName, const string& optionalFilePath,
     }
 
     bool uniformWeights = optionalEdgeWeights.size() == 0;
+    third_Weight_Column = uniformWeights;
     assert(uniformWeights or optionalEdgeWeights.size() == edgeList.size());
 
     adjLists.resize(numNodes);

@@ -100,6 +100,8 @@ public:
     double getTotalEdgeWeight() const { return totalEdgeWeight; }
     double getTotalWeight(uint node) const { return totalWeight[node]; }
     bool hasSelfLoop(uint node) const { return adjMatrix.get(node, node) != 0; }
+
+    bool get_Third_Weight_Column(){ return third_Weight_Column; }
     
     //large data structures are returned as const pointers
     //recommendation: use the getters above instead, when possible
@@ -183,6 +185,7 @@ private:
     vector<string> colorNames; //color index to color name
     unordered_map<string, uint> colorNameToId; //color name to color index
     vector<vector<uint>> nodeGroupsByColor; //color index to list of node indices
+    bool third_Weight_Column; //boolean to check if there is a third weight column or not
     
     friend class SANA; //for convenience and speed(maybe?)
 }; 
