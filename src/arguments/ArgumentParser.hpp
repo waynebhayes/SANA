@@ -5,6 +5,8 @@
 #include <vector>
 using namespace std;
 
+extern bool erFlag;
+
 class ArgumentParser {
 public:
     /* initializes the arguments and stores them in the maps below
