@@ -133,6 +133,7 @@ MEASURES_SRCS = 							\
 	src/measures/localMeasures/NodeDensity.cpp 			\
 	src/measures/localMeasures/Sequence.cpp 			\
 	src/measures/localMeasures/GraphletCosine.cpp 			\
+	src/measures/FMeasure.cpp			\
 	src/measures/localMeasures/GraphletNorm.cpp
 
 METHOD_WRAPPERS_SRC =    						\
