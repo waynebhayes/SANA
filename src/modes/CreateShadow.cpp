@@ -187,7 +187,7 @@ void CreateShadow::createShadow(const string& outFile, const vector<string>& gra
             string sName1 = gNameToSName[gName1], sName2 = gNameToSName[gName2];
             uint shadNode1 = stoi(sName1.substr(5)), shadNode2 = stoi(sName2.substr(5)); //"shad_{i}" -> i
             if (shadNode1 > shadNode2) swap(shadNode1, shadNode2); //to avoid double-counting
-            shadNbrSets[shadNode1][shadNode2]++; //auto-inserts shadNode2 if missing
+            shadNbrSets[shadNode1][shadNode2]=true; //auto-inserts shadNode2 if missing
         }
     }
 

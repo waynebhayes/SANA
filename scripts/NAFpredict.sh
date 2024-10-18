@@ -123,6 +123,7 @@ sort "$@" | uniq -c | sort -nr | gawk '
     }
     ARGIND==3 && /	NOT	/{next} # ignore "NOT" lines
     ARGIND==3&&($1 in tax1){++pGO[1][$2][$3][$4]; # species 1, protein, GO, evidence code
+    }
     ARGIND==3&&($1 in tax2){++pGO[2][$2][$3][$4]; # species 2, protein, GO, evidence code
 	C[$3]=$NF; # Category (BP,MF,CC)
     }
