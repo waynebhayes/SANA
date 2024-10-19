@@ -129,9 +129,7 @@ int main(int argc, char *argv[])
 
     if(strcmp(argv[n_arg],"auto")==0){
 	AUTO=1;
-	FILE *fp = popen("cpus","r");
-	fscanf(fp, "%d", &cpus);
-	pclose(fp);
+	cpus = sysconf(_SC_NPROCESSORS_ONLN);
 	if(cpus<1) Fatal("could not determine number of CPUs");
 	parallel = cpus-GetLoadAv(0.0);
 	if(parallel<=0) parallel=1;
