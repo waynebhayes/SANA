@@ -284,14 +284,7 @@ Graph GraphLoader::loadGraphFromFile(const string& graphName, const string& file
     if (format == "gw" || uncompressedFileExt == "gw")
         return loadGraphFromGWFile(graphName, fileName, loadWeights);
     if (format == "el" || uncompressedFileExt == "el" || format == "elw" || uncompressedFileExt == "elw"){
-        auto G =  loadGraphFromEdgeListFile(graphName, fileName, loadWeights);
-        //Graph g = G.get()
-        if(erFlag && format == "elw"){
-            if(G.get_Third_Weight_Column()){
-                throw runtime_error("GraphLoader does not support no weights for the er measure"); 
-            }
-        }
-        return G;
+        return loadGraphFromEdgeListFile(graphName, fileName, loadWeights);
     }
     if (format == "gml") return loadGraphFromGmlFile(graphName, fileName);
     if (format == "lgf") return loadGraphFromLgfFile(graphName, fileName);
