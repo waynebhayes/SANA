@@ -155,7 +155,8 @@ vector<array<string, 6>> supportedArguments = {
     { "-go_k", "double", "0", "k-common GO terms", "Objective function based on having up to k GO terms in common. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-graphletcosine", "double", "0", "Similarity of cosine between GDV vectors", "Objective function based on the cosine angle between graphlet degree vectors. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-topomeasure", "string", "", "Topological Measure", "Topological component of the scoring function. Used when \"-objfuntype\" is either \"alpha\" or \"beta\".", "1" },
-    
+    { "-f", "double", "0", "Weight of FMeasure", "This is the weight of the FMeasure", "1" },
+
     { "", "", "banner", "", "Multiple Alignment Objectives (must compile SANA with \"make multi\")", "0" },
     { "-mec", "double", "0", "Weight of MEC", "The weight of the Multiple Edge Coverage in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-ses", "double", "0", "Weight of SES", "The weight of the Squared Edge Score in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
