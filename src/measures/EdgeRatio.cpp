@@ -3,7 +3,11 @@
 #include <vector>
 #include <array>
 
-EdgeRatio::EdgeRatio(const Graph* G1, const Graph* G2): Measure(G1, G2, "er") {}
+const Graph *EdgeRatio::G1, *EdgeRatio::G2;
+EdgeRatio::EdgeRatio(const Graph* G1, const Graph* G2): Measure(G1, G2, "er") {
+    EdgeRatio::G1=G1;
+    EdgeRatio::G2=G2;
+}
 EdgeRatio::~EdgeRatio() {}
 
 double EdgeRatio::eval(const Alignment& A) {
@@ -49,3 +53,75 @@ double EdgeRatio::getEdgeRatioSum(const Graph *G1, const Graph *G2, const Alignm
 #endif
 }
 
+double EdgeRatio::getIncChangeOp(uint peg, uint oldHole, uint newHole, const Alignment &A) {
+    double val = computeIncChangeOp(peg, oldHole, newHole, A);
+    assert(val == val); // check for NaN
+    return val;
+}
+
+double EdgeRatio::computeIncChangeOp(uint peg, uint oldHole, uint newHole, const Alignment &A) {
+    assert(A[peg] == oldHole);
+    int ai=0, aSize=4*G1->getNumNodes(); // edges in both directions from everyone (including SELF!)
+    assert(aSize <= MAX_A_ARRAY);
+    for (uint nbr : *(G1->getAdjList(peg))) {
+	if(nbr == peg) assert(A[nbr] == oldHole);
+        a[ai++] = -getAligEdgeScore(G1,peg,nbr, G2,oldHole,A[nbr]);
+	// if the PEG has a self-loop, then any underlying self-loop is at newHole, otherwise
+	// the underlying edge is between newHole and the true neighbor's aligned hole.
+        uint nbrHole = (nbr == peg) ? newHole : A[nbr];
+        a[ai++] = getAligEdgeScore(G1,peg,nbr, G2,newHole,nbrHole);
+	assert(ai<=aSize);
+    }
+    if(G1->directed) for (uint nbr : *(G1->getInjList(peg))) {
+	if(nbr == peg) assert(A[nbr] == oldHole);
+	a[ai++] = -getAligEdgeScore(G1,nbr,peg, G2,A[nbr],oldHole);
+        uint nbrHole = (nbr == peg) ? newHole : A[nbr];
+	a[ai++] =  getAligEdgeScore(G1,nbr,peg, G2,nbrHole,newHole);
+	assert(ai<=aSize);
+    }
+    return AccurateSum(ai, a);
+}
+
+double EdgeRatio::getIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2, const Alignment &A) {
+    double val = computeIncSwapOp(peg1, peg2, hole1, hole2, A);
+    assert(val == val); // check for NaN
+    return val;
+}
+
+double EdgeRatio::computeIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2, const Alignment &A) {
+    assert(A[peg1] == hole1 && A[peg2] == hole2);
+    if (peg1 == peg2) return 0;
+    int ai=0, aSize=8*G1->getNumNodes(); // two pegs, each with edges in both directions from potentially everyone else
+    assert(aSize <= MAX_A_ARRAY);
+    // Subtract (peg1->hole1), add (peg1->hole2)
+    for (uint nbr : *(G1->getAdjList(peg1))) {
+	if(nbr == peg1) assert(A[nbr] == hole1);
+        a[ai++] = -getAligEdgeScore(G1,peg1,nbr, G2,hole1,A[nbr]);
+        uint nbrHole; if(nbr == peg1) nbrHole=hole2; else if(nbr==peg2) nbrHole=hole1; else nbrHole=A[nbr];
+        a[ai++] =  getAligEdgeScore(G1,peg1,nbr, G2,hole2,nbrHole);
+	assert(ai<=aSize);
+    }
+    if(G1->directed) for (uint nbr : *(G1->getInjList(peg1))) {
+	if(nbr == peg1) assert(A[nbr] == hole1);
+	a[ai++] = -getAligEdgeScore(G1,nbr,peg1, G2,A[nbr],hole1);
+        uint nbrHole; if(nbr == peg1) nbrHole=hole2; else if(nbr==peg2) nbrHole=hole1; else nbrHole=A[nbr];
+        a[ai++] =  getAligEdgeScore(G1,nbr,peg1, G2,nbrHole,hole2);
+	assert(ai<=aSize);
+    }
+   // Subtract peg2-hole2, add peg2-hole1
+   for (uint nbr : *(G1->getAdjList(peg2))) {
+	if(nbr == peg2) assert(A[nbr] == hole2);
+        a[ai++] = -getAligEdgeScore(G1,peg2,nbr, G2,hole2,A[nbr]);
+        uint nbrHole; if(nbr == peg2) nbrHole=hole1; else if(nbr==peg1) nbrHole=hole2; else nbrHole=A[nbr];
+        a[ai++] =  getAligEdgeScore(G1,peg2,nbr, G2,hole1,nbrHole);
+	assert(ai<=aSize);
+    }
+    if(G1->directed) for (uint nbr : *(G1->getInjList(peg2))) {
+	if(nbr == peg2) assert(A[nbr] == hole2);
+	a[ai++] = -getAligEdgeScore(G1,nbr,peg2, G2,A[nbr],hole2);
+        uint nbrHole; if(nbr == peg2) nbrHole=hole1; else if(nbr==peg1) nbrHole=hole2; else nbrHole=A[nbr];
+        a[ai++] =  getAligEdgeScore(G1,nbr,peg2, G2,nbrHole,hole1);
+	assert(ai<=aSize);
+    }
+    return AccurateSum(ai,a);
+}
