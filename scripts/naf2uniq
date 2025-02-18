@@ -7,4 +7,4 @@ cat "$@" |
     END{if(NF==2)for(u in count)for(v in count[u])printf "%d\t%s\t%s\n",count[u][v],u,v}' > $TMP.0
 sort -C -k 1,1nr $TMP.0 || (sort -nr $TMP.0 > $TMP.1; rm $TMP.0)
 cat $TMP.? | awk 'BEGIN{OFS="\t"}
-	!used[$2]&&!used[$3]{print $2,$3;++used[$2];++used[$3]}'
+	!used[$2]&&!used[$3]{print;++used[$2];++used[$3]}'
