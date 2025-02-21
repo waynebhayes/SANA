@@ -735,7 +735,7 @@ void SANA::performChange(uint actColId) {
         oldMs3Numer = MultiS3::numer;
     }
     int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncChangeOp(peg, oldHole, newHole) : -1;
-    double newEdSum            = needEd ? edSum + edgeDifferenceIncChangeOp(peg, oldHole, newHole) : -1;
+    double newEdSum            = needEd ? edSum + EdgeDifference::getIncChangeOp(peg, oldHole, newHole, A) : -1;
     double newErSum            = needEr ? erSum + EdgeRatio::getIncChangeOp(peg, oldHole, newHole, A) : -1;
     double newEminSum          = needEmin ? eminSum + EdgeMin::getIncChangeOp(peg, oldHole, newHole, A) : -1;
     double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncChangeOp(peg, oldHole, newHole) : -1;
@@ -847,7 +847,7 @@ void SANA::performSwap(uint actColId) {
     double newEwecSum          = needEwec ? ewecSum + EWECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
     double newNcSum            = needNC ? ncSum + ncIncSwapOp(peg1, peg2, hole1, hole2) : -1;
     double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, peg1, peg2, hole1, hole2) : -1;
-    double newEdSum            = needEd ? edSum + edgeDifferenceIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newEdSum            = needEd ? edSum + EdgeDifference::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
     double newErSum            = needEr ? erSum + EdgeRatio::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
     double newEminSum          = needEmin ? eminSum + EdgeMin::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
 
@@ -1175,48 +1175,7 @@ int SANA::aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
 #endif // WEIGHT
 }
 
-/* We swap the mapping of two nodes peg1 and peg2
- * We can first handle peg1, then do the same with peg2
- * Subtract old edge difference with edge (peg1, hole1)
- * Add new edge difference with edge (peg1, hole2) */
-double SANA::edgeDifferenceIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
-    if (peg1 == peg2) return 0;
-    // Handle peg1
-    double edgeDifferenceIncDiff = 0;
-    double c = 0;
-    for (uint nbr : G1->adjLists[peg1]) {
-        double y = -abs(G1->getEdgeWeight(peg1, nbr) - G2->getEdgeWeight(hole1, A[nbr])) - c;
-        double t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
 
-        // Determine the new target hole for nbr
-        uint nbrHole = 0;
-        if (nbr == peg1) nbrHole = hole2;
-        else if (nbr == peg2) nbrHole = hole1;
-        else nbrHole = A[nbr];
-
-        y = +abs(G1->getEdgeWeight(peg1, nbr) - G2->getEdgeWeight(hole2, nbrHole)) - c;
-        t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
-    }
-    // Handle peg2
-    for (uint nbr : G1->adjLists[peg2]) {
-        if (nbr == peg1) continue;
-        double y = -abs(G1->getEdgeWeight(peg2, nbr) - G2->getEdgeWeight(hole2, A[nbr])) - c;
-        double t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
-
-        uint nbrHole = (nbr == peg2 ? hole1 : A[nbr]);
-        y = +abs(G1->getEdgeWeight(peg2, nbr) - G2->getEdgeWeight(hole1, nbrHole)) - c;
-        t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
-    }
-    return edgeDifferenceIncDiff;
-}
 
 #define MALE_FLY_EDGES 4158055
 #define MAX_A_ARRAY (8*MALE_FLY_EDGES)
@@ -1225,23 +1184,6 @@ static double a[MAX_A_ARRAY];
 
 
 
-double SANA::edgeDifferenceIncChangeOp(uint peg, uint oldHole, uint newHole) {
-    double edgeDifferenceIncDiff = 0;
-    double c = 0;
-    for (uint nbr : G1->adjLists[peg]) {
-        double y = -abs(G1->getEdgeWeight(peg, nbr) - G2->getEdgeWeight(oldHole, A[nbr])) - c;
-        double t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
-
-        uint nbrHole = nbr == peg ? newHole : A[nbr];
-        y = +abs(G1->getEdgeWeight(peg, nbr) - G2->getEdgeWeight(newHole, nbrHole)) - c;
-        t = edgeDifferenceIncDiff + y;
-        c = (t - edgeDifferenceIncDiff) - y;
-        edgeDifferenceIncDiff = t;
-    }
-    return edgeDifferenceIncDiff;
-}
 
 
 // UGLY GORY HACK BELOW!! Sometimes the edgeVal is crazily wrong, like way above 1,000, when it
