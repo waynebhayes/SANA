@@ -4,10 +4,14 @@ die() { echo "$@" >&2; exit 1
 
 echo 'Testing measurement Edge Ratio'
 CORES=${CORES:=`./scripts/cpus 2>/dev/null || echo 4`}
-PARALLEL_EXE=${PARALLEL_EXE:?"PARALLEL_EXE must be set"}
+PARALLEL_EXE=${PARALLEL_EXE:=./parallel}
+SANA_EXE=${SANA_EXE:=./sana2.0}
 PARALLEL_CMD="$PARALLEL_EXE -s /bin/bash $CORES"
 echo "PARALLEL_CMD is '$PARALLEL_CMD'" >&2
 EXT=.weight.float
+
+MEASURE=er
+[ $# -eq 1 ] && MEASURE="$1"
 
 REG_DIR=regression-tests/EdgeRatio
 [ -d "$REG_DIR" ] || die "should be run from top-level directory of the SANA repo"
@@ -23,7 +27,7 @@ while [ $TRIES -gt 0 ]; do
 	file="$REG_DIR/$network"
 	# Run SANA to align the graph to itself
 	echo "Aligning network $network" >&2
-	echo "'$SANA_EXE$EXT' -tolerance 0 -t 5 -fg1 '$file.elw' -fg2 '$file.elw' -er 1 -o '$file' &> '$file.progress'"
+	echo "'$SANA_EXE$EXT' -tolerance 0 -t 5 -fg1 '$file.elw' -fg2 '$file.elw' -$MEASURE 1 -o '$file-$MEASURE' &> '$file-$MEASURE.progress'"
     done | tee /dev/tty | eval $PARALLEL_CMD
     PARA_STATUS=$?
 
