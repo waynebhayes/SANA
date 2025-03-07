@@ -6,6 +6,7 @@
 #include "../measures/EdgeDifference.hpp"
 #include "../measures/EdgeRatio.hpp"
 #include "../measures/EdgeMin.hpp"
+#include "../measures/EdgeGeoMean.hpp"
 #include "../measures/InducedConservedStructure.hpp"
 #include "../measures/SymmetricSubstructureScore.hpp"
 #include "../measures/JaccardSimilarityScore.hpp"
@@ -90,7 +91,7 @@ double getAlpha(const Graph& G1, const Graph& G2, ArgumentParser& args) {
 
 double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableDoubleMeasures = {
-        "ec", "ec1", "ec2", "ed","er","emin","s3","js","ics","tc","sec","wec","nodec","noded","edgec","edged", "go",
+        "ec", "ec1", "ec2", "ed","er","emin","egm", "s3","js","ics","tc","sec","wec","nodec","noded","edgec","edged", "go",
         "importance", "sequence","graphlet","graphletlgraal", "graphletcosine", "graphletnorm", "spc", "nc",
         "mec", "ewec", "ses", "ee", "ms3"
     };
@@ -170,6 +171,7 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
     m = new JaccardSimilarityScore(&G1, &G2); M.addMeasure(m, getWeight("js", G1, G2, args));
     m = new EdgeRatio(&G1, &G2); M.addMeasure(m, getWeight("er", G1, G2, args));
     m = new EdgeMin(&G1, &G2); M.addMeasure(m, getWeight("emin", G1, G2, args));
+    m = new EdgeGeoMean(&G1, &G2); M.addMeasure(m, getWeight("egm", G1, G2, args));
     m = new InducedConservedStructure(&G1, &G2); M.addMeasure(m, getWeight("ics", G1, G2, args));
     m = new MultiEdgeCorrectness(&G1, &G2); M.addMeasure(m, getWeight("mec", G1, G2, args));
     m = new SquaredEdgeScore(&G1, &G2); M.addMeasure(m, getWeight("ses", G1, G2, args));

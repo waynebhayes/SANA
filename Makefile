@@ -109,6 +109,7 @@ MEASURES_SRCS = 							\
 	src/measures/EdgeDifference.cpp         			\
 	src/measures/EdgeRatio.cpp         				\
 	src/measures/EdgeMin.cpp         				\
+	src/measures/EdgeGeoMean.cpp         				\
 	src/measures/MultiEdgeCorrectness.cpp 				\
 	src/measures/ExternalWeightedEdgeConservation.cpp               \
 	src/measures/NetGO.cpp      					\

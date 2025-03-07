@@ -146,6 +146,7 @@ vector<array<string, 6>> supportedArguments = {
     { "-ed", "double", "0", "Weight of ED", "The weight of the Edge Difference in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-er", "double", "0", "Weight of ER", "The weight of the Edge Ratio in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-emin", "double", "0", "Weight of eMin", "The weight of the Edge Min in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
+    { "-egm", "double", "0", "Weight of edgeGeoMean", "The weight of the EdgeGeoMean in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-nc", "double", "0", "Weight of NC", "This weight of Node Correctness in the objective function. To be used when \"-objfuntype\" is \"generic\".", "1" },
     { "-nodec", "double", "0", "Weight of Node Count", "The weight of the Local Node Count objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
     { "-noded", "double", "0", "Weight of Node Density", "The weight of the Local Node Density objective function. Used when \"-objfuntype\" is \"generic\".", "1" },
