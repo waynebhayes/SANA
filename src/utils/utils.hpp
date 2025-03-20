@@ -4,6 +4,7 @@
 #include <map>
 #include <ostream>
 #include <unordered_map>
+#include <cstdint>
 #include "templateUtils.cpp"
 
 using namespace std;
