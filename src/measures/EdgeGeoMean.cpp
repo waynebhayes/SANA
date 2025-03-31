@@ -4,7 +4,7 @@
 const Graph *EdgeGeoMean::G1, *EdgeGeoMean::G2;
 double EdgeGeoMean::denominator;
 
-EdgeGeoMean::EdgeGeoMean(const Graph* G1, const Graph* G2): Measure(G1, G2, "ed") {
+EdgeGeoMean::EdgeGeoMean(const Graph* G1, const Graph* G2): Measure(G1, G2, "egm") {
     EdgeGeoMean::G1=G1;
     EdgeGeoMean::G2=G2;
     denominator = computeDenom(G1,G2);
@@ -20,7 +20,9 @@ double EdgeGeoMean::eval(const Alignment& A) {
 
 double EdgeGeoMean::getEdgeScore(double w1, double w2) {
     double sgn = w1*w2>=0 ? 1:-1;
-    return sgn * sqrt(abs(w1*w2))/denominator;
+    double numer = sgn * sqrt(abs(w1*w2));
+    if(denominator) return numer/denominator;
+    else return numer;
 }
 
 
@@ -33,19 +35,15 @@ double EdgeGeoMean::computeDenom(const Graph* G1, const Graph* G2) {
     sort(W1.begin(), W1.end(), CmpEdge);
     sort(W2.begin(), W2.end(), CmpEdge);
     double sum = 0.0;
-    for(int i=0; i<min(G1->getNumNodes(), G2->getNumNodes()); i++) sum+= getEdgeScore(W1[i], W2[i]);
+    for(unsigned i=0; i<min(G1->getNumNodes(), G2->getNumNodes()); i++) sum+= getEdgeScore(W1[i], W2[i]);
     return sum;
 }
 
 double EdgeGeoMean::getEdgeGeoMeanSum(const Graph* G1, const Graph* G2, const Alignment &A) {
     double sum = 0;
-    double c = 0; //use descriptive name please
     for (const auto& edge : *(G1->getEdgeList())) {
        uint node1 = edge[0], node2 = edge[1];
-       double y = getEdgeScore(G1->getEdgeWeight(node1,node2), G2->getEdgeWeight(A[node1],A[node2])) - c;
-       double t = sum + y;
-       c = (t - sum) - y;
-       sum = t;
+       sum += getEdgeScore(G1->getEdgeWeight(node1,node2), G2->getEdgeWeight(A[node1],A[node2]));
     }
     return sum;
 }
