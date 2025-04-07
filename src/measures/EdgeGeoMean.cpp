@@ -7,7 +7,8 @@ double EdgeGeoMean::denominator;
 EdgeGeoMean::EdgeGeoMean(const Graph* G1, const Graph* G2): Measure(G1, G2, "egm") {
     EdgeGeoMean::G1=G1;
     EdgeGeoMean::G2=G2;
-    denominator = computeDenom(G1,G2);
+    EdgeGeoMean::denominator = computeDenom(G1,G2);
+    std::cerr << "Computed denominator: " << EdgeGeoMean::denominator << std::endl;
 }
 
 
@@ -15,7 +16,7 @@ EdgeGeoMean::~EdgeGeoMean() {
 }
 
 double EdgeGeoMean::eval(const Alignment& A) {
-    return getEdgeGeoMeanSum(G1, G2, A)/denominator;
+    return getEdgeGeoMeanSum(G1, G2, A);
 }
 
 double EdgeGeoMean::getEdgeScore(double w1, double w2) {
@@ -25,8 +26,7 @@ double EdgeGeoMean::getEdgeScore(double w1, double w2) {
     else return numer;
 }
 
-
-static int CmpEdge(EDGE_T w1, EDGE_T w2) {return (w1>w2);}
+static bool CmpEdge(EDGE_T w1, EDGE_T w2) {return (w1>w2);}
 
 double EdgeGeoMean::computeDenom(const Graph* G1, const Graph* G2) {
     vector<EDGE_T> W1, W2;
@@ -35,7 +35,7 @@ double EdgeGeoMean::computeDenom(const Graph* G1, const Graph* G2) {
     sort(W1.begin(), W1.end(), CmpEdge);
     sort(W2.begin(), W2.end(), CmpEdge);
     double sum = 0.0;
-    for(unsigned i=0; i<min(G1->getNumNodes(), G2->getNumNodes()); i++) sum+= getEdgeScore(W1[i], W2[i]);
+    for(unsigned i=0; i<min(W1.size(), W2.size()); i++) sum += getEdgeScore(W1[i], W2[i]);
     return sum;
 }
 
