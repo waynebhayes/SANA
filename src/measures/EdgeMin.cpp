@@ -3,26 +3,26 @@
 #include <vector>
 #include <array>
 
+double EdgeMin::denominator;
+const Graph *EdgeMin::G1, *EdgeMin::G2;
+
 EdgeMin::EdgeMin(const Graph* G1, const Graph* G2): Measure(G1, G2, "emin") {
     assert(EdgeMin::denominator==0);
     assert(EdgeMin::G1==NULL);
     assert(EdgeMin::G2==NULL);
     EdgeMin::G1=G1;
     EdgeMin::G2=G2;
-    EdgeMin::denominator=computeDenom();
+    EdgeMin::denominator=computeDenom(G1,G2);
     // Ensure we don't try to set them twice
 }
 
-EdgeMin::~EdgeMin() 
-{}
+EdgeMin::~EdgeMin() {}
 
-double EdgeMin::computeDenom() {
-    // NOTE: getTotalEdgeWeight doesn't work because, if the edges are signed, the result is close to zero.
+double EdgeMin::computeDenom(const Graph* G1, const Graph* G2) {
+    // getTotalEdgeWeight doesn't work because if the edges are signed the result is close to zero.
     // double val = min(G1->getTotalEdgeWeight(), G2->getTotalEdgeWeight());
     double ew, sumG1=0, sumG2=0;
     static bool warned;
-
-    // Sum edge weights of both graphs
     for (const auto& edge : *(G1->getEdgeList())) {
 	ew = G1->getEdgeWeight(edge[0], edge[1]);
 	if(ew < 0) {
@@ -30,7 +30,7 @@ double EdgeMin::computeDenom() {
 		cerr << "WARNING: EdgeMin really doesn't make sense with negative edge (eg., " << ew << ")\n";
 		warned=true;
 	    }
-	    ew=std::fabs(ew);
+	    ew=fabs(ew);
 	}
 	sumG1 += ew;
     }
@@ -41,12 +41,11 @@ double EdgeMin::computeDenom() {
 		cerr << "WARNING: EdgeMin really doesn't make sense with negative edge (eg., " << ew << ")\n";
 		warned=true;
 	    }
-	    ew=std::fabs(ew);
+	    ew=fabs(ew);
 	}
 	sumG2 += ew;
     }
-
-    return std::min(sumG1, sumG2);
+    return min(sumG1,sumG2);
 }
 
 double EdgeMin::eval(const Alignment& A) {
@@ -58,14 +57,13 @@ double EdgeMin::getAligEdgeScore(const uint peg1, const uint peg2, const uint ho
 }
 
 double EdgeMin::computeAligEdgeScore(const uint peg1, const uint peg2, const uint hole1, const uint hole2){
-    assert(0 <= peg1  && peg1  < G1->getNumNodes());
-    assert(0 <= peg2  && peg2  < G1->getNumNodes());
+    assert(0 <= peg1 && peg1 < G1->getNumNodes());
+    assert(0 <= peg2 && peg2 < G1->getNumNodes());
     assert(0 <= hole1 && hole1 < G2->getNumNodes());
     assert(0 <= hole2 && hole2 < G2->getNumNodes());
     assert(EdgeMin::denominator != 0);
-    const double smaller = std::min(G1->getEdgeWeight(peg1, peg2), G2->getEdgeWeight(hole1, hole2));
-    assert(smaller == smaller); // Checks `smaller` isn't NaN
-
+    const double smaller = min(G1->getEdgeWeight(peg1, peg2), G2->getEdgeWeight(hole1, hole2));
+    assert(smaller == smaller);
     return smaller / EdgeMin::denominator;
 }
 
@@ -73,28 +71,24 @@ double EdgeMin::computeAligEdgeScore(const uint peg1, const uint peg2, const uin
 #define MAX_A_ARRAY (8*MALE_FLY_EDGES)
 static double a[MAX_A_ARRAY];
 
+
 // Score the contribution of peg's aligned edges while in hole1, optionally avoiding "avoidPeg" if it's a neighbor.
 // Thanks to Marcus Longo for this idea (2025-01-27)
-double EdgeMin::scoreOnePegSlow(const uint peg, const uint avoidPeg, const uint hole, const Alignment& A) {
+double EdgeMin::scoreOnePegSlow(const Graph* G1, const uint peg, const uint avoidPeg, const Graph* G2, const uint hole, const Alignment& A) {
     int ai=0, aSize=(G1->getAdjList(peg))->size() + (G1->getInjList(peg))->size() + 3; // 3 subtractions below
     assert(aSize <= MAX_A_ARRAY);
 
     // Process edges emanating from peg
-    for(const auto& nbr : *(G1->getAdjList(peg))) {
-	if(nbr!=avoidPeg) { // FIXME: can we avoid the branch by subtracting below the loop?
-            a[ai++] = computeAligEdgeScore(peg, nbr, hole, A[nbr]);
-        }
-    }
+    for(const auto& nbr : *(G1->getAdjList(peg)))
+	if(nbr!=avoidPeg) // FIXME: can we avoid the branch by subtracting below the loop?
+	    a[ai++] = computeAligEdgeScore(peg,nbr, hole,A[nbr]);
     assert(ai<=aSize);
 
     // Process edges targeting peg EXCEPT for any self-loop, which was already counted above.
-    for(const auto& nbr : *(G1->getInjList(peg))) {
-	if(nbr!=avoidPeg && nbr!=peg) { // FIXME: can we avoid the branch by subtracting below the loop?
-            a[ai++] = computeAligEdgeScore(nbr, peg, A[nbr], hole); 
-        }
-    }
+    for(const auto& nbr : *(G1->getInjList(peg)))
+	if(nbr!=avoidPeg && nbr!=peg) // FIXME: can we avoid the branch by subtracting below the loop?
+	    a[ai++] = computeAligEdgeScore(nbr,peg, A[nbr],hole);
     assert(ai<=aSize);
-
     return AccurateSum(ai, a);
 }
 
@@ -110,12 +104,11 @@ double EdgeMin::computeSum(const Alignment &A) {
     assert(aSize <= MAX_A_ARRAY);
     for (const auto& edge : *(G1->getEdgeList())) {
 	uint node1 = edge[0], node2 = edge[1];
-	a[ai++] = computeAligEdgeScore(node1, node2, A[node1], A[node2]);
-	// NOTE: We don't need to include the reverse edge here in the directed graph case, because *if* a reverse edge of
+	a[ai++] = computeAligEdgeScore(node1,node2, A[node1],A[node2]);
+	// We don't need to include the reverse edge here in the directed graph case, because *if* a reverse edge of
 	// (u,v) exists, it's actually *in* this edgeList.
 	assert(ai<=aSize);
     }
-
     return AccurateSum(ai, a);
 #endif
 }
@@ -127,40 +120,33 @@ double EdgeMin::getIncChangeOp(const uint peg, const uint oldHole, const uint ne
 }
 
 double EdgeMin::computeIncChangeOp(const uint peg, const uint oldHole, const uint newHole, const Alignment &A) {
-    int ai=0, aSize=4*G1->getNumNodes(); // edges in both directions from everyone (including SELF!)
     assert(A[peg] == oldHole);
+    int ai=0, aSize=4*G1->getNumNodes(); // edges in both directions from everyone (including SELF!)
     assert(aSize <= MAX_A_ARRAY);
-
-    for(const auto& nbr : *(G1->getAdjList(peg))) {
+    for (const auto& nbr : *(G1->getAdjList(peg))) {
 	if(nbr == peg) assert(A[nbr] == oldHole);
-        a[ai++] = -computeAligEdgeScore(peg, nbr, oldHole, A[nbr]);
-	// NOTE: if the PEG has a self-loop, then moving it to newHole means we need to check for underlying self-loop at newHole;
-	//       otherwise the underlying edge is between newHole and the (non-self) neighbor's aligned hole.
+        a[ai++] = -computeAligEdgeScore(peg,nbr, oldHole,A[nbr]);
+	// if the PEG has a self-loop, then moving it to newHole means we need to check for underlying self-loop at newHole;
+	// otherwise the underlying edge is between newHole and the (non-self) neighbor's aligned hole.
         uint nbrHole = (nbr == peg) ? newHole : A[nbr];
         a[ai++] =  computeAligEdgeScore(peg,nbr, newHole,nbrHole);
 	assert(ai<=aSize);
     }
-
-    if (G1->directed) {
-        for (const auto& nbr : *(G1->getInjList(peg))) {
-            if(nbr == peg) assert(A[nbr] == oldHole);
-            a[ai++] = -computeAligEdgeScore(nbr,peg, A[nbr],oldHole);
-            uint nbrHole = (nbr == peg) ? newHole : A[nbr];
-            a[ai++] =  computeAligEdgeScore(nbr,peg, nbrHole,newHole);
-            assert(ai<=aSize);
-        }
-    } 
-
+    if(G1->directed) for (const auto& nbr : *(G1->getInjList(peg))) {
+	if(nbr == peg) assert(A[nbr] == oldHole);
+	a[ai++] = -computeAligEdgeScore(nbr,peg, A[nbr],oldHole);
+        uint nbrHole = (nbr == peg) ? newHole : A[nbr];
+	a[ai++] =  computeAligEdgeScore(nbr,peg, nbrHole,newHole);
+	assert(ai<=aSize);
+    }
     double old = AccurateSum(ai, a);
 #if DEBUG_EDGEMIN
-// WARNING: actually, now that I've moved the incremental code here and am using copies of G1 and G2, it's scoreOnePeg
-//          that is broken... but it's NOT when I leave it in SANA.cpp???
+// actually, now that I've moved the incremental code here and am using copies of G1 and G2, it's scoreOnePeg
+// that is broken... but it's NOT when I leave it in SANA.cpp???
     double noAvoid = G1->getNumNodes();
-    double before = scoreOnePegSlow(peg, noAvoid, oldHole, A);
-    double after  = scoreOnePegSlow(peg, noAvoid, newHole, A);
-    static int bad; 
-    printf("[%d bad] old %g Marcus %g diff %g\n", bad, old, after-before, after-before-old); 
-    assert(++bad<999);
+    double before = scoreOnePegSlow(G1,peg,noAvoid, G2, oldHole, A);
+    double after  = scoreOnePegSlow(G1,peg,noAvoid, G2, newHole, A);
+    static int bad; printf("[%d bad] old %g Marcus %g diff %g\n", bad, old, after-before, after-before-old); assert(++bad<999);
     printf("O"); fflush(stdout);
     if(fabs(after-before-old)<1e-19) return old;
 #endif
@@ -172,70 +158,57 @@ double EdgeMin::getIncSwapOp(const uint peg1, const uint peg2, const uint hole1,
 }
 
 double EdgeMin::computeIncSwapOp(const uint peg1, const uint peg2, const uint hole1, const uint hole2, const Alignment &A) {
-    int ai=0, aSize=8*G1->getNumNodes(); // two pegs, each with edges in both directions from potentially everyone else
-    assert(peg1 != peg2);
+    assert (peg1 != peg2);
     assert(A[peg1] == hole1 && A[peg2] == hole2);
+    int ai=0, aSize=8*G1->getNumNodes(); // two pegs, each with edges in both directions from potentially everyone else
     assert(aSize <= MAX_A_ARRAY);
-
     // Subtract (peg1->hole1), add (peg1->hole2)
     uint nbrHole;
     for (const auto& nbr : *(G1->getAdjList(peg1))) {
 	if(nbr == peg1) assert(A[nbr] == hole1);
         a[ai++] = -computeAligEdgeScore(peg1,nbr, hole1,A[nbr]);
-        if(nbr == peg1)    nbrHole=hole2; 
-        else if(nbr==peg2) nbrHole=hole1; 
-        else               nbrHole=A[nbr];
+        if(nbr == peg1) nbrHole=hole2; else if(nbr==peg2) nbrHole=hole1; else nbrHole=A[nbr];
         a[ai++] =  computeAligEdgeScore(peg1,nbr, hole2,nbrHole);
 	assert(ai<=aSize);
     }
-
-    if(G1->directed) {
-        for (const auto& nbr : *(G1->getInjList(peg1))) { // skip the self and peg2 outgoing
-            if(nbr == peg1) assert(A[nbr] == hole1);
-            if(nbr != peg1 && nbr!=peg2) {
-                a[ai++] = -computeAligEdgeScore(nbr, peg1, A[nbr], hole1);
-                nbrHole=A[nbr];
-                a[ai++] =  computeAligEdgeScore(nbr, peg1, nbrHole, hole2);
-            }
-            assert(ai<=aSize);
-        }
+    if(G1->directed) for (const auto& nbr : *(G1->getInjList(peg1))) { // skip the self and peg2 outgoing
+	if(nbr == peg1) assert(A[nbr] == hole1);
+        if(nbr != peg1 && nbr!=peg2) {
+	    a[ai++] = -computeAligEdgeScore(nbr,peg1, A[nbr],hole1);
+	    nbrHole=A[nbr];
+	    a[ai++] =  computeAligEdgeScore(nbr,peg1, nbrHole,hole2);
+	}
+	assert(ai<=aSize);
     }
-
    // Subtract peg2-hole2, add peg2-hole1
    for (const auto& nbr : *(G1->getAdjList(peg2))) {
 	if(nbr == peg2) assert(A[nbr] == hole2);
         a[ai++] = -computeAligEdgeScore(peg2,nbr, hole2,A[nbr]);
-        if(nbr == peg2)    nbrHole=hole1; 
-        else if(nbr==peg1) nbrHole=hole2; 
-        else               nbrHole=A[nbr];
+        if(nbr == peg2) nbrHole=hole1; else if(nbr==peg1) nbrHole=hole2; else nbrHole=A[nbr];
         a[ai++] =  computeAligEdgeScore(peg2,nbr, hole1,nbrHole);
 	assert(ai<=aSize);
     }
-
-    if(G1->directed) {
-        for (const auto& nbr : *(G1->getInjList(peg2))) {
-            if(nbr == peg2) assert(A[nbr] == hole2);
-            if(nbr != peg2 && nbr!=peg1) {
-                a[ai++] = -computeAligEdgeScore(nbr,peg2,A[nbr],hole2);
-                nbrHole=A[nbr];
-                a[ai++] =  computeAligEdgeScore(nbr,peg2,nbrHole,hole1);
-            }
-            assert(ai<=aSize);
-        }
+    if(G1->directed) for (const auto& nbr : *(G1->getInjList(peg2))) {
+	if(nbr == peg2) assert(A[nbr] == hole2);
+        if(nbr != peg2 && nbr!=peg1) {
+	    a[ai++] = -computeAligEdgeScore(nbr,peg2, A[nbr],hole2);
+	    nbrHole=A[nbr];
+	    a[ai++] =  computeAligEdgeScore(nbr,peg2, nbrHole,hole1);
+	}
+	assert(ai<=aSize);
     }
-    double oldFast = AccurateSum(ai,a);
-
+    double oldFast =  AccurateSum(ai,a);
 #if DEBUG_EDGEMIN
     double easySlow = IncSwapOp2(peg1, peg2, hole1, hole2, A);
-    if(std::fabs(oldFast - easySlow) > 4e-16) printf("X");fflush(stdout)
-
+    if(fabs(oldFast-easySlow)>4e-16) {printf("X");fflush(stdout);}
     //_predictedScore1 = currentScore + oldFast; _predictedScore2 = currentScore + easySlow;
-    if(std::fabs(easySlow - oldFast) > 1e-8)  printf("oldIncSwap = %g, new = %g, diff = %g \n", oldFast, easySlow, easySlow-oldFast);
+    if(fabs((easySlow-oldFast)) > 1e-8) printf("oldIncSwap = %g, new = %g, diff = %g \n", oldFast, easySlow, easySlow-oldFast);
     return easySlow;
 #else
     return oldFast;
 #endif
 }
+
 
 double EdgeMin::getIncSwapOp2(const uint peg1, const uint peg2, const uint hole1, const uint hole2, const Alignment &A) {
     return computeIncSwapOp2(peg1, peg2, hole1, hole2, A);
@@ -244,15 +217,14 @@ double EdgeMin::getIncSwapOp2(const uint peg1, const uint peg2, const uint hole1
 double EdgeMin::computeIncSwapOp2(const uint peg1, const uint peg2, const uint hole1, const uint hole2, const Alignment &AA) {
     Alignment A = AA;
     assert(A[peg1] == hole1 && A[peg2] == hole2);
-    assert(peg1 != peg2); // return 0;
+    assert (peg1 != peg2); // return 0;
     double noAvoid = G1->getNumNodes();
-    double old = scoreOnePegSlow(peg1, noAvoid, hole1, A); // score outward and inward A-aligned edges of peg1
-    old +=       scoreOnePegSlow(peg2, peg1, hole2, A); // score out&in as above for peg2 EXCEPT if going to peg1
-
-    // NOTE: we must PHYSICALLY swap peg1+peg2 in A, in order to correctly score the new position
+    double old = scoreOnePegSlow(G1,peg1,noAvoid, G2, hole1, A); // score outward and inward A-aligned edges of peg1
+    old       += scoreOnePegSlow(G1,peg2,peg1,    G2, hole2, A); // score out&in as above for peg2 EXCEPT if going to peg1
+    // Note we must PHYSICALLY swap peg1+peg2 in A, in order to correctly score the new position
     A[peg1] = hole2; A[peg2] = hole1;
-    double New = scoreOnePegSlow(peg2,noAvoid, hole1, A); // score outward and inward aligned edges of peg1
-    New +=       scoreOnePegSlow(peg1,peg2,    hole2, A); // score out&in as above for peg2 EXCEPT if going to peg1
+    double New = scoreOnePegSlow(G1,peg2,noAvoid, G2, hole1, A); // score outward and inward aligned edges of peg1
+    New       += scoreOnePegSlow(G1,peg1,peg2,    G2, hole2, A); // score out&in as above for peg2 EXCEPT if going to peg1
     A[peg1] = hole1; A[peg2] = hole2;
-    return New - old;
+    return New-old;
 }

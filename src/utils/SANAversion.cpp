@@ -1,1 +1,0 @@
-const char *SANAversion = "Version (HEAD -> remote/leon/directed, origin/directed, leon/directed) 3fb8650ff877bfca76b955a5348b08e155a1f38c 2025-04-09 11:35:01 -0700 Compiled with gcc/g++ " __VERSION__;
