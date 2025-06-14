@@ -3,6 +3,9 @@
 #include <vector>
 #include <array>
 
+const Graph *EdgeMin::G1, *EdgeMin::G2;
+double EdgeMin::denominator;
+
 EdgeMin::EdgeMin(const Graph* G1, const Graph* G2): Measure(G1, G2, "emin") {
     assert(EdgeMin::denominator==0);
     assert(EdgeMin::G1==NULL);
@@ -63,7 +66,7 @@ double EdgeMin::computeAligEdgeScore(const uint peg1, const uint peg2, const uin
     assert(0 <= hole1 && hole1 < G2->getNumNodes());
     assert(0 <= hole2 && hole2 < G2->getNumNodes());
     assert(EdgeMin::denominator != 0);
-    const double smaller = std::min(G1->getEdgeWeight(peg1, peg2), G2->getEdgeWeight(hole1, hole2));
+    const double smaller = getMin(G1->getEdgeWeight(peg1, peg2), G2->getEdgeWeight(hole1, hole2));
     assert(smaller == smaller); // Checks `smaller` isn't NaN
 
     return smaller / EdgeMin::denominator;
@@ -118,6 +121,10 @@ double EdgeMin::computeSum(const Alignment &A) {
 
     return AccurateSum(ai, a);
 #endif
+}
+
+double EdgeMin::getMin(const double w1, const double w2) {
+    return std::min(w1, w2);
 }
 
 double EdgeMin::getIncChangeOp(const uint peg, const uint oldHole, const uint newHole, const Alignment &A) {

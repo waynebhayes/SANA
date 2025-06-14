@@ -4,10 +4,12 @@
 #include <array>
 
 const Graph *EdgeRatio::G1, *EdgeRatio::G2;
+double EdgeRatio::denominator;
+
 EdgeRatio::EdgeRatio(const Graph* G1, const Graph* G2): Measure(G1, G2, "er") {
-    assert(EdgeMin::denominator==0);
-    assert(EdgeMin::G1==NULL);
-    assert(EdgeMin::G2==NULL);
+    assert(EdgeRatio::denominator==0);
+    assert(EdgeRatio::G1==NULL);
+    assert(EdgeRatio::G2==NULL);
     EdgeRatio::G1=G1;
     EdgeRatio::G2=G2;
     EdgeRatio::denominator=computeDenom();
@@ -41,6 +43,10 @@ double EdgeRatio::getRatio(double w1, double w2) {
 
 double EdgeRatio::getAligEdgeScore(const uint u1, const uint v1, const uint u2, const uint v2){
     // The maximum possible score is attained during a correct self-alignment, in which case every edge has a ratio of 1.
+    return computeAligEdgeScore(u1, v1, u2, v2);
+}
+
+double EdgeRatio::computeAligEdgeScore(const uint u1, const uint v1, const uint u2, const uint v2) {
     return getRatio(G1->getEdgeWeight(u1, v1), G2->getEdgeWeight(u2, v2)) / denominator;
 }
 

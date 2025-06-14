@@ -297,7 +297,7 @@ void SANA::initDataStructures() {
 
     if (needAligEdges or needSec) aligEdges = alig.computeNumAlignedEdges(*G1, *G2);
     if (needEd) edSum = EdgeDifference::getEdgeDifferenceSum(G1, G2, alig);
-    if (needEr) erSum = EdgeRatio::getEdgeRatioSum(G1, G2, alig);
+    if (needEr) erSum = EdgeRatio::getSum(alig);
     if (needEgm) egmSum = EdgeGeoMean::getEdgeGeoMeanSum(G1, G2, alig);
     if (needEmin) eminSum = ((EdgeMin*) MC->getMeasure("emin"))->eval(alig);
     if (needSquaredAligEdges) squaredAligEdges =
