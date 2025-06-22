@@ -41,6 +41,7 @@
 #include "../measures/FMeasure.hpp"
 #include "../utils/utils.hpp"
 #include "../Report.hpp"
+#include "../utils/CircBuf.hpp"
 
 
 using namespace std;
