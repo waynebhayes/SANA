@@ -6,6 +6,11 @@
 ** Marcus Longo, mlongo2021@gmail.com
 */
 
+#ifndef CIRCBUF_HPP
+#define CIRCBUF_HPP
+
+
+#include <utils.hpp>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -22,8 +27,10 @@ void CircStatReset(CIRC_STAT *c);
 double CircStatAdd(CIRC_STAT *c, double val); // returns the mean
 double CircStatMean(CIRC_STAT *c);
 double CircStatVariance(CIRC_STAT *c);
-double CircStatConfInterval (CIRC_STAT *c, double confidence)
+double CircStatConfInterval (CIRC_STAT *c, double confidence);
 
 #ifdef __cplusplus
     }
 #endif
+
+#endif // CIRCBUF_HPP
