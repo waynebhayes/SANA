@@ -24,6 +24,10 @@
 
 using namespace std;
 
+struct score_and_pBad {
+    double score;
+    double pBad;
+};
 
 class SANA: public Method {
 
@@ -37,6 +41,10 @@ public:
     Alignment run();
     Alignment runUsingIterations();
     Alignment runUsingConfidenceIntervals();
+    void collectBatches(uint numThreads, STAT *scoreBatchesMeans, STAT *scoreBatchesVariance);
+    void performBatch(bool &done, score_and_pBad &results);
+
+
     void describeParameters(ostream& stream) const;
     string fileNameSuffix(const Alignment& A) const;
     
@@ -260,9 +268,9 @@ private:
 #if LIBWAYNE
     STAT *energyIncStats;
 #endif
-    void SANAIteration();
-    void performChange(uint activeColorId);
-    void performSwap(uint activeColorId);
+    void SANAIteration(score_and_pBad &results);
+    void performChange(uint actColId, score_and_pBad &results);
+    void performSwap(uint actColId, score_and_pBad &results);
 
     Timer timer;
 
@@ -324,6 +332,13 @@ private:
 
     friend class Ameur; //it needs to read the PBad buffer
     friend class StatisticalTest;
+
+    // Multithreading
+    vector<mutex> holeLocks;
+    mutex alignmentLock;
+    mutex iterationLock;
+    mutex scoreLock;
+    uint threadNum;
 };
 
 #endif /* SANA_HPP */

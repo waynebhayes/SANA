@@ -124,7 +124,8 @@ void StatisticalTest::vComputeTFinal(GoldilocksMethod::Resources maxRes) {
     sana->initIterPerSecond();
     
     for (uint i = 0; i < sana->iterPerSecond; ++i) {
-        sana->SANAIteration();
+        score_and_pBad dummy;
+        sana->SANAIteration(dummy);
         if (sana->energyInc < 0) {
             EIncs.push_back(sana->energyInc);
         }
