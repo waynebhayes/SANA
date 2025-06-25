@@ -3,6 +3,7 @@
 #include <vector>
 #include <array>
 
+// Forward Declaration
 const Graph *EdgeMin::G1, *EdgeMin::G2;
 double EdgeMin::denominator;
 

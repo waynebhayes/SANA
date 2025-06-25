@@ -3,17 +3,44 @@
 #include <string>
 #include <vector>
 
-EdgeCorrectness::EdgeCorrectness(const Graph* G1, const Graph* G2, int graphNum) : Measure(G1, G2, "ec") {
-    denominatorGraph = graphNum;
+// Forward Declaration
+const Graph *EdgeCorrectness::G1, *EdgeCorrectness::G2;
+double EdgeCorrectness::denominator;
+
+// Note: EC assumes that G2 is the denominator graph.
+EdgeCorrectness::EdgeCorrectness(const Graph* G1, const Graph* G2) : Measure(G1, G2, "ec") {
+    assert(EdgeCorrectness::denominator==0);
+    assert(EdgeCorrectness::G1==NULL);
+    assert(EdgeCorrectness::G2==NULL);
+    EdgeCorrectness::G1=G1;
+    EdgeCorrectness::G2=G2;
+    EdgeCorrectness::denominator=G2->getNumEdges();
 }
 
-EdgeCorrectness::~EdgeCorrectness() {
-}
+EdgeCorrectness::~EdgeCorrectness() 
+{}
 
 double EdgeCorrectness::eval(const Alignment& A) {
-    switch(denominatorGraph) {
-    case 1: return (double) A.computeNumAlignedEdges(*G1, *G2)/G1->getNumEdges(); break;
-    case 2: return (double) A.computeNumAlignedEdges(*G1, *G2)/G2->getNumEdges(); break;
-    default: Fatal("unknown denominatorGraph %d in EdgeCorrectness::eval", denominatorGraph); return 0; break;
-    }
+    return (double) A.computeNumAlignedEdges(*G1, *G2) / EdgeCorrectness::denominator;
 }
+
+double EdgeCorrectness::getAligEdgeScore(const uint u1, const uint v1, const uint u2, const uint v2) {
+    // Unimplemented
+    return -.1;
+}
+
+double EdgeCorrectness::getIncChangeOp(const uint peg, const uint oldHole, const uint newHole, const Alignment &A) {
+    // Unimplemented
+    return -.1;
+}
+
+double EdgeCorrectness::getIncSwapOp(const uint peg1, const uint peg2, const uint hole1, const uint hole2, const Alignment &A) {
+    // Unimplemented
+    return -.1;
+}
+
+double EdgeCorrectness::getSum(const Alignment &A) {
+    // Unimplemented
+    return -.1;
+}
+

@@ -3,6 +3,7 @@
 #include <vector>
 #include <array>
 
+// Forward Declaration
 const Graph *EdgeRatio::G1, *EdgeRatio::G2;
 double EdgeRatio::denominator;
 

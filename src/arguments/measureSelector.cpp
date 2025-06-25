@@ -164,9 +164,9 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
     bool detRep = args.bools["-detailedreport"];
 
     Measure *m;
-    m = new EdgeCorrectness(&G1, &G2, 1);
+    m = new EdgeCorrectness(&G2, &G1);
     M.addMeasure(m, getWeight("ec", G1, G2, args)); M.addMeasure(m, getWeight("ec1", G1, G2, args));
-    m = new EdgeCorrectness(&G1, &G2, 2); M.addMeasure(m, getWeight("ec2", G1, G2, args));
+    m = new EdgeCorrectness(&G1, &G2); M.addMeasure(m, getWeight("ec2", G1, G2, args));
     m = new EdgeDifference(&G1, &G2); M.addMeasure(m, getWeight("ed", G1, G2, args));
     m = new JaccardSimilarityScore(&G1, &G2); M.addMeasure(m, getWeight("js", G1, G2, args));
     m = new EdgeRatio(&G1, &G2); M.addMeasure(m, getWeight("er", G1, G2, args));
