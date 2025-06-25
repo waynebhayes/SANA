@@ -94,8 +94,7 @@ UTILS_SRC = 								\
 	src/utils/Matrix.cpp						\
 	src/utils/Stats.cpp						\
 	src/utils/Misc.cpp						\
-	src/utils/SANAversion.cpp	\
-	src/utils/CircBuf.cpp
+	src/utils/SANAversion.cpp
 
 ARGUMENTS_SRC = 							\
 	src/arguments/ArgumentParser.cpp				\

@@ -20,7 +20,6 @@
 #if LIBWAYNE
 #include "../utils/Misc.hpp"
 #include "../utils/Stats.hpp"
-#include "../utils/CircBuf.hpp"
 #endif
 
 using namespace std;
