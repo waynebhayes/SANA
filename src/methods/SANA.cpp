@@ -23,6 +23,9 @@
 #include <unistd.h>
 
 #include "SANA.hpp"
+
+#include <future>
+
 #include "../measures/SymmetricSubstructureScore.hpp"
 #include "../measures/JaccardSimilarityScore.hpp"
 #include "../measures/InducedConservedStructure.hpp"
@@ -50,6 +53,8 @@ using namespace std;
 #if DEBUG_EDGEMIN
 static double _predictedScore1, _predictedScore2;
 #endif
+
+#define THREAD_NUMBER 12 // TODO: MAKE THIS AN ARGUMENT, PLEASE, I DON'T KNOW HOW :pray: -Marcus
 
 // Stuff for MAX_STATIONARY
 #define MAX_ST_INVALID 65535 // just in case int is 16 bits
@@ -79,6 +84,10 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     m1 = G1->getNumEdges(); m2 = G2->getNumEdges();
     g1Edges = G1->getNumEdges(); g2Edges = G2->getNumEdges();
     g1TotalWeight = G1->getTotalEdgeWeight(); g2TotalWeight = G2->getTotalEdgeWeight();
+
+    // Multithreading
+    holeLocks = vector<mutex>(n2);
+    threadNum = THREAD_NUMBER;
 
     if      (scoreAggrStr == "sum")       scoreAggr = ScoreAggregation::sum;
     else if (scoreAggrStr == "product")   scoreAggr = ScoreAggregation::product;
@@ -381,7 +390,8 @@ Alignment SANA::runUsingIterations() {
     _reallyRunning=true;
     for (iter = 0; iter <= maxIters && _numNonstationaryColors>0; iter++) {
         Temperature = temperatureFunction(float(iter)/maxIters, TInitial, TDecay);
-        SANAIteration();
+        score_and_pBad dummy;
+        SANAIteration(dummy);
         if (saveAligAndExitOnInterruption) break;
         if (saveAligAndContOnInterruption) printReportOnInterruption();
         if (iter%iterationsPerStep == 0) {
@@ -410,7 +420,8 @@ Alignment SANA::runUsingIterations() {
 // All of these are purely heuristic
 #define MAX_TAU_STEP 0.01
 #define MIN_TAU_STEP 0.001
-#define BATCH_SIZE sqrt(n1*n2)
+#define BATCH_SIZE (100 * sqrt(n1*n2))
+#define COLLECTION_QUOTA (THREAD_NUMBER * MIN_BATCHES)
 #define MIN_BATCHES 30
 #define HAPPY_BATCHES MIN(10000, (int)(m1+m2))
 #define MIN_CONFIDENCE 0.99999
@@ -435,9 +446,7 @@ Alignment SANA::runUsingConfidenceIntervals() {
 	batchSize, confidence, tolPerStep);
 
 #if LIBWAYNE
-    STAT *scoreBatch = StatAlloc(0, 0.0, 0.0, false, false);
     STAT *scoreBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
-    STAT *pBadBatch = StatAlloc(0, 0.0, 0.0, false, false);
     STAT *pBadBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
 #else
 #error "Need LIBWAYNE to be true for batch system"
@@ -446,33 +455,17 @@ Alignment SANA::runUsingConfidenceIntervals() {
     long int lastBatchCount=0;
     for (tau = 0; tau <= 1; tau += tauStep) {
 	int batchesPerTemperature = 0;
-        Temperature = temperatureFunction(tau, TInitial, TDecay);
+    Temperature = temperatureFunction(tau, TInitial, TDecay);
+
+
+
 	// Now the "inner loop"
 	Boolean satisfied = false;
 	while(!satisfied && _numNonstationaryColors>0) {
 	    if (saveAligAndExitOnInterruption) break;
 	    if (saveAligAndContOnInterruption) printReportOnInterruption();
 
-	    //currentScore = eval(A);
-	    SANAIteration();
-#if DEBUG_EDGEMIN
-	    if(iterationsPerformed % 20000 == 20000) {
-		double correct = eval(A);
-		printf("."); fflush(stdout);
-		if(fabs(currentScore - correct) > 4e-16) {
-		    printf("iter %u currentScore %g; correct %g; diff %g\n", iterationsPerformed,
-			currentScore, correct, currentScore-correct); //_predictedScore1, _predictedScore2, diff1,diff2);
-		    //currentScore = correct;
-		}
-	    }
-#endif
-	    StatAddSample(scoreBatch, currentScore);
-	    StatAddSample(pBadBatch, movePbad);
-	    if(StatNumSamples(scoreBatch) == batchSize) {
-		++batch; ++batchesPerTemperature;
-		StatAddSample(scoreBatchMeans, StatMean(scoreBatch));
-		StatAddSample(pBadBatchMeans, StatMean(pBadBatch));
-		StatReset(scoreBatch); StatReset(pBadBatch);
+	    collectBatches(THREAD_NUMBER, scoreBatchMeans, pBadBatchMeans);
 
 		if(StatNumSamples(scoreBatchMeans)>=MIN_BATCHES){
 		    double scoreInterval, pBadInterval, relativeMultiplier;
@@ -515,7 +508,6 @@ Alignment SANA::runUsingConfidenceIntervals() {
 			    // tau += tauStep;
 			    if(verbose) printf(" to %g and backtrack to tau %g\n", tauStep, tau);
 			    lastBatchCount = StatNumSamples(scoreBatchMeans);
-			}
 		    }
 		}
 	    }
@@ -551,7 +543,96 @@ Alignment SANA::runUsingConfidenceIntervals() {
     Report::saveCoreScore(*G1, *G2, A, this, coreScoreData, outputFileName);
 #endif
 
+    StatFree(scoreBatchMeans);
+    StatFree(pBadBatchMeans);
     return A;
+}
+
+
+void SANA::collectBatches(uint numThreads, STAT *scoreBatchMeans, STAT *pBadBatchMeans) {
+    if (numThreads == 1) {
+        bool dummy;
+        score_and_pBad batchReturns;
+        for (uint i = 0; i < COLLECTION_QUOTA; i++) {
+            performBatch(dummy, batchReturns);
+            StatAddSample(scoreBatchMeans, batchReturns.score);
+            StatAddSample(pBadBatchMeans, batchReturns.pBad);
+        }
+        return;
+    }
+    if (numThreads == 2) {
+        for (uint i = 0; i < COLLECTION_QUOTA / 2; i++) {
+            bool dummy1, dummy2;
+            score_and_pBad batch1Returns{}, batch2Returns{};
+            thread t = thread(&SANA::performBatch, this, ref(dummy2), ref(batch2Returns));
+            performBatch(dummy1, batch1Returns);
+            StatAddSample(scoreBatchMeans, batch1Returns.score);
+            StatAddSample(pBadBatchMeans, batch1Returns.pBad);
+            t.join();
+            StatAddSample(scoreBatchMeans, batch2Returns.score);
+            StatAddSample(pBadBatchMeans, batch2Returns.pBad);
+        }
+        return;
+    }
+
+    // DON'T DO THIS!! I AM ONLY DOING THIS BECAUSE I AM PRESSED FOR TIME!!
+    bool *threadFinished = new bool[numThreads - 1];
+    for (uint i = 0; i < numThreads - 1; i++) {
+        threadFinished[i] = false;
+    }
+    score_and_pBad *batchReturns = new score_and_pBad[numThreads - 1];
+    thread *workers = new thread[numThreads - 1];
+
+    // Thread creation
+    uint j;
+    for (j = 0; j < numThreads - 1; j++) {
+        workers[j] = thread(&SANA::performBatch, this, ref(threadFinished[j]), ref(batchReturns[j]));
+    }
+
+    // Thread cycling
+    j = 0;
+    for (uint i = 0; i < COLLECTION_QUOTA - numThreads + 1; i++) {
+        while (true) {
+            if (threadFinished[j]) {
+                workers[j].join();
+                StatAddSample(scoreBatchMeans, batchReturns[j].score);
+                StatAddSample(pBadBatchMeans, batchReturns[j].pBad);
+                threadFinished[j] = false;
+                workers[j] = thread(&SANA::performBatch, this, ref(threadFinished[j]), ref(batchReturns[j]));
+                break;
+            }
+            j++; j = j % (numThreads - 1);
+        }
+    }
+
+    // Thread clean-up
+    for (j = 0; j < numThreads - 1; j++) {
+        workers[j].join();
+        StatAddSample(scoreBatchMeans, batchReturns[j].score);
+        StatAddSample(pBadBatchMeans, batchReturns[j].pBad);
+    }
+
+    delete[] threadFinished;
+    delete[] batchReturns;
+    delete[] workers;
+    currentScore = eval(A);
+}
+
+void SANA::performBatch(bool &done, score_and_pBad &results) {
+    score_and_pBad iterationReturns;
+    STAT *scoreBatch = StatAlloc(0, 0.0, 0.0, false, false);
+    STAT *pBadBatch = StatAlloc(0, 0.0, 0.0, false, false);
+
+    for (uint i = 0; i < BATCH_SIZE; i++) {
+        SANAIteration(iterationReturns);
+        StatAddSample(scoreBatch, iterationReturns.score);
+        StatAddSample(pBadBatch, iterationReturns.pBad);
+    }
+    results.score = StatMean(scoreBatch);
+    results.pBad = StatMean(pBadBatch);
+    done = true;
+    StatFree(scoreBatch);
+    StatFree(pBadBatch);
 }
 
 
@@ -567,7 +648,8 @@ void SANA::performHillClimbing(long long int idleCountTarget) {
     while(idleCount < idleCountTarget && _numNonstationaryColors>0) {
         if (iter%iterationsPerStep == 0) trackProgress(iter, float(iter)/idleCountTarget);
         double oldScore = currentScore;
-        SANAIteration();
+        score_and_pBad returns;
+        SANAIteration(returns);
         if (abs(oldScore-currentScore) < 0.00001) ++idleCount;
         else idleCount = 0;
         ++iter;
@@ -671,15 +753,18 @@ void SANA::printReportOnInterruption() {
     cout << "Alignment saved. SANA will now continue." << endl;
 }
 
-void SANA::SANAIteration() {
+void SANA::SANAIteration(score_and_pBad &results) {
+    unique_lock<mutex> lock_iterationsPerformed{iterationLock, defer_lock};
+    lock_iterationsPerformed.lock();
     ++iterationsPerformed;
+    lock_iterationsPerformed.unlock();
     uint actColId;
     do
 	actColId = randActiveColorIdWeightedByNumNbrs();
     while(_reallyRunning && MAX_STATIONARY && _pickArrayNum[actColToG1ColId[actColId]]==0); // find a color that has non-stationary nodes
     double p = randomReal(gen);
-    if (p < actColToChangeProb[actColId]) performChange(actColId);
-    else performSwap(actColId);
+    if (p < actColToChangeProb[actColId]) performChange(actColId, results);
+    else performSwap(actColId, results);
     assert(!std::isnan(currentScore));
     assert(currentScore == currentScore);
     if(std::isinf(currentScore)) {
@@ -694,10 +779,10 @@ uint SANA::numActiveColors() const {
 uint SANA::randActiveColorIdWeightedByNumNbrs() {
     if (numActiveColors() == 1) return 0; //optimized special case: monochromatic graphs
     double p = randomReal(gen);
-    if (numActiveColors() == 2) //optimized special case: bichromatic graphs
+    if (numActiveColors() == 2) //optimized special case: bi-chromatic graphs
         return (p < actColToAccumProbCutpoint[0] ? 0 : 1);
 
-    //general case: use binary search to optimizie for the case with many active colors
+    //general case: use binary search to optimize for the case with many active colors
     auto iter = lower_bound(actColToAccumProbCutpoint.begin(), actColToAccumProbCutpoint.end(), p);
     assert(iter != actColToAccumProbCutpoint.end());
     return iter - actColToAccumProbCutpoint.begin();
@@ -774,12 +859,35 @@ uint SANA::randomG1NodeWithActiveColor(uint actColId, bool dynamic) const {
     return G1->nodeGroupsByColor[g1ColId][randNodeIndexOfColor];
 }
 
-void SANA::performChange(uint actColId) {
-    uint peg = randomG1NodeWithActiveColor(actColId, true);
-    uint oldHole = A[peg];
-    uint numUnassigWithCol = actColToUnassignedG2Nodes[actColId].size();
-    uint unassignedVecIndex = randInt(0, numUnassigWithCol-1);
-    uint newHole = actColToUnassignedG2Nodes[actColId][unassignedVecIndex];
+void SANA::performChange(uint actColId, score_and_pBad &results) {
+    uint peg, oldHole, newHole;
+    unique_lock<mutex> oldHoleLock, newHoleLock;
+    unique_lock<mutex> lockAlignment{alignmentLock, defer_lock};
+    unique_lock<mutex> lockScore{scoreLock, defer_lock};
+
+    do {
+        // Q: Why lock the alignment?
+        // A: *Because* if we don't, then it might be possible for oldHole to be found, then in the
+        // gap between this and the hole mutex check, a different thread (which is using oldHole)
+        // unlinks peg and oldHole and unlocks its mutex. The chances of this are slim, but with
+        // millions of iterations, slim is not good enough!
+        lockAlignment.lock();
+        peg = randomG1NodeWithActiveColor(actColId, true);
+        oldHole = A[peg];
+        oldHoleLock = unique_lock<mutex>{holeLocks[oldHole], try_to_lock};
+        lockAlignment.unlock();
+    } while (!oldHoleLock.owns_lock());
+
+    uint numUnassigWithCol, unassignedVecIndex;
+    do {
+        // Ditto
+        lockAlignment.lock();
+        numUnassigWithCol = actColToUnassignedG2Nodes[actColId].size();
+        unassignedVecIndex = randInt(0, numUnassigWithCol-1);
+        newHole = actColToUnassignedG2Nodes[actColId][unassignedVecIndex];
+        newHoleLock = unique_lock<mutex>{holeLocks[newHole], try_to_lock};
+    } while (!newHoleLock.owns_lock());
+
 
     assert(numUnassigWithCol > 0);
     assert(oldHole != newHole);
@@ -838,12 +946,18 @@ void SANA::performChange(uint actColId) {
     coreScoreData.incChangeOp(peg, betterHole, pBad, meanPBad);
 #endif
 
+    lockAlignment.lock();
     if (makeChange) {
-	stationary[peg]=0;
+        stationary[peg]=0;
         A[peg] = newHole;
         actColToUnassignedG2Nodes[actColId][unassignedVecIndex] = oldHole;
         assignedNodesG2[oldHole] = false;
         assignedNodesG2[newHole] = true;
+        oldHoleLock.unlock();
+        newHoleLock.unlock();
+        lockAlignment.unlock();
+
+        lockScore.lock();
         aligEdges                     = newAligEdges;
         edSum                         = newEdSum;
         erSum                         = newErSum;
@@ -859,14 +973,22 @@ void SANA::performChange(uint actColId) {
         squaredAligEdges              = newSquaredAligEdges;
         MultiS3::numer                = newMS3Numer;
     } else {
-	if(stationary[peg] >= MAX_STATIONARY) stationary[peg]=0; else ++stationary[peg];
-	if (needMS3) {
-	    MultiS3::shadowDegree[oldHole] = saveOldHoleDeg;
-	    MultiS3::shadowDegree[newHole] = saveNewHoleDeg;
-	    MultiS3::denom = oldMs3Denom;
-	    MultiS3::numer = oldMs3Numer;
-	}
+        if(stationary[peg] >= MAX_STATIONARY) stationary[peg]=0; else ++stationary[peg];
+        oldHoleLock.unlock();
+        newHoleLock.unlock();
+        lockAlignment.unlock();
+
+        lockScore.lock();
+	    if (needMS3) {
+	        MultiS3::shadowDegree[oldHole] = saveOldHoleDeg;
+	        MultiS3::shadowDegree[newHole] = saveNewHoleDeg;
+	        MultiS3::denom = oldMs3Denom;
+	        MultiS3::numer = oldMs3Numer;
+	    }
     }
+    results.score = currentScore;
+    results.pBad = pBad;
+    lockScore.unlock();
 #if 0
     uint correct = ((MultiS3*)MC->getMeasure("ms3"))->computeNumer(A);
     if(MultiS3::numer==correct)cerr<<'N';else{cerr<<"\nnumer "<<MultiS3::numer<<" off "<<(int)(MultiS3::numer-correct);MultiS3::numer=correct;}
@@ -875,15 +997,35 @@ void SANA::performChange(uint actColId) {
 #endif
 }
 
-void SANA::performSwap(uint actColId) {
-    uint peg1 = randomG1NodeWithActiveColor(actColId, true);
-    uint peg2;
-    for (uint i = 0; i < 100; i++) { //each attempt has >=50% chance of success
-        peg2 = randomG1NodeWithActiveColor(actColId, false);
-        if (peg1 != peg2) break;
-    }
+void SANA::performSwap(uint actColId, score_and_pBad &results) {
+    uint peg1, peg2, hole1, hole2;
+    unique_lock<mutex> hole1Lock, hole2Lock;
+    unique_lock<mutex> lockAlignment{alignmentLock, defer_lock};
+    unique_lock<mutex> lockScore{scoreLock, defer_lock};
+
+    do {
+        // Q: Why lock the alignment?
+        // A: *Because* if we don't, then it might be possible for oldHole to be found, then in the
+        // gap between this and the hole mutex check, a different thread (which is using hole1)
+        // unlinks peg1 and hole1 and unlocks its mutex. The chances of this are slim, but with
+        // millions of iterations, slim is not good enough!
+        lockAlignment.lock();
+        peg1 = randomG1NodeWithActiveColor(actColId, true);
+        hole1 = A[peg1];
+        hole1Lock = unique_lock<mutex>{holeLocks[hole1], try_to_lock};
+        lockAlignment.unlock();
+    } while (!hole1Lock.owns_lock());
+
+    do {
+        // Ditto
+        lockAlignment.lock();
+        peg2 = randomG1NodeWithActiveColor(actColId, true);
+        hole2 = A[peg2];
+        hole2Lock = unique_lock<mutex>{holeLocks[hole2], try_to_lock};
+        lockAlignment.unlock();
+    } while (!hole2Lock.owns_lock() && peg1 == peg2);
+
     assert(peg1 != peg2);
-    uint hole1 = A[peg1], hole2 = A[peg2];
     assert(hole1 != hole2);
     // assert(G1->getNodeColor(peg1) == G1->getNodeColor(peg2));
     // assert(G2->getNodeColor(hole1) == G2->getNodeColor(hole2));
@@ -940,10 +1082,16 @@ void SANA::performSwap(uint actColId) {
         coreScoreData.incSwapOp(peg1, peg2, betterDest1, betterDest2, pBad, meanPBad);
 #endif
 
+    lockAlignment.lock();
     if (makeChange) {
-	stationary[peg1]=stationary[peg2]=0;
+        stationary[peg1]=stationary[peg2]=0;
         A[peg1]          = hole2;
         A[peg2]          = hole1;
+        hole1Lock.unlock();
+        hole2Lock.unlock();
+        lockAlignment.unlock();
+
+        lockScore.lock();
         aligEdges           = newAligEdges;
         edSum               = newEdSum;
         erSum               = newErSum;
@@ -958,14 +1106,22 @@ void SANA::performSwap(uint actColId) {
         MultiS3::numer      = newMS3Numer;
         if (needLocal) localScoreSumMap = newLocalScoreSumMap;
     } else {
-	if(stationary[peg1]>=MAX_STATIONARY) stationary[peg1]=0; else ++stationary[peg1];
-	if(stationary[peg2]>=MAX_STATIONARY) stationary[peg2]=0; else ++stationary[peg2];
-	if (needMS3) {
-	    MultiS3::shadowDegree[hole1] = oldHole1Deg;
-	    MultiS3::shadowDegree[hole2] = oldHole2Deg;
-	    MultiS3::denom = oldMs3Denom;
-	}
+        if(stationary[peg1]>=MAX_STATIONARY) stationary[peg1]=0; else ++stationary[peg1];
+	    if(stationary[peg2]>=MAX_STATIONARY) stationary[peg2]=0; else ++stationary[peg2];
+        hole1Lock.unlock();
+        hole2Lock.unlock();
+        lockAlignment.unlock();
+
+        lockScore.lock();
+	    if (needMS3) {
+	        MultiS3::shadowDegree[hole1] = oldHole1Deg;
+	        MultiS3::shadowDegree[hole2] = oldHole2Deg;
+	        MultiS3::denom = oldMs3Denom;
+	    }
     }
+    results.score = currentScore;
+    results.pBad = pBad;
+    lockScore.unlock();
 }
 
 // returns pBad
@@ -2255,7 +2411,8 @@ void SANA::constantTempIterations(long long int iterTarget) {
     long long int iter;
     for (iter = 0; iter < iterTarget ; ++iter) {
         if (iter && iter%iterationsPerStep == 0) trackProgress(iter, float(iter)/iterTarget);
-        SANAIteration();
+        score_and_pBad dummy;
+        SANAIteration(dummy);
     }
     trackProgress(iter, float(iter)/iterTarget);
 }
@@ -2288,7 +2445,8 @@ double SANA::getEquilibriumPBadAtTemp(double temp, double maxTimeInS, int logLev
     if (verbose) cerr<<endl<<"****************************************"<<endl
                      <<"starting search for pBad for temp = "<<temp<<endl;
     while (not reachedEquilibrium) {
-        SANAIteration();
+        score_and_pBad dummy;
+        SANAIteration(dummy);
         iter++;
         if (iter%sampleInterval == 0) {
             if (verbose) {
