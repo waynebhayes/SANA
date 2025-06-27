@@ -885,6 +885,7 @@ void SANA::performChange(uint actColId, score_and_pBad &results) {
         unassignedVecIndex = randInt(0, numUnassigWithCol-1);
         newHole = actColToUnassignedG2Nodes[actColId][unassignedVecIndex];
         newHoleLock = unique_lock<mutex>{holeLocks[newHole], try_to_lock};
+        lockAlignment.unlock();
     } while (!newHoleLock.owns_lock());
 
 
