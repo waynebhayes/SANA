@@ -190,6 +190,9 @@ Alignment &Alignment::operator=(Alignment other) {
 }
 
 uint Alignment::computeNumAlignedEdges(const Graph& G1, const Graph& G2) const {
+    // This assertion ensures G2 is the "shadow" network
+    assert(G1.getNumNodes() <= G2.getNumNodes());
+
     uint res = 0;
     // Note this NEEDS TO STAY THE WAY IT IS for MULTI to work correctly, even though it's badly named for other cases.
     // This is because in MULTI, G2 is the shadow network, and G2.getEdgeWeight tells us how many edges from the other

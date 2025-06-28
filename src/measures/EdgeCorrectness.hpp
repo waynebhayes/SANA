@@ -18,7 +18,6 @@ public:
 private:
     static const Graph *G1, *G2;
     static double denominator;
-
 };
 
 #endif //EDGECORRECTNESS_HPP

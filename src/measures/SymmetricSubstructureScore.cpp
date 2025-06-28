@@ -5,8 +5,6 @@
 const Graph *SymmetricSubstructureScore::G1, *SymmetricSubstructureScore::G2;
 
 SymmetricSubstructureScore::SymmetricSubstructureScore(const Graph* G1, const Graph* G2) : Measure(G1, G2, "s3") {
-    assert(SymmetricSubstructureScore::G1==NULL);
-    assert(SymmetricSubstructureScore::G2==NULL);
     SymmetricSubstructureScore::G1=G1;
     SymmetricSubstructureScore::G2=G2;
 }

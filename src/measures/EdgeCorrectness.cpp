@@ -7,14 +7,11 @@
 const Graph *EdgeCorrectness::G1, *EdgeCorrectness::G2;
 double EdgeCorrectness::denominator;
 
-// Note: EC assumes that G2 is the denominator graph.
+// Note: EC assumes that G1 is the denominator graph.
 EdgeCorrectness::EdgeCorrectness(const Graph* G1, const Graph* G2) : Measure(G1, G2, "ec") {
-    assert(EdgeCorrectness::denominator==0);
-    assert(EdgeCorrectness::G1==NULL);
-    assert(EdgeCorrectness::G2==NULL);
     EdgeCorrectness::G1=G1;
     EdgeCorrectness::G2=G2;
-    EdgeCorrectness::denominator=G2->getNumEdges();
+    EdgeCorrectness::denominator=G1->getNumEdges();
 }
 
 EdgeCorrectness::~EdgeCorrectness() 
