@@ -267,6 +267,7 @@ private:
     double energyInc;
 #if LIBWAYNE
     STAT *energyIncStats;
+    mutex energyIncMutex;
 #endif
     void SANAIteration(score_and_pBad &results);
     void performChange(uint actColId, score_and_pBad &results);

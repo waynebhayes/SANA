@@ -53,7 +53,7 @@ using namespace std;
 static double _predictedScore1, _predictedScore2;
 #endif
 
-#define THREAD_NUMBER 12 // TODO: MAKE THIS AN ARGUMENT, PLEASE, I DON'T KNOW HOW :pray: -Marcus
+#define THREAD_NUMBER 1 // TODO: MAKE THIS AN ARGUMENT, PLEASE, I DON'T KNOW HOW :pray: -Marcus
 
 // Stuff for MAX_STATIONARY
 #define MAX_ST_INVALID 65535 // just in case int is 16 bits
@@ -114,8 +114,9 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     initializedIterPerSecond = false;
     pBadBuffer = vector<double> (PBAD_CIRCULAR_BUFFER_SIZE, 0);
     stationary = vector<uint> (n1, 0);
-    _pickArrayNum = (uint*)calloc(sizeof(uint),G1->numColors());
     _numNonstationaryColors = G1->numColors();
+    if (MAX_STATIONARY && G1->numColors() > 2)
+        randomG1NodeWithActiveColor(0, false);
 
     //objective function
     ecWeight  = MC->getWeight("ec");
@@ -419,7 +420,7 @@ Alignment SANA::runUsingIterations() {
 // All of these are purely heuristic
 #define MAX_TAU_STEP 0.01
 #define MIN_TAU_STEP 0.001
-#define BATCH_SIZE (100 * sqrt(n1*n2))
+#define BATCH_SIZE (sqrt(n1*n2))
 #define COLLECTION_QUOTA (THREAD_NUMBER * MIN_BATCHES)
 #define MIN_BATCHES 30
 #define HAPPY_BATCHES MIN(10000, (int)(m1+m2))
@@ -457,7 +458,6 @@ Alignment SANA::runUsingConfidenceIntervals() {
     Temperature = temperatureFunction(tau, TInitial, TDecay);
 
 
-
 	// Now the "inner loop"
 	Boolean satisfied = false;
 	while(!satisfied && _numNonstationaryColors>0) {
@@ -465,6 +465,8 @@ Alignment SANA::runUsingConfidenceIntervals() {
 	    if (saveAligAndContOnInterruption) printReportOnInterruption();
 
 	    collectBatches(THREAD_NUMBER, scoreBatchMeans, pBadBatchMeans);
+	    batchesPerTemperature += COLLECTION_QUOTA;
+	    batch += COLLECTION_QUOTA;
 
 		if(StatNumSamples(scoreBatchMeans)>=MIN_BATCHES){
 		    double scoreInterval, pBadInterval, relativeMultiplier;
@@ -472,7 +474,7 @@ Alignment SANA::runUsingConfidenceIntervals() {
 
 		    // The user specifies a *relative* tolerance on the FINAL score... but we don't know what the final
 		    // score will be. Thus, early on when the score is low and pBad is high, we punt to using (effectively)
-		    // an abslotule tolerance by multiplying the tolerance by pBad. Then, as the score increases and
+		    // an absolute tolerance by multiplying the tolerance by pBad. Then, as the score increases and
 		    // surpasses pBad, transition to a genuine relative tolerance by multiplying by the score.
 		    relativeMultiplier = MAX(StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
 
@@ -490,7 +492,7 @@ Alignment SANA::runUsingConfidenceIntervals() {
 			// an ENORMOUS number of batches to compensate for the "bias" that occurs in early batches.
 			if(StatMean(scoreBatchMeans) > previousScore) { // adding + tolPerSstep/2 seems too much.
 			    if(verbose)
-				printf(" ++++> temp %.4g, batchMeanScore %.3f (pBad %.3g) still increasing after %d batches; reset batches and continue\n",
+				printf(" ++++> temp %.4g, batchMeanScore %.3f (pBad %.3g) still increasing after %ld batches; reset batches and continue\n",
 				Temperature, StatMean(scoreBatchMeans),
 				StatConfInterval(pBadBatchMeans,  confidence), StatNumSamples(scoreBatchMeans));
 			    fflush(stdout);
@@ -498,7 +500,7 @@ Alignment SANA::runUsingConfidenceIntervals() {
 			    lastBatchCount = 0; StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
 			} else if(tauStep>MIN_TAU_STEP && StatNumSamples(scoreBatchMeans) >= HAPPY_BATCHES+lastBatchCount) {
 			    if(verbose)
-				printf(" ----> %d batches, avg score %g decreased at tau %g; reduce next tauStep from %g",
+				printf(" ----> %ld batches, avg score %g decreased at tau %g; reduce next tauStep from %g",
 				    StatNumSamples(scoreBatchMeans), StatMean(scoreBatchMeans), tau, tauStep);
 			    fflush(stdout);
 			    // tau -= tauStep;
@@ -515,7 +517,7 @@ Alignment SANA::runUsingConfidenceIntervals() {
 	trackProgress(batch, tau, batchesPerTemperature, StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
 	if(tauStep < MAX_TAU_STEP) {
 	    if(StatNumSamples(scoreBatchMeans) < HAPPY_BATCHES) {
-		if(verbose) printf(" *****> doing OK at tau %g & %d batches; increasing tauStep from %g",
+		if(verbose) printf(" *****> doing OK at tau %g & %ld batches; increasing tauStep from %g",
 		    tau, StatNumSamples(scoreBatchMeans), tauStep);
 		tauStep *= 3;
 		if(tauStep > MAX_TAU_STEP) tauStep = MAX_TAU_STEP;
@@ -531,7 +533,8 @@ Alignment SANA::runUsingConfidenceIntervals() {
 	    }
 	}
 	previousScore = StatMean(scoreBatchMeans);
-	StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
+	StatReset(scoreBatchMeans);
+    StatReset(pBadBatchMeans);
 	StatReset(energyIncStats);
     }
     cout<<"Performed "<<batch<<" total batches\n";
@@ -571,6 +574,7 @@ void SANA::collectBatches(uint numThreads, STAT *scoreBatchMeans, STAT *pBadBatc
             StatAddSample(scoreBatchMeans, batch2Returns.score);
             StatAddSample(pBadBatchMeans, batch2Returns.pBad);
         }
+        currentScore = eval(A);
         return;
     }
 
@@ -760,12 +764,12 @@ void SANA::SANAIteration(score_and_pBad &results) {
     uint actColId;
     do
 	actColId = randActiveColorIdWeightedByNumNbrs();
-    while(_reallyRunning && MAX_STATIONARY && _pickArrayNum[actColToG1ColId[actColId]]==0); // find a color that has non-stationary nodes
+    while(_reallyRunning && MAX_STATIONARY && _pickArrayNum && _pickArrayNum[actColToG1ColId[actColId]]==0); // find a color
+    // that has non-stationary nodes
     double p = randomReal(gen);
     if (p < actColToChangeProb[actColId]) performChange(actColId, results);
     else performSwap(actColId, results);
     assert(!std::isnan(currentScore));
-    assert(currentScore == currentScore);
     if(std::isinf(currentScore)) {
 	throw runtime_error("currentScore is inf; this might happen if there are self-loops (not otherwise detected)");
     }
@@ -787,73 +791,68 @@ uint SANA::randActiveColorIdWeightedByNumNbrs() {
     return iter - actColToAccumProbCutpoint.begin();
 }
 
+
 uint SANA::randomG1NodeWithActiveColor(uint actColId, bool dynamic) const {
     uint g1ColId = actColToG1ColId[actColId];
-    if(MAX_STATIONARY == MAX_ST_INVALID) {
-	char *s = getenv("MAX_STATIONARY");
-	if(s) printf("Setting MAX_ST to %u\n", MAX_STATIONARY = (uint)atoi(s));
-	else MAX_STATIONARY = 0;
-	assert(MAX_STATIONARY != MAX_ST_INVALID);
-    }
-
     // Stuff for MAX_STATIONARY only
     static bool _init, *_warned;
     static uint *totalDegree, **pickNodeArray, **numPickEntries, *prevIndex;
     if(MAX_STATIONARY && !_init) {
-	cerr << "PICK_NODE_ARARY INIT STUFF" << endl;
-	_warned = (bool*)calloc(sizeof(bool),G1->numColors());
-	totalDegree = (uint*)calloc(sizeof(uint),G1->numColors());
-	prevIndex   = (uint*)calloc(sizeof(uint),G1->numColors());
-	numPickEntries = (uint**)calloc(sizeof(uint*),G1->numColors());
-	pickNodeArray  = (uint**)calloc(sizeof(uint*),G1->numColors());
-	for(uint c=0; c<G1->numColors(); c++) {
-	    numPickEntries[c]= (uint*)calloc(sizeof(uint), G1->numNodesWithColor(c));
-	    // This loop computes totalDegree[c], among other things
-	    for(uint i=0; i<G1->numNodesWithColor(c); i++) {
-		uint node = G1->nodeGroupsByColor[c][i];
-		// FIXME: do we need to condition this on the neighbors of the same color as "node"?
-		totalDegree[c] += (numPickEntries[c][i] = G1->adjLists[node].size());
-	    }
-	    totalDegree[c] *= 2;
-	    pickNodeArray[c] = (uint*)calloc(sizeof(uint), totalDegree[c]);
-	    // second loop that USES totalDegree[c] that was computed above.
-	    for(uint i=0; i<G1->numNodesWithColor(c); i++) {
-		uint node = G1->nodeGroupsByColor[c][i];
-		for(uint j=0;j<G1->adjLists[node].size();j++)
-		    pickNodeArray[c][_pickArrayNum[c]++]=i; // need to use INDEX for this color and get node later
-	    }
-	    assert(_pickArrayNum[c] <= totalDegree[c]);
+	    _pickArrayNum = (uint*)calloc(sizeof(uint),G1->numColors());
+	    cerr << "PICK_NODE_ARARY INIT STUFF" << endl;
+	    _warned = (bool*)calloc(sizeof(bool),G1->numColors());
+	    totalDegree = (uint*)calloc(sizeof(uint),G1->numColors());
+	    prevIndex   = (uint*)calloc(sizeof(uint),G1->numColors());
+	    numPickEntries = (uint**)calloc(sizeof(uint*),G1->numColors());
+	    pickNodeArray  = (uint**)calloc(sizeof(uint*),G1->numColors());
+	    for(uint c=0; c<G1->numColors(); c++) {
+	        numPickEntries[c]= (uint*)calloc(sizeof(uint), G1->numNodesWithColor(c));
+	        // This loop computes totalDegree[c], among other things
+	        for(uint i=0; i<G1->numNodesWithColor(c); i++) {
+		        uint node = G1->nodeGroupsByColor[c][i];
+		        // FIXME: do we need to condition this on the neighbors of the same color as "node"?
+		        totalDegree[c] += (numPickEntries[c][i] = G1->adjLists[node].size());
+	        }
+	        totalDegree[c] *= 2;
+	        pickNodeArray[c] = (uint*)calloc(sizeof(uint), totalDegree[c]);
+	        // second loop that USES totalDegree[c] that was computed above.
+	        for(uint i=0; i<G1->numNodesWithColor(c); i++) {
+		        uint node = G1->nodeGroupsByColor[c][i];
+		        for(uint j=0;j<G1->adjLists[node].size();j++)
+		            pickNodeArray[c][_pickArrayNum[c]++]=i; // need to use INDEX for this color and get node later
+	        }
+	        assert(_pickArrayNum[c]>0 && _pickArrayNum[c] <= totalDegree[c]);
 	}
 	_init = true;
     }
 
     uint randNodeIndexOfColor;
     if(MAX_STATIONARY && _reallyRunning && dynamic) {
-	int prevNodeIndex = pickNodeArray[g1ColId][prevIndex[g1ColId]];
-	uint node = G1->nodeGroupsByColor[g1ColId][prevNodeIndex];
-	if(stationary[node] >= MAX_STATIONARY && numPickEntries[g1ColId][prevNodeIndex] > 0) {
-	    // Nuke one entry for the one that was a good move
-	    --numPickEntries[g1ColId][prevNodeIndex];
-	    //printf("%d=>%d ", node, numPickEntries[g1ColId][prevNodeIndex]); // very verbose
-	    //if(numPickEntries[g1ColId][prevNodeIndex] == 0) printf("%d ", node);
-	    assert(_pickArrayNum[g1ColId] > 0);
-	    pickNodeArray[g1ColId][prevIndex[g1ColId]] =
-		pickNodeArray[g1ColId][--_pickArrayNum[g1ColId]]; // move last entry in array to prevIndex position
-	}
-	if(_pickArrayNum[g1ColId] == 0) {
-	    assert(!_warned[g1ColId]);
-	    cerr << "Note: G1 nodes of color "+G1->getColorName(g1ColId)+" are now all stationary\n";
-	    _warned[g1ColId]=true;
-	    assert(_numNonstationaryColors > 0);
-	    --_numNonstationaryColors;
-	    if(_numNonstationaryColors == 0) cout << "All pegs of all colors are now stationary\n";
-	    prevIndex[g1ColId] = 0;
-	} else
-	    prevIndex[g1ColId] = randInt(0, _pickArrayNum[g1ColId]-1);
-	randNodeIndexOfColor = pickNodeArray[g1ColId][prevIndex[g1ColId]];
-    }
+	    int prevNodeIndex = pickNodeArray[g1ColId][prevIndex[g1ColId]];
+	    uint node = G1->nodeGroupsByColor[g1ColId][prevNodeIndex];
+	    if(stationary[node] >= MAX_STATIONARY && numPickEntries[g1ColId][prevNodeIndex] > 0) {
+	        // Nuke one entry for the one that was a good move
+	        --numPickEntries[g1ColId][prevNodeIndex];
+	        //printf("%d=>%d ", node, numPickEntries[g1ColId][prevNodeIndex]); // very verbose
+	        //if(numPickEntries[g1ColId][prevNodeIndex] == 0) printf("%d ", node);
+	        assert(_pickArrayNum[g1ColId] > 0);
+	        pickNodeArray[g1ColId][prevIndex[g1ColId]] =
+		    pickNodeArray[g1ColId][--_pickArrayNum[g1ColId]]; // move last entry in array to prevIndex position
+	    }
+	    if(_pickArrayNum[g1ColId] == 0) {
+	        assert(!_warned[g1ColId]);
+	        cerr << "Note: G1 nodes of color "+G1->getColorName(g1ColId)+" are now all stationary\n";
+	        _warned[g1ColId]=true;
+	        assert(_numNonstationaryColors > 0);
+	        --_numNonstationaryColors;
+	        if(_numNonstationaryColors == 0) cout << "All pegs of all colors are now stationary\n";
+	        prevIndex[g1ColId] = 0;
+	    } else
+	        prevIndex[g1ColId] = randInt(0, _pickArrayNum[g1ColId]-1);
+	    randNodeIndexOfColor = pickNodeArray[g1ColId][prevIndex[g1ColId]];
+        }
     else
-	randNodeIndexOfColor = randInt(0, G1->nodeGroupsByColor[g1ColId].size()-1);
+	    randNodeIndexOfColor = randInt(0, G1->nodeGroupsByColor[g1ColId].size()-1);
     assert(0 <= randNodeIndexOfColor && randNodeIndexOfColor < G1->numNodesWithColor(g1ColId));
     return G1->nodeGroupsByColor[g1ColId][randNodeIndexOfColor];
 }
@@ -953,9 +952,6 @@ void SANA::performChange(uint actColId, score_and_pBad &results) {
         actColToUnassignedG2Nodes[actColId][unassignedVecIndex] = oldHole;
         assignedNodesG2[oldHole] = false;
         assignedNodesG2[newHole] = true;
-        oldHoleLock.unlock();
-        newHoleLock.unlock();
-        lockAlignment.unlock();
 
         lockScore.lock();
         aligEdges                     = newAligEdges;
@@ -974,9 +970,6 @@ void SANA::performChange(uint actColId, score_and_pBad &results) {
         MultiS3::numer                = newMS3Numer;
     } else {
         if(stationary[peg] >= MAX_STATIONARY) stationary[peg]=0; else ++stationary[peg];
-        oldHoleLock.unlock();
-        newHoleLock.unlock();
-        lockAlignment.unlock();
 
         lockScore.lock();
 	    if (needMS3) {
@@ -989,6 +982,9 @@ void SANA::performChange(uint actColId, score_and_pBad &results) {
     results.score = currentScore;
     results.pBad = pBad;
     lockScore.unlock();
+    oldHoleLock.unlock();
+    newHoleLock.unlock();
+    alignmentLock.unlock();
 #if 0
     uint correct = ((MultiS3*)MC->getMeasure("ms3"))->computeNumer(A);
     if(MultiS3::numer==correct)cerr<<'N';else{cerr<<"\nnumer "<<MultiS3::numer<<" off "<<(int)(MultiS3::numer-correct);MultiS3::numer=correct;}
@@ -1023,7 +1019,7 @@ void SANA::performSwap(uint actColId, score_and_pBad &results) {
         hole2 = A[peg2];
         hole2Lock = unique_lock<mutex>{holeLocks[hole2], try_to_lock};
         lockAlignment.unlock();
-    } while (!hole2Lock.owns_lock() && peg1 == peg2);
+    } while (!hole2Lock.owns_lock());
 
     assert(peg1 != peg2);
     assert(hole1 != hole2);
@@ -1087,9 +1083,6 @@ void SANA::performSwap(uint actColId, score_and_pBad &results) {
         stationary[peg1]=stationary[peg2]=0;
         A[peg1]          = hole2;
         A[peg2]          = hole1;
-        hole1Lock.unlock();
-        hole2Lock.unlock();
-        lockAlignment.unlock();
 
         lockScore.lock();
         aligEdges           = newAligEdges;
@@ -1108,9 +1101,6 @@ void SANA::performSwap(uint actColId, score_and_pBad &results) {
     } else {
         if(stationary[peg1]>=MAX_STATIONARY) stationary[peg1]=0; else ++stationary[peg1];
 	    if(stationary[peg2]>=MAX_STATIONARY) stationary[peg2]=0; else ++stationary[peg2];
-        hole1Lock.unlock();
-        hole2Lock.unlock();
-        lockAlignment.unlock();
 
         lockScore.lock();
 	    if (needMS3) {
@@ -1122,6 +1112,9 @@ void SANA::performSwap(uint actColId, score_and_pBad &results) {
     results.score = currentScore;
     results.pBad = pBad;
     lockScore.unlock();
+    hole1Lock.unlock();
+    hole2Lock.unlock();
+    lockAlignment.unlock();
 }
 
 // returns pBad
@@ -1303,8 +1296,11 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
     }
     }
 #if LIBWAYNE
+    unique_lock<mutex> energyLock{energyIncMutex, defer_lock};
+    energyLock.lock();
     StatAddSample(energyIncStats, energyInc);
     avgEnergyInc = StatMean(energyIncStats);
+    energyLock.unlock();
 #endif
     //using max and min here because with extremely low temps I was seeing invalid probabilities
     //note: I did not make this change for the other types of ScoreAggregation::  -Nil

@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Functions
 die(){ (echo "$USAGE"; echo "FATAL ERROR: $@")>&2; exit 1; }
 warn(){ (echo "WARNING: $@")>&2; }
@@ -146,13 +147,24 @@ if [ $# -eq 0 ]; then
     set regression-tests/*/*.sh
 fi
 
+LOG_DIR="regression_test_logs"
+mkdir -p "$LOG_DIR"
+
 for r
 do
     REG_DIR=`dirname $r | head -1`
+	# Extract the directory name and format it for the log file
+    REG_DIR_NAME=$(basename "$(dirname "$r")")
     NEW_FAILS=0
     export REG_DIR
-    echo --- running test "'$r'" ---
-    if eval time $STDBUF $r; then # force output and error to be line buffered
+
+    TEST_NAME=$(basename "$r" .sh)
+	
+    # Construct the log file name with both directory and test name
+    LOG_FILE="$LOG_DIR/${REG_DIR_NAME}_${TEST_NAME}.log"
+
+    echo --- running test "'$r'", output to "'$LOG_FILE'" ---
+    if eval time $STDBUF $r > "$LOG_FILE" 2>&1; then # force output and error to be line buffered
 	:
     else
 	NEW_FAILS=$?
