@@ -22,7 +22,7 @@ double EdgeGeoMean::eval(const Alignment& A) {
 }
 
 double EdgeGeoMean::getEdgeScore(EDGE_T w1, EDGE_T w2) {
-    assert(w1 > 0 && w2 > 0); // for FlyWire, edges are positive
+    //assert(w1 > 0 && w2 > 0); // for FlyWire, edges are positive
     double sgn = w1*w2>=0 ? 1:-1;
     double numer = sgn * sqrt(abs(w1*w2));
     if(denominator) return numer/denominator;

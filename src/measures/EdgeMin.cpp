@@ -23,29 +23,14 @@ double EdgeMin::computeDenom() {
     // NOTE: getTotalEdgeWeight doesn't work because, if the edges are signed, the result is close to zero.
     // double val = min(G1->getTotalEdgeWeight(), G2->getTotalEdgeWeight());
     double ew, sumG1=0, sumG2=0;
-    static bool warned;
 
     // Sum edge weights of both graphs
     for (const auto& edge : *(G1->getEdgeList())) {
 	ew = G1->getEdgeWeight(edge[0], edge[1]);
-	if(ew < 0) {
-	    if(!warned) {
-		cerr << "WARNING: EdgeMin really doesn't make sense with negative edge (eg., " << ew << ")\n";
-		warned=true;
-	    }
-	    ew=std::fabs(ew);
-	}
 	sumG1 += ew;
     }
     for (const auto& edge : *(G2->getEdgeList())) {
 	ew = G2->getEdgeWeight(edge[0], edge[1]);
-	if(ew < 0) {
-	    if(!warned) {
-		cerr << "WARNING: EdgeMin really doesn't make sense with negative edge (eg., " << ew << ")\n";
-		warned=true;
-	    }
-	    ew=std::fabs(ew);
-	}
 	sumG2 += ew;
     }
 
@@ -124,6 +109,12 @@ double EdgeMin::computeSum(const Alignment &A) {
 }
 
 double EdgeMin::getMin(const double w1, const double w2) {
+    static bool warned;
+    if(!warned && (w1<0 || w2<0)) {
+	if(w1<0) cerr << "WARNING: EdgeMin really doesn't make sense with negative edge (eg., " << w1 << ")\n";
+	if(w2<0) cerr << "WARNING: EdgeMin really doesn't make sense with negative edge (eg., " << w2 << ")\n";
+	warned=true;
+    }
     return std::min(w1, w2);
 }
 

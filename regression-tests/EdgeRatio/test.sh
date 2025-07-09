@@ -37,7 +37,7 @@ while [ $TRIES -gt 0 ]; do
 	for network in $nets; do
 	    file="$REG_DIR/$network"
 	    # Test if SANA has aligned the graph to itself
-	    match_nodes=`awk '$1==$2' $file.align | wc -l`
+	    match_nodes=`awk '$1==$2' $file-$MEASURE.align | wc -l`
 	    nodes_count=`awk '{ print $1"\n"$2 }' $file.elw | sort -u | wc -l`
 	    echo "  EXPECTED matching nodes: $nodes_count GOT: $match_nodes"
 	    if (( $match_nodes != $nodes_count )); then

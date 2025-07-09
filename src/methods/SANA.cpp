@@ -53,6 +53,7 @@ using namespace std;
 static double _predictedScore1, _predictedScore2;
 #endif
 
+
 #define THREAD_NUMBER 1 // TODO: MAKE THIS AN ARGUMENT, PLEASE, I DON'T KNOW HOW :pray: -Marcus
 
 // Stuff for MAX_STATIONARY
@@ -291,6 +292,12 @@ SANA::~SANA() {}
 //even for data structures initialized here, any space allocation for them
 //should be done in the constructor, not here, to avoid memory leaks
 void SANA::initDataStructures() {
+    if(MAX_STATIONARY == MAX_ST_INVALID) {
+	char *s = getenv("MAX_STATIONARY");
+	if(s) printf("Setting MAX_ST to %u\n", MAX_STATIONARY = (uint)atoi(s));
+	else MAX_STATIONARY = 0;
+	assert(MAX_STATIONARY != MAX_ST_INVALID);
+    }
     iterationsPerformed = 0;
     numPBadsInBuffer = pBadBufferSum = pBadBufferIndex = 0;
     Alignment alig;
@@ -372,6 +379,9 @@ void SANA::initDataStructures() {
 bool _reallyRunning;
 
 Alignment SANA::run() {
+    initDataStructures();
+    setInterruptSignal();
+
     if(tolerance > 0)
 	return runUsingConfidenceIntervals();
     else
@@ -379,16 +389,13 @@ Alignment SANA::run() {
 }
 
 Alignment SANA::runUsingIterations() {
-    initDataStructures();
-    setInterruptSignal();
-
     long long int maxIters = useIterations ? maxIterations : (long long int) (getIterPerSecond()*maxSeconds);
     double leeway = 2;
     double maxSecondsWithLeeway = maxSeconds * leeway;
 
     long long int iter;
     _reallyRunning=true;
-    for (iter = 0; iter <= maxIters && _numNonstationaryColors>0; iter++) {
+    for (iter = 1; iter <= maxIters && _numNonstationaryColors>0; iter++) {
         Temperature = temperatureFunction(float(iter)/maxIters, TInitial, TDecay);
         score_and_pBad dummy;
         SANAIteration(dummy);
@@ -428,9 +435,6 @@ Alignment SANA::runUsingIterations() {
 #define TOL_SAFETY_MARGIN 1.07 // empirically this seems to cut failure rates to below 5%.
 
 Alignment SANA::runUsingConfidenceIntervals() {
-    initDataStructures();
-    setInterruptSignal();
-
     if(!multi_iteration_only) getIterPerSecond(); // avoid wasting several seconds of CPU time
     iterationsPerStep = 1; // this code doesn't use "steps"
     // FIXME: make all of these changeable on the command line
@@ -465,6 +469,7 @@ Alignment SANA::runUsingConfidenceIntervals() {
 	    if (saveAligAndContOnInterruption) printReportOnInterruption();
 
 	    collectBatches(THREAD_NUMBER, scoreBatchMeans, pBadBatchMeans);
+
 	    batchesPerTemperature += COLLECTION_QUOTA;
 	    batch += COLLECTION_QUOTA;
 
@@ -575,6 +580,7 @@ void SANA::collectBatches(uint numThreads, STAT *scoreBatchMeans, STAT *pBadBatc
             StatAddSample(pBadBatchMeans, batch2Returns.pBad);
         }
         currentScore = eval(A);
+
         return;
     }
 
@@ -762,7 +768,7 @@ void SANA::SANAIteration(score_and_pBad &results) {
     ++iterationsPerformed;
     lock_iterationsPerformed.unlock();
     uint actColId;
-    do
+    do {
 	actColId = randActiveColorIdWeightedByNumNbrs();
     while(_reallyRunning && MAX_STATIONARY && _pickArrayNum && _pickArrayNum[actColToG1ColId[actColId]]==0); // find a color
     // that has non-stationary nodes
