@@ -7,7 +7,9 @@ extern "C" {
 /* Cheap statistics taker and computer */
 
 typedef struct _statistic {
-    int n, numHistBins, *histogram, dataSize;
+    int numHistBins, dataSize;
+    int64_t n;
+    int *histogram;
     Boolean geom, histCumulative, dataSorted;
     double sum, sum2, sum3, geomSum, geomSum2, geomSum3;
     double histMin, histWidth, min, max, *allData;
