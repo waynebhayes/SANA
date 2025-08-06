@@ -79,7 +79,9 @@ METHODS_SRC =   							\
 	src/methods/HillClimbing.cpp    				\
 	src/methods/Method.cpp  					\
 	src/methods/NoneMethod.cpp 					\
-	src/methods/RandomAligner.cpp   				
+	src/methods/RandomAligner.cpp   				\
+	src/methods/SANAThree.cpp              \
+	src/methods/MoveCalculator.cpp
 
 UTILS_SRC = 								\
 	src/utils/NormalDistribution.cpp				\
@@ -160,7 +162,8 @@ METHOD_WRAPPERS_SRC =    						\
 	src/methods/wrappers/WAVEWrapper.cpp				\
 	src/methods/wrappers/PINALOGWrapper.cpp				\
 	src/methods/wrappers/SANAPISWAPWrapper.cpp			\
-	src/methods/wrappers/CytoGEDEVOWrapper.cpp			
+	src/methods/wrappers/CytoGEDEVOWrapper.cpp			\
+	src/methods/wrappers/SanaWrapper.cpp
 
 GOLDILOCKSMETHODS_SRC =   							\
 	src/goldilocksmethods/Ameur.cpp 					\

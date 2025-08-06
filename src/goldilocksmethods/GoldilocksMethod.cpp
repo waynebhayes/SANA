@@ -9,7 +9,7 @@ using namespace std;
 
 //initialization of static members
 multimap<double, double> GoldilocksMethod::allTempToPBad = multimap<double, double> (); 
-SANA* GoldilocksMethod::sana = nullptr;
+SANATwo* GoldilocksMethod::sana = nullptr;
 
 // After several years of observations, it seems that starting with pBad = 0.99 results in too much wasted time at the
 // beginning of the anneal... basically we spin in randomness for about the first 40% of the run time. It appears that

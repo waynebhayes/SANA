@@ -55,21 +55,21 @@ static double _predictedScore1, _predictedScore2;
 static uint MAX_STATIONARY = MAX_ST_INVALID, _numNonstationaryColors, *_pickArrayNum;
 
 //static fields
-bool SANA::saveAligAndExitOnInterruption = false;
-bool SANA::saveAligAndContOnInterruption = false;
-uint SANA::INVALID_ACTIVE_COLOR_ID;
-SANA::SANA(const Graph* G1, const Graph* G2,
+bool SANATwo::saveAligAndExitOnInterruption = false;
+bool SANATwo::saveAligAndContOnInterruption = false;
+uint SANATwo::INVALID_ACTIVE_COLOR_ID;
+SANATwo::SANATwo(const Graph* G1, const Graph* G2,
         double TInitial, double TDecay, double maxSeconds, long long int maxIterations, double tolerance,
 	bool addHillClimbing, MeasureCombination* MC, const string& scoreAggrStr, const Alignment& startA,
         const string& outputFileName, const string& localScoresFileName):
-                Method(G1, G2, "SANA_"+MC->toString()),
+                Method(G1, G2, "SANATwo_"+MC->toString()),
                 startA(startA),
                 addHillClimbing(addHillClimbing),
                 TInitial(TInitial), TDecay(TDecay),
                 wasBadMove(false),
                 maxSeconds(maxSeconds),
                 maxIterations(maxIterations),
-		tolerance(tolerance),
+		        tolerance(tolerance),
                 MC(MC),
                 outputFileName(outputFileName),
                 localScoresFileName(localScoresFileName) {
@@ -193,7 +193,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
 
     // NODE COLOR SYSTEM initialization
     assert(G1->numColors() <= G2->numColors());
-    const bool COL_DBG = true; //print stats about color/neighbor type probabilities
+    constexpr bool COL_DBG = true; //print stats about color/neighbor type probabilities
 
     vector<uint> numSwapNeighborsByG1Color(G1->numColors(), 0);
     vector<uint> numChangeNeighborsByG1Color(G1->numColors(), 0);
@@ -272,14 +272,14 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     actColToUnassignedG2Nodes = vector<vector<uint>> (actColToG1ColId.size());
 }
 
-SANA::~SANA() {}
+SANATwo::~SANATwo() {}
 
 //initialize data structures specific to the starting alignment
 //everything that is alignment-independent should be initialized in the
 //constructor instead
 //even for data structures initialized here, any space allocation for them
 //should be done in the constructor, not here, to avoid memory leaks
-void SANA::initDataStructures() {
+void SANATwo::initDataStructures() {
     if(MAX_STATIONARY == MAX_ST_INVALID) {
 	char *s = getenv("MAX_STATIONARY");
 	if(s) printf("Setting MAX_ST to %u\n", MAX_STATIONARY = (uint)atoi(s));
@@ -366,7 +366,7 @@ void SANA::initDataStructures() {
 
 bool _reallyRunning;
 
-Alignment SANA::run() {
+Alignment SANATwo::run() {
     initDataStructures();
     setInterruptSignal();
 
@@ -376,20 +376,20 @@ Alignment SANA::run() {
 	return runUsingIterations();
 }
 
-Alignment SANA::runUsingIterations() {
-    long long int maxIters = useIterations ? maxIterations : (long long int) (getIterPerSecond()*maxSeconds);
-    double leeway = 2;
-    double maxSecondsWithLeeway = maxSeconds * leeway;
+#define LEEWAY 2
+Alignment SANATwo::runUsingIterations() {
+    const long long int maxIters = useIterations ? maxIterations : static_cast<long long int>(getIterPerSecond() * maxSeconds);
+    const double maxSecondsWithLeeway = maxSeconds * LEEWAY;
 
     long long int iter;
     _reallyRunning=true;
     for (iter = 1; iter <= maxIters && _numNonstationaryColors>0; iter++) {
-        Temperature = temperatureFunction(float(iter)/maxIters, TInitial, TDecay);
+        Temperature = temperatureFunction(static_cast<double>(iter)/static_cast<double>(maxIters), TInitial, TDecay);
         SANAIteration();
         if (saveAligAndExitOnInterruption) break;
         if (saveAligAndContOnInterruption) printReportOnInterruption();
         if (iter%iterationsPerStep == 0) {
-            trackProgress(iter, float(iter)/maxIters);
+            trackProgress(iter, static_cast<double>(iter)/static_cast<double>(maxIters));
             if (not useIterations and timer.elapsed() > maxSecondsWithLeeway
                 // and currentScore-PreviousScore < 0.005
 		) break;
@@ -399,7 +399,7 @@ Alignment SANA::runUsingIterations() {
 #endif
         }
     }
-    trackProgress(iter, float(iter)/maxIters);
+    trackProgress(iter, static_cast<double>(iter)/static_cast<double>(maxIters));
     cout<<"Performed "<<iter<<" total iterations\n";
     if (addHillClimbing) performHillClimbing(10000000LL); //arbitrarily chosen, probably too big.
 
@@ -420,7 +420,7 @@ Alignment SANA::runUsingIterations() {
 #define MIN_CONFIDENCE 0.99999
 #define TOL_SAFETY_MARGIN 1.07 // empirically this seems to cut failure rates to below 5%.
 
-Alignment SANA::runUsingConfidenceIntervals() {
+Alignment SANATwo::runUsingConfidenceIntervals() {
     if(!multi_iteration_only) getIterPerSecond(); // avoid wasting several seconds of CPU time
     iterationsPerStep = 1; // this code doesn't use "steps"
     // FIXME: make all of these changeable on the command line
@@ -432,7 +432,7 @@ Alignment SANA::runUsingConfidenceIntervals() {
     if(confidence < MIN_CONFIDENCE) confidence = MIN_CONFIDENCE; // doesn't add much CPU to increase confidence.
 
     bool verbose = true;
-    if(verbose) printf("SANA::runUsingConfidenceIntervals Parameters: batchSize %d confidence %g tolerance per step %g\n",
+    if(verbose) printf("SANATwo::runUsingConfidenceIntervals Parameters: batchSize %d confidence %g tolerance per step %g\n",
 	batchSize, confidence, tolPerStep);
 
 #if LIBWAYNE
@@ -556,7 +556,7 @@ Alignment SANA::runUsingConfidenceIntervals() {
 }
 
 
-void SANA::performHillClimbing(long long int idleCountTarget) {
+void SANATwo::performHillClimbing(long long int idleCountTarget) {
     long long int iter = 0;
     Temperature = 0;
     numPBadsInBuffer = pBadBufferSum = pBadBufferIndex = 0;
@@ -577,7 +577,7 @@ void SANA::performHillClimbing(long long int idleCountTarget) {
     cout<<"Hill climbing took "<<T.elapsedString()<<"s"<<endl;
 }
 
-void SANA::describeParameters(ostream& sout) const {
+void SANATwo::describeParameters(ostream& sout) const {
     sout << "Temperature goldilocks:" << endl;
     sout << "T_initial: " << TInitial << endl;
     sout << "T_decay: " << TDecay << endl;
@@ -587,11 +587,11 @@ void SANA::describeParameters(ostream& sout) const {
     else sout << "Execution time: " << maxSeconds << "s" << endl;
 }
 
-string SANA::fileNameSuffix(const Alignment& Al) const {
+string SANATwo::fileNameSuffix(const Alignment& Al) const {
     return "_" + extractDecimals(eval(Al),3);
 }
 
-double SANA::temperatureFunction(double fraction, double TInitial, double TDecay) {
+double SANATwo::temperatureFunction(double fraction, double TInitial, double TDecay) {
     if (constantTemp) return TInitial;
 #if 0
     double fraction;
@@ -601,22 +601,22 @@ double SANA::temperatureFunction(double fraction, double TInitial, double TDecay
     return TInitial * exp(-TDecay * fraction);
 }
 
-double SANA::acceptingProbability(double energyInc, double Temperature) {
+double SANATwo::acceptingProbability(double energyInc, double Temperature) {
     return energyInc >= 0 ? 1 : exp(energyInc/Temperature);
 }
 
-double SANA::incrementalMeanPBad() {
+double SANATwo::incrementalMeanPBad() {
     return pBadBufferSum/(double) numPBadsInBuffer;
 }
 
-double SANA::slowMeanPBad() {
+double SANATwo::slowMeanPBad() {
     assert(numPBadsInBuffer>0);
     double sum = 0;
     for (int i = 0; i < numPBadsInBuffer; i++) sum += pBadBuffer[i];
     return sum/(double) numPBadsInBuffer;
 }
 
-double SANA::eval(const Alignment& Al) const { return MC->eval(Al); }
+double SANATwo::eval(const Alignment& Al) const { return MC->eval(Al); }
 
 void sigHandler(int s) {
     string line;
@@ -627,7 +627,7 @@ void sigHandler(int s) {
 		<<"  (2) Save Alignment and Exit"<<endl<<"  (3) Save Alignment and Continue"<<endl<<">> ";
 	    cin >> c;
 	    if (cin.eof()) { // hmm, assume ^D means "save and continue"
-		SANA::saveAligAndContOnInterruption = true;
+		SANATwo::saveAligAndContOnInterruption = true;
 		cin.clear();
 		return;
 	    }
@@ -638,17 +638,17 @@ void sigHandler(int s) {
 	    }
 	    if      (c == 0) cout<<"Continuing..."<<endl;
 	    else if (c == 1) exit(0);
-	    else if (c == 2) SANA::saveAligAndExitOnInterruption = true;
-	    else if (c == 3) SANA::saveAligAndContOnInterruption = true;
+	    else if (c == 2) SANATwo::saveAligAndExitOnInterruption = true;
+	    else if (c == 3) SANATwo::saveAligAndContOnInterruption = true;
 	} while (c < 0 || c > 3);
     }
     else if(s == SIGTERM) // probably sent via top(1), so save and exit
-	SANA::saveAligAndExitOnInterruption = true;
+	SANATwo::saveAligAndExitOnInterruption = true;
     else // any other signal (eg USR1 or something unexpected), save and continue
-	SANA::saveAligAndContOnInterruption = true;
+	SANATwo::saveAligAndContOnInterruption = true;
 }
 
-void SANA::setInterruptSignal() {
+void SANATwo::setInterruptSignal() {
     saveAligAndExitOnInterruption = false;
     struct sigaction sigInt;
     sigInt.sa_handler = sigHandler;
@@ -658,7 +658,7 @@ void SANA::setInterruptSignal() {
     sigaction(SIGTERM, &sigInt, NULL);
     sigaction(SIGHUP, &sigInt, NULL);
 }
-void SANA::printReportOnInterruption() {
+void SANATwo::printReportOnInterruption() {
     saveAligAndContOnInterruption = false; //reset value
     string timestamp = string(currentDateTime()); //necessary to make it not const
     std::replace(timestamp.begin(), timestamp.end(), ' ', '_');
@@ -669,10 +669,10 @@ void SANA::printReportOnInterruption() {
 #ifdef CORES
     Report::saveCoreScore(*G1, *G2, A, this, coreScoreData, outputFileName);
 #endif
-    cout << "Alignment saved. SANA will now continue." << endl;
+    cout << "Alignment saved. SANATwo will now continue." << endl;
 }
 
-void SANA::SANAIteration() {
+void SANATwo::SANAIteration() {
     ++iterationsPerformed;
     uint actColId;
     do {
@@ -688,11 +688,11 @@ void SANA::SANAIteration() {
     }
 }
 
-uint SANA::numActiveColors() const {
+uint SANATwo::numActiveColors() const {
     return actColToChangeProb.size();
 }
 
-uint SANA::randActiveColorIdWeightedByNumNbrs() {
+uint SANATwo::randActiveColorIdWeightedByNumNbrs() {
     if (numActiveColors() == 1) return 0; //optimized special case: monochromatic graphs
     double p = randomReal(gen);
     if (numActiveColors() == 2) //optimized special case: bichromatic graphs
@@ -704,7 +704,7 @@ uint SANA::randActiveColorIdWeightedByNumNbrs() {
     return iter - actColToAccumProbCutpoint.begin();
 }
 
-uint SANA::randomG1NodeWithActiveColor(uint actColId, bool dynamic) const {
+uint SANATwo::randomG1NodeWithActiveColor(uint actColId, bool dynamic) const {
     uint g1ColId = actColToG1ColId[actColId];
     // Stuff for MAX_STATIONARY only
     static bool _init, *_warned;
@@ -769,7 +769,7 @@ uint SANA::randomG1NodeWithActiveColor(uint actColId, bool dynamic) const {
     return G1->nodeGroupsByColor[g1ColId][randNodeIndexOfColor];
 }
 
-void SANA::performChange(uint actColId) {
+void SANATwo::performChange(uint actColId) {
     uint peg = randomG1NodeWithActiveColor(actColId, true);
     uint oldHole = A[peg];
     uint numUnassigWithCol = actColToUnassignedG2Nodes[actColId].size();
@@ -870,7 +870,7 @@ void SANA::performChange(uint actColId) {
 #endif
 }
 
-void SANA::performSwap(uint actColId) {
+void SANATwo::performSwap(uint actColId) {
     uint peg1 = randomG1NodeWithActiveColor(actColId, true);
     uint peg2;
     for (uint i = 0; i < 100; i++) { //each attempt has >=50% chance of success
@@ -893,19 +893,19 @@ void SANA::performSwap(uint actColId) {
         oldMs3Denom = MultiS3::denom;
     }
 
-    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newWecSum           = needWec ? wecSum + WECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newJsSum            = needJs ? jsSum + JSIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newEwecSum          = needEwec ? ewecSum + EWECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newNcSum            = needNC ? ncSum + ncIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, peg1, peg2, hole1, hole2) : -1;
-    double newEdSum            = needEd ? edSum + EdgeDifference::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
-    double newErSum            = needEr ? erSum + EdgeRatio::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
-    double newEgmSum           = needEgm ? egmSum + EdgeGeoMean::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
-    double newEminSum          = needEmin ? eminSum + EdgeMin::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
+    double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
+    double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
+    double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncSwapOp(peg1, peg2, hole1, hole2) : -1.;
+    double newWecSum           = needWec ? wecSum + WECIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
+    double newJsSum            = needJs ? jsSum + JSIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
+    double newEwecSum          = needEwec ? ewecSum + EWECIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
+    double newNcSum            = needNC ? ncSum + ncIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
+    double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, peg1, peg2, hole1, hole2) : -1.;
+    double newEdSum            = needEd ? edSum + EdgeDifference::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1.;
+    double newErSum            = needEr ? erSum + EdgeRatio::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1.;
+    double newEgmSum           = needEgm ? egmSum + EdgeGeoMean::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1.;
+    double newEminSum          = needEmin ? eminSum + EdgeMin::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1.;
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
@@ -964,7 +964,7 @@ void SANA::performSwap(uint actColId) {
 }
 
 // returns pBad
-double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum,
+double SANATwo::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum,
 	double newJsSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges,
 	double newExposedEdgesNumer, double newMS3Numer, double newEdgeDifferenceSum, double newEdgeRatioSum,
 	double newEdgeMinSum, double newEdgeGeoMeanSum) {
@@ -1034,7 +1034,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         // this is a terrible way to compute the max; we should loop through all of them and figure out which is the biggest
         // and in fact we haven't yet integrated icsWeight here yet, so assert so
         assert(icsWeight == 0.0);
-	if(f_betaWeight && beta_value==inf) throw runtime_error("SANA::scoreComparison: beta inconsistency");
+	if(f_betaWeight && beta_value==inf) throw runtime_error("SANATwo::scoreComparison: beta inconsistency");
         // double energyInc = max(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max( s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))), secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))), max(localWeight*((newLocalScoreSum / n1) - (localScoreSum)), max(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
         newCurrentScore += ecWeight?ecWeight * (newAligEdges / g1Edges):0;
@@ -1061,7 +1061,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
     {
         // see comment above in max
         assert(icsWeight == 0.0);
-	if(f_betaWeight && beta_value==inf) throw runtime_error("SANA::scoreComparison: beta inconsistency");
+	if(f_betaWeight && beta_value==inf) throw runtime_error("SANATwo::scoreComparison: beta inconsistency");
         //double energyInc = min(ncWeight* (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), min(min(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), min( s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))), secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))), min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)), min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
 
         newCurrentScore += ecWeight?ecWeight * (newAligEdges / g1Edges):0;
@@ -1108,7 +1108,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
     case ScoreAggregation::maxFactor:
     {
         assert(icsWeight == 0.0);
-	if(f_betaWeight && beta_value==inf) throw runtime_error("SANA::scoreComparison: beta inconsistency");
+	if(f_betaWeight && beta_value==inf) throw runtime_error("SANATwo::scoreComparison: beta inconsistency");
         double maxScore = max(ncWeight*(newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), max(max(ecWeight*(newAligEdges / g1Edges - aligEdges / g1Edges), max(
             s3Weight*((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
@@ -1169,7 +1169,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
     return (movePbad = pBad);
 }
 
-int SANA::aligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
+int SANATwo::aligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
     int res = 0;
     if (G1->hasSelfLoop(peg)) {
         if (G2->hasSelfLoop(oldHole)) res-=G2->getEdgeWeight(oldHole, oldHole);
@@ -1186,9 +1186,9 @@ int SANA::aligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
     return res;
 }
 
-int SANA::aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
+int SANATwo::aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
 #ifdef WEIGHT
-    throw runtime_error("SANA::aligEdgesIncSwapOp should not be called with WEIGHT");
+    throw runtime_error("SANATwo::aligEdgesIncSwapOp should not be called with WEIGHT");
     return 0;
 #else
     int res = 0;
@@ -1243,7 +1243,7 @@ int SANA::aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
 // it 2*(e+1).  That seemed to work better.  So yeah... big ugly hack.
 static int _edgeVal;
 #define SQRDIFF(i,j) ((_edgeVal=G2->getEdgeWeight(i, A[j])), 2*_edgeVal + 1)
-int SANA::squaredAligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
+int SANATwo::squaredAligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
     int res = 0;
     for (uint nbr : G1->adjLists[peg]) {
         // Account for uint edges? Or assume smaller graph is edge value 1?
@@ -1257,7 +1257,7 @@ int SANA::squaredAligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
     return res;
 }
 
-int SANA::squaredAligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
+int SANATwo::squaredAligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     int res = 0;
     for (uint nbr : G1->adjLists[peg1]) {
         int diff = SQRDIFF(hole1, nbr);
@@ -1284,7 +1284,7 @@ int SANA::squaredAligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2
     return res;
 }
 
-int SANA::exposedEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
+int SANATwo::exposedEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
     int res = 0;
     for (uint nbr : G1->adjLists[peg]) {
         if (not G2->hasEdge(oldHole, A[nbr])) --res;
@@ -1293,7 +1293,7 @@ int SANA::exposedEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
     return res;
 }
 
-int SANA::exposedEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
+int SANATwo::exposedEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     int res = 0;
     for (uint nbr : G1->adjLists[peg1]) {
         if (not G2->hasEdge(hole1, A[nbr])) --res;
@@ -1306,7 +1306,7 @@ int SANA::exposedEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     return res;
 }
 
-int SANA::MS3VariantHelper(const uint peg, const uint hole, bool departs){
+int SANATwo::MS3VariantHelper(const uint peg, const uint hole, bool departs){
     int res = 0;
     uint s = hole; // shadow node that u is departing
     if (departs)
@@ -1329,7 +1329,7 @@ int SANA::MS3VariantHelper(const uint peg, const uint hole, bool departs){
 }
 
 // Return the change in NUMERATOR of MS3
-int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
+int SANATwo::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
     int res = 0;
 #if MULTI_PAIRWISE || MULTI_MPI // We still need the prototpye but gut the function if it's not actually needed
     uint pegNeigh, holeNeigh, diff;
@@ -1550,7 +1550,7 @@ int SANA::MS3IncChangeOp(uint peg, uint oldHole, uint newHole) {
 }
 
 // Return change in NUMERATOR only
-int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
+int SANATwo::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
       int res = 0;
 #if MULTI_PAIRWISE || MULTI_MPI
       uint pegNeigh, holeNeigh, diff;
@@ -1926,7 +1926,7 @@ int SANA::MS3IncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     return res;
 }
 
-int SANA::inducedEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
+int SANATwo::inducedEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
     int res = 0;
     for (uint nbr : G2->adjLists[oldHole]) res -= assignedNodesG2[nbr];
     for (uint nbr : G2->adjLists[newHole]) res += assignedNodesG2[nbr];
@@ -1934,15 +1934,15 @@ int SANA::inducedEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
     return res;
 }
 
-double SANA::localScoreSumIncChangeOp(const vector<vector<float>>& sim, uint peg, uint oldHole, uint newHole) {
+double SANATwo::localScoreSumIncChangeOp(const vector<vector<float>>& sim, uint peg, uint oldHole, uint newHole) {
     return sim[peg][newHole] - sim[peg][oldHole];
 }
 
-double SANA::localScoreSumIncSwapOp(const vector<vector<float>>& sim, uint peg1, uint peg2, uint hole1, uint hole2) {
+double SANATwo::localScoreSumIncSwapOp(const vector<vector<float>>& sim, uint peg1, uint peg2, uint hole1, uint hole2) {
     return sim[peg1][hole2] - sim[peg1][hole1] + sim[peg2][hole1] - sim[peg2][hole2];
 }
 
-double SANA::JSIncChangeOp(uint peg, uint oldHole, uint newHole) {
+double SANATwo::JSIncChangeOp(uint peg, uint oldHole, uint newHole) {
     if (jsWeight == 0) return 0;
 
     //eval newJsSum
@@ -1977,7 +1977,7 @@ double SANA::JSIncChangeOp(uint peg, uint oldHole, uint newHole) {
     return change;
 }
 
-double SANA::JSIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
+double SANATwo::JSIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     if (jsWeight == 0) return 0;
 
     //eval swap as two pegs and then loop neighbors
@@ -2053,7 +2053,7 @@ double SANA::JSIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     return change;
 }
 
-double SANA::WECIncChangeOp(uint peg, uint oldHole, uint newHole) {
+double SANATwo::WECIncChangeOp(uint peg, uint oldHole, uint newHole) {
     double res = 0;
     for (uint nbr : G1->adjLists[peg]) {
         if (G2->getEdgeWeight(oldHole, A[nbr])) {
@@ -2068,7 +2068,7 @@ double SANA::WECIncChangeOp(uint peg, uint oldHole, uint newHole) {
     return res;
 }
 
-double SANA::WECIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
+double SANATwo::WECIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     double res = 0;
     for (uint nbr : G1->adjLists[peg1]) {
         if (G2->getEdgeWeight(hole1, A[nbr])) {
@@ -2097,11 +2097,11 @@ double SANA::WECIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     return res;
 }
 
-double SANA::EWECIncChangeOp(uint peg, uint oldHole, uint newHole) {
+double SANATwo::EWECIncChangeOp(uint peg, uint oldHole, uint newHole) {
     return EWECSimCombo(peg, newHole) - EWECSimCombo(peg, oldHole);
 }
 
-double SANA::EWECIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
+double SANATwo::EWECIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     double score = EWECSimCombo(peg1, hole2) + EWECSimCombo(peg2, hole1)
                  - EWECSimCombo(peg1, hole1) - EWECSimCombo(peg2, hole2);
     if (G1->hasEdge(peg1, peg2) and G2->hasEdge(hole1, hole2)) {
@@ -2111,7 +2111,7 @@ double SANA::EWECIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     return score;
 }
 
-double SANA::EWECSimCombo(uint peg, uint hole) {
+double SANATwo::EWECSimCombo(uint peg, uint hole) {
     double score = 0;
     for (uint nbr : G1->adjLists[peg]) {
         if (G2->getEdgeWeight(hole, A[nbr])) {
@@ -2123,14 +2123,14 @@ double SANA::EWECSimCombo(uint peg, uint hole) {
     return score/(2*g1Edges);
 }
 
-int SANA::ncIncChangeOp(uint peg, uint oldHole, uint newHole) {
+int SANATwo::ncIncChangeOp(uint peg, uint oldHole, uint newHole) {
     int change = 0;
     if (trueAWithValidCountAppended[peg] == oldHole) change -= 1;
     if (trueAWithValidCountAppended[peg] == newHole) change += 1;
     return change;
 }
 
-int SANA::ncIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
+int SANATwo::ncIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     int change = 0;
     if (trueAWithValidCountAppended[peg1] == hole1) change -= 1;
     if (trueAWithValidCountAppended[peg2] == hole2) change -= 1;
@@ -2139,7 +2139,7 @@ int SANA::ncIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     return change;
 }
 
-void SANA::trackProgress(long long int iter, double fractionTime, int batches, double batchScore, double batchPbad) {
+void SANATwo::trackProgress(long long int iter, double fractionTime, int batches, double batchScore, double batchPbad) {
     if (!enableTrackProgress) return;
     double elapsedTime = timer.elapsed();
     uint iterationsElapsed = iterationsPerformed-oldIterationsPerformed;
@@ -2201,18 +2201,18 @@ void SANA::trackProgress(long long int iter, double fractionTime, int batches, d
     }
 }
 
-void SANA::setTInitial(double t) { TInitial = t; }
-void SANA::setTFinal(double t) { TFinal = t; }
-void SANA::setTDecayFromTempRange() { TDecay = -log(TFinal/TInitial); }
-void SANA::setDynamicTDecay() { dynamicTDecay = true; }
-void SANA::setMultiOnly() { multi_iteration_only = true; }
+void SANATwo::setTInitial(double t) { TInitial = t; }
+void SANATwo::setTFinal(double t) { TFinal = t; }
+void SANATwo::setTDecayFromTempRange() { TDecay = -log(TFinal/TInitial); }
+void SANATwo::setDynamicTDecay() { dynamicTDecay = true; }
+void SANATwo::setMultiOnly() { multi_iteration_only = true; }
 
-double SANA::getIterPerSecond() {
+double SANATwo::getIterPerSecond() {
     if (not initializedIterPerSecond) initIterPerSecond();
     return iterPerSecond;
 }
 
-void SANA::initIterPerSecond() {
+void SANATwo::initIterPerSecond() {
     initializedIterPerSecond = true;
     cout << "Determining iteration speed...." << endl;
     double totalIps = 0.0;
@@ -2245,7 +2245,7 @@ void SANA::initIterPerSecond() {
     ofs<<"time,score,avgEnergyInc,Temperature,realTemp,pBad,lower,higher,timer"<<endl;
 }
 
-void SANA::constantTempIterations(long long int iterTarget) {
+void SANATwo::constantTempIterations(long long int iterTarget) {
     initDataStructures();
     long long int iter;
     for (iter = 0; iter < iterTarget ; ++iter) {
@@ -2260,10 +2260,12 @@ void SANA::constantTempIterations(long long int iterTarget) {
 This function should return the avg pBad at equilibrium.
 we keep track of the score every certain number of iterations
 if the score went down at least half the time,
-this suggests that the upward trend is over and we are at equilirbium
+this suggests that the upward trend is over and we are at equilibrium
 once we know we are at equilibrium, we use the buffer of pbads to get an average pBad
 'logLevel' can be 0 (no output) 1 (logs result in cerr) or 2 (verbose/debug mode)*/
-double SANA::getEquilibriumPBadAtTemp(double temp, double maxTimeInS, int logLevel) {
+#define NUM_SCORES 11 //the larger 'numScores' is, the stronger evidence of reaching equilibrium. keep this value odd
+#define SAMPLE_INTERVAL 10000
+double SANATwo::getEquilibriumPBadAtTemp(double temp, double maxTimeInS, int logLevel) {
     //new state for the run at fixed temperature
     //assert(temp == temp);
     constantTemp = true;
@@ -2272,21 +2274,17 @@ double SANA::getEquilibriumPBadAtTemp(double temp, double maxTimeInS, int logLev
 
     //note: this is a circular buffer that maintains scores sampled at intervals
     vector<double> scoreBuffer;
-    //the larger 'numScores' is, the stronger evidence of reachign equilibrium. keep this value odd
-    const uint numScores = 11;
     uint iter = 0;
-    uint sampleInterval = 10000;
     bool reachedEquilibrium = false;
     initDataStructures(); //this initializes the timer and resets the pBad buffer
-    bool verbose = (logLevel == 2); //print everything going on, for debugging purposes
     uint verbose_i = 0;
-    if (verbose) cerr<<endl<<"****************************************"<<endl
+    if (logLevel == 2) cerr<<endl<<"****************************************"<<endl
                      <<"starting search for pBad for temp = "<<temp<<endl;
     while (not reachedEquilibrium) {
         SANAIteration();
         iter++;
-        if (iter%sampleInterval == 0) {
-            if (verbose) {
+        if (iter%SAMPLE_INTERVAL == 0) {
+            if (logLevel == 2) {
                 cerr<<verbose_i<<" score: "<<currentScore<<" (avg pBad: "
                     <<slowMeanPBad()<<")"<<endl;
                 verbose_i++;
@@ -2294,45 +2292,45 @@ double SANA::getEquilibriumPBadAtTemp(double temp, double maxTimeInS, int logLev
             //circular buffer behavior
             //(since the buffer is tiny, the cost of shifting everything is negligible)
             scoreBuffer.push_back(currentScore);
-            if (scoreBuffer.size() > numScores) scoreBuffer.erase(scoreBuffer.begin());
-            if (scoreBuffer.size() == numScores) {
+            if (scoreBuffer.size() > NUM_SCORES) scoreBuffer.erase(scoreBuffer.begin());
+            if (scoreBuffer.size() == NUM_SCORES) {
                 //check if we are at eq:
                 //if the score went down more than up, it suggests we are at eq
                 int scoreTrend = 0;
-                for (uint i = 0; i < numScores-1; i++) {
+                for (uint i = 0; i < NUM_SCORES-1; i++) {
                     if (scoreBuffer[i+1] < scoreBuffer[i]) scoreTrend--;
                     if (scoreBuffer[i+1] > scoreBuffer[i]) scoreTrend++;
                 }
                 reachedEquilibrium = (scoreTrend <= 0);
-                if (verbose) {
+                if (logLevel == 2) {
                     cerr<<"scoreTrend = "<<scoreTrend<<endl;
                     if (reachedEquilibrium) {
                         cerr<<endl<<"Reached equilibrium"<<endl<<"scoreBuffer:"<<endl;
-                        for (uint i = 0; i < scoreBuffer.size(); i++) cerr<<scoreBuffer[i]<<" ";
+                        for (const double i : scoreBuffer) cerr<<i<<" ";
                         cerr<<endl;
                     }
                 }
             }
             if (timer.elapsed() > maxTimeInS) {
-                if (true || verbose) {
+                if (true || logLevel == 2) {
                     cerr<<"ran out of time. scoreBuffer:"<<endl;
-                    for (uint i = 0; i < scoreBuffer.size(); i++) cerr<<scoreBuffer[i]<<endl;
+                    for (const double i : scoreBuffer) cerr<<i<<endl;
                     cerr<<endl;
                 }
                 break;
             }
         }
     }
-    double pBadAvgAtEq = slowMeanPBad();
-    double nextIps = (double)iter / (double)timer.elapsed();
-    pair<double, double> nextPair (temp, nextIps);
+    const double pBadAvgAtEq = slowMeanPBad();
+    double nextIps = static_cast<double>(iter) / (double)timer.elapsed();
+    const pair<double, double> nextPair (temp, nextIps);
     ipsList.push_back(nextPair);
     if (logLevel >= 0) {
         cout<<"> getEquilibriumPBadAtTemp("<<temp<<") = "<<pBadAvgAtEq<<" (score: "<<currentScore<<")";
         if (reachedEquilibrium) cout<<" (time: "<<timer.elapsed()<<"s)";
         else cout<<" (didn't detect eq. after "<<maxTimeInS<<"s)";
         cout<<" iterations = "<<iter<<", ips = "<<nextIps<<endl;
-        if (verbose) cerr<<"final result: "<<pBadAvgAtEq<<endl
+        if (logLevel == 2) cerr<<"final result: "<<pBadAvgAtEq<<endl
                          <<"****************************************"<<endl<<endl;
     }
 
@@ -2344,7 +2342,7 @@ double SANA::getEquilibriumPBadAtTemp(double temp, double maxTimeInS, int logLev
     return pBadAvgAtEq;
 }
 
-void SANA::initTau(void) {
+void SANATwo::initTau(void) {
     /* tau = {
     1.000, 0.985, 0.970, 0.960, 0.950, 0.942, 0.939, 0.934, 0.928, 0.920,
     0.918, 0.911, 0.906, 0.901, 0.896, 0.891, 0.885, 0.879, 0.873, 0.867,
