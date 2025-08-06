@@ -509,7 +509,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest() {
     // Request parameters with dummy values to shut up the linter.
     bool twoPegs;
     unsigned peg1 = 0;
-    unsigned peg2 = -1;
+    unsigned peg2 = 0;
     unsigned hole1 = 0;
     unsigned hole2 = 0;
     unsigned activeColorSANA = 0;
@@ -579,6 +579,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest() {
         lockedHoles[hole2] = true;
         break;
     }
+
     return changeRequest{twoPegs, peg1, peg2, hole1, hole2, activeColorSANA, unassignedVecIndex};
 }
 

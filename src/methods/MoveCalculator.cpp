@@ -100,6 +100,8 @@ SANAThree::changeRequest SANAThree::CalculatorHandler::extractRequest() {
     requestProcessed.wait(outputLock, [this] {return !_decisionQueue.empty();});
     const auto request = _decisionQueue.front();
     _decisionQueue.pop();
+    outputLock.unlock();
+
     return request;
 }
 
