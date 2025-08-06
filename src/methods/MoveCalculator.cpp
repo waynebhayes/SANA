@@ -58,7 +58,7 @@ SANAThree::CalculatorHandler::CalculatorHandler(const unsigned threadNumber, SAN
     // else
     _threadVector.reserve(threadNumber);
     for (unsigned i = 0; i < threadNumber; ++i) {
-        _threadVector.emplace_back(thread(_mainLoop, this));
+        _threadVector.emplace_back(&CalculatorHandler::_mainLoop, this);
     }
 }
 

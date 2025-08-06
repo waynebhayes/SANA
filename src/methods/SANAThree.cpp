@@ -391,7 +391,7 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
 		        }
 		    }
 	        }
-        trackProgress(batch * batchSize, tau, T.elapsed(), temperature, lastPBad, batch,
+        trackProgress(batch, tau, T.elapsed(), temperature, lastPBad, batchesPerTemperature,
                       StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
 	    if(tauStep < MAX_TAU_STEP) {
 	        if(StatNumSamples(scoreBatchMeans) < HAPPY_BATCHES) {
