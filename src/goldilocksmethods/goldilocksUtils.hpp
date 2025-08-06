@@ -22,7 +22,7 @@ struct GoldilocksExpParams {
     int numValidationSamples;
 };
 
-void goldilocksMethodComparison(SANA *const sana);
+void goldilocksMethodComparison(SanaWrapper *const sana);
 
 vector<string> formatMethodData(const GoldilocksExpParams& params, string name, bool hasUnifiedRuntime,
                 double TInitial, double TFinal, GoldilocksMethod::Resources TIniRes,

@@ -82,3 +82,9 @@ regression-out
 # Macbook files
 *.DS_Store
 src/*.DS_Store
+/src/methods/refactor code/
+/src/methods/refactor code/SANA.cpp
+/src/methods/refactor code/SANA.hpp
+/src/methods/refactor code/
+/src/methods/refactor code/SANA.cpp
+/src/methods/refactor code/SANA.hpp

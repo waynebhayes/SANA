@@ -38,6 +38,11 @@ int randInt(int low, int high) {
     return dis(gen);
 }
 
+int randInt(int low, int high, mt19937 &gen) {
+    uniform_int_distribution<> dis(low, high);
+    return dis(gen);
+}
+
 int randMod(int n) { return randInt(0, n-1); }
 
 void randomShuffle(vector<uint>& v) {

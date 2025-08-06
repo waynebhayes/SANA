@@ -25,14 +25,14 @@
 using namespace std;
 
 
-class SANA: public Method {
+class SANATwo: public Method {
 
 public:
-    SANA(const Graph* G1, const Graph* G2,
+    SANATwo(const Graph* G1, const Graph* G2,
 	double TInitial, double TDecay, double maxSeconds, long long maxIterations, double tolerance,
         bool addHillClimbing, MeasureCombination* MC, const string& scoreAggrStr,
         const Alignment& optionalStartAlig, const string& outputFileName, const string& localScoresFileName);
-    ~SANA();
+    ~SANATwo();
 
     Alignment run();
     Alignment runUsingIterations();
@@ -41,8 +41,8 @@ public:
     string fileNameSuffix(const Alignment& A) const;
     
     //set temperature decay dynamically
-    void setDynamicTDecay();    
-    void setMultiOnly();    
+    void setDynamicTDecay();
+    void setMultiOnly();
 
     void setTInitial(double t);
     void setTFinal(double t);
@@ -51,12 +51,12 @@ public:
     void setTDecayFromTempRange();
 
     double getEquilibriumPBadAtTemp(double temp, double maxTimeInS = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
-    list<pair<double, double>> ipsList;
 
     //Defining infinity for f_beta
     double inf = std::numeric_limits<double>::infinity();
 
 private:
+    list<pair<double, double>> ipsList;
     Alignment startA;
 
     bool addHillClimbing; //for post-run hill climbing
@@ -76,7 +76,7 @@ private:
 
     //may incorrect probabilities (even negative) if the pbads in the buffer are small enough
     //due to accumulated precision errors of adding and subtracting tiny values from pBadBufferSum
-    double incrementalMeanPBad(); 
+    double incrementalMeanPBad();
 
     //this function adds all the pBads in the buffer from scratch and divides at the end
     //this takes linear time instead of constant, hence the name
@@ -120,7 +120,6 @@ private:
     double Temperature; //shouldn't be capitalized
     double temperatureFunction(double fractionalTime, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double Temperature);
-
 
     double iterPerSecond;
     double getIterPerSecond();
@@ -268,7 +267,7 @@ private:
 
     //Control+C during execution offers options
     //exit, save alignment and exit, save alignment and continue
-    static void setInterruptSignal(); 
+    static void setInterruptSignal();
     void printReportOnInterruption();
 public: //these need to be public to be set from the interruption handler
     static bool saveAligAndExitOnInterruption;

@@ -7,6 +7,7 @@
 #include "../utils/Timer.hpp"
 #include "../methods/NoneMethod.hpp"
 #include "../methods/HillClimbing.hpp"
+#include "../methods/wrappers/SanaWrapper.hpp"
 #include "../methods/SANA.hpp"
 #include "../methods/RandomAligner.hpp"
 #include "../methods/wrappers/NETALWrapper.hpp"
@@ -101,7 +102,7 @@ void MethodSelector::validateRunTimeSpec(ArgumentParser& args) {
     }
 }
 
-SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2, 
+SanaWrapper* MethodSelector::initSANA(const Graph& G1, const Graph& G2, 
         ArgumentParser& args, MeasureCombination& M, string startAligName) {
     string TIniArg = args.strings["-tinitial"];
     string TDecayArg = args.strings["-tdecay"];
@@ -112,7 +113,7 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
     if (goldilocksMethodName == "comparison") {
         Alignment startAlig;
         if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
-        SANA sana(&G1, &G2, 0.0, 0.0, 0, 0, 0.0, 0, &M, 
+        SanaWrapper sana(&G1, &G2, 0.0, 0.0, 0, 0, 0.0, 0, &M, 
                   args.strings["-combinedScoreAs"], startAlig, "", "");
         goldilocksMethodComparison(&sana);
         exit(0);
@@ -151,8 +152,7 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
     Alignment startAlig;
     if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
 
-    SANA* sana = new SANA(&G1, &G2,
-	TInitial, TDecay, maxSeconds, maxIterations, tolerance,
+    SanaWrapper* sana = new SanaWrapper(&G1, &G2, TInitial, TDecay, maxSeconds, maxIterations, tolerance,
         args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"],
         startAlig, args.strings["-o"], args.strings["-localScoresFile"]);
 
