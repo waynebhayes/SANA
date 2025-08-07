@@ -38,8 +38,8 @@ int randInt(int low, int high) {
     return dis(gen);
 }
 
-int randInt(int low, int high, mt19937 &gen) {
-    uniform_int_distribution<> dis(low, high);
+unsigned randUnsigned(unsigned low, unsigned high, mt19937 &gen) {
+    uniform_int_distribution<unsigned> dis(low, high);
     return dis(gen);
 }
 

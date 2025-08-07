@@ -510,7 +510,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest() {
     // Request parameters with dummy values to shut up the linter.
     bool twoPegs;
     unsigned peg1 = 0;
-    unsigned peg2 = 0;
+    unsigned peg2 = -1;
     unsigned hole1 = 0;
     unsigned hole2 = 0;
     unsigned activeColorSANA = 0;
@@ -543,38 +543,43 @@ SANAThree::changeRequest SANAThree::chooseNextRequest() {
         const unsigned activeColorG1 = actColToG1ColId[activeColorSANA];
 
         for (unsigned i = 0; i < 15; i++) {
-            peg1 = G1->getNodesWithColor(activeColorG1)->at(randInt(0, G1->numNodesWithColor(activeColorG1) - 1));
+            peg1 = G1->getNodesWithColor(activeColorG1)->at(randUnsigned(0, G1->numNodesWithColor(activeColorG1) - 1, generator));
             hole1 = alignment[peg1];
             if (not lockedHoles[hole1]) break;
         }
         // If we can't find a peg with an unlocked hole, restart.
         if (lockedHoles[hole1]) continue;
-        lockedHoles[hole1] = true;
 
         // Choose second hole and, if a swap, the second peg.
         if (twoPegs) {
             for (unsigned i = 0; i < 30; i++) {
-                peg2 = G1->getNodesWithColor(activeColorG1)->at(randInt(0, G1->numNodesWithColor(activeColorG1) - 1));
+                peg2 = G1->getNodesWithColor(activeColorG1)->at(randUnsigned(0, G1->numNodesWithColor(activeColorG1) - 1, generator));
                 hole2 = alignment[peg2];
                 if (not lockedHoles[hole2] && peg1 != peg2) break;
             }
             // If we can't find a peg in an unlocked hole that isn't peg1, restart
             if (lockedHoles[hole2] || peg1 == peg2) continue;
-            lockedHoles[hole2] = true;
         }
         else {
+            const unsigned numUnassignedWithColor = actColToUnassignedG2Nodes[activeColorSANA].size();
+
+            // I am pretty sure this is an impossible case, but it doesn't hurt to double-check
+            // -Marcus
+            if (numUnassignedWithColor == 0) continue;
             for (unsigned i = 0; i < 30; i++) {
-                const unsigned numUnassigWithCol = actColToUnassignedG2Nodes[activeColorSANA].size();
-                unassignedVecIndex = randInt(0, numUnassigWithCol-1, generator);
+                unassignedVecIndex = randUnsigned(0, numUnassignedWithColor-1, generator);
                 hole2 = actColToUnassignedG2Nodes[activeColorSANA][unassignedVecIndex];
                 if (not lockedHoles[hole2]) break;
             }
-
+            // If we can't find an unlocked hole
+            if (lockedHoles[hole2]) continue;
         }
 
+        // We have both holes, we can safely lock now.
+        lockedHoles[hole1] = true;
+        lockedHoles[hole2] = true;
         break;
     }
-
     return changeRequest{twoPegs, peg1, peg2, hole1, hole2, activeColorSANA, unassignedVecIndex};
 }
 
