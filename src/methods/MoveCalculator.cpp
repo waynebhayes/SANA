@@ -67,6 +67,7 @@ SANAThree::CalculatorHandler::~CalculatorHandler(){
 
     // Ensures all threads are terminated before deconstruction.
     _calculatorsOn = false;
+    requestSubmitted.notify_all();
     for (thread& t: _threadVector) {
         t.join();
     }
@@ -83,25 +84,22 @@ void SANAThree::CalculatorHandler::submitRequest(changeRequest input) {
     inputLock.lock();
     _scoringQueue.push(input);
     inputLock.unlock();
+    requestSubmitted.notify_one();
 }
 
 SANAThree::changeRequest SANAThree::CalculatorHandler::extractRequest() {
-    // See comment about unique_locks in submitRequest
-    unique_lock<mutex> outputLock (_decisionQueueMutex, defer_lock);
-
     assert(_requestBalance > 0 && "You should not be extracting more requests from CalculatorHandler than you submitted!");
     _requestBalance--;
 
-    // Ideally, _decisionQueue should never be empty. If it is, you're not using enough threads.
-    while (_decisionQueue.empty()) {
-        this_thread::sleep_for(chrono::milliseconds(WAIT_TIME));
-    }
+    // See comment about unique_locks in submitRequest
+    unique_lock<mutex> outputLock (_decisionQueueMutex);
 
-    outputLock.lock();
+    // Explanation: basically, this single line tells the thread to block until decisionQueue is no
+    // longer empty and wake up to test this only whenever the outputLock mutex is unlocked.
+    // Ideally, _decisionQueue should never be empty. If it is, you're not using enough thread
+    requestProcessed.wait(outputLock, [this] {return !_decisionQueue.empty();});
     const auto request = _decisionQueue.front();
     _decisionQueue.pop();
-    outputLock.unlock();
-
     return request;
 }
 
@@ -112,11 +110,8 @@ void SANAThree::CalculatorHandler::_mainLoop() {
 
     while (_calculatorsOn) {
         inputLock.lock();
-        if (_scoringQueue.empty()) {
-            inputLock.unlock();
-            this_thread::sleep_for(chrono::milliseconds(WAIT_TIME));
-            continue;
-        }
+        requestSubmitted.wait(inputLock, [this] {return !_scoringQueue.empty() || !_calculatorsOn;});
+        if (!_calculatorsOn) {break;}
         changeRequest currentRequest = _scoringQueue.front();
         _scoringQueue.pop();
         inputLock.unlock();
@@ -124,6 +119,7 @@ void SANAThree::CalculatorHandler::_mainLoop() {
         outputLock.lock();
         _decisionQueue.push(currentRequest);
         outputLock.unlock();
+        requestProcessed.notify_one();
     }
 }
 

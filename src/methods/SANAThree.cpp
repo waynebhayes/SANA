@@ -251,10 +251,10 @@ void SANAThree::scramble() {
     }
 }
 
-#define BATCH_SIZE (static_cast<long long unsigned>(10 * sqrt(n1*n2) * threadNumber)) // This is probably too small.
+#define BATCH_SIZE (static_cast<long long unsigned>(max(n1,n2))) // This is probably too small.
 #define LEEWAY 1.75
 #define iterationsPerStep 100
-#define temperatureFunction(f, i, d) (i * exp(-d * f)) // I don't like this, surely we can do better?
+#define temperatureFunction(f, i, d) (i * exp(-d * f))
 void SANAThree::runIterations(CalculatorHandler &threadPool) {
     double maxSecondsWithLeeway;
     long long unsigned maxBatches;
@@ -348,7 +348,8 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
 		    StatAddSample(pBadBatchMeans, output.averagePBad);
 
 		    if(StatNumSamples(scoreBatchMeans)>=MIN_BATCHES){
-		        double pBadInterval, scoreInterval = pBadInterval = tolPerStep;
+		        double pBadInterval = tolPerStep;
+		        double scoreInterval = pBadInterval;
 
 		        // The user specifies a *relative* tolerance on the FINAL score... but we don't know what the final
 		        // score will be. Thus, early on when the score is low and pBad is high, we punt to using (effectively)
@@ -363,8 +364,8 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
 
 		        scoreInterval *= relativeMultiplier;
 		        pBadInterval *= relativeMultiplier;
-		        if( StatConfInterval(scoreBatchMeans, confidence) < scoreInterval &&
-			    StatConfInterval(pBadBatchMeans,  confidence) < pBadInterval     ) satisfied = true;
+		        if(StatConfInterval(scoreBatchMeans, confidence) < scoreInterval &&
+			    StatConfInterval(pBadBatchMeans,  confidence) < pBadInterval) satisfied = true;
 		        else if(StatNumSamples(scoreBatchMeans) >= HAPPY_BATCHES) {
 			    // Reset the batch system if the score is increasing steadily, otherwise it can't "converge" without
 			    // an ENORMOUS number of batches to compensate for the "bias" that occurs in early batches.

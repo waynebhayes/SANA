@@ -1,5 +1,6 @@
 #ifndef NEWSANA_HPP
 #define NEWSANA_HPP
+#include <condition_variable>
 #include <mutex>
 #include <thread>
 #include <map>
@@ -112,12 +113,15 @@ private:
         // single use in _singleThreadBatch in the main class because we have no threads to spare.
         // Otherwise, this function should never be accessed directly by SANAThree unless you know
         // what you are doing or have consulted me.
+        // TODO: make this a friend function
         void _assessChange(changeRequest &input) const{
             if (input.twoPegs) _assessSwap(input);
             else _assessMove(input);
         }
     private:
         bool _calculatorsOn;
+        condition_variable requestSubmitted;
+        condition_variable requestProcessed;
         const unsigned _extraThreads;
         int _requestBalance;
         SANAThree &_parent;
