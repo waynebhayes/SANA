@@ -131,7 +131,7 @@ private:
     //if startA is empty, a random alignment is used
     void initDataStructures();
     vector<uint> A;
-    vector<bool> assignedNodesG2;
+    vector<char> assignedNodesG2;
 
     //objective function
     MeasureCombination* MC;
