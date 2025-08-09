@@ -36,11 +36,11 @@ void Graph::addEdge(ushort node1, ushort node2)
 
 //My functions and constructor 
 Graph::Graph(int n) :
-    adjMatrix(vector<vector<bool>> (n, vector<bool>(n))),
+    adjMatrix(vector<vector<char>> (n, vector<char>(n))),
     adjLists(vector<vector<ushort>> (n, vector<ushort>(0)))
     {}
 
-void Graph::setAdjMatrix(vector<bool>& v)
+void Graph::setAdjMatrix(vector<char>& v)
 {
     int k = 0;
     for (unsigned int i = 0; i < this->getNumNodes(); i++)
@@ -135,9 +135,9 @@ void Graph::print_adjLists()
 
 void Graph::reset()
 {
-    // vector<vector<bool>> n(adjMatrix.size(), vector<bool>(adjMatrix.size()));
+    // vector<vector<char>> n(adjMatrix.size(), vector<char>(adjMatrix.size()));
     // adjMatrix = n;
-    for (vector<bool> m:adjMatrix) {
+    for (vector<char> m:adjMatrix) {
         for (uint i = 0; i < m.size(); i++) {
             m[i] = false;
         }
