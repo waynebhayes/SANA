@@ -53,7 +53,7 @@ vector<uint> NodeCorrectness::createTrueAlignment(const Graph& G1, const Graph& 
 
     bool oneToOneError = false;
     bool nodeExistError = false;
-    vector<bool> g2Used(G2.getNumNodes(), false);
+    vector<char> g2Used(G2.getNumNodes(), false);
 
     for(uint i = 0; i < E.size()/2; ++i) {
         string name1 = E[2*i], name2 = E[2*i+1];

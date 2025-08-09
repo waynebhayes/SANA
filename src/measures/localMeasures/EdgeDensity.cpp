@@ -19,7 +19,7 @@ double EdgeDensity::calcEdgeDensity(const Graph* G, uint originNode, uint maxDis
     uint numNodes = G->getNumNodes();
     uint UNINTIALIZED_DISTANCE = numNodes;
     vector<uint> distanceFromOrigin(numNodes, UNINTIALIZED_DISTANCE);
-    vector<bool> visited(numNodes, false);
+    vector<char> visited(numNodes, false);
     queue <uint> Q;
 
     uint numEdgesWithinMaxDistance = 0;
