@@ -177,8 +177,9 @@ private:
     mt19937 generator; // rng
     uniform_real_distribution<> randomReal;
 
-    // To mark holes as off limits for swaps or changes.
-    vector<bool> lockedHoles;
+    // To mark holes as off limits for swaps or changes. Vector<bool> is too slow, so we shall
+    // sacrifice space for speed.
+    vector<char> lockedHoles;
 
     // This is not mine, which is probably why I wish to rewrite it, lol. -Marcus
     vector<double> actColToAccumProbCutpoint;
