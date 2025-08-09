@@ -70,7 +70,7 @@ Alignment HillClimbing::run() {
     uint n1 = G1->getNumNodes(), n2 = G2->getNumNodes();
     vector<uint> A(startA.asVector());
 
-    vector<bool> assignedNodesG2(n2, false);
+    vector<char> assignedNodesG2(n2, false);
     for (uint i = 0; i < n1; i++) {
         assignedNodesG2[A[i]] = true;
     }
