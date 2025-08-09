@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <ios>
 #include <string>
+#include <chrono>
+#include <ctime>
 #include "Timer.hpp"
 using namespace std;
 
@@ -43,3 +45,24 @@ long long Timer::get() {
     return res;
 }
 
+TimerTrue::TimerTrue() = default;
+
+void TimerTrue::start() {
+    startTime = get();
+}
+
+double TimerTrue::elapsed() const {
+    const chrono::time_point<chrono::steady_clock> current = get();
+    const chrono::duration<double> duration = current - startTime;
+    return duration.count();
+}
+
+string TimerTrue::elapsedString() const {
+    ostringstream s;
+    s << fixed << setprecision(3) << elapsed() << "s";
+    return s.str();
+}
+
+chrono::time_point<chrono::steady_clock> TimerTrue::get() {
+    return chrono::steady_clock::now();
+}
