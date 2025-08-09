@@ -165,7 +165,7 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
 }
 
 void SANAThree::initDataStructures() {
-    auto assignedNodesG2 = vector<bool> (n2);
+    auto assignedNodesG2 = vector<char> (n2);
 
     Alignment alig;
     if (startingAlignment.size() != 0) alig = startingAlignment;
@@ -258,7 +258,7 @@ void SANAThree::scramble() {
 void SANAThree::runIterations(CalculatorHandler &threadPool) {
     double maxSecondsWithLeeway;
     long long unsigned maxBatches;
-    Timer T;
+    TimerTrue T;
     T.start();
     double iterationsPerSecond;
     {
@@ -308,7 +308,7 @@ void SANAThree::runIterations(CalculatorHandler &threadPool) {
 #define MIN_CONFIDENCE 0.99999
 #define TOL_SAFETY_MARGIN 1.07 // empirically this seems to cut failure rates to below 5%.
 void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
-    Timer T;
+    TimerTrue T;
     T.start();
 
     // TODO: make all of these changeable on the command line
