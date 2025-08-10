@@ -253,11 +253,11 @@ void SANAThree::scramble() {
 
 #define BATCH_SIZE (static_cast<long long unsigned>(max(n1,n2))) // This is probably too small.
 #define LEEWAY 1.75
-#define iterationsPerStep 100
 #define temperatureFunction(f, i, d) (i * exp(-d * f))
 void SANAThree::runIterations(CalculatorHandler &threadPool) {
     double maxSecondsWithLeeway;
     long long unsigned maxBatches;
+    unsigned batchesPerStep;
     TimerTrue T;
     T.start();
     double iterationsPerSecond;
@@ -268,6 +268,7 @@ void SANAThree::runIterations(CalculatorHandler &threadPool) {
             batches++;
         }
         iterationsPerSecond = BATCH_SIZE * batches / T.elapsed();
+        batchesPerStep = ceil(batches * 30 / T.elapsed());
     }
     if (maxSeconds > 0) {
         maxBatches = ceil(maxSeconds * iterationsPerSecond / BATCH_SIZE);
@@ -277,18 +278,16 @@ void SANAThree::runIterations(CalculatorHandler &threadPool) {
         maxBatches = 1 + maxIterations / BATCH_SIZE;
         maxSecondsWithLeeway = 0;
     }
-
+    T.start();
     long long unsigned iter = 0;
     double temperature = tInitial;
-    trackProgress(iter * BATCH_SIZE, static_cast<double>(iter)/static_cast<double>(maxBatches), T.elapsed(),
-                temperature, 1.);
     for (; iter < maxBatches; iter += 1) {
         temperature = temperatureFunction(static_cast<double>(iter)/static_cast<double>(maxBatches),
                                                  tInitial, tDecay);
         const batchOutput output = collectBatch(threadPool, temperature);
         if (saveAligAndExitOnInterruption) break;
         if (saveAligAndContOnInterruption) printReportOnInterruption();
-        if (iter % iterationsPerStep == 0) {
+        if (iter % batchesPerStep == 0) {
             trackProgress(iter * BATCH_SIZE, static_cast<double>(iter)/static_cast<double>(maxBatches), T.elapsed(),
                 temperature, output.averagePBad);
         }
@@ -612,6 +611,7 @@ void SANAThree::trackProgress(long long unsigned iter, double fractionTime, doub
     }
     const double ips = (iter - lastIterations) / (elapsedTime - oldTimeElapsed);
     oldTimeElapsed = elapsedTime;
+    lastIterations = iter;
 
     printf("%lld (%.5g%%,%.1fs): score = %.3g ips = %.2g, P(%.3g) = %.3g", iter, 100*fractionTime,
         elapsedTime, currentScore, ips, temperature, lastAvgPBad);
