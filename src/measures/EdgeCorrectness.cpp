@@ -39,7 +39,7 @@ double EdgeCorrectness::getIncChangeOp(uint peg, uint oldHole, uint newHole, con
 	res -= G2->getEdgeWeight(A[nbr],oldHole);
 	res += G2->getEdgeWeight(A[nbr],newHole);
     }
-    return res;
+    return res / denominator;
 }
 
 double EdgeCorrectness::getIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2, const Alignment &A) {
