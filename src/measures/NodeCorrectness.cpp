@@ -2,6 +2,8 @@
 #include <vector>
 #include <iostream>
 
+#include "Misc.hpp"
+
 using namespace std;
 
 NodeCorrectness::NodeCorrectness(const vector<uint>& A): Measure(NULL, NULL, "nc"), trueAWithValidCountAppended(A) {}
@@ -53,7 +55,7 @@ vector<uint> NodeCorrectness::createTrueAlignment(const Graph& G1, const Graph& 
 
     bool oneToOneError = false;
     bool nodeExistError = false;
-    vector<char> g2Used(G2.getNumNodes(), false);
+    vector<Boolean> g2Used(G2.getNumNodes(), false);
 
     for(uint i = 0; i < E.size()/2; ++i) {
         string name1 = E[2*i], name2 = E[2*i+1];

@@ -24,7 +24,6 @@
 
 using namespace std;
 
-
 class SANATwo: public Method {
 
 public:
@@ -131,7 +130,7 @@ private:
     //if startA is empty, a random alignment is used
     void initDataStructures();
     vector<uint> A;
-    vector<char> assignedNodesG2;
+    vector<Boolean> assignedNodesG2;
 
     //objective function
     MeasureCombination* MC;

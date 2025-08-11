@@ -3,6 +3,8 @@
 #include <vector>
 #include <queue>
 #include <iostream>
+
+#include "Misc.hpp"
 #include "../../utils/FileIO.hpp"
 
 using namespace std;
@@ -19,7 +21,7 @@ double EdgeDensity::calcEdgeDensity(const Graph* G, uint originNode, uint maxDis
     uint numNodes = G->getNumNodes();
     uint UNINTIALIZED_DISTANCE = numNodes;
     vector<uint> distanceFromOrigin(numNodes, UNINTIALIZED_DISTANCE);
-    vector<char> visited(numNodes, false);
+    vector<Boolean> visited(numNodes, false);
     queue <uint> Q;
 
     uint numEdgesWithinMaxDistance = 0;

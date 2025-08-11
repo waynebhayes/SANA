@@ -267,7 +267,7 @@ SANATwo::SANATwo(const Graph* G1, const Graph* G2,
     }
     //things initialized in initDataStructures because they depend on the starting alignment
     //they have the same size for every run, so we can allocate the size here
-    assignedNodesG2 = vector<char> (n2);
+    assignedNodesG2 = vector<Boolean> (n2);
     totalInducedWeight = vector<uint> (n2,0);
     actColToUnassignedG2Nodes = vector<vector<uint>> (actColToG1ColId.size());
 }
