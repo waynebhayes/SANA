@@ -687,7 +687,7 @@ void SANAThree::trackProgress(long long unsigned iter, double fractionTime, doub
     oldTimeElapsed = elapsedTime;
     lastIterations = iter;
 
-    printf("%lld (%.5g%%,%.1fs): score = %.3g ips = %.2g, P(%.3g) = %.3g", iter, 100*fractionTime,
+    printf("%lld (%.5g%%,%.1fs): score = %.3g ips = %.5g, P(%.3g) = %.3g", iter, 100*fractionTime,
         elapsedTime, currentScore, ips, temperature, lastAvgPBad);
     if(batches) printf(" batches %d bSc %.3g, bpBad %.3g", batches, batchScore, batchPbad);
     printf("\n");
