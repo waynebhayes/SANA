@@ -9,7 +9,7 @@
 
 using namespace std;
 
-#define THREAD_NUMBER 1
+#define THREAD_NUMBER 5
 
 class SanaWrapper: public Method {
 
