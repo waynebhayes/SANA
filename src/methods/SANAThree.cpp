@@ -87,7 +87,7 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
     swapsPerColor.reserve(G1->numColors());
     movesPerColor.reserve(G1->numColors());
     pegsPerColor.reserve(G1->numColors());
-    unassignedHolesPerColor.reserve(G1->numColors());
+    unassignedHolesPerColor = vector<unsigned>(G1->numColors(), 0);
     lockedHoles = vector<set<unsigned>>(G1->numColors());
     lockedPegs = vector<set<unsigned>>(G1->numColors());
     numSwaps = 0;
@@ -157,6 +157,7 @@ void SANAThree::initDataStructures() {
         uint actColId = holeToColorID[g2Node];
         if (actColId != n1) {
             colorUnassignedNodes[actColId].push_back(g2Node);
+            unassignedHolesPerColor[actColId] += 1;
         }
     }
 
@@ -519,7 +520,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest() {
         // these possibilities into the actual possibility.
 
         // Enclosed in brackets so that these temporary variables keep in scope.
-        {
+
             // Calculating peg1. There is a quadratic inequality I use that derives from the fact that
             // cumulativeSwaps(peg1) <= alignmentNumber < cumulativeSwaps(peg1 + 1). Do the math
             // if you are confused, it's a good exercise.
@@ -547,7 +548,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest() {
             // peg2's ID is just the offset from alignmentNumber - cumSwaps(peg1) and then offset
             // again by peg1 + 1;
             peg2colorID = static_cast<unsigned>(alignmentNumber - cumulativeSwaps + peg1colorID + 1);
-        }
+
 
         // Math for making sure SANA stays updated on who has what for node locking purposes.
         if (threadNumber > 1) {
@@ -569,14 +570,16 @@ SANAThree::changeRequest SANAThree::chooseNextRequest() {
             numAdjacentAlignments -= swapsRemoved + movesRemoved;
         }
 
-        peg1 = G1->getNodesWithColor(color)->at(peg1colorID);
-        peg2 = G1->getNodesWithColor(color)->at(peg2colorID);
+        peg1 = (*G1->getNodesWithColor(color))[peg1colorID];
+        peg2 = (*G1->getNodesWithColor(color))[peg2colorID];
         hole1 = alignment[peg1];
         hole2 = alignment[peg2];
     }
     // Move Logic
     else {
         twoPegs = false;
+
+        alignmentNumber -= numSwaps;
 
         // Find the active color
         for (color = 0; color < movesPerColor.size() - 1; color++) {
@@ -616,7 +619,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest() {
             numAdjacentAlignments -= swapsRemoved + movesRemoved;
         }
 
-        peg1 = G1->getNodesWithColor(color)->at(peg1colorID);
+        peg1 = (*G1->getNodesWithColor(color))[peg1colorID];
         hole1 = alignment[peg1];
         hole2 = colorUnassignedNodes[color][hole2unassignedID];
     }
