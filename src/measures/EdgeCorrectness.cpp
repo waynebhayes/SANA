@@ -3,8 +3,6 @@
 #include <string>
 #include <vector>
 
-#include "EdgeMin.hpp"
-
 const Graph* EdgeCorrectness::G1 = nullptr;
 const Graph* EdgeCorrectness::G2 = nullptr;
 double EdgeCorrectness::denominator = 1;

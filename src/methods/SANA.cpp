@@ -893,7 +893,7 @@ void SANATwo::performSwap(uint actColId) {
         oldMs3Denom = MultiS3::denom;
     }
 
-    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
+    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
     double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
     double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
     double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncSwapOp(peg1, peg2, hole1, hole2) : -1.;
