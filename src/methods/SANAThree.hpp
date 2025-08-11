@@ -64,24 +64,28 @@ private:
     struct changeRequest {
         // Request properties
         const bool twoPegs;
+
         const unsigned peg1;
         const unsigned peg2;
         const unsigned hole1;
         const unsigned hole2;
-        const unsigned activeColorSANA;
-        const unsigned unoccupiedHole2ID;
+
+        const unsigned peg1colorID;
+        const unsigned peg2colorID;
+        const unsigned hole2unassignedID;
+
+        const unsigned color;
 
         // Request output
         double energyInc;
 
-        // Constructor to initialize all members
-        changeRequest(bool twoPegs, unsigned peg1, unsigned peg2,
-                      unsigned hole1, unsigned hole2, unsigned activeColorSANA,
-                      unsigned unoccupiedHole2ID)
-            : twoPegs(twoPegs), peg1(peg1), peg2(peg2),
-              hole1(hole1), hole2(hole2), activeColorSANA(activeColorSANA),
-              unoccupiedHole2ID(unoccupiedHole2ID), energyInc(0.0) {
-            energyInc = 0.0;
+        changeRequest(bool two_pegs, unsigned peg1, unsigned peg2, unsigned hole1, unsigned hole2,
+        unsigned peg1colorID, unsigned peg2colorID, unsigned hole2unassignedID,
+        unsigned colorID, double energyInc):
+            twoPegs(two_pegs), peg1(peg1), peg2(peg2), hole1(hole1), hole2(hole2),
+            peg1colorID(peg1colorID), peg2colorID(peg2colorID), hole2unassignedID(hole2unassignedID),
+            color(colorID) {
+            this->energyInc = energyInc;
         }
     };
 
@@ -174,20 +178,24 @@ private:
 
     // THE REQUEST SYSTEM
 
-    mt19937 generator; // rng
+    mt19937_64 generator; // rng
     uniform_real_distribution<> randomReal;
 
-    // To mark holes as off limits for swaps or changes. Vector<bool> is too slow, so we shall
-    // sacrifice space for speed.
-    vector<char> lockedHoles;
+    vector<vector<unsigned>> colorUnassignedNodes;
 
-    // This is not mine, which is probably why I wish to rewrite it, lol. -Marcus
-    vector<double> actColToAccumProbCutpoint;
-    vector<double> actColToChangeProb;
-    vector<uint> actColToG1ColId;
-    vector<vector<uint>> actColToUnassignedG2Nodes;
-    vector<uint> g2NodeToActColId; //data structure used to initialize actColToUnassignedG2Nodes
-    uint INVALID_ACTIVE_COLOR_ID; //arbitrary value bigger than any valid active color id
+    // Keeps track of the total number of alignments, swaps, and moves we have access to as changes
+    uint64_t numAdjacentAlignments;
+    uint64_t numSwaps;
+    vector<uint64_t> swapsPerColor;
+    vector<uint64_t> movesPerColor;
+
+    // Keeps track of how many unlocked pegs and unassigned holes per colorID that we have access to
+    vector<unsigned> pegsPerColor;
+    vector<unsigned> unassignedHolesPerColor;
+
+    // Keeps track of which pegs and holes we have locked (if we have threads) per color:
+    vector<set<unsigned>> lockedPegs;
+    vector<set<unsigned>> lockedHoles;
 
     changeRequest chooseNextRequest();
     void implementLastRequest(double pBad, const changeRequest &input);
