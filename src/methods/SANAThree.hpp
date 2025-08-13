@@ -19,18 +19,16 @@
 using namespace std;
 
 // Big Picture TODO list by priority:
-// 0.) Add thread number as a command line argument
-// 1.) Profile this new version and find if the main thread or the daughters are the bottleneck
+// 1.) Add thread number as a command line argument
 // 2.) Refactor and cleanly implement the stationary node system from 2.0
 // 3.) Fix happy batches system
-// 4.) Refactor the node color system
-// 5.) Figure out how to better track the statistics of the SA process without cluttering up the
+// 4.) Figure out how to better track the statistics of the SA process without cluttering up the
 // SANA class like in the 2.0
-// 6.) Goldilocks functionality
-// 7.) SANAWrapper retired
-// 8.) Better thread error detection and/or experiment with more restrictive locking schemes
-// 9.) Individual node KE system
-// 10.) Multi-pairwise SANA reimplemented
+// 5.) Goldilocks functionality
+// 6.) SANAWrapper retired
+// 7.) Better thread error detection and/or experiment with more restrictive locking schemes
+// 8.) Individual node KE system
+// 9.) Multi-pairwise SANA reimplemented
 // If you have ideas for any of this, my element is @malongo:matrix.org
 // -Marcus
 

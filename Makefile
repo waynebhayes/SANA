@@ -4,7 +4,7 @@ ARCH_FLAGS=$(shell ($(GCC) -v 2>&1; uname -a) | awk '/CYGWIN/{print "-U__STRICT_
 MY_CC = g++$(GCC_VER)
 CXXFLAGS = -I "src/utils" "-DLIBWAYNE=1" -Wall -std=gnu++11 -pthread $(ARCH_FLAGS) #-pg -fno-inline
 
-SANA_VER=2.0
+SANA_VER=3.0
 MAIN = sana$(SANA_VER)
 
 #you can give these on Make's command line, eg "SPARSE=1" or "WEIGHT=1" or "MULTI=1"
@@ -24,13 +24,35 @@ ifeq ($(SPARSE), 1) # this one should be listed first so largest networks are ru
     MAIN := $(MAIN).sparse
 endif
 
+
+ifeq ($(LEGACY), 1)
+    $(info LEGACY is: $(LEGACY))
+    $(info Legacy build detected.)
+ifdef THREADS
+    $(error Multithreading is not supported for legacy SANA.)
+endif
+    CXXFLAGS := $(CXXFLAGS) -DLEGACY
+    MAIN := $(MAIN).legacy
+else
+ifdef THREADS # this is the number of calculator threads
+ifeq ($(THREADS), 2)
+    $(error For efficiency reasons, two threads is not yet a supported amount, as it requires unique programming.)
+else
+    CXXFLAGS := $(CXXFLAGS) "-DTHREADS=$(THREADS)"
+    MAIN := $(MAIN).threads.$(THREADS)
+endif
+else
+    MAIN := $(MAIN).threads.1
+endif
+endif
+
 ifeq ($(STATIC), 1)
     CXXFLAGS := $(CXXFLAGS) -static #-Bstatic for some versions of gcc
     MAIN := $(MAIN).static
 endif
 
 ifeq ($(GDB), 1) # this one should be second-last since the debugging ones run slowly and should be used on smallish networks.
-    CXXFLAGS := $(CXXFLAGS) -ggdb
+    CXXFLAGS := $(CXXFLAGS) -g -O0
     MAIN := $(MAIN).gdb
 else
     CXXFLAGS := $(CXXFLAGS) -O3 # always turn on optimization if not debugging
@@ -61,12 +83,12 @@ endif
 ######## THIS ONE MUST BE LAST to ensure "MAIN=error" when an incompatible combination occurs ##################
 ifeq ($(MULTI), 1)
     ifeq ($(WEIGHT), 1)
-	ERROR="SANA cannot currently use WEIGHT in MULTI-alignments"
-	MAIN=error
+    ERROR="SANA cannot currently use WEIGHT in MULTI-alignments"
+    MAIN=error
     endif
     ifeq ($(CORES), 1)
-	ERROR="SANA cannot currently compute CORES in MULTI-alignments"
-	MAIN=error
+    ERROR="SANA cannot currently compute CORES in MULTI-alignments"
+    MAIN=error
     endif
 endif
 
