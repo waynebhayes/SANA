@@ -9,7 +9,11 @@
 
 using namespace std;
 
+#ifdef THREADS
+#define THREAD_NUMBER THREADS
+#else
 #define THREAD_NUMBER 1
+#endif
 
 class SanaWrapper: public Method {
 
@@ -25,26 +29,17 @@ public:
     Alignment runUsingIterations();
     Alignment runUsingConfidenceIntervals();
 
-    void describeParameters(ostream& stream) const override {modern.describeParameters(stream);}
-    string fileNameSuffix(const Alignment& A) const override {return modern.fileNameSuffix(A);}
+    void describeParameters(ostream& stream) const override;
+    string fileNameSuffix(const Alignment& A) const override;
 
     static void setDynamicTDecay() {featureNotSupported("DynamicTDecay");}
     static void setMultiOnly() {featureNotSupported("multiple_iteration_only");}
 
-    void setTInitial(const double t) {
-        legacy.setTInitial(t);
-        modern.setTInitial(t);
-    }
+    void setTInitial(double t);
 
-    void setTFinal(const double t) {
-        legacy.setTFinal(t);
-        modern.setTFinal(t);
-    }
+    void setTFinal(double t);
 
-    void setTDecayFromTempRange() {
-        legacy.setTDecayFromTempRange();
-        modern.setTDecayFromTempRange();
-    }
+    void setTDecayFromTempRange();
 
     // So far, this is the ONLY public facing function that SANAThree cannot handle, but it is
     // such a dozy that it will have to wait for another time.
@@ -55,7 +50,10 @@ public:
 
 private:
     SANATwo legacy;
+#ifdef LEGACY
+#else
     SANAThree modern;
+#endif
 
     static void featureNotSupported(const string& name) {
         cout << "At this stage, SANA 3.0 does not support " << name << "." << endl;
