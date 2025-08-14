@@ -108,31 +108,30 @@ private:
         // These are the proper getters and setters for CalculatorHandler. Please use this, minding
         // the below comment.
         // -Marcus
-        void submitRequest(changeRequest input);
-        changeRequest extractRequest();
+        batchOutput collectBatch(double temperature);
 
-        // This function is be considered PRIVATE, and hence the underscore. It is public ONLY for a
-        // single use in _singleThreadBatch in the main class because we have no threads to spare.
-        // Otherwise, this function should never be accessed directly by SANAThree unless you know
-        // what you are doing or have consulted me.
-        // TODO: make this a friend function
-        void _assessChange(changeRequest &input) const{
-            if (input.twoPegs) _assessSwap(input);
-            else _assessMove(input);
-        }
     private:
         bool _calculatorsOn;
-        condition_variable requestSubmitted;
+
         condition_variable requestProcessed;
+        condition_variable startBatch;
         const unsigned _extraThreads;
-        int _requestBalance;
+
+        double temperature;
+        double totalEnergy;
+        double totalPBad;
+
+        unsigned long long _inputRequests;
+        unsigned long long _outputRequests;
+
         SANAThree &_parent;
-        mutex _scoringQueueMutex;
-        mutex _decisionQueueMutex;
-        queue<changeRequest> _scoringQueue;
-        queue<changeRequest> _decisionQueue;
+        mutex _requestSystem;
         vector<thread> _threadVector;
         void _mainLoop();
+        void _assessChange(changeRequest& currentRequest) const {
+            if (currentRequest.twoPegs) _assessSwap(currentRequest);
+            else _assessMove(currentRequest);
+        }
         void _assessMove(changeRequest &input) const; // One pin
         void _assessSwap(changeRequest &input) const; // Two pins
     };
@@ -142,6 +141,7 @@ private:
     const double tolerance;
     const unsigned long long maxSeconds;
     const unsigned long long maxIterations;
+    const unsigned long long batchSize;
     const unsigned threadNumber;
     const MeasureCombination *const MC;
     const Alignment startingAlignment; // Give an empty alignment for a scramble
@@ -166,13 +166,6 @@ private:
     void runHillClimbing(CalculatorHandler &threadPool);
 
     void scramble();
-    batchOutput collectBatch(CalculatorHandler &threadPool, const double temperature) {
-        if (threadNumber == 1)
-            return _singleThreadBatch(threadPool, temperature);
-        return _multiThreadBatch(threadPool, temperature);
-    }
-    batchOutput _singleThreadBatch(CalculatorHandler &threadPool, double temperature);
-    batchOutput _multiThreadBatch(CalculatorHandler &threadPool, double temperature);
 
     // THE REQUEST SYSTEM
 

@@ -35,12 +35,8 @@ endif
     MAIN := $(MAIN).legacy
 else
 ifdef THREADS # this is the number of calculator threads
-ifeq ($(THREADS), 2)
-    $(error For efficiency reasons, two threads is not yet a supported amount, as it requires unique programming.)
-else
     CXXFLAGS := $(CXXFLAGS) "-DTHREADS=$(THREADS)"
     MAIN := $(MAIN).threads.$(THREADS)
-endif
 else
     MAIN := $(MAIN).threads.1
 endif
