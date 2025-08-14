@@ -4,11 +4,9 @@
 #include <thread>
 #include <string>
 #include <vector>
-#include <utility>
 #include <fstream>
 #include <iomanip>
 #include <stdexcept>
-#include <unordered_set>
 #include <algorithm>
 #include <random>
 #include <cmath>
@@ -24,11 +22,6 @@
 #include "../Report.hpp"
 #include "../utils/Stats.hpp"
 
-double static inline acceptingProbability(double energyInc, double temperature) {
-    if (temperature == 0.) return energyInc >= 0;
-    return energyInc >= 0 ? 1 : exp(energyInc / temperature);
-}
-
 bool SANAThree::saveAligAndExitOnInterruption = false;
 bool SANAThree::saveAligAndContOnInterruption = false;
 SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double TDecay, double maxSeconds,
@@ -43,6 +36,7 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
     tolerance(tolerance),
     maxSeconds(maxSeconds),
     maxIterations(maxIterations),
+    batchSize(max(n1,n2)),
     threadNumber(threadNumber),
     MC(MC),
     startingAlignment(optionalStartAlig),
@@ -161,8 +155,9 @@ void SANAThree::initDataStructures() {
         }
     }
 
-    currentScore = MC->eval(alig);
     alignment = alig.asVector();
+    if (startingAlignment.size() > 0) scramble();
+    currentScore = MC->eval(alignment);
 }
 
 Alignment SANAThree::runUsingIterations() {
@@ -205,7 +200,7 @@ Alignment SANAThree::run() {
     setInterruptSignal();
 
     // See CalculatorHandler comment as to why this is a local variable.
-    CalculatorHandler threadPool{threadNumber - 1, *this};
+    CalculatorHandler threadPool{threadNumber, *this};
 
     if (tolerance > 0)
         runConfidenceIntervals(threadPool);
@@ -227,7 +222,6 @@ void SANAThree::scramble() {
     }
 }
 
-#define BATCH_SIZE (static_cast<long long unsigned>(max(n1,n2))) // This is probably too small.
 #define LEEWAY 1.75
 #define temperatureFunction(f, i, d) (i * exp(-d * f))
 void SANAThree::runIterations(CalculatorHandler &threadPool) {
@@ -240,18 +234,18 @@ void SANAThree::runIterations(CalculatorHandler &threadPool) {
     {
         unsigned batches = 0;
         while (T.elapsed() < 1.) {
-            collectBatch(threadPool, 0.);
+            threadPool.collectBatch(0.);
             batches++;
         }
-        iterationsPerSecond = BATCH_SIZE * batches / T.elapsed();
+        iterationsPerSecond = batchSize * batches / T.elapsed();
         batchesPerStep = ceil(batches * 30 / T.elapsed());
     }
     if (maxSeconds > 0) {
-        maxBatches = ceil(maxSeconds * iterationsPerSecond / BATCH_SIZE);
+        maxBatches = ceil(maxSeconds * iterationsPerSecond / batchSize);
         maxSecondsWithLeeway = maxSeconds * LEEWAY;
     }
     else {
-        maxBatches = 1 + maxIterations / BATCH_SIZE;
+        maxBatches = 1 + maxIterations / batchSize;
         maxSecondsWithLeeway = 0;
     }
     T.start();
@@ -260,18 +254,19 @@ void SANAThree::runIterations(CalculatorHandler &threadPool) {
     for (; iter < maxBatches; iter += 1) {
         temperature = temperatureFunction(static_cast<double>(iter)/static_cast<double>(maxBatches),
                                                  tInitial, tDecay);
-        const batchOutput output = collectBatch(threadPool, temperature);
+        const batchOutput output = threadPool.collectBatch(temperature);
+        currentScore = MC->eval(alignment);
         if (saveAligAndExitOnInterruption) break;
         if (saveAligAndContOnInterruption) printReportOnInterruption();
         if (iter % batchesPerStep == 0) {
-            trackProgress(iter * BATCH_SIZE, static_cast<double>(iter)/static_cast<double>(maxBatches), T.elapsed(),
+            trackProgress(iter * batchSize, static_cast<double>(iter)/static_cast<double>(maxBatches), T.elapsed(),
                 temperature, output.averagePBad);
         }
         if (maxSecondsWithLeeway != 0. and T.elapsed() > maxSecondsWithLeeway) break;
     }
-    trackProgress(iter * BATCH_SIZE, static_cast<double>(iter)/static_cast<double>(maxBatches), T.elapsed(),
+    trackProgress(iter * batchSize, static_cast<double>(iter)/static_cast<double>(maxBatches), T.elapsed(),
                 temperature, 0.);
-    cout<<"Performed "<<iter * BATCH_SIZE<<" total iterations\n";
+    cout<<"Performed "<<iter * batchSize<<" total iterations\n";
 }
 
 // All of these are purely heuristic -Wayne (I think, at least -Marcus)
@@ -287,7 +282,7 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
     T.start();
 
     // TODO: make all of these changeable on the command line
-    unsigned batch = 0, batchSize = BATCH_SIZE;
+    unsigned batch = 0;
     double tau, tauStep = MAX_TAU_STEP; // dynamically made smaller or bigger as necessary
     assert(tolerance > 0);
     double tolPerStep = tolerance * (tauStep) / TOL_SAFETY_MARGIN;
@@ -295,7 +290,7 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
     if(confidence < MIN_CONFIDENCE) confidence = MIN_CONFIDENCE; // doesn't add much CPU to increase confidence.
 
     bool verbose = true;
-    if(verbose) printf("SANAThree::runConfidenceIntervals Parameters: batchSize %d confidence %g tolerance per step %g\n",
+    if(verbose) printf("SANAThree::runConfidenceIntervals Parameters: batchSize %llu confidence %g tolerance per step %g\n",
 	batchSize, confidence, tolPerStep);
 
     STAT *scoreBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
@@ -304,7 +299,7 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
     long int lastBatchCount=0;
     double lastPBad = 1.0;
     double previousScore = currentScore;
-    double temperature;
+    double temperature = 0;
     for (tau = 0; tau <= 1; tau += tauStep) {
 	    int batchesPerTemperature = 0;
         temperature = temperatureFunction(tau, tInitial, tDecay);
@@ -315,7 +310,8 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
 	        if (saveAligAndExitOnInterruption) break;
 	        if (saveAligAndContOnInterruption) printReportOnInterruption();
 
-	        const batchOutput output = collectBatch(threadPool, temperature);
+	        const batchOutput output = threadPool.collectBatch(temperature);
+	        currentScore = MC->eval(alignment);
 	        lastPBad = output.averagePBad;
 
             ++batch; ++batchesPerTemperature;
@@ -402,81 +398,13 @@ void SANAThree::runHillClimbing(CalculatorHandler &threadPool) {
     Timer T;
     T.start();
 
-    const unsigned long runTime = 1 + HILLCLIMB_DURATION / BATCH_SIZE;
+    const unsigned long runTime = 1 + HILLCLIMB_DURATION / batchSize;
     unsigned long long iter = 0;
     for (; iter < runTime; iter++) {
-        collectBatch(threadPool, 0.);
+        threadPool.collectBatch(0.);
+        currentScore = MC->eval(alignment);
     }
     cout<<"Hill climbing took "<<T.elapsedString()<<"s"<<endl;
-}
-
-SANAThree::batchOutput SANAThree::_singleThreadBatch(CalculatorHandler &threadPool, double temperature) {
-    double scoreTotal = 0;
-    double pBadTotal = 0;
-    for (unsigned long i = 0; i < BATCH_SIZE; i++) {
-        // Here, because we have no threads to spare, we are using a "should be private" CalculatorHandler
-        // function. This is behavior that is not to be replicated in the rest of this code base
-        // unless you have consulted me first.
-        // -Marcus
-        changeRequest request = chooseNextRequest();
-        threadPool._assessChange(request);
-        const double pBad = acceptingProbability(request.energyInc, temperature);
-        implementLastRequest(pBad, request);
-
-        // Update our totals.
-        scoreTotal += currentScore;
-        pBadTotal += pBad;
-    }
-    currentScore = MC->eval(alignment);
-
-    // We handle the compiler the constructor here so that it knows it shouldn't be doing any copying
-    return batchOutput{scoreTotal/BATCH_SIZE, pBadTotal/BATCH_SIZE};
-}
-
-SANAThree::batchOutput SANAThree::_multiThreadBatch(CalculatorHandler &threadPool, double temperature) {
-    double scoreTotal = 0;
-    double pBadTotal = 0;
-
-    // A fresh set of requests for CalculatorHandler to chew on
-    for (unsigned long i = 0; i < threadNumber - 1; i++) {
-        // Feed the threadpool a new request
-        threadPool.submitRequest(chooseNextRequest());
-    }
-
-    // The main loop
-    for (unsigned long i = 0; i < BATCH_SIZE - (threadNumber - 1); i++) {
-        // Feed the threadpool a new request
-        threadPool.submitRequest(chooseNextRequest());
-
-        // Extract and process a new request
-        changeRequest outputRequest = threadPool.extractRequest();
-        const double pBad = acceptingProbability(outputRequest.energyInc, temperature);
-        implementLastRequest(pBad, outputRequest);
-
-        // Update our totals
-        scoreTotal += currentScore;
-        pBadTotal += pBad;
-    }
-
-    // Clean up the requests to bring threadPool back to _requestBalance = 0;
-    for (unsigned long i = 0; i < threadNumber - 1; i++) {
-        // Extract and process a new request
-        changeRequest outputRequest = threadPool.extractRequest();
-        const double pBad = acceptingProbability(outputRequest.energyInc, temperature);
-        implementLastRequest(pBad, outputRequest);
-
-        // Update our totals
-        scoreTotal += currentScore;
-        pBadTotal += pBad;
-    }
-
-    // For a multi-threaded SA where the alignment is changing while energyInc is being calculated,
-    // sometimes small errors in the score will accumulate. This update is to make sure we never get
-    // *too* far out of sync.
-    currentScore = MC->eval(alignment);
-
-    // We handle the compiler the constructor here so that it knows it shouldn't be doing any copying
-    return batchOutput{scoreTotal/BATCH_SIZE, pBadTotal/BATCH_SIZE};
 }
 
 SANAThree::changeRequest SANAThree::chooseNextRequest() {

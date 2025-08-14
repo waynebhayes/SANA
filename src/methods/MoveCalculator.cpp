@@ -46,16 +46,23 @@
 #include "../utils/utils.hpp"
 #include "../Report.hpp"
 
-#define WAIT_TIME 2 // I am uncertain of how long this should be, but it shouldn't be very long.
+double static inline acceptingProbability(const double energyInc, const double temperature) {
+    if (temperature == 0.) return energyInc >= 0;
+    return energyInc >= 0 ? 1 : exp(energyInc / temperature);
+}
 
 SANAThree::CalculatorHandler::CalculatorHandler(const unsigned threadNumber, SANAThree &SANA):
     _extraThreads(threadNumber),
-    _parent(SANA) {
+    _parent(SANA){
     _calculatorsOn = true;
-    _requestBalance = 0;
+    temperature = 0;
+    totalEnergy = 0;
+    totalPBad = 0;
 
-    if (threadNumber == 0) return;
-    // else
+    _inputRequests = _parent.batchSize;
+    _outputRequests = _parent.batchSize;
+
+    if (threadNumber == 0) throw runtime_error("Thread number must be > 0");
     _threadVector.reserve(threadNumber);
     for (unsigned i = 0; i < threadNumber; ++i) {
         _threadVector.emplace_back(&CalculatorHandler::_mainLoop, this);
@@ -67,59 +74,53 @@ SANAThree::CalculatorHandler::~CalculatorHandler(){
 
     // Ensures all threads are terminated before deconstruction.
     _calculatorsOn = false;
-    requestSubmitted.notify_all();
+    startBatch.notify_all();
     for (thread& t: _threadVector) {
         t.join();
     }
 }
 
-void SANAThree::CalculatorHandler::submitRequest(changeRequest input) {
+SANAThree::batchOutput SANAThree::CalculatorHandler::collectBatch(double temperature) {
     // Unique_locking this is horrible overkill for a function this simple, but in case someone
     // chooses to mess with this in the future, I have safety proofed it. The compiler will
     // optimize it out anyway.
-    unique_lock<mutex> inputLock (_scoringQueueMutex, defer_lock);
+    unique_lock<mutex> requestLock (_requestSystem, defer_lock);
 
-    assert(_extraThreads > 0 && "You should not be submitting requests to CalculatorHandler if you have no extra threads");
-    _requestBalance++;
-    inputLock.lock();
-    _scoringQueue.push(input);
-    inputLock.unlock();
-    requestSubmitted.notify_one();
-}
+    this->temperature = temperature;
+    totalEnergy = 0.;
+    totalPBad = 0.;
 
-SANAThree::changeRequest SANAThree::CalculatorHandler::extractRequest() {
-    assert(_requestBalance > 0 && "You should not be extracting more requests from CalculatorHandler than you submitted!");
-    _requestBalance--;
+    _inputRequests = 0;
+    _outputRequests = 0;
+    startBatch.notify_one();
 
-    // See comment about unique_locks in submitRequest
-    unique_lock<mutex> outputLock (_decisionQueueMutex);
-
-    // Explanation: basically, this single line tells the thread to block until decisionQueue is no
-    // longer empty and wake up to test this only whenever the outputLock mutex is unlocked.
-    // Ideally, _decisionQueue should never be empty. If it is, you're not using enough thread
-    requestProcessed.wait(outputLock, [this] {return !_decisionQueue.empty();});
-    const auto request = _decisionQueue.front();
-    _decisionQueue.pop();
-    return request;
+    requestProcessed.wait(requestLock, [this] {return _outputRequests == _parent.batchSize;});
+    return {totalEnergy / _parent.batchSize, totalPBad / _parent.batchSize};
 }
 
 void SANAThree::CalculatorHandler::_mainLoop() {
     // See comment about unique_locks in submitRequest
-    unique_lock<mutex> inputLock (_scoringQueueMutex, defer_lock);
-    unique_lock<mutex> outputLock (_decisionQueueMutex, defer_lock);
+    unique_lock<mutex> requestLock (_requestSystem, defer_lock);
 
     while (_calculatorsOn) {
-        inputLock.lock();
-        requestSubmitted.wait(inputLock, [this] {return !_scoringQueue.empty() || !_calculatorsOn;});
+        requestLock.lock();
+        startBatch.wait(requestLock, [this] {return _inputRequests < _parent.batchSize || !_calculatorsOn;});
         if (!_calculatorsOn) {break;}
-        changeRequest currentRequest = _scoringQueue.front();
-        _scoringQueue.pop();
-        inputLock.unlock();
+        changeRequest currentRequest = _parent.chooseNextRequest();
+        _inputRequests++;
+        requestLock.unlock();
+        startBatch.notify_one();
+
         _assessChange(currentRequest);
-        outputLock.lock();
-        _decisionQueue.push(currentRequest);
-        outputLock.unlock();
-        requestProcessed.notify_one();
+
+        requestLock.lock();
+        totalEnergy += currentRequest.energyInc;
+        const double pBad = acceptingProbability(currentRequest.energyInc, temperature);
+        totalPBad += pBad;
+        _parent.implementLastRequest(pBad, currentRequest);
+        _outputRequests++;
+        requestLock.unlock();
+        requestProcessed.notify_all();
     }
 }
 
