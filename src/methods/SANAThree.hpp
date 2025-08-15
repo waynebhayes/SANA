@@ -159,7 +159,7 @@ private:
     void initDataStructures();
 
     // Main run function and variables
-    vector<unsigned> alignment;
+    Alignment alignment;
     double currentScore;
     void runIterations(CalculatorHandler &threadPool);
     void runConfidenceIntervals(CalculatorHandler &threadPool);
