@@ -61,7 +61,6 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
     }
 
     currentScore = 0.;
-    alignment.reserve(n1);
 
     if (scoreAggrStr != "sum") {
         cerr << "SANA 3.0 alpha does not yet support score aggregation methods other than weighted"
@@ -125,9 +124,8 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
 void SANAThree::initDataStructures() {
     auto assignedNodesG2 = vector<char> (n2);
 
-    Alignment alig;
-    if (startingAlignment.size() != 0) alig = startingAlignment;
-    else alig = Alignment::randomColorRestrictedAlignment(*G1, *G2);
+    if (startingAlignment.size() != 0) alignment = startingAlignment;
+    else alignment = Alignment::randomColorRestrictedAlignment(*G1, *G2);
 
     //init holeToColorID. For each node, we do the following transformations:
     //g2Node -> g2ColorId -> g1ColorId -> actColId
@@ -142,7 +140,7 @@ void SANAThree::initDataStructures() {
 
     //initialize assignedNodesG2 (the size was already set in the constructor)
     for (uint i = 0; i < n2; i++) assignedNodesG2[i] = false;
-    for (uint i = 0; i < n1; i++) assignedNodesG2[alig[i]] = true;
+    for (uint i = 0; i < n1; i++) assignedNodesG2[alignment[i]] = true;
     //initialize actColToUnassignedG2Nodes (the size was already set in the constructor)
     for (uint i = 0; i < colorUnassignedNodes.size(); i++)
         colorUnassignedNodes[i].clear();
@@ -155,8 +153,6 @@ void SANAThree::initDataStructures() {
         }
     }
 
-    alignment = alig.asVector();
-    if (startingAlignment.size() > 0) scramble();
     currentScore = MC->eval(alignment);
 }
 
@@ -210,16 +206,6 @@ Alignment SANAThree::run() {
     if (hillClimbing) runHillClimbing(threadPool);
 
     return alignment;
-}
-
-// Why the big duration? Well, this is the least effortful part of the SANA process.
-// Might as well do it in a way that REALLY scrambles the alignment.
-#define SCRAMBLE_DURATION 1000000000ul
-void SANAThree::scramble() {
-    for (unsigned i = 0; i < min(static_cast<unsigned long>(n1 * n1), SCRAMBLE_DURATION); i++) {
-        changeRequest request = chooseNextRequest();
-        implementLastRequest(1., request);
-    }
 }
 
 #define LEEWAY 1.75

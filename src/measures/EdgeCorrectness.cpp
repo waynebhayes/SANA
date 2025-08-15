@@ -20,7 +20,7 @@ EdgeCorrectness::~EdgeCorrectness() {
 }
 
 double EdgeCorrectness::eval(const Alignment& A) {
-    return A.computeNumAlignedEdges(*G1, *G2)/denominator;
+    return A.computeNumAlignedEdges(*G1, *G2) / denominator;
 }
 
 double EdgeCorrectness::getIncChangeOp(uint peg, uint oldHole, uint newHole, const Alignment &A) {

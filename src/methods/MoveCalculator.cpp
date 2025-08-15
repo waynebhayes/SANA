@@ -90,7 +90,7 @@ SANAThree::batchOutput SANAThree::CalculatorHandler::collectBatch(double tempera
 
     _inputRequests = 0;
     _outputRequests = 0;
-    startBatch.notify_one();
+    startBatch.notify_all();
 
     requestLock.lock();
     requestProcessed.wait(requestLock, [this] {return _outputRequests == _parent.batchSize;});
@@ -105,27 +105,24 @@ void SANAThree::CalculatorHandler::_mainLoop() {
         startBatch.wait(requestLock, [this] {return _inputRequests < _parent.batchSize || !_calculatorsOn;});
         if (!_calculatorsOn) {
             requestLock.unlock();
-            startBatch.notify_all();
             return;
         }
         changeRequest currentRequest = _parent.chooseNextRequest();
         _inputRequests++;
         requestLock.unlock();
-        startBatch.notify_one();
 
         _assessChange(currentRequest);
 
-        requestLock.lock();
-        totalEnergy += currentRequest.energyInc;
         const double pBad = acceptingProbability(currentRequest.energyInc, temperature);
-        totalPBad += pBad;
+        requestLock.lock();
         _parent.implementLastRequest(pBad, currentRequest);
+        totalPBad += pBad;
+        totalEnergy += _parent.currentScore;
         _outputRequests++;
         requestLock.unlock();
-        requestProcessed.notify_all();
+        requestProcessed.notify_one();
         requestLock.lock();
     }
-    startBatch.notify_all();
 }
 
 void SANAThree::CalculatorHandler::_assessMove(changeRequest &input) const {
