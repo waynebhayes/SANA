@@ -76,7 +76,7 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
     // NODE COLOR SYSTEM initialization
 
     assert(G1->numColors() <= G2->numColors());
-    constexpr bool COL_DBG = true; //print stats about color/neighbor type probabilities
+    constexpr bool COL_DBG = false; //print stats about color/neighbor type probabilities
 
     swapsPerColor.reserve(G1->numColors());
     movesPerColor.reserve(G1->numColors());

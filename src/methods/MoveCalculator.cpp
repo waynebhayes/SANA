@@ -70,8 +70,6 @@ SANAThree::CalculatorHandler::CalculatorHandler(const unsigned threadNumber, SAN
 }
 
 SANAThree::CalculatorHandler::~CalculatorHandler(){
-    if (_extraThreads == 0) return;
-
     // Ensures all threads are terminated before deconstruction.
     _calculatorsOn = false;
     startBatch.notify_all();
@@ -94,18 +92,22 @@ SANAThree::batchOutput SANAThree::CalculatorHandler::collectBatch(double tempera
     _outputRequests = 0;
     startBatch.notify_one();
 
+    requestLock.lock();
     requestProcessed.wait(requestLock, [this] {return _outputRequests == _parent.batchSize;});
     return {totalEnergy / _parent.batchSize, totalPBad / _parent.batchSize};
 }
 
 void SANAThree::CalculatorHandler::_mainLoop() {
     // See comment about unique_locks in submitRequest
-    unique_lock<mutex> requestLock (_requestSystem, defer_lock);
+    unique_lock<mutex> requestLock (_requestSystem);
 
     while (_calculatorsOn) {
-        requestLock.lock();
         startBatch.wait(requestLock, [this] {return _inputRequests < _parent.batchSize || !_calculatorsOn;});
-        if (!_calculatorsOn) {break;}
+        if (!_calculatorsOn) {
+            requestLock.unlock();
+            startBatch.notify_all();
+            return;
+        }
         changeRequest currentRequest = _parent.chooseNextRequest();
         _inputRequests++;
         requestLock.unlock();
@@ -121,7 +123,9 @@ void SANAThree::CalculatorHandler::_mainLoop() {
         _outputRequests++;
         requestLock.unlock();
         requestProcessed.notify_all();
+        requestLock.lock();
     }
+    startBatch.notify_all();
 }
 
 void SANAThree::CalculatorHandler::_assessMove(changeRequest &input) const {
