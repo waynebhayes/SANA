@@ -10,7 +10,7 @@
 using namespace std;
 
 #ifdef THREADS
-#define THREAD_NUMBER THREADS
+#define THREAD_NUMBER atoi(getenv("SANA_THREADS"))
 #else
 #define THREAD_NUMBER 1
 #endif

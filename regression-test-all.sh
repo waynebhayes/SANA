@@ -37,7 +37,7 @@ if [ ! -x NetGO/NetGO.awk ]; then
     [ -x NetGO/NetGO.awk ] || die "Still can't find NetGO"
 fi
 
-export SANA_VER=2.0
+export SANA_VER=3.0
 export SANA_EXE="${SANA_EXE:=./sana$SANA_VER}"
 export SANA_DIR="${SANA_DIR:=`/bin/pwd`}"
 MAKE=false
