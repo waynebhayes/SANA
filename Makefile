@@ -26,7 +26,6 @@ endif
 
 
 ifeq ($(LEGACY), 1)
-    $(info LEGACY is: $(LEGACY))
     $(info Legacy build detected.)
 ifdef THREADS
 	$(error Multithreading is not supported for legacy SANA.)

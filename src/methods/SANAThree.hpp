@@ -123,6 +123,7 @@ private:
 
         unsigned long long _inputRequests;
         unsigned long long _outputRequests;
+        unsigned long long _pBadTotal;
 
         SANAThree &_parent;
         mutex _requestSystem;

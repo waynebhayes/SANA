@@ -46,7 +46,7 @@
 #include "../utils/utils.hpp"
 #include "../Report.hpp"
 
-double static inline acceptingProbability(const double energyInc, const double temperature) {
+double static acceptingProbability(const double energyInc, const double temperature) {
     if (temperature == 0.) return energyInc >= 0;
     return energyInc >= 0 ? 1 : exp(energyInc / temperature);
 }
@@ -90,11 +90,13 @@ SANAThree::batchOutput SANAThree::CalculatorHandler::collectBatch(double tempera
 
     _inputRequests = 0;
     _outputRequests = 0;
+    _pBadTotal = 0;
     startBatch.notify_all();
 
     requestLock.lock();
     requestProcessed.wait(requestLock, [this] {return _outputRequests == _parent.batchSize;});
-    return {totalEnergy / _parent.batchSize, totalPBad / _parent.batchSize};
+    if (_pBadTotal == 0) _pBadTotal = 1;
+    return {totalEnergy / _parent.batchSize, totalPBad / _pBadTotal};
 }
 
 void SANAThree::CalculatorHandler::_mainLoop() {
@@ -116,7 +118,10 @@ void SANAThree::CalculatorHandler::_mainLoop() {
         const double pBad = acceptingProbability(currentRequest.energyInc, temperature);
         requestLock.lock();
         _parent.implementLastRequest(pBad, currentRequest);
-        totalPBad += pBad;
+        if (currentRequest.energyInc < 0) {
+            totalPBad += pBad;
+            _pBadTotal++;
+        }
         totalEnergy += _parent.currentScore;
         _outputRequests++;
         requestLock.unlock();

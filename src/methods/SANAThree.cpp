@@ -224,7 +224,7 @@ void SANAThree::runIterations(CalculatorHandler &threadPool) {
             batches++;
         }
         iterationsPerSecond = batchSize * batches / T.elapsed();
-        batchesPerStep = ceil(batches * 30 / T.elapsed());
+        batchesPerStep = ceil(batches * 10 / T.elapsed());
     }
     if (maxSeconds > 0) {
         maxBatches = ceil(maxSeconds * iterationsPerSecond / batchSize);
