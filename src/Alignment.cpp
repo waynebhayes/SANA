@@ -1,6 +1,5 @@
 #include "Alignment.hpp"
 #include "Graph.hpp"
-#include "Misc.hpp"
 #include "utils/utils.hpp"
 #include "utils/FileIO.hpp"
 using namespace std;
@@ -101,7 +100,7 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
             A[G1.getNameIndex(nodeG1)] = G2.getNameIndex(nodeG2);
         }
     }
-    vector<Boolean> G2AssignedNodes(n2, false);
+    vector<bool> G2AssignedNodes(n2, false);
     for (uint i = 0; i < n1; i++) {
         if (A[i] != n2) {
             if (G2AssignedNodes[A[i]]) throw runtime_error("two G1 nodes map to the same G2 node");
@@ -219,7 +218,7 @@ void Alignment::compose(const Alignment& other) {
 bool Alignment::isCorrectlyDefined(const Graph& G1, const Graph& G2) {
     uint n1 = G1.getNumNodes();
     uint n2 = G2.getNumNodes();
-    vector<Boolean> G2AssignedNodes(n2, false);
+    vector<bool> G2AssignedNodes(n2, false);
     vector<uint> colorMap = G1.myColorIdsToOtherGraphColorIds(G2);
 
     if (A.size() != n1) return false;
@@ -235,7 +234,7 @@ bool Alignment::isCorrectlyDefined(const Graph& G1, const Graph& G2) {
 
 void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) {
     uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();
-    vector<Boolean> G2AssignedNodes(n2, false);
+    vector<bool> G2AssignedNodes(n2, false);
     vector<uint> colorMap = G1.myColorIdsToOtherGraphColorIds(G2);
     int count = 0;
     if (A.size() != n1) 

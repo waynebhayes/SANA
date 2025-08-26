@@ -11,6 +11,7 @@ public:
     static double getIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2, const Alignment &A);
 
 private:
+    int denominatorGraph;
     static const Graph *G1, *G2;
     static double denominator;
 };

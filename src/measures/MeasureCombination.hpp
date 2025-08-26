@@ -19,12 +19,11 @@ public:
     ~MeasureCombination();
     double eval(const Alignment& A) const;
     double eval(const string& measureName, const Alignment& A) const;
-    void addMeasure(Measure* m);
     void addMeasure(Measure* m, double weight);
+    void addMeasure(Measure* m);
     void printWeights(ostream& ofs) const;
     void printMeasures(const Alignment& A, ostream& ofs) const;
     double getWeight(const string& measureName) const;
-    double getWeight(int i) const;
     Measure* getMeasure(const string& measureName) const;
     Measure* getMeasure(int i) const;
     bool containsMeasure(const string& measureName) const;

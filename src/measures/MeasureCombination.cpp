@@ -134,16 +134,13 @@ double MeasureCombination::getWeight(const string& measureName) const {
     }
     throw runtime_error("Measure not found.");
 }
-double MeasureCombination::getWeight(const int i) const {
-    return weights[i];
-}
 Measure* MeasureCombination::getMeasure(const string& measureName) const {
     for (auto m : measures) {
         if (m->getName() == measureName) return m;
     }
     throw runtime_error("Measure not found.");
 }
-Measure* MeasureCombination::getMeasure(const int i) const {
+Measure* MeasureCombination::getMeasure(int i) const {
     return measures[i];
 }
 uint MeasureCombination::numMeasures() const {

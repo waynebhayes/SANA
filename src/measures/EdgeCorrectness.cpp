@@ -12,15 +12,20 @@ EdgeCorrectness::EdgeCorrectness(const Graph* G1, const Graph* G2, int graphNum)
     switch (graphNum) {
         case 1: denominator = G1->getNumEdges(); break;
         case 2: denominator = G2->getNumEdges(); break;
-        default: Fatal("unknown graphNum %d in EdgeCorrectness::eval", graphNum);
+        default: Fatal("unknown graphNum %d in EdgeCorrectness::EdgeCorrecteness", graphNum);
     }
+    denominatorGraph = graphNum;
 }
 
 EdgeCorrectness::~EdgeCorrectness() {
 }
 
 double EdgeCorrectness::eval(const Alignment& A) {
-    return A.computeNumAlignedEdges(*G1, *G2) / denominator;
+    switch(denominatorGraph) {
+        case 1: return (double) A.computeNumAlignedEdges(*G1, *G2)/G1->getNumEdges(); break;
+        case 2: return (double) A.computeNumAlignedEdges(*G1, *G2)/G2->getNumEdges(); break;
+        default: Fatal("unknown denominatorGraph %d in EdgeCorrectness::eval", denominatorGraph); return 0; break;
+    }
 }
 
 double EdgeCorrectness::getIncChangeOp(uint peg, uint oldHole, uint newHole, const Alignment &A) {

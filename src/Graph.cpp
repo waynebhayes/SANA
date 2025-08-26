@@ -16,8 +16,6 @@
 #include <unistd.h>
 #include <regex>
 
-#include "Misc.hpp"
-
 #ifdef MULTI_MPI
 #include "Alignment.hpp" // alignment needed for pruning
 #endif
@@ -317,7 +315,7 @@ vector<uint> Graph::degreeDistribution() const {
 bool _isBiggerCC(const vector<uint>& a, const vector<uint>& b) { return a.size()>b.size(); }
 vector<vector<uint>> Graph::connectedComponents() const {
     uint n = getNumNodes();
-    vector<Boolean> nodesAreChecked(n, false);
+    vector<bool> nodesAreChecked(n, false);
     vector<uint> nodes;
     nodes.reserve(n);
     for (uint i = 0; i < n; ++i) nodes.push_back(i);
@@ -361,7 +359,7 @@ uint Graph::numEdgesInNodeInducedSubgraph(const vector<uint>& subgraphNodes) con
 vector<uint> Graph::numEdgesAroundByLayers(uint node, uint maxDist) const {
     uint n = getNumNodes();
     vector<uint> distances(n, n);
-    vector<Boolean> visited(n, false);
+    vector<bool> visited(n, false);
     distances[node] = 0;
     queue<uint> Q;
     Q.push(node);

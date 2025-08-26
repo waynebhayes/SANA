@@ -50,7 +50,7 @@ ifeq ($(GDB), 1) # this one should be second-last since the debugging ones run s
     CXXFLAGS := $(CXXFLAGS) -g -O0
     MAIN := $(MAIN).gdb
 else
-    CXXFLAGS := $(CXXFLAGS) -O3 -flto # always turn on optimization if not debugging, ftlo is linktime optimization
+    CXXFLAGS := $(CXXFLAGS) -O3 # always turn on optimization if not debugging
 endif
 
 ifeq ($(CORES), 1) # CORES should be listed last to ensure it's used on the smallest networks during regression tests.

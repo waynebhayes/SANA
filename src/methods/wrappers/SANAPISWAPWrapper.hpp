@@ -2,12 +2,12 @@
 #define SANAPISWAPWRAPPER_HPP
 
 #include <cassert>
-#include "PISwapWrapper.hpp"
 #include "SanaWrapper.hpp"
 #include "WrappedMethod.hpp"
-#include "../SANA.hpp"
+#include "PISwapWrapper.hpp"
 #include "../../arguments/ArgumentParser.hpp"
 #include "../../measures/MeasureCombination.hpp"
+#include "../SANA.hpp"
 
 using namespace std;
 

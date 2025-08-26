@@ -61,31 +61,31 @@ string Graph::getName() const {
 
 Graph::Graph() :
     edgeList(vector<vector<ushort> > (0)),
-    adjMatrix(vector<vector<Boolean> > (0)),
+    adjMatrix(vector<vector<bool> > (0)),
     adjLists(vector<vector<ushort> > (0)),
     decimal_representation(0),
-    lockedList(vector<Boolean> (0)),
+    lockedList(vector<bool> (0)),
     lockedTo(vector<string>(0)),
     lockedCount(0)
     {}
 
 Graph::Graph(const Graph& G) {
     edgeList = vector<vector<ushort> > (G.edgeList);
-    adjMatrix = vector<vector<Boolean> > (G.adjMatrix);
+    adjMatrix = vector<vector<bool> > (G.adjMatrix);
     adjLists = vector<vector<ushort> > (G.adjLists);
     decimal_representation = G.decimal_representation;
     connectedComponents = vector<vector<ushort> > (G.connectedComponents);
-    lockedList = vector<Boolean> (G.lockedList);
+    lockedList = vector<bool> (G.lockedList);
     lockedTo = vector<string> (G.lockedTo);
     lockedCount = G.lockedCount;
 }
 
 Graph::Graph(uint n, const vector<vector<ushort> > edges) {
     adjLists = vector<vector<ushort> > (n, vector<ushort> (0));
-    adjMatrix = vector<vector<Boolean> > (n, vector<Boolean> (n, false));
+    adjMatrix = vector<vector<bool> > (n, vector<bool> (n, false));
     edgeList = edges;
 
-    lockedList = vector<Boolean> (n, false);
+    lockedList = vector<bool> (n, false);
     lockedTo = vector<string> (n, "");
     lockedCount = 0;
 
@@ -112,9 +112,9 @@ uint Graph::getNumConnectedComponents() const {
     return connectedComponents.size();
 }
 
-void Graph::getAdjMatrix(vector<vector<Boolean> >& adjMatrixCopy) const {
+void Graph::getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const {
     uint n = getNumNodes();
-    adjMatrixCopy = vector<vector<Boolean> > (n, vector<Boolean> (n));
+    adjMatrixCopy = vector<vector<bool> > (n, vector<bool> (n));
     for (uint i = 0; i < n; i++) {
         for (uint j = 0; j < n; j++) adjMatrixCopy[i][j] = adjMatrix[i][j];
     }
@@ -172,9 +172,9 @@ void Graph::loadGwFile(const string& fileName) {
     }
 
     adjLists = vector<vector<ushort> > (n, vector<ushort>(0));
-    adjMatrix = vector<vector<Boolean> > (n, vector<Boolean>(n, false));
+    adjMatrix = vector<vector<bool> > (n, vector<bool>(n, false));
     edgeList = vector<vector<ushort> > (m, vector<ushort>(2));
-    lockedList = vector<Boolean> (n, false);
+    lockedList = vector<bool> (n, false);
     lockedTo = vector<string> (n, "");
 
     //read edges
@@ -256,7 +256,7 @@ Graph Graph::nodeInducedSubgraph(const vector<ushort>& nodes) const {
     unordered_set<ushort> nodeSet(nodes.begin(), nodes.end());
     Graph G;
     G.adjLists = vector<vector<ushort> > (n, vector<ushort> (0));
-    G.adjMatrix = vector<vector<Boolean> > (n, vector<Boolean> (n, false));
+    G.adjMatrix = vector<vector<bool> > (n, vector<bool> (n, false));
     //only add edges between induced nodes
     for (const auto& edge: edgeList) {
         ushort node1 = edge[0], node2 = edge[1];
@@ -382,7 +382,7 @@ vector<ushort> Graph::numNodesAround(ushort node, ushort maxDist) const {
 vector<ushort> Graph::numEdgesAround(ushort node, ushort maxDist) const {
     uint n = getNumNodes();
     vector<ushort> distances(n, n);
-    vector<Boolean> visited(n, false);
+    vector<bool> visited(n, false);
     distances[node] = 0;
     queue<ushort> Q;
     Q.push(node);
@@ -973,7 +973,7 @@ bool Graph::sameNodeNames(const Graph& other) const {
 void Graph::setLockedList(vector<string>& nodes, vector<string> & pairs){
     map<string,ushort> nodeMap = getNodeNameToIndexMap();
     const int size = nodeMap.size();
-    vector<Boolean> locked (size, false);
+    vector<bool> locked (size, false);
     vector<string> lockPairs (size, "");
     for(uint i = 0; i < nodes.size(); i++){
         ushort index = nodeMap[nodes[i]];
@@ -985,7 +985,7 @@ void Graph::setLockedList(vector<string>& nodes, vector<string> & pairs){
     lockedCount = nodes.size();
 }
 
-vector<Boolean>& Graph::getLockedList(){
+vector<bool>& Graph::getLockedList(){
     return lockedList;
 }
 bool Graph::isLocked(uint index)
@@ -1005,14 +1005,14 @@ int Graph::getLockedCount(){
 //My functions and constructor 
 Graph::Graph(int n) :
     edgeList(vector<vector<ushort> > (0)),
-    adjMatrix(vector<vector<Boolean>> (n, vector<Boolean>(n))),
+    adjMatrix(vector<vector<bool>> (n, vector<bool>(n))),
     adjLists(vector<vector<ushort>> (n, vector<ushort>(0))),
-    lockedList(vector<Boolean> (0)),
+    lockedList(vector<bool> (0)),
     lockedTo(vector<string>(0)),         
     lockedCount(0)
     {}
 
-void Graph::setAdjMatrix(vector<Boolean>& v)
+void Graph::setAdjMatrix(vector<bool>& v)
 {
     int k = 0;
     for (unsigned int i = 0; i < this->getNumNodes(); i++)

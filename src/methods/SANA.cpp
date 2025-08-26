@@ -193,7 +193,7 @@ SANATwo::SANATwo(const Graph* G1, const Graph* G2,
 
     // NODE COLOR SYSTEM initialization
     assert(G1->numColors() <= G2->numColors());
-    constexpr bool COL_DBG = true; //print stats about color/neighbor type probabilities
+    const bool COL_DBG = true; //print stats about color/neighbor type probabilities
 
     vector<uint> numSwapNeighborsByG1Color(G1->numColors(), 0);
     vector<uint> numChangeNeighborsByG1Color(G1->numColors(), 0);
@@ -267,7 +267,7 @@ SANATwo::SANATwo(const Graph* G1, const Graph* G2,
     }
     //things initialized in initDataStructures because they depend on the starting alignment
     //they have the same size for every run, so we can allocate the size here
-    assignedNodesG2 = vector<Boolean> (n2);
+    assignedNodesG2 = vector<bool> (n2);
     totalInducedWeight = vector<uint> (n2,0);
     actColToUnassignedG2Nodes = vector<vector<uint>> (actColToG1ColId.size());
 }
@@ -376,20 +376,20 @@ Alignment SANATwo::run() {
 	return runUsingIterations();
 }
 
-#define LEEWAY 2
 Alignment SANATwo::runUsingIterations() {
-    const long long int maxIters = useIterations ? maxIterations : static_cast<long long int>(getIterPerSecond() * maxSeconds);
-    const double maxSecondsWithLeeway = maxSeconds * LEEWAY;
+    long long int maxIters = useIterations ? maxIterations : (long long int) (getIterPerSecond()*maxSeconds);
+    double leeway = 2;
+    double maxSecondsWithLeeway = maxSeconds * leeway;
 
     long long int iter;
     _reallyRunning=true;
     for (iter = 1; iter <= maxIters && _numNonstationaryColors>0; iter++) {
-        Temperature = temperatureFunction(static_cast<double>(iter)/static_cast<double>(maxIters), TInitial, TDecay);
+        Temperature = temperatureFunction(float(iter)/maxIters, TInitial, TDecay);
         SANAIteration();
         if (saveAligAndExitOnInterruption) break;
         if (saveAligAndContOnInterruption) printReportOnInterruption();
         if (iter%iterationsPerStep == 0) {
-            trackProgress(iter, static_cast<double>(iter)/static_cast<double>(maxIters));
+            trackProgress(iter, float(iter)/maxIters);
             if (not useIterations and timer.elapsed() > maxSecondsWithLeeway
                 // and currentScore-PreviousScore < 0.005
 		) break;
@@ -399,7 +399,7 @@ Alignment SANATwo::runUsingIterations() {
 #endif
         }
     }
-    trackProgress(iter, static_cast<double>(iter)/static_cast<double>(maxIters));
+    trackProgress(iter, float(iter)/maxIters);
     cout<<"Performed "<<iter<<" total iterations\n";
     if (addHillClimbing) performHillClimbing(10000000LL); //arbitrarily chosen, probably too big.
 
@@ -449,7 +449,7 @@ Alignment SANATwo::runUsingConfidenceIntervals() {
 	int batchesPerTemperature = 0;
         Temperature = temperatureFunction(tau, TInitial, TDecay);
 	// Now the "inner loop"
-	Boolean satisfied = false;
+	bool satisfied = false;
 	while(!satisfied && _numNonstationaryColors>0) {
 	    if (saveAligAndExitOnInterruption) break;
 	    if (saveAligAndContOnInterruption) printReportOnInterruption();
@@ -894,18 +894,18 @@ void SANATwo::performSwap(uint actColId) {
     }
 
     int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
-    double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
-    double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncSwapOp(peg1, peg2, hole1, hole2) : -1.;
-    double newWecSum           = needWec ? wecSum + WECIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
-    double newJsSum            = needJs ? jsSum + JSIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
-    double newEwecSum          = needEwec ? ewecSum + EWECIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
-    double newNcSum            = needNC ? ncSum + ncIncSwapOp(peg1, peg2, hole1, hole2) : -1.;
-    double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, peg1, peg2, hole1, hole2) : -1.;
-    double newEdSum            = needEd ? edSum + EdgeDifference::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1.;
-    double newErSum            = needEr ? erSum + EdgeRatio::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1.;
-    double newEgmSum           = needEgm ? egmSum + EdgeGeoMean::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1.;
-    double newEminSum          = needEmin ? eminSum + EdgeMin::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1.;
+    double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newWecSum           = needWec ? wecSum + WECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newJsSum            = needJs ? jsSum + JSIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newEwecSum          = needEwec ? ewecSum + EWECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newNcSum            = needNC ? ncSum + ncIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, peg1, peg2, hole1, hole2) : -1;
+    double newEdSum            = needEd ? edSum + EdgeDifference::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newErSum            = needEr ? erSum + EdgeRatio::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newEgmSum           = needEgm ? egmSum + EdgeGeoMean::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newEminSum          = needEmin ? eminSum + EdgeMin::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
@@ -2263,8 +2263,6 @@ if the score went down at least half the time,
 this suggests that the upward trend is over and we are at equilibrium
 once we know we are at equilibrium, we use the buffer of pbads to get an average pBad
 'logLevel' can be 0 (no output) 1 (logs result in cerr) or 2 (verbose/debug mode)*/
-#define NUM_SCORES 11 //the larger 'numScores' is, the stronger evidence of reaching equilibrium. keep this value odd
-#define SAMPLE_INTERVAL 10000
 double SANATwo::getEquilibriumPBadAtTemp(double temp, double maxTimeInS, int logLevel) {
     //new state for the run at fixed temperature
     //assert(temp == temp);
@@ -2274,17 +2272,21 @@ double SANATwo::getEquilibriumPBadAtTemp(double temp, double maxTimeInS, int log
 
     //note: this is a circular buffer that maintains scores sampled at intervals
     vector<double> scoreBuffer;
+    //the larger 'numScores' is, the stronger evidence of reachign equilibrium. keep this value odd
+    const uint numScores = 11;
     uint iter = 0;
+    uint sampleInterval = 10000;
     bool reachedEquilibrium = false;
     initDataStructures(); //this initializes the timer and resets the pBad buffer
+    bool verbose = (logLevel == 2); //print everything going on, for debugging purposes
     uint verbose_i = 0;
-    if (logLevel == 2) cerr<<endl<<"****************************************"<<endl
+    if (verbose) cerr<<endl<<"****************************************"<<endl
                      <<"starting search for pBad for temp = "<<temp<<endl;
     while (not reachedEquilibrium) {
         SANAIteration();
         iter++;
-        if (iter%SAMPLE_INTERVAL == 0) {
-            if (logLevel == 2) {
+        if (iter%sampleInterval == 0) {
+            if (verbose) {
                 cerr<<verbose_i<<" score: "<<currentScore<<" (avg pBad: "
                     <<slowMeanPBad()<<")"<<endl;
                 verbose_i++;
@@ -2292,45 +2294,45 @@ double SANATwo::getEquilibriumPBadAtTemp(double temp, double maxTimeInS, int log
             //circular buffer behavior
             //(since the buffer is tiny, the cost of shifting everything is negligible)
             scoreBuffer.push_back(currentScore);
-            if (scoreBuffer.size() > NUM_SCORES) scoreBuffer.erase(scoreBuffer.begin());
-            if (scoreBuffer.size() == NUM_SCORES) {
+            if (scoreBuffer.size() > numScores) scoreBuffer.erase(scoreBuffer.begin());
+            if (scoreBuffer.size() == numScores) {
                 //check if we are at eq:
                 //if the score went down more than up, it suggests we are at eq
                 int scoreTrend = 0;
-                for (uint i = 0; i < NUM_SCORES-1; i++) {
+                for (uint i = 0; i < numScores-1; i++) {
                     if (scoreBuffer[i+1] < scoreBuffer[i]) scoreTrend--;
                     if (scoreBuffer[i+1] > scoreBuffer[i]) scoreTrend++;
                 }
                 reachedEquilibrium = (scoreTrend <= 0);
-                if (logLevel == 2) {
+                if (verbose) {
                     cerr<<"scoreTrend = "<<scoreTrend<<endl;
                     if (reachedEquilibrium) {
                         cerr<<endl<<"Reached equilibrium"<<endl<<"scoreBuffer:"<<endl;
-                        for (const double i : scoreBuffer) cerr<<i<<" ";
+                        for (uint i = 0; i < scoreBuffer.size(); i++) cerr<<scoreBuffer[i]<<" ";
                         cerr<<endl;
                     }
                 }
             }
             if (timer.elapsed() > maxTimeInS) {
-                if (true || logLevel == 2) {
+                if (true || verbose) {
                     cerr<<"ran out of time. scoreBuffer:"<<endl;
-                    for (const double i : scoreBuffer) cerr<<i<<endl;
+                    for (uint i = 0; i < scoreBuffer.size(); i++) cerr<<scoreBuffer[i]<<endl;
                     cerr<<endl;
                 }
                 break;
             }
         }
     }
-    const double pBadAvgAtEq = slowMeanPBad();
-    double nextIps = static_cast<double>(iter) / (double)timer.elapsed();
-    const pair<double, double> nextPair (temp, nextIps);
+    double pBadAvgAtEq = slowMeanPBad();
+    double nextIps = (double)iter / (double)timer.elapsed();
+    pair<double, double> nextPair (temp, nextIps);
     ipsList.push_back(nextPair);
     if (logLevel >= 0) {
         cout<<"> getEquilibriumPBadAtTemp("<<temp<<") = "<<pBadAvgAtEq<<" (score: "<<currentScore<<")";
         if (reachedEquilibrium) cout<<" (time: "<<timer.elapsed()<<"s)";
         else cout<<" (didn't detect eq. after "<<maxTimeInS<<"s)";
         cout<<" iterations = "<<iter<<", ips = "<<nextIps<<endl;
-        if (logLevel == 2) cerr<<"final result: "<<pBadAvgAtEq<<endl
+        if (verbose) cerr<<"final result: "<<pBadAvgAtEq<<endl
                          <<"****************************************"<<endl<<endl;
     }
 

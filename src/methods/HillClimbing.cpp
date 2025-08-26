@@ -17,8 +17,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "HillClimbing.hpp"
-
-#include "Misc.hpp"
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/localMeasures/GenericLocalMeasure.hpp"
 #include "../measures/WeightedEdgeConservation.hpp"
@@ -72,7 +70,7 @@ Alignment HillClimbing::run() {
     uint n1 = G1->getNumNodes(), n2 = G2->getNumNodes();
     vector<uint> A(startA.asVector());
 
-    vector<Boolean> assignedNodesG2(n2, false);
+    vector<bool> assignedNodesG2(n2, false);
     for (uint i = 0; i < n1; i++) {
         assignedNodesG2[A[i]] = true;
     }

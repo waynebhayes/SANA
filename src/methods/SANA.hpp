@@ -24,6 +24,7 @@
 
 using namespace std;
 
+
 class SANATwo: public Method {
 
 public:
@@ -50,12 +51,12 @@ public:
     void setTDecayFromTempRange();
 
     double getEquilibriumPBadAtTemp(double temp, double maxTimeInS = 1.0, int logLevel = 1); //0 for no output, 2 for verbose
+    list<pair<double, double>> ipsList;
 
     //Defining infinity for f_beta
     double inf = std::numeric_limits<double>::infinity();
 
 private:
-    list<pair<double, double>> ipsList;
     Alignment startA;
 
     bool addHillClimbing; //for post-run hill climbing
@@ -120,6 +121,7 @@ private:
     double temperatureFunction(double fractionalTime, double TInitial, double TDecay);
     double acceptingProbability(double energyInc, double Temperature);
 
+
     double iterPerSecond;
     double getIterPerSecond();
     bool initializedIterPerSecond;
@@ -130,7 +132,7 @@ private:
     //if startA is empty, a random alignment is used
     void initDataStructures();
     vector<uint> A;
-    vector<Boolean> assignedNodesG2;
+    vector<bool> assignedNodesG2;
 
     //objective function
     MeasureCombination* MC;

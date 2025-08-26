@@ -5,8 +5,6 @@
 #include <utility>
 #include <unordered_set>
 #include <map>
-
-#include "../../src/utils/Misc.hpp"
 using namespace std;
 
 class Graph {
@@ -26,7 +24,7 @@ public:
     uint getNumEdges() const;
     const vector<vector<ushort> >& getConnectedComponents() const;
     uint getNumConnectedComponents() const;
-    void getAdjMatrix(vector<vector<Boolean> >& adjMatrixCopy) const;
+    void getAdjMatrix(vector<vector<bool> >& adjMatrixCopy) const;
     void getAdjLists(vector<vector<ushort> >& adjListsCopy) const;
     void getEdgeList(vector<vector<ushort> > & edgeListCopy) const;
     vector<string> getNodeNames() const;
@@ -79,14 +77,14 @@ public:
 
     // For locking
     void setLockedList(vector<string>& nodes, vector<string>& pairs);
-    vector<Boolean>& getLockedList();
+    vector<bool>& getLockedList();
     bool isLocked(uint index);
     string getLockedTo(uint index);
     int getLockedCount();
 
     //My functions and constructor
     Graph(int n);
-    void setAdjMatrix(vector<Boolean>& v);
+    void setAdjMatrix(vector<bool>& v);
     void print_adjMatrix(bool upper = 0);
     uint getDegree(uint node) const;
     void set_decimal_representation(int n);
@@ -99,13 +97,13 @@ private:
     string name;
 
     vector<vector<ushort> > edgeList; //edges in no particular order
-    vector<vector<Boolean> > adjMatrix;
+    vector<vector<bool> > adjMatrix;
     vector<vector<ushort> > adjLists; //neighbors in no particular order
     int decimal_representation;
 
     //list of the nodes of each connected component, sorted from larger to smaller
     vector<vector<ushort> > connectedComponents;
-    vector<Boolean> lockedList;  // shows which nodes are locked
+    vector<bool> lockedList;  // shows which nodes are locked
     vector<string> lockedTo;  // name of node we lock to in other graph
     int lockedCount = 0;
 
