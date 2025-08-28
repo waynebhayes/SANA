@@ -241,10 +241,10 @@ void SANAThree::runIterations(CalculatorHandler &threadPool) {
         temperature = temperatureFunction(static_cast<double>(iter)/static_cast<double>(maxBatches),
                                                  tInitial, tDecay);
         const batchOutput output = threadPool.collectBatch(temperature);
-        currentScore = MC->eval(alignment);
         if (saveAligAndExitOnInterruption) break;
         if (saveAligAndContOnInterruption) printReportOnInterruption();
         if (iter % batchesPerStep == 0) {
+            currentScore = MC->eval(alignment);
             trackProgress(iter * batchSize, static_cast<double>(iter)/static_cast<double>(maxBatches), T.elapsed(),
                 temperature, output.averagePBad);
         }
@@ -297,7 +297,6 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
 	        if (saveAligAndContOnInterruption) printReportOnInterruption();
 
 	        const batchOutput output = threadPool.collectBatch(temperature);
-	        currentScore = MC->eval(alignment);
 	        lastPBad = output.averagePBad;
 
             ++batch; ++batchesPerTemperature;
@@ -324,6 +323,7 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
 		        if(StatConfInterval(scoreBatchMeans, confidence) < scoreInterval &&
 			    StatConfInterval(pBadBatchMeans,  confidence) < pBadInterval) satisfied = true;
 		        else if(StatNumSamples(scoreBatchMeans) >= HAPPY_BATCHES) {
+		        currentScore = MC->eval(alignment);
 			    // Reset the batch system if the score is increasing steadily, otherwise it can't "converge" without
 			    // an ENORMOUS number of batches to compensate for the "bias" that occurs in early batches.
 			    if(StatMean(scoreBatchMeans) > previousScore) { // adding + tolPerSstep/2 seems too much.
@@ -349,6 +349,7 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
 		        }
 		    }
 	        }
+        currentScore = MC->eval(alignment);
         trackProgress(batch, tau, T.elapsed(), temperature, lastPBad, batchesPerTemperature,
                       StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
 	    if(tauStep < MAX_TAU_STEP) {

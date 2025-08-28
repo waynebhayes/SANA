@@ -324,6 +324,7 @@ private:
 
     friend class Ameur; //it needs to read the PBad buffer
     friend class StatisticalTest;
+    friend class SANAThree;
 };
 
 #endif /* SANA_HPP */

@@ -46,11 +46,17 @@ ifeq ($(STATIC), 1)
     MAIN := $(MAIN).static
 endif
 
-ifeq ($(GDB), 1) # this one should be second-last since the debugging ones run slowly and should be used on smallish networks.
+# this one should be second-last since the debugging ones run slowly and should be used on smallish networks.
+ifeq ($(GDB), 2) # For profiling
+    CXXFLAGS := $(CXXFLAGS) -g -pg -O3 -fdebug-prefix-map=$(pwd)=.
+    MAIN := $(MAIN).o3.gdb
+else
+ifeq ($(GDB), 1) # For debugging
     CXXFLAGS := $(CXXFLAGS) -g -O0
     MAIN := $(MAIN).gdb
 else
     CXXFLAGS := $(CXXFLAGS) -O3 # always turn on optimization if not debugging
+endif
 endif
 
 ifeq ($(CORES), 1) # CORES should be listed last to ensure it's used on the smallest networks during regression tests.

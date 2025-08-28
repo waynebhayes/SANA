@@ -5,30 +5,24 @@
 
 const Graph* EdgeCorrectness::G1 = nullptr;
 const Graph* EdgeCorrectness::G2 = nullptr;
-double EdgeCorrectness::denominator = 1;
 EdgeCorrectness::EdgeCorrectness(const Graph* G1, const Graph* G2, int graphNum): Measure(G1, G2, "ec") {
     EdgeCorrectness::G1=G1;
     EdgeCorrectness::G2=G2;
     switch (graphNum) {
-        case 1: denominator = G1->getNumEdges(); break;
-        case 2: denominator = G2->getNumEdges(); break;
-        default: Fatal("unknown graphNum %d in EdgeCorrectness::EdgeCorrecteness", graphNum);
+        case 1: denominator = EdgeCorrectness::G1->getNumEdges(); break;
+        case 2: denominator = EdgeCorrectness::G2->getNumEdges(); break;
+        default: Fatal("unknown graphNum %d in EdgeCorrectness::EdgeCorrectness", graphNum);
     }
-    denominatorGraph = graphNum;
 }
 
 EdgeCorrectness::~EdgeCorrectness() {
 }
 
 double EdgeCorrectness::eval(const Alignment& A) {
-    switch(denominatorGraph) {
-        case 1: return (double) A.computeNumAlignedEdges(*G1, *G2)/G1->getNumEdges(); break;
-        case 2: return (double) A.computeNumAlignedEdges(*G1, *G2)/G2->getNumEdges(); break;
-        default: Fatal("unknown denominatorGraph %d in EdgeCorrectness::eval", denominatorGraph); return 0; break;
-    }
+    return static_cast<double>(A.computeNumAlignedEdges(*G1, *G2)) / denominator;
 }
 
-double EdgeCorrectness::getIncChangeOp(uint peg, uint oldHole, uint newHole, const Alignment &A) {
+double EdgeCorrectness::getIncChangeOp(uint peg, uint oldHole, uint newHole, const Alignment &A) const {
     int res = 0;
     if (G1->hasSelfLoop(peg)) {
         if (G2->hasSelfLoop(oldHole)) res-=G2->getEdgeWeight(oldHole, oldHole);
@@ -42,10 +36,10 @@ double EdgeCorrectness::getIncChangeOp(uint peg, uint oldHole, uint newHole, con
 	res -= G2->getEdgeWeight(A[nbr],oldHole);
 	res += G2->getEdgeWeight(A[nbr],newHole);
     }
-    return res / denominator;
+    return static_cast<double>(res) / denominator;
 }
 
-double EdgeCorrectness::getIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2, const Alignment &A) {
+double EdgeCorrectness::getIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2, const Alignment &A) const {
     int res = 0;
     if (G1->hasSelfLoop(peg1)) {
         if (G2->hasSelfLoop(hole1)) res-=G2->getEdgeWeight(hole1, hole1);
@@ -86,5 +80,5 @@ double EdgeCorrectness::getIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole
      if                 (G1->hasEdge(peg1, peg2) and G2->hasEdge(hole1, hole2)) res += 2;
      if(G1->directed) if(G1->hasEdge(peg2, peg1) and G2->hasEdge(hole2, hole1)) res += 2;
 // #endif
-    return res / denominator;
+    return static_cast<double>(res) / denominator;
 }
