@@ -96,7 +96,7 @@ SANAThree::batchOutput SANAThree::CalculatorHandler::collectBatch(double tempera
     _pBadTotal = 0;
     startBatch.notify_all();
 
-    requestProcessed.wait(requestLock, [this] {return _outputRequests == _parent.batchSize;});
+    requestsFinished.wait(requestLock);
     if (_pBadTotal == 0) _pBadTotal = 1;
     return {totalEnergy / _parent.batchSize, totalPBad / _pBadTotal};
 }
@@ -105,8 +105,12 @@ void SANAThree::CalculatorHandler::_mainLoop() {
     // See comment about unique_locks in submitRequest
     unique_lock<mutex> requestLock (_requestSystem);
 
-    startBatch.wait(requestLock, [this] {return _inputRequests < _parent.batchSize || !_calculatorsOn;});
-    while (_calculatorsOn) {
+    bool on; // To prevent double accessing this variable when unnecessary. We want compiler to cache it in certain scenarios
+    startBatch.wait(requestLock, [this, &on]{
+        on = _calculatorsOn;
+        return _inputRequests < _parent.batchSize || !on;
+    });
+    while (on) {
         changeRequest currentRequest = _parent.chooseNextRequest();
         _inputRequests++;
         requestLock.unlock();
@@ -122,78 +126,114 @@ void SANAThree::CalculatorHandler::_mainLoop() {
         }
         totalEnergy += _parent.currentScore;
         _outputRequests++;
-        requestProcessed.notify_one();
-        startBatch.wait(requestLock, [this] {return _inputRequests < _parent.batchSize || !_calculatorsOn;});
+        on = _calculatorsOn;
+        if (_inputRequests >= _parent.batchSize and on) {
+            if (_outputRequests >= _parent.batchSize) requestsFinished.notify_one();
+            startBatch.wait(requestLock);
+            on = _calculatorsOn;
+        }
     }
 }
 
-static inline double aligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole, Alignment &alignment, const Graph *G1, const Graph *G2, unsigned denominator) {
+static inline double aligEdgesIncMoveOp(uint peg, uint oldHole, uint newHole, Alignment &alignment, const Graph *G1, const Graph *G2, unsigned denominator) {
     int res = 0;
     if (G1->hasSelfLoop(peg)) {
-        if (G2->hasSelfLoop(oldHole)) res-=G2->getEdgeWeight(oldHole, oldHole);
-        if (G2->hasSelfLoop(newHole)) res+=G2->getEdgeWeight(newHole, newHole);
+        if (G2->hasSelfLoop(oldHole))
+            res-=G2->getEdgeWeight(oldHole, oldHole);
+        if (G2->hasSelfLoop(newHole))
+            res+=G2->getEdgeWeight(newHole, newHole);
     }
-    for (uint nbr : *G1->getAdjList(peg)) if (nbr != peg) {
-	res -= G2->getEdgeWeight(oldHole, alignment[nbr]);
-	res += G2->getEdgeWeight(newHole, alignment[nbr]);
+    for (uint nbrPeg : *G1->getAdjList(peg)) if (nbrPeg != peg) {
+        const unsigned nbrHole = alignment[nbrPeg];
+        const int def = G2->getEdgeWeight(oldHole, nbrHole);
+        res -= def;
+        const int sur = G2->getEdgeWeight(newHole, nbrHole);
+        res += sur;
     }
-    if(G1->directed) for (uint nbr : *G1->getInjList(peg)) if (nbr != peg) {
-	res -= G2->getEdgeWeight(alignment[nbr],oldHole);
-	res += G2->getEdgeWeight(alignment[nbr],newHole);
+    if(G1->directed)
+        for (uint nbrPeg : *G1->getInjList(peg)) if (nbrPeg != peg) {
+            const unsigned nbrHole = alignment[nbrPeg];
+            const int def = G2->getEdgeWeight(nbrHole, oldHole);
+            res -= def;
+            const int sur = G2->getEdgeWeight(nbrHole, newHole);
+            res += sur;
     }
     return static_cast<double>(res) / denominator;
 }
 
 static inline double aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2, Alignment &alignment, const Graph *G1, const Graph *G2, unsigned denominator) {
-#ifdef WEIGHT
-    throw runtime_error("SANATwo::aligEdgesIncSwapOp should not be called with WEIGHT");
-    return 0;
-#else
-    int res = 0;
+    int result = 0;
+
+    // TODO: weight check
+
+    /*
+     * Marcus compiler optimizations for multithreading:
+     * Do NOT call alignment[] for the same index twice in a row. You might believe "oh, the compiler will just optimize
+     * it away, its no biggy!" NO, IT WILL NOT, because the alignment can vary while this calculation is ongoing. So the
+     * compiler is going to believe it has to fetch the value again in case it has changed. Now, we don't actually care
+     * if it has changed, but the compiler has no way to know that unless we tell it by manually specifying that YES,
+     * we want to use the same value twice, code transparency be damned.
+     */
+
+    // Peg 1 changes
     if (G1->hasSelfLoop(peg1)) {
-        if (G2->hasSelfLoop(hole1)) res-=G2->getEdgeWeight(hole1, hole1);
-        if (G2->hasSelfLoop(hole2)) res+=G2->getEdgeWeight(hole2, hole2);
+        if (G2->hasSelfLoop(hole1))
+            result-=G2->getEdgeWeight(hole1, hole1);
+        if (G2->hasSelfLoop(hole2))
+            result+=G2->getEdgeWeight(hole2, hole2);
     }
-    for (uint nbr : *G1->getAdjList(peg1)) if (nbr != peg1) {
-	res -= G2->getEdgeWeight(hole1, alignment[nbr]);
-	res += G2->getEdgeWeight(hole2, alignment[nbr]);
+    for (const uint nbrPeg : *G1->getAdjList(peg1)) if (nbrPeg != peg1) {
+        const unsigned nbrHole = alignment[nbrPeg];
+        const int def = G2->getEdgeWeight(hole1, nbrHole);
+        result -= def;
+        const int sur = G2->getEdgeWeight(hole2, nbrHole);
+        result += sur;
     }
-    if(G1->directed) for (uint nbr : *G1->getInjList(peg1)) if (nbr != peg1) {
-	res -= G2->getEdgeWeight(alignment[nbr],hole1);
-	res += G2->getEdgeWeight(alignment[nbr],hole2);
-    }
-
+    // Peg 2 changes
     if (G1->hasSelfLoop(peg2)) {
-        if (G2->hasSelfLoop(hole2)) res-=G2->getEdgeWeight(hole2, hole2);
-        if (G2->hasSelfLoop(hole1)) res+=G2->getEdgeWeight(hole1, hole1);
+        if (G2->hasSelfLoop(hole2))
+            result-=G2->getEdgeWeight(hole2, hole2);
+        if (G2->hasSelfLoop(hole1))
+            result+=G2->getEdgeWeight(hole1, hole1);
     }
-    for (uint nbr : *G1->getAdjList(peg2)) if (nbr != peg2) {
-	res -= G2->getEdgeWeight(hole2, alignment[nbr]);
-	res += G2->getEdgeWeight(hole1, alignment[nbr]);
+    for (const uint nbrPeg : *G1->getAdjList(peg2)) if (nbrPeg != peg2) {
+        const unsigned nbrHole = alignment[nbrPeg];
+        const int deficit = G2->getEdgeWeight(hole2, nbrHole);
+        result -= deficit;
+        const int sur = G2->getEdgeWeight(hole1, nbrHole);
+        result += sur;
     }
-    if(G1->directed) for (uint nbr : *G1->getInjList(peg2)) if (nbr != peg2) {
-	res -= G2->getEdgeWeight(alignment[nbr],hole2);
-	res += G2->getEdgeWeight(alignment[nbr],hole1);
+    // Fix for double counting
+    if (G1->hasEdge(peg1, peg2) and G2->hasEdge(hole1, hole2))
+        result += 2;
+
+    // Same thing again, but backwards
+    if(G1->directed) {
+        for (const uint nbrPeg : *G1->getInjList(peg1)) if (nbrPeg != peg1) {
+            const unsigned nbrHole = alignment[nbrPeg];
+            const int def = G2->getEdgeWeight(nbrHole, hole1);
+            result -= def;
+            const int sur = G2->getEdgeWeight(nbrHole, hole2);
+            result += sur;
+        }
+        for (const uint nbrPeg : *G1->getInjList(peg2)) if (nbrPeg != peg2) {
+            const unsigned nbrHole = alignment[nbrPeg];
+            const int deficit = G2->getEdgeWeight(nbrHole, hole2);
+            result -= deficit;
+            const int sur = G2->getEdgeWeight(nbrHole, hole1);
+            result += sur;
+        }
+        if (G1->hasEdge(peg2, peg1) and G2->hasEdge(hole2, hole1))
+            result += 2;
     }
 
-    //address the case where we are swapping between adjacent nodes with adjacent images:
-#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
-    //why set the least-significant bit to 0?
-    //this kind of bit manipulation needs a comment clarification -Nil
-    res += (-1 << 1) & (G1->getEdgeWeight(peg1, peg2) +
-                        G2->getEdgeWeight(hole1, hole2));
-#else
-    if                 (G1->hasEdge(peg1, peg2) and G2->hasEdge(hole1, hole2)) res += 2;
-    if(G1->directed) if(G1->hasEdge(peg2, peg1) and G2->hasEdge(hole2, hole1)) res += 2;
-#endif
-    return res / denominator;
-#endif // WEIGHT
+    return static_cast<double>(result) / denominator;
 }
 
 void SANAThree::CalculatorHandler::_assessMove(changeRequest &input) const {
     // This is a hack, MC should be providing this information, not SANA!!
     if (_parent.needEC) {
-        input.energyInc = aligEdgesIncChangeOp(input.peg1, input.hole1, input.hole2,
+        input.energyInc = aligEdgesIncMoveOp(input.peg1, input.hole1, input.hole2,
                                             _parent.alignment, _parent.G1, _parent.G2, _parent.m1)
                           * _parent.MC->getWeight("ec");
     }

@@ -113,7 +113,7 @@ private:
     private:
         bool _calculatorsOn;
 
-        condition_variable requestProcessed;
+        condition_variable requestsFinished;
         condition_variable startBatch;
         const unsigned _extraThreads;
 

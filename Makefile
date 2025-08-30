@@ -48,7 +48,7 @@ endif
 
 # this one should be second-last since the debugging ones run slowly and should be used on smallish networks.
 ifeq ($(GDB), 2) # For profiling
-    CXXFLAGS := $(CXXFLAGS) -g -pg -O3 -fdebug-prefix-map=$(pwd)=.
+    CXXFLAGS := $(CXXFLAGS) -g -O3 -fno-omit-frame-pointer
     MAIN := $(MAIN).o3.gdb
 else
 ifeq ($(GDB), 1) # For debugging

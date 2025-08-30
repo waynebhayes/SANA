@@ -282,6 +282,8 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
     STAT *scoreBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
     STAT *pBadBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
 
+
+    // TODO: add batchesPerStep from runIterations for a re-eval of score
     long int lastBatchCount=0;
     double lastPBad = 1.0;
     double previousScore = currentScore;
@@ -323,7 +325,6 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
 		        if(StatConfInterval(scoreBatchMeans, confidence) < scoreInterval &&
 			    StatConfInterval(pBadBatchMeans,  confidence) < pBadInterval) satisfied = true;
 		        else if(StatNumSamples(scoreBatchMeans) >= HAPPY_BATCHES) {
-		        currentScore = MC->eval(alignment);
 			    // Reset the batch system if the score is increasing steadily, otherwise it can't "converge" without
 			    // an ENORMOUS number of batches to compensate for the "bias" that occurs in early batches.
 			    if(StatMean(scoreBatchMeans) > previousScore) { // adding + tolPerSstep/2 seems too much.
