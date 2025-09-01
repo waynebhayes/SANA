@@ -25,6 +25,7 @@ bool myNan(double x);
 double randDouble();
 int randInt(int low, int high);
 unsigned randIndex(unsigned size, mt19937_64 &gen);
+uint64_t randIndex(uint64_t size, mt19937_64 &gen);
 int randMod(int n);
 void randomShuffle(vector<uint>& v);
 

@@ -43,6 +43,11 @@ unsigned randIndex(const unsigned size, mt19937_64 &gen) {
     return dis(gen);
 }
 
+uint64_t randIndex(const uint64_t size, mt19937_64 &gen) {
+    uniform_int_distribution<uint64_t> dis(0, size - 1);
+    return dis(gen);
+}
+
 int randMod(int n) { return randInt(0, n-1); }
 
 void randomShuffle(vector<uint>& v) {

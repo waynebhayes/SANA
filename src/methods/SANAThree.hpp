@@ -162,6 +162,8 @@ private:
     // Main run function and variables
     Alignment alignment;
     double currentScore;
+    uint64_t totalMovesPerformed;
+    uint64_t totalSwapsPerformed;
     void runIterations(CalculatorHandler &threadPool);
     void runConfidenceIntervals(CalculatorHandler &threadPool);
     void runHillClimbing(CalculatorHandler &threadPool);

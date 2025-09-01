@@ -89,36 +89,42 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
         string colName = G1->getColorName(g1Id);
         if (not G2->hasColor(colName))
             throw runtime_error("G1 nodes colored " + colName + " cannot be matched to any G2 nodes");
-        uint c1 = G1->numNodesWithColor(g1Id);
-        uint c2 = G2->numNodesWithColor(G2->getColorId(colName));
+        unsigned c1 = G1->numNodesWithColor(g1Id);
+        unsigned c2 = G2->numNodesWithColor(G2->getColorId(colName));
 
         pegsPerColor.push_back(c1);
 
         if (c1 > c2)
             throw runtime_error("there are " + to_string(c1) + " G1 nodes colored "
                                 + colName + " but only " + to_string(c2) + " such nodes in G2");
-        const uint numSwapNbrs = c1 * (c1 - 1) / 2;
-        const uint numChangeNbrs = c1 * (c2 - c1);
-        const uint numNbrs = numSwapNbrs + numChangeNbrs;
+        const uint64_t numSwapNeighbors = c1 * (c1 - 1) / 2;
+        const uint64_t numMoveNeighbors = c1 * (c2 - c1);
+        const uint64_t numNeighbors = numSwapNeighbors + numMoveNeighbors;
 
-        swapsPerColor.push_back(numSwapNbrs);
-        movesPerColor.push_back(numChangeNbrs);
-        numSwaps += numSwapNbrs;
-        numAdjacentAlignments += numSwapNbrs + numChangeNbrs;
-        if (COL_DBG) {
-            cerr << "color " << colName << " has " << numSwapNbrs << " swap nbrs and "
-                    << numChangeNbrs << " change nbrs (" << numNbrs << " total)" << endl;
-            if (numNbrs == 0) cerr << "color " << colName << " is inactive" << endl;
+        swapsPerColor.push_back(numSwapNeighbors);
+        movesPerColor.push_back(numMoveNeighbors);
+        numSwaps += numSwapNeighbors;
+        numAdjacentAlignments += numSwapNeighbors + numMoveNeighbors;
+        if (true) {
+            cerr << "SANAThree:: color " << colName << " has " << numSwapNeighbors << " possible swaps and "
+                    << numMoveNeighbors << " possible moves (" << numNeighbors << " total)" << endl;
+            if (numNeighbors == 0) cerr << "color " << colName << " is inactive" << endl;
         }
     }
-    if (COL_DBG) cerr << "alignments have " << numAdjacentAlignments << " nbrs in total" << endl;
+    if (true) {
+        cerr << "SANAThree:: Alignments have " << numAdjacentAlignments << " possible changes in total" << endl;
+        cerr << "SANAThree:: There are " << numSwaps << " possible swaps and " << numAdjacentAlignments - numSwaps << " possible moves." << endl;
+    }
     if (numAdjacentAlignments == 0)
         throw runtime_error(
-            "there is a unique valid alignment, so running SANA is pointless");
+            "There is a unique valid alignment, so running SANA is pointless");
 
     //things initialized in initDataStructures because they depend on the starting alignment
     //they have the same size for every run, so we can allocate the size here
     colorUnassignedNodes = vector<vector<uint>>(swapsPerColor.size());
+
+    totalMovesPerformed = 0;
+    totalSwapsPerformed = 0;
 }
 
 void SANAThree::initDataStructures() {
@@ -252,7 +258,9 @@ void SANAThree::runIterations(CalculatorHandler &threadPool) {
     }
     trackProgress(iter * batchSize, static_cast<double>(iter)/static_cast<double>(maxBatches), T.elapsed(),
                 temperature, 0.);
-    cout<<"Performed "<<iter * batchSize<<" total iterations\n";
+    cout<<"Performed "<< totalMovesPerformed <<" moves\n";
+    cout<<"Performed "<< totalSwapsPerformed <<" swaps\n";
+    cout<<"Performed "<< totalMovesPerformed + totalSwapsPerformed <<" total iterations\n";
 }
 
 // All of these are purely heuristic -Wayne (I think, at least -Marcus)
@@ -573,7 +581,7 @@ void SANAThree::implementLastRequest(double pBad, const changeRequest &input) {
             const uint64_t swapsAdded = numColorPegs;
             movesPerColor[color] += swapsAdded;
             numSwaps += swapsAdded;
-            const uint64_t movesAdded = numColorUnassignedHoles - numColorPegs + 1;
+            const uint64_t movesAdded = numColorUnassignedHoles + numColorPegs + 1;
             movesPerColor[color] += movesAdded;
             numAdjacentAlignments += swapsAdded + movesAdded;
         }
@@ -582,8 +590,15 @@ void SANAThree::implementLastRequest(double pBad, const changeRequest &input) {
     if (randomReal(generator) >= pBad) return;
 
     alignment[input.peg1] = input.hole2;
-    if (input.twoPegs) alignment[input.peg2] = input.hole1; // Swap
-    else colorUnassignedNodes[input.color][input.hole2unassignedID] = input.hole1; // Move
+    if (input.twoPegs) {
+        alignment[input.peg2] = input.hole1; // Swap
+        totalSwapsPerformed++;
+    }
+    else {
+        colorUnassignedNodes[input.color][input.hole2unassignedID] = input.hole1; // Move
+        totalMovesPerformed++;
+    }
+
     currentScore += input.energyInc;
 }
 
