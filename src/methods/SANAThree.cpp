@@ -47,7 +47,7 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
     m1(G1->getNumEdges()),
     m2(G2->getNumEdges()),
     tInitial(TInitial),
-    tDecay(TDecay) {
+    tDecay(TDecay){
     // This should never happen, and if it does, it is 100% user error.
     if (threadNumber >= n1 / 2) {
         throw runtime_error(
@@ -75,7 +75,7 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
     // NODE COLOR SYSTEM initialization
 
     assert(G1->numColors() <= G2->numColors());
-    constexpr bool COL_DBG = false; //print stats about color/neighbor type probabilities
+    constexpr bool COL_DBG = true; //print stats about color/neighbor type probabilities
 
     swapsPerColor.reserve(G1->numColors());
     movesPerColor.reserve(G1->numColors());
@@ -125,41 +125,8 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
 
     totalMovesPerformed = 0;
     totalSwapsPerformed = 0;
-}
-
-void SANAThree::initDataStructures() {
-    auto assignedNodesG2 = vector<char> (n2);
-
-    if (startingAlignment.size() != 0) alignment = startingAlignment;
-    else alignment = Alignment::randomColorRestrictedAlignment(*G1, *G2);
-
-    //init holeToColorID. For each node, we do the following transformations:
-    //g2Node -> g2ColorId -> g1ColorId -> actColId
-    vector<uint> g2ToG1ColorIdMap = G2->myColorIdsToOtherGraphColorIds(*G1);
-    auto holeToColorID = vector<uint>(n2, n1);
-    for (uint g2Node = 0; g2Node < n2; g2Node++) {
-        uint g2ColorId = G2->getNodeColor(g2Node);
-        uint color = g2ToG1ColorIdMap[g2ColorId];
-        if (color == Graph::INVALID_COLOR_ID) continue; //no node in G1 has this color
-        holeToColorID[g2Node] = color;
-    }
-
-    //initialize assignedNodesG2 (the size was already set in the constructor)
-    for (uint i = 0; i < n2; i++) assignedNodesG2[i] = false;
-    for (uint i = 0; i < n1; i++) assignedNodesG2[alignment[i]] = true;
-    //initialize actColToUnassignedG2Nodes (the size was already set in the constructor)
-    for (uint i = 0; i < colorUnassignedNodes.size(); i++)
-        colorUnassignedNodes[i].clear();
-    for (uint g2Node = 0; g2Node < n2; g2Node++) {
-        if (assignedNodesG2[g2Node]) continue;
-        uint actColId = holeToColorID[g2Node];
-        if (actColId != n1) {
-            colorUnassignedNodes[actColId].push_back(g2Node);
-            unassignedHolesPerColor[actColId] += 1;
-        }
-    }
-
-    currentScore = MC->eval(alignment);
+    initDataStructures();
+    threadPool = new CalculatorHandler {threadNumber, *this, batchSize / 2};
 }
 
 Alignment SANAThree::runUsingIterations() {
@@ -180,6 +147,43 @@ Alignment SANAThree::runUsingConfidenceIntervals() {
     return run();
 }
 
+void SANAThree::initDataStructures() {
+    auto assignedNodesG2 = vector<char> (n2);
+
+    if (startingAlignment.size() != 0) alignment = startingAlignment;
+    else alignment = Alignment::randomColorRestrictedAlignment(*G1, *G2);
+
+    //init holeToColorID. For each node, we do the following transformations:
+    //g2Node -> g2ColorId -> g1ColorId -> actColId
+    vector<uint> g2ToG1ColorIdMap = G2->myColorIdsToOtherGraphColorIds(*G1);
+    auto holeToColorID = vector<uint>(n2, n1);
+    for (uint g2Node = 0; g2Node < n2; g2Node++) {
+        uint g2ColorId = G2->getNodeColor(g2Node);
+        uint color = g2ToG1ColorIdMap[g2ColorId];
+        if (color == Graph::INVALID_COLOR_ID) continue; //no node in G1 has this color
+        holeToColorID[g2Node] = color;
+    }
+
+    for (uint i = 0; i < n2; i++) assignedNodesG2[i] = false;
+    for (uint i = 0; i < n1; i++) assignedNodesG2[alignment[i]] = true;
+    //initialize actColToUnassignedG2Nodes (the size was already set in the constructor)
+    for (auto & colorUnassignedNode : colorUnassignedNodes)
+        colorUnassignedNode.clear();
+    for (auto &unassNum: unassignedHolesPerColor)
+        unassNum = 0;
+    for (uint g2Node = 0; g2Node < n2; g2Node++) {
+        if (assignedNodesG2[g2Node]) continue;
+        uint actColId = holeToColorID[g2Node];
+        if (actColId != n1) {
+            colorUnassignedNodes[actColId].push_back(g2Node);
+            unassignedHolesPerColor[actColId] += 1;
+        }
+    }
+
+    currentScore = MC->eval(alignment);
+}
+
+
 // TODO:
 // This is terribly outdated. I'll buy a (soft) cider for anyone who takes it upon themselves to
 // make a better version, but this relatively low priority.
@@ -197,26 +201,26 @@ string SANAThree::fileNameSuffix(const Alignment& Al) const {
     return "_" + extractDecimals(MC->eval(Al),3);
 }
 
+double SANAThree::getEquilibriumPBadAtTemp(double temperature, unsigned timeoutSeconds) const {
+    return threadPool->runUntilEquilibrium(temperature, timeoutSeconds);
+}
+
 Alignment SANAThree::run() {
-    initDataStructures();
     setInterruptSignal();
 
-    // See CalculatorHandler comment as to why this is a local variable.
-    CalculatorHandler threadPool{threadNumber, *this};
-
     if (tolerance > 0)
-        runConfidenceIntervals(threadPool);
+        runConfidenceIntervals();
     else
-        runIterations(threadPool);
+        runIterations();
 
-    if (hillClimbing) runHillClimbing(threadPool);
+    if (hillClimbing) runHillClimbing();
 
     return alignment;
 }
 
 #define LEEWAY 1.75
 #define temperatureFunction(f, i, d) (i * exp(-d * f))
-void SANAThree::runIterations(CalculatorHandler &threadPool) {
+void SANAThree::runIterations() {
     double maxSecondsWithLeeway;
     long long unsigned maxBatches;
     unsigned batchesPerStep;
@@ -226,7 +230,7 @@ void SANAThree::runIterations(CalculatorHandler &threadPool) {
     {
         unsigned batches = 0;
         while (T.elapsed() < 1.) {
-            threadPool.collectBatch(0.);
+            threadPool->collectBatch(0.);
             batches++;
         }
         iterationsPerSecond = batchSize * batches / T.elapsed();
@@ -240,13 +244,15 @@ void SANAThree::runIterations(CalculatorHandler &threadPool) {
         maxBatches = 1 + maxIterations / batchSize;
         maxSecondsWithLeeway = 0;
     }
+    initDataStructures();
+    threadPool->resetBuffers();
     T.start();
     long long unsigned iter = 0;
     double temperature = tInitial;
     for (; iter < maxBatches; iter += 1) {
         temperature = temperatureFunction(static_cast<double>(iter)/static_cast<double>(maxBatches),
                                                  tInitial, tDecay);
-        const batchOutput output = threadPool.collectBatch(temperature);
+        const batchOutput output = threadPool->collectBatch(temperature);
         if (saveAligAndExitOnInterruption) break;
         if (saveAligAndContOnInterruption) printReportOnInterruption();
         if (iter % batchesPerStep == 0) {
@@ -271,9 +277,8 @@ void SANAThree::runIterations(CalculatorHandler &threadPool) {
 #define HAPPY_BATCHES MIN(10000, (int)(m1+m2))
 #define MIN_CONFIDENCE 0.99999
 #define TOL_SAFETY_MARGIN 1.07 // empirically this seems to cut failure rates to below 5%.
-void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
+void SANAThree::runConfidenceIntervals() {
     TimerTrue T;
-    T.start();
 
     // TODO: make all of these changeable on the command line
     unsigned batch = 0;
@@ -293,21 +298,22 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
 
     // TODO: add batchesPerStep from runIterations for a re-eval of score
     long int lastBatchCount=0;
-    double lastPBad = 1.0;
     double previousScore = currentScore;
     double temperature = 0;
+    initDataStructures();
+    threadPool->resetBuffers();
+    T.start();
     for (tau = 0; tau <= 1; tau += tauStep) {
 	    int batchesPerTemperature = 0;
         temperature = temperatureFunction(tau, tInitial, tDecay);
 
 	    // Now the "inner loop"
-	    Boolean satisfied = false;
+	    bool satisfied = false;
 	    while(!satisfied) {
 	        if (saveAligAndExitOnInterruption) break;
 	        if (saveAligAndContOnInterruption) printReportOnInterruption();
 
-	        const batchOutput output = threadPool.collectBatch(temperature);
-	        lastPBad = output.averagePBad;
+	        const batchOutput output = threadPool->collectBatch(temperature);
 
             ++batch; ++batchesPerTemperature;
 		    StatAddSample(scoreBatchMeans, output.averageScore);
@@ -359,7 +365,7 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
 		    }
 	        }
         currentScore = MC->eval(alignment);
-        trackProgress(batch, tau, T.elapsed(), temperature, lastPBad, batchesPerTemperature,
+        trackProgress(batch * batchSize, tau, T.elapsed(), temperature, threadPool->recentPBadTrue(), batchesPerTemperature,
                       StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
 	    if(tauStep < MAX_TAU_STEP) {
 	        if(StatNumSamples(scoreBatchMeans) < HAPPY_BATCHES) {
@@ -382,7 +388,7 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
 	    StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
     }
     cout<<"Performed "<<batch<<" total batches\n";
-    trackProgress(batch * batchSize, tau, T.elapsed(), temperature, lastPBad);
+    trackProgress(batch * batchSize, tau, T.elapsed(), temperature, threadPool->recentPBadQuick());
 }
 
 // I stole this duration from SANA proper. I will repeat the comment there that this is
@@ -390,14 +396,14 @@ void SANAThree::runConfidenceIntervals(CalculatorHandler &threadPool) {
 // class?? TODO: fix this
 // -Marcus
 #define HILLCLIMB_DURATION 10000000000u
-void SANAThree::runHillClimbing(CalculatorHandler &threadPool) {
+void SANAThree::runHillClimbing() {
     Timer T;
     T.start();
 
     const unsigned long runTime = 1 + HILLCLIMB_DURATION / batchSize;
     unsigned long long iter = 0;
     for (; iter < runTime; iter++) {
-        threadPool.collectBatch(0.);
+        threadPool->collectBatch(0.);
         currentScore = MC->eval(alignment);
     }
     cout<<"Hill climbing took "<<T.elapsedString()<<"s"<<endl;

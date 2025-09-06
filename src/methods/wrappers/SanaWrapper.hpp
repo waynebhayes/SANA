@@ -23,7 +23,7 @@ public:
         const string &scoreAggrStr, const Alignment &optionalStartAlig,
         const string &outputFileName, const string &localScoresFileName);
 
-    ~SanaWrapper() override {}
+    ~SanaWrapper() override = default;
 
     Alignment run() override;
     Alignment runUsingIterations();
@@ -41,26 +41,17 @@ public:
 
     void setTDecayFromTempRange();
 
-    // So far, this is the ONLY public facing function that SANAThree cannot handle, but it is
-    // such a dozy that it will have to wait for another time.
-    // -Marcus
     double getEquilibriumPBadAtTemp(double temp, double maxTimeInS = 1.0, int logLevel = 1) {
-        return legacy.getEquilibriumPBadAtTemp(temp, maxTimeInS, logLevel);
+        return modern.getEquilibriumPBadAtTemp(temp, maxTimeInS);
     }
 
 private:
-    SANATwo legacy;
-#ifdef LEGACY
-#else
     SANAThree modern;
-#endif
 
     static void featureNotSupported(const string& name) {
         cout << "At this stage, SANA 3.0 does not support " << name << "." << endl;
     }
 
-    friend class Ameur; //it needs to read the PBad buffer
-    friend class StatisticalTest;
     friend class GoldilocksMethod;
 };
 

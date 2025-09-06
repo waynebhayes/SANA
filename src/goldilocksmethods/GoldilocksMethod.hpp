@@ -30,7 +30,7 @@ public:
 
     //single, static SANA for all goldilocks methods
     //call setSana before initializing any goldilocks method
-    static void setSana(SanaWrapper *const sana) { GoldilocksMethod::sana = &sana->legacy; }
+    static void setSana(SanaWrapper *const sana) { GoldilocksMethod::sana = &sana->modern; }
 
     GoldilocksMethod();
     virtual ~GoldilocksMethod() =default;
@@ -89,7 +89,7 @@ protected:
     virtual void vComputeTInitial(Resources maxRes);
     virtual void vComputeTFinal(Resources maxRes);
 
-    static SANATwo* sana;
+    static SANAThree* sana;
 
     double targetInitialPBad, targetFinalPBad;
     double errorTol;

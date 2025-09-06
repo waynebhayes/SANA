@@ -4,21 +4,11 @@
 #include <thread>
 #include <string>
 #include <vector>
-#include <utility>
-#include <iostream>
 #include <fstream>
 #include <iomanip>
-#include <sstream>
-#include <cstdlib>
 #include <stdexcept>
-#include <unordered_set>
-#include <algorithm>
 #include <random>
-#include <queue>
-#include <iomanip>
-#include <set>
 #include <cmath>
-#include <limits>
 #include <thread>
 #include <mutex>
 #include <cassert>
@@ -27,23 +17,9 @@
 #include <unistd.h>
 
 #include "SANAThree.hpp"
-#include "../measures/SymmetricSubstructureScore.hpp"
-#include "../measures/JaccardSimilarityScore.hpp"
-#include "../measures/InducedConservedStructure.hpp"
-#include "../measures/EdgeCorrectness.hpp"
-#include "../measures/EdgeDifference.hpp"
 #include "../measures/EdgeRatio.hpp"
 #include "../measures/EdgeMin.hpp"
-#include "../measures/EdgeGeoMean.hpp"
 #include "../measures/SquaredEdgeScore.hpp"
-#include "../measures/WeightedEdgeConservation.hpp"
-#include "../measures/NodeCorrectness.hpp"
-#include "../measures/SymmetricEdgeCoverage.hpp"
-#include "../measures/localMeasures/Sequence.hpp"
-#include "../measures/EdgeExposure.hpp"
-#include "../measures/MultiS3.hpp"
-#include "../measures/FMeasure.hpp"
-#include "../utils/utils.hpp"
 #include "../Report.hpp"
 
 double static inline acceptingProbability(const double energyInc, const double temperature) {
@@ -51,86 +27,177 @@ double static inline acceptingProbability(const double energyInc, const double t
     return energyInc >= 0 ? 1 : exp(energyInc / temperature);
 }
 
-SANAThree::CalculatorHandler::CalculatorHandler(const unsigned threadNumber, SANAThree &SANA):
-    _extraThreads(threadNumber),
-    _parent(SANA){
-    _calculatorsOn = true;
-    temperature = 0;
-    totalEnergy = 0;
-    totalPBad = 0;
+#define SCORE_BATCH_SIZE 31
+SANAThree::CalculatorHandler::CalculatorHandler(const unsigned threadNumber, SANAThree &SANA, unsigned long long bufferSize):
+    daughterNum(threadNumber),
+    parent(SANA),
+    scoreBuffer(SCORE_BATCH_SIZE),
+    pBadBuffer(bufferSize) {
 
-    _inputRequests = _parent.batchSize;
-    _outputRequests = _parent.batchSize;
+    calculatorsOn = true;
+    collectBatches = true;
+    temperature = 0.;
+    totalEnergy = 0.;
+    totalPBad = 0.;
+
+    inputRequests = parent.batchSize;
+    outputRequests = parent.batchSize;
+
+    pBadTotal = 0;
 
     if (threadNumber == 0) throw runtime_error("Thread number must be > 0");
-    _threadVector.reserve(threadNumber);
+    threadVector.reserve(threadNumber);
     for (unsigned i = 0; i < threadNumber; ++i) {
-        _threadVector.emplace_back(&CalculatorHandler::_mainLoop, this);
+        threadVector.emplace_back(&CalculatorHandler::_mainLoop, this);
     }
 }
 
 SANAThree::CalculatorHandler::~CalculatorHandler(){
-    unique_lock<mutex> requestLock (_requestSystem);
+    unique_lock<mutex> requestLock (requestMutex);
     // Ensures all threads are terminated before deconstruction.
-    _calculatorsOn = false;
+    calculatorsOn = false;
     startBatch.notify_all();
     requestLock.unlock();
-    for (thread& t: _threadVector) {
+    for (thread& t: threadVector) {
         t.join();
     }
 }
 
-SANAThree::batchOutput SANAThree::CalculatorHandler::collectBatch(double temperature) {
+double SANAThree::CalculatorHandler::runUntilEquilibrium(const double temperature, unsigned timeoutSeconds) {
+    unique_lock<mutex> requestLock (requestMutex, defer_lock);
+    unique_lock<mutex> bufferLock (bufferMutex, defer_lock);
+
+    this->temperature = temperature;
+
+    bufferLock.lock();
+    scoreBuffer.resetBuffer();
+    pBadBuffer.resetBuffer();
+    bufferLock.unlock();
+
+    requestLock.lock();
+    collectBatches = false;
+    inputRequests = 0;
+    outputRequests = 0;
+    startBatch.notify_all();
+    requestLock.unlock();
+
+    const auto originalTime = chrono::steady_clock::now();
+    const auto timeoutTime = originalTime + chrono::seconds(timeoutSeconds);
+    bool timedOut = false;
+
+    bufferLock.lock();
+    unsigned iter = SCORE_BATCH_SIZE - 1;
+    do {
+        if (equilibriumCheck.wait_until(bufferLock, timeoutTime) == cv_status::timeout) {
+            timedOut = true;
+            break;
+        }
+        ++iter;
+        equilibriumCheck.notify_one();
+    } while (scoreBuffer.trendingUpwards());
+    collectBatches = true;
+
+    const double answer = recentPBadTrue();
+    scoreBuffer.resetBuffer();
+    pBadBuffer.resetBuffer();
+
+
+    const chrono::duration<double> duration = chrono::steady_clock::now() - originalTime;
+    cout<<"> getEquilibriumPBadAtTemp("<<temperature<<") = "<<answer<<" (score: "<<parent.currentScore<<")"
+    <<" (time: "<<duration.count()<<"s)"
+    << (timedOut? "[TIMED OUT]" : "")
+    <<" iterations = "<<iter * parent.batchSize
+    <<", ips = "<< (iter * parent.batchSize) / duration.count() <<endl
+    <<"****************************************"<<endl<<endl;
+
+    return answer;
+}
+
+
+SANAThree::batchOutput SANAThree::CalculatorHandler::collectBatch(const double temperature) {
     // Unique_locking this is horrible overkill for a function this simple, but in case someone
     // chooses to mess with this in the future, I have safety proofed it. The compiler will
     // optimize it out anyway.
-    unique_lock<mutex> requestLock (_requestSystem, defer_lock);
+    unique_lock<mutex> requestLock (requestMutex, defer_lock);
+    unique_lock<mutex> bufferLock (bufferMutex, defer_lock);
 
     this->temperature = temperature;
+
+    bufferLock.lock();
     totalEnergy = 0.;
     totalPBad = 0.;
+    pBadTotal = 0;
+    bufferLock.unlock();
 
     requestLock.lock();
-    _inputRequests = 0;
-    _outputRequests = 0;
-    _pBadTotal = 0;
+    inputRequests = 0;
+    outputRequests = 0;
+
     startBatch.notify_all();
 
     requestsFinished.wait(requestLock);
-    if (_pBadTotal == 0) _pBadTotal = 1;
-    return {totalEnergy / _parent.batchSize, totalPBad / _pBadTotal};
+    bufferLock.lock();
+    if (pBadTotal == 0) pBadTotal = 1;
+    return {totalEnergy / parent.batchSize, totalPBad / pBadTotal};
 }
 
 void SANAThree::CalculatorHandler::_mainLoop() {
     // See comment about unique_locks in submitRequest
-    unique_lock<mutex> requestLock (_requestSystem);
+    unique_lock<mutex> bufferLock (bufferMutex, defer_lock);
+    unique_lock<mutex> requestLock (requestMutex);
 
     bool on; // To prevent double accessing this variable when unnecessary. We want compiler to cache it in certain scenarios
+
+
     startBatch.wait(requestLock, [this, &on]{
-        on = _calculatorsOn;
-        return _inputRequests < _parent.batchSize || !on;
+        on = calculatorsOn;
+        return inputRequests < parent.batchSize || !on || !collectBatches;
     });
-    while (on) {
-        changeRequest currentRequest = _parent.chooseNextRequest();
-        _inputRequests++;
+    while (on) { // Request system should be locked while this check is made, too complicated to explain why
+        // Part 1, generate request
+        // (We enter this part locked!)
+        changeRequest currentRequest = parent.chooseNextRequest();
+        inputRequests++;
         requestLock.unlock();
 
+        // Part 2, assess request and calculate pBad
         _assessChange(currentRequest);
-
         const double pBad = acceptingProbability(currentRequest.energyInc, temperature);
+
+        // Part 3, implement request
         requestLock.lock();
-        _parent.implementLastRequest(pBad, currentRequest);
-        if (currentRequest.energyInc < 0) {
-            totalPBad += pBad;
-            _pBadTotal++;
+        parent.implementLastRequest(pBad, currentRequest);
+        requestLock.unlock();
+
+        // Part 4, update stats
+        bufferLock.lock();
+        outputRequests++;
+        if (!collectBatches) { // For equilibrium, ts is so cringe, we should probably be doing this switch with an inherited class -Marcus
+            if (currentRequest.energyInc < 0) pBadBuffer.insert(pBad);
+            if (outputRequests % parent.batchSize == 0) {
+                scoreBuffer.insert(parent.currentScore);
+                if (scoreBuffer.isFull()) {
+                    equilibriumCheck.notify_all();
+                    // Pause this thread until calculation over
+                    equilibriumCheck.wait(bufferLock);
+                }
+            }
+            bufferLock.unlock();
+            requestLock.lock();
+            continue;
         }
-        totalEnergy += _parent.currentScore;
-        _outputRequests++;
-        on = _calculatorsOn;
-        if (_inputRequests >= _parent.batchSize and on) {
-            if (_outputRequests >= _parent.batchSize) requestsFinished.notify_one();
+        if (currentRequest.energyInc < 0) {
+            pBadBuffer.insert(pBad);
+            totalPBad += pBad;
+            pBadTotal++;
+        }
+        totalEnergy += parent.currentScore;
+        bufferLock.unlock();
+        requestLock.lock();
+        if (inputRequests >= parent.batchSize and ((on = calculatorsOn))) {
+            if (outputRequests >= parent.batchSize) requestsFinished.notify_all();
             startBatch.wait(requestLock);
-            on = _calculatorsOn;
+            on = calculatorsOn;
         }
     }
 }
@@ -232,35 +299,35 @@ static inline double aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint h
 
 void SANAThree::CalculatorHandler::_assessMove(changeRequest &input) const {
     // This is a hack, MC should be providing this information, not SANA!!
-    if (_parent.needEC) {
+    if (parent.needEC) {
         input.energyInc = aligEdgesIncMoveOp(input.peg1, input.hole1, input.hole2,
-                                            _parent.alignment, _parent.G1, _parent.G2, _parent.m1)
-                          * _parent.MC->getWeight("ec");
+                                            parent.alignment, parent.G1, parent.G2, parent.m1)
+                          * parent.MC->getWeight("ec");
     }
-    if (_parent.needEM) {
-        input.energyInc += EdgeMin::getIncChangeOp(input.peg1, input.hole1, input.hole2, _parent.alignment)
-                           * _parent.MC->getWeight("emin");
+    if (parent.needEM) {
+        input.energyInc += EdgeMin::getIncChangeOp(input.peg1, input.hole1, input.hole2, parent.alignment)
+                           * parent.MC->getWeight("emin");
     }
-    if (_parent.needER) {
-        input.energyInc += EdgeRatio::getIncChangeOp(input.peg1, input.hole1, input.hole2, _parent.alignment)
-                           * _parent.MC->getWeight("er");
+    if (parent.needER) {
+        input.energyInc += EdgeRatio::getIncChangeOp(input.peg1, input.hole1, input.hole2, parent.alignment)
+                           * parent.MC->getWeight("er");
     }
 }
 
 void SANAThree::CalculatorHandler::_assessSwap(changeRequest &input) const {
     // This is a hack, MC should be providing this information, not SANA!!
-    if (_parent.needEC) {
+    if (parent.needEC) {
         input.energyInc = aligEdgesIncSwapOp(input.peg1, input.peg2, input.hole1, input.hole2,
-                                            _parent.alignment, _parent.G1, _parent.G2, _parent.m1)
-                          * _parent.MC->getWeight("ec");
+                                            parent.alignment, parent.G1, parent.G2, parent.m1)
+                          * parent.MC->getWeight("ec");
     }
-    if (_parent.needEM) {
-        input.energyInc += EdgeMin::getIncSwapOp(input.peg1, input.peg2, input.hole1, input.hole2, _parent.alignment)
-                           * _parent.MC->getWeight("emin");
+    if (parent.needEM) {
+        input.energyInc += EdgeMin::getIncSwapOp(input.peg1, input.peg2, input.hole1, input.hole2, parent.alignment)
+                           * parent.MC->getWeight("emin");
     }
-    if (_parent.needER) {
-        input.energyInc += EdgeRatio::getIncSwapOp(input.peg1, input.peg2, input.hole1, input.hole2, _parent.alignment)
-                           * _parent.MC->getWeight("er");
+    if (parent.needER) {
+        input.energyInc += EdgeRatio::getIncSwapOp(input.peg1, input.peg2, input.hole1, input.hole2, parent.alignment)
+                           * parent.MC->getWeight("er");
     }
 }
 

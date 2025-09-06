@@ -189,14 +189,11 @@ METHOD_WRAPPERS_SRC =    						\
 	src/methods/wrappers/SanaWrapper.cpp
 
 GOLDILOCKSMETHODS_SRC =   							\
-	src/goldilocksmethods/Ameur.cpp 					\
-	src/goldilocksmethods/IteratedAmeur.cpp    				\
 	src/goldilocksmethods/LinearRegressionModern.cpp  					\
 	src/goldilocksmethods/LinearRegressionVintage.cpp 					\
 	src/goldilocksmethods/PBadBinarySearch.cpp   				\
 	src/goldilocksmethods/GoldilocksMethod.cpp    					\
 	src/goldilocksmethods/goldilocksUtils.cpp 					\
-	src/goldilocksmethods/StatisticalTest.cpp  	\
 	src/goldilocksmethods/IteratedLinearRegression.cpp		
 
 MODES_SRC = 								\
