@@ -19,7 +19,7 @@ static void validateRunTimeSpec(ArgumentParser& args);
 
 private:
 
-static SanaWrapper* initSANA(const Graph& G1, const Graph& G2, ArgumentParser& args, MeasureCombination& M, string startAligName=""); 
+static SANAThree* initSANA(const Graph& G1, const Graph& G2, ArgumentParser& args, MeasureCombination& M, string startAligName="");
 static LGraalWrapper* initLgraalWrapper(const Graph& G1,const Graph& G2, ArgumentParser& args);
 static HubAlignWrapper* initHubAlignWrapper(const Graph& G1, const Graph& G2, ArgumentParser& args);
 

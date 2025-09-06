@@ -2,12 +2,11 @@
 #define SANAPISWAPWRAPPER_HPP
 
 #include <cassert>
-#include "SanaWrapper.hpp"
 #include "WrappedMethod.hpp"
 #include "PISwapWrapper.hpp"
 #include "../../arguments/ArgumentParser.hpp"
 #include "../../measures/MeasureCombination.hpp"
-#include "../SANA.hpp"
+#include "../SANAThree.hpp"
 
 using namespace std;
 
@@ -17,7 +16,7 @@ public:
     Alignment run();
 
 private:
-    SanaWrapper* sanaMethod;
+    SANAThree* sanaMethod;
     PISwapWrapper* piswapMethod;
     MeasureCombination M;
 

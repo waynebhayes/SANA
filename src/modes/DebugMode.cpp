@@ -12,7 +12,7 @@
 #include "../measures/MeasureCombination.hpp"
 #include "../measures/localMeasures/GoSimilarity.hpp"
 #include "../methods/Method.hpp"
-#include "../methods/SANA.hpp"
+#include "../methods/SANAThree.hpp"
 #include "../goldilocksmethods/LinearRegressionVintage.hpp"
 #include "../Graph.hpp"
 #include "../Alignment.hpp"

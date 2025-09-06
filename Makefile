@@ -98,7 +98,6 @@ LFLAGS =
 LIBS =
 
 METHODS_SRC =   							\
-	src/methods/SANA.cpp    					\
 	src/methods/HillClimbing.cpp    				\
 	src/methods/Method.cpp  					\
 	src/methods/NoneMethod.cpp 					\
@@ -185,8 +184,7 @@ METHOD_WRAPPERS_SRC =    						\
 	src/methods/wrappers/WAVEWrapper.cpp				\
 	src/methods/wrappers/PINALOGWrapper.cpp				\
 	src/methods/wrappers/SANAPISWAPWrapper.cpp			\
-	src/methods/wrappers/CytoGEDEVOWrapper.cpp			\
-	src/methods/wrappers/SanaWrapper.cpp
+	src/methods/wrappers/CytoGEDEVOWrapper.cpp
 
 GOLDILOCKSMETHODS_SRC =   							\
 	src/goldilocksmethods/LinearRegressionModern.cpp  					\

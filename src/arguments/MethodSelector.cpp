@@ -4,11 +4,9 @@
 
 #include "measureSelector.hpp"
 
-#include "../utils/Timer.hpp"
 #include "../methods/NoneMethod.hpp"
 #include "../methods/HillClimbing.hpp"
-#include "../methods/wrappers/SanaWrapper.hpp"
-#include "../methods/SANA.hpp"
+#include "../methods/SANAThree.hpp"
 #include "../methods/RandomAligner.hpp"
 #include "../methods/wrappers/NETALWrapper.hpp"
 #include "../methods/wrappers/MIGRAALWrapper.hpp"
@@ -31,6 +29,11 @@
 
 using namespace std;
 
+#ifdef THREADS
+#define THREAD_NUMBER atoi(getenv("SANA_THREADS"))
+#else
+#define THREAD_NUMBER 1
+#endif
 
 Method* MethodSelector::initMethod(const Graph& G1, const Graph& G2, ArgumentParser& args, MeasureCombination& M) {
     string aligFile = args.strings["-eval"];
@@ -102,7 +105,7 @@ void MethodSelector::validateRunTimeSpec(ArgumentParser& args) {
     }
 }
 
-SanaWrapper* MethodSelector::initSANA(const Graph& G1, const Graph& G2, 
+SANAThree* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
         ArgumentParser& args, MeasureCombination& M, string startAligName) {
     string TIniArg = args.strings["-tinitial"];
     string TDecayArg = args.strings["-tdecay"];
@@ -113,8 +116,8 @@ SanaWrapper* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
     if (goldilocksMethodName == "comparison") {
         Alignment startAlig;
         if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
-        SanaWrapper sana(&G1, &G2, 0.0, 0.0, 0, 0, 0.0, 0, &M, 
-                  args.strings["-combinedScoreAs"], startAlig, "", "");
+        SANAThree sana(&G1, &G2, 0.0, 0.0, 0, 0, 0.0, 0, &M,
+                  args.strings["-combinedScoreAs"], startAlig, "", "", THREAD_NUMBER);
         goldilocksMethodComparison(&sana);
         exit(0);
     }
@@ -152,9 +155,9 @@ SanaWrapper* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
     Alignment startAlig;
     if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
 
-    SanaWrapper* sana = new SanaWrapper(&G1, &G2, TInitial, TDecay, maxSeconds, maxIterations, tolerance,
+    SANAThree* sana = new SANAThree(&G1, &G2, TInitial, TDecay, maxSeconds, maxIterations, tolerance,
         args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"],
-        startAlig, args.strings["-o"], args.strings["-localScoresFile"]);
+        startAlig, args.strings["-o"], args.strings["-localScoresFile"], THREAD_NUMBER);
 
     if (useMethodForTIni or useMethodForTDecay) {
         if (goldilocksMethodName == "auto" ) { //if user uses 'auto', choose for them
@@ -172,8 +175,6 @@ SanaWrapper* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
         }
         goldilocksMethod->printGoldilocksStatistics();
     }
-    if (args.bools["-dynamictdecay"]) sana->setDynamicTDecay();
-    if (args.bools["-multi-iteration-only"]) sana->setMultiOnly();
     return sana;
 }
 

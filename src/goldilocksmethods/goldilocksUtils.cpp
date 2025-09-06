@@ -23,7 +23,7 @@ unique_ptr<GoldilocksMethod> getGoldilocksMethod(string name) {
     throw runtime_error("goldilocks method "+name+" not found");
 }
 
-void goldilocksMethodComparison(SanaWrapper *const sana) {
+void goldilocksMethodComparison(SANAThree *const sana) {
 
     //customizable parameters
     GoldilocksExpParams params;
