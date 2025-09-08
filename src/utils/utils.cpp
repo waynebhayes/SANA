@@ -38,12 +38,24 @@ int randInt(int low, int high) {
     return dis(gen);
 }
 
-unsigned randIndex(const unsigned size, mt19937_64 &gen) {
+unsigned randIndex(const unsigned size) {
+    static mt19937 gen(getRandomSeed());
     uniform_int_distribution<unsigned> dis(0, size - 1);
     return dis(gen);
 }
 
-uint64_t randIndex(const uint64_t size, mt19937_64 &gen) {
+uint64_t randIndex_64(const uint64_t size) {
+    static mt19937_64 gen(getRandomSeed());
+    uniform_int_distribution<uint64_t> dis(0, size - 1);
+    return dis(gen);
+}
+
+unsigned randIndex(const unsigned size, mt19937 &gen) {
+    uniform_int_distribution<unsigned> dis(0, size - 1);
+    return dis(gen);
+}
+
+uint64_t randIndex_64(const uint64_t size, mt19937_64 &gen) {
     uniform_int_distribution<uint64_t> dis(0, size - 1);
     return dis(gen);
 }

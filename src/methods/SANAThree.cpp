@@ -425,7 +425,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest() {
     unsigned color = 0;
 
     // Our only RNG call! This uniquely determines our valid request, now we just have to decode it.
-    uint64_t alignmentNumber = randIndex(numAdjacentAlignments, generator);
+    uint64_t alignmentNumber = randIndex_64(numAdjacentAlignments, generator);
 
     // Swap Logic
     if (alignmentNumber < numSwaps) {
