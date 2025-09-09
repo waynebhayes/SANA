@@ -30,6 +30,10 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
         const string& scoreAggrStr, const Alignment& optionalStartAlig, const string& outputFileName,
         const string& localScoresFileName, unsigned threadNumber):
     Method(G1, G2, "SANAThree_" + MC->toString()),
+    n1(G1->getNumNodes()),
+    n2(G2->getNumNodes()),
+    m1(G1->getNumEdges()),
+    m2(G2->getNumEdges()),
     hillClimbing(addHillClimbing),
     needEC(MC->getWeight("ec") > 0),
     needEM(MC->getWeight("emin") > 0),
@@ -43,12 +47,8 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
     startingAlignment(optionalStartAlig),
     outputFileName(outputFileName),
     localScoresFileName(localScoresFileName),
-    n1(G1->getNumNodes()),
-    n2(G2->getNumNodes()),
-    m1(G1->getNumEdges()),
-    m2(G2->getNumEdges()),
     tInitial(TInitial),
-    tDecay(TDecay){
+    tDecay(TDecay) {
     // This should never happen, and if it does, it is 100% user error.
     if (threadNumber >= n1 / 2) {
         throw runtime_error(
@@ -71,7 +71,6 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
 
     generator = mt19937_64(getRandomSeed());
     randomReal = uniform_real_distribution<>(0, 1);
-
 
     // NODE COLOR SYSTEM initialization
 

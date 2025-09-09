@@ -77,7 +77,7 @@ Graph::Graph(const bool directed, const string& graphName, const string& optiona
         nodeWeights[node1] += weight;
         totalGraphWeight += weight;
         ++dummyNumEdges;
-        if (node1 == node2) continue;
+        if (node1 == node2) continue; // That is, self-loops do not show up in injList!
         if(!directed) {
             adjLists[node2].emplace(node1, weight);
             nodeWeights[node2] += weight;

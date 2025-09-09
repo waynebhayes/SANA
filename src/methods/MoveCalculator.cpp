@@ -153,7 +153,7 @@ void SANAThree::CalculatorHandler::_mainLoop() {
         on = calculatorsOn;
         return inputRequests < parent.batchSize || !on || !collectBatches;
     });
-    while (on) { // Request system should be locked while this check is made, too complicated to explain why
+    while (on) { // Request system should always be locked while this check is made, too complicated to explain why
         // Part 1, generate request
         // (We enter this part locked!)
         changeRequest currentRequest = parent.chooseNextRequest();
@@ -172,7 +172,7 @@ void SANAThree::CalculatorHandler::_mainLoop() {
         // Part 4, update stats
         bufferLock.lock();
         outputRequests++;
-        if (!collectBatches) { // For equilibrium, ts is so cringe, we should probably be doing this switch with an inherited class -Marcus
+        if (!collectBatches) { // For equilibrium, ts is so cringe -Marcus
             if (currentRequest.energyInc < 0) pBadBuffer.insert(pBad);
             if (outputRequests % parent.batchSize == 0) {
                 scoreBuffer.insert(parent.currentScore);
@@ -186,6 +186,7 @@ void SANAThree::CalculatorHandler::_mainLoop() {
             requestLock.lock();
             continue;
         }
+        // Implicit else
         if (currentRequest.energyInc < 0) {
             pBadBuffer.insert(pBad);
             totalPBad += pBad;
@@ -202,39 +203,45 @@ void SANAThree::CalculatorHandler::_mainLoop() {
     }
 }
 
-static inline double aligEdgesIncMoveOp(uint peg, uint oldHole, uint newHole, Alignment &alignment, const Graph *G1, const Graph *G2, unsigned denominator) {
-    int res = 0;
-    if (G1->hasSelfLoop(peg)) {
-        if (G2->hasSelfLoop(oldHole))
-            res-=G2->getEdgeWeight(oldHole, oldHole);
-        if (G2->hasSelfLoop(newHole))
-            res+=G2->getEdgeWeight(newHole, newHole);
-    }
-    auto list = G1->getAdjList(peg);
-    for (uint nbrPeg : *list) if (nbrPeg != peg) {
-        const unsigned nbrHole = alignment[nbrPeg];
-        const int def = G2->getEdgeWeight(oldHole, nbrHole);
-        res -= def;
-        const int sur = G2->getEdgeWeight(newHole, nbrHole);
-        res += sur;
-    }
-    if(G1->directed)
-        list = G1->getInjList(peg);
-        for (uint nbrPeg : *list) if (nbrPeg != peg) {
-            const unsigned nbrHole = alignment[nbrPeg];
-            const int def = G2->getEdgeWeight(nbrHole, oldHole);
-            res -= def;
-            const int sur = G2->getEdgeWeight(nbrHole, newHole);
-            res += sur;
-    }
-    return static_cast<double>(res) / denominator;
-}
 
-static inline double aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2, Alignment &alignment, const Graph *G1, const Graph *G2, unsigned denominator) {
+
+static inline double aligEdgesIncMoveOp(const Graph::Node &peg1, const Graph::Node &hole1, const Graph::Node &hole2,
+    Alignment &alignment, uint64_t totalEdges, bool directed) {
+
+#ifdef WEIGHT
+    cerr << "EdgeCorrectness should not be used with weight. It is optimized for unweighted graphs and make incompatible assumptions." <<endl;
+    throw runtime_error("Bad measure used with WEIGHT compiler setting.");
+#else
     int result = 0;
 
-    // TODO: weight check
+    for (const auto &edge: peg1.adjList) {
+        const unsigned nbrHole = alignment[edge.first];
+        result -= hole1.adjList.count(nbrHole);
+        result += hole2.adjList.count(nbrHole);
+    }
+    // self-loop correction
+    if (peg1.adjList.count(peg1.nodeID)) {
+        result -= hole2.adjList.count(hole1.nodeID); // Subtract erroneously counted edge
+        result += hole2.adjList.count(hole2.nodeID); // Add correct edge
+    }
+    if(directed) {
+        for (const auto& edge : peg1.injList) {
+            const unsigned nbrHole = alignment[edge.first];
+            result -= hole1.injList.count(nbrHole);
+            result += hole2.injList.count(nbrHole);
+        }
+    }
 
+    return static_cast<double>(result) / totalEdges;
+#endif
+}
+
+static inline double aligEdgesIncSwapOp(const Graph::Node &peg1, const Graph::Node &peg2, const Graph::Node &hole1, const Graph::Node &hole2,
+    Alignment &alignment, uint64_t totalEdges, bool directed) {
+#ifdef WEIGHT
+    cerr << "EdgeCorrectness should not be used with weight. It is optimized for unweighted graphs and make incompatible assumptions." <<endl;
+    throw runtime_error("Bad measure used with WEIGHT compiler setting.");
+#else
     /*
      * Marcus compiler optimizations for multithreading:
      * Do NOT call alignment[] for the same index twice in a row. You might believe "oh, the compiler will just optimize
@@ -243,97 +250,90 @@ static inline double aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint h
      * if it has changed, but the compiler has no way to know that unless we tell it by manually specifying that YES,
      * we want to use the same value twice, code transparency be damned.
      */
+    int result = 0;
 
-    // Peg 1 changes
-    if (G1->hasSelfLoop(peg1)) {
-        if (G2->hasSelfLoop(hole1))
-            result-=G2->getEdgeWeight(hole1, hole1);
-        if (G2->hasSelfLoop(hole2))
-            result+=G2->getEdgeWeight(hole2, hole2);
+    for (const auto &edge: peg1.adjList) {
+        const unsigned nbrHole = alignment[edge.first];
+        result -= hole1.adjList.count(nbrHole);
+        result += hole2.adjList.count(nbrHole);
     }
-    auto list = G1->getAdjList(peg1);
-    for (const uint nbrPeg : *list) if (nbrPeg != peg1) {
-        const unsigned nbrHole = alignment[nbrPeg];
-        const int def = G2->getEdgeWeight(hole1, nbrHole);
-        result -= def;
-        const int sur = G2->getEdgeWeight(hole2, nbrHole);
-        result += sur;
+    // self-loop correction
+    if (peg1.adjList.count(peg1.nodeID)) {
+        result -= hole2.adjList.count(hole1.nodeID); // Subtract erroneously counted edge
+        result += hole2.adjList.count(hole2.nodeID); // Add correct edge
     }
-    // Peg 2 changes
-    if (G1->hasSelfLoop(peg2)) {
-        if (G2->hasSelfLoop(hole2))
-            result-=G2->getEdgeWeight(hole2, hole2);
-        if (G2->hasSelfLoop(hole1))
-            result+=G2->getEdgeWeight(hole1, hole1);
+    for (const auto &edge: peg2.adjList) {
+        const unsigned nbrHole = alignment[edge.first];
+        result -= hole2.adjList.count(nbrHole);
+        result += hole1.adjList.count(nbrHole);
     }
-    list = G1->getAdjList(peg2);
-    for (const uint nbrPeg : *list) if (nbrPeg != peg2) {
-        const unsigned nbrHole = alignment[nbrPeg];
-        const int deficit = G2->getEdgeWeight(hole2, nbrHole);
-        result -= deficit;
-        const int sur = G2->getEdgeWeight(hole1, nbrHole);
-        result += sur;
+    // self-loop correction
+    if (peg2.adjList.count(peg2.nodeID)) {
+        result -= hole1.adjList.count(hole2.nodeID); // Subtract erroneously counted edge
+        result += hole1.adjList.count(hole1.nodeID); // Add correct edge
     }
-    // Fix for double counting
-    if (G1->hasEdge(peg1, peg2) and G2->hasEdge(hole1, hole2))
-        result += 2;
-
-    // Same thing again, but backwards
-    if(G1->directed) {
-        list = G1->getInjList(peg1);
-        for (const uint nbrPeg : *list) if (nbrPeg != peg1) {
-            const unsigned nbrHole = alignment[nbrPeg];
-            const int def = G2->getEdgeWeight(nbrHole, hole1);
-            result -= def;
-            const int sur = G2->getEdgeWeight(nbrHole, hole2);
-            result += sur;
+    if(directed) {
+        for (const auto &edge: peg1.injList) {
+            const unsigned nbrHole = alignment[edge.first];
+            result -= hole1.injList.count(nbrHole);
+            result += hole2.injList.count(nbrHole);
         }
-        list = G1->getInjList(peg2);
-        for (const uint nbrPeg : *list) if (nbrPeg != peg2) {
-            const unsigned nbrHole = alignment[nbrPeg];
-            const int deficit = G2->getEdgeWeight(nbrHole, hole2);
-            result -= deficit;
-            const int sur = G2->getEdgeWeight(nbrHole, hole1);
-            result += sur;
+        for (const auto &edge: peg2.injList) {
+            const unsigned nbrHole = alignment[edge.first];
+            result -= hole2.injList.count(nbrHole);
+            result += hole1.injList.count(nbrHole);
         }
-        if (G1->hasEdge(peg2, peg1) and G2->hasEdge(hole2, hole1))
-            result += 2;
-    }
 
-    return static_cast<double>(result) / denominator;
+        // Directed peg edge correction
+        if (peg1.adjList.count(peg2.nodeID)) {
+        if (peg2.adjList.count(peg1.nodeID)) { // peg1 <-> peg2
+            result += hole1.adjList.count(hole2.nodeID);
+            result -= hole1.adjList.count(hole1.nodeID);
+            result -= hole2.adjList.count(hole2.nodeID);
+            result += hole2.adjList.count(hole1.nodeID);
+        }
+        else { // peg1 -> peg2
+            result += hole1.adjList.count(hole2.nodeID);
+            result += hole2.adjList.count(hole1.nodeID);
+            result -= hole2.adjList.count(hole2.nodeID);
+        }}
+        else if (peg2.adjList.count(peg1.nodeID)) { // peg1 <- peg2
+            result += hole2.adjList.count(hole1.nodeID);
+            result += hole1.adjList.count(hole2.nodeID);
+            result -= hole1.adjList.count(hole1.nodeID);
+        }
+    }
+    // Undirected case to correct peg1 <-> peg2 edge, which should result in zero delta.
+    else if (peg1.adjList.count(peg2.nodeID)) {
+        result += hole1.adjList.count(hole2.nodeID);
+        result -= hole1.adjList.count(hole1.nodeID);
+        result -= hole2.adjList.count(hole2.nodeID);
+        result += hole2.adjList.count(hole1.nodeID);
+    }
+    return static_cast<double>(result) / totalEdges;
+#endif
 }
 
 void SANAThree::CalculatorHandler::_assessMove(changeRequest &input) const {
     // This is a hack, MC should be providing this information, not SANA!!
+    const Graph::Node &peg1 = parent.G1->deliverNode(input.peg1);
+    const Graph::Node &hole1 = parent.G2->deliverNode(input.hole1);
+    const Graph::Node &hole2 = parent.G2->deliverNode(input.hole2);
     if (parent.needEC) {
-        input.energyInc = aligEdgesIncMoveOp(input.peg1, input.hole1, input.hole2,
-                                            parent.alignment, parent.G1, parent.G2, parent.m1)
+        input.energyInc = aligEdgesIncMoveOp(peg1, hole1, hole2, parent.alignment, parent.m1, parent.G1->directed)
                           * parent.MC->getWeight("ec");
-    }
-    if (parent.needEM) {
-        input.energyInc += EdgeMin::getIncChangeOp(input.peg1, input.hole1, input.hole2, parent.alignment)
-                           * parent.MC->getWeight("emin");
-    }
-    if (parent.needER) {
-        input.energyInc += EdgeRatio::getIncChangeOp(input.peg1, input.hole1, input.hole2, parent.alignment)
-                           * parent.MC->getWeight("er");
     }
 }
 
 void SANAThree::CalculatorHandler::_assessSwap(changeRequest &input) const {
     // This is a hack, MC should be providing this information, not SANA!!
+    const Graph::Node &peg1 = parent.G1->deliverNode(input.peg1);
+    const Graph::Node &peg2 = parent.G1->deliverNode(input.peg2);
+    const Graph::Node &hole1 = parent.G2->deliverNode(input.hole1);
+    const Graph::Node &hole2 = parent.G2->deliverNode(input.hole2);
     if (parent.needEC) {
-        input.energyInc = aligEdgesIncSwapOp(input.peg1, input.peg2, input.hole1, input.hole2,
-                                            parent.alignment, parent.G1, parent.G2, parent.m1)
+        input.energyInc = aligEdgesIncSwapOp(peg1, peg2, hole1, hole2, parent.alignment, parent.m1, parent.G1->directed)
                           * parent.MC->getWeight("ec");
-    }
-    if (parent.needEM) {
-        input.energyInc += EdgeMin::getIncSwapOp(input.peg1, input.peg2, input.hole1, input.hole2, parent.alignment)
-                           * parent.MC->getWeight("emin");
-    }
-    if (parent.needER) {
-        input.energyInc += EdgeRatio::getIncSwapOp(input.peg1, input.peg2, input.hole1, input.hole2, parent.alignment)
-                           * parent.MC->getWeight("er");
     }
 }
 

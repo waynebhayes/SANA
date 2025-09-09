@@ -17,6 +17,7 @@
 #include "../measures/CoreScore.hpp"
 #include "../utils/Misc.hpp"
 #include "../utils/CircularBuffer.hpp"
+#include "../Graph.hpp"
 
 using namespace std;
 
@@ -161,6 +162,9 @@ private:
         void _assessSwap(changeRequest &input) const; // Two pins
     };
 
+    // Convenience variables
+    const uint64_t n1, n2, m1, m2;
+
     // Control variables, keep constant -Marcus
     const bool hillClimbing, needEC, needEM, needER;
     const double tolerance;
@@ -173,11 +177,8 @@ private:
     const string outputFileName;
     const string localScoresFileName;
 
-    // Convenience variables
-    const unsigned n1, n2, m1, m2;
-
     double tInitial;
-    double tFinal;
+    double tFinal{};
     double tDecay;
 
     CalculatorHandler *threadPool;
