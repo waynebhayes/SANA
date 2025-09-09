@@ -16,6 +16,7 @@
 #include <cstdio>
 
 #include "SANAThree.hpp"
+
 #include "../measures/SquaredEdgeScore.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/randomSeed.hpp"

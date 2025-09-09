@@ -24,7 +24,7 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     cout << "Initializing graphs..." << endl;
     string fg1 = args.strings["-fg1"], fg2 = args.strings["-fg2"];
     string g1Name, g2Name, g1File, g2File;
-    if (fg1 != "") {
+    if (!fg1.empty()) {
         g1Name = FileIO::fileNameWithoutPathAndExtension(fg1);
         g1File = fg1;
     } else {
@@ -57,19 +57,12 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     T.start();
     auto futureG1 = async(&loadGraphFromFile, g1Name, g1File, g1HasWeights, directed);
     auto futureG2 = async(&loadGraphFromFile, g2Name, g2File, g2HasWeights, directed);
-    Graph G1 = futureG1.get();
-    Graph G2 = futureG2.get();
-#ifdef MULTI_MPI
-    G1.hasWeights = g1HasWeights;
-    G2.hasWeights = g2HasWeights;
-    G1.otherGraph = &G2;
-    G2.otherGraph = &G1;
-#endif
-    G1.directed = G2.directed = directed;
+    unique_ptr<Graph> G1(new Graph(futureG1.get()));
+    unique_ptr<Graph> G2(new Graph(futureG2.get()));
 
     cout << "Loading graph files took " << T.elapsedString() << endl <<endl;
 
-    if (G1.getNumNodes() > G2.getNumNodes())
+    if (G1->getNumNodes() > G2->getNumNodes())
         throw runtime_error("G1 has more nodes than G2. Please swap the graphs");
 
     //colors or locking
@@ -92,42 +85,42 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
     } else if (lockSameNames) {
         cout<<"Locking nodes with the same name"<<endl;
         array<vector<array<string, 2>>, 2> nodeColorLists =
-            nodeColorListsFromCommonNames(G1.commonNodeNames(G2));
+            nodeColorListsFromCommonNames(G1->commonNodeNames(*G2));
         g1Colors = nodeColorLists[0], g2Colors = nodeColorLists[1];
     } else {
         if (g1HasColorFile) g1Colors = RawColorFileData(fcolors1).nodeColorList;
         if (g2HasColorFile) g2Colors = RawColorFileData(fcolors2).nodeColorList;
     }
-    if (g1Colors.empty() and g2Colors.empty() and G1.getNumNodes() > G2.getNumNodes()) {
+    if (g1Colors.empty() and g2Colors.empty() and G1->getNumNodes() > G2->getNumNodes()) {
         throw runtime_error("Please swap G1 and G2. G2 should have more nodes.");
     }
-    G1.initColorDataStructs(g1Colors);
-    G2.initColorDataStructs(g2Colors);
+    G1->reinitializeColors(g1Colors);
+    G2->reinitializeColors(g2Colors);
 
     //check that G1 and G2 have the same colors
     bool colorMismatch = false;
     string errMsg = "";
-    for (const string& colName : *(G1.getColorNames())) {
-        uint g1ColId = G1.getColorId(colName);
-        if (not G2.hasColor(colName)) {
+    for (const string& colName : *(G1->getColorNames())) {
+        uint g1ColId = G1->getColorId(colName);
+        if (not G2->hasColor(colName)) {
             colorMismatch = true;
-            errMsg += "G1 has "+to_string(G1.numNodesWithColor(g1ColId))
+            errMsg += "G1 has "+to_string(G1->numNodesWithColor(g1ColId))
                    +" nodes colored '"+colName+"', like node '"
-                   +G1.getNodeName((G1.getNodesWithColor(g1ColId))->at(0))+"', but G2 has 0.\n";
+                   +G1->getNodeName((G1->getNodesWithColor(g1ColId))->at(0))+"', but G2 has 0.\n";
         }
     }
-    for (const string& colName : *(G2.getColorNames())) {
-        uint g2ColId = G2.getColorId(colName);
-        if (not G1.hasColor(colName)) {
+    for (const string& colName : *(G2->getColorNames())) {
+        uint g2ColId = G2->getColorId(colName);
+        if (not G1->hasColor(colName)) {
             colorMismatch = true;
-            errMsg += "G2 has "+to_string(G2.numNodesWithColor(g2ColId))
+            errMsg += "G2 has "+to_string(G2->numNodesWithColor(g2ColId))
                    +" nodes colored '"+colName+"', like node '"
-                   +G2.getNodeName((G2.getNodesWithColor(g2ColId))->at(0))+"', but G1 has 0.\n";
+                   +G2->getNodeName((G2->getNodesWithColor(g2ColId))->at(0))+"', but G1 has 0.\n";
         }
     }
     if (colorMismatch) {
-        G1.debugPrint();
-        G2.debugPrint();
+        G1->debugPrint();
+        G2->debugPrint();
         errMsg += "The two networks should have the same colors. " \
             "For example, if you are aligning two virus-host networks, then the colors " \
             "should be 'virus' and 'host'; using species names won't work, because for example a node " \
@@ -137,13 +130,13 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
 
     //add dummy nodes to G2 to guarantee an alignment exists
     unordered_map<string,uint> colToNumDummies;
-    for (const string& colName : *(G1.getColorNames())) {
-        uint g1Count = G1.numNodesWithColor(G1.getColorId(colName));
-        uint g2Count = G2.numNodesWithColor(G2.getColorId(colName));
+    for (const string& colName : *(G1->getColorNames())) {
+        uint g1Count = G1->numNodesWithColor(G1->getColorId(colName));
+        uint g2Count = G2->numNodesWithColor(G2->getColorId(colName));
         if (g1Count > g2Count) colToNumDummies[colName] = g1Count - g2Count;
     }
     if (not colToNumDummies.empty()) {
-        vector<string> g2NodeNames = *(G2.getNodeNames());
+        vector<string> g2NodeNames = G2->getNodeNames();
         g2NodeNames.reserve(g2NodeNames.size() + colToNumDummies.size());
         uint numDummiesWithDefCol = (colToNumDummies.count(Graph::DEFAULT_COLOR_NAME) ?
                                             colToNumDummies[Graph::DEFAULT_COLOR_NAME] : 0);
@@ -164,11 +157,11 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
         cout<<endl;
         vector<EDGE_T> g2Weights;
         if (g2HasWeights) {
-            g2Weights.reserve(G2.getNumEdges());
-            for (const auto& edge : *(G2.getEdgeList()))
-                g2Weights.push_back(G2.getEdgeWeight(edge[0], edge[1]));
+            g2Weights.reserve(G2->getNumEdges());
+            for (const auto& edge : *(G2->getEdgeList()))
+                g2Weights.push_back(G2->getEdgeWeight(edge[0], edge[1]));
         }
-        G2 = Graph(G2.directed, G2.getName(), G2.getFilePath(), *(G2.getEdgeList()), g2NodeNames, g2Weights, g2Colors);
+        G2.reset(new Graph(G2->directed, G2->getName(), G2->getFilePath(), *(G2->getEdgeList()), g2NodeNames, g2Weights, g2Colors));
     }
 
     string path1 = args.strings["-pathmap1"], path2 = args.strings["-pathmap2"];
@@ -176,48 +169,31 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
         uint power1 = stoi(path1);
         if (power1 > 1) {
             cout << "Raising G1 to the " << power1 << " power" << endl;
-            G1 = G1.graphPower(power1);
+            G1.reset(new Graph(G1->graphPower(power1)));
         }
     }
     if (path2 != "") {
         uint power2 = stoi(path2);
         if (power2 > 1) {
             cout << "Raising G2 to the " << power2 << " power" << endl;
-            G2 = G2.graphPower(power2);
+            G2.reset(new Graph(G2->graphPower(power2)));
         }
     }
-
-#ifdef MULTI_PAIRWISE
-    //prune G1 from G2 (G2 is the shadow network)
-    string nodeMapFile = args.strings["-startalignment"];
-    if (nodeMapFile == "") throw runtime_error("argument -startalignment not provided");
-    cout << "Starting to prune using " << nodeMapFile << endl;
-    if (nodeMapFile.size() <= 6) throw runtime_error("start alignment file should end with '.align'");
-    string format = nodeMapFile.substr(nodeMapFile.size()-6);
-    if (format != ".align") throw runtime_error("only edge list format ('.align') is supported for start alignment");
-    Alignment A = Alignment::loadEdgeList(G1, G2, nodeMapFile);
-    vector<uint> G1ToG2Map = A.asVector();
-    G2 = pruneG1FromG2(G1, G2, G1ToG2Map);
-#elif MULTI_MPI
-    // DO NOT prune G1 from G2 because that's going to be done on-the-fly in the MPI version.
-    string nodeMapFile = args.strings["-startalignment"];
-    if (nodeMapFile != "") throw runtime_error("argument -startalignment should not be provided when using MULTI_MPI");
-#endif
 
     double rewiredFraction1 = args.doubles["-rewire1"];
     if (rewiredFraction1 > 0) {
         if (rewiredFraction1 > 1)
             throw runtime_error("Cannot rewire more than 100% of G1 edges");
-        G1 = G1.graphWithRewiredRandomEdges(rewiredFraction1);
+        G1.reset(new Graph(G1->graphWithRewiredRandomEdges(rewiredFraction1)));
     }
     double rewiredFraction2 = args.doubles["-rewire2"];
     if (rewiredFraction2 > 0) {
         if (rewiredFraction2 > 1)
             throw runtime_error("Cannot rewire more than 100% of G2 edges");
-        G2 = G2.graphWithRewiredRandomEdges(rewiredFraction2);
+        G2.reset(new Graph(G2->graphWithRewiredRandomEdges(rewiredFraction2)));
     }
-    if (G1.getNumEdges() == 0) throw runtime_error("G1 has 0 edges");
-    if (G2.getNumEdges() == 0) throw runtime_error("G2 has 0 edges");
+    if (G1->getNumEdges() == 0) throw runtime_error("G1 has 0 edges");
+    if (G2->getNumEdges() == 0) throw runtime_error("G2 has 0 edges");
 
     cout << "Total time for loading graphs (" << T.elapsedString() << ")" << endl;
 
@@ -225,16 +201,16 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
 	cout << "Skipping graph validation\n";
     else {
         T.start();
-        G1.debugPrint();
-        G2.debugPrint();
+        G1->debugPrint();
+        G2->debugPrint();
 	cout << "Validating graph 1\n";
-        if (not G1.isWellDefined()) throw runtime_error("G1 is not well-defined");
+        if (not G1->isWellDefined()) throw runtime_error("G1 is not well-defined");
 	cout << "Validating graph 2\n";
-        if (not G2.isWellDefined()) throw runtime_error("G2 is not well-defined");
+        if (not G2->isWellDefined()) throw runtime_error("G2 is not well-defined");
         cout << "Total time validating graphs (" << T.elapsedString() << ")" << endl << endl;
     }
 
-    return {G1, G2};
+    return {*G1, *G2};
 }
 
 void GraphLoader::saveInGWFormat(const Graph& G, const string& outFile, bool saveWeights) {
@@ -246,7 +222,7 @@ void GraphLoader::saveInGWFormat(const Graph& G, const string& outFile, bool sav
     ofstream ofs(tempFile);
     ofs << "LEDA.GRAPH" << endl << "string" << endl << "short" << endl << "-2" << endl;
     ofs << G.getNumNodes() << endl;
-    for (const auto& name : *(G.getNodeNames())) ofs << "|{" << name << "}|" << endl;
+    for (const auto& name : G.getNodeNames()) ofs << "|{" << name << "}|" << endl;
     ofs << G.getNumEdges() << endl;
     for (const auto& edge : *(G.getEdgeList())) {
         ofs << edge[0]+1 << " " << edge[1]+1 << " 0 |{"; //re-indexing to 1-based

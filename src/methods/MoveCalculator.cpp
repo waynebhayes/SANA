@@ -210,7 +210,8 @@ static inline double aligEdgesIncMoveOp(uint peg, uint oldHole, uint newHole, Al
         if (G2->hasSelfLoop(newHole))
             res+=G2->getEdgeWeight(newHole, newHole);
     }
-    for (uint nbrPeg : *G1->getAdjList(peg)) if (nbrPeg != peg) {
+    auto list = G1->getAdjList(peg);
+    for (uint nbrPeg : *list) if (nbrPeg != peg) {
         const unsigned nbrHole = alignment[nbrPeg];
         const int def = G2->getEdgeWeight(oldHole, nbrHole);
         res -= def;
@@ -218,7 +219,8 @@ static inline double aligEdgesIncMoveOp(uint peg, uint oldHole, uint newHole, Al
         res += sur;
     }
     if(G1->directed)
-        for (uint nbrPeg : *G1->getInjList(peg)) if (nbrPeg != peg) {
+        list = G1->getInjList(peg);
+        for (uint nbrPeg : *list) if (nbrPeg != peg) {
             const unsigned nbrHole = alignment[nbrPeg];
             const int def = G2->getEdgeWeight(nbrHole, oldHole);
             res -= def;
@@ -249,7 +251,8 @@ static inline double aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint h
         if (G2->hasSelfLoop(hole2))
             result+=G2->getEdgeWeight(hole2, hole2);
     }
-    for (const uint nbrPeg : *G1->getAdjList(peg1)) if (nbrPeg != peg1) {
+    auto list = G1->getAdjList(peg1);
+    for (const uint nbrPeg : *list) if (nbrPeg != peg1) {
         const unsigned nbrHole = alignment[nbrPeg];
         const int def = G2->getEdgeWeight(hole1, nbrHole);
         result -= def;
@@ -263,7 +266,8 @@ static inline double aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint h
         if (G2->hasSelfLoop(hole1))
             result+=G2->getEdgeWeight(hole1, hole1);
     }
-    for (const uint nbrPeg : *G1->getAdjList(peg2)) if (nbrPeg != peg2) {
+    list = G1->getAdjList(peg2);
+    for (const uint nbrPeg : *list) if (nbrPeg != peg2) {
         const unsigned nbrHole = alignment[nbrPeg];
         const int deficit = G2->getEdgeWeight(hole2, nbrHole);
         result -= deficit;
@@ -276,14 +280,16 @@ static inline double aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint h
 
     // Same thing again, but backwards
     if(G1->directed) {
-        for (const uint nbrPeg : *G1->getInjList(peg1)) if (nbrPeg != peg1) {
+        list = G1->getInjList(peg1);
+        for (const uint nbrPeg : *list) if (nbrPeg != peg1) {
             const unsigned nbrHole = alignment[nbrPeg];
             const int def = G2->getEdgeWeight(nbrHole, hole1);
             result -= def;
             const int sur = G2->getEdgeWeight(nbrHole, hole2);
             result += sur;
         }
-        for (const uint nbrPeg : *G1->getInjList(peg2)) if (nbrPeg != peg2) {
+        list = G1->getInjList(peg2);
+        for (const uint nbrPeg : *list) if (nbrPeg != peg2) {
             const unsigned nbrHole = alignment[nbrPeg];
             const int deficit = G2->getEdgeWeight(nbrHole, hole2);
             result -= deficit;

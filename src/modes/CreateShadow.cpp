@@ -93,7 +93,7 @@ void CreateShadow::createShadow(const string& outFile, const vector<string>& gra
         //if hasCols is false, every node gets the default color, which is a valid color
         if (hasCols) {
             auto nodeColorPairs = GraphLoader::rawTwoColumnFileData(colFiles[i]);
-            G.initColorDataStructs(nodeColorPairs);
+            G.reinitializeColors(nodeColorPairs);
         }
         for (const string& gColor : *(G.getColorNames())) {
             uint gColorCount = G.numNodesWithColor(G.getColorId(gColor));
@@ -149,7 +149,7 @@ void CreateShadow::createShadow(const string& outFile, const vector<string>& gra
         Graph G = GraphLoader::loadGraphFromFile("", graphFiles[i], false, false);
         if (hasCols) {
             auto nodeColorPairs = GraphLoader::rawTwoColumnFileData(colFiles[i]);
-            G.initColorDataStructs(nodeColorPairs);
+            G.reinitializeColors(nodeColorPairs);
         }
 
         //figure out the mapping from G to the shadow graph

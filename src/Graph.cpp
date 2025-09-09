@@ -1,19 +1,9 @@
 #include "Graph.hpp"
 #include <queue>
-#include <set>
-#include <unordered_set>
 #include <iterator>
-#include <cmath>
 #include <cassert>
 #include <sstream>
-#include <typeinfo> //typeid
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/file.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <unistd.h>
 #include <regex>
 
 #ifdef MULTI_MPI
@@ -24,75 +14,113 @@ using namespace std;
 
 //static attributes
 const string Graph::DEFAULT_COLOR_NAME = "__default";
-const uint Graph::INVALID_COLOR_ID = 9999999;
+const unsigned Graph::INVALID_COLOR_ID = 9999999;
 
 Graph::Graph(const bool directed, const string& graphName, const string& optionalFilePath,
-	     const vector<array<uint, 2>>& edgeList,
-             const vector<string>& optionalNodeNames,
-             const vector<EDGE_T>& optionalEdgeWeights,
-             const vector<array<string, 2>>& partialNodeColorPairs):
-        directed(directed), name(graphName), filePath(optionalFilePath),
-        edgeList(edgeList), nodeNames(optionalNodeNames) {
-
-    uint numNodes;
-    if (optionalNodeNames.size() != 0) numNodes = optionalNodeNames.size();
+                     const vector<array<unsigned, 2>>& edgeList,
+                     const vector<string>& optionalNodeNames,
+                     const vector<EDGE_T>& optionalEdgeWeights,
+                     const vector<array<string, 2>>& partialNodeColorPairs):
+    directed(directed),
+    numEdges(edgeList.size()),
+    name(graphName),
+    filePath(optionalFilePath),
+    edgeList(edgeList) {
+    
+    vector<string> nodeNames;
+    unsigned numNodes;
+    if (optionalNodeNames.empty()) numNodes = optionalNodeNames.size();
     else {
         //if names are not given, derive the number of nodes from the edge list
         //and give them dummy names
         if (edgeList.empty()) {
             numNodes = 0;
         } else {
-            uint maxInd = 0;
+            unsigned maxInd = 0;
             for (const auto& edge : edgeList)
-                for (uint node : edge)
+                for (const unsigned node : edge)
                     if (node > maxInd) maxInd = node;
             numNodes = maxInd+1;
         }
         nodeNames.reserve(numNodes);
-        for (uint i = 0; i < numNodes; i++) nodeNames.push_back(to_string(i));
+        for (unsigned i = 0; i < numNodes; i++) nodeNames.push_back(to_string(i));
     }
 
     nodeNameToIndexMap.reserve(numNodes);
-    for (uint i = 0; i < numNodes; i++) {
+    for (unsigned i = 0; i < numNodes; i++) {
         if (nodeNameToIndexMap.count(nodeNames[i]))
             throw runtime_error("repeated node name "+nodeNames[i]+" passed to graph constructor");
-        nodeNameToIndexMap[nodeNames[i]] = i;
+        nodeNameToIndexMap[nodeNames.at(i)] = i;
     }
 
-    bool uniformWeights = optionalEdgeWeights.size() == 0;
+    const bool uniformWeights = optionalEdgeWeights.size() == 0;
     assert(uniformWeights or optionalEdgeWeights.size() == edgeList.size());
 
-    adjLists.resize(numNodes);
-    injLists.resize(numNodes);
-    adjMatrix = Matrix<EDGE_T>(numNodes);
-    totalWeight = vector<double>(numNodes, 0.0);
-    totalEdgeWeight = 0;
-    for (uint i = 0; i < edgeList.size(); i++) {
-        uint node1 = edgeList[i][0], node2 = edgeList[i][1];
+    vector<MAP_TYPE> adjLists(numNodes, MAP_TYPE{});
+    vector<MAP_TYPE> injLists(numNodes, MAP_TYPE{});
+    auto nodeWeights = vector<double>(numNodes, 0.0);
+    totalGraphWeight = 0;
+    uint64_t dummyNumEdges = 0;
+    for (unsigned i = 0; i < edgeList.size(); i++) {
+        unsigned node1 = edgeList[i][0], node2 = edgeList[i][1];
         assert(node1 < numNodes and node2 < numNodes);
-        adjLists[node1].push_back(node2);
-        if (node1 == node2) ; // do nothing... don't duplicate self-loop whether it's directed on undirected
-        else if(!directed) adjLists[node2].push_back(node1);
-        else injLists[node2].push_back(node1);
         EDGE_T weight;
-        if (uniformWeights) weight = 1;
-        else weight = optionalEdgeWeights[i];
-        if (weight == 0) throw runtime_error("edges with weight 0 are not supported");
-	if((directed && adjMatrix[node1][node2]) || (!directed && (adjMatrix[node1][node2] or adjMatrix[node2][node1])))
-            throw runtime_error("repeated edge ("+nodeNames[node1]+","+nodeNames[node2]+") in edge list passed to graph constructor; did you mean to specify \"-directed\"?");
-        adjMatrix[node1][node2] = weight; totalWeight[node1] += weight;
+        if (uniformWeights)
+            weight = 1;
+        else
+            weight = optionalEdgeWeights[i];
+        if (weight == 0)
+            throw runtime_error("edges with weight 0 are not supported");
+        if((directed && adjLists[node1].count(node2)) || (!directed && (adjLists[node1].count(node2) || adjLists[node2].count(node1))))
+            throw runtime_error("Repeated edge ("+nodeNames[node1]+","+nodeNames[node2]+") in edge list passed to graph constructor; did you mean to specify \"-directed\"?");
+        adjLists[node1].emplace(node2, weight);
+        nodeWeights[node1] += weight;
+        totalGraphWeight += weight;
+        ++dummyNumEdges;
+        if (node1 == node2) continue;
         if(!directed) {
-	    adjMatrix[node2][node1] = weight;
-	    if(node2!=node1) totalWeight[node2] += weight;
-	}
-        totalEdgeWeight += weight;
+            adjLists[node2].emplace(node1, weight);
+            nodeWeights[node2] += weight;
+        }
+        else
+            injLists[node2].emplace(node1, weight);
     }
-    adjLists.shrink_to_fit();
-    injLists.shrink_to_fit();
-    initColorDataStructs(partialNodeColorPairs);
+    assert(numEdges == dummyNumEdges);
+
+    vector<unsigned> nodeColors(numNodes, INVALID_COLOR_ID);
+    vector<string> nodeColorNames(numNodes, "");
+    initColorDataStructs(partialNodeColorPairs, nodeColors, nodeColorNames);
+
+    // We do not want fragmented data. Therefore, we will be ditching all of these temporary structures in favor
+    // of a fresh start and hopefully linear data that is easy to cash.
+    nodes.reserve(numNodes);
+    for (unsigned i = 0; i < numNodes; i++) {
+        nodes.emplace_back(i, nodeColors.at(i), nodeWeights.at(i), nodeNames.at(i),
+               nodeColorNames.at(i), adjLists.at(i), injLists.at(i));
+    }
+    nodes.shrink_to_fit();
 }
 
-void Graph::initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs) {
+void Graph::reinitializeColors(const vector<array<string, 2>>& partialNodeColorPairs) {
+    const unsigned numNodes = nodes.size();
+    vector<unsigned> nodeColors(numNodes, INVALID_COLOR_ID);
+    vector<string> nodeColorNames(numNodes, "");
+    initColorDataStructs(partialNodeColorPairs, nodeColors, nodeColorNames);
+
+    vector<Node> newNodes;
+    newNodes.reserve(numNodes);
+    for (unsigned i = 0; i < numNodes; i++) {
+        Node &oldNode = nodes.at(i);
+        newNodes.emplace_back(oldNode, nodeColors.at(i), nodeColorNames.at(i));
+    }
+    newNodes.shrink_to_fit();
+
+    swap(nodes, newNodes);
+}
+
+
+void Graph::initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs,
+                                     vector<unsigned> &nodeColors, vector<string> &nodeColorNames) {
     //data structures initialized here:
     nodeColors.clear();
     colorNames.clear();
@@ -115,226 +143,173 @@ void Graph::initColorDataStructs(const vector<array<string, 2>>& partialNodeColo
         colorSet.insert(colorName);
     }
 
-    if (nodeNameToColorName.size() < getNumNodes()) {
+    if (nodeNameToColorName.size() < nodeColorNames.size()) {
         colorNames.push_back(DEFAULT_COLOR_NAME); //default color gets index 0, if present
     }
     colorNames.insert(colorNames.end(), colorSet.begin(), colorSet.end());
 
-    for (uint i = 0; i < colorNames.size(); i++) {
+    for (unsigned i = 0; i < colorNames.size(); i++) {
         colorNameToId[colorNames[i]] = i;
     }
 
     //nodes initialized with color id 0 (which corresponds to the default color, if any node has it)
     //nodes not in the passed map will keep it
-    nodeColors = vector<uint> (getNumNodes(), 0);
+    nodeColors = vector<unsigned> (nodeNameToIndexMap.size(), 0);
     for (auto& nodeToColor : nodeNameToColorName) {
-        uint nodeId = nodeNameToIndexMap[nodeToColor.first];
-        uint colorId = colorNameToId[nodeToColor.second];
+        unsigned nodeId = nodeNameToIndexMap[nodeToColor.first];
+        unsigned colorId = colorNameToId[nodeToColor.second];
         nodeColors[nodeId] = colorId;
     }
 
-    nodeGroupsByColor = vector<vector<uint>> (colorNames.size(), vector<uint> (0));
-    for (uint i = 0; i < getNumNodes(); i++) {
+    nodeGroupsByColor = vector<vector<unsigned>> (colorNames.size(), vector<unsigned> (0));
+    for (unsigned i = 0; i < nodeNameToIndexMap.size(); i++) {
         nodeGroupsByColor[nodeColors[i]].push_back(i);
     }
 }
 
-#ifdef MULTI_MPI
-EDGE_T Graph::getEdgeWeight(uint node1, uint node2) const
-{
-    // if (*this is G2, then we're going to need the Alignment of G1 to G2, so we can query
-    // if there's an edge in G1 aligned over the node1 and node2 given as parameters)
-    //     hasEdge = 1;
-    // return adjMatrix.get(node1, node2) - hasEdge;
-
-    if (this->hasWeights)
-    {
-        // will be 1 if we discover G1 has an aligned edge above (node1,node2)
-        int hasEdge = 0;
-
-        // A[(peg/G1 nodeNumber)] = (hole/G2 nodeNumber)
-        Alignment *A = this->otherGraph->alignment;
-
-        vector<uint> aligVect = A->asVector();
-        // inefficient ok for now
-        int g1Node1 = find(aligVect.begin(), aligVect.end(), node1) - aligVect.begin();
-        int g1Node2 = find(aligVect.begin(), aligVect.end(), node2) - aligVect.begin();
-
-        if (this->otherGraph->hasEdge(g1Node1, g1Node2))
-        {
-            hasEdge = 1;
-        }
-        return adjMatrix.get(node1, node2) - hasEdge;
-    }
-    return adjMatrix.get(node1, node2);
+Graph Graph::nodeInducedSubgraph(const vector<unsigned>& nodes) const {
+    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
+    << "This information will help inform us that this functionality should not be retired." << endl;
+    throw runtime_error("Function not implemented!");
 }
-#endif
-
-Graph Graph::nodeInducedSubgraph(const vector<uint>& nodes) const {
-    uint oldN = getNumNodes();
-    uint newN = nodes.size();
-    const uint INVALID_NEW_INDEX = newN; //arbitrary value outside range 0..newN-1
-    vector<uint> oldToNewIndex(oldN, INVALID_NEW_INDEX);
-    for (uint i = 0; i < newN; i++) oldToNewIndex[nodes[i]] = i;
-
-    vector<array<uint, 2>> newEdgeList;
-    vector<EDGE_T> newEdgeWeights;
-    for (const auto& edge: edgeList) {
-        uint newNode1 = oldToNewIndex[edge[0]];
-        uint newNode2 = oldToNewIndex[edge[1]];
-        if (newNode1 != INVALID_NEW_INDEX and newNode2 != INVALID_NEW_INDEX) {
-            newEdgeList.push_back({newNode1, newNode2});
-            newEdgeWeights.push_back(getEdgeWeight(edge[0], edge[1]));
-        }
-    }
-
-    vector<string> newNodeNames;
-    newNodeNames.reserve(newN);
-    for (uint node : nodes) newNodeNames.push_back(nodeNames[node]);
-
-    vector<array<string, 2>> newNodeNameToColorName;
-    bool hasDefColor = colorNames[0] == DEFAULT_COLOR_NAME; //if present, the default color is at index 0
-    for (const uint node : nodes) {
-        if (hasDefColor and nodeColors[node] == 0) continue;
-        newNodeNameToColorName.push_back({nodeNames[node], colorNames[nodeColors[node]]});
-    }
-    return Graph(directed, name+"_subgraph", "", newEdgeList, newNodeNames, newEdgeWeights, newNodeNameToColorName);
+Graph Graph::randomNodeInducedSubgraph(unsigned numNodes) const {
+    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
+    << "This information will help inform us that this functionality should not be retired." << endl;
+    throw runtime_error("Function not implemented!");
 }
-
-Graph Graph::randomNodeInducedSubgraph(uint numNodes) const {
-    if (numNodes > getNumNodes()) cerr << "the subgraph cannot have more nodes" << endl;
-    vector<uint> v;
-    v.reserve(getNumNodes());
-    for (uint i = 0; i < getNumNodes(); i++) v.push_back(i);
-    randomShuffle(v);
-    v.resize(numNodes);
-    return nodeInducedSubgraph(v);
+Graph Graph::shuffledGraph(vector<unsigned>& newToOldMap) const {
+    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
+    << "This information will help inform us that this functionality should not be retired." << endl;
+    throw runtime_error("Function not implemented!");
 }
-
-Graph Graph::shuffledGraph(vector<uint> &newToOldMap) const {
-    newToOldMap.clear(); //this is a return argument by reference
-    newToOldMap.reserve(getNumNodes());
-    for (uint i = 0; i < getNumNodes(); i++) newToOldMap.push_back(i);
-    randomShuffle(newToOldMap);
-    return nodeInducedSubgraph(newToOldMap);
+Graph Graph::graphPower(unsigned power) const {
+    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
+    << "This information will help inform us that this functionality should not be retired." << endl;
+    throw runtime_error("Function not implemented!");
 }
-
-//this function is not tested a lot, use with care?
-Graph Graph::graphPower(uint power) const {
-    if (power == 0) throw runtime_error("graphs don't have 0 powers (well, maybe the Identity but why would you want that?)");
-    if (power == 1) cerr<<"Warning: first power of a graph is just the graph itself"<<endl;
-    uint n = getNumNodes();
-    SparseMatrix<uint> oriAdjMat(n);
-    for (const auto& edge : edgeList) {
-        uint node1 = edge[0], node2 = edge[1];
-        oriAdjMat[node1][node2] = 1;
-	if(!directed) oriAdjMat[node2][node1] = 1;
-    }
-    SparseMatrix<uint> newAdjMat = oriAdjMat;
-
-    for(uint i = 1; i < power; i++) {
-        //the number of multiplications can be reduced from O(power) to O(log power)
-        //by multiplying the new matrix with itself instead of the original
-        //I left this optimization unimplemented since I don't think this function is used much -Nil
-        SparseMatrix<uint> newAdjMat = newAdjMat.multiply(oriAdjMat);
-    }
-    vector<array<uint, 2>> newEdgeList;
-    //there is probably an O(m) way to do this instead of O(n^2) -Nil
-    for(uint i=0;i<n;i++){
-        for(uint j=i;j<n;j++){
-            if(newAdjMat.get(i,j) > 0){
-                newEdgeList.push_back({i,j});
-            }
-        }
-    }
-    return Graph(directed, name+"_power_"+to_string(power), "", newEdgeList,
-                 nodeNames, {}, colorsAsNodeColorNamePairs()); //unweighted result
-}
-
 Graph Graph::graphWithAddedRandomEdges(double addedEdgesProportion) const {
-	throw runtime_error("didn't reimplement this yet because I suspect this feature is not used. Sorry -Nil");
+    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
+    << "This information will help inform us that this functionality should not be retired." << endl;
+    throw runtime_error("Function not implemented!");
 }
 Graph Graph::graphWithRemovedRandomEdges(double removedEdgesProportion) const {
-	throw runtime_error("didn't reimplement this yet because I suspect this feature is not used. Sorry -Nil");
+    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
+    << "This information will help inform us that this functionality should not be retired." << endl;
+    throw runtime_error("Function not implemented!");
 }
 Graph Graph::graphWithRewiredRandomEdges(double rewiredEdgesProportion) const {
-	throw runtime_error("didn't reimplement this yet because I suspect this feature is not used. Sorry -Nil");
+    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
+    << "This information will help inform us that this functionality should not be retired." << endl;
+    throw runtime_error("Function not implemented!");
+}
+Graph Graph::graphIntersection(const Graph& other, const vector<unsigned>& thisToOtherNodeMap) const {
+    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
+    << "This information will help inform us that this functionality should not be retired." << endl;
+    throw runtime_error("Function not implemented!");
 }
 
-Graph Graph::graphIntersection(const Graph& other, const vector<uint>& thisToOtherNodeMap) const {
-    vector<array<uint, 2>> newEdgeList;
-    for (const auto& edge : edgeList) {
-        uint on1 = thisToOtherNodeMap[edge[0]], on2 = thisToOtherNodeMap[edge[1]];
-        if (other.hasEdge(on1, on2)) newEdgeList.push_back(edge);
+unique_ptr<vector<unsigned>> Graph::getAdjList(unsigned node) const {
+    static bool gaveWarning = false;
+    if (!gaveWarning) {
+        cerr << "Warning, soon to deprecated getAdjList function was used. This should be fixed." <<endl;
+        cerr << "It can cause issues if the output is dereferenced as a temporary object." <<endl;
+        cerr << "It is also a poorly optimized compatibility function left over from SANA2.0." <<endl;
+        gaveWarning = true;
     }
-    vector<string> newNodeNames;
-    newNodeNames.reserve(getNumNodes());
-    for (uint i = 0; i < getNumNodes(); i++) {
-        string g1Name = nodeNames[i];
-        string newName = "("+g1Name+","+other.nodeNames[thisToOtherNodeMap[i]]+")";
-        newNodeNames.push_back(newName);
+    unique_ptr<vector<unsigned>> adjList(new vector<unsigned>());
+    for (const auto &pair: nodes.at(node).adjList)
+        adjList->push_back(pair.first);
+    return adjList;
+}
+
+unique_ptr<vector<vector<unsigned>>> Graph::getAdjLists() const {
+    static bool gaveWarning = false;
+    if (!gaveWarning) {
+        cerr << "NO ONE SHOULD BE USING Graph::getAdjLists() EVER! FIX YO CODE" <<endl;
+        gaveWarning = true;
     }
-
-    vector<array<string, 2>> newNodeColorPairs;
-    bool hasDefColor = colorNames[0] == DEFAULT_COLOR_NAME;
-    newNodeColorPairs.reserve(getNumNodes() - (hasDefColor ? numNodesWithColor(0) : 0));
-    for (uint i = (hasDefColor ? 1 : 0); i < numColors(); i++) {
-        string colName = colorNames[i];
-        for (uint node : nodeGroupsByColor[i]) {
-            string g1Name = nodeNames[node];
-            string newName = "("+g1Name+","+other.nodeNames[thisToOtherNodeMap[node]]+")";
-            newNodeColorPairs.push_back({newName, colName});
-        }
+    unique_ptr<vector<vector<unsigned>>> adjLists(new vector<vector<unsigned>>());
+    adjLists->reserve(nodes.size());
+    for (unsigned i = 0; i < nodes.size(); ++i) {
+        adjLists->push_back(*getAdjList(i));
     }
-
-    return Graph(directed, name+"_intersection_"+other.name, "", newEdgeList,
-                 newNodeNames, {}, newNodeColorPairs); //unweighted result
+    return adjLists;
 }
 
-uint Graph::randomNode() const {
-    if (getNumNodes() == 0) throw runtime_error("no nodes");
-    return randInt(0, getNumNodes()-1);
+unique_ptr<vector<unsigned>> Graph::getInjList(unsigned node) const {
+    static bool gaveWarning = false;
+    if (!gaveWarning) {
+        cerr << "Warning, soon to deprecated getInjList function was used. This should be fixed." <<endl;
+        cerr << "It can cause issues if the output is dereferenced as a temporary object." <<endl;
+        cerr << "It is also a poorly optimized compatibility function left over from SANA2.0." <<endl;
+        gaveWarning = true;
+    }
+    unique_ptr<vector<unsigned>> injList(new vector<unsigned>());
+    for (const auto &pair: nodes.at(node).adjList)
+        injList->push_back(pair.first);
+    return injList;}
+
+const vector<array<unsigned, 2>>* Graph::getEdgeList() const {
+    static bool gaveWarning = false;
+    if (!gaveWarning) {
+        cerr << "Warning, soon to deprecated getEdgeList function was used. This should be fixed." <<endl;
+        gaveWarning = true;
+    }
+    return &edgeList;
 }
 
-uint Graph::maxDegree() const {
-    if (adjLists.size() == 0) return 0;
-    uint res = adjLists[0].size();
-    for (uint i = 1; i < getNumNodes(); i++)
-        if (adjLists[i].size() > res) res = adjLists[i].size();
-    return res;
+const unordered_map<string, unsigned>* Graph::getNodeNameToIndexMap() const {
+    static bool gaveWarning = false;
+    if (!gaveWarning) {
+        cerr << "Warning, soon to deprecated getEdgeList function was used. This should be fixed." <<endl;
+        gaveWarning = true;
+    }
+    return &nodeNameToIndexMap;
 }
 
-vector<uint> Graph::degreeDistribution() const {
-    vector<uint> res(maxDegree()+1);
-    for (uint i = 0; i < getNumNodes(); i++)
-        res[adjLists[i].size()]++;
-    return res;
+unsigned Graph::maxDegree() const {
+    unsigned maxDegree = 0;
+    for (const Node &node: nodes) {
+        maxDegree = node.adjList.size() > maxDegree ? node.adjList.size() : maxDegree;
+    }
+    return maxDegree;
 }
+
+vector<unsigned> Graph::degreeDistribution() const {
+    vector<unsigned> degreeDis(maxDegree()+1);
+    for (const Node &node: nodes) {
+        const unsigned degree = node.adjList.size();
+        ++degreeDis[degree];
+    }
+    return degreeDis;
+}
+
+/* Marcus: borrowed code from the old graph system written by Nil Mamano. I enacted minimal changes where possible. */
 
 // predicate for sorting CCs, but it doesn't measure strongly connected components (and I don't care right now)
-bool _isBiggerCC(const vector<uint>& a, const vector<uint>& b) { return a.size()>b.size(); }
-vector<vector<uint>> Graph::connectedComponents() const {
-    uint n = getNumNodes();
-    vector<bool> nodesAreChecked(n, false);
-    vector<uint> nodes;
-    nodes.reserve(n);
-    for (uint i = 0; i < n; ++i) nodes.push_back(i);
-    vector<vector<uint>> res;
-    while (not nodes.empty()) {
-        uint startOfConnected = nodes.back();
-        nodes.pop_back();
+static bool _isBiggerCC(const vector<unsigned>& a, const vector<unsigned>& b) { return a.size()>b.size(); }
+vector<vector<unsigned>> Graph::connectedComponents() const {
+    unsigned nodeNum = getNumNodes();
+    vector<bool> nodesAreChecked(nodeNum, false);
+    vector<unsigned> nodeList;
+    nodeList.reserve(nodeNum);
+    for (unsigned i = 0; i < nodeNum; ++i) nodeList.push_back(i);
+    vector<vector<unsigned>> res;
+    while (not nodeList.empty()) {
+        unsigned startOfConnected = nodeList.back();
+        nodeList.pop_back();
         if (nodesAreChecked[startOfConnected]) continue;
-        vector<uint> connected;
-        queue<uint> neighbors;
+        vector<unsigned> connected;
+        queue<unsigned> neighbors;
         neighbors.push(startOfConnected);
         while (not neighbors.empty()) {
-            uint node = neighbors.front();
+            unsigned node = neighbors.front();
             neighbors.pop();
             if (nodesAreChecked[node]) continue;
             connected.push_back(node);
             nodesAreChecked[node] = true;
-            for (uint nbr: adjLists[node]) {
-                if (not nodesAreChecked[nbr]) neighbors.push(nbr);
+            for (const auto& nbrWeightPair: nodes.at(node).adjList) {
+                if (not nodesAreChecked[nbrWeightPair.first]) neighbors.push(nbrWeightPair.first);
             }
         }
         res.push_back(connected);
@@ -343,98 +318,103 @@ vector<vector<uint>> Graph::connectedComponents() const {
     return res;
 }
 
-uint Graph::numEdgesInNodeInducedSubgraph(const vector<uint>& subgraphNodes) const {
-    unordered_set<uint> nodeSet(subgraphNodes.begin(), subgraphNodes.end());
-    uint count = 0;
-    for (uint node1 : subgraphNodes)
-        for (uint node2 : adjLists[node1])
-            count += nodeSet.count(node2);
-    if(directed) return count;
-    else {
-	assert(count%2==0);
-	return count/2;
+unsigned Graph::numEdgesInNodeInducedSubgraph(const vector<unsigned>& subgraphNodes) const {
+    unsigned numEdges = 0;
+    const unordered_set<unsigned> subgraphSet(subgraphNodes.begin(), subgraphNodes.end());
+    for (const auto nodeID: subgraphNodes) {
+        const Node &node = nodes.at(nodeID);
+        for (const auto edge: node.adjList) {
+            numEdges += subgraphSet.count(edge.first);
+        }
     }
+    if (!directed) {
+        assert(numEdges % 2 == 0);
+        numEdges /= 2;
+    }
+    return numEdges;
 }
 
-vector<uint> Graph::numEdgesAroundByLayers(uint node, uint maxDist) const {
-    uint n = getNumNodes();
-    vector<uint> distances(n, n);
-    vector<bool> visited(n, false);
+// Marcus: More borrowed code, thank you Dr. Mamano. Syntax has been cleaned up slightly, I still
+// wish we were on C++17 so that I could use structured bindings.
+vector<unsigned> Graph::numEdgesAroundByLayers(unsigned node, unsigned maxDist) const {
+    unsigned numNodes = getNumNodes();
+    vector<unsigned> distances(numNodes, numNodes);
+    vector<bool> visited(numNodes, false);
     distances[node] = 0;
-    queue<uint> Q;
+    queue<unsigned> Q;
     Q.push(node);
-    vector<uint> result(maxDist, 0);
+    vector<unsigned> result(maxDist, 0);
     while (not Q.empty()) {
-        uint u = Q.front();
+        unsigned uID = Q.front();
+        const Node &uNode = nodes.at(uID);
         Q.pop();
-        uint dist = distances[u];
+        unsigned dist = distances[uID];
         if (dist == maxDist) break;
-        for (uint i = 0; i < adjLists[u].size(); i++) {
-            uint v = adjLists[u][i];
-            if (not visited[v]) result[dist]++;
-            if (distances[v] < n) continue;
-            distances[v] = dist+1;
-            Q.push(v);
+        for (const auto &edge: uNode.adjList) {
+            unsigned vID = edge.first;
+            if (not visited[vID]) result[dist]++;
+            if (distances[vID] < numNodes) continue;
+            distances[vID] = dist+1;
+            Q.push(vID);
         }
-        visited[u] = true;
+        visited[uID] = true;
     }
     return result;
 }
-
-vector<uint> Graph::numNodesAroundByLayers(uint node, uint maxDist) const {
-    uint n = getNumNodes();
-    vector<uint> distances(n, n);
+vector<unsigned> Graph::numNodesAroundByLayers(unsigned node, unsigned maxDist) const {
+    unsigned numNodes = getNumNodes();
+    vector<unsigned> distances(numNodes, numNodes);
     distances[node] = 0;
-    queue<uint> Q;
+    queue<unsigned> Q;
     Q.push(node);
     while (not Q.empty()) {
-        uint u = Q.front();
+        unsigned uID = Q.front();
+        const Node &uNode = nodes.at(uID);
         Q.pop();
-        uint dist = distances[u];
+        unsigned dist = distances[uID];
         if (dist == maxDist) break;
-        for (uint i = 0; i < adjLists[u].size(); i++) {
-            uint v = adjLists[u][i];
-            if (distances[v] < n) continue;
-            distances[v] = dist+1;
-            Q.push(v);
+        for (const auto &edge: uNode.adjList) {
+            unsigned vID = edge.first;
+            if (distances[vID] < numNodes) continue;
+            distances[vID] = dist+1;
+            Q.push(vID);
         }
     }
-    vector<uint> result(maxDist, 0);
-    uint total = 0;
-    for (uint i = 0; i < n; i++)
-        if (distances[i] < n and distances[i] > 0) {
-        result[distances[i]-1]++;
-        total++;
-    }
+    vector<unsigned> result(maxDist, 0);
+    unsigned total = 0;
+    for (unsigned i = 0; i < numNodes; i++)
+        if (distances[i] < numNodes and distances[i] > 0) {
+            result[distances[i]-1]++;
+            total++;
+        }
     assert(total == nodesAround(node, maxDist).size());
     return result;
 }
-
-vector<uint> Graph::nodesAround(uint node, uint maxDist) const {
-    uint n = getNumNodes();
-    vector<uint> distances(n, n);
+vector<unsigned> Graph::nodesAround(unsigned node, unsigned maxDist) const {
+    unsigned nodeNum = getNumNodes();
+    vector<unsigned> distances(nodeNum, nodeNum);
     distances[node] = 0;
-    queue<uint> Q;
+    queue<unsigned> Q;
     Q.push(node);
     while (not Q.empty()) {
-        uint u = Q.front();
+        unsigned uID = Q.front();
+        const Node &uNode = nodes.at(uID);
         Q.pop();
-        uint dist = distances[u];
+        unsigned dist = distances[uID];
         if (dist == maxDist) break;
-        for (uint i = 0; i < adjLists[u].size(); i++) {
-            uint v = adjLists[u][i];
-            if (distances[v] < n) continue;
-            distances[v] = dist+1;
-            Q.push(v);
+        for (const auto &edge: uNode.adjList) {
+            unsigned vID = edge.first;
+            if (distances[vID] < nodeNum) continue;
+            distances[vID] = dist+1;
+            Q.push(vID);
         }
     }
-    vector<uint> result;
-    for (uint i = 0; i < n; i++) {
-        if (distances[i] < n and distances[i] >= 0) result.push_back(i);
+    vector<unsigned> result;
+    for (unsigned i = 0; i < nodeNum; i++) {
+        if (distances[i] < nodeNum) result.push_back(i);
     }
     return result;
 }
-
 bool Graph::hasSameNodeNamesAs(const Graph& other) const {
     if (getNumNodes() != other.getNumNodes()) return false;
     for (const auto& kv : nodeNameToIndexMap) {
@@ -453,20 +433,8 @@ vector<string> Graph::commonNodeNames(const Graph& other) const {
     res.shrink_to_fit();
     return res;
 }
-
-// NODE COLOR SYSTEM
-
-uint Graph::getNodeColor(uint node) const { return nodeColors[node]; }
-uint Graph::getColorId(string name) const {
-    if (!colorNameToId.count(name)) throw runtime_error("color name not found");
-    return colorNameToId.at(name);
-}
-string Graph::getColorName(uint colorId) const { return colorNames.at(colorId); }
-const vector<string>* Graph::getColorNames() const { return &colorNames; }
-bool Graph::hasColor(string name) const { return colorNameToId.count(name); }
-uint Graph::numColors() const { return colorNames.size(); }
-vector<uint> Graph::myColorIdsToOtherGraphColorIds(const Graph& other) const {
-    vector<uint> res;
+vector<unsigned> Graph::myColorIdsToOtherGraphColorIds(const Graph& other) const {
+    vector<unsigned> res;
     res.reserve(numColors());
     for (const string& colorName: colorNames) {
         if (!other.hasColor(colorName)) {
@@ -477,57 +445,188 @@ vector<uint> Graph::myColorIdsToOtherGraphColorIds(const Graph& other) const {
     }
     return res;
 }
-
 vector<array<string, 2>> Graph::colorsAsNodeColorNamePairs() const {
     vector<array<string, 2>> res;
     bool hasDefColor = colorNames[0] == DEFAULT_COLOR_NAME;
     res.reserve(getNumNodes() - (hasDefColor ? numNodesWithColor(0) : 0));
-    for (uint i = (hasDefColor ? 1 : 0); i < numColors(); i++) {
+    for (unsigned i = (hasDefColor ? 1 : 0); i < numColors(); i++) {
         string colName = colorNames[i];
-        for (uint node : nodeGroupsByColor[i])
-            res.push_back({nodeNames[node], colName});
+        for (unsigned node : nodeGroupsByColor[i])
+            res.push_back({nodes.at(node).nodeName, colName});
     }
     return res;
 }
+
+bool Graph::isWellDefined() const {
+    ostringstream ss;
+    //data structures have the right size
+    unsigned n = nodes.size();
+    if (nodeNameToIndexMap.size() != n)
+        ss<<"nodes has size "<<n<<" but nodeNameToIndexMap has size "<<nodeNameToIndexMap.size()<<endl;
+    unsigned k = colorNames.size();
+    if (colorNameToId.size() != k)
+        ss<<"colorNames has size "<<k<<" but colorNameToId has size "<<colorNameToId.size()<<endl;
+    if (nodeGroupsByColor.size() != k)
+        ss<<"colorNames has size "<<k<<" but nodeGroupsByColor has size "<<nodeGroupsByColor.size()<<endl;
+
+    //adjMatrix is symmetric if !directed, and the sum of edges weights equals totalGraphWeight
+    unsigned numEdgesInAdjLists = 0;
+    double adjListSum = 0;
+    vector<double> nodeSum = vector<double>(n, 0.0);
+    for (const Node &node1: nodes) {
+        for (const auto &edge: node1.adjList) {
+            unsigned node2ID = edge.first;
+            EDGE_T weight = edge.second;
+            if (!directed && weight != getEdgeWeight(node2ID, node1.nodeID))
+                ss<<"matrix is undirected but adjLists are not symmetric at edge ("<<node1.nodeID<<" <-> "<<node2ID<<")"<<endl;
+            numEdgesInAdjLists++;
+            adjListSum += weight;
+            nodeSum[node1.nodeID] += weight;
+        }
+    }
+    if (adjListSum != totalGraphWeight)
+        ss<<"totalGraphWeight attribute is "<<totalGraphWeight<<" but the edges in adjList add up to "<<adjListSum<<endl;
+    for (unsigned i = 0; i < n; i++) if(nodeSum[i] != nodes.at(i).totalWeight)
+        ss<<"totalWeight["<<getNodeName(i)<<"] attribute is "<<nodes.at(i).totalWeight<<" but in the adjList adds up to "<<nodeSum[i]<<endl;
+
+    //edgeList: all entries appear in adjLists, are not repeated, and every entry in adj matrix is in edge list
+    if (edgeList.size() != numEdgesInAdjLists)
+        ss<<"edgeList has "<<edgeList.size()<<" edges but adj Lists have "<<numEdgesInAdjLists<<endl;
+
+    vector<unordered_set<unsigned>> nbrSetsInEdgeList(n);
+    for (unsigned i = 0; i < n; i++)
+        nbrSetsInEdgeList[i].reserve(nodes.at(i).adjList.size()); //to avoid hash table resizings
+
+    for (const auto& edge : edgeList) {
+        if (edge[0] < 0 or edge[0] >= n or edge[1] < 0 or edge[1] >= n)
+            ss<<"edge {"<<edge[0]<<", "<<edge[1]<<"} in edgeList out of range"<<endl;
+        else {
+            if (!hasEdge(edge[0], edge[1]))
+                ss<<"edge {"<<edge[0]<<", "<<edge[1]<<"} in edgeList missing in adjLists"<<endl;
+            if (!directed) {
+                unsigned nodeMin = min(edge[0], edge[1]), nodeMax = max(edge[0], edge[1]);
+                //nodeMin and nodeMax to impose a canonical order on edges
+                if (nbrSetsInEdgeList[nodeMin].count(nodeMax))
+                    ss<<"edge {"<<edge[0]<<", "<<edge[1]<<"} repeated in edgeList"<<endl;
+                nbrSetsInEdgeList[nodeMin].insert(nodeMax);
+            }
+        }
+    }
+
+    //all names are unique
+    unordered_set<string> seenNames;
+    for (const Node &node: nodes) {
+        if (seenNames.count(node.nodeName))
+            ss<<"repeated node name "<<node.nodeName<<endl;
+        seenNames.insert(node.nodeName);
+        if (!nodeNameToIndexMap.count(node.nodeName))
+            ss<<"nodeNameToIndexMap missing node name "<<node.nodeName<<endl;
+        else if (nodeNameToIndexMap.at(node.nodeName) != node.nodeID)
+            ss<<"nodeNameToIndexMap is not the inverse of nodeNames for "<<node.nodeID<<endl;
+        if (node.colorID < 0 or node.colorID >= numColors())
+            ss<<"node "<<node.nodeID<<" has color "<<node.colorID<<" but there are "<<numColors()<<" colors"<<endl;
+    }
+
+    //colorNames are unique
+    unordered_set<string> seenColors;
+    seenColors.reserve(colorNames.size());
+    for (const string& color : colorNames) {
+        if (seenColors.count(color))
+            ss<<"repeated color name "<<color;
+        seenColors.insert(color);
+    }
+
+    //colorNameToId is the inverse map of colorNames
+    for (unsigned i = 0; i < colorNames.size(); i++) {
+        if (!colorNameToId.count(colorNames[i]))
+            ss<<"colorNameToId missing color name "<<colorNames[i]<<endl;
+        else if (colorNameToId.at(colorNames[i]) != i)
+            ss<<"colorNameToId is not the inverse of colorNames for "<<i<<endl;
+    }
+
+    //nodeGroupsByColor contains every node exactly once
+    //and the node colors match the nodeColors struct
+    //and no color group is empty
+    unordered_set<unsigned> nodesInColorGroups;
+    nodesInColorGroups.reserve(n);
+    for (unsigned c = 0; c < nodeGroupsByColor.size(); c++) {
+        if (nodeGroupsByColor[c].size() == 0)
+            ss<<"Color "<<c<<" does not have any nodes"<<endl;
+        for (unsigned node : nodeGroupsByColor[c]) {
+            if (nodesInColorGroups.count(node))
+                ss<<"nodeGroupsByColor contains repeated node "<<node<<endl;
+            else if (nodes.at(node).colorID != c)
+                ss<<"node "<<node<<" in color group "<<c<<" but nodeColors["<<node<<"]="<<nodes.at(node).colorID<<endl;
+            nodesInColorGroups.insert(node);
+        }
+    }
+    if (nodesInColorGroups.size() != n)
+        ss<<"nodeGroupsByColor contain "<<nodesInColorGroups.size()<<"nodes in total but adjLists has size "<<n<<endl;
+
+    //wrap up
+    string errMsg = ss.str();
+    if (errMsg.size() != 0) {
+        cerr<<"Graph "<<name<<" is not well defined. Has the following issues: "<<endl;
+        unsigned maxMsgLen = 2000;
+        if (errMsg.size() <= maxMsgLen) cerr<<errMsg<<endl;
+        else cerr<<errMsg.substr(0, maxMsgLen)<<" ..."<<endl;
+        return false;
+    }
+    return true;
+}
+
 
 void Graph::debugPrint() const {
     size_t MAX_LEN = 10;
     cerr<<"DEBUG PRINT "<<name<<endl;
     cerr<<"filePath: "<<filePath<<endl;
     cerr<<"directed: "<<directed<<endl;
-    cerr<<"adjLists size: "<<adjLists.size()<<endl;
-    cerr<<"injLists size: "<<injLists.size()<<endl;
-    cerr<<"neighbor lists sizes: ";
-    for(uint i = 0; i < min(adjLists.size(), MAX_LEN); i++) cerr<<adjLists[i].size()<<' ';
-    if (MAX_LEN < adjLists.size()) cerr<<"...";
+    cerr<<"nodes vector size: "<<nodes.size()<<endl;
+
+    cerr<<"adj edge list sizes: ";
+    for(unsigned i = 0; i < min(nodes.size(), MAX_LEN); i++) cerr<<nodes.at(i).adjList.size()<<' ';
+    if (MAX_LEN < nodes.size()) cerr<<"...";
     cerr<<endl;
-    cerr<<"adjLists[0]: ";
-    for (uint i = 0; i < min(adjLists[0].size(), MAX_LEN); i++) cerr<<adjLists[0][i]<<' ';
-    if (MAX_LEN < adjLists[0].size()) cerr<<"...";
+    cerr<<"nodes[0].adjList: ";
+    unsigned count = 0;
+    for (const auto& edge: nodes.at(0).adjList) {
+        if (count >= MAX_LEN) {
+            break;
+        }
+        std::cerr << "(" << edge.first << ", " << edge.second << ") ";
+        count++;
+    }
+    if (MAX_LEN < nodes.at(0).adjList.size()) cerr<<"...";
     cerr<<endl;
 
-    for(uint i = 0; i < min(injLists.size(), MAX_LEN); i++) cerr<<injLists[i].size()<<' ';
-    if (MAX_LEN < injLists.size()) cerr<<"...";
+    cerr<<"inj edge list sizes: ";
+    for(unsigned i = 0; i < min(nodes.size(), MAX_LEN); i++) cerr<<nodes.at(i).injList.size()<<' ';
+    if (MAX_LEN < nodes.size()) cerr<<"...";
     cerr<<endl;
-    cerr<<"injLists[0]: ";
-    for (uint i = 0; i < min(injLists[0].size(), MAX_LEN); i++) cerr<<injLists[0][i]<<' ';
-    if (MAX_LEN < injLists[0].size()) cerr<<"...";
+    cerr<<"nodes[0].injList: ";
+    count = 0;
+    for (const auto& edge: nodes.at(0).injList) {
+        if (count >= MAX_LEN) {
+            break;
+        }
+        std::cerr << "(" << edge.first << ", " << edge.second << ") ";
+        count++;
+    }
+    if (MAX_LEN < nodes.at(0).injList.size()) cerr<<"...";
     cerr<<endl;
 
-    cerr<<"adjMatrix size: "<<adjMatrix.size()<<endl;
-
-    cerr<<"nodeNames (size "<<nodeNames.size()<<"): ";
-    for (uint i = 0; i < min(nodeNames.size(), MAX_LEN); i++) cerr<<nodeNames[i]<<' ';
-    if (MAX_LEN < nodeNames.size()) cerr<<"...";
+    cerr<<"nodeNames: ";
+    for (unsigned i = 0; i < min(nodes.size(), MAX_LEN); i++) cerr<<nodes.at(i).nodeName<<' ';
+    if (MAX_LEN < nodes.size()) cerr<<"...";
     cerr<<endl;
 
-    cerr<<"nodeColors (size "<<nodeColors.size()<<"): ";
-    for (uint i = 0; i < min(nodeColors.size(), MAX_LEN); i++) cerr<<nodeColors[i]<<' ';
-    if (MAX_LEN < nodeColors.size()) cerr<<"...";
+    cerr<<"nodeColors: ";
+    for (unsigned i = 0; i < min(nodes.size(), MAX_LEN); i++) cerr<<nodes.at(i).nodeName<<' ';
+    if (MAX_LEN < nodes.size()) cerr<<"...";
     cerr<<endl;
 
     cerr<<"nodeNameToIndexMap (size "<<nodeNameToIndexMap.size()<<"): ";
-    uint kvi = 0;
+    unsigned kvi = 0;
     for (auto kv:nodeNameToIndexMap) {
         cerr<<kv.first<<":"<<kv.second<<' ';
         if (kvi++ == MAX_LEN and nodeNameToIndexMap.size() > MAX_LEN) { cerr<<"..."; break; }
@@ -535,25 +634,25 @@ void Graph::debugPrint() const {
     cerr<<endl;
 
     cerr<<"edge list (size "<<edgeList.size()<<"): ";
-    for (uint i = 0; i < min(edgeList.size(), MAX_LEN); i++) cerr<<'{'<<edgeList[i][0]<<", "<<edgeList[i][1]<<"} ";
+    for (unsigned i = 0; i < min(edgeList.size(), MAX_LEN); i++) cerr<<'{'<<edgeList[i][0]<<", "<<edgeList[i][1]<<"} ";
     if (MAX_LEN < edgeList.size()) cerr<<"...";
     cerr<<endl;
 
-    cerr<<"totalEdgeWeight: "<<totalEdgeWeight<<endl;
+    cerr<<"totalGraphWeight: "<<totalGraphWeight<<endl;
     auto CCs = connectedComponents();
     cerr<<"Number of CCs: "<<CCs.size()<<endl;
     cerr<<"CC sizes: ";
-    for(uint i = 0; i < min(CCs.size(), MAX_LEN); i++) cerr<<CCs[i].size()<<' ';
+    for(unsigned i = 0; i < min(CCs.size(), MAX_LEN); i++) cerr<<CCs[i].size()<<' ';
     if (MAX_LEN < CCs.size()) cerr<<"...";
     cerr<<endl;
 
     cerr<<"CCs[0]: ";
-    for (uint i = 0; i < min(CCs[0].size(), MAX_LEN); i++) cerr<<CCs[0][i]<<' ';
+    for (unsigned i = 0; i < min(CCs[0].size(), MAX_LEN); i++) cerr<<CCs[0][i]<<' ';
     if (MAX_LEN < CCs[0].size()) cerr<<"...";
     cerr<<endl;
 
     cerr<<"colorNames (size "<<colorNames.size()<<"): ";
-    for (uint i = 0; i < min(colorNames.size(), MAX_LEN); i++) cerr<<colorNames[i]<<' ';
+    for (unsigned i = 0; i < min(colorNames.size(), MAX_LEN); i++) cerr<<colorNames[i]<<' ';
     if (MAX_LEN < colorNames.size()) cerr<<"...";
     cerr<<endl;
 
@@ -567,182 +666,12 @@ void Graph::debugPrint() const {
 
     cerr<<"nodeGroupsByColor size: "<<nodeGroupsByColor.size()<<endl;
     cerr<<"color group sizes: ";
-    for(uint i = 0; i < min(nodeGroupsByColor.size(), MAX_LEN); i++) cerr<<nodeGroupsByColor[i].size()<<' ';
+    for(unsigned i = 0; i < min(nodeGroupsByColor.size(), MAX_LEN); i++) cerr<<nodeGroupsByColor[i].size()<<' ';
     if (MAX_LEN < nodeGroupsByColor.size()) cerr<<"...";
     cerr<<endl;
 
     cerr<<"nodeGroupsByColor[0]: ";
-    for (uint i = 0; i < min(nodeGroupsByColor[0].size(), MAX_LEN); i++) cerr<<nodeGroupsByColor[0][i]<<' ';
+    for (unsigned i = 0; i < min(nodeGroupsByColor[0].size(), MAX_LEN); i++) cerr<<nodeGroupsByColor[0][i]<<' ';
     if (MAX_LEN < nodeGroupsByColor[0].size()) cerr<<"...";
     cerr<<endl; cerr<<endl;
-}
-
-bool Graph::isWellDefined() const {
-    ostringstream ss;
-    //data structures have the right size
-    uint n = adjMatrix.size();
-    if (adjLists.size() != n)
-        ss<<"adjMatrix has size "<<n<<" but adjLists has size "<<adjLists.size()<<endl;
-    if (injLists.size() != n)
-        ss<<"adjMatrix has size "<<n<<" but injLists has size "<<injLists.size()<<endl;
-    if (nodeNames.size() != n)
-        ss<<"adjMatrix has size "<<n<<" but nodeNames has size "<<nodeNames.size()<<endl;
-    if (nodeNameToIndexMap.size() != n)
-        ss<<"adjMatrix has size "<<n<<" but nodeNameToIndexMap has size "<<nodeNameToIndexMap.size()<<endl;
-    if (nodeColors.size() != n)
-        ss<<"adjMatrix has size "<<n<<" but nodeColors has size "<<nodeNameToIndexMap.size()<<endl;
-    uint k = colorNames.size();
-    if (colorNameToId.size() != k)
-        ss<<"colorNames has size "<<k<<" but colorNameToId has size "<<colorNameToId.size()<<endl;
-    if (nodeGroupsByColor.size() != k)
-        ss<<"colorNames has size "<<k<<" but nodeGroupsByColor has size "<<nodeGroupsByColor.size()<<endl;
-
-    //adjMatrix is symmetric if !directed, and the sum of edges weights equals totalEdgeWeight
-    uint numEdgesInAdjMat = 0;
-    double adjMatSum = 0;
-    vector<double> nodeSum = vector<double>(n, 0.0);
-    for (uint i = 0; i < n; i++) {
-        for (uint j = 0; j < n; j++) if(j <= i || directed) {
-            if (!directed && adjMatrix.get(i, j) != adjMatrix.get(j, i))
-                ss<<"matrix is undirected but adjMatrix is not symmetric at ("<<i<<", "<<j<<")"<<endl;
-            if (hasEdge(i,j)) {
-		numEdgesInAdjMat++;
-		adjMatSum += getEdgeWeight(i,j);
-		nodeSum[i] += getEdgeWeight(i,j);
-		if(!directed && j!=i) nodeSum[j] += getEdgeWeight(i,j);
-            }
-        }
-    }
-    if (adjMatSum != totalEdgeWeight)
-        ss<<"totalEdgeWeight attribute is "<<totalEdgeWeight<<" but the edges in adjMatrix add up to "<<adjMatSum<<endl;
-    for (uint i = 0; i < n; i++) if(nodeSum[i] != totalWeight[i])
-        ss<<"totalWeight["<<getNodeName(i)<<"] attribute is "<<totalWeight[i]<<" but in the adjMatrix add up to "<<nodeSum[i]<<endl;
-
-    //edgeList: all entries appear in adjMatrix, are not repeated, and every entry in adj matrix is in edge list
-    if (edgeList.size() != numEdgesInAdjMat)
-        ss<<"edgeList has "<<edgeList.size()<<" edges but adjMatrix has "<<numEdgesInAdjMat<<endl;
-
-    vector<unordered_set<uint>> nbrSetsInEdgeList(n);
-    for (uint i = 0; i < n; i++)
-        nbrSetsInEdgeList[i].reserve(adjLists[i].size()); //to avoid hash table resizings
-
-    for (const auto& edge : edgeList) {
-        if (edge[0] < 0 or edge[0] >= n or edge[1] < 0 or edge[1] >= n)
-            ss<<"edge {"<<edge[0]<<", "<<edge[1]<<"} in edgeList out of range"<<endl;
-        else {
-            if (!hasEdge(edge[0], edge[1]))
-                ss<<"edge {"<<edge[0]<<", "<<edge[1]<<"} in edgeList missing in adjMatrix"<<endl;
-	    if(!directed) {
-		uint nodeMin = min(edge[0], edge[1]), nodeMax = max(edge[0], edge[1]);
-		//nodeMin and nodeMax to impose a canonical order on edges
-		if (nbrSetsInEdgeList[nodeMin].count(nodeMax))
-		    ss<<"edge {"<<edge[0]<<", "<<edge[1]<<"} repeated in edgeList"<<endl;
-		nbrSetsInEdgeList[nodeMin].insert(nodeMax);
-	    }
-        }
-    }
-
-    //adjLists: all entries appear in adjMatrix, are not repeated, and every entry in adj matrix is in adj lists
-    uint singleCountedNumEdges = 0, doubleCountedNumEdges = 0; //once from each endpoint
-    for (uint i = 0; i < n; i++) {
-        uint numNbrs = adjLists[i].size();
-//<<<<<< STOPPED HERE >>>>>>>>>>>>
-        if (numNbrs > n)
-            ss<<"adjLists["<<i<<"] has size "<<numNbrs<<" but adjLists has size "<<n<<endl;
-        if(directed) singleCountedNumEdges += adjLists[i].size();
-        doubleCountedNumEdges += adjLists[i].size();
-        if (hasEdge(i,i)) doubleCountedNumEdges++;
-    }
-    if(directed) {
-	if (edgeList.size() != singleCountedNumEdges)
-	    ss<<"directed edgeList has "<<edgeList.size()<<" edge endpoints but adjLists has "<<singleCountedNumEdges<<endl;
-    } else {
-	assert(singleCountedNumEdges == 0);
-	if (2*edgeList.size() != doubleCountedNumEdges)
-	    ss<<"undirected edgeList has "<<2*edgeList.size()<<" edge endpoints but adjLists has "<<doubleCountedNumEdges<<endl;
-    }
-
-    for (uint i = 0; i < n; i++) {
-        unordered_set<uint> seenNbrs;
-        seenNbrs.reserve(adjLists[i].size());
-        for (uint nbr : adjLists[i]) {
-            if (nbr < 0 or nbr >= n)
-                ss<<"adjLists["<<i<<"] contains node "<<nbr<<" out of range"<<endl;
-            else {
-                if (!hasEdge(i,nbr))
-		    ss<<"adjLists["<<getNodeName(i)<<"] contains "<<getNodeName(nbr)<<" which is missing in adjMatrix"<<endl;
-                if (seenNbrs.count(nbr))
-                    ss<<"adjLists["<<i<<"] contains repeated node "<<nbr<<endl;
-                seenNbrs.insert(nbr);
-            }
-        }
-    }
-
-    //all names are unique
-    unordered_set<string> seenNames;
-    for (const string& name : nodeNames) {
-        if (seenNames.count(name))
-            ss<<"repeated node name "<<name<<endl;
-        seenNames.insert(name);
-    }
-
-    //nodeNameToIndexMap is the inverse of nodeNames
-    for (uint i = 0; i < n; i++) {
-        if (!nodeNameToIndexMap.count(nodeNames[i]))
-            ss<<"nodeNameToIndexMap missing node name "<<nodeNames[i]<<endl;
-        else if (nodeNameToIndexMap.at(nodeNames[i]) != i)
-            ss<<"nodeNameToIndexMap is not the inverse of nodeNames for "<<i<<endl;
-    }
-
-    //nodeColors contains valid color indices
-    for (uint i = 0; i < nodeColors.size(); i++)
-        if (nodeColors[i] < 0 or nodeColors[i] >= colorNames.size())
-            ss<<"node "<<i<<" has color "<<nodeColors[i]<<" but there are "<<colorNames.size()<<" colors"<<endl;
-
-    //colorNames are unique
-    unordered_set<string> seenColors;
-    seenColors.reserve(colorNames.size());
-    for (const string& color : colorNames) {
-        if (seenColors.count(color))
-            ss<<"repeated color name "<<color;
-        seenColors.insert(color);
-    }
-
-    //colorNameToId is the inverse map of colorNames
-    for (uint i = 0; i < colorNames.size(); i++) {
-        if (!colorNameToId.count(colorNames[i]))
-            ss<<"colorNameToId missing color name "<<colorNames[i]<<endl;
-        else if (colorNameToId.at(colorNames[i]) != i)
-            ss<<"colorNameToId is not the inverse of colorNames for "<<i<<endl;
-    }
-
-    //nodeGroupsByColor contains every node exactly once
-    //and the node colors match the nodeColors struct
-    //and no color group is empty
-    unordered_set<uint> nodesInColorGroups;
-    nodesInColorGroups.reserve(n);
-    for (uint c = 0; c < nodeGroupsByColor.size(); c++) {
-        if (nodeGroupsByColor[c].size() == 0)
-            ss<<"Color "<<c<<" does not have any nodes"<<endl;
-        for (uint node : nodeGroupsByColor[c]) {
-            if (nodesInColorGroups.count(node))
-                ss<<"nodeGroupsByColor contains repeated node "<<node<<endl;
-            else if (nodeColors[node] != c)
-                ss<<"node "<<node<<" in color group "<<c<<" but nodeColors["<<node<<"]="<<nodeColors[node]<<endl;
-            nodesInColorGroups.insert(node);
-        }
-    }
-    if (nodesInColorGroups.size() != n)
-        ss<<"nodeGroupsByColor contain "<<nodesInColorGroups.size()<<"nodes in total but adjLists has size "<<n<<endl;
-
-    //wrap up
-    string errMsg = ss.str();
-    if (errMsg.size() != 0) {
-        cerr<<"Graph "<<name<<" is not well defined. Has the following issues: "<<endl;
-        uint maxMsgLen = 2000;
-        if (errMsg.size() <= maxMsgLen) cerr<<errMsg<<endl;
-        else cerr<<errMsg.substr(0, maxMsgLen)<<" ..."<<endl;
-        return false;
-    }
-    return true;
 }

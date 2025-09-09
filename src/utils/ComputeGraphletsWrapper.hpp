@@ -1,10 +1,11 @@
-#ifndef COMPUTEGRAPHLETSWRAPPER_H_
-#define COMPUTEGRAPHLETSWRAPPER_H_
+#ifndef COMPUTEGRAPHLETSWRAPPER_HPP
+#define COMPUTEGRAPHLETSWRAPPER_HPP
 
 #include <vector>
 #include <string>
 #include "utils.hpp"
 #include "../Graph.hpp"
+#include "Timer.hpp"
 
 using namespace std;
 
@@ -22,4 +23,4 @@ static void writeMatrixToBinaryFile(const vector<vector<uint>>& matrix, const st
 static void readMatrixFromBinaryFile(vector<vector<uint>>& matrix, const string& fileName);
 };
 
-#endif /* COMPUTEGRAPHLETSWRAPPER_H_ */
+#endif /* COMPUTEGRAPHLETSWRAPPER_HPP */

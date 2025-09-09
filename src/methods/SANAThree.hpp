@@ -9,6 +9,7 @@
 #include <list>
 #include <limits>
 #include <queue>
+#include <set>
 
 #include "Method.hpp"
 #include "../measures/Measure.hpp"
