@@ -48,7 +48,8 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
     outputFileName(outputFileName),
     localScoresFileName(localScoresFileName),
     tInitial(TInitial),
-    tDecay(TDecay) {
+    tDecay(TDecay),
+    holeLocks(n2, false) {
     // This should never happen, and if it does, it is 100% user error.
     if (threadNumber >= n1 / 2) {
         throw runtime_error(
@@ -77,12 +78,10 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
     assert(G1->numColors() <= G2->numColors());
     constexpr bool COL_DBG = true; //print stats about color/neighbor type probabilities
 
-    swapsPerColor.reserve(G1->numColors());
-    movesPerColor.reserve(G1->numColors());
-    pegsPerColor.reserve(G1->numColors());
-    unassignedHolesPerColor = vector<unsigned>(G1->numColors(), 0);
-    lockedHoles = vector<set<unsigned>>(G1->numColors());
-    lockedPegs = vector<set<unsigned>>(G1->numColors());
+    swapsPerColor.reserve(G1->numColors() + 1);
+    movesPerColor.reserve(G1->numColors() + 1);
+    swapsPerColor.push_back(0);
+    movesPerColor.push_back(0);
     numSwaps = 0;
     numAdjacentAlignments  = 0;
     for (uint g1Id = 0; g1Id < G1->numColors(); g1Id++) {
@@ -92,8 +91,6 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
         unsigned c1 = G1->numNodesWithColor(g1Id);
         unsigned c2 = G2->numNodesWithColor(G2->getColorId(colName));
 
-        pegsPerColor.push_back(c1);
-
         if (c1 > c2)
             throw runtime_error("there are " + to_string(c1) + " G1 nodes colored "
                                 + colName + " but only " + to_string(c2) + " such nodes in G2");
@@ -101,10 +98,10 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
         const uint64_t numMoveNeighbors = c1 * (c2 - c1);
         const uint64_t numNeighbors = numSwapNeighbors + numMoveNeighbors;
 
-        swapsPerColor.push_back(numSwapNeighbors);
-        movesPerColor.push_back(numMoveNeighbors);
         numSwaps += numSwapNeighbors;
+        swapsPerColor.push_back(numSwaps);
         numAdjacentAlignments += numSwapNeighbors + numMoveNeighbors;
+        movesPerColor.push_back(numAdjacentAlignments - numSwaps);
         if (true) {
             cerr << "SANAThree:: color " << colName << " has " << numSwapNeighbors << " possible swaps and "
                     << numMoveNeighbors << " possible moves (" << numNeighbors << " total)" << endl;
@@ -123,8 +120,10 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
     //they have the same size for every run, so we can allocate the size here
     colorUnassignedNodes = vector<vector<uint>>(swapsPerColor.size());
 
-    totalMovesPerformed = 0;
-    totalSwapsPerformed = 0;
+    totalMovesCalculated = 0;
+    totalMovesAccepted = 0;
+    totalSwapsCalculated = 0;
+    totalSwapsAccepted = 0;
     initDataStructures();
     threadPool = new CalculatorHandler {threadNumber, *this, batchSize / 2};
 }
@@ -169,14 +168,11 @@ void SANAThree::initDataStructures() {
     //initialize actColToUnassignedG2Nodes (the size was already set in the constructor)
     for (auto & colorUnassignedNode : colorUnassignedNodes)
         colorUnassignedNode.clear();
-    for (auto &unassNum: unassignedHolesPerColor)
-        unassNum = 0;
     for (uint g2Node = 0; g2Node < n2; g2Node++) {
         if (assignedNodesG2[g2Node]) continue;
         uint actColId = holeToColorID[g2Node];
         if (actColId != n1) {
             colorUnassignedNodes[actColId].push_back(g2Node);
-            unassignedHolesPerColor[actColId] += 1;
         }
     }
 
@@ -215,6 +211,13 @@ Alignment SANAThree::run() {
 
     if (hillClimbing) runHillClimbing();
 
+    cout<<"Calculated "<< totalMovesCalculated <<" moves\n";
+    cout<<"Calculated "<< totalSwapsCalculated <<" swaps\n";
+    cout<<"Calculated "<< totalMovesCalculated + totalSwapsCalculated <<" total iterations\n";
+    cout<<"Accepted "<< totalMovesAccepted <<" moves\n";
+    cout<<"Accepted "<< totalSwapsAccepted <<" swaps\n";
+    cout<<"Accepted "<< totalMovesAccepted + totalSwapsAccepted <<" total iterations\n";
+
     return alignment;
 }
 
@@ -244,6 +247,10 @@ void SANAThree::runIterations() {
         maxBatches = 1 + maxIterations / batchSize;
         maxSecondsWithLeeway = 0;
     }
+    totalMovesCalculated = 0;
+    totalMovesAccepted = 0;
+    totalSwapsCalculated = 0;
+    totalSwapsAccepted = 0;
     initDataStructures();
     threadPool->resetBuffers();
     T.start();
@@ -264,9 +271,6 @@ void SANAThree::runIterations() {
     }
     trackProgress(iter * batchSize, static_cast<double>(iter)/static_cast<double>(maxBatches), T.elapsed(),
                 temperature, 0.);
-    cout<<"Performed "<< totalMovesPerformed <<" moves\n";
-    cout<<"Performed "<< totalSwapsPerformed <<" swaps\n";
-    cout<<"Performed "<< totalMovesPerformed + totalSwapsPerformed <<" total iterations\n";
 }
 
 // All of these are purely heuristic -Wayne (I think, at least -Marcus)
@@ -295,11 +299,14 @@ void SANAThree::runConfidenceIntervals() {
     STAT *scoreBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
     STAT *pBadBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
 
-
     // TODO: add batchesPerStep from runIterations for a re-eval of score
     long int lastBatchCount=0;
     double previousScore = currentScore;
     double temperature = 0;
+    totalMovesCalculated = 0;
+    totalMovesAccepted = 0;
+    totalSwapsCalculated = 0;
+    totalSwapsAccepted = 0;
     initDataStructures();
     threadPool->resetBuffers();
     T.start();
@@ -410,6 +417,8 @@ void SANAThree::runHillClimbing() {
 }
 
 SANAThree::changeRequest SANAThree::chooseNextRequest() {
+    unique_lock<mutex> lockAlignmentAndHoles(checkHoleLock, defer_lock);
+
     // Request parameters
     bool twoPegs;
 
@@ -424,193 +433,126 @@ SANAThree::changeRequest SANAThree::chooseNextRequest() {
 
     unsigned color = 0;
 
-    // Our only RNG call! This uniquely determines our valid request, now we just have to decode it.
-    uint64_t alignmentNumber = randIndex_64(numAdjacentAlignments, generator);
+    while (true) {
+        uint64_t alignmentNumber = randIndex_64(numAdjacentAlignments, generator);
 
-    // Swap Logic
-    if (alignmentNumber < numSwaps) {
-        twoPegs = true;
+        // Swap Logic
+        if (alignmentNumber < numSwaps) {
+            twoPegs = true;
 
-        // Find the active color
-        for (color = 0; color < swapsPerColor.size() - 1; color++) {
-            uint64_t swapColorNum = swapsPerColor[color];
-            if (alignmentNumber < swapColorNum) {
-                break;
+            // Find the active color
+            {
+                auto colorIter = upper_bound(swapsPerColor.begin(), swapsPerColor.end(), alignmentNumber) - 1;
+                color = colorIter - swapsPerColor.begin();
+                alignmentNumber = alignmentNumber - *colorIter;
             }
-            alignmentNumber -= swapColorNum;
+
+            // We consider each swap possibility of this color to be ordered in the following way:
+            // (0, 1), (0, 2), ..., (0, n), (1, 2), ..., (n-1, n)
+            // Ignoring symmetrical options (it's the same swap, after all), this means that the first
+            // (n - 1) indices for these options have peg1 = 0, then the next (n - 2) for these options
+            // have peg1 = 1 and so on. What this next complicated bit does is transform an index into
+            // these possibilities into the actual possibility.
+
+            // Enclosed in brackets so that these temporary variables keep in scope.
+            {
+                const unsigned numColorPegs = G1->numNodesWithColor(color);
+                // Calculating peg1. There is a quadratic inequality I use that derives from the fact that
+                // cumulativeSwaps(peg1) <= alignmentNumber < cumulativeSwaps(peg1 + 1). Do the math
+                // if you are confused, it's a good exercise.
+                const auto n = static_cast<double>(numColorPegs);
+                const auto Ad = static_cast<double>(alignmentNumber); // Narrowing cast, yuck!
+                const double discriminant = (2. * n - 1) * (2. * n - 1) - 8. * Ad;
+                peg1colorID = 1U + static_cast<unsigned>(ceil((2. * n - 1. - sqrt(discriminant)) / 2.));
+
+                // These are the possibilities that have already been counted for all first pegs that
+                // are less than the current one
+                uint64_t cumulativeSwaps = peg1colorID * (2ULL * numColorPegs - peg1colorID - 1ULL) / 2;
+
+                // Because any conversion from a double to an unsigned is sus, we ensure that we
+                // do indeed fulfill the inequality of:
+                // cumSwaps(peg1) <= alignmentNumber < cumSwaps(peg1  + 1)
+                while (alignmentNumber < cumulativeSwaps) {
+                    cumulativeSwaps -= numColorPegs - peg1colorID;
+                    peg1colorID--;
+                }
+                while (alignmentNumber >= cumulativeSwaps + numColorPegs - peg1colorID - 1) {
+                    cumulativeSwaps += numColorPegs - peg1colorID - 1;
+                    peg1colorID++;
+                }
+
+                // peg2's ID is just the offset from alignmentNumber - cumSwaps(peg1) and then offset
+                // again by peg1 + 1;
+                peg2colorID = static_cast<unsigned>(alignmentNumber - cumulativeSwaps + peg1colorID + 1);
+            }
+
+            peg1 = (*G1->getNodesWithColor(color))[peg1colorID];
+            peg2 = (*G1->getNodesWithColor(color))[peg2colorID];
+            lockAlignmentAndHoles.lock();
+            hole1 = alignment[peg1];
+            hole2 = alignment[peg2];
+        }
+        // Move Logic
+        else {
+            twoPegs = false;
+
+            alignmentNumber -= numSwaps;
+
+            // Find the active color
+            {
+                auto colorIter = upper_bound(movesPerColor.begin(), movesPerColor.end(), alignmentNumber) - 1;
+                color = colorIter - movesPerColor.begin();
+                alignmentNumber = alignmentNumber - *colorIter;
+            }
+
+            // YES, IT IS REALLY THIS EASY FOR THE MOVE CASE COMPARED TO THE SWAP CASE
+            const unsigned numUnassignedHoles = colorUnassignedNodes.at(color).size();
+            peg1colorID = alignmentNumber / numUnassignedHoles;
+            hole2unassignedID = alignmentNumber % numUnassignedHoles;
+
+            peg1 = (*G1->getNodesWithColor(color))[peg1colorID];
+            lockAlignmentAndHoles.lock();
+            hole1 = alignment[peg1];
+            hole2 = colorUnassignedNodes[color][hole2unassignedID];
+        }
+        // I.E., if invalid, reroll. Rejection sampling, google it
+        if (holeLocks[hole1] || holeLocks[hole2]) {
+            lockAlignmentAndHoles.unlock();
+            continue;
         }
 
-        const unsigned numColorPegs = pegsPerColor[color];
-
-        // We consider each swap possibility of this color to be ordered in the following way:
-        // (0, 1), (0, 2), ..., (0, n), (1, 2), ..., (n-1, n)
-        // Ignoring symmetrical options (it's the same swap, after all), this means that the first
-        // (n - 1) indices for these options have peg1 = 0, then the next (n - 2) for these options
-        // have peg1 = 1 and so on. What this next complicated bit does is transform an index into
-        // these possibilities into the actual possibility.
-
-        // Enclosed in brackets so that these temporary variables keep in scope.
-
-            // Calculating peg1. There is a quadratic inequality I use that derives from the fact that
-            // cumulativeSwaps(peg1) <= alignmentNumber < cumulativeSwaps(peg1 + 1). Do the math
-            // if you are confused, it's a good exercise.
-            const double n = static_cast<double>(numColorPegs);
-            const double Ad = static_cast<double>(alignmentNumber); // Narrowing cast, yuck!
-            const double discriminant = (2. * n - 1) * (2. * n - 1) - 8. * Ad;
-            peg1colorID = 1U + static_cast<unsigned>(ceil((2. * n - 1. - sqrt(discriminant)) / 2.));
-
-            // These are the possibilities that have already been counted for all first pegs that
-            // are less than the current one
-            uint64_t cumulativeSwaps = peg1colorID * (2ULL * numColorPegs - peg1colorID - 1ULL) / 2;
-
-            // Because any conversion from a double to an unsigned is sus, we ensure that we
-            // do indeed fulfill the inequality of:
-            // cumSwaps(peg1) <= alignmentNumber < cumSwaps(peg1  + 1)
-            while (alignmentNumber < cumulativeSwaps) {
-                cumulativeSwaps -= numColorPegs - peg1colorID;
-                peg1colorID--;
-            }
-            while (alignmentNumber >= cumulativeSwaps + numColorPegs - peg1colorID - 1) {
-                cumulativeSwaps += numColorPegs - peg1colorID - 1;
-                peg1colorID++;
-            }
-
-            // peg2's ID is just the offset from alignmentNumber - cumSwaps(peg1) and then offset
-            // again by peg1 + 1;
-            peg2colorID = static_cast<unsigned>(alignmentNumber - cumulativeSwaps + peg1colorID + 1);
-
-
-        // Math for making sure SANA stays updated on who has what for node locking purposes.
-        if (threadNumber > 1) {
-            // Make sure that we adjust the colorID in case of any locking
-            for (const unsigned& lockedPeg: lockedPegs[color]) {
-                if (lockedPeg <= peg1colorID) peg1colorID++;
-                if (lockedPeg <= peg2colorID) peg2colorID++;
-            }
-
-            lockedPegs[color].insert(peg1colorID);
-            lockedPegs[color].insert(peg2colorID);
-
-            pegsPerColor[color] -= 2;
-            const uint64_t swapsRemoved = numColorPegs * 2 - 3;
-            swapsPerColor[color] -= swapsRemoved;
-            numSwaps -= swapsRemoved;
-            const uint64_t movesRemoved = 2 * unassignedHolesPerColor[color];
-            movesPerColor[color] -= movesRemoved;
-            numAdjacentAlignments -= swapsRemoved + movesRemoved;
-        }
-
-        peg1 = (*G1->getNodesWithColor(color))[peg1colorID];
-        peg2 = (*G1->getNodesWithColor(color))[peg2colorID];
-        hole1 = alignment[peg1];
-        hole2 = alignment[peg2];
+        holeLocks[hole1] = holeLocks[hole2] = true;
+        return {twoPegs, peg1, peg2, hole1, hole2, hole2unassignedID, color, 0.0};
     }
-    // Move Logic
-    else {
-        twoPegs = false;
-
-        alignmentNumber -= numSwaps;
-
-        // Find the active color
-        for (color = 0; color < movesPerColor.size() - 1; color++) {
-            uint64_t moveColorNum = movesPerColor[color];
-            if (alignmentNumber < moveColorNum) {
-                break;
-            }
-            alignmentNumber -= moveColorNum;
-        }
-
-        // YES, IT IS REALLY THIS EASY FOR THE MOVE CASE COMPARED TO THE SWAP CASE
-        const unsigned numColorPegs = pegsPerColor[color];
-        const unsigned numUnassignedHoles = unassignedHolesPerColor[color];
-        peg1colorID = alignmentNumber / numUnassignedHoles;
-        hole2unassignedID = alignmentNumber % numUnassignedHoles;
-
-        // Math for making sure SANA stays updated on who has what for node locking purposes.
-        if (threadNumber > 1) {
-            // Make sure that we adjust the colorID in case of any locking
-            for (const unsigned& lockedPeg: lockedPegs[color]) {
-                if (lockedPeg <= peg1colorID) peg1colorID++;
-            }
-            for (const unsigned& lockedHole: lockedHoles[color]) {
-                if (lockedHole <= hole2unassignedID) hole2unassignedID++;
-            }
-
-            lockedPegs[color].insert(peg1colorID);
-            lockedHoles[color].insert(hole2unassignedID);
-
-            pegsPerColor[color] -= 1;
-            unassignedHolesPerColor[color] -= 1;
-            const uint64_t swapsRemoved = numColorPegs - 1;
-            movesPerColor[color] -= swapsRemoved;
-            numSwaps -= swapsRemoved;
-            const uint64_t movesRemoved = numUnassignedHoles + numColorPegs - 1;
-            movesPerColor[color] -= movesRemoved;
-            numAdjacentAlignments -= swapsRemoved + movesRemoved;
-        }
-
-        peg1 = (*G1->getNodesWithColor(color))[peg1colorID];
-        hole1 = alignment[peg1];
-        hole2 = colorUnassignedNodes[color][hole2unassignedID];
-    }
-
-    return changeRequest(twoPegs, peg1, peg2, hole1, hole2, peg1colorID, peg2colorID,
-                         hole2unassignedID, color, 0.0);
 }
 
 // This probably deserves a rework. I am uncomfortable with the current implementation and pushing
 // it all off into its own function has solved this only marginally. It works, but there has got to
 // be a less intrusive way to do this!
 void SANAThree::implementLastRequest(double pBad, const changeRequest &input) {
-    if (threadNumber > 1) {
-        const unsigned color = input.color;
-        const unsigned numColorPegs = pegsPerColor[color];
-        const unsigned numColorUnassignedHoles = unassignedHolesPerColor[color];
-        if (input.twoPegs) {
-            lockedPegs[color].erase(input.peg1colorID);
-            lockedPegs[color].erase(input.peg2colorID);
+    unique_lock<mutex> lockAlignmentAndHoles(checkHoleLock);
 
-            pegsPerColor[color] += 2;
-            const uint64_t swapsAdded = numColorPegs * 2 + 1;
-            swapsPerColor[color] += swapsAdded;
-            numSwaps += swapsAdded;
-            const uint64_t movesAdded = 2 * numColorUnassignedHoles;
-            movesPerColor[color] += movesAdded;
-            numAdjacentAlignments += swapsAdded + movesAdded;
-        }
-        else {
-            lockedPegs[color].erase(input.peg1colorID);
-            lockedHoles[color].erase(input.hole2unassignedID);
-
-            pegsPerColor[color] += 1;
-            unassignedHolesPerColor[color] += 1;
-            const uint64_t swapsAdded = numColorPegs;
-            movesPerColor[color] += swapsAdded;
-            numSwaps += swapsAdded;
-            const uint64_t movesAdded = numColorUnassignedHoles + numColorPegs + 1;
-            movesPerColor[color] += movesAdded;
-            numAdjacentAlignments += swapsAdded + movesAdded;
-        }
-    }
+    holeLocks[input.hole1] = holeLocks[input.hole2] = false;
+    if (input.twoPegs) totalSwapsCalculated++;
+    else totalMovesCalculated++;
 
     if (randomReal(generator) >= pBad) return;
 
     alignment[input.peg1] = input.hole2;
     if (input.twoPegs) {
         alignment[input.peg2] = input.hole1; // Swap
-        totalSwapsPerformed++;
+        totalSwapsAccepted++;
     }
     else {
         colorUnassignedNodes[input.color][input.hole2unassignedID] = input.hole1; // Move
-        totalMovesPerformed++;
+        totalMovesAccepted++;
     }
 
     currentScore += input.energyInc;
 }
 
 // TODO
-// This function should be written in C++, not C, and should give more useful statistics like in
-// SANA 2.0
+// This function should be written in C++, not C
 void SANAThree::trackProgress(long long unsigned iter, double fractionTime, double elapsedTime,
     double temperature, double lastAvgPBad, unsigned batches, double batchScore, double batchPbad) const {
 

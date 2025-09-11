@@ -156,22 +156,20 @@ void SANAThree::CalculatorHandler::_mainLoop() {
     while (on) { // Request system should always be locked while this check is made, too complicated to explain why
         // Part 1, generate request
         // (We enter this part locked!)
-        changeRequest currentRequest = parent.chooseNextRequest();
-        inputRequests++;
+        ++inputRequests;
         requestLock.unlock();
+        changeRequest currentRequest = parent.chooseNextRequest();
 
         // Part 2, assess request and calculate pBad
         _assessChange(currentRequest);
         const double pBad = acceptingProbability(currentRequest.energyInc, temperature);
 
         // Part 3, implement request
-        requestLock.lock();
         parent.implementLastRequest(pBad, currentRequest);
-        requestLock.unlock();
 
         // Part 4, update stats
         bufferLock.lock();
-        outputRequests++;
+        ++outputRequests;
         if (!collectBatches) { // For equilibrium, ts is so cringe -Marcus
             if (currentRequest.energyInc < 0) pBadBuffer.insert(pBad);
             if (outputRequests % parent.batchSize == 0) {
@@ -194,6 +192,8 @@ void SANAThree::CalculatorHandler::_mainLoop() {
         }
         totalEnergy += parent.currentScore;
         bufferLock.unlock();
+
+        // Stop batch logic
         requestLock.lock();
         if (inputRequests >= parent.batchSize and ((on = calculatorsOn))) {
             if (outputRequests >= parent.batchSize) requestsFinished.notify_all();

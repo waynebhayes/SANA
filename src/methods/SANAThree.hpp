@@ -76,8 +76,6 @@ private:
         const unsigned hole1;
         const unsigned hole2;
 
-        const unsigned peg1colorID;
-        const unsigned peg2colorID;
         const unsigned hole2unassignedID;
 
         const unsigned color;
@@ -86,10 +84,8 @@ private:
         double energyInc;
 
         changeRequest(bool two_pegs, unsigned peg1, unsigned peg2, unsigned hole1, unsigned hole2,
-        unsigned peg1colorID, unsigned peg2colorID, unsigned hole2unassignedID,
-        unsigned colorID, double energyInc):
-            twoPegs(two_pegs), peg1(peg1), peg2(peg2), hole1(hole1), hole2(hole2),
-            peg1colorID(peg1colorID), peg2colorID(peg2colorID), hole2unassignedID(hole2unassignedID),
+        unsigned hole2unassignedID, unsigned colorID, double energyInc):
+            twoPegs(two_pegs), peg1(peg1), peg2(peg2), hole1(hole1), hole2(hole2), hole2unassignedID(hole2unassignedID),
             color(colorID) {
             this->energyInc = energyInc;
         }
@@ -189,8 +185,10 @@ private:
     // Main run function and variables
     Alignment alignment;
     double currentScore;
-    uint64_t totalMovesPerformed;
-    uint64_t totalSwapsPerformed;
+    uint64_t totalMovesCalculated;
+    uint64_t totalMovesAccepted;
+    uint64_t totalSwapsCalculated;
+    uint64_t totalSwapsAccepted;
     void runIterations();
     void runConfidenceIntervals();
     void runHillClimbing();
@@ -208,13 +206,8 @@ private:
     vector<uint64_t> swapsPerColor;
     vector<uint64_t> movesPerColor;
 
-    // Keeps track of how many unlocked pegs and unassigned holes per colorID that we have access to
-    vector<unsigned> pegsPerColor;
-    vector<unsigned> unassignedHolesPerColor;
-
-    // Keeps track of which pegs and holes we have locked (if we have threads) per color:
-    vector<set<unsigned>> lockedPegs;
-    vector<set<unsigned>> lockedHoles;
+    mutex checkHoleLock;
+    vector<bool> holeLocks;
 
     changeRequest chooseNextRequest();
     void implementLastRequest(double pBad, const changeRequest &input);
