@@ -31,7 +31,7 @@ Graph::Graph(const bool directed, const string& graphName, const string& optiona
     name(graphName),
     filePath(optionalFilePath),
     edgeList(edgeList) {
-    
+
     vector<string> nodeNames;
     unsigned numNodes;
     if (optionalNodeNames.empty()) numNodes = optionalNodeNames.size();
