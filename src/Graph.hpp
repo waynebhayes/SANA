@@ -102,8 +102,7 @@ public:
 private:
 
     // This should NOT BE PUBLIC and cannot be used to change node colors. Use the above instead.
-    void initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs,
-                                     vector<unsigned> &nodeColors, vector<string> &nodeColorNames);
+    void initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs, vector<unsigned> &nodeColors);
 
     friend class GraphLoader;
 
@@ -122,38 +121,39 @@ public:
     //keeps only the edges that are also in other. the result is unweighted
     Graph graphIntersection(const Graph& other, const vector<unsigned>& thisToOtherNodeMap) const;
 
-
-    const Node &deliverNode(unsigned nodeID) const {return nodes.at(nodeID);}
-
     //O(1) getters (defined in header for efficiency -- allows inlining)
     string getName() const { return name; }
     string getFilePath() const { return filePath; }
     unsigned getNumNodes() const { return nodes.size(); }
     unsigned getNumEdges() const { return numEdges; }
     bool isDirected() const { return directed; }
-    //note: edges with weight 0 are not supported
-    bool hasEdge(unsigned node1, unsigned node2) const {
-        const MAP_TYPE &adjList = nodes.at(node1).adjList;
-        return adjList.find(node2) != adjList.end();
-    }
 
+    // Your bread and butter getter for interacting with the graph.
+    const Node &deliverNode(unsigned nodeID) const {return nodes.at(nodeID);}
+
+    // Marcus: these should only ever be used rarely and only ever when you need ONE random access.
+    // Whenever possible, use deliverNode to receive and store the Node reference.
     EDGE_T getEdgeWeight(unsigned node1, unsigned node2) const {
         const MAP_TYPE &adjList = nodes.at(node1).adjList;
         const auto it = adjList.find(node2);
         return it != adjList.end() ? it->second : static_cast<EDGE_T>(0);
     };
-
     bool hasNodeName(const string& nodeName) const { return nodeNameToIndexMap.count(nodeName); }
     string getNodeName(unsigned node) const { return nodes.at(node).nodeName; }
     unsigned getNameIndex(const string& nodeName) const { return nodeNameToIndexMap.at(nodeName); } //reverse of getNodeName
     unsigned getNumNbrs(unsigned node) const { return nodes.at(node).adjList.size(); }
     double getTotalEdgeWeight() const { return totalGraphWeight; }
-    double getTotalWeight(unsigned node) const { return nodes.at(node).totalWeight; }
+    double getTotalNodeWeight(unsigned node) const { return nodes.at(node).totalWeight; }
+    //note: edges with weight 0 are not supported
+    bool hasEdge(unsigned node1, unsigned node2) const {
+        const MAP_TYPE &adjList = nodes.at(node1).adjList;
+        return adjList.find(node2) != adjList.end();
+    }
     bool hasSelfLoop(unsigned node) const { return hasEdge(node, node); }
 
 
-    //large data structures are returned as const pointers
-    //recommendation: use the getters above instead, when possible
+    // large data structures are returned as const pointers, legacy functions.
+    // recommendation: don't use at all.
     unique_ptr<vector<unsigned>> getAdjList(unsigned node) const;
     unique_ptr<vector<vector<unsigned>>> getAdjLists() const; // THIS REALLY SHOULD NOT BE USED
     unique_ptr<vector<unsigned>> getInjList(unsigned node) const;

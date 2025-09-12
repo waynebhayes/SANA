@@ -5,6 +5,11 @@
 #include <sstream>
 #include <fcntl.h>
 #include <regex>
+#include <set>
+
+#ifdef LINUX
+#include <execinfo.h>
+#endif
 
 #ifdef MULTI_MPI
 #include "Alignment.hpp" // alignment needed for pruning
@@ -88,15 +93,14 @@ Graph::Graph(const bool directed, const string& graphName, const string& optiona
     assert(numEdges == dummyNumEdges);
 
     vector<unsigned> nodeColors(numNodes, INVALID_COLOR_ID);
-    vector<string> nodeColorNames(numNodes, "");
-    initColorDataStructs(partialNodeColorPairs, nodeColors, nodeColorNames);
+    initColorDataStructs(partialNodeColorPairs, nodeColors);
 
     // We do not want fragmented data. Therefore, we will be ditching all of these temporary structures in favor
     // of a fresh start and hopefully linear data that is easy to cash.
     nodes.reserve(numNodes);
     for (unsigned i = 0; i < numNodes; i++) {
         nodes.emplace_back(i, nodeColors.at(i), nodeWeights.at(i), nodeNames.at(i),
-               nodeColorNames.at(i), adjLists.at(i), injLists.at(i));
+                  colorNames.at(nodeColors.at(i)), adjLists.at(i), injLists.at(i));
     }
     nodes.shrink_to_fit();
 }
@@ -104,14 +108,13 @@ Graph::Graph(const bool directed, const string& graphName, const string& optiona
 void Graph::reinitializeColors(const vector<array<string, 2>>& partialNodeColorPairs) {
     const unsigned numNodes = nodes.size();
     vector<unsigned> nodeColors(numNodes, INVALID_COLOR_ID);
-    vector<string> nodeColorNames(numNodes, "");
-    initColorDataStructs(partialNodeColorPairs, nodeColors, nodeColorNames);
+    initColorDataStructs(partialNodeColorPairs, nodeColors);
 
     vector<Node> newNodes;
     newNodes.reserve(numNodes);
     for (unsigned i = 0; i < numNodes; i++) {
         Node &oldNode = nodes.at(i);
-        newNodes.emplace_back(oldNode, nodeColors.at(i), nodeColorNames.at(i));
+        newNodes.emplace_back(oldNode, nodeColors.at(i), colorNames.at(nodeColors.at(i)));
     }
     newNodes.shrink_to_fit();
 
@@ -119,8 +122,7 @@ void Graph::reinitializeColors(const vector<array<string, 2>>& partialNodeColorP
 }
 
 
-void Graph::initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs,
-                                     vector<unsigned> &nodeColors, vector<string> &nodeColorNames) {
+void Graph::initColorDataStructs(const vector<array<string, 2>>& partialNodeColorPairs, vector<unsigned> &nodeColors) {
     //data structures initialized here:
     nodeColors.clear();
     colorNames.clear();
@@ -143,7 +145,7 @@ void Graph::initColorDataStructs(const vector<array<string, 2>>& partialNodeColo
         colorSet.insert(colorName);
     }
 
-    if (nodeNameToColorName.size() < nodeColorNames.size()) {
+    if (nodeNameToColorName.size() < nodeNameToIndexMap.size()) {
         colorNames.push_back(DEFAULT_COLOR_NAME); //default color gets index 0, if present
     }
     colorNames.insert(colorNames.end(), colorSet.begin(), colorSet.end());
@@ -168,52 +170,128 @@ void Graph::initColorDataStructs(const vector<array<string, 2>>& partialNodeColo
 }
 
 Graph Graph::nodeInducedSubgraph(const vector<unsigned>& nodes) const {
-    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
-    << "This information will help inform us that this functionality should not be retired." << endl;
-    throw runtime_error("Function not implemented!");
+    uint oldN = getNumNodes();
+    uint newN = nodes.size();
+    const uint INVALID_NEW_INDEX = newN; //arbitrary value outside range 0..newN-1
+    vector<uint> oldToNewIndex(oldN, INVALID_NEW_INDEX);
+    for (uint i = 0; i < newN; i++) oldToNewIndex[nodes[i]] = i;
+
+    vector<array<uint, 2>> newEdgeList;
+    vector<EDGE_T> newEdgeWeights;
+    for (const auto& edge: edgeList) {
+        uint newNode1 = oldToNewIndex[edge[0]];
+        uint newNode2 = oldToNewIndex[edge[1]];
+        if (newNode1 != INVALID_NEW_INDEX and newNode2 != INVALID_NEW_INDEX) {
+            newEdgeList.push_back({newNode1, newNode2});
+            newEdgeWeights.push_back(getEdgeWeight(edge[0], edge[1]));
+        }
+    }
+
+    vector<string> newNodeNames;
+    newNodeNames.reserve(newN);
+    vector<array<string, 2>> newNodeNameToColorName;
+    bool hasDefColor = colorNames[0] == DEFAULT_COLOR_NAME; //if present, the default color is at index 0
+    for (const Node& node : this->nodes) {
+        newNodeNames.push_back(node.nodeName);
+        if (hasDefColor and node.colorID == 0) continue;
+        newNodeNameToColorName.push_back({node.nodeName, node.colorName});
+    }
+    return {directed, name+"_subgraph", "", newEdgeList, newNodeNames, newEdgeWeights, newNodeNameToColorName};
+
 }
+
 Graph Graph::randomNodeInducedSubgraph(unsigned numNodes) const {
-    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
-    << "This information will help inform us that this functionality should not be retired." << endl;
-    throw runtime_error("Function not implemented!");
+    if (numNodes > getNumNodes()) {
+        throw runtime_error("A subgraph cannot have more nodes than the original graph.");
+    }
+    vector<unsigned> v;
+    v.reserve(numNodes);
+    for (unsigned i = 0; i < getNumNodes(); i++) v.push_back(i);
+    randomShuffle(v);
+    v.resize(numNodes);
+    return nodeInducedSubgraph(v);
 }
 Graph Graph::shuffledGraph(vector<unsigned>& newToOldMap) const {
-    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
-    << "This information will help inform us that this functionality should not be retired." << endl;
-    throw runtime_error("Function not implemented!");
+    newToOldMap.clear(); //this is a return argument by reference
+    newToOldMap.reserve(getNumNodes());
+    for (uint i = 0; i < getNumNodes(); i++) newToOldMap.push_back(i);
+    randomShuffle(newToOldMap);
+    return nodeInducedSubgraph(newToOldMap);
 }
 Graph Graph::graphPower(unsigned power) const {
-    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
+    cerr << "Sorry, but \"Graph::graphPower\" is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
     << "This information will help inform us that this functionality should not be retired." << endl;
     throw runtime_error("Function not implemented!");
 }
 Graph Graph::graphWithAddedRandomEdges(double addedEdgesProportion) const {
-    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
+    cerr << "Sorry, but \"Graph::graphWithAddedRandomEdges\" is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
     << "This information will help inform us that this functionality should not be retired." << endl;
     throw runtime_error("Function not implemented!");
 }
 Graph Graph::graphWithRemovedRandomEdges(double removedEdgesProportion) const {
-    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
+    cerr << "Sorry, but \"Graph::graphWithRemovedRandomEdges\" is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
     << "This information will help inform us that this functionality should not be retired." << endl;
     throw runtime_error("Function not implemented!");
 }
 Graph Graph::graphWithRewiredRandomEdges(double rewiredEdgesProportion) const {
-    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
+    cerr << "Sorry, but \"Graph::graphWithRewiredRandomEdges\" is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
     << "This information will help inform us that this functionality should not be retired." << endl;
     throw runtime_error("Function not implemented!");
 }
 Graph Graph::graphIntersection(const Graph& other, const vector<unsigned>& thisToOtherNodeMap) const {
-    cerr << "Sorry, but this function is currently unimplemented. Please contact Marcus if you absolutely require it." <<endl
-    << "This information will help inform us that this functionality should not be retired." << endl;
-    throw runtime_error("Function not implemented!");
+    vector<array<uint, 2>> newEdgeList;
+    for (const auto& edge : edgeList) {
+        uint on1 = thisToOtherNodeMap[edge[0]], on2 = thisToOtherNodeMap[edge[1]];
+        if (other.hasEdge(on1, on2)) newEdgeList.push_back(edge);
+    }
+    vector<string> newNodeNames;
+    newNodeNames.reserve(getNumNodes());
+    for (uint i = 0; i < getNumNodes(); i++) {
+        string g1Name = nodes.at(i).nodeName;
+        string newName = "("+g1Name+","+other.nodes.at(thisToOtherNodeMap[i]).nodeName+")";
+        newNodeNames.push_back(newName);
+    }
+
+    vector<array<string, 2>> newNodeColorPairs;
+    bool hasDefColor = colorNames[0] == DEFAULT_COLOR_NAME;
+    newNodeColorPairs.reserve(getNumNodes() - (hasDefColor ? numNodesWithColor(0) : 0));
+    for (uint i = (hasDefColor ? 1 : 0); i < numColors(); i++) {
+        string colName = colorNames[i];
+        for (uint node : nodeGroupsByColor[i]) {
+            string g1Name = nodes.at(node).nodeName;
+            string newName = "("+g1Name+","+other.nodes.at(thisToOtherNodeMap[node]).nodeName+")";
+            newNodeColorPairs.push_back({newName, colName});
+        }
+    }
+
+    return Graph(directed, name+"_intersection_"+other.name, "", newEdgeList,
+                 newNodeNames, {}, newNodeColorPairs); //unweighted result
 }
+
+#ifdef LINUX
+void print_stack_trace() {
+    const unsigned max_frames = 64;
+    void* callstack[max_frames];
+    unsigned frames = backtrace(callstack, max_frames);
+    char** symbols = backtrace_symbols(callstack, frames);
+
+    for (unsigned i = 0; i < frames; ++i) {
+        std::cout << symbols[i] << std::endl;
+    }
+    free(symbols); // Free the memory allocated by backtrace_symbols
+}
+#endif
 
 unique_ptr<vector<unsigned>> Graph::getAdjList(unsigned node) const {
     static bool gaveWarning = false;
     if (!gaveWarning) {
         cerr << "Warning, soon to deprecated getAdjList function was used. This should be fixed." <<endl;
         cerr << "It can cause issues if the output is dereferenced as a temporary object." <<endl;
-        cerr << "It is also a poorly optimized compatibility function left over from SANA2.0." <<endl;
+        cerr << "It is also a poorly optimized compatibility function left over from SANA2.0. -Marcus" <<endl;
+        cerr << "If you are on Linux, you should shortly receive a stacktrace for this call..." <<endl;
+#ifdef LINUX
+        print_stack_trace();
+#endif
         gaveWarning = true;
     }
     unique_ptr<vector<unsigned>> adjList(new vector<unsigned>());
@@ -225,7 +303,11 @@ unique_ptr<vector<unsigned>> Graph::getAdjList(unsigned node) const {
 unique_ptr<vector<vector<unsigned>>> Graph::getAdjLists() const {
     static bool gaveWarning = false;
     if (!gaveWarning) {
-        cerr << "NO ONE SHOULD BE USING Graph::getAdjLists() EVER! FIX YO CODE" <<endl;
+        cerr << "NO ONE SHOULD BE USING Graph::getAdjLists() EVER! FIX YO CODE -Marcus" <<endl;
+        cerr << "If you are on Linux, you should shortly receive a stacktrace for this offensive call..." <<endl;
+#ifdef LINUX
+        print_stack_trace();
+#endif
         gaveWarning = true;
     }
     unique_ptr<vector<vector<unsigned>>> adjLists(new vector<vector<unsigned>>());
@@ -241,7 +323,11 @@ unique_ptr<vector<unsigned>> Graph::getInjList(unsigned node) const {
     if (!gaveWarning) {
         cerr << "Warning, soon to deprecated getInjList function was used. This should be fixed." <<endl;
         cerr << "It can cause issues if the output is dereferenced as a temporary object." <<endl;
-        cerr << "It is also a poorly optimized compatibility function left over from SANA2.0." <<endl;
+        cerr << "It is also a poorly optimized compatibility function left over from SANA2.0. -Marcus" <<endl;
+        cerr << "If you are on Linux, you should shortly receive a stacktrace for this call..." <<endl;
+#ifdef LINUX
+        print_stack_trace();
+#endif
         gaveWarning = true;
     }
     unique_ptr<vector<unsigned>> injList(new vector<unsigned>());
@@ -253,6 +339,11 @@ const vector<array<unsigned, 2>>* Graph::getEdgeList() const {
     static bool gaveWarning = false;
     if (!gaveWarning) {
         cerr << "Warning, soon to deprecated getEdgeList function was used. This should be fixed." <<endl;
+        cerr << "It is a poorly optimized compatibility function left over from SANA2.0. -Marcus" <<endl;
+        cerr << "If you are on Linux, you should shortly receive a stacktrace for this call..." <<endl;
+#ifdef LINUX
+        print_stack_trace();
+#endif
         gaveWarning = true;
     }
     return &edgeList;
