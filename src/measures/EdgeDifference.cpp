@@ -43,7 +43,8 @@ double EdgeDifference::getIncChangeOp(const uint peg, const uint oldHole, const 
 double EdgeDifference::computeIncChangeOp(uint peg, uint oldHole, uint newHole, const Alignment &A) {
     double edgeDifferenceIncDiff = 0;
     double c = 0;
-    for (uint nbr : *(G1->getAdjList(peg))) {
+    unique_ptr<vector<unsigned>> G1pegAdj = G1->getAdjList(peg);
+    for (uint nbr : *G1pegAdj) {
         double y = -abs(G1->getEdgeWeight(peg, nbr) - G2->getEdgeWeight(oldHole, A[nbr])) - c;
         double t = edgeDifferenceIncDiff + y;
         c = (t - edgeDifferenceIncDiff) - y;
@@ -71,7 +72,8 @@ double EdgeDifference::computeIncSwapOp(uint peg1, uint peg2, uint hole1, uint h
     // Handle peg1
     double edgeDifferenceIncDiff = 0;
     double c = 0;
-    for (uint nbr : *(G1->getAdjList(peg1))) {
+    unique_ptr<vector<unsigned>> G1peg1Adj = G1->getAdjList(peg1);
+    for (uint nbr : *G1peg1Adj) {
         double y = -abs(G1->getEdgeWeight(peg1, nbr) - G2->getEdgeWeight(hole1, A[nbr])) - c;
         double t = edgeDifferenceIncDiff + y;
         c = (t - edgeDifferenceIncDiff) - y;
@@ -88,8 +90,8 @@ double EdgeDifference::computeIncSwapOp(uint peg1, uint peg2, uint hole1, uint h
         c = (t - edgeDifferenceIncDiff) - y;
         edgeDifferenceIncDiff = t;
     }
-    // Handle peg2
-    for (uint nbr : *(G1->getAdjList(peg2))) {
+    unique_ptr<vector<unsigned>> G1peg2Adj = G1->getAdjList(peg2);
+    for (uint nbr : *G1peg2Adj) {
         if (nbr == peg1) continue;
         double y = -abs(G1->getEdgeWeight(peg2, nbr) - G2->getEdgeWeight(hole2, A[nbr])) - c;
         double t = edgeDifferenceIncDiff + y;

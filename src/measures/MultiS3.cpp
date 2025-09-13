@@ -93,7 +93,8 @@ void MultiS3::prefillInducedNeighborRungs(const Alignment& A) {
     }
     for (uint i = 0; i < n2; ++i){
         inducedNeighborRungs[i] = 0;
-        for (uint nbr : *(G2->getAdjList(i))) {
+        auto k = G2->getAdjList(i);
+        for (uint nbr : *k) {
             if (whichPeg[nbr] != n1) {
                 inducedNeighborRungs[i] += G2->getEdgeWeight(i, nbr);
             }

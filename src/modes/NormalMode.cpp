@@ -92,7 +92,7 @@ void NormalMode::run(ArgumentParser& args) {
         ofstream localMeasureOfs(localMeasureFileName);
 
         if (!multi_iter_only) {
-            Graph CS = G1.graphIntersection(G2, *(A.getVector()));
+            Graph CS = G1.graphIntersection(G2, A.asVector());
             string aligGraphFileName = baseName + ".ccs-el";
             cout << "Saving common subgraph in edge list format as \"" << aligGraphFileName << "\"" << endl;
             GraphLoader::saveInEdgeListFormat(CS, aligGraphFileName, false, true, "", " ");

@@ -61,7 +61,8 @@ double EdgeGeoMean::getIncChangeOp(const uint peg, const uint oldHole, const uin
 
 double EdgeGeoMean::computeIncChangeOp(uint peg, uint oldHole, uint newHole, const Alignment &A) {
     double diff = 0;
-    for (uint nbr : *(G1->getAdjList(peg))) {
+    auto pegAdj = G1->getAdjList(peg);
+    for (uint nbr : *pegAdj) {
 	if(G2->hasEdge(oldHole, A[nbr]))
 	    diff -= getEdgeScore(G1->getEdgeWeight(peg, nbr), G2->getEdgeWeight(oldHole, A[nbr]));
 
@@ -85,7 +86,8 @@ double EdgeGeoMean::computeIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole
     // Handle peg1
     double diff = 0;
     double c = 0;
-    for (uint nbr : *(G1->getAdjList(peg1))) {
+    auto pegAdj = G1->getAdjList(peg1);
+    for (uint nbr : *pegAdj) {
         if(G2->hasEdge(hole1, A[nbr]))
 	    diff -= getEdgeScore(G1->getEdgeWeight(peg1, nbr), G2->getEdgeWeight(hole1, A[nbr]));
 
@@ -99,7 +101,8 @@ double EdgeGeoMean::computeIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole
 	    diff += getEdgeScore(G1->getEdgeWeight(peg1, nbr), G2->getEdgeWeight(hole2, nbrHole));
     }
     // Handle peg2
-    for (uint nbr : *(G1->getAdjList(peg2))) {
+    pegAdj = G2->getAdjList(peg2);
+    for (uint nbr : *pegAdj) {
         if (nbr == peg1) continue;
         if(G2->hasEdge(hole2, A[nbr]))
 	    diff -= getEdgeScore(G1->getEdgeWeight(peg2, nbr), G2->getEdgeWeight(hole2, A[nbr]));

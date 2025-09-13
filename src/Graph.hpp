@@ -152,7 +152,7 @@ public:
     bool hasSelfLoop(unsigned node) const { return hasEdge(node, node); }
 
 
-    // large data structures are returned as const pointers, legacy functions.
+    // large data structures are returned as unique pointers, legacy functions.
     // recommendation: don't use at all.
     unique_ptr<vector<unsigned>> getAdjList(unsigned node) const;
     unique_ptr<vector<vector<unsigned>>> getAdjLists() const; // THIS REALLY SHOULD NOT BE USED

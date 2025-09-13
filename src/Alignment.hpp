@@ -10,6 +10,7 @@
 #include <algorithm>
 #include "Graph.hpp"
 #include "utils/utils.hpp"
+#include <atomic>
 
 using namespace std;
 
@@ -48,22 +49,28 @@ public:
     //shuffled node order
     static Alignment correctMapping(const Graph& G1, const Graph& G2);
 
-    vector<uint> asVector() const;
-    const vector<uint>* getVector() const; //preferred option if just reading
+    vector<uint> asVector() const {
+        vector<uint> v;
+        for (const auto& e : A) {
+            v.push_back(e.load());
+        }
+        return v;
+    }
 
-    uint& operator[](uint node);
-    const uint& operator[](const uint node) const;
-    uint size() const;
-    uint& back();
+    void set(uint node, uint value) {A[node].store(value);}
+    const uint getSafe(uint node) const {return A[node].load();}
+    void swap(uint node1, uint node2){A[node2].store(A[node1].exchange(A[node2].load()));}
+    const uint operator[](uint node) const {return A[node].load(memory_order_relaxed);} // This is for relaxed and casual access. No write access, nerds.
+    uint size() const {return A.size();}
     void compose(const Alignment& other);
 
     uint computeNumAlignedEdges(const Graph& G1, const Graph& G2) const;
 
-    bool isCorrectlyDefined(const Graph& G1, const Graph& G2);
-    void printDefinitionErrors(const Graph& G1, const Graph& G2);
+    bool isCorrectlyDefined(const Graph& G1, const Graph& G2) const;
+    void printDefinitionErrors(const Graph& G1, const Graph& G2) const;
 
 private:
-    vector<uint> A;
+    vector<atomic_uint> A;
 };
 
 #endif /* ALIGNMENT_HPP */

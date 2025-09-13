@@ -34,7 +34,8 @@ double EdgeDensity::calcEdgeDensity(const Graph* G, uint originNode, uint maxDis
         if (dist == maxDist) break;
         numNodesWithinMaxDistance++;
 
-        for(uint nbr : *(G->getAdjList(currentNode))) {
+        auto g1AdjList = G->getAdjList(currentNode);
+        for(uint nbr : *g1AdjList) {
             if (distanceFromOrigin[nbr] == UNINTIALIZED_DISTANCE) {
                 distanceFromOrigin[nbr] = dist + 1;
                 Q.push(nbr);

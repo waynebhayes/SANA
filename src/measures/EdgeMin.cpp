@@ -64,11 +64,13 @@ static double a[MAX_A_ARRAY];
 // Score the contribution of peg's aligned edges while in hole1, optionally avoiding "avoidPeg" if it's a neighbor.
 // Thanks to Marcus Longo for this idea (2025-01-27)
 double EdgeMin::scoreOnePegSlow(const uint peg, const uint avoidPeg, const uint hole, const Alignment& A) {
-    int ai=0, aSize=(G1->getAdjList(peg))->size() + (G1->getInjList(peg))->size() + 3; // 3 subtractions below
+    auto pegAdjList = G1->getAdjList(peg);
+    auto pegInjList = G2->getInjList(peg);
+    int ai=0, aSize=pegAdjList->size() + pegInjList->size() + 3; // 3 subtractions below
     assert(aSize <= MAX_A_ARRAY);
 
     // Process edges emanating from peg
-    for(const auto& nbr : *(G1->getAdjList(peg))) {
+    for(const auto& nbr : *pegAdjList) {
 	if(nbr!=avoidPeg) { // FIXME: can we avoid the branch by subtracting below the loop?
             a[ai++] = computeAligEdgeScore(peg, nbr, hole, A[nbr]);
         }
@@ -76,7 +78,7 @@ double EdgeMin::scoreOnePegSlow(const uint peg, const uint avoidPeg, const uint 
     assert(ai<=aSize);
 
     // Process edges targeting peg EXCEPT for any self-loop, which was already counted above.
-    for(const auto& nbr : *(G1->getInjList(peg))) {
+    for(const auto& nbr : *pegInjList) {
 	if(nbr!=avoidPeg && nbr!=peg) { // FIXME: can we avoid the branch by subtracting below the loop?
             a[ai++] = computeAligEdgeScore(nbr, peg, A[nbr], hole); 
         }
@@ -129,7 +131,8 @@ double EdgeMin::computeIncChangeOp(const uint peg, const uint oldHole, const uin
     assert(A[peg] == oldHole);
     assert(aSize <= MAX_A_ARRAY);
 
-    for(const auto& nbr : *(G1->getAdjList(peg))) {
+    auto pegAdjList = G1->getAdjList(peg);
+    for(const auto& nbr : *pegAdjList) {
 	if(nbr == peg) assert(A[nbr] == oldHole);
         a[ai++] = -computeAligEdgeScore(peg, nbr, oldHole, A[nbr]);
 	// NOTE: if the PEG has a self-loop, then moving it to newHole means we need to check for underlying self-loop at newHole;
@@ -140,7 +143,8 @@ double EdgeMin::computeIncChangeOp(const uint peg, const uint oldHole, const uin
     }
 
     if (G1->directed) {
-        for (const auto& nbr : *(G1->getInjList(peg))) {
+        auto pegInjList = G2->getInjList(peg);
+        for (const auto& nbr : *pegInjList) {
             if(nbr == peg) assert(A[nbr] == oldHole);
             a[ai++] = -computeAligEdgeScore(nbr,peg, A[nbr],oldHole);
             uint nbrHole = (nbr == peg) ? newHole : A[nbr];
@@ -177,7 +181,8 @@ double EdgeMin::computeIncSwapOp(const uint peg1, const uint peg2, const uint ho
 
     // Subtract (peg1->hole1), add (peg1->hole2)
     uint nbrHole;
-    for (const auto& nbr : *(G1->getAdjList(peg1))) {
+    auto k = G1->getAdjList(peg1);
+    for (const auto& nbr : *k) {
 	if(nbr == peg1) assert(A[nbr] == hole1);
         a[ai++] = -computeAligEdgeScore(peg1,nbr, hole1,A[nbr]);
         if(nbr == peg1)    nbrHole=hole2; 
@@ -188,7 +193,8 @@ double EdgeMin::computeIncSwapOp(const uint peg1, const uint peg2, const uint ho
     }
 
     if(G1->directed) {
-        for (const auto& nbr : *(G1->getInjList(peg1))) { // skip the self and peg2 outgoing
+        k = G2->getInjList(peg1);
+        for (const auto& nbr : *k) { // skip the self and peg2 outgoing
             if(nbr == peg1) assert(A[nbr] == hole1);
             if(nbr != peg1 && nbr!=peg2) {
                 a[ai++] = -computeAligEdgeScore(nbr, peg1, A[nbr], hole1);
@@ -200,7 +206,8 @@ double EdgeMin::computeIncSwapOp(const uint peg1, const uint peg2, const uint ho
     }
 
    // Subtract peg2-hole2, add peg2-hole1
-   for (const auto& nbr : *(G1->getAdjList(peg2))) {
+    k = G1->getAdjList(peg2);
+   for (const auto& nbr : *k) {
 	if(nbr == peg2) assert(A[nbr] == hole2);
         a[ai++] = -computeAligEdgeScore(peg2,nbr, hole2,A[nbr]);
         if(nbr == peg2)    nbrHole=hole1; 
@@ -248,9 +255,9 @@ double EdgeMin::computeIncSwapOp2(const uint peg1, const uint peg2, const uint h
     old +=       scoreOnePegSlow(peg2, peg1, hole2, A); // score out&in as above for peg2 EXCEPT if going to peg1
 
     // NOTE: we must PHYSICALLY swap peg1+peg2 in A, in order to correctly score the new position
-    A[peg1] = hole2; A[peg2] = hole1;
+    A.swap(peg1, peg2);
     double New = scoreOnePegSlow(peg2,noAvoid, hole1, A); // score outward and inward aligned edges of peg1
     New +=       scoreOnePegSlow(peg1,peg2,    hole2, A); // score out&in as above for peg2 EXCEPT if going to peg1
-    A[peg1] = hole1; A[peg2] = hole2;
+    A.swap(peg1, peg2);
     return New - old;
 }

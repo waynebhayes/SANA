@@ -21,7 +21,8 @@ vector<uint> JaccardSimilarityScore::getAlignedByNode(const Graph *G1, const Gra
         // dont need to check if i is aligned because g1 is smaller and always will be alinged
         uint iAlignedTo = A[i]; //find the node i is mapped to
         uint iAlignedEdges = 0;
-        for (uint nbr : *(G1->getAdjList(i))) {
+        auto k = G1->getAdjList(i);
+        for (uint nbr : *k) {
             uint neighbourAlignedTo = A[nbr];
             iAlignedEdges += G2->getEdgeWeight(iAlignedTo, neighbourAlignedTo);
         }

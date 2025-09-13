@@ -14,7 +14,6 @@
 #include "Method.hpp"
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
-#include "../measures/CoreScore.hpp"
 #include "../utils/Misc.hpp"
 #include "../utils/CircularBuffer.hpp"
 #include "../Graph.hpp"
@@ -149,7 +148,7 @@ private:
         CircularBuffer<double> pBadBuffer;
 
         vector<thread> threadVector;
-        void _mainLoop();
+        void _mainLoop(uint64_t seed);
         void _assessChange(changeRequest& currentRequest) const {
             if (currentRequest.twoPegs) _assessSwap(currentRequest);
             else _assessMove(currentRequest);
@@ -164,7 +163,7 @@ private:
     // Control variables, keep constant -Marcus
     const bool hillClimbing, needEC, needEM, needER;
     const double tolerance;
-    const unsigned long long maxSeconds;
+    const double maxSeconds;
     const unsigned long long maxIterations;
     const unsigned long long batchSize;
     const unsigned threadNumber;
@@ -184,7 +183,7 @@ private:
 
     // Main run function and variables
     Alignment alignment;
-    double currentScore;
+    atomic<double> currentScore;
     uint64_t totalMovesCalculated;
     uint64_t totalMovesAccepted;
     uint64_t totalSwapsCalculated;
@@ -197,7 +196,6 @@ private:
 
     // THE REQUEST SYSTEM
 
-    mt19937_64 generator; // rng
     uniform_real_distribution<> randomReal;
     vector<vector<unsigned>> colorUnassignedNodes;
     // Keeps track of the total number of alignments, swaps, and moves we have access to as changes
@@ -209,8 +207,8 @@ private:
     mutex checkHoleLock;
     vector<bool> holeLocks;
 
-    changeRequest chooseNextRequest();
-    void implementLastRequest(double pBad, const changeRequest &input);
+    changeRequest chooseNextRequest(mt19937_64 &generator);
+    void implementLastRequest(double pBad, const changeRequest &input, mt19937_64 &generator);
 
     // TRACKING SYSTEM
     void trackProgress(long long unsigned iter, double fractionTime, double elapsedTime,

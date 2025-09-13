@@ -4,40 +4,49 @@
 #include "utils/FileIO.hpp"
 using namespace std;
 
-Alignment::Alignment() {}
-Alignment::Alignment(const vector<uint>& mapping): A(mapping) {}
-Alignment::Alignment(const Alignment& alig): A(alig.A) {}
+Alignment::Alignment() = default;
+Alignment::Alignment(const vector<uint>& mapping) {
+    vector<atomic_uint> align(mapping.size());
+
+    for (size_t i = 0; i < mapping.size(); ++i) {
+        align[i].store(mapping[i]);
+    }
+    A = move(align);
+}
+Alignment::Alignment(const Alignment& alig){
+    vector<atomic_uint> align(alig.A.size());
+
+    for (size_t i = 0; i < alig.A.size(); ++i) {
+        align[i].store(alig.A[i].load());
+    }
+    A = move(align);
+};
+
 Alignment::Alignment(const Graph& G1, const Graph& G2, const vector<array<string, 2>>& edgeList) {
     uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();
     assert(n1 == edgeList.size());
-    A = vector<uint>(n1, n2); //n2 used to denote invalid index
+    A = vector<atomic_uint>(n1); //n2 used to denote invalid index
+    for (auto &value: A) value.store(n2);
     for (const auto& edge : edgeList) {
-        string nodeG1 = edge[0], nodeG2 = edge[1];
-        A[G1.getNameIndex(nodeG1)] = G2.getNameIndex(nodeG2);
+        const string &nodeG1 = edge[0], &nodeG2 = edge[1];
+        A[G1.getNameIndex(nodeG1)].store(G2.getNameIndex(nodeG2));
     }
     printDefinitionErrors(G1,G2);
     assert(isCorrectlyDefined(G1, G2));
 }
 
-uint Alignment::size() const { return A.size(); }
-vector<uint> Alignment::asVector() const { return A; }
-const vector<uint>* Alignment::getVector() const { return &A; }
-uint& Alignment::back() { return A.back(); }
-uint& Alignment::operator[] (uint node) { return A[node]; }
-const uint& Alignment::operator[](const uint node) const { return A[node]; }
-
 Alignment Alignment::loadEdgeList(const Graph& G1, const Graph& G2, const string& fileName) {
-    vector<string> edges = FileIO::fileToWords(fileName);
+    const vector<string> edges = FileIO::fileToWords(fileName);
     vector<array<string, 2>> edgeList;
     edgeList.reserve(edges.size()/2);
     for (uint i = 0; i < edges.size(); i += 2) {
         edgeList.push_back({edges[i], edges[i+1]});
     }
-    return Alignment(G1, G2, edgeList);
+    return {G1, G2, edgeList};
 }
 
 Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, const string& fileName) {
-    vector<string> edges = FileIO::fileToWords(fileName);
+    const vector<string> edges = FileIO::fileToWords(fileName);
     vector<array<string, 2>> edgeList;
     edgeList.reserve(edges.size()/2);
     for (uint i = 0; i < edges.size(); i += 2) {
@@ -53,7 +62,7 @@ Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, con
             edgeList.push_back({name2, name1});
         }
     }
-    return Alignment(G1, G2, edgeList);
+    return {G1, G2, edgeList};
 }
 
 Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
@@ -94,7 +103,7 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
                 }
             }
             if (nodeG1Misplaced and nodeG2Misplaced) {
-                swap(nodeG1, nodeG2);
+                std::swap(nodeG1, nodeG2);
                 cout << nodeG1 << " and " << nodeG2 << " swapped." << endl;
             }
             A[G1.getNameIndex(nodeG1)] = G2.getNameIndex(nodeG2);
@@ -109,8 +118,8 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
     }
     for (uint i = 0; i < n1; i++) {
         if (A[i] == n2) {
-            int j = randMod(n2);
-            while (G2AssignedNodes[j]) j = randMod(n2);
+            unsigned j = randIndex(n2);
+            while (G2AssignedNodes[j]) j = randIndex(n2);
             A[i] = j;
             G2AssignedNodes[j] = true;
         }
@@ -157,7 +166,7 @@ Alignment Alignment::random(uint n1, uint n2) {
 
 Alignment Alignment::empty() {
     vector<uint> emptyMapping(0);
-    return Alignment(emptyMapping);
+    return {emptyMapping};
 }
 
 Alignment Alignment::identity(uint n) {
@@ -165,7 +174,7 @@ Alignment Alignment::identity(uint n) {
     for (uint i = 0; i < n; i++) {
         A[i] = i;
     }
-    return Alignment(A);
+    return {A};
 }
 
 Alignment Alignment::correctMapping(const Graph& G1, const Graph& G2) {
@@ -176,16 +185,11 @@ Alignment Alignment::correctMapping(const Graph& G1, const Graph& G2) {
     for (uint i = 0; i < G1.getNumNodes(); i++) {
         A[i] = G2.getNameIndex(G1.getNodeName(i));
     }
-    return Alignment(A);
+    return {A};
 }
 
 Alignment &Alignment::operator=(Alignment other) {
-    const uint n = max(A.size(), other.A.size());
-    A.reserve(n);
-    other.A.reserve(n);
-    swap(A, other.A);
-    A.shrink_to_fit();
-    other.A.shrink_to_fit();
+    std::swap(A, other.A);
     return *this;
 }
 
@@ -207,15 +211,15 @@ uint Alignment::computeNumAlignedEdges(const Graph& G1, const Graph& G2) const {
 Alignment Alignment::reverse(uint n2) const {
     uint n1 = size();
     vector<uint> A(n2, n1); //n1 used for invalid mapping
-    for (uint i = 0; i < n1; i++) A[A[i]] = i;
-    return Alignment(A);
+    for (uint i = 0; i < n1; i++) A[this->A[i].load()] = i;
+    return {A};
 }
 
 void Alignment::compose(const Alignment& other) {
-    for (uint i = 0; i < size(); i++) A[i] = other.A[A[i]];
+    for (uint i = 0; i < size(); i++) A[i].store(other.A[A[i].load()].load());
 }
 
-bool Alignment::isCorrectlyDefined(const Graph& G1, const Graph& G2) {
+bool Alignment::isCorrectlyDefined(const Graph& G1, const Graph& G2) const {
     uint n1 = G1.getNumNodes();
     uint n2 = G2.getNumNodes();
     vector<bool> G2AssignedNodes(n2, false);
@@ -232,7 +236,7 @@ bool Alignment::isCorrectlyDefined(const Graph& G1, const Graph& G2) {
     return true;
 }
 
-void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) {
+void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) const {
     uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();
     vector<bool> G2AssignedNodes(n2, false);
     vector<uint> colorMap = G1.myColorIdsToOtherGraphColorIds(G2);

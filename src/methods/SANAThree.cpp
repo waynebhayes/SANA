@@ -70,13 +70,13 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
                 "run the old version." << endl;
     }
 
-    generator = mt19937_64(getRandomSeed());
+
     randomReal = uniform_real_distribution<>(0, 1);
 
     // NODE COLOR SYSTEM initialization
 
     assert(G1->numColors() <= G2->numColors());
-    constexpr bool COL_DBG = true; //print stats about color/neighbor type probabilities
+
 
     swapsPerColor.reserve(G1->numColors() + 1);
     movesPerColor.reserve(G1->numColors() + 1);
@@ -222,7 +222,7 @@ Alignment SANAThree::run() {
 }
 
 #define LEEWAY 1.75
-#define temperatureFunction(f, i, d) (i * exp(-d * f))
+#define temperatureFunction(f, i, d) ((i) * exp(-(d) * (f)))
 void SANAThree::runIterations() {
     double maxSecondsWithLeeway;
     long long unsigned maxBatches;
@@ -416,7 +416,7 @@ void SANAThree::runHillClimbing() {
     cout<<"Hill climbing took "<<T.elapsedString()<<"s"<<endl;
 }
 
-SANAThree::changeRequest SANAThree::chooseNextRequest() {
+SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
     unique_lock<mutex> lockAlignmentAndHoles(checkHoleLock, defer_lock);
 
     // Request parameters
@@ -434,7 +434,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest() {
     unsigned color = 0;
 
     while (true) {
-        uint64_t alignmentNumber = randIndex_64(numAdjacentAlignments, generator);
+        uint64_t alignmentNumber = randIndex_64(numAdjacentAlignments, generator); // TODO: lock
 
         // Swap Logic
         if (alignmentNumber < numSwaps) {
@@ -529,7 +529,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest() {
 // This probably deserves a rework. I am uncomfortable with the current implementation and pushing
 // it all off into its own function has solved this only marginally. It works, but there has got to
 // be a less intrusive way to do this!
-void SANAThree::implementLastRequest(double pBad, const changeRequest &input) {
+void SANAThree::implementLastRequest(double pBad, const changeRequest &input, mt19937_64 &generator) {
     unique_lock<mutex> lockAlignmentAndHoles(checkHoleLock);
 
     holeLocks[input.hole1] = holeLocks[input.hole2] = false;
@@ -538,17 +538,17 @@ void SANAThree::implementLastRequest(double pBad, const changeRequest &input) {
 
     if (randomReal(generator) >= pBad) return;
 
-    alignment[input.peg1] = input.hole2;
     if (input.twoPegs) {
-        alignment[input.peg2] = input.hole1; // Swap
+        alignment.swap(input.peg1, input.peg2);
         totalSwapsAccepted++;
     }
     else {
+        alignment.set(input.peg1, input.hole2);
         colorUnassignedNodes[input.color][input.hole2unassignedID] = input.hole1; // Move
         totalMovesAccepted++;
     }
 
-    currentScore += input.energyInc;
+    currentScore.store(currentScore.load() + input.energyInc);
 }
 
 // TODO
@@ -567,7 +567,7 @@ void SANAThree::trackProgress(long long unsigned iter, double fractionTime, doub
     lastIterations = iter;
 
     printf("%lld (%.5g%%,%.1fs): score = %.3g ips = %.5g, P(%.3g) = %.3g", iter, 100*fractionTime,
-        elapsedTime, currentScore, ips, temperature, lastAvgPBad);
+        elapsedTime, currentScore.load(), ips, temperature, lastAvgPBad);
     if(batches) printf(" batches %d bSc %.3g, bpBad %.3g", batches, batchScore, batchPbad);
     printf("\n");
     fflush(stdout);
@@ -606,7 +606,7 @@ void sigHandlerThree(const int s) {
 
 void SANAThree::setInterruptSignal() {
     saveAligAndExitOnInterruption = false;
-    struct sigaction sigInt;
+    struct sigaction sigInt{};
     sigInt.sa_handler = sigHandlerThree;
     sigemptyset(&sigInt.sa_mask);
     sigInt.sa_flags = 0;

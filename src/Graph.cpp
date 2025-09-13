@@ -313,7 +313,7 @@ unique_ptr<vector<vector<unsigned>>> Graph::getAdjLists() const {
     unique_ptr<vector<vector<unsigned>>> adjLists(new vector<vector<unsigned>>());
     adjLists->reserve(nodes.size());
     for (unsigned i = 0; i < nodes.size(); ++i) {
-        adjLists->push_back(*getAdjList(i));
+        adjLists->emplace_back(*getAdjList(i));
     }
     return adjLists;
 }
@@ -570,8 +570,10 @@ bool Graph::isWellDefined() const {
             EDGE_T weight = edge.second;
             if (!directed && weight != getEdgeWeight(node2ID, node1.nodeID))
                 ss<<"matrix is undirected but adjLists are not symmetric at edge ("<<node1.nodeID<<" <-> "<<node2ID<<")"<<endl;
-            numEdgesInAdjLists++;
-            adjListSum += weight;
+            if (directed || node1.nodeID <= node2ID) {
+                numEdgesInAdjLists++;
+                adjListSum += weight;
+            }
             nodeSum[node1.nodeID] += weight;
         }
     }

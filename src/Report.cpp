@@ -22,7 +22,7 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
     saveAlignmentAsEdgeList(A, G1, G2, aligFileName);
 
     if (longVersion) {
-        Graph CS = G1.graphIntersection(G2, *(A.getVector()));
+        Graph CS = G1.graphIntersection(G2, A.asVector());
         string aligGraphFileName = baseName+".ccs-el";
         cout<<"Saving common subgraph in edge list format as \""<<aligGraphFileName<<"\""<<endl;
         GraphLoader::saveInEdgeListFormat(CS, aligGraphFileName, false, true, "", " ");        
@@ -73,7 +73,7 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
     Timer T3;
     T3.start();  
     ofs << "Common subgraph:" << endl;
-    Graph CS = G1.graphIntersection(G2, *(A.getVector()));
+    Graph CS = G1.graphIntersection(G2, A.asVector());
     printGraphStats(CS, numCCsToPrint, ofs);
     auto CCs = CS.connectedComponents();
     uint numCCs = CCs.size();
@@ -122,11 +122,11 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
                 ofs << G1.getNodeName(nodes[i]) << '\t' << G2.getNodeName(A[nodes[i]]);
                 for (uint d=1; d<=EDGE_COUNT_DIST; d++){
                     uint fullCount=0; 
-                    vector<uint> V1 = G1.numEdgesAroundByLayers(nodes[i], d); 
+                    vector<uint> V1 = G1.numEdgesAroundByLayers(nodes[i], d);
                     for (uint j=0;j<d;j++) fullCount+= V1[j];
                     ofs << '\t' << fullCount;
                     fullCount=0; 
-                    vector<uint> V2 = G2.numEdgesAroundByLayers(A[nodes[i]], d); 
+                    vector<uint> V2 = G2.numEdgesAroundByLayers(A[nodes[i]], d);
                     for (uint j=0;j<d;j++) fullCount+= V2[j];
                     ofs << '\t' << fullCount;
                     vector<uint> localNodes(G1.nodesAround(nodes[i], d));
@@ -322,7 +322,7 @@ void Report::reportAll(const Graph& G1, const Graph& G2, const Alignment& A,
     Timer T3;
     T3.start();
     outOfs << "Common subgraph:" << endl;
-    Graph CS = G1.graphIntersection(G2, *(A.getVector()));
+    Graph CS = G1.graphIntersection(G2, A.asVector());
     printGraphStats(CS, numCCsToPrint, outOfs);
     auto CCs = CS.connectedComponents();
     uint numCCs = CCs.size();

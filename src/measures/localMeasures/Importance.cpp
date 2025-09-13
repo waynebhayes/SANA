@@ -146,7 +146,8 @@ vector<double> Importance::getImportances(const Graph& G) {
     vector<double> res(n);
     for (uint u = 0; u < n; u++) {
         double edgeWeightSum = 0;
-        for (uint v : *(G.getAdjList(u))) {
+        auto uAdjList = G.getAdjList(u);
+        for (uint v : *uAdjList) {
             edgeWeightSum += edgeWeights[u][v];
         }
         res[u] = nodeWeights[u] + edgeWeightSum;
@@ -185,7 +186,7 @@ bool Importance::hasNodesWithEnoughDegree(const Graph& G) {
         nodes[i] = i;
     }
     sort(nodes.begin(), nodes.end(), DegreeComp(G));
-    return (*G.getAdjLists())[nodes[n-1]].size() > DEG;
+    return G.getAdjLists()->size() > DEG;
 }
 
 bool Importance::fulfillsPrereqs(const Graph* G1, const Graph* G2) {

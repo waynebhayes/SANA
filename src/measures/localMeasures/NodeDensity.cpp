@@ -29,7 +29,8 @@ double NodeDensity::calcNodeDensity (const Graph* G, uint originNode, uint maxDi
         uint dist = distanceFromOrigin[currentNode];
         if (dist == maxDist) break;
         numNodesWithinMaxDistance++;
-        for (uint nbr : *(G->getAdjList(currentNode))) {
+        auto currentNodeAdjList = G->getAdjList(currentNode);
+        for (uint nbr : *currentNodeAdjList) {
             if (distanceFromOrigin[nbr] == UNINTIALIZED_DISTANCE) {
                 distanceFromOrigin[nbr] = dist + 1;
                 Q.push(nbr);

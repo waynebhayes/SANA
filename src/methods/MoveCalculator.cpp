@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <unistd.h>
 
+#include "randomSeed.hpp"
 #include "SANAThree.hpp"
 #include "../measures/EdgeRatio.hpp"
 #include "../measures/EdgeMin.hpp"
@@ -45,10 +46,12 @@ SANAThree::CalculatorHandler::CalculatorHandler(const unsigned threadNumber, SAN
 
     pBadTotal = 0;
 
+    mt19937_64 generator(random_device{}());
+
     if (threadNumber == 0) throw runtime_error("Thread number must be > 0");
     threadVector.reserve(threadNumber);
     for (unsigned i = 0; i < threadNumber; ++i) {
-        threadVector.emplace_back(&CalculatorHandler::_mainLoop, this);
+        threadVector.emplace_back(&CalculatorHandler::_mainLoop, this, generator());
     }
 }
 
@@ -141,10 +144,12 @@ SANAThree::batchOutput SANAThree::CalculatorHandler::collectBatch(const double t
     return {totalEnergy / parent.batchSize, totalPBad / pBadTotal};
 }
 
-void SANAThree::CalculatorHandler::_mainLoop() {
+void SANAThree::CalculatorHandler::_mainLoop(uint64_t seed) {
     // See comment about unique_locks in submitRequest
     unique_lock<mutex> bufferLock (bufferMutex, defer_lock);
     unique_lock<mutex> requestLock (requestMutex);
+
+    mt19937_64 generator(seed);
 
     bool on; // To prevent double accessing this variable when unnecessary. We want compiler to cache it in certain scenarios
 
@@ -158,14 +163,14 @@ void SANAThree::CalculatorHandler::_mainLoop() {
         // (We enter this part locked!)
         ++inputRequests;
         requestLock.unlock();
-        changeRequest currentRequest = parent.chooseNextRequest();
+        changeRequest currentRequest = parent.chooseNextRequest(generator);
 
         // Part 2, assess request and calculate pBad
         _assessChange(currentRequest);
         const double pBad = acceptingProbability(currentRequest.energyInc, temperature);
 
         // Part 3, implement request
-        parent.implementLastRequest(pBad, currentRequest);
+        parent.implementLastRequest(pBad, currentRequest, generator);
 
         // Part 4, update stats
         bufferLock.lock();
@@ -173,7 +178,7 @@ void SANAThree::CalculatorHandler::_mainLoop() {
         if (!collectBatches) { // For equilibrium, ts is so cringe -Marcus
             if (currentRequest.energyInc < 0) pBadBuffer.insert(pBad);
             if (outputRequests % parent.batchSize == 0) {
-                scoreBuffer.insert(parent.currentScore);
+                scoreBuffer.insert(parent.currentScore.load(memory_order_relaxed));
                 if (scoreBuffer.isFull()) {
                     equilibriumCheck.notify_all();
                     // Pause this thread until calculation over
@@ -190,7 +195,7 @@ void SANAThree::CalculatorHandler::_mainLoop() {
             totalPBad += pBad;
             pBadTotal++;
         }
-        totalEnergy += parent.currentScore;
+        totalEnergy += parent.currentScore.load(memory_order_relaxed);
         bufferLock.unlock();
 
         // Stop batch logic

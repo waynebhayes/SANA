@@ -149,17 +149,20 @@ Alignment HillClimbing::run() {
                 uint newTarget = unassignedNodesG2[newTargetIndex];
 
                 int newAligEdges = aligEdges;
-                for (uint nbr : *(G1->getAdjList(source))) {
+                unique_ptr<vector<unsigned>> G1AdjList = G1->getAdjList(source);
+                for (uint nbr : *G1AdjList) {
                     newAligEdges -= G2->getEdgeWeight(oldTarget, A[nbr]);
                     newAligEdges += G2->getEdgeWeight(newTarget, A[nbr]);
                 }
 
                 int newG2InducedEdges = g2InducedEdges;
                 if (needG2InducedEdges) {
-                    for (uint nbr : *(G2->getAdjList(oldTarget))) {
+                    unique_ptr<vector<unsigned>> G2AdjList = G2->getAdjList(oldTarget);
+                    for (uint nbr : *G2AdjList) {
                         newG2InducedEdges -= assignedNodesG2[nbr];
                     }
-                    for (uint nbr : *(G2->getAdjList(newTarget))) {
+                    G2AdjList = G2->getAdjList(newTarget);
+                    for (uint nbr : *G2AdjList) {
                         newG2InducedEdges += assignedNodesG2[nbr];
                     }
                     //address case changing between adjacent nodes:
@@ -172,7 +175,7 @@ Alignment HillClimbing::run() {
 
                 double newWecSum = wecSum;
                 if (wecWeight > 0) {
-                    for (uint nbr : *(G1->getAdjList(source))) {
+                    for (uint nbr : *G1AdjList) {
                         if (G2->hasEdge(oldTarget, A[nbr])) {
                             newWecSum -= (*wecSimMatrix)[source][oldTarget];
                             newWecSum -= (*wecSimMatrix)[nbr][A[nbr]];
@@ -209,11 +212,13 @@ Alignment HillClimbing::run() {
                 uint target1 = A[source1], target2 = A[source2];
 
                 int newAligEdges = aligEdges;
-                for (uint nbr : *(G1->getAdjList(source1))) {
+                unique_ptr<vector<unsigned>> G1AdjList1 = G1->getAdjList(source1);
+                for (uint nbr : *G1AdjList1) {
                     newAligEdges -= G2->getEdgeWeight(target1, A[nbr]);
                     newAligEdges += G2->getEdgeWeight(target2, A[nbr]);
                 }
-                for (uint nbr : *(G1->getAdjList(source2))) {
+                unique_ptr<vector<unsigned>> G1AdjList2 = G1->getAdjList(source1);
+                for (uint nbr : *G1AdjList2) {
                     newAligEdges -= G2->getEdgeWeight(target2, A[nbr]);
                     newAligEdges += G2->getEdgeWeight(target1, A[nbr]);
                 }
@@ -232,7 +237,7 @@ Alignment HillClimbing::run() {
 
                 double newWecSum = wecSum;
                 if (wecWeight > 0) {
-                    for (uint nbr : *(G1->getAdjList(source1))) {
+                    for (uint nbr : *G1AdjList1) {
                         if (G2->hasEdge(target1, A[nbr])) {
                             newWecSum -= (*wecSimMatrix)[source1][target1];
                             newWecSum -= (*wecSimMatrix)[nbr][A[nbr]];
@@ -242,7 +247,7 @@ Alignment HillClimbing::run() {
                             newWecSum += (*wecSimMatrix)[nbr][A[nbr]];
                         }
                     }
-                    for (uint nbr : *(G1->getAdjList(source2))) {
+                    for (uint nbr : *G1AdjList2) {
                         if (G2->hasEdge(target2, A[nbr])) {
                             newWecSum -= (*wecSimMatrix)[source2][target2];
                             newWecSum -= (*wecSimMatrix)[nbr][A[nbr]];
