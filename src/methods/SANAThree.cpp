@@ -16,10 +16,10 @@
 #include <cstdio>
 
 #include "SANAThree.hpp"
+#include "BatchHarvester.hpp"
 
 #include "../measures/SquaredEdgeScore.hpp"
 #include "../utils/utils.hpp"
-#include "../utils/randomSeed.hpp"
 #include "../Report.hpp"
 #include "../utils/Stats.hpp"
 
@@ -125,8 +125,10 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
     totalSwapsCalculated = 0;
     totalSwapsAccepted = 0;
     initDataStructures();
-    threadPool = new CalculatorHandler {threadNumber, *this, batchSize / 2};
+    threadPool = new BatchHarvester {threadNumber, *this, batchSize / 2};
 }
+
+SANAThree::~SANAThree() {delete threadPool;}
 
 Alignment SANAThree::runUsingIterations() {
     cerr << "Warning, direct public access to SANA's different run types is being phased out." << endl;
@@ -196,6 +198,8 @@ void SANAThree::describeParameters(ostream &stream) const {
 string SANAThree::fileNameSuffix(const Alignment& Al) const {
     return "_" + extractDecimals(MC->eval(Al),3);
 }
+
+unsigned SANAThree::pBadsInBuffer() const {return threadPool->pBadsInBuffer();}
 
 double SANAThree::getEquilibriumPBadAtTemp(double temperature, unsigned timeoutSeconds) const {
     return threadPool->runUntilEquilibrium(temperature, timeoutSeconds);
@@ -417,7 +421,7 @@ void SANAThree::runHillClimbing() {
 }
 
 SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
-    unique_lock<mutex> lockAlignmentAndHoles(checkHoleLock, defer_lock);
+    unique_lock<mutex> lockAlignmentAndHoles(alignmentMutex, defer_lock);
 
     // Request parameters
     bool twoPegs;
@@ -434,7 +438,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
     unsigned color = 0;
 
     while (true) {
-        uint64_t alignmentNumber = randIndex_64(numAdjacentAlignments, generator); // TODO: lock
+        uint64_t alignmentNumber = randIndex_64(numAdjacentAlignments, generator);
 
         // Swap Logic
         if (alignmentNumber < numSwaps) {
@@ -529,14 +533,14 @@ SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
 // This probably deserves a rework. I am uncomfortable with the current implementation and pushing
 // it all off into its own function has solved this only marginally. It works, but there has got to
 // be a less intrusive way to do this!
-void SANAThree::implementLastRequest(double pBad, const changeRequest &input, mt19937_64 &generator) {
-    unique_lock<mutex> lockAlignmentAndHoles(checkHoleLock);
+double SANAThree::implementLastRequest(double pBad, const changeRequest &input, mt19937_64 &generator) {
+    unique_lock<mutex> lockAlignmentAndHoles(alignmentMutex);
 
     holeLocks[input.hole1] = holeLocks[input.hole2] = false;
     if (input.twoPegs) totalSwapsCalculated++;
     else totalMovesCalculated++;
 
-    if (randomReal(generator) >= pBad) return;
+    if (randomReal(generator) >= pBad) return currentScore;
 
     if (input.twoPegs) {
         alignment.swap(input.peg1, input.peg2);
@@ -548,7 +552,9 @@ void SANAThree::implementLastRequest(double pBad, const changeRequest &input, mt
         totalMovesAccepted++;
     }
 
-    currentScore.store(currentScore.load() + input.energyInc);
+    const double val = currentScore.load() + input.energyInc;
+    currentScore.store(val);
+    return val;
 }
 
 // TODO

@@ -4,7 +4,7 @@ ARCH_FLAGS=$(shell ($(GCC) -v 2>&1; uname -a) | awk '/CYGWIN/{print "-U__STRICT_
 MY_CC = g++$(GCC_VER)
 CXXFLAGS = -I "src/utils" "-DLIBWAYNE=1" -Wall -std=gnu++11 -pthread $(ARCH_FLAGS) #-pg -fno-inline
 
-SANA_VER=3.2
+SANA_VER=3.3
 MAIN = sana$(SANA_VER)
 
 #you can give these on Make's command line, eg "SPARSE=1" or "WEIGHT=1" or "MULTI=1"
@@ -47,15 +47,25 @@ ifeq ($(STATIC), 1)
 endif
 
 # this one should be second-last since the debugging ones run slowly and should be used on smallish networks.
+ifeq ($(GDB), 4)
+    CXXFLAGS := $(CXXFLAGS) -g -O3 -fno-omit-frame-pointer -fsanitize=thread
+    MAIN := $(MAIN).sanitize.o3.gdb
+else
+ifeq ($(GDB), 3)
+    CXXFLAGS := $(CXXFLAGS) -g -O0 -fno-omit-frame-pointer -fsanitize=thread
+    MAIN := $(MAIN).sanitize.gdb
+else
 ifeq ($(GDB), 2) # For profiling
     CXXFLAGS := $(CXXFLAGS) -g -O3 -fno-omit-frame-pointer
     MAIN := $(MAIN).o3.gdb
 else
 ifeq ($(GDB), 1) # For debugging
-    CXXFLAGS := $(CXXFLAGS) -g -O0
+    CXXFLAGS := $(CXXFLAGS) -g -O0 -fno-omit-frame-pointer
     MAIN := $(MAIN).gdb
 else
     CXXFLAGS := $(CXXFLAGS) -O3 # always turn on optimization if not debugging
+endif
+endif
 endif
 endif
 
@@ -103,7 +113,7 @@ METHODS_SRC =   							\
 	src/methods/NoneMethod.cpp 					\
 	src/methods/RandomAligner.cpp   				\
 	src/methods/SANAThree.cpp              \
-	src/methods/MoveCalculator.cpp
+	src/methods/BatchHarvester.cpp
 
 UTILS_SRC = 								\
 	src/utils/NormalDistribution.cpp				\

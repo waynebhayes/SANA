@@ -1,8 +1,6 @@
-#ifndef NEWSANA_HPP
-#define NEWSANA_HPP
-#include <condition_variable>
+#ifndef SANATHREE_HPP
+#define SANATHREE_HPP
 #include <mutex>
-#include <thread>
 #include <map>
 #include <ctime>
 #include <random>
@@ -21,29 +19,23 @@
 using namespace std;
 
 // Big Picture TODO list by priority:
-// 1.) Add thread number as a command line argument
-// 2.) Refactor and cleanly implement the stationary node system from 2.0
-// 3.) Fix happy batches system
-// 4.) Figure out how to better track the statistics of the SA process without cluttering up the
-// SANA class like in the 2.0
-// 5.) Goldilocks functionality
-// 6.) SANAWrapper retired
-// 7.) Better thread error detection and/or experiment with more restrictive locking schemes
-// 8.) Individual node KE system
-// 9.) Multi-pairwise SANA reimplemented
+// 0.) Fix Happy Batches System
+// 1.) Refactor and cleanly implement the stationary node system from 2.0
+// 2.) Individual node KE system
+// 3.) Multi-pairwise SANA reimplemented
 // If you have ideas for any of this, my element is @malongo:matrix.org
 // -Marcus
 
 
 
 class SANAThree: public Method {
-
+    class BatchHarvester;
 public:
     SANAThree(const Graph* G1, const Graph* G2, double TInitial, double TDecay, double maxSeconds,
         long long maxIterations, double tolerance, bool addHillClimbing, const MeasureCombination* MC,
         const string& scoreAggrStr, const Alignment& optionalStartAlig, const string& outputFileName,
         const string& localScoresFileName, unsigned threadNumber);
-    ~SANAThree() override {delete threadPool;}
+    ~SANAThree() override;
 
     Alignment run() override;
 
@@ -62,7 +54,7 @@ public:
     //requires TInitial and TFinal to be already initialized
     void setTDecayFromTempRange() {tDecay = -log(tFinal/tInitial);}
 
-    unsigned pBadsInBuffer() const {return threadPool->pBadsInBuffer();}
+    unsigned pBadsInBuffer() const;
 
 private:
 
@@ -95,68 +87,6 @@ private:
         const double averagePBad;
     };
 
-    // Multithread handler (yes, this is used even when single-threaded to prevent code bloat
-    // even if it is slightly slower than dedicated single-threading, but also if you are single-
-    // threading even after the refactor, then you clearly care more about accuracy than speed).
-    // -Marcus
-    class CalculatorHandler {
-    public:
-        // The handler starts the threads as soon as it is constructed and terminates them when it
-        // is deconstructed. Therefore, it should only ever exist as a local object at the smallest
-        // possible scope to ensure that the computer threads are not being hogged by a greedy SANA.
-        // -Marcus
-        CalculatorHandler(unsigned threadNumber, SANAThree &SANA, unsigned long long bufferSize);
-        ~CalculatorHandler();
-
-        // This is the proper way to interface with collectBatch
-        // -Marcus
-        batchOutput collectBatch(double temperature);
-
-        double runUntilEquilibrium(double temperature, unsigned timeoutSeconds);
-
-        double recentPBadQuick() const {return pBadBuffer.quickAverage();}
-
-        double recentPBadTrue() {return pBadBuffer.accurateAverage();}
-
-        unsigned pBadsInBuffer() const {return pBadBuffer.size();}
-
-        void resetBuffers() {pBadBuffer.resetBuffer(); scoreBuffer.resetBuffer();}
-
-    private:
-        bool calculatorsOn;
-        bool collectBatches;
-        const unsigned daughterNum;
-
-        double temperature;
-        double totalEnergy;
-        double totalPBad;
-
-        uint64_t inputRequests;
-        uint64_t outputRequests;
-        uint64_t pBadTotal;
-
-        SANAThree &parent;
-
-        mutex requestMutex;
-        mutex bufferMutex;
-
-        condition_variable requestsFinished;
-        condition_variable equilibriumCheck;
-        condition_variable startBatch;
-
-        CircularBuffer<double> scoreBuffer;
-        CircularBuffer<double> pBadBuffer;
-
-        vector<thread> threadVector;
-        void _mainLoop(uint64_t seed);
-        void _assessChange(changeRequest& currentRequest) const {
-            if (currentRequest.twoPegs) _assessSwap(currentRequest);
-            else _assessMove(currentRequest);
-        }
-        void _assessMove(changeRequest &input) const; // One pin
-        void _assessSwap(changeRequest &input) const; // Two pins
-    };
-
     // Convenience variables
     const uint64_t n1, n2, m1, m2;
 
@@ -176,14 +106,12 @@ private:
     double tFinal{};
     double tDecay;
 
-    CalculatorHandler *threadPool;
+    BatchHarvester *threadPool;
 
     // Set-up function
     void initDataStructures();
 
     // Main run function and variables
-    Alignment alignment;
-    atomic<double> currentScore;
     uint64_t totalMovesCalculated;
     uint64_t totalMovesAccepted;
     uint64_t totalSwapsCalculated;
@@ -204,11 +132,14 @@ private:
     vector<uint64_t> swapsPerColor;
     vector<uint64_t> movesPerColor;
 
-    mutex checkHoleLock;
-    vector<bool> holeLocks;
-
+    // These mess with these mutexes.
+    mutex scoreMutex;
+        atomic<double> currentScore;
+    mutex alignmentMutex;
+        Alignment alignment;
+        vector<bool> holeLocks;
     changeRequest chooseNextRequest(mt19937_64 &generator);
-    void implementLastRequest(double pBad, const changeRequest &input, mt19937_64 &generator);
+    double implementLastRequest(double pBad, const changeRequest &input, mt19937_64 &generator); // Returns if accepted or rejected
 
     // TRACKING SYSTEM
     void trackProgress(long long unsigned iter, double fractionTime, double elapsedTime,
@@ -224,4 +155,4 @@ public:
 
 
 
-#endif // NEWSANA_HPP
+#endif // SANATHREE_HPP
