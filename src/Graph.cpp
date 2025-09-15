@@ -33,8 +33,12 @@ Graph::Graph(const bool directed, const string& graphName, const string& optiona
     edgeList(edgeList) {
 
     vector<string> nodeNames;
+    const vector<string> *nodeNamesPtr;
     unsigned numNodes;
-    if (optionalNodeNames.empty()) numNodes = optionalNodeNames.size();
+    if (!optionalNodeNames.empty()) {
+        numNodes = optionalNodeNames.size();
+        nodeNamesPtr = &optionalNodeNames;
+    }
     else {
         //if names are not given, derive the number of nodes from the edge list
         //and give them dummy names
@@ -49,13 +53,14 @@ Graph::Graph(const bool directed, const string& graphName, const string& optiona
         }
         nodeNames.reserve(numNodes);
         for (unsigned i = 0; i < numNodes; i++) nodeNames.push_back(to_string(i));
+        nodeNamesPtr = &nodeNames;
     }
 
     nodeNameToIndexMap.reserve(numNodes);
     for (unsigned i = 0; i < numNodes; i++) {
-        if (nodeNameToIndexMap.count(nodeNames[i]))
-            throw runtime_error("repeated node name "+nodeNames[i]+" passed to graph constructor");
-        nodeNameToIndexMap[nodeNames.at(i)] = i;
+        if (nodeNameToIndexMap.count((*nodeNamesPtr)[i]))
+            throw runtime_error("repeated node name "+(*nodeNamesPtr)[i]+" passed to graph constructor");
+        nodeNameToIndexMap[nodeNamesPtr->at(i)] = i;
     }
 
     const bool uniformWeights = optionalEdgeWeights.size() == 0;
@@ -77,7 +82,7 @@ Graph::Graph(const bool directed, const string& graphName, const string& optiona
         if (weight == 0)
             throw runtime_error("edges with weight 0 are not supported");
         if((directed && adjLists[node1].count(node2)) || (!directed && (adjLists[node1].count(node2) || adjLists[node2].count(node1))))
-            throw runtime_error("Repeated edge ("+nodeNames[node1]+","+nodeNames[node2]+") in edge list passed to graph constructor; did you mean to specify \"-directed\"?");
+            throw runtime_error("Repeated edge ("+(*nodeNamesPtr)[node1]+","+(*nodeNamesPtr)[node2]+") in edge list passed to graph constructor; did you mean to specify \"-directed\"?");
         adjLists[node1].emplace(node2, weight);
         nodeWeights[node1] += weight;
         totalGraphWeight += weight;
@@ -99,7 +104,7 @@ Graph::Graph(const bool directed, const string& graphName, const string& optiona
     // of a fresh start and hopefully linear data that is easy to cash.
     nodes.reserve(numNodes);
     for (unsigned i = 0; i < numNodes; i++) {
-        nodes.emplace_back(i, nodeColors.at(i), nodeWeights.at(i), nodeNames.at(i),
+        nodes.emplace_back(i, nodeColors.at(i), nodeWeights.at(i), nodeNamesPtr->at(i),
                   colorNames.at(nodeColors.at(i)), adjLists.at(i), injLists.at(i));
     }
     nodes.shrink_to_fit();
