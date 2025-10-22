@@ -828,7 +828,7 @@ void SANA::performChange(uint actColId) {
         oldMs3Denom = MultiS3::denom;
         oldMs3Numer = MultiS3::numer;
     }
-    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncChangeOp(peg, oldHole, newHole) : -1;
+    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + EdgeCorrectness::getIncChangeOp(peg, oldHole, newHole, A) : -1;
     double newEdSum            = needEd ? edSum + EdgeDifference::getIncChangeOp(peg, oldHole, newHole, A) : -1;
     double newErSum            = needEr ? erSum + EdgeRatio::getIncChangeOp(peg, oldHole, newHole, A) : -1;
     double newEgmSum           = needEgm ? egmSum + EdgeGeoMean::getIncChangeOp(peg, oldHole, newHole, A) : -1;
@@ -973,7 +973,7 @@ void SANA::performSwap(uint actColId) {
         oldMs3Denom = MultiS3::denom;
     }
 
-    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + aligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + EdgeCorrectness::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
     double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
     double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
     double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncSwapOp(peg1, peg2, hole1, hole2) : -1;
@@ -1251,71 +1251,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
     return (movePbad = pBad);
 }
 
-// Leon: remove the following two functions and put them into the Measure::EdgeCorrectness class, and CALL them, and
-// then set MEASURE_CLASS_COMPLETE to 1 to test.
-#define MEASURE_CLASS_COMPLETE 0
-#if !MEASURE_CLASS_COMPLETE
-int SANA::aligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
-    int res = 0;
-    if (G1->hasSelfLoop(peg)) {
-        if (G2->hasSelfLoop(oldHole)) res-=G2->getEdgeWeight(oldHole, oldHole);
-        if (G2->hasSelfLoop(newHole)) res+=G2->getEdgeWeight(newHole, newHole);
-    }
-    for (uint nbr : G1->adjLists[peg]) if (nbr != peg) {
-	res -= G2->getEdgeWeight(oldHole, A[nbr]);
-	res += G2->getEdgeWeight(newHole, A[nbr]);
-    }
-    if(G1->directed) for (uint nbr : G1->injLists[peg]) if (nbr != peg) {
-	res -= G2->getEdgeWeight(A[nbr],oldHole);
-	res += G2->getEdgeWeight(A[nbr],newHole);
-    }
-    return res;
-}
-
-int SANA::aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
-#ifdef WEIGHT
-    throw runtime_error("SANA::aligEdgesIncSwapOp should not be called with WEIGHT");
-    return 0;
-#else
-    int res = 0;
-    if (G1->hasSelfLoop(peg1)) {
-        if (G2->hasSelfLoop(hole1)) res-=G2->getEdgeWeight(hole1, hole1);
-        if (G2->hasSelfLoop(hole2)) res+=G2->getEdgeWeight(hole2, hole2);
-    }
-    for (uint nbr : G1->adjLists[peg1]) if (nbr != peg1) {
-	res -= G2->getEdgeWeight(hole1, A[nbr]);
-	res += G2->getEdgeWeight(hole2, A[nbr]);
-    }
-    if(G1->directed) for (uint nbr : G1->injLists[peg1]) if (nbr != peg1) {
-	res -= G2->getEdgeWeight(A[nbr],hole1);
-	res += G2->getEdgeWeight(A[nbr],hole2);
-    }
-
-    if (G1->hasSelfLoop(peg2)) {
-        if (G2->hasSelfLoop(hole2)) res-=G2->getEdgeWeight(hole2, hole2);
-        if (G2->hasSelfLoop(hole1)) res+=G2->getEdgeWeight(hole1, hole1);
-    }
-    for (uint nbr : G1->adjLists[peg2]) if (nbr != peg2) {
-	res -= G2->getEdgeWeight(hole2, A[nbr]);
-	res += G2->getEdgeWeight(hole1, A[nbr]);
-    }
-    if(G1->directed) for (uint nbr : G1->injLists[peg2]) if (nbr != peg2) {
-	res -= G2->getEdgeWeight(A[nbr],hole2);
-	res += G2->getEdgeWeight(A[nbr],hole1);
-    }
-    //address the case where we are swapping between adjacent nodes with adjacent images:
-#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
-    //why set the least-significant bit to 0?
-    //this kind of bit manipulation needs a comment clarification -Nil
-    res += (-1 << 1) & (G1->getEdgeWeight(peg1, peg2) + G2->getEdgeWeight(hole1, hole2));
-#else
-    if                 (G1->hasEdge(peg1, peg2) and G2->hasEdge(hole1, hole2)) res += 2;
-    if(G1->directed) if(G1->hasEdge(peg2, peg1) and G2->hasEdge(hole2, hole1)) res += 2;
-#endif
-    return res;
-#endif // WEIGHT
-}
-#endif
+#define MEASURE_CLASS_COMPLETE 1
 
 // UGLY GORY HACK BELOW!! Sometimes the edgeVal is crazily wrong, like way above 1,000, when it
 // cannot possibly be greater than the number of networks we're aligning when MULTI_PAIRWISE is on.

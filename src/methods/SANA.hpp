@@ -158,8 +158,6 @@ private:
     //to evaluate EC incrementally
     bool needAligEdges;
     int aligEdges;
-    int aligEdgesIncChangeOp(uint peg, uint oldHole, uint newHole);
-    int aligEdgesIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2);
 
     // to evaluate ED (edge difference score) incrementally
     bool needEd, needEr, needEmin, needEgm;
