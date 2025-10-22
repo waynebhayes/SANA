@@ -62,6 +62,19 @@ struct point
         return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
     }
 
+    point& operator=(const point& other)
+    {
+        if (this != &other)
+        {
+            this->id = other.id;
+            this->x = other.x;
+            this->y = other.y;
+            this->z = other.z;
+            this->parent = other.parent;
+        }
+        return *this;
+    }
+
     friend point operator-(const point& lhs, const point& rhs)
     {
         return point(POINT_DEFAULT_ID, lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z, POINT_DEFAULT_PARENT);
@@ -152,19 +165,6 @@ void nearest_neighbor(const std::vector<point>& p, const std::vector<point>& q)
             point o_i = q_i + 0.5 * s_i;
 
             double d_i = (m_i - o_i).magnitude();
-
-            std::cout << "p_i = " << p_i << std::endl
-                      << "p_j = " << p_j << std::endl
-                      << "r_i = " << r_i << std::endl
-                      << "m_i = " << m_i << std::endl
-                      << std::endl
-                      << "q_i = " << q_i << std::endl
-                      << "q_j = " << q_j << std::endl
-                      << "s_i = " << s_i << std::endl
-                      << "o_i = " << o_i << std::endl
-                      << std::endl
-                      << "m_i - o_i = " << m_i - o_i << std::endl
-                      << "d_i = " << d_i << std::endl << std::endl;
             
             if (d_i < d_min)
             {
