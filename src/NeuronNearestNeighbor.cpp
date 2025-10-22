@@ -12,14 +12,13 @@
 #include <unistd.h>
 
 #define USAGE_MSG "NeuronNearestNeighbor [-o OUTFILE] -t TARGET_PATH | -q QUERY_PATH\n"\
-                  "\n  -t TARGET_PATHNAME      Path to the source SWC."\
-                  "\n  -q QUERY_PATHNAME    Path to the query SWC."\
-                  "\n  -h                   Prints the usage statement to STDOUT. All other arguments are ignored.\n"
+                  "\n  -t TARGET_PATH   Path to the source SWC."\
+                  "\n  -q QUERY_PATH    Path to the query SWC."\
+                  "\n  -h               Prints the usage statement to STDOUT. All other arguments are ignored.\n"
 
 constexpr int MIN_LINE_LEN = 34;
 constexpr int POINT_DEFAULT_PARENT = -1;
 constexpr int POINT_DEFAULT_ID = -1;
-constexpr int MICROSECOND_TO_NANOSECOND = 1000;
 
 struct point
 {
@@ -93,7 +92,7 @@ unsigned estimate_point_count(std::istream& in)
     return file_byte_len / MIN_LINE_LEN;
 }
 
-int load_points(const std::string& filepath, std::vector<point>& vec, bool convert_to_ns)
+int load_points(const std::string& filepath, std::vector<point>& vec)
 {
     std::string line;
     unsigned i = 0, id = -1;
@@ -120,10 +119,6 @@ int load_points(const std::string& filepath, std::vector<point>& vec, bool conve
         sin.str(line);
         sin >> id;
         vec[id].parse(line);
-        if (convert_to_ns)
-        {
-            vec[id] = vec[id] * MICROSECOND_TO_NANOSECOND;
-        }
         ++i;
     }
     vec.resize(i + 1);
@@ -228,14 +223,14 @@ int main(int argc, char *argv[])
     }
 
     std::vector<point> target_v;
-    rc = load_points(target_filepath, target_v, false);
+    rc = load_points(target_filepath, target_v);
     if (rc)
     {
         return rc;
     }
 
     std::vector<point> query_v;
-    rc = load_points(query_filepath, query_v, true);
+    rc = load_points(query_filepath, query_v);
     if (rc)
     {
         return rc;
