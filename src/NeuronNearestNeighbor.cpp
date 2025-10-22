@@ -11,9 +11,9 @@
 
 #include <unistd.h>
 
-#define USAGE_MSG "NeuronNearestNeighbor [-o OUTFILE] -t TARGET_PATHNAME | -q QUERY_PATHNAME\n"\
-                  "\n  -t TARGET_PATHNAME      Pathname to the source SWC."\
-                  "\n  -q QUERY_PATHNAME    Pathname to the query SWC."\
+#define USAGE_MSG "NeuronNearestNeighbor [-o OUTFILE] -t TARGET_PATH | -q QUERY_PATH\n"\
+                  "\n  -t TARGET_PATHNAME      Path to the source SWC."\
+                  "\n  -q QUERY_PATHNAME    Path to the query SWC."\
                   "\n  -h                   Prints the usage statement to STDOUT. All other arguments are ignored.\n"
 
 constexpr int MIN_LINE_LEN = 34;
