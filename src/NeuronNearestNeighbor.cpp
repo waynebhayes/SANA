@@ -291,9 +291,9 @@ enum class mode : int
 };
 
 #define USAGE_MSG "USAGE: ./sinblast ... followed by one of the following:\n"\
-"    -l query.swc [ list of target.swc's ] # pair the query against all listed targets |\n"\
-"    -r [list of swc files] # produce random pairs, ad infinitum |\n"\
-"    -s [sin file] # turn a sin file into a p-value matrix |\n"\
+"    -l query.swc [ list of target.swc's ] # pair the query against all listed targets, produces .sin files|\n"\
+"    -r [list of swc files] # produce random pairs, ad infinitum, produces .sin files |\n"\
+"    -s [sin file] # turn a sin file into a p-value matrix, produces a .matrix file |\n"\
 "    -m [matrix file] # read a p-value matrix file";
 
 void usage_and_exit(void)
