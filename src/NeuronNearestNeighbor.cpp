@@ -143,9 +143,20 @@ int load_points(const std::string& filepath, std::vector<point>& vec)
     return 0;
 }
 
+double calculate_angle_difference(const point& r_i, const point& s_i, bool do_cosine)
+{
+    double r_magnitude = r_i.magnitude();
+    double s_magnitude = s_i.magnitude();
+    if (r_magnitude == 0 || s_magnitude == 0) return -1;
+    double angle_difference = std::abs(dot(r_i, s_i) / (r_magnitude * s_magnitude));
+    if(angle_difference>1) angle_difference=1;
+    if (!do_cosine) return sin(acos(angle_difference));
+    return angle_difference;
+}
+
 // NATHAN: please name the first argument query (or q) and the second one target (or t)
 // done :) - nathan
-void nearest_neighbor(const std::vector<point>& query, const std::vector<point>& target)
+void nearest_neighbor(const std::vector<point>& query, const std::vector<point>& target, bool do_cosine)
 {
     for (const auto& query_i : query)
     {
@@ -155,7 +166,7 @@ void nearest_neighbor(const std::vector<point>& query, const std::vector<point>&
         point m_i = query_i + 0.5 * r_i;
         point target_min;
         double distance_min = std::numeric_limits<double>::max();
-        double norm_dot_prod_min = 0;
+        double angle_diff = 0;
         for (const auto& target_i : target)
         {
             if (target_i.parent == -1) continue;
@@ -169,14 +180,13 @@ void nearest_neighbor(const std::vector<point>& query, const std::vector<point>&
             {
                 target_min = target_i;
                 distance_min = distance_i;
-                double r_magnitude = r_i.magnitude();
-                double s_magnitude = s_i.magnitude();
-                if (r_magnitude == 0 || s_magnitude == 0) continue;
-                norm_dot_prod_min = std::abs(dot(r_i, s_i) / (r_magnitude * s_magnitude));
-                if(norm_dot_prod_min>1) norm_dot_prod_min=1;
+
+                double angle_diff_tmp = calculate_angle_difference(r_i, s_i, do_cosine);
+                if (angle_diff_tmp == -1) continue;
+                angle_diff = angle_diff_tmp;
             }
         }
-        std::cout << query_i.id << " " << target_min.id << " " << distance_min << " " << sin(acos(norm_dot_prod_min)) << "\n";
+        std::cout << query_i.id << " " << target_min.id << " " << distance_min << " " << angle_diff << "\n";
     }
     std::cout.flush();
 }
@@ -193,15 +203,17 @@ int sin_to_counts_matrix(const std::string& filepath, std::vector<std::vector<in
     std::istringstream sin;
     double distance, theta;
     int scaled_dist, scaled_ang;
-    while (std::getline(fin, line))
-    {
+    std::getline(fin, ignore); // first line is the two filenames
+    while (std::getline(fin, line)) {
+        sin.clear();
         sin.str(line);
-        sin >> ignore >> ignore >> distance >> theta;
+        sin >> ignore >> ignore;
+        if (sin.fail()) continue;
+        sin >> distance >> theta;
         scaled_dist = (int) (sqrt(distance));
         scaled_ang = (int) (sqrt(MATRIX_THETA_SCALING_FACTOR * theta));
         ++matrix[scaled_dist][scaled_ang];
         sin.str("");
-        sin.clear();
     }
     return 0;
 }
@@ -225,7 +237,7 @@ int counts_to_pmatrix(std::vector<std::vector<int>>& matrix)
 // @TODO actually print out some useful info about the matrix.
 void print_header(size_t matrix_i_size, size_t matrix_j_size)
 {
-    printf("# %lux%lu Matrix!\n", matrix_i_size, matrix_j_size);
+    printf("# %lu x %lu Matrix!\n", matrix_i_size, matrix_j_size);
 }
 
 void print_matrix(const std::vector<std::vector<int>>& matrix)
@@ -254,9 +266,9 @@ int read_matrix(const std::string& filepath, std::vector<std::vector<int>>& matr
     }
     std::string ch;
     size_t i, j;
-    while (std::cin >> ch) {
+    while (fin >> ch) {
         if (ch == "#") {
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            fin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
         else {
             break;
@@ -264,8 +276,8 @@ int read_matrix(const std::string& filepath, std::vector<std::vector<int>>& matr
     }
     matrix[0][0] = std::stoi(ch);
     for (size_t i = 1; i < matrix.size(); ++i) {
-        for (size_t j = 0; i < matrix[i].size(); ++j) {
-            std::cin >> matrix[i][j];
+        for (size_t j = 0; j < matrix[i].size(); ++j) {
+            fin >> matrix[i][j];
         }
     }
     return 0;
@@ -290,11 +302,43 @@ enum class mode : int
     count
 };
 
+std::string mode_to_str(mode m) {
+    std::string mode_str;
+    switch (m)
+    {
+        case mode::listed: {
+            mode_str = "listed";
+            break;
+        }
+        case mode::random_inf: {
+            mode_str = "random_inf";
+            break;
+        }
+        case mode::sin_to_matrix: {
+            mode_str = "sin_to_matrix";
+            break;
+        }
+        case mode::read_matrix: {
+            mode_str = "read_matrix";
+            break;
+        }
+        case mode::count: {
+            mode_str = "count";
+            break;
+        }
+    }
+    return mode_str;
+}
+
 #define USAGE_MSG "USAGE: ./sinblast ... followed by one of the following:\n"\
 "    -l query.swc [ list of target.swc's ] # pair the query against all listed targets, produces .sin files|\n"\
-"    -r [list of swc files] # produce random pairs, ad infinitum, produces .sin files |\n"\
+"    -r [rand_count] [list of swc files] # produce random pairs, ad infinitum if number of random pairs == -1, produces .sin files |\n"\
 "    -s [sin file] # turn a sin file into a p-value matrix, produces a .matrix file |\n"\
-"    -m [matrix file] # read a p-value matrix file";
+"    -m [matrix file] # read a p-value matrix file\n"\
+"    -n [number of random pairs] # The amount of random pairs to produce, ONLY WORKS WITH -r\n"\
+"    -c # Calculate cosine angle difference instead of sine\n"\
+"    -h # print usage message\n"\
+
 
 void usage_and_exit(void)
 {
@@ -302,40 +346,89 @@ void usage_and_exit(void)
     exit(EXIT_FAILURE);
 }
 
+void invalid_combination_msg(mode m1, mode m2)
+{
+    std::cerr << "invalid combination: \"" << mode_to_str(m1) << "\", \"" 
+              << mode_to_str(m2) << "\"" << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
-    int opt, rc;
+    int opt = 0, rc = 0;
     std::string target_filepath, query_filepath, sin_filepath, matrix_filepath;
     mode md = mode::count;
-    int argn = 1;
+    int rand_count = 0;
+    bool do_cosine = false, do_inf = false;
 
     // NATHAN: feel free to put the optarg() stuff back again... we may be adding more options in the future...
     // done :) - nathan
-    while ((opt = getopt(argc, argv, ":l:rs:m:")) != -1) {
+    while ((opt = getopt(argc, argv, ":l:r:cs:m:h")) != -1) {
         switch (opt) {
             case 'l': {
-                if (md != mode::count) { usage_and_exit(); }
+                if (md != mode::count) { 
+                    invalid_combination_msg(md, mode::listed);
+                    usage_and_exit(); 
+                }
                 md = mode::listed;
+                query_filepath = optarg;
                 break;
             }
             case 'r': {
-                if (md != mode::count) { usage_and_exit(); }
+                if (md != mode::count) { 
+                    invalid_combination_msg(md, mode::random_inf);
+                    usage_and_exit();
+                }
                 md = mode::random_inf;
+                try {
+                    rand_count = std::stoi(optarg);
+                } catch (const std::invalid_argument& e) {
+                    std::cerr << "rand_count argument invalid." << std::endl;
+                    usage_and_exit();
+                } catch (const std::out_of_range& e) {
+                    std::cerr << "rand_count argument out of range." << std::endl;
+                    usage_and_exit();
+                }
+                if (rand_count == 0) {
+                    do_inf = true;
+                }
+                break;
+            }
+            case 'c': {
+                do_cosine = true;
                 break;
             }
             case 's': {
-                if (md != mode::count) { usage_and_exit(); }
+                if (md != mode::count) { 
+                    invalid_combination_msg(md, mode::sin_to_matrix);
+                    usage_and_exit();
+                }
                 md = mode::sin_to_matrix;
                 sin_filepath = optarg;
                 break;
             }
             case 'm': {
-                if (md != mode::count) { usage_and_exit(); }
+                if (md != mode::count) { 
+                    invalid_combination_msg(md, mode::read_matrix);
+                    usage_and_exit(); 
+                }
                 md = mode::read_matrix;
                 matrix_filepath = optarg;
                 break;
             }
+            case 'h': {
+                std::cout << USAGE_MSG;
+                exit(EXIT_SUCCESS);
+            }
+            case ':': {
+                std::cerr << "option -" << static_cast<char>(optopt) << "requires an argument." << std::endl;
+                usage_and_exit();
+            }
+            case '?': {
+                std::cerr << "unknown option -" << static_cast<char>(optopt) << "requires an argument." << std::endl;
+                usage_and_exit();
+            }
             default: {
+                std::cerr << "invalid option: " << opt << "\n";
                 usage_and_exit();
             }
         }
@@ -343,12 +436,15 @@ int main(int argc, char *argv[])
     switch (md)
     {
         case mode::listed: {
-            if (query_filepath.empty()) { std::cerr << USAGE_MSG; return EXIT_FAILURE;}
+            if (query_filepath.empty()) { 
+                std::cerr << "query filepath empty." << std::endl;
+                usage_and_exit(); 
+            }
             std::vector<point> query_v;
             rc = load_points(query_filepath, query_v);
             if (rc) return rc;
 
-            for(int i=2;i<argc;i++) {
+            for(int i=optind;i<argc;i++) {
                 target_filepath = argv[i];
                 if (target_filepath.empty()) {std::cerr << "can't open " << target_filepath << "; continuing\n"; continue;}
                 std::vector<point> target_v;
@@ -357,36 +453,39 @@ int main(int argc, char *argv[])
                 str_strip_extension(target_filepath);
                 str_strip_extension(query_filepath);
                 std::cout << query_filepath << " " << target_filepath << "\n";
-                nearest_neighbor(query_v, target_v);
+                nearest_neighbor(query_v, target_v, do_cosine);
             }
+            return 0;
         }
         case mode::random_inf: {
-            ++argn;
-            int n = argc - argn; // number of input SWC files, from which random pairs will be chosen
-            srand48(time(0)+getpid()); // seed the random number generator
-            while(1) {
-                int i = argn+n*drand48(), j = argn+n*drand48();
+            int n = argc - optind; // number of input SWC files, from which random pairs will be chosen
+            srand48(time(0) + getpid()); // seed the random number generator
+            while(do_inf || rand_count > 0) {
+                int i = optind + n * drand48(), j = optind + n * drand48();
 
                 query_filepath = argv[i];
                 std::vector<point> query_v;
                 rc = load_points(query_filepath, query_v);
-                assert(rc==0);
+                if (rc == -1) continue;
 
                 target_filepath = argv[j];
                 std::vector<point> target_v;
                 rc = load_points(target_filepath, target_v);
-                assert(rc==0);
+                if (rc == -1) continue;
 
-                // NATHAN: it would be good to strip off the ".swc" from the end of the names before printing them
-                // done :) - nathan
                 str_strip_extension(target_filepath);
                 str_strip_extension(query_filepath);
                 std::cout << query_filepath << " " << target_filepath << "\n";
-                nearest_neighbor(query_v, target_v);
+                nearest_neighbor(query_v, target_v, do_cosine);
+                if (!do_inf) --rand_count;
             }
+            return 0;
         }
         case mode::sin_to_matrix: {
-            if (sin_filepath.empty()) { usage_and_exit(); }
+            if (sin_filepath.empty()) { 
+                std::cerr << "sin filepath empty." << std::endl;
+                usage_and_exit(); 
+            }
             
             std::vector<std::vector<int>> matrix(MATRIX_DISTANCE_BIN_COUNT, 
                 std::vector<int>(MATRIX_THETA_BIN_COUNT, 0));
@@ -395,9 +494,11 @@ int main(int argc, char *argv[])
             rc = counts_to_pmatrix(matrix);
             assert(rc == 0);
             print_matrix(matrix);
+            return 0;
         }
         case mode::read_matrix: {
             // @TODO NOT IMPLEMENTED
+            return 0;
         }
     }
 }
