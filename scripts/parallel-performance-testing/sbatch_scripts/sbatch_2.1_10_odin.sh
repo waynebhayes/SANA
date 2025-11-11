@@ -1,0 +1,11 @@
+#!/bin/bash
+#SBATCH --job-name=sana-PPT-2.1-10
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=10
+#SBATCH --nodelist=odin
+#SBATCH --output=/home/lmacadar/Desktop/Research/SANA/scripts/parallel-performance-testing/output/2.1-10-odin-run24.out
+#SBATCH --error=/home/lmacadar/Desktop/Research/SANA/scripts/parallel-performance-testing/output/2.1-10-odin-run24.out
+
+cd /home/lmacadar/Desktop/Research/SANA
+SANA_THREADS="10" /usr/bin/time -f 'TIMING: real=%e user=%U sys=%S' ./sana2.1 -g1 yeast -g2 human -ec 1 -tolerance 0 -it 100000000 -tinitial 0.01 -tdecay 6

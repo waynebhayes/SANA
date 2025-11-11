@@ -1,22 +1,20 @@
 # Parallel Performance Testing Script
 
-Simple script for running SANA performance tests across different versions and thread counts.
+Simple script for running SANA performance tests on OpenLab across:
+- Different versions
+- Different core counts
+- Different OpenLab nodes
 
 ## Commands
 
-- `./ppt.sh compute` - Creates sbatch scripts and submits all jobs to the Openlab SLURM queue
-- `./ppt.sh extract` - Parses the output files and extracts statistics into a CSV file at `results/results.csv`.
-- `./ppt.sh graph` - Generates performance graphs from the CSV data.
-- `./ppt.sh clear` - Clears all output files and sbatch scripts. Useful if you want to re-run tests.
+- `./ppt.py compute [N]` - Submit N jobs per configuration and wait for completion. Defaults to 1 job.
+- `./ppt.py extract` - Parse output files and extract statistics into CSV at `results/results.csv`
+- `./ppt.py graph` - Generate performance graphs from the CSV data
+- `./ppt.py clear` - Clear all output files and sbatch scripts
+- `-v` - Print out more details
 
-## Tidbits
+## Notes
 
-The script will automatically **skip** any configurations that already have output files. If you want to re-run a test, use `./ppt.sh clear` first to remove existing outputs.
-
-The monitoring table shows real-time status from SLURM, including job IDs, elapsed time, and why jobs might be pending (like "Priority" or "QOSMaxCpuPerNode").
-
-## Limitations
-
-- Testing only happens **once per configuration** for now.
-- Cores are **shared within Openlab**.
-
+- The `compute` command automatically clears previous outputs before starting
+- Cores are shared within Openlab; actual concurrency may be limited
+- Output files are named: `{version}-{threads}-{machine}-run{N}.out`
