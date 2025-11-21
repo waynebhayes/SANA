@@ -8,6 +8,7 @@
 #include <limits>
 #include <memory>
 #include <iomanip>
+#include "nanoflann.hpp"
 
 
 // C-based includes
@@ -98,6 +99,50 @@ struct point
     }
 };
 
+struct Midpoint
+{
+    int id;        // original query_i.id or target_i.id
+    double mx, my, mz;
+};
+
+std::vector<Midpoint> build_midpoints(const std::vector<point>& pts)
+{
+    std::vector<Midpoint> mp;
+    mp.reserve(pts.size());
+
+    for (const auto& p : pts)
+    {
+        if (p.parent == -1) continue;
+        const point& parent = pts[p.parent];
+        point r = parent - p;
+        point m = p + 0.5 * r;
+
+        mp.push_back({p.id, m.x, m.y, m.z});
+    }
+
+    return mp;
+}
+
+struct MidpointCloud
+{
+    std::vector<Midpoint> pts;
+
+    // nanoflann interface: number of points
+    inline size_t kdtree_get_point_count() const { return pts.size(); }
+
+    // nanoflann interface: coordinate for point index idx, dimension dim
+    inline double kdtree_get_pt(const size_t idx, const size_t dim) const
+    {
+        if (dim == 0) return pts[idx].mx;
+        if (dim == 1) return pts[idx].my;
+        return pts[idx].mz;
+    }
+
+    // Bounding-box not needed
+    template<class BBOX>
+    bool kdtree_get_bbox(BBOX&) const { return false; }
+};
+
 // overestimates the point count slightly, 
 // faster than iterating through and counting the lines.
 unsigned estimate_point_count(std::istream& in)
@@ -152,6 +197,62 @@ double calculate_angle_difference(const point& r_i, const point& s_i, bool do_co
     if(angle_difference>1) angle_difference=1;
     if (!do_cosine) return sin(acos(angle_difference));
     return angle_difference;
+}
+
+void nearest_neighbor_kdtree(const std::vector<point>& query, const std::vector<point>& target, bool do_cosine)
+{
+    // Build midpoints for query / target
+    std::vector<Midpoint> query_mp = build_midpoints(query);
+    std::vector<Midpoint> target_mp = build_midpoints(target);
+
+    // Build point cloud for KD-tree
+    MidpointCloud cloud;
+    cloud.pts = target_mp;
+
+    using KDTree = nanoflann::KDTreeSingleIndexAdaptor<
+        nanoflann::L2_Simple_Adaptor<double, MidpointCloud>,
+        MidpointCloud,
+        3
+    >;
+
+    KDTree index(3, cloud, nanoflann::KDTreeSingleIndexAdaptorParams(10));
+    index.buildIndex();
+
+    // For each query midpoint, perform nearest neighbor search
+    for (const auto& qmp : query_mp)
+    {
+        double query_pt[3] = { qmp.mx, qmp.my, qmp.mz };
+
+        size_t nearest_idx = 0;
+        double out_dist_sqr = 0;
+
+        nanoflann::KNNResultSet<double> resultSet(1);
+        resultSet.init(&nearest_idx, &out_dist_sqr);
+        index.findNeighbors(resultSet, query_pt, 0);
+
+        const Midpoint& tmp = target_mp[nearest_idx];
+
+        // query-side r_i
+        const point& qi = query[qmp.id];
+        if (qi.parent == -1) continue;
+        const point& qj = query[qi.parent];
+        point r_i = qj - qi;
+
+        // target-side s_i
+        const point& ti = target[tmp.id];
+        if (ti.parent == -1) continue;
+        const point& tj = target[ti.parent];
+        point s_i = tj - ti;
+
+        // angle difference
+        double angle_diff = calculate_angle_difference(r_i, s_i, do_cosine);
+
+        // output: id_i id_j distance angle
+        std::cout << qi.id << " " << ti.id << " "
+                  << std::sqrt(out_dist_sqr) << " "
+                  << angle_diff << "\n";
+    }
+    std::cout.flush();
 }
 
 // NATHAN: please name the first argument query (or q) and the second one target (or t)
@@ -352,6 +453,7 @@ void invalid_combination_msg(mode m1, mode m2)
               << mode_to_str(m2) << "\"" << std::endl;
 }
 
+#ifndef TEST_KDTREE 
 int main(int argc, char *argv[])
 {
     int opt = 0, rc = 0;
@@ -502,3 +604,4 @@ int main(int argc, char *argv[])
         }
     }
 }
+#endif
