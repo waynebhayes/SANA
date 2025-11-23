@@ -358,7 +358,6 @@ int read_matrix(const std::string& filepath, std::vector<std::vector<int>>& matr
     matrix[0][0] = std::stoi(str);
     for (size_t i = 0; i < matrix.size(); ++i) {
         for (size_t j = 0; j < matrix[i].size(); ++j) {
-            if (i == 0 && j == 0) continue;
             fin >> matrix[i][j];
         }
     }
