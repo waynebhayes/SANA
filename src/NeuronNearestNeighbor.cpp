@@ -19,8 +19,8 @@ constexpr int LINE_MIN_LEN = 34;
 constexpr int POINT_DEFAULT_PARENT = -1;
 constexpr int POINT_DEFAULT_ID = -1;
 
-constexpr int MATRIX_DISTANCE_BIN_COUNT = 1000;
-constexpr int MATRIX_THETA_BIN_COUNT = 1000;
+constexpr int MATRIX_DISTANCE_BIN_COUNT = 2000;
+constexpr int MATRIX_THETA_BIN_COUNT = 2000;
 constexpr int MATRIX_THETA_SCALING_FACTOR = 1000000;
 
 struct point
@@ -274,10 +274,11 @@ int read_matrix(const std::string& filepath, std::vector<std::vector<int>>& matr
             break;
         }
     }
-    matrix[0][0] = std::stoi(ch);
-    for (size_t i = 1; i < matrix.size(); ++i) {
+        
+    for (size_t i = 0; i < matrix.size(); ++i) {
         for (size_t j = 0; j < matrix[i].size(); ++j) {
-            fin >> matrix[i][j];
+            if (i == 0 && j == 0) matrix[0][0] = stoi(ch);
+            else fin >> matrix[i][j];
         }
     }
     return 0;
@@ -497,7 +498,14 @@ int main(int argc, char *argv[])
             return 0;
         }
         case mode::read_matrix: {
-            // @TODO NOT IMPLEMENTED
+            if (matrix_filepath.empty()) {
+                std::cerr << "matrix filepath empty." << std::endl;
+                usage_and_exit();
+            }
+            std::vector<std::vector<int>> matrix(MATRIX_DISTANCE_BIN_COUNT, 
+                                                 std::vector<int>(MATRIX_THETA_BIN_COUNT, 0));
+            read_matrix(matrix_filepath, matrix);
+            print_matrix(matrix);
             return 0;
         }
     }
