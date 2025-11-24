@@ -99,43 +99,45 @@ struct point
     }
 };
 
-struct Midpoint
+std::vector<point> build_midpoints(const std::vector<point>& pts)
 {
-    int id;        // original query_i.id or target_i.id
-    double mx, my, mz;
-};
-
-std::vector<Midpoint> build_midpoints(const std::vector<point>& pts)
-{
-    std::vector<Midpoint> mp;
+    std::vector<point> mp;
     mp.reserve(pts.size());
 
     for (const auto& p : pts)
     {
         if (p.parent == -1) continue;
         const point& parent = pts[p.parent];
+
+        // r = parent - p
         point r = parent - p;
+        // m = p + 0.5 * r
         point m = p + 0.5 * r;
 
-        mp.push_back({p.id, m.x, m.y, m.z});
+        // midpoint: id = original id, parent = -1
+        mp.emplace_back(p.id, m.x, m.y, m.z, -1);
     }
 
     return mp;
 }
 
+// KD-tree cloud (const)
 struct MidpointCloud
 {
-    std::vector<Midpoint> pts;
+    const std::vector<point>& pts;
+
+    MidpointCloud(const std::vector<point>& points) : pts(points) {}
 
     // nanoflann interface: number of points
     inline size_t kdtree_get_point_count() const { return pts.size(); }
 
     // nanoflann interface: coordinate for point index idx, dimension dim
-    inline double kdtree_get_pt(const size_t idx, const size_t dim) const
+    inline double kdtree_get_pt(size_t idx, size_t dim) const
     {
-        if (dim == 0) return pts[idx].mx;
-        if (dim == 1) return pts[idx].my;
-        return pts[idx].mz;
+        const point& p = pts[idx];
+        if (dim == 0) return p.x;
+        if (dim == 1) return p.y;
+        return p.z;
     }
 
     // Bounding-box not needed
@@ -202,12 +204,11 @@ double calculate_angle_difference(const point& r_i, const point& s_i, bool do_co
 void nearest_neighbor_kdtree(const std::vector<point>& query, const std::vector<point>& target, bool do_cosine)
 {
     // Build midpoints for query / target
-    std::vector<Midpoint> query_mp = build_midpoints(query);
-    std::vector<Midpoint> target_mp = build_midpoints(target);
+    std::vector<point> query_mp  = build_midpoints(query);
+    std::vector<point> target_mp = build_midpoints(target);
 
     // Build point cloud for KD-tree
-    MidpointCloud cloud;
-    cloud.pts = target_mp;
+    MidpointCloud cloud(target_mp);
 
     using KDTree = nanoflann::KDTreeSingleIndexAdaptor<
         nanoflann::L2_Simple_Adaptor<double, MidpointCloud>,
@@ -221,7 +222,7 @@ void nearest_neighbor_kdtree(const std::vector<point>& query, const std::vector<
     // For each query midpoint, perform nearest neighbor search
     for (const auto& qmp : query_mp)
     {
-        double query_pt[3] = { qmp.mx, qmp.my, qmp.mz };
+        double query_pt[3] = { qmp.x, qmp.y, qmp.z };
 
         size_t nearest_idx = 0;
         double out_dist_sqr = 0;
@@ -230,15 +231,15 @@ void nearest_neighbor_kdtree(const std::vector<point>& query, const std::vector<
         resultSet.init(&nearest_idx, &out_dist_sqr);
         index.findNeighbors(resultSet, query_pt, 0);
 
-        const Midpoint& tmp = target_mp[nearest_idx];
+        const point& tmp = target_mp[nearest_idx];
 
-        // query-side r_i
+        // original query-side segment r_i
         const point& qi = query[qmp.id];
         if (qi.parent == -1) continue;
         const point& qj = query[qi.parent];
         point r_i = qj - qi;
 
-        // target-side s_i
+        // original target-side segment s_i
         const point& ti = target[tmp.id];
         if (ti.parent == -1) continue;
         const point& tj = target[ti.parent];
@@ -247,11 +248,11 @@ void nearest_neighbor_kdtree(const std::vector<point>& query, const std::vector<
         // angle difference
         double angle_diff = calculate_angle_difference(r_i, s_i, do_cosine);
 
-        // output: id_i id_j distance angle
         std::cout << qi.id << " " << ti.id << " "
                   << std::sqrt(out_dist_sqr) << " "
                   << angle_diff << "\n";
     }
+
     std::cout.flush();
 }
 

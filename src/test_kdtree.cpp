@@ -9,13 +9,19 @@ int main()
     bool do_cosine = false;
 
     std::vector<point> query = {
-        point(0, 0, 0, 0, 1), point(1, 1, 0, 0, -1), point(2, 2, 0, 0, 1),
-        point(3, 1, 1, 1, 1), point(4, 2, 2, 0, 3)
+        point(0, 0, 0, 0, -1), // root
+        point(1, 1, 0, 0, 0),
+        point(2, 2, 0, 0, 1),
+        point(3, 1, 1, 1, 1),
+        point(4, 2, 2, 0, 3)
     };
 
     std::vector<point> target = {
-        point(0, 0, 1, 0, 1), point(1, 0, 2, 0, -1), point(2, 0, 3, 0, 1),
-        point(3, 1, 1, 0, 2), point(4, 3, 3, 0, 2)
+        point(0, 0, 1, 0, -1), // root
+        point(1, 0, 2, 0, 0),
+        point(2, 0, 3, 0, 1),
+        point(3, 1, 1, 0, 2),
+        point(4, 3, 3, 0, 2)
     };
 
     // brute-force
