@@ -15,7 +15,7 @@
 #include <cstring>
 #include <cassert>
 
-constexpr int LINE_MIN_LEN = 34;
+constexpr int LINE_MIN_LEN = 10;
 constexpr int POINT_DEFAULT_PARENT = -1;
 constexpr int POINT_DEFAULT_ID = -1;
 
@@ -149,10 +149,8 @@ unsigned estimate_point_count(std::istream& in) {
 }
 
 int load_points(const std::string& filepath, std::vector<Point>& vec) {
-    std::string line;
-    unsigned i = 0, id = -1;
+    std::ifstream fin{filepath};
     
-    std::ifstream fin{filepath, std::ios::in};
     if (!fin) {
         std::cerr << "Error: Cannot open stream with filepath: '" 
             << filepath << "'." << std::endl;
@@ -163,15 +161,19 @@ int load_points(const std::string& filepath, std::vector<Point>& vec) {
     // Point count + 1 for 1-indexed files
     vec.resize(point_count + 1);
     
-    std::istringstream sin;
+    std::string line;
+    unsigned i = 0, id = -1;
     while (std::getline(fin, line)) {
-        if (!line.empty() && line[0] == '#')
-        {
-            continue;
-        }
-        sin.str(line);
+        if (line.empty()) continue;
+        if (!line.empty() && line[0] == '#') continue;
+        std::istringstream sin(line);
         sin >> id;
-        vec[id].parse(line);
+        if (id >= vec.size()) {
+            std::cerr << "id too big: " << id << std::endl;
+            return -1;
+        } else {
+            vec[id].parse(line);
+        }
         ++i;
     }
     vec.resize(i + 1);
@@ -338,7 +340,6 @@ void print_matrix(const std::vector<std::vector<int>>& matrix) {
     }
 }
 
-// assumes size of the matrix is given.
 int read_matrix(const std::string& filepath, std::vector<std::vector<int>>& matrix) {
     std::ifstream fin{filepath, std::ios::in};
     if (!fin) {
@@ -364,18 +365,13 @@ int read_matrix(const std::string& filepath, std::vector<std::vector<int>>& matr
     return 0;
 }
 
-void str_strip_extension(std::string& path) {
-    size_t last_dot = path.rfind('.');
-    if (last_dot == std::string::npos) { return; }
-    path = path.substr(0, last_dot);
-}
-
 enum class mode : int {
-    listed,
+    query,
+    generate_matrix,
+
     random_inf,
     sin_to_matrix,
     read_matrix,
-    full,
     count
 };
 
@@ -383,10 +379,15 @@ std::string mode_to_str(mode m) {
     std::string mode_str;
     switch (m)
     {
-        case mode::listed: {
+        case mode::query: {
             mode_str = "listed";
             break;
         }
+        case mode::generate_matrix: {
+            mode_str = "generate_matrix";
+            break;
+        }
+
         case mode::random_inf: {
             mode_str = "random_inf";
             break;
@@ -408,7 +409,7 @@ std::string mode_to_str(mode m) {
 }
 
 #define USAGE_MSG "USAGE: ./sinblast ... followed by one of the following:\n"\
-"    -l query.swc [ list of target.swc's ]  # pair the query against all listed targets, produces .sin files |\n"\
+"    -l query.swc [ list of target.swc's ]  # pair the query against all listed targets, produces .score files |\n"\
 "    -r [rand_count] [list of swc files]    # produce random pairs, ad infinitum if number of random pairs == -1, produces .sin files |\n"\
 "    -s [sin file]                          # turn a sin file into a p-value matrix, produces a .matrix file |\n"\
 "    -m [matrix file]                       # read a p-value matrix file\n"\
@@ -427,6 +428,12 @@ void invalid_combination_msg(mode m1, mode m2) {
               << mode_to_str(m2) << "\"" << std::endl;
 }
 
+void str_strip_extension(std::string& path) {
+    size_t last_dot = path.rfind('.');
+    if (last_dot == std::string::npos) { return; }
+    path = path.substr(0, last_dot);
+}
+
 #ifndef TEST_KDTREE 
 int main(int argc, char *argv[]) {
     int opt = 0, rc = 0;
@@ -439,10 +446,10 @@ int main(int argc, char *argv[]) {
         switch (opt) {
             case 'l': {
                 if (md != mode::count) { 
-                    invalid_combination_msg(md, mode::listed);
+                    invalid_combination_msg(md, mode::query);
                     usage_and_exit(); 
                 }
-                md = mode::listed;
+                md = mode::query;
                 query_filepath = optarg;
                 break;
             }
@@ -511,7 +518,7 @@ int main(int argc, char *argv[]) {
             std::cout << USAGE_MSG;
             exit(EXIT_SUCCESS);
         }
-        case mode::listed: {
+        case mode::query: {
             if (query_filepath.empty()) { 
                 std::cerr << "query filepath empty." << std::endl;
                 usage_and_exit(); 
@@ -558,7 +565,10 @@ int main(int argc, char *argv[]) {
                 str_strip_extension(target_filepath);
                 str_strip_extension(query_filepath);
                 std::cout << query_filepath << " " << target_filepath << "\n";
-                nearest_neighbor(query_v, target_v, do_cosine);
+                std::vector<PointComparison> comp_v = nearest_neighbor_kdtree(query_v, target_v, do_cosine);
+                for (const PointComparison& point_comp : comp_v) {
+                    point_comp.print(std::cout);
+                }
                 if (!do_inf) --rand_count;
             }
             return 0;
