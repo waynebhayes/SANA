@@ -34,15 +34,16 @@ constexpr const char *OUT_OF_RANGE_ERR_MSG = "argument out of range: %s\n";
 constexpr const char *FILEPATH_EMPTY_ERR_MSG = "%s filepath empty\n";
 constexpr const char *FILE_OPENING_ERR_MSG = "cannot open file stream, file: %s";
 constexpr const char *USAGE_MSG = 
-"USAGE: ./sinblast ... followed by one of the following:\n"
-"    -q queryFile target1File [target2File ...]     # pair the query against all listed targets, produces .score files |\n"
-"    -g swc1File [swc2File ...]                     # generate a p-value matrix for the swc files, produces a .matrix file |\n"
-"    -r N swc1File [swc2File ...]                   # produce random pairs, ad infinitum if number of random pairs == -1, produces .sin files |\n"
+"USAGE: ./nblast++ ... followed by one of the following:\n"
+"    -q queryFile targetFile1 [targetFile2 ...]     # pair the query against all listed targets, produces .score files |\n"
+"    -g swcFile1 [swcFile2 ...]                     # generate a p-value matrix for the swc files, prints a .matrix file to stdout |\n"
+"    -n N swcFile2 [swcFile2 ...]                   # produce random pairs, ad infinitum if number of random pairs == -1, prints a .sin file to stdout |\n"
 "    -s sinFile                                     # turn a sin file into a p-value matrix, produces a .matrix file |\n"
-
-"    -m matrixFile                                  # read a p-value matrix file\n"
+"    -r randomPairMatrixFile                        # read in the random pair matrix file\n"
+"    -m matchPairMatrixFile                         # read in the match pair matrix file\n"
 "    -c                                             # Calculate cosine angle measure instead of sine\n"
 "    -h                                             # print usage message";
+
 enum class option : int {
     Query,
     GenerateMatrices,
@@ -561,7 +562,7 @@ double scoreNeuronPair(const IntVector2D& pMatchMatrix, const IntVector2D& pRand
     computeRawScores(pMatchMatrix, pRandomMatrix, reverseSelfMatchVector);
     double reverseSelfTotalScore = sumRawScores(reverseSelfMatchVector);
     
-    // normalize forward and reverse by self 
+    // normalize forward and reverse by self
     // then average for final score
     return ((forwardTotalScore / forwardSelfTotalScore) + (reverseTotalScore / reverseSelfTotalScore)) / 2;
 }
