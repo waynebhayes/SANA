@@ -1,22 +1,19 @@
 #ifndef EDGEDIFFERENCE_HPP
 #define EDGEDIFFERENCE_HPP
-#include "Measure.hpp"
+#include "WeightedMeasure.hpp"
 
-class EdgeDifference: public Measure {
+class EdgeDifference: public WeightedMeasure {
 public:
     EdgeDifference(const Graph* G1, const Graph* G2);
     virtual ~EdgeDifference();
     double eval(const Alignment& A);
 
+    // Keep static methods for backward compatibility with existing static calls
     static double adjustSumToTargetScore(const Graph *G1, const Graph *G2, const double edgeDifferenceSum);
     static double getEdgeDifferenceSum(const Graph *G1, const Graph *G2, const Alignment &A);
-    static double getIncChangeOp(const uint peg, const uint oldHole, const uint newHole, const Alignment &A);
-    static double getIncSwapOp(const uint peg1, const uint peg2, const uint hole1, const uint hole2, const Alignment &A);
 
 private:
-    static const Graph *G1, *G2;
-    static double computeIncChangeOp(const uint peg, const uint oldHole, const uint newHole, const Alignment &A);
-    static double computeIncSwapOp(const uint peg1, const uint peg2, const uint hole1, const uint hole2, const Alignment &A);
+    double getEdgeScore(double w1, double w2);
 };
 
 #endif //EDGEDIFFERENCE_HPP

@@ -1,8 +1,8 @@
 #ifndef SYMMETRICSUBSTRUCTURESCORE_HPP
 #define SYMMETRICSUBSTRUCTURESCORE_HPP
-#include "Measure.hpp"
+#include "BooleanMeasure.hpp"
 
-class SymmetricSubstructureScore: public Measure {
+class SymmetricSubstructureScore: public BooleanMeasure {
 public:
     SymmetricSubstructureScore(const Graph* G1, const Graph* G2);
     virtual ~SymmetricSubstructureScore();

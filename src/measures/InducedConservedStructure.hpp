@@ -1,12 +1,13 @@
 #ifndef INDUCEDCONSERVEDSTRUCTURE_HPP
 #define INDUCEDCONSERVEDSTRUCTURE_HPP
-#include "Measure.hpp"
+#include "BooleanMeasure.hpp"
 
-class InducedConservedStructure: public Measure {
+class InducedConservedStructure: public BooleanMeasure {
 public:
     InducedConservedStructure(const Graph* G1, const Graph* G2);
     virtual ~InducedConservedStructure();
     double eval(const Alignment& A);
+
 private:
 
 };

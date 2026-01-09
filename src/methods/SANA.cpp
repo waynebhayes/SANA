@@ -305,8 +305,8 @@ void SANA::initDataStructures() {
 
     if (needAligEdges or needSec) aligEdges = alig.computeNumAlignedEdges(*G1, *G2);
     if (needEd) edSum = EdgeDifference::getEdgeDifferenceSum(G1, G2, alig);
-    if (needEr) erSum = EdgeRatio::getSum(alig);
-    if (needEgm) egmSum = EdgeGeoMean::getEdgeGeoMeanSum(G1, G2, alig);
+    if (needEr) erSum = ((EdgeRatio*) MC->getMeasure("er"))->eval(alig);
+    if (needEgm) egmSum = ((EdgeGeoMean*) MC->getMeasure("egm"))->eval(alig);
     if (needEmin) eminSum = ((EdgeMin*    ) MC->getMeasure("emin"))->eval(alig);
     if (needSquaredAligEdges) squaredAligEdges =
             ((SquaredEdgeScore*) MC->getMeasure("ses"))->numSquaredAlignedEdges(alig);
@@ -828,11 +828,11 @@ void SANA::performChange(uint actColId) {
         oldMs3Denom = MultiS3::denom;
         oldMs3Numer = MultiS3::numer;
     }
-    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + EdgeCorrectness::getIncChangeOp(peg, oldHole, newHole, A) : -1;
-    double newEdSum            = needEd ? edSum + EdgeDifference::getIncChangeOp(peg, oldHole, newHole, A) : -1;
-    double newErSum            = needEr ? erSum + EdgeRatio::getIncChangeOp(peg, oldHole, newHole, A) : -1;
-    double newEgmSum           = needEgm ? egmSum + EdgeGeoMean::getIncChangeOp(peg, oldHole, newHole, A) : -1;
-    double newEminSum          = needEmin ? eminSum + EdgeMin::getIncChangeOp(peg, oldHole, newHole, A) : -1;
+    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + ((EdgeCorrectness*) MC->getMeasure("ec"))->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+    double newEdSum            = needEd ? edSum + ((EdgeDifference*) MC->getMeasure("ed"))->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+    double newErSum            = needEr ? erSum + ((EdgeRatio*) MC->getMeasure("er"))->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+    double newEgmSum           = needEgm ? egmSum + ((EdgeGeoMean*) MC->getMeasure("egm"))->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+    double newEminSum          = needEmin ? eminSum + ((EdgeMin*) MC->getMeasure("emin"))->getIncChangeOp(peg, oldHole, newHole, A) : -1;
     double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncChangeOp(peg, oldHole, newHole) : -1;
     double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncChangeOp(peg, oldHole, newHole) : -1;
     double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncChangeOp(peg, oldHole, newHole) : -1;
@@ -973,7 +973,7 @@ void SANA::performSwap(uint actColId) {
         oldMs3Denom = MultiS3::denom;
     }
 
-    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + EdgeCorrectness::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    int newAligEdges           = (needAligEdges or needSec) ? aligEdges + ((EdgeCorrectness*) MC->getMeasure("ec"))->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
     double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
     double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
     double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncSwapOp(peg1, peg2, hole1, hole2) : -1;
@@ -982,10 +982,10 @@ void SANA::performSwap(uint actColId) {
     double newEwecSum          = needEwec ? ewecSum + EWECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
     double newNcSum            = needNC ? ncSum + ncIncSwapOp(peg1, peg2, hole1, hole2) : -1;
     double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, peg1, peg2, hole1, hole2) : -1;
-    double newEdSum            = needEd ? edSum + EdgeDifference::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
-    double newErSum            = needEr ? erSum + EdgeRatio::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
-    double newEgmSum           = needEgm ? egmSum + EdgeGeoMean::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
-    double newEminSum          = needEmin ? eminSum + EdgeMin::getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newEdSum            = needEd ? edSum + ((EdgeDifference*) MC->getMeasure("ed"))->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newErSum            = needEr ? erSum + ((EdgeRatio*) MC->getMeasure("er"))->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newEgmSum           = needEgm ? egmSum + ((EdgeGeoMean*) MC->getMeasure("egm"))->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newEminSum          = needEmin ? eminSum + ((EdgeMin*) MC->getMeasure("emin"))->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
@@ -1062,7 +1062,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += egmWeight?egmWeight * newEdgeGeoMeanSum:0;
         newCurrentScore += eminWeight?eminWeight * newEdgeMinSum:0;
         newCurrentScore += s3Weight?s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
-        newCurrentScore += icsWeight?icsWeight * (newAligEdges / newInducedEdges):0;
+        newCurrentScore += (icsWeight && newInducedEdges != 0)?icsWeight * (newAligEdges / newInducedEdges):0;
         newCurrentScore += secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
         newCurrentScore += localWeight?localWeight * (newLocalScoreSum / n1):0;
         newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
@@ -1093,7 +1093,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore = 1;
         newCurrentScore *= ecWeight?ecWeight * (newAligEdges / g1Edges):0;
         newCurrentScore *= s3Weight?s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
-        newCurrentScore *= icsWeight?icsWeight * (newAligEdges / newInducedEdges):0;
+        newCurrentScore *= (icsWeight && newInducedEdges != 0)?icsWeight * (newAligEdges / newInducedEdges):0;
         newCurrentScore *= localWeight?localWeight * (newLocalScoreSum / n1):0;
         newCurrentScore *= secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
         newCurrentScore *= wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
@@ -1122,7 +1122,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += ecWeight?ecWeight * (newAligEdges / g1Edges):0;
         newCurrentScore += secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
         newCurrentScore += s3Weight?s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
-        newCurrentScore += icsWeight?icsWeight * (newAligEdges / newInducedEdges):0;
+        newCurrentScore += (icsWeight && newInducedEdges != 0)?icsWeight * (newAligEdges / newInducedEdges):0;
         newCurrentScore += localWeight?localWeight * (newLocalScoreSum / n1):0;
         newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
         newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
@@ -1148,7 +1148,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 
         newCurrentScore += ecWeight?ecWeight * (newAligEdges / g1Edges):0;
         newCurrentScore += s3Weight?s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
-        newCurrentScore += icsWeight?icsWeight * (newAligEdges / newInducedEdges):0;
+        newCurrentScore += (icsWeight && newInducedEdges != 0)?icsWeight * (newAligEdges / newInducedEdges):0;
         newCurrentScore += secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
         newCurrentScore += localWeight?localWeight * (newLocalScoreSum / n1):0;
         newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
@@ -1171,7 +1171,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += ecWeight?ecWeight / (newAligEdges / g1Edges):0;
         newCurrentScore += secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
         newCurrentScore += s3Weight?s3Weight / (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
-        newCurrentScore += icsWeight?icsWeight / (newAligEdges / newInducedEdges):0;
+        newCurrentScore += (icsWeight && newInducedEdges != 0)?icsWeight / (newAligEdges / newInducedEdges):0;
         newCurrentScore += localWeight?localWeight / (newLocalScoreSum / n1):0;
         newCurrentScore += wecWeight?wecWeight / (newWecSum / (2 * g1Edges)):0;
         newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
@@ -1206,7 +1206,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += ecWeight?ecWeight * (newAligEdges / g1Edges):0;
         newCurrentScore += secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
         newCurrentScore += s3Weight?s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
-        newCurrentScore += icsWeight?icsWeight * (newAligEdges / newInducedEdges):0;
+        newCurrentScore += (icsWeight && newInducedEdges != 0)?icsWeight * (newAligEdges / newInducedEdges):0;
         newCurrentScore += localWeight?localWeight * (newLocalScoreSum / n1):0;
         newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
         newCurrentScore += jsWeight?jsWeight * (newJsSum):0;

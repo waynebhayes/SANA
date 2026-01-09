@@ -154,7 +154,7 @@ sort "$@" | uniq -c | sort -nr | gawk '
 				NAFpredict[2][p2][g]["ALL"]+=NAF[p1][p2] # "ALL" accounts for all evidence codes.
 			    }
 	# Now that we have accumulated all the possible predictions and evidences, print out only those that meet NAFthresh
-	ASSERT(isarray(NAFpredict), "NAFpredict is not an array");
+	ASSERT(isarray(NAFpredict), "NAFpredict is not an array, which suggests there are no new predictions to make");
 	ASSERT(isarray(tax2), "tax2 is not an array");
 	for(p2 in NAFpredict[2])for(g in NAFpredict[2][p2])for(evc in NAFpredict[2][p2][g])
 	    if(NAFpredict[2][p2][g][evc] >= NAFthresh) {
