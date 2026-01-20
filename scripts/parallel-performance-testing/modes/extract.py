@@ -1,9 +1,6 @@
-"""Extract mode: Parse results from output files into CSV."""
-
 import sys
 import csv
 import re
-
 
 def run_extract(tester) -> None:
     """
@@ -13,22 +10,28 @@ def run_extract(tester) -> None:
         tester: ParallelPerformanceTester instance
     """
     tester.ensure_directories()
-    print("Extracting statistics from output files...")
+    print("Extracting...")
     
     results_file = tester.results_dir / "results.csv"
     
-    # Prepare header
-    header = ["sana_version", "threads", "machine", "output_file"] + tester.detection_order
-    
+    computed_measures = ["Efficiency"]
+    header = ["sana_version", "threads", "machine", "output_file"] + tester.detection_order + computed_measures
     results = []
     count = 0
     
-    # Process output files
     for output_file in sorted(tester.output_dir.glob("*.out")):
         basename_file = output_file.name
         
-        # Parse filename for version, threads, and machine
-        match = re.match(r"([0-9]+\.[0-9]+)-([0-9]+)-([a-z\-]+)-run\d+\.out", basename_file)
+        # Format: {sana_version}_{threads}_{machine}_run{run_idx}.out
+        # Examples:
+        #   threads_8_circinus-1_run0.out
+        #   nothreads_4_circinus-1_run1.out
+        #   2.1_4_circinus-1_run0.out
+        #
+        # Group 1: sana_version (anything up to "_<threads>_")
+        # Group 2: threads (digits)
+        # Group 3: machine (letters/numbers/hyphens/underscores)
+        match = re.match(r"(.+?)_([0-9]+)_([A-Za-z0-9_\-]+)_run\d+\.out$", basename_file)
         if not match:
             continue
         
@@ -36,10 +39,8 @@ def run_extract(tester) -> None:
         threads = match.group(2)
         machine = match.group(3)
         
-        # Read file content
         content = output_file.read_text()
         
-        # Extract values using patterns
         row = {
             "sana_version": sana_version,
             "threads": threads,
@@ -49,13 +50,24 @@ def run_extract(tester) -> None:
         
         for label in tester.detection_order:
             pattern = tester.detections[label]
-            match = re.search(pattern, content)
-            row[label] = match.group(1) if match else ""
+            # Use MULTILINE flag so ^ and $ match line boundaries
+            regex_match = re.search(pattern, content, re.MULTILINE)
+            row[label] = regex_match.group(1) if regex_match else ""
+        
+        try:
+            real_time = float(row.get("RealTime", 0) or 0)
+            user_time = float(row.get("UserTime", 0) or 0)
+            sys_time = float(row.get("SystemTime", 0) or 0)
+            if real_time > 0:
+                row["Efficiency"] = f"{(user_time + sys_time) / real_time:.4f}"
+            else:
+                row["Efficiency"] = "0"
+        except (ValueError, TypeError):
+            row["Efficiency"] = ""
         
         results.append(row)
         count += 1
     
-    # Write results
     if count == 0:
         print("No results to write")
         if results_file.exists():
@@ -66,6 +78,5 @@ def run_extract(tester) -> None:
             writer.writeheader()
             writer.writerows(results)
         
-        print(f"Extracted statistics from {count} files")
-        print(f"Results written to: {results_file}")
+        print(f"Extracted {count} files -> {results_file}")
 

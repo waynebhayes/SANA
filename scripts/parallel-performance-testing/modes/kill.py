@@ -1,46 +1,27 @@
-"""Kill mode: Cancel orchestration jobs."""
-
 import sys
-import subprocess
-
 
 def run_kill(tester) -> None:
-    """
-    Find and cancel all orchestration jobs (ppt-orch) by name.
+    """Kill all ppt-* TMUX sessions on remote machines."""
+    from ppt import ssh_command
     
-    Args:
-        tester: ParallelPerformanceTester instance (unused, kept for consistency)
-    """
-    try:
-        # Get list of jobs with name "ppt-orch"
-        result = subprocess.run(
-            ["squeue", "-h", "-n", "ppt-orch", "-o", "%i"],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        
-        job_ids = result.stdout.strip().split('\n')
-        job_ids = [jid for jid in job_ids if jid.strip()]
-        
-        if not job_ids:
-            print("No orchestration jobs (ppt-orch) found")
-            return
-        
-        # Cancel each job
-        cancelled = 0
-        for job_id in job_ids:
-            try:
-                subprocess.run(["scancel", job_id], timeout=5)
-                print(f"Cancelled job {job_id}")
-                cancelled += 1
-            except Exception:
-                pass
-        
-        print(f"Cancelled {cancelled} orchestration job(s)")
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-
-
-
+    machines = set(machine for _, _, machine in tester.test_configs)
+    total_killed = 0
+    
+    for machine in machines:
+        try:
+            result = ssh_command(machine, "tmux list-sessions -F '#{session_name}' 2>/dev/null | grep '^ppt-' || true", use_sshpass=True)
+            
+            if result.returncode == 0 and result.stdout.strip():
+                sessions = [s.strip() for s in result.stdout.strip().split('\n') if s.strip()]
+                for session in sessions:
+                    try:
+                        ssh_command(machine, f"tmux kill-session -t '{session}' 2>/dev/null || true", use_sshpass=True)
+                        total_killed += 1
+                    except Exception:
+                        pass
+        except Exception as e:
+            print(f"Error on {machine}: {e}", file=sys.stderr)
+    if total_killed > 0:
+        print(f"Killed {total_killed} remote session(s)")
+    else:
+        print("No ppt-* sessions found on remote machines")
