@@ -14,9 +14,11 @@ public:
     string getName();
     virtual bool isLocal();
     virtual double balanceWeight();
+    int getOptimizationDirection() const;
 protected:
     const Graph* G1;
     const Graph* G2;
+    int optimizationDirection; // +1 for maximize (higher is better), -1 for minimize (lower is better)
 private:
     string name;
 };
