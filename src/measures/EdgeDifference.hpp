@@ -8,12 +8,10 @@ public:
     virtual ~EdgeDifference();
     double eval(const Alignment& A);
 
-    // Keep static methods for backward compatibility with existing static calls
-    static double adjustSumToTargetScore(const Graph *G1, const Graph *G2, const double edgeDifferenceSum);
-    static double getEdgeDifferenceSum(const Graph *G1, const Graph *G2, const Alignment &A);
-
 private:
     double getEdgeScore(double w1, double w2);
+    double computeDenominator(const Graph* G1, const Graph* G2);
+    double denominator; // Sum of edge weights from smaller graph
 };
 
 #endif //EDGEDIFFERENCE_HPP
