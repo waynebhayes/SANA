@@ -304,7 +304,7 @@ void SANA::initDataStructures() {
     }
 
     if (needAligEdges or needSec) aligEdges = alig.computeNumAlignedEdges(*G1, *G2);
-    if (needEd) edSum = EdgeDifference::getEdgeDifferenceSum(G1, G2, alig);
+    if (needEd) edSum = ((EdgeDifference*) MC->getMeasure("ed"))->eval(alig);
     if (needEr) erSum = ((EdgeRatio*) MC->getMeasure("er"))->eval(alig);
     if (needEgm) egmSum = ((EdgeGeoMean*) MC->getMeasure("egm"))->eval(alig);
     if (needEmin) eminSum = ((EdgeMin*    ) MC->getMeasure("emin"))->eval(alig);
@@ -1057,7 +1057,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
     case ScoreAggregation::sum:
     {
         newCurrentScore += ecWeight?ecWeight * (newAligEdges / g1Edges):0;
-        newCurrentScore += edWeight?edWeight * EdgeDifference::adjustSumToTargetScore(G1,G2,newEdgeDifferenceSum):0;
+        newCurrentScore += edWeight?edWeight * newEdgeDifferenceSum:0;
         newCurrentScore += erWeight?erWeight * newEdgeRatioSum:0;
         newCurrentScore += egmWeight?egmWeight * newEdgeGeoMeanSum:0;
         newCurrentScore += eminWeight?eminWeight * newEdgeMinSum:0;
@@ -1084,7 +1084,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 	if (MultiS3::denominator_type==MultiS3::ee_global) MultiS3::denom = newExposedEdgesNumer;
         newCurrentScore += ms3Weight ? ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)MultiS3::Normalization_factor:0;//(double)NUM_GRAPHS;
 #endif
-        energyInc = newCurrentScore - currentScore;
+        energyInc = (newCurrentScore - currentScore) * MC->getOptimizationDirection();
         wasBadMove = energyInc < 0;
         break;
     }
@@ -1107,7 +1107,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 	    }
 	}
 
-        energyInc = newCurrentScore - currentScore;
+        energyInc = (newCurrentScore - currentScore) * MC->getOptimizationDirection();
         wasBadMove = energyInc < 0;
         break;
     }
@@ -1135,7 +1135,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 	    }
 	}
 
-        energyInc = newCurrentScore - currentScore;
+        energyInc = (newCurrentScore - currentScore) * MC->getOptimizationDirection();
         wasBadMove = energyInc < 0;
         break;
     }
@@ -1162,7 +1162,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 	    }
 	}
 
-        energyInc = newCurrentScore - currentScore;
+        energyInc = (newCurrentScore - currentScore) * MC->getOptimizationDirection();
         wasBadMove = energyInc < 0;
         break;
     }
@@ -1183,7 +1183,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
 	}
-        energyInc = newCurrentScore - currentScore;
+        energyInc = (newCurrentScore - currentScore) * MC->getOptimizationDirection();
         wasBadMove = energyInc < 0;
         break;
     }

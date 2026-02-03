@@ -14,7 +14,11 @@ double MeasureCombination::eval(const Alignment& A) const {
     uint n = measures.size();
     double total = 0;
     for (uint i = 0; i < n; i++) {
-        if (weights[i] > 0) total += measures[i]->eval(A) * weights[i];
+        if (weights[i] > 0) {
+            double score = measures[i]->eval(A);
+            // No direction multiplication - keep natural values
+            total += score * weights[i];
+        }
     }
     return total;
 }
@@ -151,6 +155,18 @@ bool MeasureCombination::containsMeasure(const string& measureName) const {
         if (m->getName() == measureName) return true;
     }
     return false;
+}
+
+int MeasureCombination::getOptimizationDirection() const {
+    // Return -1 if any measure wants to minimize, else +1 (maximize)
+    int direction = 1;
+    for (uint i = 0; i < measures.size(); i++) {
+        if (weights[i] > 0 && measures[i]->getOptimizationDirection() == -1) {
+            direction = -1;
+            break;
+        }
+    }
+    return direction;
 }
 void MeasureCombination::initn1n2(uint& n1, uint& n2) const {
     if (n1 != 0 and n2 != 0) return; //already init

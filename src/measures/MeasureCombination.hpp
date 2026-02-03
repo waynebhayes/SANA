@@ -27,6 +27,7 @@ public:
     Measure* getMeasure(const string& measureName) const;
     Measure* getMeasure(int i) const;
     bool containsMeasure(const string& measureName) const;
+    int getOptimizationDirection() const;  // Get overall optimization direction
     void normalize();
     uint numMeasures() const;
     string toString() const;
