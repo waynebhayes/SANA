@@ -2,7 +2,7 @@ ARCH=$(shell uname -a | awk '{if(/CYGWIN/){V="CYGWIN"}else if(/Darwin/){V="Darwi
 ARCH_FLAGS=$(shell ($(GCC) -v 2>&1; uname -a) | awk '/CYGWIN/{print "-U__STRICT_ANSI__"}')
 
 MY_CC = g++$(GCC_VER)
-CXXFLAGS = -I "src/utils" "-DLIBWAYNE=1" -Wall -std=gnu++11 -pthread $(ARCH_FLAGS) #-fno-inline
+CXXFLAGS = -I "src/utils" "-DLIBWAYNE=1" -DNDEBUG -flto -Wall -std=gnu++11 -pthread $(ARCH_FLAGS) #-fno-inline
 
 # Version 2.2: Refactored edge measures (EdgeMin, EdgeRatio, EdgeGeoMean, EdgeDifference) with WeightedMeasure base class
 SANA_VER=2.2

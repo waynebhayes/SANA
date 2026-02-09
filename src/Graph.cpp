@@ -80,6 +80,38 @@ Graph::Graph(const bool directed, const string& graphName, const string& optiona
     }
     adjLists.shrink_to_fit();
     injLists.shrink_to_fit();
+
+    // Build CSR (Compressed Sparse Row) from adjacency lists.
+    // All neighbor data goes into one contiguous array, eliminating the
+    // per-node heap allocation and pointer chase of vector<vector<uint>>.
+    {
+        uint n = adjLists.size();
+        csrAdjOff_.resize(n + 1);
+        uint total = 0;
+        for (uint i = 0; i < n; i++) {
+            csrAdjOff_[i] = total;
+            total += adjLists[i].size();
+        }
+        csrAdjOff_[n] = total;
+        csrAdjData_.resize(total);
+        for (uint i = 0; i < n; i++)
+            for (uint j = 0; j < adjLists[i].size(); j++)
+                csrAdjData_[csrAdjOff_[i] + j] = adjLists[i][j];
+
+        n = injLists.size();
+        csrInjOff_.resize(n + 1);
+        total = 0;
+        for (uint i = 0; i < n; i++) {
+            csrInjOff_[i] = total;
+            total += injLists[i].size();
+        }
+        csrInjOff_[n] = total;
+        csrInjData_.resize(total);
+        for (uint i = 0; i < n; i++)
+            for (uint j = 0; j < injLists[i].size(); j++)
+                csrInjData_[csrInjOff_[i] + j] = injLists[i][j];
+    }
+
     initColorDataStructs(partialNodeColorPairs);
 }
 
