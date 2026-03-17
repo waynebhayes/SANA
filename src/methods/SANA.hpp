@@ -4,6 +4,8 @@
 #include <map>
 #include <tuple>
 #include <mutex>
+#include <atomic>
+#include <memory>
 #include <chrono>
 #include <ctime>
 #include <random>
@@ -90,6 +92,15 @@ private:
     // used only if MAX_STATIONARY is set (via getenv)
     vector<uint> stationary;
 
+    // Luca
+    int numThreads = 1;
+    mutex commitMutex;
+    unique_ptr<atomic<bool>[]> holeInUse;
+
+    static void runIterationsWorker(SANA* sana, atomic<long long int>* sharedIter,
+        atomic<bool>* shouldStop, long long int maxIters, double TInitial, double TDecay);
+    static void runBatchWorker(SANA* sana, double* outPbad, double* outScore, double temperature);
+
     //data structures for the networks
     uint n1, n2, m1, m2;
     double g1Edges, g2Edges; //stored as double because they appear in division
@@ -145,12 +156,12 @@ private:
     double ecWeight, edWeight, erWeight, eminWeight, egmWeight, s3Weight, icsWeight, wecWeight, jsWeight, secWeight,
            ncWeight, localWeight, mecWeight, sesWeight, eeWeight, ms3Weight, ewecWeight,f_betaWeight;
 
-    //this should be refactored so that the return parameter is not the 9th one out of 15
-    // changed in June 2020 to return pBad, not the decision itself. -WH
-    double scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum, 
+    // Luca
+    double scoreComparisonThreads(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum,
         double newJsSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges,
-	double newExposedEdgesNumer, double newMS3Numer, double newEdgeDifferenceSum, double newEdgeRatioSum,
-	double newEdgeMinSum, double newEgmSum);
+        double newExposedEdgesNumer, double newMS3Numer, double newEdgeDifferenceSum, double newEdgeRatioSum,
+        double newEdgeMinSum, double newEgmSum,
+        double temperature, bool& outWasBadMove, double& outEnergyInc);
 
     enum class ScoreAggregation{sum, product, inverse, max, min, maxFactor};
     ScoreAggregation scoreAggr;
@@ -271,9 +282,14 @@ private:
 #if LIBWAYNE
     STAT *energyIncStats;
 #endif
-    void SANAIteration();
-    void performChange(uint activeColorId);
-    void performSwap(uint activeColorId);
+
+//    void SANAIteration();
+
+    // Luca
+    double SANAIterationThreads(mt19937& rng, uniform_real_distribution<>& rnd, double temperature);
+    double performChangeThreads(uint activeColorId, mt19937& rng, uniform_real_distribution<>& rnd, double temperature);
+    double performSwapThreads(uint activeColorId, mt19937& rng, uniform_real_distribution<>& rnd, double temperature);
+    
 
     Timer timer;
 
@@ -308,7 +324,10 @@ private:
 
     // The mechanism for choosing a neighbor of an alignment uniformly at random is done in 4 steps:
     // 1. an active color is chosen randomly weighted by their number of neighbors
-    uint randActiveColorIdWeightedByNumNbrs(); //not const because of RNG
+    // uint randActiveColorIdWeightedByNumNbrs(); //not const because of RNG
+
+    // Luca
+    uint randActiveColorIdWeightedByNumNbrsThreads(mt19937& rng, uniform_real_distribution<>& rnd);
 
     /* Data structure to implement step 1. index i contains the accumulated probability of choosing
     any of the active colors with active color id <= i. The last value is 1 (by definition).
@@ -323,6 +342,10 @@ private:
     //3. the peg node (or pair of Peg nodes, for a swap) are chosen randomly from G1 among the
     //nodes of the chosen color
     uint randomG1NodeWithActiveColor(uint actColId, bool biased) const;
+
+    // Luca
+    uint randomG1NodeWithActiveColorThreads(uint actColId, bool biased, mt19937& rng) const;
+
     vector<uint> actColToG1ColId; //to implement step 3.
 
     //4. same with target nodes
