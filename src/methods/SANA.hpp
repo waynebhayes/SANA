@@ -97,6 +97,15 @@ private:
     mutex commitMutex;
     unique_ptr<atomic<bool>[]> holeInUse;
 
+    // Collision counters (only meaningful when numThreads > 1)
+    // holeLockCollisions:  times a holeInUse CAS failed (thread had to retry picking a move)
+    // commitMutexWaits:   times a thread tried to lock commitMutex but had to wait (contention)
+    // commitRetries:      times commitMutex was acquired but the peg had already moved
+    //                     (thread computed a delta against a stale alignment and had to discard it)
+    atomic<long long int> holeLockCollisions{0};
+    atomic<long long int> commitMutexWaits{0};
+    atomic<long long int> commitRetries{0};
+
     static void runIterationsWorker(SANA* sana, atomic<long long int>* sharedIter,
         atomic<bool>* shouldStop, long long int maxIters, double TInitial, double TDecay);
     static void runBatchWorker(SANA* sana, double* outPbad, double* outScore, double temperature);

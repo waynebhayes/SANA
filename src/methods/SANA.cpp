@@ -295,6 +295,9 @@ void SANA::initDataStructures() {
 	assert(MAX_STATIONARY != MAX_ST_INVALID);
     }
     iterationsPerformed = 0;
+    holeLockCollisions.store(0);
+    commitMutexWaits.store(0);
+    commitRetries.store(0);
     for (uint i = 0; i < n2; i++) holeInUse[i].store(false);
     numPBadsInBuffer = pBadBufferSum = pBadBufferIndex = 0;
     Alignment alig;
@@ -447,6 +450,29 @@ Alignment SANA::runUsingIterations() {
     long long int iter = sharedIter.load();
     trackProgress(iter, (double)iter / maxIters);
     cout<<"Performed "<<iter<<" total iterations\n";
+    if (numThreads > 1) {
+        long long int holeC   = holeLockCollisions.load();
+        long long int mutexWC = commitMutexWaits.load();
+        long long int commitC = commitRetries.load();
+        long long int totalIter = iterationsPerformed;
+        double holeRate   = totalIter > 0 ? 1000.0 * holeC   / (double)totalIter : 0.0;
+        double mutexRate  = totalIter > 0 ? 1000.0 * mutexWC / (double)totalIter : 0.0;
+        double commitRate = totalIter > 0 ? 1000.0 * commitC / (double)totalIter : 0.0;
+        double holePct    = totalIter > 0 ? 100.0  * holeC   / (double)totalIter : 0.0;
+        double mutexPct   = totalIter > 0 ? 100.0  * mutexWC / (double)totalIter : 0.0;
+        double commitPct  = totalIter > 0 ? 100.0  * commitC / (double)totalIter : 0.0;
+        printf("\n=== Multithreading collision report (%d threads) ===\n", numThreads);
+        printf("  holeLock   collisions : %lld  (%.2f%%,  %.1f per 1k iters)\n",
+               holeC,   holePct,   holeRate);
+        printf("  commitMutex waits     : %lld  (%.2f%%,  %.1f per 1k iters)  [lock contention]\n",
+               mutexWC, mutexPct,  mutexRate);
+        printf("  commitRetry collisions: %lld  (%.2f%%,  %.1f per 1k iters)  [stale peg]\n",
+               commitC, commitPct, commitRate);
+        printf("  total iterations      : %lld\n", totalIter);
+        printf("  wasted work (commit)  : %.2f%%  of compute thrown away\n", commitPct);
+        printf("====================================================\n\n");
+        fflush(stdout);
+    }
     if (addHillClimbing) performHillClimbing(10000000LL); //arbitrarily chosen, probably too big.
 
 #ifdef CORES
@@ -962,9 +988,13 @@ double SANA::performChangeThreads(uint actColId, mt19937& rng, uniform_real_dist
         }
 
         bool expected = false;
-        if (!holeInUse[oldHole].compare_exchange_strong(expected, true)) continue;
+        if (!holeInUse[oldHole].compare_exchange_strong(expected, true)) {
+            ++holeLockCollisions;
+            continue;
+        }
         expected = false;
         if (!holeInUse[newHole].compare_exchange_strong(expected, true)) {
+            ++holeLockCollisions;
             holeInUse[oldHole].store(false);
             continue;
         }
@@ -1127,8 +1157,12 @@ double SANA::performChangeThreads(uint actColId, mt19937& rng, uniform_real_dist
         // Luca: High thread collision here
         needRetry = false;
         {
-            lock_guard<mutex> lk(commitMutex);
+            if (!commitMutex.try_lock()) {
+                ++commitMutexWaits;
+                commitMutex.lock();
+            }
             if (A[peg] != oldHole) {
+                ++commitRetries;
                 needRetry = true;
             } else {
 #ifdef CORES
@@ -1191,6 +1225,7 @@ double SANA::performChangeThreads(uint actColId, mt19937& rng, uniform_real_dist
                 ++iterationsPerformed;
                 retPbad = pBad;
             }
+            commitMutex.unlock();
         }
         ++iterationsPerformed;
 
@@ -1255,9 +1290,13 @@ double SANA::performSwapThreads(uint actColId, mt19937& rng, uniform_real_distri
         }
 
         bool expected = false;
-        if (!holeInUse[hole1].compare_exchange_strong(expected, true)) continue;
+        if (!holeInUse[hole1].compare_exchange_strong(expected, true)) {
+            ++holeLockCollisions;
+            continue;
+        }
         expected = false;
         if (!holeInUse[hole2].compare_exchange_strong(expected, true)) {
+            ++holeLockCollisions;
             holeInUse[hole1].store(false);
             continue;
         }
@@ -1521,8 +1560,12 @@ double SANA::performSwapThreads(uint actColId, mt19937& rng, uniform_real_distri
         // Luca: High thread collision here
         needRetry = false;
         {
-            lock_guard<mutex> lk(commitMutex);
+            if (!commitMutex.try_lock()) {
+                ++commitMutexWaits;
+                commitMutex.lock();
+            }
             if (A[peg1] != hole1 || A[peg2] != hole2) {
+                ++commitRetries;
                 needRetry = true;
             } else {
 #ifdef CORES
@@ -1581,6 +1624,7 @@ double SANA::performSwapThreads(uint actColId, mt19937& rng, uniform_real_distri
                 ++iterationsPerformed;
                 retPbad = pBad;
             }
+            commitMutex.unlock();
         }
         ++iterationsPerformed;
 
@@ -2658,12 +2702,28 @@ void SANA::trackProgress(long long int iter, double fractionTime, int batches, d
     cout<< " ips = "<<ips<<", P("<<Temperature<<") = "<<acceptingProbability(avgEnergyInc, Temperature);
     cout<<", pBad = "<<incrementalMeanPBad();
     if(batches) cout << " " << batches << " bSc " << batchScore;
+    if (numThreads > 1) {
+        cout << " | holeLock=" << holeLockCollisions.load()
+             << " mutexWait=" << commitMutexWaits.load()
+             << " commitRetry=" << commitRetries.load();
+    }
     cout << endl;
 #else
     printf("%ld (%.5g%%,%.1fs): score = %.3g ips = %.2g, P(%.3g) = %.3g, pBad = %.3g",
 	long(iter/iterationsPerStep), 100*fractionTime, elapsedTime, currentScore, ips, Temperature,
 	acceptingProbability(avgEnergyInc, Temperature), incrementalMeanPBad());
     if(batches) printf(" batches %d bSc %.3g", batches, batchScore);
+    if (numThreads > 1) {
+        long long int holeC   = holeLockCollisions.load();
+        long long int mutexWC = commitMutexWaits.load();
+        long long int commitC = commitRetries.load();
+        long long int totalIter = iterationsPerformed;
+        double holeRate   = totalIter > 0 ? 1000.0 * holeC   / (double)totalIter : 0.0;
+        double mutexRate  = totalIter > 0 ? 1000.0 * mutexWC / (double)totalIter : 0.0;
+        double commitRate = totalIter > 0 ? 1000.0 * commitC / (double)totalIter : 0.0;
+        printf(" | holeLock=%lld (%.1f/k) mutexWait=%lld (%.1f/k) commitRetry=%lld (%.1f/k)",
+               holeC, holeRate, mutexWC, mutexRate, commitC, commitRate);
+    }
     printf("\n");
     fflush(stdout);
 #endif
