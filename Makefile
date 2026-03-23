@@ -4,8 +4,7 @@ ARCH_FLAGS=$(shell ($(GCC) -v 2>&1; uname -a) | awk '/CYGWIN/{print "-U__STRICT_
 MY_CC = g++$(GCC_VER)
 CXXFLAGS = -I "src/utils" "-DLIBWAYNE=1" -DNDEBUG -flto -Wall -std=gnu++11 -pthread $(ARCH_FLAGS) #-fno-inline
 
-# Version 2.2: Refactored edge measures (EdgeMin, EdgeRatio, EdgeGeoMean, EdgeDifference) with WeightedMeasure base class
-SANA_VER=2.2
+SANA_VER=3.4
 MAIN = sana$(SANA_VER)
 
 #you can give these on Make's command line, eg "SPARSE=1" or "WEIGHT=1" or "MULTI=1"

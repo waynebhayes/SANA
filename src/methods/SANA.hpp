@@ -97,6 +97,30 @@ private:
     mutex commitMutex;
     unique_ptr<atomic<bool>[]> holeInUse;
 
+    // Per-thread state for async parallel (numThreads > 1, phased execution)
+    long long reconcileInterval;
+    struct ThreadLocalState {
+        int aligEdges;
+        double edSum, erSum, egmSum, eminSum;
+        int inducedEdges, squaredAligEdges;
+        double localScoreSum, wecSum, jsSum, ewecSum;
+        int ncSum;
+        map<string, double> localScoreSumMap;
+        vector<uint> alignedByNode;
+        double currentScore;
+        vector<uint> stationary;
+        vector<double> pBadBuffer;
+        int pBadBufferIndex, numPBadsInBuffer;
+        double pBadBufferSum;
+#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
+        uint ms3Numer, ms3Denom;
+        vector<uint> ms3ShadowDegree, totalInducedWeight;
+        int edgeExposureNumer;
+#endif
+    };
+    vector<ThreadLocalState> threadStates;
+    void reconcileThreadState(ThreadLocalState& state, const Alignment& alig);
+
     // Collision counters (only meaningful when numThreads > 1)
     // holeLockCollisions:  times a holeInUse CAS failed (thread had to retry picking a move)
     // commitMutexWaits:   times a thread tried to lock commitMutex but had to wait (contention)
@@ -108,6 +132,8 @@ private:
 
     static void runIterationsWorker(SANA* sana, atomic<long long int>* sharedIter,
         atomic<bool>* shouldStop, long long int maxIters, double TInitial, double TDecay);
+    static void runPhaseWorker(SANA* sana, int threadId, atomic<long long int>* sharedIter,
+        atomic<bool>* shouldStop, long long phaseEnd, long long maxIters, double TInitial, double TDecay);
     static void runBatchWorker(SANA* sana, double* outPbad, double* outScore, double temperature);
 
     //data structures for the networks
@@ -159,6 +185,27 @@ private:
     bool isHappyPeg (const uint peg ) { return alignment.isHappy(peg, A[peg]); }
     bool isHappyHole(const uint hole) { return alignment.isHappy(A_[hole], hole); }
 
+    int& refAligEdges() { return _threadState ? _threadState->aligEdges : aligEdges; }
+    double& refEdSum() { return _threadState ? _threadState->edSum : edSum; }
+    double& refErSum() { return _threadState ? _threadState->erSum : erSum; }
+    double& refEgmSum() { return _threadState ? _threadState->egmSum : egmSum; }
+    double& refEminSum() { return _threadState ? _threadState->eminSum : eminSum; }
+    int& refInducedEdges() { return _threadState ? _threadState->inducedEdges : inducedEdges; }
+    int& refSquaredAligEdges() { return _threadState ? _threadState->squaredAligEdges : squaredAligEdges; }
+    double& refLocalScoreSum() { return _threadState ? _threadState->localScoreSum : localScoreSum; }
+    double& refWecSum() { return _threadState ? _threadState->wecSum : wecSum; }
+    double& refJsSum() { return _threadState ? _threadState->jsSum : jsSum; }
+    double& refEwecSum() { return _threadState ? _threadState->ewecSum : ewecSum; }
+    int& refNcSum() { if (_threadState) return _threadState->ncSum; return ncSum; }
+    double& refCurrentScore() { return _threadState ? _threadState->currentScore : currentScore; }
+    map<string, double>& refLocalScoreSumMap() { return _threadState ? _threadState->localScoreSumMap : localScoreSumMap; }
+    vector<uint>& refAlignedByNode() { return _threadState ? _threadState->alignedByNode : alignedByNode; }
+    vector<uint>& refStationary() { return _threadState ? _threadState->stationary : stationary; }
+    vector<double>& refPBadBuffer() { return _threadState ? _threadState->pBadBuffer : pBadBuffer; }
+    int& refPBadBufferIndex() { return _threadState ? _threadState->pBadBufferIndex : pBadBufferIndex; }
+    int& refNumPBadsInBuffer() { return _threadState ? _threadState->numPBadsInBuffer : numPBadsInBuffer; }
+    double& refPBadBufferSum() { return _threadState ? _threadState->pBadBufferSum : pBadBufferSum; }
+
     //objective function
     MeasureCombination* MC;
     double eval(const Alignment& A) const;
@@ -170,7 +217,7 @@ private:
         double newJsSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges,
         double newExposedEdgesNumer, double newMS3Numer, double newEdgeDifferenceSum, double newEdgeRatioSum,
         double newEdgeMinSum, double newEgmSum,
-        double temperature, bool& outWasBadMove, double& outEnergyInc);
+        double temperature, bool& outWasBadMove, double& outEnergyInc, const double* fitnessForAcceptReject = nullptr);
 
     enum class ScoreAggregation{sum, product, inverse, max, min, maxFactor};
     ScoreAggregation scoreAggr;
@@ -298,6 +345,7 @@ private:
     double SANAIterationThreads(mt19937& rng, uniform_real_distribution<>& rnd, double temperature);
     double performChangeThreads(uint activeColorId, mt19937& rng, uniform_real_distribution<>& rnd, double temperature);
     double performSwapThreads(uint activeColorId, mt19937& rng, uniform_real_distribution<>& rnd, double temperature);
+    thread_local static ThreadLocalState* _threadState;
     
 
     Timer timer;

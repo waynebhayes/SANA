@@ -53,6 +53,7 @@ static uint MAX_STATIONARY = MAX_ST_INVALID, _numNonstationaryColors, *_pickArra
 bool SANA::saveAligAndExitOnInterruption = false;
 bool SANA::saveAligAndContOnInterruption = false;
 uint SANA::INVALID_ACTIVE_COLOR_ID;
+thread_local SANA::ThreadLocalState* SANA::_threadState = nullptr;
 SANA::SANA(const Graph* G1, const Graph* G2,
         double TInitial, double TDecay, double maxSeconds, long long int maxIterations, double tolerance,
 	bool addHillClimbing, MeasureCombination* MC, const string& scoreAggrStr, const Alignment& startA,
@@ -104,6 +105,8 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     _numNonstationaryColors = G1->numColors();
     char* envThreads = getenv("SANA_THREADS");
     numThreads = envThreads ? max(1, atoi(envThreads)) : 1;
+    char* envReconcile = getenv("SANA_RECONCILE_INTERVAL");
+    reconcileInterval = envReconcile ? max(1LL, (long long)atoi(envReconcile)) : 10000;
     holeInUse = unique_ptr<atomic<bool>[]>(new atomic<bool>[n2]);
     for (uint i = 0; i < n2; i++) holeInUse[i].store(false);
 
@@ -378,6 +381,57 @@ void SANA::initDataStructures() {
     timer.start();
 }
 
+void SANA::reconcileThreadState(ThreadLocalState& state, const Alignment& alig) {
+    state.aligEdges = 0; state.edSum = state.erSum = state.egmSum = state.eminSum = 0;
+    state.inducedEdges = state.squaredAligEdges = 0;
+    state.localScoreSum = state.wecSum = state.jsSum = state.ewecSum = state.ncSum = 0;
+    if (needAligEdges or needSec) state.aligEdges = alig.computeNumAlignedEdges(*G1, *G2);
+    if (needEd) state.edSum = ((EdgeDifference*) MC->getMeasure("ed"))->eval(alig);
+    if (needEr) state.erSum = ((EdgeRatio*) MC->getMeasure("er"))->eval(alig);
+    if (needEgm) state.egmSum = ((EdgeGeoMean*) MC->getMeasure("egm"))->eval(alig);
+    if (needEmin) state.eminSum = ((EdgeMin*) MC->getMeasure("emin"))->eval(alig);
+    if (needSquaredAligEdges) state.squaredAligEdges = ((SquaredEdgeScore*) MC->getMeasure("ses"))->numSquaredAlignedEdges(alig);
+#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
+    if (needExposedEdges) state.edgeExposureNumer = EdgeExposure::numExposedEdges(alig, *G1, *G2);
+    if (needMS3) {
+        state.ms3Numer = ((MultiS3*) MC->getMeasure("ms3"))->computeNumer(alig);
+        state.ms3Denom = ((MultiS3*) MC->getMeasure("ms3"))->computeDenom(alig);
+        state.ms3ShadowDegree = MultiS3::shadowDegree;
+        state.totalInducedWeight.resize(n2);
+        for (uint i = 0; i < n1; i++) {
+            state.totalInducedWeight[alig[i]] = 0;
+            for (uint j = 0; j < n1; j++) if (i != j)
+                state.totalInducedWeight[alig[i]] += G2->getEdgeWeight(alig[i], alig[j]);
+        }
+    }
+#endif
+    if (needInducedEdges) state.inducedEdges = G2->numEdgesInNodeInducedSubgraph(alig.asVector());
+    if (needLocal) {
+        state.localScoreSum = 0;
+        for (uint i = 0; i < n1; i++) state.localScoreSum += sims[i][alig[i]];
+        state.localScoreSumMap.clear();
+    }
+    if (needWec) {
+        Measure* wec = MC->getMeasure("wec");
+        state.wecSum = wec->eval(alig) * 2 * g1Edges;
+    }
+    if (needJs) {
+        state.jsSum = ((Measure*) MC->getMeasure("js"))->eval(alig);
+        state.alignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, alig);
+    }
+    if (needEwec) {
+        state.ewecSum = ((ExternalWeightedEdgeConservation*) MC->getMeasure("ewec"))->eval(alig);
+    }
+    if (needNC) {
+        state.ncSum = (int)((MC->getMeasure("nc")->eval(alig)) * trueAWithValidCountAppended.back());
+    }
+    state.currentScore = eval(alig);
+    state.stationary.assign(n1, 0);
+    state.pBadBuffer.assign(PBAD_CIRCULAR_BUFFER_SIZE, 0);
+    state.pBadBufferIndex = state.numPBadsInBuffer = 0;
+    state.pBadBufferSum = 0;
+}
+
 bool _reallyRunning;
 
 Alignment SANA::run() {
@@ -403,6 +457,20 @@ void SANA::runIterationsWorker(SANA* sana, atomic<long long int>* sharedIter,
     }
 }
 
+void SANA::runPhaseWorker(SANA* sana, int threadId, atomic<long long int>* sharedIter,
+        atomic<bool>* shouldStop, long long phaseEnd, long long maxIters, double TInitial, double TDecay) {
+    mt19937 rng(getRandomSeed());
+    uniform_real_distribution<> rnd(0.0, 1.0);
+    sana->_threadState = &sana->threadStates[threadId];
+    while (true) {
+        long long int iter = ++(*sharedIter);
+        if (iter > maxIters || iter > phaseEnd || _numNonstationaryColors == 0 || shouldStop->load()) break;
+        double temp = sana->temperatureFunction((double)iter / maxIters, TInitial, TDecay);
+        sana->SANAIterationThreads(rng, rnd, temp);
+    }
+    sana->_threadState = nullptr;
+}
+
 void SANA::runBatchWorker(SANA* sana, double* outPbad, double* outScore, double temperature) {
     mt19937 rng(getRandomSeed());
     uniform_real_distribution<> rnd(0.0, 1.0);
@@ -418,36 +486,76 @@ Alignment SANA::runUsingIterations() {
     atomic<long long int> sharedIter{0};
     atomic<bool> shouldStop{false};
     _reallyRunning=true;
-    vector<thread> workers;
-    for (int t = 0; t < numThreads; t++)
-        workers.emplace_back(runIterationsWorker, this, &sharedIter, &shouldStop, maxIters, TInitial, TDecay);
 
-    long long int nextProgressAt = iterationsPerStep;
-    while (!shouldStop.load()) {
-        long long int iter = sharedIter.load();
-        if (iter > maxIters || _numNonstationaryColors == 0) break;
-        if (saveAligAndExitOnInterruption) { shouldStop.store(true); break; }
-        if (saveAligAndContOnInterruption) printReportOnInterruption();
-        if (iter >= nextProgressAt) {
-            trackProgress(iter, (double)iter / maxIters);
-            nextProgressAt += iterationsPerStep;
-            if (not useIterations and timer.elapsed() > maxSecondsWithLeeway) {
-                shouldStop.store(true);
-                break;
-            }
-            // PreviousScore = currentScore;
+    if (numThreads > 1) {
+        threadStates.resize(numThreads);
+        Alignment alig(A);
+        for (int t = 0; t < numThreads; t++)
+            reconcileThreadState(threadStates[t], alig);
+
+        long long phaseStart = 0;
+        long long nextProgressAt = iterationsPerStep;
+        while (phaseStart < maxIters && _numNonstationaryColors > 0 && !shouldStop.load()) {
+            if (saveAligAndExitOnInterruption) { shouldStop.store(true); break; }
+            if (saveAligAndContOnInterruption) printReportOnInterruption();
+
+            long long phaseEnd = min(phaseStart + reconcileInterval, maxIters);
+            vector<thread> workers;
+            for (int t = 0; t < numThreads; t++)
+                workers.emplace_back(runPhaseWorker, this, t, &sharedIter, &shouldStop, phaseEnd, maxIters, TInitial, TDecay);
+
+            for (auto& w : workers) w.join();
+
+            Alignment alig(A);
+            for (int t = 0; t < numThreads; t++)
+                reconcileThreadState(threadStates[t], alig);
+            currentScore = eval(alig);
+
+            phaseStart = phaseEnd;
+            long long iter = sharedIter.load();
+
+            if (iter >= nextProgressAt) {
+                trackProgress(iter, (double)iter / maxIters);
+                nextProgressAt += iterationsPerStep;
+                if (not useIterations and timer.elapsed() > maxSecondsWithLeeway) {
+                    shouldStop.store(true);
+                }
 #if LIBWAYNE
-            {
-                lock_guard<mutex> lk(commitMutex);
                 StatReset(energyIncStats);
-            }
 #endif
+            }
         }
-        this_thread::sleep_for(chrono::milliseconds(1));
+    } else {
+        vector<thread> workers;
+        for (int t = 0; t < numThreads; t++)
+            workers.emplace_back(runIterationsWorker, this, &sharedIter, &shouldStop, maxIters, TInitial, TDecay);
+
+        long long nextProgressAt = iterationsPerStep;
+        while (!shouldStop.load()) {
+            long long int iter = sharedIter.load();
+            if (iter > maxIters || _numNonstationaryColors == 0) break;
+            if (saveAligAndExitOnInterruption) { shouldStop.store(true); break; }
+            if (saveAligAndContOnInterruption) printReportOnInterruption();
+            if (iter >= nextProgressAt) {
+                trackProgress(iter, (double)iter / maxIters);
+                nextProgressAt += iterationsPerStep;
+                if (not useIterations and timer.elapsed() > maxSecondsWithLeeway) {
+                    shouldStop.store(true);
+                    break;
+                }
+#if LIBWAYNE
+                commitMutex.lock();
+                StatReset(energyIncStats);
+                commitMutex.unlock();
+#endif
+            }
+            this_thread::sleep_for(chrono::milliseconds(1));
+        }
+
+        for (auto& w : workers) w.join();
     }
 
-    for (auto& w : workers) w.join();
-    long long int iter = sharedIter.load();
+    long long iter = sharedIter.load();
     trackProgress(iter, (double)iter / maxIters);
     cout<<"Performed "<<iter<<" total iterations\n";
     if (numThreads > 1) {
@@ -727,7 +835,10 @@ double SANA::acceptingProbability(double energyInc, double Temperature) {
 }
 
 double SANA::incrementalMeanPBad() {
-    return pBadBufferSum/(double) numPBadsInBuffer;
+    int n = _threadState ? refNumPBadsInBuffer() : numPBadsInBuffer;
+    if (n == 0) return 0;
+    double sum = _threadState ? refPBadBufferSum() : pBadBufferSum;
+    return sum / (double) n;
 }
 
 double SANA::slowMeanPBad() {
@@ -1125,44 +1236,46 @@ double SANA::performChangeThreads(uint actColId, mt19937& rng, uniform_real_dist
 
         map<string, double> newLocalScoreSumMap;
         if (needLocal) {
-            newLocalScoreSumMap = map<string, double>(localScoreSumMap);
+            newLocalScoreSumMap = map<string, double>(refLocalScoreSumMap());
             for (auto& item : newLocalScoreSumMap)
                 item.second += localScoreSumIncChangeOp(localSimMatrixMap[item.first], peg, oldHole, newHole);
         }
 
-        int newAligEdges           = doEc ? aligEdges + ecDelta : -1;
-        double newEdSum            = needEd ? edSum + edDelta : -1;
-        double newErSum            = needEr ? erSum + erDelta : -1;
-        double newEgmSum           = needEgm ? egmSum + egmDelta : -1;
-        double newEminSum          = needEmin ? eminSum + eminDelta : -1;
-        double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + sqAeDelta : -1;
+        int newAligEdges           = doEc ? refAligEdges() + ecDelta : -1;
+        double newEdSum            = needEd ? refEdSum() + edDelta : -1;
+        double newErSum            = needEr ? refErSum() + erDelta : -1;
+        double newEgmSum           = needEgm ? refEgmSum() + egmDelta : -1;
+        double newEminSum          = needEmin ? refEminSum() + eminDelta : -1;
+        double newSquaredAligEdges = needSquaredAligEdges ? refSquaredAligEdges() + sqAeDelta : -1;
         double newExposedEdgesNumer = needExposedEdges ? EdgeExposure::numer + expEdNumerDelta : -1;
         double newMS3Numer         = needMS3 ? MultiS3::numer + ms3NumerDelta : -1;
-        int newInducedEdges        = needInducedEdges ? inducedEdges + inducedEdDelta : -1;
-        double newLocalScoreSum    = needLocal ? localScoreSum + localSumDelta : -1;
-        double newWecSum           = needWec ? wecSum + wecSumDelta : -1;
-        double newJsSum            = needJs ? jsSum + jsSumDelta : -1;
-        double newEwecSum          = needEwec ? ewecSum + ewecSumDelta : -1;
-        double newNcSum            = needNC ? ncSum + ncSumDelta : -1;
+        int newInducedEdges        = needInducedEdges ? refInducedEdges() + inducedEdDelta : -1;
+        double newLocalScoreSum    = needLocal ? refLocalScoreSum() + localSumDelta : -1;
+        double newWecSum           = needWec ? refWecSum() + wecSumDelta : -1;
+        double newJsSum            = needJs ? refJsSum() + jsSumDelta : -1;
+        double newEwecSum          = needEwec ? refEwecSum() + ewecSumDelta : -1;
+        double newNcSum            = needNC ? refNcSum() + ncSumDelta : -1;
 
         double newCurrentScore = 0;
         bool localWasBadMove; double localEnergyInc;
+        const double* fitnessPtr = _threadState ? &refCurrentScore() : nullptr;
         double pBad = scoreComparisonThreads(newAligEdges, newInducedEdges, newLocalScoreSum,
             newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum,
             newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer,
             newEdSum, newErSum, newEminSum, newEgmSum,
-            temperature, localWasBadMove, localEnergyInc);
+            temperature, localWasBadMove, localEnergyInc, fitnessPtr);
         bool makeChange = rnd(rng) < pBad;
 
-        // Luca: High thread collision here
         needRetry = false;
         {
-            if (!commitMutex.try_lock()) {
-                ++commitMutexWaits;
-                commitMutex.lock();
+            if (!_threadState) {
+                if (!commitMutex.try_lock()) {
+                    ++commitMutexWaits;
+                    commitMutex.lock();
+                }
             }
             if (A[peg] != oldHole) {
-                ++commitRetries;
+                if (!_threadState) ++commitRetries;
                 needRetry = true;
             } else {
 #ifdef CORES
@@ -1173,7 +1286,7 @@ double SANA::performChangeThreads(uint actColId, mt19937& rng, uniform_real_dist
 #endif
 
                 if (makeChange) {
-                    stationary[peg] = 0;
+                    refStationary()[peg] = 0;
                     assert(A_[newHole] == G1->getNumNodes());
                     A_[oldHole] = G1->getNumNodes();
                     alignment[peg] = A[peg] = newHole;
@@ -1181,23 +1294,23 @@ double SANA::performChangeThreads(uint actColId, mt19937& rng, uniform_real_dist
                     actColToUnassignedG2Nodes[actColId][unassignedVecIndex] = oldHole;
                     assignedNodesG2[oldHole] = false;
                     assignedNodesG2[newHole] = true;
-                    aligEdges        = doEc ? aligEdges + ecDelta : -1;
-                    edSum            = needEd ? edSum + edDelta : -1;
-                    erSum            = needEr ? erSum + erDelta : -1;
-                    egmSum           = needEgm ? egmSum + egmDelta : -1;
-                    eminSum          = needEmin ? eminSum + eminDelta : -1;
-                    inducedEdges     = needInducedEdges ? inducedEdges + inducedEdDelta : -1;
-                    localScoreSum    = needLocal ? localScoreSum + localSumDelta : -1;
-                    wecSum           = needWec ? wecSum + wecSumDelta : -1;
-                    ewecSum          = needEwec ? ewecSum + ewecSumDelta : -1;
-                    ncSum            = needNC ? ncSum + ncSumDelta : -1;
-                    if (needLocal) localScoreSumMap = newLocalScoreSumMap;
-                    currentScore             = newCurrentScore;
+                    refAligEdges()        = doEc ? refAligEdges() + ecDelta : -1;
+                    refEdSum()            = needEd ? refEdSum() + edDelta : -1;
+                    refErSum()            = needEr ? refErSum() + erDelta : -1;
+                    refEgmSum()           = needEgm ? refEgmSum() + egmDelta : -1;
+                    refEminSum()          = needEmin ? refEminSum() + eminDelta : -1;
+                    refInducedEdges()     = needInducedEdges ? refInducedEdges() + inducedEdDelta : -1;
+                    refLocalScoreSum()    = needLocal ? refLocalScoreSum() + localSumDelta : -1;
+                    refWecSum()           = needWec ? refWecSum() + wecSumDelta : -1;
+                    refEwecSum()          = needEwec ? refEwecSum() + ewecSumDelta : -1;
+                    refNcSum()            = needNC ? refNcSum() + ncSumDelta : -1;
+                    if (needLocal) refLocalScoreSumMap() = newLocalScoreSumMap;
+                    refCurrentScore()     = newCurrentScore;
                     EdgeExposure::numer      = needExposedEdges ? EdgeExposure::numer + expEdNumerDelta : -1;
-                    squaredAligEdges         = needSquaredAligEdges ? squaredAligEdges + sqAeDelta : -1;
+                    refSquaredAligEdges()    = needSquaredAligEdges ? refSquaredAligEdges() + sqAeDelta : -1;
                     MultiS3::numer           = needMS3 ? MultiS3::numer + ms3NumerDelta : -1;
                 } else {
-                    if (stationary[peg] >= MAX_STATIONARY) stationary[peg] = 0; else ++stationary[peg];
+                    if (refStationary()[peg] >= MAX_STATIONARY) refStationary()[peg] = 0; else ++refStationary()[peg];
                     if (needMS3) {
                         MultiS3::shadowDegree[oldHole] = saveOldHoleDeg;
                         MultiS3::shadowDegree[newHole] = saveNewHoleDeg;
@@ -1207,16 +1320,16 @@ double SANA::performChangeThreads(uint actColId, mt19937& rng, uniform_real_dist
                 }
 
                 if (localWasBadMove) {
-                    if (numPBadsInBuffer == PBAD_CIRCULAR_BUFFER_SIZE) {
-                        pBadBufferIndex = (pBadBufferIndex == PBAD_CIRCULAR_BUFFER_SIZE ? 0 : pBadBufferIndex);
-                        pBadBufferSum -= pBadBuffer[pBadBufferIndex];
-                        pBadBuffer[pBadBufferIndex] = pBad;
+                    if (refNumPBadsInBuffer() == PBAD_CIRCULAR_BUFFER_SIZE) {
+                        refPBadBufferIndex() = (refPBadBufferIndex() == PBAD_CIRCULAR_BUFFER_SIZE ? 0 : refPBadBufferIndex());
+                        refPBadBufferSum() -= refPBadBuffer()[refPBadBufferIndex()];
+                        refPBadBuffer()[refPBadBufferIndex()] = pBad;
                     } else {
-                        pBadBuffer[pBadBufferIndex] = pBad;
-                        numPBadsInBuffer++;
+                        refPBadBuffer()[refPBadBufferIndex()] = pBad;
+                        refNumPBadsInBuffer()++;
                     }
-                    pBadBufferSum += pBad;
-                    pBadBufferIndex++;
+                    refPBadBufferSum() += pBad;
+                    refPBadBufferIndex()++;
                 }
 #if LIBWAYNE
                 StatAddSample(energyIncStats, localEnergyInc);
@@ -1225,7 +1338,7 @@ double SANA::performChangeThreads(uint actColId, mt19937& rng, uniform_real_dist
                 ++iterationsPerformed;
                 retPbad = pBad;
             }
-            commitMutex.unlock();
+            if (!_threadState) commitMutex.unlock();
         }
         ++iterationsPerformed;
 
@@ -1529,43 +1642,45 @@ double SANA::performSwapThreads(uint actColId, mt19937& rng, uniform_real_distri
 
         map<string, double> newLocalScoreSumMap;
         if (needLocal) {
-            newLocalScoreSumMap = map<string, double>(localScoreSumMap);
+            newLocalScoreSumMap = map<string, double>(refLocalScoreSumMap());
             for (auto& item : newLocalScoreSumMap)
                 item.second += localScoreSumIncSwapOp(localSimMatrixMap[item.first], peg1, peg2, hole1, hole2);
         }
 
-        int newAligEdges            = doEc ? aligEdges + ecDelta : -1;
-        double newEdSum             = needEd ? edSum + edDelta : -1;
-        double newErSum             = needEr ? erSum + erDelta : -1;
-        double newEgmSum            = needEgm ? egmSum + egmDelta : -1;
-        double newEminSum           = needEmin ? eminSum + eminDelta : -1;
-        double newSquaredAligEdges  = needSquaredAligEdges ? squaredAligEdges + sqAeDelta : -1;
+        int newAligEdges            = doEc ? refAligEdges() + ecDelta : -1;
+        double newEdSum             = needEd ? refEdSum() + edDelta : -1;
+        double newErSum             = needEr ? refErSum() + erDelta : -1;
+        double newEgmSum            = needEgm ? refEgmSum() + egmDelta : -1;
+        double newEminSum           = needEmin ? refEminSum() + eminDelta : -1;
+        double newSquaredAligEdges  = needSquaredAligEdges ? refSquaredAligEdges() + sqAeDelta : -1;
         double newExposedEdgesNumer = needExposedEdges ? EdgeExposure::numer + expEdNumerDelta : -1;
         double newMS3Numer          = needMS3 ? MultiS3::numer + ms3NumerDelta : -1;
-        double newLocalScoreSum     = needLocal ? localScoreSum + localSumDelta : -1;
-        double newWecSum            = needWec ? wecSum + wecSumDelta : -1;
-        double newJsSum             = needJs ? jsSum + jsSumDelta : -1;
-        double newEwecSum           = needEwec ? ewecSum + ewecSumDelta : -1;
-        double newNcSum             = needNC ? ncSum + ncSumDelta : -1;
+        double newLocalScoreSum     = needLocal ? refLocalScoreSum() + localSumDelta : -1;
+        double newWecSum            = needWec ? refWecSum() + wecSumDelta : -1;
+        double newJsSum             = needJs ? refJsSum() + jsSumDelta : -1;
+        double newEwecSum           = needEwec ? refEwecSum() + ewecSumDelta : -1;
+        double newNcSum             = needNC ? refNcSum() + ncSumDelta : -1;
 
         double newCurrentScore = 0;
         bool localWasBadMove; double localEnergyInc;
-        double pBad = scoreComparisonThreads(newAligEdges, inducedEdges, newLocalScoreSum,
+        const double* fitnessPtr = _threadState ? &refCurrentScore() : nullptr;
+        double pBad = scoreComparisonThreads(newAligEdges, refInducedEdges(), newLocalScoreSum,
             newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum,
             newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer,
             newEdSum, newErSum, newEminSum, newEgmSum,
-            temperature, localWasBadMove, localEnergyInc);
+            temperature, localWasBadMove, localEnergyInc, fitnessPtr);
         bool makeChange = rnd(rng) < pBad;
-        
-        // Luca: High thread collision here
+
         needRetry = false;
         {
-            if (!commitMutex.try_lock()) {
-                ++commitMutexWaits;
-                commitMutex.lock();
+            if (!_threadState) {
+                if (!commitMutex.try_lock()) {
+                    ++commitMutexWaits;
+                    commitMutex.lock();
+                }
             }
             if (A[peg1] != hole1 || A[peg2] != hole2) {
-                ++commitRetries;
+                if (!_threadState) ++commitRetries;
                 needRetry = true;
             } else {
 #ifdef CORES
@@ -1577,27 +1692,27 @@ double SANA::performSwapThreads(uint actColId, mt19937& rng, uniform_real_distri
 #endif
 
                 if (makeChange) {
-                    stationary[peg1] = stationary[peg2] = 0;
+                    refStationary()[peg1] = refStationary()[peg2] = 0;
                     assert(A_[hole1] == peg1 && A_[hole2] == peg2);
                     alignment[peg1] = A[peg1] = hole2; A_[hole2] = peg1;
                     alignment[peg2] = A[peg2] = hole1; A_[hole1] = peg2;
-                    aligEdges           = doEc ? aligEdges + ecDelta : -1;
-                    edSum               = needEd ? edSum + edDelta : -1;
-                    erSum               = needEr ? erSum + erDelta : -1;
-                    egmSum              = needEgm ? egmSum + egmDelta : -1;
-                    eminSum             = needEmin ? eminSum + eminDelta : -1;
-                    localScoreSum       = needLocal ? localScoreSum + localSumDelta : -1;
-                    wecSum              = needWec ? wecSum + wecSumDelta : -1;
-                    ewecSum             = needEwec ? ewecSum + ewecSumDelta : -1;
-                    ncSum               = needNC ? ncSum + ncSumDelta : -1;
-                    currentScore        = newCurrentScore;
-                    squaredAligEdges    = needSquaredAligEdges ? squaredAligEdges + sqAeDelta : -1;
+                    refAligEdges()        = doEc ? refAligEdges() + ecDelta : -1;
+                    refEdSum()            = needEd ? refEdSum() + edDelta : -1;
+                    refErSum()            = needEr ? refErSum() + erDelta : -1;
+                    refEgmSum()           = needEgm ? refEgmSum() + egmDelta : -1;
+                    refEminSum()          = needEmin ? refEminSum() + eminDelta : -1;
+                    refLocalScoreSum()    = needLocal ? refLocalScoreSum() + localSumDelta : -1;
+                    refWecSum()           = needWec ? refWecSum() + wecSumDelta : -1;
+                    refEwecSum()          = needEwec ? refEwecSum() + ewecSumDelta : -1;
+                    refNcSum()            = needNC ? refNcSum() + ncSumDelta : -1;
+                    refCurrentScore()     = newCurrentScore;
+                    refSquaredAligEdges() = needSquaredAligEdges ? refSquaredAligEdges() + sqAeDelta : -1;
                     EdgeExposure::numer = needExposedEdges ? EdgeExposure::numer + expEdNumerDelta : -1;
                     MultiS3::numer      = needMS3 ? MultiS3::numer + ms3NumerDelta : -1;
-                    if (needLocal) localScoreSumMap = newLocalScoreSumMap;
+                    if (needLocal) refLocalScoreSumMap() = newLocalScoreSumMap;
                 } else {
-                    if (stationary[peg1] >= MAX_STATIONARY) stationary[peg1] = 0; else ++stationary[peg1];
-                    if (stationary[peg2] >= MAX_STATIONARY) stationary[peg2] = 0; else ++stationary[peg2];
+                    if (refStationary()[peg1] >= MAX_STATIONARY) refStationary()[peg1] = 0; else ++refStationary()[peg1];
+                    if (refStationary()[peg2] >= MAX_STATIONARY) refStationary()[peg2] = 0; else ++refStationary()[peg2];
                     if (needMS3) {
                         MultiS3::shadowDegree[hole1] = oldHole1Deg;
                         MultiS3::shadowDegree[hole2] = oldHole2Deg;
@@ -1606,16 +1721,16 @@ double SANA::performSwapThreads(uint actColId, mt19937& rng, uniform_real_distri
                 }
 
                 if (localWasBadMove) {
-                    if (numPBadsInBuffer == PBAD_CIRCULAR_BUFFER_SIZE) {
-                        pBadBufferIndex = (pBadBufferIndex == PBAD_CIRCULAR_BUFFER_SIZE ? 0 : pBadBufferIndex);
-                        pBadBufferSum -= pBadBuffer[pBadBufferIndex];
-                        pBadBuffer[pBadBufferIndex] = pBad;
+                    if (refNumPBadsInBuffer() == PBAD_CIRCULAR_BUFFER_SIZE) {
+                        refPBadBufferIndex() = (refPBadBufferIndex() == PBAD_CIRCULAR_BUFFER_SIZE ? 0 : refPBadBufferIndex());
+                        refPBadBufferSum() -= refPBadBuffer()[refPBadBufferIndex()];
+                        refPBadBuffer()[refPBadBufferIndex()] = pBad;
                     } else {
-                        pBadBuffer[pBadBufferIndex] = pBad;
-                        numPBadsInBuffer++;
+                        refPBadBuffer()[refPBadBufferIndex()] = pBad;
+                        refNumPBadsInBuffer()++;
                     }
-                    pBadBufferSum += pBad;
-                    pBadBufferIndex++;
+                    refPBadBufferSum() += pBad;
+                    refPBadBufferIndex()++;
                 }
 #if LIBWAYNE
                 StatAddSample(energyIncStats, localEnergyInc);
@@ -1624,7 +1739,7 @@ double SANA::performSwapThreads(uint actColId, mt19937& rng, uniform_real_distri
                 ++iterationsPerformed;
                 retPbad = pBad;
             }
-            commitMutex.unlock();
+            if (!_threadState) commitMutex.unlock();
         }
         ++iterationsPerformed;
 
@@ -1638,7 +1753,7 @@ double SANA::scoreComparisonThreads(double newAligEdges, double newInducedEdges,
     double newWecSum, double newJsSum, double newNcSum, double& newCurrentScore,
     double newEwecSum, double newSquaredAligEdges, double newExposedEdgesNumer, double newMS3Numer,
     double newEdgeDifferenceSum, double newEdgeRatioSum, double newEdgeMinSum, double newEdgeGeoMeanSum,
-    double temperature, bool& outWasBadMove, double& outEnergyInc) {
+    double temperature, bool& outWasBadMove, double& outEnergyInc, const double* fitnessForAcceptReject) {
     outWasBadMove = false;
     double pBad = 0;
     newCurrentScore = 0;
@@ -1671,7 +1786,7 @@ double SANA::scoreComparisonThreads(double newAligEdges, double newInducedEdges,
         if (MultiS3::denominator_type == MultiS3::ee_global) MultiS3::denom = newExposedEdgesNumer;
         newCurrentScore += ms3Weight ? ms3Weight * (double)newMS3Numer / (double)MultiS3::denom / (double)MultiS3::Normalization_factor : 0;
 #endif
-        outEnergyInc = (newCurrentScore - currentScore) * MC->getOptimizationDirection();
+        outEnergyInc = (newCurrentScore - (fitnessForAcceptReject ? *fitnessForAcceptReject : currentScore)) * MC->getOptimizationDirection();
         outWasBadMove = outEnergyInc < 0;
         break;
     }
@@ -1691,7 +1806,7 @@ double SANA::scoreComparisonThreads(double newAligEdges, double newInducedEdges,
             else
                 newCurrentScore *= f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
         }
-        outEnergyInc = (newCurrentScore - currentScore) * MC->getOptimizationDirection();
+        outEnergyInc = (newCurrentScore - (fitnessForAcceptReject ? *fitnessForAcceptReject : currentScore)) * MC->getOptimizationDirection();
         outWasBadMove = outEnergyInc < 0;
         break;
     }
@@ -1712,7 +1827,7 @@ double SANA::scoreComparisonThreads(double newAligEdges, double newInducedEdges,
             else
                 newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
         }
-        outEnergyInc = (newCurrentScore - currentScore) * MC->getOptimizationDirection();
+        outEnergyInc = (newCurrentScore - (fitnessForAcceptReject ? *fitnessForAcceptReject : currentScore)) * MC->getOptimizationDirection();
         outWasBadMove = outEnergyInc < 0;
         break;
     }
@@ -1733,7 +1848,7 @@ double SANA::scoreComparisonThreads(double newAligEdges, double newInducedEdges,
             else
                 newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
         }
-        outEnergyInc = (newCurrentScore - currentScore) * MC->getOptimizationDirection();
+        outEnergyInc = (newCurrentScore - (fitnessForAcceptReject ? *fitnessForAcceptReject : currentScore)) * MC->getOptimizationDirection();
         outWasBadMove = outEnergyInc < 0;
         break;
     }
@@ -1752,23 +1867,23 @@ double SANA::scoreComparisonThreads(double newAligEdges, double newInducedEdges,
             else
                 newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
         }
-        outEnergyInc = (newCurrentScore - currentScore) * MC->getOptimizationDirection();
+        outEnergyInc = (newCurrentScore - (fitnessForAcceptReject ? *fitnessForAcceptReject : currentScore)) * MC->getOptimizationDirection();
         outWasBadMove = outEnergyInc < 0;
         break;
     }
     case ScoreAggregation::maxFactor: {
         assert(icsWeight == 0.0);
         if (f_betaWeight && beta_value == inf) throw runtime_error("SANA::scoreComparison: beta inconsistency");
-        double maxScore = max(ncWeight * (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), max(max(ecWeight * (newAligEdges / g1Edges - aligEdges / g1Edges), max(
-            s3Weight * ((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
-            secWeight * 0.5 * (newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
-            max(localWeight * ((newLocalScoreSum / n1) - (localScoreSum)),
-            max(wecWeight * (newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight * (newJsSum - jsSum)))));
-        double minScore = min(ncWeight * (newNcSum / trueAWithValidCountAppended.back() - ncSum / trueAWithValidCountAppended.back()), min(min(ecWeight * (newAligEdges / g1Edges - aligEdges / g1Edges), min(
-            s3Weight * ((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (aligEdges / (g1Edges + inducedEdges - aligEdges)))),
-            secWeight * 0.5 * (newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
-            min(localWeight * ((newLocalScoreSum / n1) - (localScoreSum)),
-            min(wecWeight * (newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight * (newJsSum - jsSum)))));
+        double maxScore = max(ncWeight * (newNcSum / trueAWithValidCountAppended.back() - refNcSum() / trueAWithValidCountAppended.back()), max(max(ecWeight * (newAligEdges / g1Edges - refAligEdges() / g1Edges), max(
+            s3Weight * ((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (refAligEdges() / (g1Edges + refInducedEdges() - refAligEdges())))),
+            secWeight * 0.5 * (newAligEdges / g1Edges - refAligEdges() / g1Edges + newAligEdges / g2Edges - refAligEdges() / g2Edges))),
+            max(localWeight * ((newLocalScoreSum / n1) - (refLocalScoreSum())),
+            max(wecWeight * (newWecSum / (2 * g1Edges) - refWecSum() / (2 * g1Edges)), jsWeight * (newJsSum - refJsSum())))));
+        double minScore = min(ncWeight * (newNcSum / trueAWithValidCountAppended.back() - refNcSum() / trueAWithValidCountAppended.back()), min(min(ecWeight * (newAligEdges / g1Edges - refAligEdges() / g1Edges), min(
+            s3Weight * ((newAligEdges / (g1Edges + newInducedEdges - newAligEdges) - (refAligEdges() / (g1Edges + refInducedEdges() - refAligEdges())))),
+            secWeight * 0.5 * (newAligEdges / g1Edges - refAligEdges() / g1Edges + newAligEdges / g2Edges - refAligEdges() / g2Edges))),
+            min(localWeight * ((newLocalScoreSum / n1) - (refLocalScoreSum())),
+            min(wecWeight * (newWecSum / (2 * g1Edges) - refWecSum() / (2 * g1Edges)), jsWeight * (newJsSum - refJsSum())))));
         newCurrentScore += ecWeight ? ecWeight * (newAligEdges / g1Edges) : 0;
         newCurrentScore += secWeight ? secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges) * 0.5 : 0;
         newCurrentScore += s3Weight ? s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)) : 0;
@@ -1783,7 +1898,7 @@ double SANA::scoreComparisonThreads(double newAligEdges, double newInducedEdges,
             else
                 newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
         }
-        outEnergyInc = newCurrentScore - currentScore;
+        outEnergyInc = newCurrentScore - (fitnessForAcceptReject ? *fitnessForAcceptReject : currentScore);
         outWasBadMove = maxScore < -1 * minScore;
         break;
     }
