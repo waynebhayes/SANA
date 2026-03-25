@@ -21,6 +21,7 @@ REG_DIR=regression-tests/EdgeRatio
 nets="150 WMean_con WMean_ocd"
 TRIES=10 # sometimes these fail at random; try a few times just in case
 PARA_STATUS=0
+unset SANA_TOLERANCE # it's set to 0 for most regression tests but we need a tolerance in this one
 
 while [ $TRIES -gt 0 ]; do
     (( TRIES-- ))

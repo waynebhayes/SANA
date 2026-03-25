@@ -32,8 +32,7 @@ double EdgeMin::computeDenom() {
 
 double EdgeMin::getEdgeScore(double w1, double w2) {
     // EdgeMin requires unsigned integer edge weights
-    assert(w1 == (unsigned long int)w1 && "EdgeMin requires unsigned integer edge weights (compile with EDGE_T=unsigned)");
-    assert(w2 == (unsigned long int)w2 && "EdgeMin requires unsigned integer edge weights (compile with EDGE_T=unsigned)");
+    if(w1 < 0 || w2 < 0) return -1;
     return std::min(w1, w2) / denominator;
 }
 

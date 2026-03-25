@@ -13,6 +13,8 @@
 #include "../measures/localMeasures/LocalMeasure.hpp"
 #include "../measures/Measure.hpp"
 #include "../measures/MeasureCombination.hpp"
+#include "../measures/BooleanMeasure.hpp"
+#include "../measures/WeightedMeasure.hpp"
 #include "../utils/randomSeed.hpp"
 #include "../measures/ExternalWeightedEdgeConservation.hpp"
 #include "../measures/CoreScore.hpp"
@@ -132,7 +134,7 @@ private:
     //if startA is empty, a random alignment is used
     void initDataStructures();
     vector<uint> A, A_; // A_ is the inverse alignment of A
-    vector<bool> assignedNodesG2;
+    vector<uint8_t> assignedNodesG2;
 
     bool isHappyPeg (const uint peg ) { return alignment.isHappy(peg, A[peg]); }
     bool isHappyHole(const uint hole) { return alignment.isHappy(A_[hole], hole); }
@@ -229,6 +231,14 @@ private:
     double EWECIncChangeOp(uint peg, uint oldHole, uint newHole);
     double EWECIncSwapOp(uint peg1, uint Peg2, uint node1, uint node2);
     double EWECSimCombo(uint peg, uint node);
+
+    // Cached measure pointers -- eliminates per-iteration string-keyed
+    // map lookups in the hot loop (MC->getMeasure("ec") etc.)
+    BooleanMeasure*  ecMeasurePtr;
+    WeightedMeasure* edMeasurePtr;
+    WeightedMeasure* erMeasurePtr;
+    WeightedMeasure* egmMeasurePtr;
+    WeightedMeasure* eminMeasurePtr;
 
     //to evaluate local measures incrementally
     bool needLocal;
