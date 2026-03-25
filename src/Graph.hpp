@@ -37,6 +37,17 @@ using namespace std;
     #endif
 #endif
 
+// Lightweight span over contiguous uint array (C++11 compatible).
+// Used by the CSR adjacency-list representation for cache-friendly iteration.
+struct UintSpan {
+    const uint* _begin;
+    const uint* _end;
+    const uint* begin() const { return _begin; }
+    const uint* end()   const { return _end; }
+    uint size()         const { return (uint)(_end - _begin); }
+    const uint& operator[](uint i) const { return _begin[i]; }
+};
+
 class Graph {
 public:
     /* All-purpose constructor
@@ -107,6 +118,17 @@ public:
     //recommendation: use the getters above instead, when possible
     const vector<uint>* getAdjList(uint node) const { return &adjLists.at(node); }
     const vector<uint>* getInjList(uint node) const { return &injLists.at(node); }
+
+    // Cache-friendly neighbor access via CSR (Compressed Sparse Row).
+    // Returns a lightweight span over contiguous memory — no pointer chase.
+    UintSpan adjSpan(uint node) const {
+        return UintSpan{csrAdjData_.data() + csrAdjOff_[node],
+                        csrAdjData_.data() + csrAdjOff_[node + 1]};
+    }
+    UintSpan injSpan(uint node) const {
+        return UintSpan{csrInjData_.data() + csrInjOff_[node],
+                        csrInjData_.data() + csrInjOff_[node + 1]};
+    }
     const vector<vector<uint>>* getAdjLists() const { return &adjLists; }
     const vector<vector<uint>>* getInjLists() const { return &injLists; }
     const vector<array<uint, 2>>* getEdgeList() const { return &edgeList; }
@@ -178,6 +200,13 @@ private:
     vector<vector<uint>> injLists; // incoming edges, used only if the graph is directed.
     Matrix<EDGE_T> adjMatrix;
     unordered_map<string, uint> nodeNameToIndexMap; //reverse of nodeNames
+
+    // CSR (Compressed Sparse Row) representation — all neighbor data in one
+    // contiguous allocation for cache-friendly iteration in the hot loop.
+    vector<uint> csrAdjData_;
+    vector<uint> csrAdjOff_;
+    vector<uint> csrInjData_;
+    vector<uint> csrInjOff_;
 
     //each edge has a weight in the range of type EDGE_T, but their sum may be beyond that range
     //double can contain the sum of EDGE_T values for any EDGE_T.

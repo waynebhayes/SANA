@@ -11,8 +11,11 @@ public:
     virtual double getIncChangeOp(uint peg, uint oldHole, uint newHole, const Alignment& A);
     virtual double getIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2, const Alignment& A);
 
-protected:
+    // Made public so SANA can call getEdgeScore directly in fused neighbor loops,
+    // avoiding redundant neighbor-list iterations when multiple measures are active.
     virtual double getEdgeScore(double w1, double w2) = 0;
+
+protected:
     double computeIncChangeOp(uint peg, uint oldHole, uint newHole, const Alignment& A);
     double computeIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2, const Alignment& A);
 };
