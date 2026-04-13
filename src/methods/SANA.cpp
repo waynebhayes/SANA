@@ -17,6 +17,7 @@
 #include <limits>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <cassert>
 #include <signal.h>
 #include <stdio.h>
@@ -290,6 +291,23 @@ void SANA::initDataStructures() {
 	else MAX_STATIONARY = 0;
 	assert(MAX_STATIONARY != MAX_ST_INVALID);
     }
+
+#ifdef SANA_THREADS
+    static bool printedThreads = false;
+    if (!printedThreads) {
+        printedThreads = true;
+
+        numThreads = 1;
+        char* threadsStr = getenv("THREADS");
+        if (threadsStr) {
+            int parsed = (uint)atoi(threadsStr);
+            if (parsed > 0) numThreads = (uint)parsed;
+        }
+
+        printf("Using %u threads\n", numThreads);
+    }
+#endif
+
     iterationsPerformed = 0;
     numPBadsInBuffer = pBadBufferSum = pBadBufferIndex = 0;
     Alignment alig;
@@ -368,6 +386,11 @@ void SANA::initDataStructures() {
     A = alig.asVector();
     A_ = alig.reverse(G2->getNumNodes()).asVector();
     timer.start();
+
+#ifdef SANA_THREADS
+    if (holeInUse.size() != n2) holeInUse = vector<atomic<bool>>(n2);
+    for (uint hole = 0; hole < n2; hole++) holeInUse[hole].store(false, memory_order_relaxed);
+#endif
 }
 
 bool _reallyRunning;
@@ -390,7 +413,16 @@ Alignment SANA::runUsingIterations() {
 
     long long int iter;
     _reallyRunning=true;
-    // Luca: create threads here, each performing maxIters/numThreads (maybe?)
+
+#ifdef SANA_THREADS
+    if (numThreads > 1) {
+        if (alignment.allowedPartnersEnabled()) {
+            throw runtime_error("THREADS>1 is not currently supported when allowedPartnersEnabled()");
+        }
+        return runUsingIterationsThreads();
+    }
+#endif
+
     for (iter = 1; iter <= maxIters && _numNonstationaryColors>0; iter++) {
         Temperature = temperatureFunction(float(iter)/maxIters, TInitial, TDecay);
         SANAIteration();
@@ -417,6 +449,515 @@ Alignment SANA::runUsingIterations() {
 
     return A;
 }
+
+#ifdef SANA_THREADS
+void SANA::printThreadedContentionReport() const {
+    if (numThreads <= 1) return;
+    printf("holeMutexCollisions=%llu holeMutexAccesses=%llu\n",
+           (unsigned long long)holeMutexCollisions.load(),
+           (unsigned long long)holeMutexAccesses.load());
+    printf("commitMutexCollisions=%llu commitMutexAccesses=%llu\n",
+           (unsigned long long)commitMutexCollisions.load(),
+           (unsigned long long)commitMutexAccesses.load());
+}
+
+uint SANA::randActiveColorIdWeightedByNumNbrsThreads(mt19937& rng) {
+    if (numActiveColors() == 1) return 0;
+    uniform_real_distribution<> rnd(0.0, 1.0);
+    double p = rnd(rng);
+    if (numActiveColors() == 2)
+        return (p < actColToAccumProbCutpoint[0] ? 0 : 1);
+    auto iter = lower_bound(actColToAccumProbCutpoint.begin(), actColToAccumProbCutpoint.end(), p);
+    assert(iter != actColToAccumProbCutpoint.end());
+    return (uint)(iter - actColToAccumProbCutpoint.begin());
+}
+
+uint SANA::randomG1NodeWithActiveColorThreads(uint actColId, bool dynamic, mt19937& rng) const {
+    uint g1ColId = actColToG1ColId[actColId];
+    const auto& group = G1->nodeGroupsByColor[g1ColId];
+    uniform_int_distribution<uint> dist(0, (uint)group.size() - 1);
+    return group[dist(rng)];
+}
+
+void SANA::SANAIterationThreads(double temperature, mt19937& rng, uniform_real_distribution<>& rnd) {
+    uint actColId = randActiveColorIdWeightedByNumNbrsThreads(rng);
+    double p = rnd(rng);
+    if (p < actColToChangeProb[actColId]) performChangeThreads(actColId, rng, rnd, temperature);
+    else performSwapThreads(actColId, rng, rnd, temperature);
+}
+
+double SANA::performChangeThreads(uint actColId, mt19937& rng, uniform_real_distribution<>& rnd, double temperature) {
+    if (alignment.allowedPartnersEnabled()) {
+        assert(numThreads == 1);
+        assert(G1->numColors() == 1 && G2->numColors() == 1);
+    }
+
+    const uint EMPTY_PEG = G1->getNumNodes();
+    uint peg, oldHole, newHole, unassignedVecIndex;
+    double retPbad = 0.0;
+
+    bool needRetry = true;
+    while (needRetry) {
+        uint numUnassig = actColToUnassignedG2Nodes[actColId].size();
+        if (numUnassig == 0) return 0.0;
+
+        peg = randomG1NodeWithActiveColorThreads(actColId, true, rng);
+        oldHole = A[peg];
+        unassignedVecIndex = uniform_int_distribution<uint>(0, numUnassig - 1)(rng);
+        newHole = actColToUnassignedG2Nodes[actColId][unassignedVecIndex];
+        if (oldHole == newHole) continue;
+
+        bool expected = false;
+        if (!holeInUse[oldHole].compare_exchange_strong(expected, true, memory_order_relaxed)) {
+            ++holeMutexCollisions;
+            continue;
+        }
+        expected = false;
+        if (!holeInUse[newHole].compare_exchange_strong(expected, true, memory_order_relaxed)) {
+            ++holeMutexCollisions;
+            holeInUse[oldHole].store(false, memory_order_relaxed);
+            continue;
+        }
+        ++holeMutexAccesses;
+
+        Temperature = temperature;
+        unsigned saveOldHoleDeg = 0, saveNewHoleDeg = 0, oldMs3Denom = 0, oldMs3Numer = 0;
+        if (needMS3) {
+            saveOldHoleDeg = MultiS3::shadowDegree[oldHole];
+            saveNewHoleDeg = MultiS3::shadowDegree[newHole];
+            oldMs3Denom = MultiS3::denom;
+            oldMs3Numer = MultiS3::numer;
+        }
+
+        int ecDelta = 0;
+        double edDelta = 0, erDelta = 0, egmDelta = 0, eminDelta = 0;
+        bool doEc = needAligEdges || needSec;
+        bool doWeighted = needEd || needEr || needEgm || needEmin;
+        if (doEc && !doWeighted) {
+            if (G1->hasSelfLoop(peg)) {
+                if (G2->hasSelfLoop(oldHole)) ecDelta -= G2->getEdgeWeight(oldHole, oldHole);
+                if (G2->hasSelfLoop(newHole)) ecDelta += G2->getEdgeWeight(newHole, newHole);
+            }
+            for (uint nbr : G1->adjSpan(peg)) {
+                if (nbr == peg) continue;
+                uint aHole = A[nbr];
+                ecDelta += G2->adjMatrix.get(newHole, aHole) - G2->adjMatrix.get(oldHole, aHole);
+            }
+            if (G1->directed) {
+                for (uint nbr : G1->injSpan(peg)) {
+                    if (nbr == peg) continue;
+                    uint aHole = A[nbr];
+                    ecDelta += G2->getEdgeWeight(aHole, newHole) - G2->getEdgeWeight(aHole, oldHole);
+                }
+            }
+        } else if (doEc || doWeighted) {
+            if (G1->hasSelfLoop(peg)) {
+                if (doEc) {
+                    if (G2->hasSelfLoop(oldHole)) ecDelta -= G2->getEdgeWeight(oldHole, oldHole);
+                    if (G2->hasSelfLoop(newHole)) ecDelta += G2->getEdgeWeight(newHole, newHole);
+                }
+                if (doWeighted) {
+                    double g1sw = G1->getEdgeWeight(peg, peg);
+                    if (needEd) {
+                        if (G2->hasSelfLoop(oldHole)) edDelta -= edMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(oldHole, oldHole));
+                        if (G2->hasSelfLoop(newHole)) edDelta += edMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(newHole, newHole));
+                    }
+                    if (needEr) {
+                        if (G2->hasSelfLoop(oldHole)) erDelta -= erMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(oldHole, oldHole));
+                        if (G2->hasSelfLoop(newHole)) erDelta += erMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(newHole, newHole));
+                    }
+                    if (needEgm) {
+                        if (G2->hasSelfLoop(oldHole)) egmDelta -= egmMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(oldHole, oldHole));
+                        if (G2->hasSelfLoop(newHole)) egmDelta += egmMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(newHole, newHole));
+                    }
+                    if (needEmin) {
+                        if (G2->hasSelfLoop(oldHole)) eminDelta -= eminMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(oldHole, oldHole));
+                        if (G2->hasSelfLoop(newHole)) eminDelta += eminMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(newHole, newHole));
+                    }
+                }
+            }
+            for (uint nbr : G1->adjSpan(peg)) {
+                if (nbr == peg) continue;
+                uint aHole = A[nbr];
+                EDGE_T oldW2 = G2->adjMatrix.get(oldHole, aHole);
+                EDGE_T newW2 = G2->adjMatrix.get(newHole, aHole);
+                if (doEc) { ecDelta -= oldW2; ecDelta += newW2; }
+                if (doWeighted) {
+                    double g1w = G1->getEdgeWeight(peg, nbr);
+                    if (needEd) {
+                        if (oldW2) edDelta -= edMeasurePtr->getEdgeScore(g1w, oldW2);
+                        if (newW2) edDelta += edMeasurePtr->getEdgeScore(g1w, newW2);
+                    }
+                    if (needEr) {
+                        if (oldW2) erDelta -= erMeasurePtr->getEdgeScore(g1w, oldW2);
+                        if (newW2) erDelta += erMeasurePtr->getEdgeScore(g1w, newW2);
+                    }
+                    if (needEgm) {
+                        if (oldW2) egmDelta -= egmMeasurePtr->getEdgeScore(g1w, oldW2);
+                        if (newW2) egmDelta += egmMeasurePtr->getEdgeScore(g1w, newW2);
+                    }
+                    if (needEmin) {
+                        if (oldW2) eminDelta -= eminMeasurePtr->getEdgeScore(g1w, oldW2);
+                        if (newW2) eminDelta += eminMeasurePtr->getEdgeScore(g1w, newW2);
+                    }
+                }
+            }
+            if (G1->directed) {
+                for (uint nbr : G1->injSpan(peg)) {
+                    if (nbr == peg) continue;
+                    uint aHole = A[nbr];
+                    if (doEc) {
+                        ecDelta -= G2->getEdgeWeight(aHole, oldHole);
+                        ecDelta += G2->getEdgeWeight(aHole, newHole);
+                    }
+                    if (doWeighted) {
+                        double g1w = G1->getEdgeWeight(nbr, peg);
+                        EDGE_T oldW2 = G2->adjMatrix.get(aHole, oldHole);
+                        EDGE_T newW2 = G2->adjMatrix.get(aHole, newHole);
+                        if (needEd) {
+                            if (oldW2) edDelta -= edMeasurePtr->getEdgeScore(g1w, oldW2);
+                            if (newW2) edDelta += edMeasurePtr->getEdgeScore(g1w, newW2);
+                        }
+                        if (needEr) {
+                            if (oldW2) erDelta -= erMeasurePtr->getEdgeScore(g1w, oldW2);
+                            if (newW2) erDelta += erMeasurePtr->getEdgeScore(g1w, newW2);
+                        }
+                        if (needEgm) {
+                            if (oldW2) egmDelta -= egmMeasurePtr->getEdgeScore(g1w, oldW2);
+                            if (newW2) egmDelta += egmMeasurePtr->getEdgeScore(g1w, newW2);
+                        }
+                        if (needEmin) {
+                            if (oldW2) eminDelta -= eminMeasurePtr->getEdgeScore(g1w, oldW2);
+                            if (newW2) eminDelta += eminMeasurePtr->getEdgeScore(g1w, newW2);
+                        }
+                    }
+                }
+            }
+        }
+
+        int sqAeDelta       = needSquaredAligEdges  ? squaredAligEdgesIncChangeOp(peg, oldHole, newHole) : 0;
+        int expEdNumerDelta = needExposedEdges      ? exposedEdgesIncChangeOp(peg, oldHole, newHole) : 0;
+        int ms3NumerDelta   = needMS3               ? MS3IncChangeOp(peg, oldHole, newHole) : 0;
+        int inducedEdDelta  = needInducedEdges      ? inducedEdgesIncChangeOp(peg, oldHole, newHole) : 0;
+        double localSumDelta = needLocal            ? localScoreSumIncChangeOp(sims, peg, oldHole, newHole) : 0;
+        double wecSumDelta   = needWec              ? WECIncChangeOp(peg, oldHole, newHole) : 0;
+        double jsSumDelta    = needJs               ? JSIncChangeOp(peg, oldHole, newHole) : 0;
+        double ewecSumDelta  = needEwec             ? EWECIncChangeOp(peg, oldHole, newHole) : 0;
+        double ncSumDelta    = needNC               ? ncIncChangeOp(peg, oldHole, newHole) : 0;
+
+        map<string, double> newLocalScoreSumMap;
+        if (needLocal) {
+            newLocalScoreSumMap = map<string, double>(localScoreSumMap);
+            for (auto& item : newLocalScoreSumMap)
+                item.second += localScoreSumIncChangeOp(localSimMatrixMap[item.first], peg, oldHole, newHole);
+        }
+
+        int newAligEdges           = doEc ? aligEdges + ecDelta : -1;
+        double newEdSum            = needEd ? edSum + edDelta : -1;
+        double newErSum            = needEr ? erSum + erDelta : -1;
+        double newEgmSum           = needEgm ? egmSum + egmDelta : -1;
+        double newEminSum          = needEmin ? eminSum + eminDelta : -1;
+        double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + sqAeDelta : -1;
+        double newExposedEdgesNumer = needExposedEdges ? EdgeExposure::numer + expEdNumerDelta : -1;
+        double newMS3Numer         = needMS3 ? MultiS3::numer + ms3NumerDelta : -1;
+        int newInducedEdges        = needInducedEdges ? inducedEdges + inducedEdDelta : -1;
+        double newLocalScoreSum    = needLocal ? localScoreSum + localSumDelta : -1;
+        double newWecSum           = needWec ? wecSum + wecSumDelta : -1;
+        double newJsSum            = needJs ? jsSum + jsSumDelta : -1;
+        double newEwecSum          = needEwec ? ewecSum + ewecSumDelta : -1;
+        double newNcSum            = needNC ? ncSum + ncSumDelta : -1;
+
+        double newCurrentScore = 0;
+        double pBad = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum,
+            newWecSum, newJsSum, newNcSum, newCurrentScore, newEwecSum,
+            newSquaredAligEdges, newExposedEdgesNumer, newMS3Numer,
+            newEdSum, newErSum, newEminSum, newEgmSum);
+
+        bool makeChange = rnd(rng) < pBad;
+
+        needRetry = false;
+        if (!commitMutex.try_lock()) {
+            ++commitMutexCollisions;
+#ifdef COMMIT_MUTEX_SPIN
+                unsigned spins = 0;
+                while (!commitMutex.try_lock()) {
+                    ++commitMutexCollisions;
+                    ++spins;
+                }
+#else
+                while (!commitMutex.try_lock()) {
+                    ++commitMutexCollisions;
+                    std::this_thread::sleep_for(std::chrono::microseconds(50));
+                }
+#endif
+        }
+        ++commitMutexAccesses;
+
+        if (A[peg] != oldHole) {
+            needRetry = true;
+        } else {
+#ifdef CORES
+            uint betterHole = wasBadMove ? oldHole : newHole;
+            double meanPBad = incrementalMeanPBad();
+            if (meanPBad <= 0 || myNan(meanPBad)) meanPBad = LOW_PBAD_LIMIT_FOR_CORES;
+            coreScoreData.incChangeOp(peg, betterHole, pBad, meanPBad);
+#endif
+
+            if (makeChange) {
+                stationary[peg] = 0;
+                if (A_[newHole] == EMPTY_PEG) {
+                    A_[oldHole] = EMPTY_PEG;
+                    alignment[peg] = A[peg] = newHole;
+                    A_[newHole] = peg;
+                    actColToUnassignedG2Nodes[actColId][unassignedVecIndex] = oldHole;
+                    assignedNodesG2[oldHole] = false;
+                    assignedNodesG2[newHole] = true;
+                    aligEdges        = newAligEdges;
+                    edSum            = newEdSum;
+                    erSum            = newErSum;
+                    egmSum           = newEgmSum;
+                    eminSum          = newEminSum;
+                    inducedEdges     = newInducedEdges;
+                    localScoreSum    = newLocalScoreSum;
+                    wecSum           = newWecSum;
+                    jsSum            = newJsSum;
+                    ewecSum          = newEwecSum;
+                    ncSum            = newNcSum;
+                    if (needLocal) localScoreSumMap = newLocalScoreSumMap;
+                    currentScore     = newCurrentScore;
+                    EdgeExposure::numer = newExposedEdgesNumer;
+                    squaredAligEdges    = newSquaredAligEdges;
+                    MultiS3::numer      = newMS3Numer;
+                } 
+                
+                else needRetry = true;
+            } else {
+                if (stationary[peg] >= MAX_STATIONARY) stationary[peg] = 0; else ++stationary[peg];
+                if (needMS3) {
+                    MultiS3::shadowDegree[oldHole] = saveOldHoleDeg;
+                    MultiS3::shadowDegree[newHole] = saveNewHoleDeg;
+                    MultiS3::denom = oldMs3Denom;
+                    MultiS3::numer = oldMs3Numer;
+                }
+            }
+
+            ++iterationsPerformed;
+            retPbad = pBad;
+        }
+
+        commitMutex.unlock();
+
+        holeInUse[oldHole].store(false, memory_order_relaxed);
+        holeInUse[newHole].store(false, memory_order_relaxed);
+    }
+
+    return retPbad;
+}
+
+double SANA::performSwapThreads(uint actColId, mt19937& rng, uniform_real_distribution<>& rnd, double temperature) {
+    uint peg1 = randomG1NodeWithActiveColorThreads(actColId, true, rng);
+    uint peg2 = peg1;
+    for (uint tries = 0; tries < 100 && peg2 == peg1; tries++)
+        peg2 = randomG1NodeWithActiveColorThreads(actColId, false, rng);
+    if (peg1 == peg2) return 0.0;
+
+    uint hole1 = A[peg1];
+    uint hole2 = A[peg2];
+    if (hole1 == hole2) return 0.0;
+
+    bool expected = false;
+    if (!holeInUse[hole1].compare_exchange_strong(expected, true, memory_order_relaxed)) {
+        ++holeMutexCollisions;
+        return 0.0;
+    }
+    expected = false;
+    if (!holeInUse[hole2].compare_exchange_strong(expected, true, memory_order_relaxed)) {
+        ++holeMutexCollisions;
+        holeInUse[hole1].store(false, memory_order_relaxed);
+        return 0.0;
+    }
+    ++holeMutexAccesses;
+
+    Temperature = temperature;
+    unsigned oldHole1Deg = 0, oldHole2Deg = 0, oldMs3Denom = 0;
+    if (needMS3) {
+        oldHole1Deg = MultiS3::shadowDegree[hole1];
+        oldHole2Deg = MultiS3::shadowDegree[hole2];
+        oldMs3Denom = MultiS3::denom;
+    }
+
+    int ecDelta = 0;
+    double edDelta = 0, erDelta = 0, egmDelta = 0, eminDelta = 0;
+    bool doEc = needAligEdges || needSec;
+    bool doWeighted = needEd || needEr || needEgm || needEmin;
+    if (doEc && !doWeighted) {
+        if (G1->hasSelfLoop(peg1)) {
+            if (G2->hasSelfLoop(hole1)) ecDelta -= G2->getEdgeWeight(hole1, hole1);
+            if (G2->hasSelfLoop(hole2)) ecDelta += G2->getEdgeWeight(hole2, hole2);
+        }
+        for (uint nbr : G1->adjSpan(peg1)) {
+            if (nbr == peg1) continue;
+            uint aHole = A[nbr];
+            ecDelta += G2->adjMatrix.get(hole2, aHole) - G2->adjMatrix.get(hole1, aHole);
+        }
+        if (G1->directed) {
+            for (uint nbr : G1->injSpan(peg1)) {
+                if (nbr == peg1) continue;
+                uint aHole = A[nbr];
+                ecDelta += G2->getEdgeWeight(aHole, hole2) - G2->getEdgeWeight(aHole, hole1);
+            }
+        }
+        if (G1->hasSelfLoop(peg2)) {
+            if (G2->hasSelfLoop(hole2)) ecDelta -= G2->getEdgeWeight(hole2, hole2);
+            if (G2->hasSelfLoop(hole1)) ecDelta += G2->getEdgeWeight(hole1, hole1);
+        }
+        for (uint nbr : G1->adjSpan(peg2)) {
+            if (nbr == peg2) continue;
+            uint aHole = A[nbr];
+            ecDelta += G2->adjMatrix.get(hole1, aHole) - G2->adjMatrix.get(hole2, aHole);
+        }
+        if (G1->directed) {
+            for (uint nbr : G1->injSpan(peg2)) {
+                if (nbr == peg2) continue;
+                uint aHole = A[nbr];
+                ecDelta += G2->getEdgeWeight(aHole, hole1) - G2->getEdgeWeight(aHole, hole2);
+            }
+        }
+#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
+        ecDelta += (-1 << 1) & (G1->getEdgeWeight(peg1, peg2) + G2->getEdgeWeight(hole1, hole2));
+#else
+        if (G1->hasEdge(peg1, peg2) && G2->hasEdge(hole1, hole2)) ecDelta += 2;
+        if (G1->directed && G1->hasEdge(peg2, peg1) && G2->hasEdge(hole2, hole1)) ecDelta += 2;
+#endif
+    }
+
+    int newAligEdges           = doEc ? aligEdges + ecDelta : -1;
+    double newEdSum            = needEd ? edSum + edDelta : -1;
+    double newErSum            = needEr ? erSum + erDelta : -1;
+    double newEgmSum           = needEgm ? egmSum + egmDelta : -1;
+    double newEminSum          = needEmin ? eminSum + eminDelta : -1;
+    double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newWecSum           = needWec ? wecSum + WECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newJsSum            = needJs ? jsSum + JSIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newEwecSum          = needEwec ? ewecSum + EWECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newNcSum            = needNC ? ncSum + ncIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, peg1, peg2, hole1, hole2) : -1;
+
+    map<string, double> newLocalScoreSumMap;
+    if (needLocal) {
+        newLocalScoreSumMap = map<string, double>(localScoreSumMap);
+        for (auto &item : newLocalScoreSumMap)
+            item.second += localScoreSumIncSwapOp(localSimMatrixMap[item.first], peg1, peg2, hole1, hole2);
+    }
+
+    double newCurrentScore = 0;
+    double pBad = scoreComparison(newAligEdges, inducedEdges, newLocalScoreSum, newWecSum,
+        newJsSum, newNcSum, newCurrentScore, newEwecSum, newSquaredAligEdges,
+        newExposedEdgesNumer, newMS3Numer, newEdSum, newErSum,
+        newEminSum, newEgmSum);
+
+    bool makeChange = rnd(rng) < pBad;
+
+    if (!commitMutex.try_lock()) {
+        ++commitMutexCollisions;
+#ifdef COMMIT_MUTEX_SPIN
+            unsigned spins = 0;
+            while (!commitMutex.try_lock()) {
+                ++commitMutexCollisions;
+                ++spins;
+            }
+#else
+            while (!commitMutex.try_lock()) {
+                ++commitMutexCollisions;
+                std::this_thread::sleep_for(std::chrono::microseconds(50));
+            }
+#endif
+    }
+    ++commitMutexAccesses;
+    if (A[peg1] != hole1 || A[peg2] != hole2) {
+        commitMutex.unlock();
+        holeInUse[hole1].store(false, memory_order_relaxed);
+        holeInUse[hole2].store(false, memory_order_relaxed);
+        return 0.0;
+    }
+
+    if (makeChange) {
+        stationary[peg1]=stationary[peg2]=0;
+        alignment[peg1] = A[peg1] = hole2; A_[hole2] = peg1;
+        alignment[peg2] = A[peg2] = hole1; A_[hole1] = peg2;
+        aligEdges           = newAligEdges;
+        edSum               = newEdSum;
+        erSum               = newErSum;
+        egmSum              = newEgmSum;
+        eminSum             = newEminSum;
+        localScoreSum       = newLocalScoreSum;
+        wecSum              = newWecSum;
+        jsSum               = newJsSum;
+        ewecSum             = newEwecSum;
+        ncSum               = newNcSum;
+        currentScore        = newCurrentScore;
+        squaredAligEdges    = newSquaredAligEdges;
+        EdgeExposure::numer = newExposedEdgesNumer;
+        MultiS3::numer      = newMS3Numer;
+        if (needLocal) localScoreSumMap = newLocalScoreSumMap;
+    } else {
+        if(stationary[peg1]>=MAX_STATIONARY) stationary[peg1]=0; else ++stationary[peg1];
+        if(stationary[peg2]>=MAX_STATIONARY) stationary[peg2]=0; else ++stationary[peg2];
+        if (needMS3) {
+            MultiS3::shadowDegree[hole1] = oldHole1Deg;
+            MultiS3::shadowDegree[hole2] = oldHole2Deg;
+            MultiS3::denom = oldMs3Denom;
+        }
+    }
+    ++iterationsPerformed;
+    commitMutex.unlock();
+
+    holeInUse[hole1].store(false, memory_order_relaxed);
+    holeInUse[hole2].store(false, memory_order_relaxed);
+    return pBad;
+}
+
+Alignment SANA::runUsingIterationsThreads() {
+    long long int maxIters = useIterations ? maxIterations : (long long int) (getIterPerSecond()*maxSeconds);
+
+    holeMutexCollisions = 0;
+    holeMutexAccesses = 0;
+    commitMutexCollisions = 0;
+    commitMutexAccesses = 0;
+
+    atomic<long long int> counter(0);
+    vector<thread> workers;
+    workers.reserve(numThreads);
+
+    for (uint t = 0; t < numThreads; t++) {
+        workers.emplace_back([&]() {
+            mt19937 rng(getRandomSeed() ^ (uint64_t)hash<std::thread::id>{}(std::this_thread::get_id()));
+            uniform_real_distribution<> rnd(0.0, 1.0);
+            while (_reallyRunning && !saveAligAndExitOnInterruption && _numNonstationaryColors > 0) {
+                long long int iter = counter.fetch_add(1) + 1;
+                if (iter > maxIters) break;
+                double temperature = temperatureFunction(float(iter) / maxIters, TInitial, TDecay);
+                SANAIterationThreads(temperature, rng, rnd);
+            }
+        });
+    }
+
+    for (auto& th : workers) th.join();
+
+    trackProgress(maxIters, 1.0);
+    cout<<"Performed "<<MIN((long long int)counter.load(), maxIters)<<" total iterations\n";
+    if (addHillClimbing) performHillClimbing(10000000LL);
+
+#ifdef CORES
+    Report::saveCoreScore(*G1, *G2, A, this, coreScoreData, outputFileName);
+#endif
+
+    printThreadedContentionReport();
+    return A;
+}
+#endif
 
 
 // All of these are purely heuristic
@@ -454,7 +995,16 @@ Alignment SANA::runUsingConfidenceIntervals() {
 #endif
     _reallyRunning=true;
     long int lastBatchCount=0;
-    // Luca: parallel threads here
+
+#ifdef SANA_THREADS
+    if (numThreads > 1) {
+        if (alignment.allowedPartnersEnabled()) {
+            throw runtime_error("THREADS>1 is not supported when allowedPartnersEnabled()");
+        }
+        return runUsingConfidenceIntervalsThreads();
+    }
+#endif
+
     for (tau = 0; tau <= 1; tau += tauStep) {
 	int batchesPerTemperature = 0;
         Temperature = temperatureFunction(tau, TInitial, TDecay);
@@ -553,6 +1103,110 @@ Alignment SANA::runUsingConfidenceIntervals() {
 
     return A;
 }
+
+#ifdef SANA_THREADS
+Alignment SANA::runUsingConfidenceIntervalsThreads() {
+    holeMutexCollisions = 0;
+    holeMutexAccesses = 0;
+    commitMutexCollisions = 0;
+    commitMutexAccesses = 0;
+
+    if(!multi_iteration_only) getIterPerSecond();
+    iterationsPerStep = 1;
+
+    int batch=0, batchSize = BATCH_SIZE;
+    double tau, tauStep = MAX_TAU_STEP;
+    assert(tolerance > 0);
+    double tolPerStep = tolerance * (tauStep) / TOL_SAFETY_MARGIN;
+    double confidence = 1-pow(tolPerStep, 1.5);
+    if(confidence < MIN_CONFIDENCE) confidence = MIN_CONFIDENCE;
+
+    bool verbose = true;
+    if(verbose) printf("SANA::runUsingConfidenceIntervalsThreads Parameters: batchSize %d confidence %g tolerance per step %g\n",
+        batchSize, confidence, tolPerStep);
+
+#if LIBWAYNE
+    STAT *scoreBatch = StatAlloc(0, 0.0, 0.0, false, false);
+    STAT *scoreBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
+    STAT *pBadBatch = StatAlloc(0, 0.0, 0.0, false, false);
+    STAT *pBadBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
+#else
+#error "Need LIBWAYNE to be true for batch system"
+#endif
+
+    atomic<bool> stop(false);
+    atomic<bool> satisfiedAtomic(false);
+    atomic<long long int> innerCounter(0);
+
+    for (tau = 0; tau <= 1 && _numNonstationaryColors>0; tau += tauStep) {
+        int batchesPerTemperature = 0;
+        Temperature = temperatureFunction(tau, TInitial, TDecay);
+        satisfiedAtomic.store(false);
+        stop.store(false);
+
+        vector<thread> workers;
+        workers.reserve(numThreads);
+        for (uint t = 0; t < numThreads; t++) {
+            workers.emplace_back([&]() {
+                mt19937 rng(getRandomSeed() ^ (uint64_t)hash<std::thread::id>{}(std::this_thread::get_id()));
+                uniform_real_distribution<> rnd(0.0, 1.0);
+                while (!stop.load() && _reallyRunning && !saveAligAndExitOnInterruption && _numNonstationaryColors > 0) {
+                    innerCounter.fetch_add(1);
+                    SANAIterationThreads(Temperature, rng, rnd);
+
+                    if (!commitMutex.try_lock()) {
+                        ++commitMutexCollisions;
+#ifdef COMMIT_MUTEX_SPIN
+                            unsigned spins = 0;
+                            while (!commitMutex.try_lock()) {
+                                ++commitMutexCollisions;
+                                ++spins;
+                            }
+#else
+                            while (!commitMutex.try_lock()) {
+                                ++commitMutexCollisions;
+                                std::this_thread::sleep_for(std::chrono::microseconds(50));
+                            }
+#endif
+                    }
+                    ++commitMutexAccesses;
+                    StatAddSample(scoreBatch, currentScore);
+                    StatAddSample(pBadBatch, movePbad);
+                    if(StatNumSamples(scoreBatch) == batchSize) {
+                        ++batch; ++batchesPerTemperature;
+                        StatAddSample(scoreBatchMeans, StatMean(scoreBatch));
+                        StatAddSample(pBadBatchMeans, StatMean(pBadBatch));
+                        StatReset(scoreBatch); StatReset(pBadBatch);
+
+                        if(StatNumSamples(scoreBatchMeans)>=MIN_BATCHES){
+                            double scoreInterval, pBadInterval, relativeMultiplier;
+                            scoreInterval = pBadInterval = tolPerStep;
+                            relativeMultiplier = MAX(StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
+                            relativeMultiplier *= (1+log(batchesPerTemperature));
+                            scoreInterval *= relativeMultiplier;
+                            pBadInterval *= relativeMultiplier;
+                            if( StatConfInterval(scoreBatchMeans, confidence) < scoreInterval &&
+                                StatConfInterval(pBadBatchMeans,  confidence) < pBadInterval     ) {
+                                satisfiedAtomic.store(true);
+                                stop.store(true);
+                            }
+                        }
+                    }
+                    commitMutex.unlock();
+                }
+            });
+        }
+
+        for (auto& th : workers) th.join();
+
+        if(saveAligAndExitOnInterruption) break;
+        if(satisfiedAtomic.load()) continue;
+    }
+
+    printThreadedContentionReport();
+    return A;
+}
+#endif
 
 
 void SANA::performHillClimbing(long long int idleCountTarget) {

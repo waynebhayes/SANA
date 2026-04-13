@@ -73,27 +73,12 @@ def run_graph(tester) -> None:
                 std = np.std(values)
                 stats[char][key] = (mean, std)
     
-    # UserTime / RealTime
-    if "UserTime" in stats and "RealTime" in stats:
-        for key in list(stats["UserTime"].keys()):
-            if key in stats["RealTime"]:
-                u_mean, u_std = stats["UserTime"][key]
-                r_mean, r_std = stats["RealTime"][key]
-                if r_mean != 0:
-                    s_mean = u_mean / r_mean
-                    s_var = (u_std / r_mean) ** 2 + (u_mean * r_std / (r_mean ** 2)) ** 2
-                    s_std = np.sqrt(s_var)
-                    stats["Speedup"][key] = (s_mean, s_std)
-        graph_characteristics = list(characteristics) + ["Speedup"]
-    else:
-        graph_characteristics = list(characteristics)
-    
     colors = {}
     color_palette = plt.cm.tab10(np.linspace(0, 1, max(10, len(all_configs))))
     for i, config in enumerate(sorted(all_configs)):
         colors[config] = color_palette[i % len(color_palette)]
     
-    for char in graph_characteristics:
+    for char in characteristics:
         fig, ax = plt.subplots(1, 1, figsize=(8, 5))
         
         scale_configs = [
@@ -144,7 +129,7 @@ def run_graph(tester) -> None:
         print(f"Graphs for {char} saved to {output_file}")
         plt.close()
     
-    num_chars = len(graph_characteristics)
+    num_chars = len(characteristics)
     fig, axes = plt.subplots(1, num_chars, figsize=(6 * num_chars, 5))
     
     if num_chars == 1:
@@ -155,7 +140,7 @@ def run_graph(tester) -> None:
     ]
     
     for xscale, yscale, title_suffix in scale_configs:
-        for col_idx, char in enumerate(graph_characteristics):
+        for col_idx, char in enumerate(characteristics):
             ax = axes[col_idx]
             ax.set_xscale(xscale)
             ax.set_yscale(yscale)
@@ -202,5 +187,5 @@ def run_graph(tester) -> None:
     plt.close()
     
     num_scales = len(scale_configs)
-    print(f"Generated {len(graph_characteristics)} characteristic graphs with {num_scales} scale type(s) each")
+    print(f"Generated {len(characteristics)} characteristic graphs with {num_scales} scale type(s) each")
     print(f"Plus 1 combined graph with all characteristics")

@@ -28,13 +28,13 @@ _SSH_PASSWORD = None
 
 # In any command, a {threads} marker is replaced with the thread count.
 SANA_COMMANDS = {
-    "wh_directed": "                                 /usr/bin/time -p ./sana2.2.static.wh_directed      -tolerance 0 -it 1000000000 -directed -tinitial 4e-6 -tdecay 1.5 -skip-graph-validation -ec 1 -g1 yeast -g2 human",
-    "wh_SANA3":    "                                 /usr/bin/time -p ./sana3.3.threads.static.wh_SANA3 -tolerance 0 -it 1000000000 -directed -tinitial 4e-6 -tdecay 1.5 -skip-graph-validation -ec 1 -g1 yeast -g2 human -maxthreads {threads}",
-    "ml_SANA3":    "export SANA_THREADS={threads} && /usr/bin/time -p ./sana3.3.threads.static.ml_SANA3 -tolerance 0 -it 1000000000 -directed -tinitial 4e-6 -tdecay 1.5 -skip-graph-validation -ec 1 -g1 yeast -g2 human"
+    "wh_directed": "                                 /usr/bin/time -p ./sana2.2.static.wh_directed      -tolerance 0 -it 100000000 -directed -tinitial 4e-6 -tdecay 1.5 -skip-graph-validation -ec 1 -g1 yeast -g2 human",
+    "wh_SANA3":    "                                 /usr/bin/time -p ./sana3.3.threads.static.wh_SANA3 -tolerance 0 -it 100000000 -directed -tinitial 4e-6 -tdecay 1.5 -skip-graph-validation -ec 1 -g1 yeast -g2 human -maxthreads {threads}",
+    "ml_SANA3":    "export SANA_THREADS={threads} && /usr/bin/time -p ./sana3.3.threads.static.ml_SANA3 -tolerance 0 -it 100000000 -directed -tinitial 4e-6 -tdecay 1.5 -skip-graph-validation -ec 1 -g1 yeast -g2 human"
 }
 
 TEST_CONFIGS_SPEC = {
-    "versions": ["ml_SANA3"],
+    "versions": ["wh_directed", "wh_SANA3", "ml_SANA3"],
     "cores":    [1, 2, 4, 8, 16], 
     "machines": ["hermod"]
 }

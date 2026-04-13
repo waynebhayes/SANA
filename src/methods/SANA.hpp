@@ -4,6 +4,7 @@
 #include <map>
 #include <tuple>
 #include <mutex>
+#include <atomic>
 #include <chrono>
 #include <ctime>
 #include <random>
@@ -60,6 +61,18 @@ public:
 
 private:
     Alignment startA, alignment;
+
+#ifdef SANA_THREADS
+    uint numThreads = 1;
+
+    vector<atomic<bool>> holeInUse;
+    mutex commitMutex;
+
+    atomic<unsigned long long> holeMutexCollisions{0};
+    atomic<unsigned long long> holeMutexAccesses{0};
+    atomic<unsigned long long> commitMutexCollisions{0};
+    atomic<unsigned long long> commitMutexAccesses{0};
+#endif
 
     bool addHillClimbing; //for post-run hill climbing
     bool multi_iteration_only=false; // if true, skip optional CPU-wasting steps
@@ -274,6 +287,17 @@ private:
     void SANAIteration();
     void performChange(uint activeColorId);
     void performSwap(uint activeColorId);
+
+#ifdef SANA_THREADS
+    Alignment runUsingIterationsThreads();
+    Alignment runUsingConfidenceIntervalsThreads();
+    void SANAIterationThreads(double temperature, mt19937& rng, uniform_real_distribution<>& rnd);
+    double performChangeThreads(uint actColId, mt19937& rng, uniform_real_distribution<>& rnd, double temperature);
+    double performSwapThreads(uint actColId, mt19937& rng, uniform_real_distribution<>& rnd, double temperature);
+    uint randActiveColorIdWeightedByNumNbrsThreads(mt19937& rng);
+    uint randomG1NodeWithActiveColorThreads(uint actColId, bool dynamic, mt19937& rng) const;
+    void printThreadedContentionReport() const;
+#endif
 
     Timer timer;
 

@@ -42,6 +42,16 @@ else
     CXXFLAGS := $(CXXFLAGS) -O3 # always turn on optimization if not debugging
 endif
 
+ifdef THREADS
+    CXXFLAGS := $(CXXFLAGS) -DSANA_THREADS
+    MAIN := $(MAIN).threads
+endif
+
+ifeq ($(COMMIT_MUTEX_SPIN), 1)
+    CXXFLAGS := $(CXXFLAGS) -DCOMMIT_MUTEX_SPIN
+    MAIN := $(MAIN).commit-mutex-spin
+endif
+
 ifeq ($(CORES), 1) # CORES should be listed last to ensure it's used on the smallest networks during regression tests.
     CXXFLAGS := $(CXXFLAGS) -DCORES
     MAIN := $(MAIN).cores
