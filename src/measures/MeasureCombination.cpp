@@ -300,7 +300,7 @@ void MeasureCombination::writeLocalScores(ostream& ofs,
             }
         }
     } else { // output only aligned pairs
-        for(uint i = 0; i < A.size(); ++i) {
+        for(uint i = 0; i < A.numOfPegs(); ++i) {
             edgeStream<<G1.getNodeName(i)<<"\t"<<G2.getNodeName(A[i]);
             ofs<<setw(COL_WIDTH)<<edgeStream.str();
             edgeStream.str("");

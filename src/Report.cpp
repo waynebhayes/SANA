@@ -30,7 +30,7 @@ void Report::saveReport(const Graph& G1, const Graph& G2, const Alignment& A,
 
     cout<<"Saving report as \""<<fileName<<"\""<<endl;
     ofstream ofs(fileName);
-    for (uint i = 0; i < A.size(); i++) ofs<<A[i]<<" ";
+    for (uint i = 0; i < A.numOfPegs(); i++) ofs<<A[i]<<" ";
     ofs<<endl;
     ofs << endl << currentDateTime() << endl;
     ofs << "Seed: " << getRandomSeed() << endl;
@@ -280,7 +280,7 @@ void Report::reportAll(const Graph& G1, const Graph& G2, const Alignment& A,
 
     cout << "Saving " << "alignment " + to_string(num) << " report in \"" << baseName + ".out" << "\"" << endl;
     outOfs << "This is alignment " + to_string(num) << endl;
-    for (uint i = 0; i < A.size(); i++) outOfs << A[i] << " ";
+    for (uint i = 0; i < A.numOfPegs(); i++) outOfs << A[i] << " ";
     outOfs << endl;
     outOfs << endl << currentDateTime() << endl;
     outOfs << "Seed: " << getRandomSeed() << endl;

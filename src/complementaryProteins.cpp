@@ -36,8 +36,8 @@ vector<vector<string>> getProteinPairs(string complementStatus, bool BioGRIDNetw
 }
 
 vector<vector<string>> getAlignedPairs(const Graph& G1, const Graph& G2, const Alignment& A) {
-    vector<vector<string>> res(A.size(), vector<string> (2));
-    for (uint i = 0; i < A.size(); i++) {
+    vector<vector<string>> res(A.numOfPegs(), vector<string> (2));
+    for (uint i = 0; i < A.numOfPegs(); i++) {
         res[i][0] = G1.getNodeName(i);
         res[i][1] = G2.getNodeName(A[i]);
     }

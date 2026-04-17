@@ -9,7 +9,7 @@ NodeCorrectness::~NodeCorrectness() {}
 
 double NodeCorrectness::eval(const Alignment& A) {
     uint count = 0;
-    for (uint i = 0; i < A.size(); i++) {
+    for (uint i = 0; i < A.numOfPegs(); i++) {
         if (A[i] == trueAWithValidCountAppended[i]) count++;
     }
     return (double) count / trueAWithValidCountAppended.back();

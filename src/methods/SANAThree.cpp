@@ -151,7 +151,7 @@ Alignment SANAThree::runUsingConfidenceIntervals() {
 void SANAThree::initDataStructures() {
     auto assignedNodesG2 = vector<char> (n2);
 
-    if (startingAlignment.size() == 0) alignment = Alignment::randomColorRestrictedAlignment(*G1, *G2);
+    if (startingAlignment.numOfPegs() == 0) alignment = Alignment::randomColorRestrictedAlignment(*G1, *G2);
     else alignment = startingAlignment;
 
     //init holeToColorID. For each node, we do the following transformations:
@@ -184,7 +184,7 @@ void SANAThree::initDataStructures() {
 
 // TODO:
 // This is terribly outdated. I'll buy a (soft) cider for anyone who takes it upon themselves to
-// make a better version, but this relatively low priority.
+// make a better version, but this relatively low priority. -Marcus
 void SANAThree::describeParameters(ostream &stream) const {
     stream << "Temperature goldilocks:" << endl;
     stream << "T_initial: " << tInitial << endl;
@@ -420,84 +420,84 @@ void SANAThree::runHillClimbing() {
     cout<<"Hill climbing took "<<T.elapsedString()<<"s"<<endl;
 }
 
-#if 0
-    Note: The deterministic if-cascade below may instead need to use randomness to choose among the possibilities.
-       One way to do this could be to do a "normal" (Marcus) move, perhaps with probability (1-tau) \in [0,1], so that
-       we initially do mostly "Marcus" moves, transitioning to "allowed Partner" moves as the anneal progresses.
-Basic idea:
-    pick any hole at random (possibly restricted to those that are either EMPTY or UNHAPPY)
-    if hole has no allowed partner pegs
-	pick ANY (unhappy?) peg and pull it here
-    else
-	if hole has any unhappy partner pegs
-	    pick one and pull it here
-	else
-	    pick an already happy partner peg and pull it here
-	fi
-    fi
-    // NOTE: "pull it here" means "move" it if the hole was empty, otherwise "swap" with the hole the other peg is in.
-#endif
-// Special case of allowedPartners requests (which is incompatible with node color system)
-SANAThree::changeRequest SANAThree::allowedPartnersRequest(mt19937_64 &generator) {
-    assert(G1->numColors()==1 && G2->numColors()==1);
-    const unsigned color = 0;
-
+#ifdef PREFERRED_HOLES
+#define RESTRICT_P 1
+SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64& generator) {
     unique_lock<mutex> lockAlignmentAndHoles(alignmentMutex, defer_lock);
+
     // Request parameters
-    bool twoPegs = false;
-    unsigned peg1, peg2 = -1; // Garbage allocation so that an exception will occur if not set and then used
-    unsigned hole1, hole2;
+    bool twoPegs;
+
+    unsigned peg1;
+    unsigned peg2;
+    unsigned hole1;
+    unsigned hole2;
+
     unsigned hole2unassignedID = -1;
+    unsigned color = -1;
 
-    while(true) {
-	// pick hole2 first since it's the only one that could potentially be empty
-	lockAlignmentAndHoles.lock();
-	// hole2 = G2->getNumNodes() * randomReal(generator); // pick any hole
-	do {
-	    hole2 = G2->getNumNodes() * randomReal(generator);
-	} while(alignment.isHappyHole(hole2)); // isHappyHole is false if the hole is empty
-	peg2 = alignment.whichPeg(hole2); // can be (-1)
-	assert(peg2 == (unsigned)(-1) || peg2 < G1->getNumNodes());
+    // Loop while we look for a valid adjacent alignment.
+    while (true) {
+        // Part 1, select a random peg1
+        peg1 = randIndex_64(n1, generator);
 
-	if(alignment.allowedPegs(hole2).size() == 0) // if no partners exist, pick a random UNHAPPY peg
-	    do peg1 = G1->getNumNodes() * randomReal(generator);
-	    while(alignment.isHappyPeg(peg1));
-	else {
-	    unordered_set<uint> myUnhappyPegs;
-	    for(const auto peg : alignment.allowedPegs(hole2))
-		if(peg!=peg2 && !alignment.isHappy(peg, hole2))
-		    myUnhappyPegs.insert(peg);
-	    if(myUnhappyPegs.size()) { // there exist unhappy pegs; choose one and pull it here
-		uint randIndex = myUnhappyPegs.size() * randomReal(generator);
-		auto it = myUnhappyPegs.begin(); std::advance(it, randIndex);
-		peg1 = *it;
-	    } else { // all of hole2's allowed pegs are already happy, but pick one and pull it here anyay
-		uint randIndex = alignment.allowedPegs(hole2).size() * randomReal(generator);
-		auto it = alignment.allowedPegs(hole2).begin(); std::advance(it, randIndex);
-		peg1 = *it;
-	    }
-	}
-	assert(peg1 < G1->getNumNodes());
-	hole1 = alignment[peg1];
-	if(peg2 == (uint)(-1)) {
-	    twoPegs = false;
-            const unsigned numUnassignedHoles = colorUnassignedNodes.at(color).size();
-	    hole2unassignedID = (hole1+hole2) % numUnassignedHoles;
-	    colorUnassignedNodes[color][hole2unassignedID] = hole2;
-	} else
-	    twoPegs = true;
-	if (holeLocks[hole1] || holeLocks[hole2]) {
-	    lockAlignmentAndHoles.unlock();
-	    continue;
-	}
-	holeLocks[hole1] = holeLocks[hole2] = true;
-	return {twoPegs, peg1, peg2, hole1, hole2, hole2unassignedID, color, 0.0};
+        // We want: p(adjAli) = 1 / numAdjAlignments
+        // What we get: p(adjAli(peg1, hole2)) = (1 / n1) * (1 / numPerfHoles(peg1))
+        // How: p(adjAli(peg1, hole2)) = (numPerHoles(peg1) / numAdjAlignments) * (1 / numPerfHoles(peg1))
+
+        // Part 2, find hole2. We either select an allowed hole2 from peg1's list of preferred
+        if (randomReal(generator) <= RESTRICT_P) {
+            const unsigned hole2Idx = randIndex_64(PREFERRED_HOLES[peg1].len(), generator);
+            hole2 = PREFERRED_HOLES[peg1][hole2Idx];
+        }
+        else {
+            hole2 = randIndex_64(n2, generator);
+        }
+
+        // Part 3: check for locks
+        lockAlignmentAndHoles.lock();
+        hole1 = alignment[peg1];
+        if (holeLocks[hole1] || holeLocks[hole2]) {
+            lockAlignmentAndHoles.unlock();
+            continue;
+        }
+        holeLocks[hole1] = holeLocks[hole2] = true;
+        peg2 = INVERSE_ALIGNMENT[hole2];
+        lockAlignmentAndHoles.unlock();
+
+
+        if (peg2 == -1) twoPegs = false;
+        else twoPegs = true;
+
+        return {twoPegs, peg1, peg2, hole1, hole2, hole2unassignedID, color};
     }
 }
 
-SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
-    if(alignment.allowedPartnersEnabled()) return allowedPartnersRequest(generator);
+double SANAThree::new_implementLastRequest(double pBad, const changeRequest &input, mt19937_64 &generator) {
+    unique_lock<mutex> lockAlignmentAndHoles(alignmentMutex);
 
+    holeLocks[input.hole1] = holeLocks[input.hole2] = false;
+    if (input.twoPegs) totalSwapsCalculated++;
+    else totalMovesCalculated++;
+
+    if (randomReal(generator) >= pBad) return currentScore;
+
+    if (input.twoPegs) {
+        alignment.swapPegs(input.peg1, input.peg2);
+        totalSwapsAccepted++;
+    }
+    else {
+        alignment.movePeg(input.peg1, input.hole2);
+        totalMovesAccepted++;
+    }
+
+    const double val = currentScore.load() + input.energyInc;
+    currentScore.store(val);
+    return val;
+}
+#else
+
+SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
     unique_lock<mutex> lockAlignmentAndHoles(alignmentMutex, defer_lock);
 
     // Request parameters
@@ -570,8 +570,8 @@ SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
             peg1 = (*G1->getNodesWithColor(color))[peg1colorID];
             peg2 = (*G1->getNodesWithColor(color))[peg2colorID];
             lockAlignmentAndHoles.lock();
-            hole1 = alignment[peg1];
-            hole2 = alignment[peg2];
+            hole1 = alignment.pegToHole(peg1);
+            hole2 = alignment.pegToHole(peg2);
         }
         // Move Logic
         else {
@@ -593,7 +593,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
 
             peg1 = (*G1->getNodesWithColor(color))[peg1colorID];
             lockAlignmentAndHoles.lock();
-            hole1 = alignment[peg1];
+            hole1 = alignment.pegToHole(peg1);
             hole2 = colorUnassignedNodes[color][hole2unassignedID];
         }
         // I.E., if invalid, reroll. Rejection sampling, google it
@@ -607,9 +607,6 @@ SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
     }
 }
 
-// This probably deserves a rework. I am uncomfortable with the current implementation and pushing
-// it all off into its own function has solved this only marginally. It works, but there has got to
-// be a less intrusive way to do this!
 double SANAThree::implementLastRequest(double pBad, const changeRequest &input, mt19937_64 &generator) {
     double randomNum = randomReal(generator); // MARCUS says it's better to generate before the mutex...
     unique_lock<mutex> lockAlignmentAndHoles(alignmentMutex);
@@ -620,11 +617,11 @@ double SANAThree::implementLastRequest(double pBad, const changeRequest &input, 
     if (randomNum >= pBad) return currentScore;
 
     if (input.twoPegs) {
-        alignment.swap(input.peg1, input.peg2);
+        alignment.swapPegs(input.peg1, input.peg2);
         totalSwapsAccepted++;
     }
     else {
-        alignment.set(input.peg1, input.hole2);
+        alignment.movePeg(input.peg1, input.hole2);
         colorUnassignedNodes[input.color][input.hole2unassignedID] = input.hole1; // Move
         totalMovesAccepted++;
     }
@@ -633,6 +630,8 @@ double SANAThree::implementLastRequest(double pBad, const changeRequest &input, 
     currentScore.store(val);
     return val;
 }
+
+#endif
 
 // TODO
 // This function should NOT be re-written in C++, because C++ sucks at formatted output

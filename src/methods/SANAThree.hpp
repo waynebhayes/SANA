@@ -139,7 +139,6 @@ private:
         Alignment alignment;
         vector<bool> holeLocks;
     changeRequest chooseNextRequest(mt19937_64 &generator);
-    changeRequest allowedPartnersRequest(mt19937_64 &generator);
     double implementLastRequest(double pBad, const changeRequest &input, mt19937_64 &generator); // Returns if accepted or rejected
 
     // TRACKING SYSTEM

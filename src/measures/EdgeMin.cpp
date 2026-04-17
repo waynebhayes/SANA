@@ -255,9 +255,9 @@ double EdgeMin::computeIncSwapOp2(const uint peg1, const uint peg2, const uint h
     old +=       scoreOnePegSlow(peg2, peg1, hole2, A); // score out&in as above for peg2 EXCEPT if going to peg1
 
     // NOTE: we must PHYSICALLY swap peg1+peg2 in A, in order to correctly score the new position
-    A.swap(peg1, peg2);
+    A.swapPegs(peg1, peg2);
     double New = scoreOnePegSlow(peg2,noAvoid, hole1, A); // score outward and inward aligned edges of peg1
     New +=       scoreOnePegSlow(peg1,peg2,    hole2, A); // score out&in as above for peg2 EXCEPT if going to peg1
-    A.swap(peg1, peg2);
+    A.swapPegs(peg1, peg2);
     return New - old;
 }

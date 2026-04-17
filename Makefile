@@ -4,7 +4,7 @@ ARCH_FLAGS=$(shell ($(GCC) -v 2>&1; uname -a) | awk '/CYGWIN/{print "-U__STRICT_
 MY_CC = g++$(GCC_VER)
 CXXFLAGS = -I "src/utils" "-DLIBWAYNE=1" -Wall -std=gnu++11 -pthread $(ARCH_FLAGS) #-pg -fno-inline
 
-SANA_VER=3.3
+SANA_VER=3.4
 MAIN = sana$(SANA_VER)
 
 #you can give these on Make's command line, eg "SPARSE=1" or "WEIGHT=1" or "MULTI=1"
@@ -22,23 +22,6 @@ endif
 ifeq ($(SPARSE), 1) # this one should be listed first so largest networks are run using SPARSE
     CXXFLAGS := $(CXXFLAGS) -DSPARSE
     MAIN := $(MAIN).sparse
-endif
-
-
-ifeq ($(LEGACY), 1)
-    $(info Legacy build detected.)
-ifdef THREADS
-	$(error Multithreading is not supported for legacy SANA.)
-endif
-    CXXFLAGS := $(CXXFLAGS) -DLEGACY
-    MAIN := $(MAIN).legacy
-else
-ifdef THREADS # this is the number of calculator threads
-	CXXFLAGS := $(CXXFLAGS) "-DTHREADS=$(THREADS)"
-	MAIN := $(MAIN).threads
-else
-	MAIN := $(MAIN)
-endif
 endif
 
 ifeq ($(STATIC), 1)
@@ -69,39 +52,39 @@ endif
 endif
 endif
 
-ifeq ($(CORES), 1) # CORES should be listed last to ensure it's used on the smallest networks during regression tests.
-    CXXFLAGS := $(CXXFLAGS) -DCORES
-    MAIN := $(MAIN).cores
-endif
-
-## Below here are not "normal" pairwise SANA executables
-
-ifeq ($(MULTI), 1)
-    CXXFLAGS := $(CXXFLAGS) -DMULTI_PAIRWISE
-    MAIN := $(MAIN).multi
-endif
-
-ifeq ($(WEIGHT), 1)
-    CXXFLAGS := $(CXXFLAGS) -DWEIGHT
-    ifndef EDGE_T
-	EDGE_T=float # default; use uchar or ushort to reduce memory usage (if weights are ints)
-    endif
-    SUFFIX=.$(EDGE_T)
-    CXXFLAGS := $(CXXFLAGS) "-DEDGE_T=$(EDGE_T)"
-    MAIN := $(MAIN).weight$(SUFFIX)
-endif
-
-######## THIS ONE MUST BE LAST to ensure "MAIN=error" when an incompatible combination occurs ##################
-ifeq ($(MULTI), 1)
-    ifeq ($(WEIGHT), 1)
-    ERROR="SANA cannot currently use WEIGHT in MULTI-alignments"
-    MAIN=error
-    endif
-    ifeq ($(CORES), 1)
-    ERROR="SANA cannot currently compute CORES in MULTI-alignments"
-    MAIN=error
-    endif
-endif
+#ifeq ($(CORES), 1) # CORES should be listed last to ensure it's used on the smallest networks during regression tests.
+#    CXXFLAGS := $(CXXFLAGS) -DCORES
+#    MAIN := $(MAIN).cores
+#endif
+#
+### Below here are not "normal" pairwise SANA executables
+#
+#ifeq ($(MULTI), 1)
+#    CXXFLAGS := $(CXXFLAGS) -DMULTI_PAIRWISE
+#    MAIN := $(MAIN).multi
+#endif
+#
+#ifeq ($(WEIGHT), 1)
+#    CXXFLAGS := $(CXXFLAGS) -DWEIGHT
+#    ifndef EDGE_T
+#	EDGE_T=float # default; use uchar or ushort to reduce memory usage (if weights are ints)
+#    endif
+#    SUFFIX=.$(EDGE_T)
+#    CXXFLAGS := $(CXXFLAGS) "-DEDGE_T=$(EDGE_T)"
+#    MAIN := $(MAIN).weight$(SUFFIX)
+#endif
+#
+######### THIS ONE MUST BE LAST to ensure "MAIN=error" when an incompatible combination occurs ##################
+#ifeq ($(MULTI), 1)
+#    ifeq ($(WEIGHT), 1)
+#    ERROR="SANA cannot currently use WEIGHT in MULTI-alignments"
+#    MAIN=error
+#    endif
+#    ifeq ($(CORES), 1)
+#    ERROR="SANA cannot currently compute CORES in MULTI-alignments"
+#    MAIN=error
+#    endif
+#endif
 
 INCLUDES =
 LFLAGS =
