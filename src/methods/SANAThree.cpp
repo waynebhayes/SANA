@@ -199,8 +199,6 @@ string SANAThree::fileNameSuffix(const Alignment& Al) const {
     return "_" + extractDecimals(MC->eval(Al),3);
 }
 
-unsigned SANAThree::pBadsInBuffer() const {return threadPool->pBadsInBuffer();}
-
 double SANAThree::getEquilibriumPBadAtTemp(double temperature, unsigned timeoutSeconds) const {
     return threadPool->runUntilEquilibrium(temperature, timeoutSeconds);
 }
@@ -256,7 +254,6 @@ void SANAThree::runIterations() {
     totalSwapsCalculated = 0;
     totalSwapsAccepted = 0;
     initDataStructures();
-    threadPool->resetBuffers();
     T.start();
     long long unsigned iter = 0;
     double temperature = tInitial;
@@ -303,7 +300,7 @@ void SANAThree::runConfidenceIntervals() {
     STAT *scoreBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
     STAT *pBadBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
 
-    // TODO: add batchesPerStep from runIterations for a re-eval of score
+    // TODO: add batchesPerStep from runIterations for a regular re-eval of score
     long int lastBatchCount=0;
     double previousScore = currentScore;
     double temperature = 0;
@@ -312,10 +309,14 @@ void SANAThree::runConfidenceIntervals() {
     totalSwapsCalculated = 0;
     totalSwapsAccepted = 0;
     initDataStructures();
-    threadPool->resetBuffers();
+
+    double lastPBad = 0.0;
+
     T.start();
+
+    // Technical start of the loop, we do not indent for aesthetic reasons
     for (tau = 0; tau <= 1; tau += tauStep) {
-	int batchesPerTemperature = 0;
+	int batchesThisTemperature = 0;
         temperature = temperatureFunction(tau, tInitial, tDecay);
 
 	// Now the "inner loop"
@@ -325,10 +326,10 @@ void SANAThree::runConfidenceIntervals() {
 	    if (saveAligAndContOnInterruption) printReportOnInterruption();
 
 	    const batchOutput output = threadPool->collectBatch(temperature);
-
-            ++batch; ++batchesPerTemperature;
+        ++batch; ++batchesThisTemperature;
 	    StatAddSample(scoreBatchMeans, output.averageScore);
 	    StatAddSample(pBadBatchMeans, output.averagePBad);
+	    lastPBad = output.averagePBad;
 
 	    if(StatNumSamples(scoreBatchMeans)>=MIN_BATCHES) {
 		double pBadInterval = tolPerStep;
@@ -343,7 +344,7 @@ void SANAThree::runConfidenceIntervals() {
 		// HOWEVER, we also slowly decrease the tolerance (by slowly increasing the Interval), because
 		// sometimes we can get "stuck" for a VERY long time at one temperature because the score
 		// is fluctuating too much. Let's not get stuck too long.
-		relativeMultiplier *= (1+log(batchesPerTemperature));
+		relativeMultiplier *= (1+log(batchesThisTemperature));
 
 		scoreInterval *= relativeMultiplier;
 		pBadInterval *= relativeMultiplier;
@@ -375,10 +376,12 @@ void SANAThree::runConfidenceIntervals() {
 		}
 	    }
 	}
-        currentScore = MC->eval(alignment);
-        trackProgress(batch * batchSize, tau, T.elapsed(), temperature, threadPool->recentPBadTrue(), batchesPerTemperature,
-                      StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
-	if(tauStep < MAX_TAU_STEP) {
+
+    currentScore = MC->eval(alignment);
+    trackProgress(batch * batchSize, tau, T.elapsed(), temperature, lastPBad, batchesThisTemperature,
+                  StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
+
+    if(tauStep < MAX_TAU_STEP) {
 	    if(StatNumSamples(scoreBatchMeans) < HAPPY_BATCHES) {
 		if(verbose) printf(" *****> doing OK at tau %g & %d batches; increasing tauStep from %g",
 		    tau, StatNumSamples(scoreBatchMeans), tauStep);
@@ -399,7 +402,7 @@ void SANAThree::runConfidenceIntervals() {
 	StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
     }
     cout<<"Performed "<<batch<<" total batches\n";
-    trackProgress(batch * batchSize, tau, T.elapsed(), temperature, threadPool->recentPBadQuick());
+    trackProgress(batch * batchSize, tau, T.elapsed(), temperature, lastPBad);
 }
 
 // I stole this duration from SANA proper. I will repeat the comment there that this is
@@ -593,7 +596,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
 
             peg1 = (*G1->getNodesWithColor(color))[peg1colorID];
             lockAlignmentAndHoles.lock();
-            hole1 = alignment.pegToHole(peg1);
+            hole1 = alignment[peg1];
             hole2 = colorUnassignedNodes[color][hole2unassignedID];
         }
         // I.E., if invalid, reroll. Rejection sampling, google it
@@ -607,7 +610,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
     }
 }
 
-double SANAThree::implementLastRequest(double pBad, const changeRequest &input, mt19937_64 &generator) {
+double SANAThree::implementLastRequest(double pBad, double energyInc, const changeRequest &input, mt19937_64 &generator) {
     double randomNum = randomReal(generator); // MARCUS says it's better to generate before the mutex...
     unique_lock<mutex> lockAlignmentAndHoles(alignmentMutex);
     holeLocks[input.hole1] = holeLocks[input.hole2] = false;
@@ -626,7 +629,7 @@ double SANAThree::implementLastRequest(double pBad, const changeRequest &input, 
         totalMovesAccepted++;
     }
 
-    const double val = currentScore.load() + input.energyInc;
+    const double val = currentScore.load() + energyInc;
     currentScore.store(val);
     return val;
 }

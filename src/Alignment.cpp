@@ -4,73 +4,32 @@
 #include "utils/FileIO.hpp"
 using namespace std;
 
-// WARNING: the allowed list is GLOBAL to the Alignment class
-unordered_map<uint, unordered_set<uint>> Alignment::allowedPeg2Hole, Alignment::allowedHole2Peg;
+Alignment::Alignment() = default;
+Alignment::Alignment(const vector<uint>& mapping) {
+    vector<atomic_uint> align(mapping.size());
 
-Alignment::Alignment(): n1(0), n2(0), A(vector<atomic_uint>(0))
-#ifdef PREFERRED_HOLES
-    ,invA(vector<atomic_uint>(0))
-#endif
-{}
-
-Alignment::Alignment(const vector<uint>& mapping, unsigned n2):
-    n1(mapping.size()),
-    n2(n2),
-    A(n1)
-#ifdef PREFERRED_HOLES
-    ,invA(n2)
-{
-    for (auto hole: invA) hole.store(n1);
-#else
-{
-#endif
-
-    for (size_t peg = 0; peg < mapping.size(); ++peg) {
-        const unsigned hole = mapping[peg];
-        if (hole < n2) {
-            A[peg].store(hole);
-#ifdef PREFERRED_HOLES
-            invA[hole].store(peg)
-#endif
-        }
-        else A[peg].store(n2);
+    for (size_t i = 0; i < mapping.size(); ++i) {
+        align[i].store(mapping[i]);
     }
+    A = move(align);
 }
-Alignment::Alignment(const Alignment& alig):
-    n1(alig.n1),
-    n2(alig.n2),
-    A(n1)
-#ifdef PREFERRED_HOLES
-    ,invA(n2) {
-    for (unsigned i = 0; i < n2; ++i) {
-        invA[i].store(alig.invA[i].load());
+Alignment::Alignment(const Alignment& alig){
+    vector<atomic_uint> align(alig.A.size());
+
+    for (size_t i = 0; i < alig.A.size(); ++i) {
+        align[i].store(alig.A[i].load());
     }
-#else
-{
-#endif
-    for (unsigned i = 0; i < n1; ++i) {
-        A[i].store(alig.A[i].load());
-    }
+    A = move(align);
 };
 
-Alignment::Alignment(const Graph& G1, const Graph& G2, const vector<array<string, 2>>& edgeList):
-    n1(G1.getNumNodes()),
-    n2(G2.getNumNodes()),
-    A(n1)
-#ifdef PREFERRED_HOLES
-    ,invA(n2) {
-    for (auto &value: invA) value.store(n1); //n1 used to denote invalid inverse index
-#else
-{
-#endif
-    for (auto &value: A) value.store(n2); //n2 used to denote invalid index
-
+Alignment::Alignment(const Graph& G1, const Graph& G2, const vector<array<string, 2>>& edgeList) {
+    uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();
+    assert(n1 == edgeList.size());
+    A = vector<atomic_uint>(n1); //n2 used to denote invalid index
+    for (auto &value: A) value.store(n2);
     for (const auto& edge : edgeList) {
         const string &nodeG1 = edge[0], &nodeG2 = edge[1];
-        A.at(G1.getNameIndex(nodeG1)).store(G2.getNameIndex(nodeG2));
-#ifdef PREFERRED_HOLES
-        invA.at(G2.getNameIndex(nodeG2)).store(G1.getNameIndex(nodeG2));
-#endif
+        A[G1.getNameIndex(nodeG1)].store(G2.getNameIndex(nodeG2));
     }
     printDefinitionErrors(G1,G2);
     assert(isCorrectlyDefined(G1, G2));
@@ -165,13 +124,13 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
             G2AssignedNodes[j] = true;
         }
     }
-    Alignment alig(A, n2);
+    Alignment alig(A);
     alig.printDefinitionErrors(G1, G2);
     assert(alig.isCorrectlyDefined(G1, G2));
     return alig;
 }
 
-Alignment Alignment::loadMapping(const string& fileName, unsigned n2) {
+Alignment Alignment::loadMapping(const string& fileName) {
     if (not FileIO::fileExists(fileName)) {
         throw runtime_error("Starting alignment file "+fileName+" not found");
     }
@@ -182,18 +141,7 @@ Alignment Alignment::loadMapping(const string& fileName, unsigned n2) {
     vector<uint> A(0);
     int g2Ind;
     while (iss >> g2Ind) A.push_back(g2Ind);
-    return {A, n2};
-}
-
-// Function to read a line from an input stream and split it into words.
-static std::vector<std::string> lineToWords(const std::string& line) {
-    std::vector<std::string> words;
-    std::stringstream ss(line);
-    std::string word;
-    while (ss >> word) {
-	words.push_back(word);
-    }
-    return words;
+    return A;
 }
 
 Alignment Alignment::random(uint n1, uint n2) {
@@ -213,11 +161,20 @@ Alignment Alignment::random(uint n1, uint n2) {
         }
     }
     randomShuffle(alignment);
-    return {alignment, n2};
+    return alignment;
 }
 
 Alignment Alignment::empty() {
-    return {};
+    vector<uint> emptyMapping(0);
+    return {emptyMapping};
+}
+
+Alignment Alignment::identity(uint n) {
+    vector<uint> A(n);
+    for (uint i = 0; i < n; i++) {
+        A[i] = i;
+    }
+    return {A};
 }
 
 Alignment Alignment::correctMapping(const Graph& G1, const Graph& G2) {
@@ -228,11 +185,12 @@ Alignment Alignment::correctMapping(const Graph& G1, const Graph& G2) {
     for (uint i = 0; i < G1.getNumNodes(); i++) {
         A[i] = G2.getNameIndex(G1.getNodeName(i));
     }
-    return {A, G2.getNumNodes()};
+    return {A};
 }
 
-Alignment &Alignment::operator=(const Alignment &other) {
-    return Alignment(other);
+Alignment &Alignment::operator=(Alignment other) {
+    std::swap(A, other.A);
+    return *this;
 }
 
 uint Alignment::computeNumAlignedEdges(const Graph& G1, const Graph& G2) const {
@@ -254,15 +212,11 @@ Alignment Alignment::reverse(uint n2) const {
     uint n1 = numOfPegs();
     vector<uint> A(n2, n1); //n1 used for invalid mapping
     for (uint i = 0; i < n1; i++) A[this->A[i].load()] = i;
-    return {A, n1};
+    return {A};
 }
 
 void Alignment::compose(const Alignment& other) {
-    for (uint i = 0; i < numOfPegs(); i++) {
-        const unsigned f_of_i = A[i].load();
-        const unsigned g_of_f_of_i = other.A[f_of_i].load();
-        A[i].store(g_of_f_of_i);
-    }
+    for (uint i = 0; i < numOfPegs(); i++) A[i].store(other.A[A[i].load()].load());
 }
 
 bool Alignment::isCorrectlyDefined(const Graph& G1, const Graph& G2) const {
@@ -340,10 +294,10 @@ Alignment Alignment::randomColorRestrictedAlignment(const Graph& G1, const Graph
         g1ColIdToG2Nodes[g1ColId].pop_back();
     }
 
-    Alignment alig(A, G2.getNumNodes());
+    Alignment alig(A);
     if (not alig.isCorrectlyDefined(G1, G2)) {
         alig.printDefinitionErrors(G1, G2);
         throw runtime_error("alignment not correctly defined");
     }
-    return alig;
+    return alig;   
 }

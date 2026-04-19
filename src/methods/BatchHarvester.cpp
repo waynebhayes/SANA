@@ -13,7 +13,6 @@
 #include <cassert>
 #include <csignal>
 #include <cstdio>
-#include <unistd.h>
 
 #include "SANAThree.hpp"
 #include "BatchHarvester.hpp"
@@ -21,170 +20,170 @@
 
 #define DEBUG_HARVESTER 0
 
+/// Returns the probability that a bad move will be accepted.
+///
+/// # Parameters:
+///
+/// const double energyInc: the score improvement of a potential change.
+///
+/// const double temperature: the annealing temperature, higher temperature -> bad change more likely
 double static inline acceptingProbability(const double energyInc, const double temperature) {
-    if (temperature == 0.) return energyInc >= 0;
-    return energyInc >= 0 ? 1 : exp(energyInc / temperature);
+    if (temperature == 0.) // Float comparisons are definitely a bad practice. -ML
+        return energyInc >= 0; // Bool coerced into 0.0 and 1.0. Probably a bad practice - ML
+    return energyInc >= 0 ? 1 : exp(energyInc / temperature); // Potential for -inf here, but exp(-inf) = 0 -ML
 }
 
-#define SCORE_BATCH_SIZE 31
+#define SCORE_BATCH_SIZE 31 // TODO: Borrowed from SANA 2.0. This should probably be looked at -ML
 SANAThree::BatchHarvester::BatchHarvester(const unsigned threadNumber, SANAThree &SANA, unsigned long long bufferSize):
     parent(SANA),
     daughterNum(threadNumber),
-    temperature(0.),
     startedRequests(0),
     finishedRequests(0),
-    numPBad(0),
-    scoreBuffer(SCORE_BATCH_SIZE),
-    pBadBuffer(bufferSize) {
+	currentState(State::pause),
+	daughtersPaused(0),
+	daughtersTerminated(0),
+	totalScore(0.0),
+	totalPBad(0.0),
+    numTotalPBad(0),
+    temperature(0.),
+    scoreCircBuffer(SCORE_BATCH_SIZE),
+    pBadCircBuffer(bufferSize) {
+    unique_lock<mutex> stateLock(stateMutex);
 
-    unique_lock<mutex> stateLock(stateMutex); // Overkill, but I am trying to set a good example to you youngsters
-    currentState = State::pause; // We DO NOT want threads to start calculations yet.
-    daughtersPaused = 0;
-    daughtersTerminated = 0;
-    stateLock.unlock();
-
-    unique_lock<mutex> outputLock(outputMutex);
-    totalEnergy = 0.; // Not strictly required, every function will reset these as necessary anyway
-    totalPBad = 0.;
-    outputLock.unlock();
-
-    numPBad = 0;
-
+    // Seed an initial generator to provide seeds for the daughter threads.
     mt19937_64 generator(random_device{}());
 
+    // Debug
     cerr << "HI THERE! BatchHarvester is using " << threadNumber << " threads\n";
+    if (threadNumber == 0)
+        throw runtime_error("Thread number must be > 0");
 
-    if (threadNumber == 0) throw runtime_error("Thread number must be > 0");
+	// Cast out the necessary number of threads
     threadVector.reserve(threadNumber);
-    stateLock.lock();
     for (unsigned i = 0; i < threadNumber; ++i) {
         threadVector.emplace_back(&BatchHarvester::daughterFunction, this, generator());
     }
-    handlerCondition.wait(stateLock, [this]{return daughtersPaused == daughterNum;});
 
-#if DEBUG_HARVESTER
-    assert(daughtersPaused == daughterNum);
-#endif
+    // Wait for all daughter to pause before exiting constructor.
+    waitMom.wait(stateLock, [this]{return daughtersPaused == daughterNum;});
+	#if DEBUG_HARVESTER
+	    assert(daughtersPaused == daughterNum);
+	#endif
 }
 
-SANAThree::BatchHarvester::~BatchHarvester(){
+// I greatly dislike destructors that are nontrivial, but I do not see a way around it. -ML
+SANAThree::BatchHarvester::~BatchHarvester() {
     unique_lock<mutex> stateLock(stateMutex); // Lock state access
-    currentState = State::terminate; // Set the state to class termination
-    if (daughtersPaused > 0) { // Check if any daughters are paused and wake them if they are
-        daughtersPaused = 0;
-        pausedCondition.notify_all();
-    }
-    handlerCondition.wait(stateLock, [this]{return daughtersTerminated == daughterNum;}); // Wait for all daughters to terminate
-    assert(daughtersTerminated == daughterNum); // This thread should only be woken if all daughters are terminated
-    for (thread& t: threadVector) t.join(); // Join all threads
+
+	// The order here is extremely important or else you will get a data race.
+	// My recommendation is that you do not touch this unless you really know what you are doing.
+	// -ML
+
+	// Set the state to termination and wake up any paused daughter threads.
+	activateDaughters(State::terminate);
+
+    // Wait for all daughters to terminate
+    waitMom.wait(stateLock, [this]{return daughtersTerminated == daughterNum;});
+
+    // This thread should only be successfully woken if all daughters are terminated
+	// If not, then we have a memory leak.
+    assert(daughtersTerminated == daughterNum);
+
+    // Join all threads
+    for (thread& t: threadVector)
+        t.join();
 }
 
 double SANAThree::BatchHarvester::runUntilEquilibrium(double temperature, unsigned timeoutSeconds) {
-    unique_lock<mutex> stateLock(stateMutex);
-    unique_lock<mutex> outputLock(outputMutex, defer_lock);
+	unique_lock<mutex> stateLock(stateMutex); // Held
 
-#if DEBUG_HARVESTER
-    // Are we in a valid state? Did someone forget to clean up?
-    assert(currentState == State::pause);
-    assert(daughtersPaused == daughterNum);
-    assert(daughtersTerminated == 0);
-    stateLock.unlock();
-    // Reset everything in case someone somehow collected a traditional annealing batch before this equilibrium run
-    outputLock.lock();
-    scoreBuffer.resetBuffer();
-    pBadBuffer.resetBuffer();
-    outputLock.unlock();
+	resetCounters();
+
+	#if DEBUG_HARVESTER
+	    // Are we in a valid state? Did someone forget to clean up?
+	    assert(currentState == State::pause);
+	    assert(daughtersPaused == daughterNum);
+	    assert(daughtersTerminated == 0);
+	#endif
+
+	// bufferLock and stateLock should generally NOT be held at the same time.
+	stateLock.unlock();
+
+	unique_lock<mutex> bufferLock(bufferMutex);
+		resetBuffers();
+    bufferLock.unlock();
+
     stateLock.lock();
-#endif
 
-    chrono::duration<double> duration;
-    bool timedOut = false;
+	// Set all daughters loose to equilibrate at this temperature.
+	this->temperature = temperature;
+    activateDaughters(State::equilibrate);
 
-    this->temperature.store(temperature);
-    currentState = State::equilibrate;
-    daughtersPaused = 0;
-    pausedCondition.notify_all();
-    const auto originalTime = chrono::steady_clock::now();
-    if(!handlerCondition.wait_for(stateLock, chrono::seconds(timeoutSeconds), [this]{return daughtersPaused==daughterNum;})) {
-        // Clean up for an early wake.
-        duration = chrono::steady_clock::now() - originalTime;
+	bool timedOut = false;
+	const auto originalTime = chrono::steady_clock::now();
+	// Wait for all daughters to pause unless we time out.
+    if(!waitMom.wait_for(stateLock, chrono::seconds(timeoutSeconds), [this]{return daughtersPaused == daughterNum;})) {
+        // Clean up if we time out.
         timedOut = true;
         currentState = State::pause;
-        handlerCondition.wait(stateLock, [this]{return daughtersPaused == daughterNum;});
+    	// Wait for all daughters to pause.
+        waitMom.wait(stateLock, [this]{return daughtersPaused == daughterNum;});
     }
-    else {
-        duration = chrono::steady_clock::now() - originalTime;
-    }
-#if DEBUG_HARVESTER
-    // We should be safe to unpause and unlock the state
-    assert(currentState == State::pause);
-    assert(daughtersPaused == daughterNum);
-#endif
+	#if DEBUG_HARVESTER
+	    // We should be safe to unpause and unlock the state
+	    assert(currentState == State::pause);
+	    assert(daughtersPaused == daughterNum);
+	#endif
+
+	// Unlock the state, as no more state modifications will be done.
     stateLock.unlock();
 
-    outputLock.lock();
-    // Terminal output
-    const double answer = recentPBadTrue();
-    cout<<"> getEquilibriumPBadAtTemp("<<temperature<<") = "<<answer<<" (score: "<<parent.currentScore<<")"
-    <<" (time: "<<duration.count()<<"s)"
+	// Terminal output of answer.
+    bufferLock.lock();
+	const chrono::duration<double> equilibriumDuration = chrono::steady_clock::now() - originalTime;
+    const double pBadAnswer = pBadCircBuffer.accurateAverage();
+    cout<<"> getEquilibriumPBadAtTemp("<<temperature<<") = "<<pBadAnswer<<" (score: "<<parent.currentScore<<")"
+    <<" (time: "<<equilibriumDuration.count()<<"s)"
     << (timedOut? "[TIMED OUT]" : "")
     <<" iterations = "<< finishedRequests
-    <<", ips = "<< static_cast<double>(finishedRequests) / duration.count() <<endl
+    <<", ips = "<< static_cast<double>(finishedRequests) / equilibriumDuration.count() <<endl
     <<"****************************************"<<endl<<endl;
 
-    // Clean up
-    startedRequests.store(0);
-    finishedRequests.store(0);
-    scoreBuffer.resetBuffer();
-    pBadBuffer.resetBuffer();
-
-    return answer;
+    return pBadAnswer;
 }
 
 SANAThree::batchOutput SANAThree::BatchHarvester::collectBatch(double temperature) {
-    unique_lock<mutex> stateLock(stateMutex);
-    unique_lock<mutex> outputLock(outputMutex, defer_lock);
+    unique_lock<mutex> stateLock(stateMutex); // Held whenever not waiting
 
-#if DEBUG_HARVESTER
-    // Are we in a valid state? Did someone forget to clean up? This entire section can be removed if it is never
-    assert(currentState == State::pause);
-    assert(daughtersPaused == daughterNum);
-    assert(daughtersTerminated == 0);
-    stateLock.unlock();
-    assert(startedRequests == 0); // Atomics don't require locks
-    assert(finishedRequests == 0);
-    outputLock.lock();
-    assert(totalEnergy == 0);
-    assert(totalPBad == 0);
-    assert(numPBad == 0);
-    outputLock.unlock();
-    stateLock.lock();
-#endif
+	#if DEBUG_HARVESTER
+	    // Are we in a valid state? Did someone forget to clean up?
+	    assert(currentState == State::pause);
+	    assert(daughtersPaused == daughterNum);
+	    assert(daughtersTerminated == 0);
+	#endif
 
-    this->temperature.store(temperature);
-    currentState = State::anneal;
-    daughtersPaused = 0;
-    pausedCondition.notify_all();
-    handlerCondition.wait(stateLock, [this]{return daughtersPaused == daughterNum;});
-#if DEBUG_HARVESTER
-    // We should be safe to unpause and unlock the state
-    assert(currentState == State::pause);
-    assert(daughtersPaused == daughterNum);
-    assert(finishedRequests == parent.batchSize);
-    assert(startedRequests >= parent.batchSize);
-#endif
-    // ReSharper disable once CppDFAUnreachableCode
-    stateLock.unlock();
+	// Reset global counters and outputs.
+	resetCounters();
 
-    outputLock.lock();
-    startedRequests.store(0);
-    finishedRequests.store(0);
-    if (numPBad == 0) ++numPBad;
-    const double averageScore = totalEnergy / parent.batchSize;
-    const double averagePBad = totalPBad / numPBad;
-    totalEnergy = 0;
-    totalPBad = 0;
-    numPBad = 0;
+	// Send daughters loose at this temperature annealing.
+    this->temperature = temperature;
+    activateDaughters(State::anneal);
+
+	// Wait for all daughters to pause.
+    waitMom.wait(stateLock, [this]{return daughtersPaused == daughterNum;});
+
+	#if DEBUG_HARVESTER
+	    // We should be safe to unpause and unlock the state
+	    assert(currentState == State::pause);
+	    assert(daughtersPaused == daughterNum);
+	    assert(finishedRequests == parent.batchSize);
+	    assert(startedRequests >= parent.batchSize);
+	#endif
+
+    if (numTotalPBad == 0)
+    	++numTotalPBad;
+    const double averageScore = totalScore / finishedRequests.load();
+    const double averagePBad = totalPBad / numTotalPBad;
 
     return {averageScore, averagePBad};
 }
@@ -193,112 +192,152 @@ SANAThree::batchOutput SANAThree::BatchHarvester::collectBatch(double temperatur
 void SANAThree::BatchHarvester::daughterFunction(uint64_t seed) {
     mt19937_64 generator(seed);
 
-    cerr << "DAUGHTER FUNCTION HERE\n" ;;
+    unique_lock<mutex> bufferLock(bufferMutex, defer_lock); // Defer
+    unique_lock<mutex> stateLock(stateMutex); // Held
 
-    unique_lock<mutex> outputLock(outputMutex, defer_lock);
-    unique_lock<mutex> stateLock(stateMutex);
+	// To prevent needing more mutex use, we collect these stats on the stack and then forward them
+	// to the Mom thread when we pause
+	double collectedScore = 0.0;
+	double collectedPBad = 0.0;
+	uint64_t processedPBad = 0;
 
+	// Store these locally on the stack.
+	double temperature = this->temperature;
+	const unsigned batchSize = parent.batchSize;
+
+	// Main state loop.
     // After every operation is complete, the function returns to check the current state of the Harvester
-    int whileCount=0;
     while (true) {
-	switch (currentState) { // Always enter with state locked
-        case State::anneal: {
-            stateLock.unlock();
-            if (startedRequests++ >= parent.batchSize) {
-                stateLock.lock();
-                currentState = State::pause;
-                continue;
-            }
-            // Part 1, select request to process
-            changeRequest currentRequest = parent.chooseNextRequest(generator);
+    // CRITICAL: We always enter this switch statement with the stateLock held -ML
+	switch (currentState) {
 
-            // Part 2, assess request
-            assessChange(currentRequest);
-            const double pBad = acceptingProbability(currentRequest.energyInc, temperature);
+		// For this state, all daughters pause operations until Mom tells them to start again.
+		case State::pause: {
 
-            // Part 3, implement (or don't implement) request
-            const double newScore = parent.implementLastRequest(pBad, currentRequest, generator);
+			// Give the Mom thread our results
+			totalScore += collectedScore;
+			totalPBad += collectedPBad;
+			numTotalPBad += collectedPBad;
 
-            // Part 4, record the results
-            outputLock.lock();
-            totalEnergy += newScore;
-            if (currentRequest.energyInc < 0) {
-                totalPBad += pBad;
-                pBadBuffer.insert(pBad);
-                ++numPBad;
-            }
-            outputLock.unlock();
+			// If all daughter threads are paused, then the Mom thread is alerted
+			if (++daughtersPaused == daughterNum)
+				waitMom.notify_all();
 
-            ++finishedRequests;
-            stateLock.lock();
-	    break;
-        }
+			// Now we wait until we told that daughter threads should be unpaused.
+			// A condition is required here because the C++ standard does not guarantee that a
+			// thread will never be woken up without our code asking for it. This is called a
+			// spurious wakeup. -ML
+			waitDaughters.wait(stateLock, [this]{return currentState != State::pause;});
 
-        case State::equilibrate: {
-            stateLock.unlock();
-            ++startedRequests;
-            // Part 1, select request to process
-            changeRequest currentRequest = parent.chooseNextRequest(generator);
+			// Reset our daughter stats.
+			collectedScore = 0.0;
+			collectedPBad = 0.0;
+			processedPBad = 0;
 
-            // Part 2, assess request
-            assessChange(currentRequest);
-            const double pBad = acceptingProbability(currentRequest.energyInc, temperature);
+			// Fetch the current temperature.
+			temperature = this->temperature;
 
-            // Part 3, implement (or don't implement) request
-            const double newScore = parent.implementLastRequest(pBad, currentRequest, generator);
+			continue;
+		}
 
-            // Part 4, record the results
-            stateLock.lock();
-            if (currentState != State::equilibrate) continue; // Esoteric race condition, honestly, user skill issue if
-            // it is encountered. More threads would have to be
-            // assigned by the user than nodes in either G1 or G2.
-            // This is a performance hit that makes me unhappy, but I
-            // feel obligated to accommodate it. -Marcus
-            stateLock.unlock();
-            outputLock.lock();
-            if (currentRequest.energyInc < 0) {
-                pBadBuffer.insert(pBad);
-            }
-            if (++finishedRequests % parent.batchSize == 0) {
-                scoreBuffer.insert(newScore);
-                if (scoreBuffer.isFull() && !scoreBuffer.trendingUpwards()) {
-                    stateLock.lock();
-                    currentState = State::pause;
-                    stateLock.unlock();
-                }
-            }
-            outputLock.unlock();
+		// For this state, the daughters process requests as granted to them by the SANA class.
+		// This means calculating the expected change to the score, the resulting pBad, and then
+		// implementing the change safely if it is accepted. The daughters process exactly one batch
+		// of requests, as determined by the batchSize of the SANA class. Then they self-halt and
+		// notify the Mom thread that unpaused them that the batch is finished.
+	    case State::anneal: {
+	        stateLock.unlock();
 
-            stateLock.lock();
-            break;
-        }
+	        // Pause all threads if we've met the quota. We jump to reassess state.
+	        if (startedRequests++ >= batchSize) {
+	            stateLock.lock();
+	            currentState = State::pause;
+	            continue;
+	        }
 
-        case State::pause: {
-                if (++daughtersPaused == daughterNum) handlerCondition.notify_all();
-                pausedCondition.wait(stateLock, [this]{return daughtersPaused == 0;});
-            break;
-        }
+	        // Part 1, ask the SANA class for a request to process
+	        changeRequest currentRequest = parent.chooseNextRequest(generator);
 
-        case State::terminate: {
-            if (++daughtersTerminated == daughterNum) handlerCondition.notify_all();
-            return;
-	    break;
-        }
-        default: throw runtime_error("Unknown harvester state. Either I messed up or someone touched my code -Marcus");
-	    break;
-    }
-    if(++whileCount%100000==0) printf("bH whileCount %d\n", whileCount);
+	        // Part 2, assess request
+	        double energyInc = assessRequest(currentRequest);
+	        const double pBad = acceptingProbability(energyInc, temperature);
+
+	        // Part 3, implement (or don't implement) request
+	        const double newScore = parent.implementLastRequest(pBad, energyInc, currentRequest, generator);
+
+	        // Part 4, record the results
+	        collectedScore += newScore;
+			if (energyInc < 0.0) {
+				collectedPBad += pBad;
+				++processedPBad;
+			}
+	        ++finishedRequests;
+
+	        stateLock.lock();
+	        continue;
+	    }
+
+		// This state is very similar to anneal, but we record results in circular buffers and
+		// otherwise process requests indefinitely or until equilibrium is reached.
+	    case State::equilibrate: {
+	        stateLock.unlock();
+	        // Part 1, select request to process
+	        changeRequest currentRequest = parent.chooseNextRequest(generator);
+
+	        // Part 2, assess request
+	        const double energyInc = assessRequest(currentRequest);
+	        const double pBad = acceptingProbability(energyInc, temperature);
+
+	        // Part 3, implement (or don't implement) request
+	        const double newScore = parent.implementLastRequest(pBad, energyInc, currentRequest, generator);
+
+	    	// Part 4, record the results
+	        bufferLock.lock();
+	        if (energyInc < 0) {
+	            pBadCircBuffer.insert(pBad);
+	        }
+			// Every batchSize, we add a new score to the scoreCircBuffer.
+	        if (++finishedRequests % batchSize == 0) {
+	            scoreCircBuffer.insert(newScore);
+	            if (scoreCircBuffer.isFull() && !scoreCircBuffer.trendingUpwards()) {
+					// This looks a little ridiculous, and it wouldn't really cause a data race if
+	            	// you don't unlock the bufferLock before modifying the state, but I don't want
+	            	// to set a bad example that someone will emulate. And moving this pause
+	            	// requires putting a conditional outside the batchSize modulo check which could
+	            	// slightly reduce performance. Just tolerate this unless entirely refactoring.
+	            	// -ML
+	            	bufferLock.unlock();
+		                stateLock.lock();
+							currentState = State::pause;
+		                stateLock.unlock();
+	            	bufferLock.lock();
+	            }
+	        }
+	        bufferLock.unlock();
+
+	        stateLock.lock();
+	        continue;
+	    }
+
+		// Termination states
+	    case State::terminate: {
+	        if (++daughtersTerminated == daughterNum) waitMom.notify_all();
+	        return;
+	    }
+	    default:
+	        throw runtime_error("Unknown harvester state. Either I messed up or someone touched my code -ML");
+	}
     }
 }
 
+// TODO: Move this out!
+static inline double aligEdgesIncMoveOp(const Graph::Node &peg1, const Graph::Node &hole1,
+	const Graph::Node &hole2, const Alignment &alignment, uint64_t totalEdges, bool directed) {
 
-static inline double aligEdgesIncMoveOp(const Graph::Node &peg1, const Graph::Node &hole1, const Graph::Node &hole2,
-    Alignment &alignment, uint64_t totalEdges, bool directed) {
-
-#ifdef WEIGHT
-    cerr << "EdgeCorrectness should not be used with weight. It is optimized for unweighted graphs and makes incompatible assumptions." <<endl;
-    throw runtime_error("Bad measure used with WEIGHT compiler setting.");
-#else
+	#ifdef WEIGHT
+	    cerr << "EdgeCorrectness should not be used with weight. It is optimized for unweighted graphs and makes incompatible assumptions." <<endl;
+	    throw runtime_error("Bad measure used with WEIGHT compiler setting.");
+	#endif
     int64_t result = 0;
 
     for (const auto &edge: peg1.adjList) {
@@ -320,22 +359,24 @@ static inline double aligEdgesIncMoveOp(const Graph::Node &peg1, const Graph::No
     }
 
     return static_cast<double>(result) / totalEdges;
-#endif
 }
 
-static inline double aligEdgesIncSwapOp(const Graph::Node &peg1, const Graph::Node &peg2, const Graph::Node &hole1, const Graph::Node &hole2,
-    Alignment &alignment, uint64_t totalEdges, bool directed) {
-#ifdef WEIGHT
-    cerr << "EdgeCorrectness should not be used with weight. It is optimized for unweighted graphs and makes incompatible assumptions." <<endl;
-    throw runtime_error("Bad measure used with WEIGHT compiler setting.");
-#else
+// TODO: And this, too!
+static inline double aligEdgesIncSwapOp(const Graph::Node &peg1, const Graph::Node &peg2,
+	const Graph::Node &hole1, const Graph::Node &hole2, const Alignment &alignment,
+	const uint64_t totalEdges, const bool directed) {
+	#ifdef WEIGHT
+	    cerr << "EdgeCorrectness should not be used with weight. It is optimized for unweighted graphs and makes incompatible assumptions." <<endl;
+	    throw runtime_error("Bad measure used with WEIGHT compiler setting.");
+	#endif
     /*
      * Marcus compiler optimizations for multithreading:
-     * Do NOT call alignment[] for the same index twice in a row. You might believe "oh, the compiler will just optimize
-     * it away, its no biggy!" NO, IT WILL NOT, because the alignment can vary while this calculation is ongoing. So the
-     * compiler is going to believe it has to fetch the value again in case it has changed. Now, we don't actually care
-     * if it has changed, but the compiler has no way to know that unless we tell it by manually specifying that YES,
-     * we want to use the same value twice, code transparency be damned.
+     * Do NOT call alignment[] for the same index twice in a row. You might believe "oh, the
+     * compiler will just optimize it away, its no biggy!" IT WILL NOT, because the alignment can
+     * vary while this calculation is ongoing. So the compiler is going to believe it has to fetch
+     * the value again in case it has changed. Now, we don't actually care if it has changed, but
+     * the compiler has no way to know that unless we tell it by manually specifying that YES, we
+     * want to use the same value twice, code transparency be damned.
      */
     int64_t result = 0;
 
@@ -344,21 +385,24 @@ static inline double aligEdgesIncSwapOp(const Graph::Node &peg1, const Graph::No
         result -= hole1.adjList.count(nbrHole);
         result += hole2.adjList.count(nbrHole);
     }
-    // self-loop correction
+    // Self-loop correction.
     if (peg1.adjList.count(peg1.nodeID)) {
         result -= hole2.adjList.count(hole1.nodeID); // Subtract erroneously counted edge
         result += hole2.adjList.count(hole2.nodeID); // Add correct edge
     }
+
     for (const auto &edge: peg2.adjList) {
         const unsigned nbrHole = alignment[edge.first];
         result -= hole2.adjList.count(nbrHole);
         result += hole1.adjList.count(nbrHole);
     }
-    // self-loop correction
+    // Self-loop correction
     if (peg2.adjList.count(peg2.nodeID)) {
         result -= hole1.adjList.count(hole2.nodeID); // Subtract erroneously counted edge
         result += hole1.adjList.count(hole1.nodeID); // Add correct edge
     }
+
+	//
     if(directed) {
         for (const auto &edge: peg1.injList) {
             const unsigned nbrHole = alignment[edge.first];
@@ -373,18 +417,22 @@ static inline double aligEdgesIncSwapOp(const Graph::Node &peg1, const Graph::No
 
         // Directed peg edge correction
         if (peg1.adjList.count(peg2.nodeID)) {
-        if (peg2.adjList.count(peg1.nodeID)) { // peg1 <-> peg2
-            result += hole1.adjList.count(hole2.nodeID);
-            result -= hole1.adjList.count(hole1.nodeID);
-            result -= hole2.adjList.count(hole2.nodeID);
-            result += hole2.adjList.count(hole1.nodeID);
+        // peg1 <-> peg2
+	        if (peg2.adjList.count(peg1.nodeID)) {
+	            result += hole1.adjList.count(hole2.nodeID);
+	            result -= hole1.adjList.count(hole1.nodeID);
+	            result -= hole2.adjList.count(hole2.nodeID);
+	            result += hole2.adjList.count(hole1.nodeID);
+	        }
+	        // peg1 -> peg2
+	        else {
+	            result += hole1.adjList.count(hole2.nodeID);
+	            result += hole2.adjList.count(hole1.nodeID);
+	            result -= hole2.adjList.count(hole2.nodeID);
+	        }
         }
-        else { // peg1 -> peg2
-            result += hole1.adjList.count(hole2.nodeID);
-            result += hole2.adjList.count(hole1.nodeID);
-            result -= hole2.adjList.count(hole2.nodeID);
-        }}
-        else if (peg2.adjList.count(peg1.nodeID)) { // peg1 <- peg2
+    	// peg1 <- peg2
+        else if (peg2.adjList.count(peg1.nodeID)) {
             result += hole2.adjList.count(hole1.nodeID);
             result += hole1.adjList.count(hole2.nodeID);
             result -= hole1.adjList.count(hole1.nodeID);
@@ -398,30 +446,37 @@ static inline double aligEdgesIncSwapOp(const Graph::Node &peg1, const Graph::No
         result += hole2.adjList.count(hole1.nodeID);
     }
     return static_cast<double>(result) / totalEdges;
-#endif
 }
 
-void SANAThree::BatchHarvester::assessMove(changeRequest &input) const {
-    // This is a hack, MC should be providing this information, not SANA!!
-    const Graph::Node &peg1 = parent.G1->deliverNode(input.peg1);
+double SANAThree::BatchHarvester::assessMove_(const changeRequest &input) const {
+	double energyInc = 0.0;
+
+	// This is a hack, MC should be providing this information, not SANA!!
+	const Graph::Node &peg1 = parent.G1->deliverNode(input.peg1);
     const Graph::Node &hole1 = parent.G2->deliverNode(input.hole1);
     const Graph::Node &hole2 = parent.G2->deliverNode(input.hole2);
     if (parent.needEC) {
-        input.energyInc = aligEdgesIncMoveOp(peg1, hole1, hole2, parent.alignment, parent.m1, parent.G1->directed)
-                          * parent.MC->getWeight("ec");
+        energyInc += parent.MC->getWeight("ec") *
+        	aligEdgesIncMoveOp(peg1, hole1, hole2, parent.alignment, parent.m1, parent.G1->directed);
     }
+
+	return energyInc;
 }
 
-void SANAThree::BatchHarvester::assessSwap(changeRequest &input) const {
-    // This is a hack, MC should be providing this information, not SANA!!
+double SANAThree::BatchHarvester::assessSwap_(const changeRequest &input) const {
+	double energyInc = 0.0;
+
+	// This is a hack, MC should be providing this information, not SANA!!
     const Graph::Node &peg1 = parent.G1->deliverNode(input.peg1);
     const Graph::Node &peg2 = parent.G1->deliverNode(input.peg2);
     const Graph::Node &hole1 = parent.G2->deliverNode(input.hole1);
     const Graph::Node &hole2 = parent.G2->deliverNode(input.hole2);
     if (parent.needEC) {
-        input.energyInc = aligEdgesIncSwapOp(peg1, peg2, hole1, hole2, parent.alignment, parent.m1, parent.G1->directed)
-                          * parent.MC->getWeight("ec");
+        energyInc += parent.MC->getWeight("ec") *
+        	aligEdgesIncSwapOp(peg1, peg2, hole1, hole2, parent.alignment, parent.m1, parent.G1->directed);
     }
+
+	return energyInc;
 }
 
 

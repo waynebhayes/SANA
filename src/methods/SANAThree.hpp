@@ -54,8 +54,6 @@ public:
     //requires TInitial and TFinal to be already initialized
     void setTDecayFromTempRange() {tDecay = -log(tFinal/tInitial);}
 
-    unsigned pBadsInBuffer() const;
-
 private:
 
     struct changeRequest {
@@ -71,14 +69,10 @@ private:
 
         const unsigned color;
 
-        // Request output
-        double energyInc;
-
         changeRequest(bool two_pegs, unsigned peg1, unsigned peg2, unsigned hole1, unsigned hole2,
         unsigned hole2unassignedID, unsigned colorID, double energyInc):
             twoPegs(two_pegs), peg1(peg1), peg2(peg2), hole1(hole1), hole2(hole2), hole2unassignedID(hole2unassignedID),
             color(colorID) {
-            this->energyInc = energyInc;
         }
     };
 
@@ -120,8 +114,6 @@ private:
     void runConfidenceIntervals();
     void runHillClimbing();
 
-    void scramble();
-
     // THE REQUEST SYSTEM
 
     uniform_real_distribution<> randomReal;
@@ -139,7 +131,7 @@ private:
         Alignment alignment;
         vector<bool> holeLocks;
     changeRequest chooseNextRequest(mt19937_64 &generator);
-    double implementLastRequest(double pBad, const changeRequest &input, mt19937_64 &generator); // Returns if accepted or rejected
+    double implementLastRequest(double pBad, double energyInc, const changeRequest &input, mt19937_64 &generator); // Returns if accepted or rejected
 
     // TRACKING SYSTEM
     void trackProgress(long long unsigned iter, double fractionTime, double elapsedTime,

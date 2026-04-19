@@ -22,26 +22,26 @@ class Alignment {
 public:
     Alignment();
     Alignment(const Alignment& alig);
-    Alignment &operator=(const Alignment &); //TODO
-    Alignment(const vector<uint>& mapping, uint n2);
+    Alignment &operator=(Alignment);
+    Alignment(const vector<uint>& mapping);
     Alignment(const Graph& G1, const Graph& G2, const vector<array<string, 2>>& edgeList);
 
     static Alignment loadEdgeList(const Graph& G1, const Graph& G2, const string& fileName);
+
     //list of pairs of aligned node names, but first node in each pair may be of G2
     static Alignment loadEdgeListUnordered(const Graph& G1, const Graph& G2, const string& fileName);
     static Alignment loadPartialEdgeList(const Graph& G1, const Graph& G2, const string& fileName, bool byName);
-    static Alignment loadMapping(const string& fileName, unsigned n2);
+    static Alignment loadMapping(const string& fileName);
     static Alignment randomColorRestrictedAlignment(const Graph& G1, const Graph& G2);
-
-    // void loadAllowedPartners(const Graph& G1, const Graph& G2, const string& fileName);
-
+    
     //returns a random alignment from a graph with n1 nodes to a graph with nodes n2 >= n1 nodes
     static Alignment random(uint n1, uint n2);
     static Alignment empty();
+    static Alignment identity(uint n);
 
     //returns an alignment of size n2 that is the inverse of this
     //value 'n1' is used as invalid mapping
-    Alignment reverse(uint n2) const; //TODO
+    Alignment reverse(uint n2) const;
 
     //returns the correct alignment between G1 and G2 by looking at
     //their node names. it assumes that they have the same node names
@@ -57,46 +57,22 @@ public:
         return v;
     }
 
-    uint numOfPegs() const {return n1;}
-    void compose(const Alignment& other); // TODO
+    void movePeg(uint node, uint value) {A[node].store(value);}
+    const uint pegToHole(uint node) const {return A[node].load();}
+    void swapPegs(uint node1, uint node2){A[node2].store(A[node1].exchange(A[node2].load()));}
+    const uint operator[](uint node) const {return A[node].load(memory_order_relaxed);} // No write access.
+    uint numOfPegs() const {return A.size();}
+    void compose(const Alignment& other);
 
     uint computeNumAlignedEdges(const Graph& G1, const Graph& G2) const;
 
-    bool isCorrectlyDefined(const Graph& G1, const Graph& G2) const; // TODO
+    bool isCorrectlyDefined(const Graph& G1, const Graph& G2) const;
     void printDefinitionErrors(const Graph& G1, const Graph& G2) const;
 
-    // This is for relaxed and casual access. No write access!
-    uint operator[](uint peg) const {return A[peg].load(memory_order_relaxed);}
-
-#ifdef PREFERRED_HOLES
-    uint numOfHoles() const {return n2;}
-    uint pegToHole(uint peg) const {return A.at(peg).load();}
-    uint holeToPeg(uint hole) const {return invA.at(hole).load();}
-    void movePeg(uint peg, uint newHole) {
-        assert(invA[newHole].load() == n1);
-        const unsigned oldHole = A[peg].load();
-        A[peg].store(newHole);
-        invA[newHole].store(peg);
-        invA[oldHole].store(n1);
-    }
-    void swapPegs(uint peg1, uint peg2) {
-        const unsigned hole1 = A[peg1];
-        A[peg2].store(A[peg1].exchange(A[peg2].load()));
-    }
-#else
-    uint pegToHole(uint peg) const {return A[peg].load();}
-    void movePeg(uint peg, uint newHole) {A[peg].store(newHole);}
-    void swapPegs(uint peg1, uint peg2) {A[peg2].store(A[peg1].exchange(A[peg2].load()));}
-#endif
+    void loadAllowedPartners(const Graph& G1, const Graph& G2, const string& fileName) {}; // TODO
 
 private:
-    unsigned n1;
-    unsigned n2;
     vector<atomic_uint> A;
-
-#ifdef PREFERRED_HOLES
-    vector<atomic_uint> invA;
-#endif
 };
 
 #endif /* ALIGNMENT_HPP */

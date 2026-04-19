@@ -14,7 +14,7 @@ using namespace std;
 template<typename T, typename = typename enable_if<is_arithmetic<T>::value>::type>
 class CircularBuffer {
 public:
-    explicit CircularBuffer(unsigned long long size) {
+    explicit CircularBuffer(size_t size) {
         full = false;
         default_fill = 0;
         sum = 0;
@@ -22,7 +22,7 @@ public:
         currentPlace = data.begin();
     }
 
-    CircularBuffer(unsigned long long size, T default_fill) {
+    CircularBuffer(size_t size, T default_fill) {
         full = true;
         sum = default_fill * size;
         this->default_fill = default_fill;
@@ -81,6 +81,7 @@ public:
         return quickAverage();
     }
 
+    // TODO: This bad and borrowed from SANA 2. This is just not a great equilibrium, it should be fixed. -ML
     bool trendingUpwards() const {
         int trend = 0;
         auto end = full ? data.end() : currentPlace;
@@ -109,12 +110,12 @@ protected:
 template<typename T, typename = typename enable_if<is_arithmetic<T>::value>::type>
 class CircularSTATBuffer final : public CircularBuffer<T> {
 public:
-    explicit CircularSTATBuffer(unsigned long long size):
+    explicit CircularSTATBuffer(size_t size):
         CircularBuffer<T>(size) {
         sumSquared = 0;
     }
 
-    CircularSTATBuffer(unsigned long long size, T default_fill):
+    CircularSTATBuffer(size_t size, T default_fill):
         CircularBuffer<T>(size, default_fill) {
         sumSquared = default_fill * default_fill * size;
     }
