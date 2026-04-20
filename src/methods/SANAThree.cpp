@@ -41,7 +41,7 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, double TInitial, double T
     tolerance(tolerance),
     maxSeconds(maxSeconds),
     maxIterations(maxIterations),
-    batchSize(max(n1,n2)),
+    batchSize(max<uint64_t>(15000u,n2)),
     threadNumber(threadNumber),
     MC(MC),
     startingAlignment(optionalStartAlig),

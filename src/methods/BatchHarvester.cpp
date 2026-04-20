@@ -30,7 +30,14 @@
 double static inline acceptingProbability(const double energyInc, const double temperature) {
     if (temperature == 0.) // Float comparisons are definitely a bad practice. -ML
         return energyInc >= 0; // Bool coerced into 0.0 and 1.0. Probably a bad practice - ML
-    return energyInc >= 0 ? 1 : exp(energyInc / temperature); // Potential for -inf here, but exp(-inf) = 0 -ML
+	if (energyInc >= 0.)
+		return 1.0;
+
+	const double exponent = energyInc / temperature;
+	if (exponent < -700)
+		return 0.0;
+
+	return exp(exponent);
 }
 
 #define SCORE_BATCH_SIZE 31 // TODO: Borrowed from SANA 2.0. This should probably be looked at -ML
@@ -217,7 +224,7 @@ void SANAThree::BatchHarvester::daughterFunction(uint64_t seed) {
 			// Give the Mom thread our results
 			totalScore += collectedScore;
 			totalPBad += collectedPBad;
-			numTotalPBad += collectedPBad;
+			numTotalPBad += processedPBad;
 
 			// If all daughter threads are paused, then the Mom thread is alerted
 			if (++daughtersPaused == daughterNum)
