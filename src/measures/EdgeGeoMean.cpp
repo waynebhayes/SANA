@@ -33,8 +33,8 @@ static bool CmpEdge(EDGE_T w1, EDGE_T w2) { return (w1 > w2); }
 
 double EdgeGeoMean::computeDenom(const Graph* G1, const Graph* G2) {
     vector<EDGE_T> W1, W2;
-    for (const auto& edge : *(G1->getEdgeList())) W1.push_back(G1->getEdgeWeight(edge[0],edge[1]));
-    for (const auto& edge : *(G2->getEdgeList())) W2.push_back(G2->getEdgeWeight(edge[0],edge[1]));
+    for (const auto& edge : G1->getEdgeList()) W1.push_back(G1->getEdgeWeight(edge[0],edge[1]));
+    for (const auto& edge : G2->getEdgeList()) W2.push_back(G2->getEdgeWeight(edge[0],edge[1]));
     sort(W1.begin(), W1.end(), CmpEdge);
     sort(W2.begin(), W2.end(), CmpEdge);
     double sum = 0.0;
@@ -45,7 +45,7 @@ double EdgeGeoMean::computeDenom(const Graph* G1, const Graph* G2) {
 
 double EdgeGeoMean::getEdgeGeoMeanSum(const Graph* G1, const Graph* G2, const Alignment &A) {
     double sum = 0;
-    for (const auto& edge : *(G1->getEdgeList())) {
+    for (const auto& edge : G1->getEdgeList()) {
        uint node1 = edge[0], node2 = edge[1];
        if(G2->hasEdge(A[node1],A[node2]))
 	   sum += getEdgeScore(G1->getEdgeWeight(node1,node2), G2->getEdgeWeight(A[node1],A[node2]));
@@ -85,7 +85,6 @@ double EdgeGeoMean::computeIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole
     if (peg1 == peg2) return 0;
     // Handle peg1
     double diff = 0;
-    double c = 0;
     auto pegAdj = G1->getAdjList(peg1);
     for (uint nbr : *pegAdj) {
         if(G2->hasEdge(hole1, A[nbr]))

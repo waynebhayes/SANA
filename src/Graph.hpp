@@ -131,8 +131,8 @@ public:
     // Your bread and butter getter for interacting with the graph.
     const Node &deliverNode(unsigned nodeID) const {return nodes.at(nodeID);}
 
-    // Marcus: these should only ever be used rarely and only ever when you need ONE random access.
-    // Whenever possible, use deliverNode to receive and store the Node reference.
+    // These should only ever be used rarely and only ever when you need ONE random access.
+    // Whenever possible, use deliverNode to receive and store the Node reference. - ML
     EDGE_T getEdgeWeight(unsigned node1, unsigned node2) const {
         const MAP_TYPE &adjList = nodes.at(node1).adjList;
         const auto it = adjList.find(node2);
@@ -157,7 +157,7 @@ public:
     unique_ptr<vector<unsigned>> getAdjList(unsigned node) const;
     unique_ptr<vector<vector<unsigned>>> getAdjLists() const; // THIS REALLY SHOULD NOT BE USED
     unique_ptr<vector<unsigned>> getInjList(unsigned node) const;
-    const vector<array<unsigned, 2>>* getEdgeList() const;
+    const vector<array<unsigned, 2>> &getEdgeList() const;
     const unordered_map<string,unsigned>* getNodeNameToIndexMap() const;
 
     //things that are computed when called

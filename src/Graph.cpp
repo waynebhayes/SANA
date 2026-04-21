@@ -7,7 +7,7 @@
 #include <regex>
 #include <set>
 
-#ifdef LINUX
+#ifdef __linux__
 #include <execinfo.h>
 #endif
 
@@ -273,7 +273,7 @@ Graph Graph::graphIntersection(const Graph& other, const vector<unsigned>& thisT
                  newNodeNames, {}, newNodeColorPairs); //unweighted result
 }
 
-#ifdef LINUX
+#ifdef __linux__
 void print_stack_trace() {
     const unsigned max_frames = 64;
     void* callstack[max_frames];
@@ -294,7 +294,7 @@ unique_ptr<vector<unsigned>> Graph::getAdjList(unsigned node) const {
         cerr << "It can cause issues if the output is dereferenced as a temporary object." <<endl;
         cerr << "It is also a poorly optimized compatibility function left over from SANA2.0. -Marcus" <<endl;
         cerr << "If you are on Linux, you should shortly receive a stacktrace for this call..." <<endl;
-#ifdef LINUX
+#ifdef __linux__
         print_stack_trace();
 #endif
         gaveWarning = true;
@@ -310,7 +310,7 @@ unique_ptr<vector<vector<unsigned>>> Graph::getAdjLists() const {
     if (!gaveWarning) {
         cerr << "NO ONE SHOULD BE USING Graph::getAdjLists() EVER! FIX YO CODE -Marcus" <<endl;
         cerr << "If you are on Linux, you should shortly receive a stacktrace for this offensive call..." <<endl;
-#ifdef LINUX
+#ifdef __linux__
         print_stack_trace();
 #endif
         gaveWarning = true;
@@ -330,7 +330,7 @@ unique_ptr<vector<unsigned>> Graph::getInjList(unsigned node) const {
         cerr << "It can cause issues if the output is dereferenced as a temporary object." <<endl;
         cerr << "It is also a poorly optimized compatibility function left over from SANA2.0. -Marcus" <<endl;
         cerr << "If you are on Linux, you should shortly receive a stacktrace for this call..." <<endl;
-#ifdef LINUX
+#ifdef __linux__
         print_stack_trace();
 #endif
         gaveWarning = true;
@@ -340,18 +340,8 @@ unique_ptr<vector<unsigned>> Graph::getInjList(unsigned node) const {
         injList->push_back(pair.first);
     return injList;}
 
-const vector<array<unsigned, 2>>* Graph::getEdgeList() const {
-    static bool gaveWarning = false;
-    if (!gaveWarning) {
-        cerr << "Warning, soon to deprecated getEdgeList function was used. This should be fixed." <<endl;
-        cerr << "It is a poorly optimized compatibility function left over from SANA2.0. -Marcus" <<endl;
-        cerr << "If you are on Linux, you should shortly receive a stacktrace for this call..." <<endl;
-#ifdef LINUX
-        print_stack_trace();
-#endif
-        gaveWarning = true;
-    }
-    return &edgeList;
+const vector<array<unsigned, 2>> &Graph::getEdgeList() const {
+    return edgeList;
 }
 
 const unordered_map<string, unsigned>* Graph::getNodeNameToIndexMap() const {

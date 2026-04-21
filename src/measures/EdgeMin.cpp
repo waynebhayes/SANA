@@ -25,11 +25,11 @@ double EdgeMin::computeDenom() {
     double ew, sumG1=0, sumG2=0;
 
     // Sum edge weights of both graphs
-    for (const auto& edge : *(G1->getEdgeList())) {
+    for (const auto& edge : G1->getEdgeList()) {
 	ew = G1->getEdgeWeight(edge[0], edge[1]);
 	sumG1 += ew;
     }
-    for (const auto& edge : *(G2->getEdgeList())) {
+    for (const auto& edge : G2->getEdgeList()) {
 	ew = G2->getEdgeWeight(edge[0], edge[1]);
 	sumG2 += ew;
     }
@@ -98,7 +98,7 @@ double EdgeMin::computeSum(const Alignment &A) {
 #else
     int ai=0, aSize=G1->getNumEdges();
     assert(aSize <= MAX_A_ARRAY);
-    for (const auto& edge : *(G1->getEdgeList())) {
+    for (const auto& edge : G1->getEdgeList()) {
 	uint node1 = edge[0], node2 = edge[1];
 	a[ai++] = computeAligEdgeScore(node1, node2, A[node1], A[node2]);
 	// NOTE: We don't need to include the reverse edge here in the directed graph case, because *if* a reverse edge of

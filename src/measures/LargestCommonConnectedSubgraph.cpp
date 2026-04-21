@@ -8,7 +8,7 @@ LargestCommonConnectedSubgraph::LargestCommonConnectedSubgraph(const Graph* G1, 
 LargestCommonConnectedSubgraph::~LargestCommonConnectedSubgraph() {}
 
 double LargestCommonConnectedSubgraph::eval(const Alignment& A) {
-    Graph CS = G1->graphIntersection(*G2, A.asVector());
+    Graph CS = G1->graphIntersection(*G2, A.copyPegsToHoles());
     vector<uint> LCCSNodes = (CS.connectedComponents())[0]; //largest CC
     uint n = LCCSNodes.size();
     double N = (double) n/G1->getNumNodes();

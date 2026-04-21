@@ -180,7 +180,7 @@ void CreateShadow::createShadow(const string& outFile, const vector<string>& gra
         }
 
         //add the edges
-        for (const auto& edge : (*G.getEdgeList())) {
+        for (const auto& edge : G.getEdgeList()) {
             string gName1 = G.getNodeName(edge[0]), gName2 = G.getNodeName(edge[1]);
             assert(gNameToSName.count(gName1));
             assert(gNameToSName.count(gName2));

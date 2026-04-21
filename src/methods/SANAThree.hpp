@@ -18,16 +18,6 @@
 
 using namespace std;
 
-// Big Picture TODO list by priority:
-// 0.) Fix Happy Batches System
-// 1.) Refactor and cleanly implement the stationary node system from 2.0
-// 2.) Individual node KE system
-// 3.) Multi-pairwise SANA reimplemented
-// If you have ideas for any of this, my element is @malongo:matrix.org
-// -Marcus
-
-
-
 class SANAThree: public Method {
     class BatchHarvester;
 public:
@@ -65,14 +55,8 @@ private:
         const unsigned hole1;
         const unsigned hole2;
 
-        const unsigned hole2unassignedID;
-
-        const unsigned color;
-
-        changeRequest(bool two_pegs, unsigned peg1, unsigned peg2, unsigned hole1, unsigned hole2,
-        unsigned hole2unassignedID, unsigned colorID, double energyInc):
-            twoPegs(two_pegs), peg1(peg1), peg2(peg2), hole1(hole1), hole2(hole2), hole2unassignedID(hole2unassignedID),
-            color(colorID) {
+        changeRequest(bool two_pegs, unsigned peg1, unsigned peg2, unsigned hole1, unsigned hole2):
+            twoPegs(two_pegs), peg1(peg1), peg2(peg2), hole1(hole1), hole2(hole2) {
         }
     };
 
@@ -85,12 +69,12 @@ private:
     const uint64_t n1, n2, m1, m2;
 
     // Control variables, keep constant -Marcus
-    const bool hillClimbing, needEC, needEM, needER;
     const double tolerance;
     const double maxSeconds;
-    const unsigned long long maxIterations;
-    const unsigned long long batchSize;
+    const uint64_t maxIterations;
+    const uint64_t batchSize;
     const unsigned threadNumber;
+    const bool hillClimbing, needEC, needEM, needER;
     const MeasureCombination *const MC;
     const Alignment startingAlignment; // Give an empty alignment for a scramble
     const string outputFileName;
@@ -102,8 +86,11 @@ private:
 
     BatchHarvester *threadPool;
 
+    atomic<double> currentScore;
+    Alignment alignment;
+
     // Set-up function
-    void initDataStructures();
+    void resetAlignment();
 
     // Main run function and variables
     uint64_t totalMovesCalculated;
@@ -115,21 +102,13 @@ private:
     void runHillClimbing();
 
     // THE REQUEST SYSTEM
-
     uniform_real_distribution<> randomReal;
-    vector<vector<unsigned>> colorUnassignedNodes;
-    // Keeps track of the total number of alignments, swaps, and moves we have access to as changes
-    uint64_t numAdjacentAlignments;
-    uint64_t numSwaps;
-    vector<uint64_t> swapsPerColor;
-    vector<uint64_t> movesPerColor;
 
-    // These mess with these mutexes.
-    mutex scoreMutex;
-        atomic<double> currentScore;
-    mutex alignmentMutex;
-        Alignment alignment;
-        vector<bool> holeLocks;
+    // Hole locking system
+    vector<atomic_flag> holeLocks;
+    bool tryToLockHoles(unsigned hole1, unsigned hole2);
+    void releaseHoles(unsigned hole1, unsigned hole2);
+
     changeRequest chooseNextRequest(mt19937_64 &generator);
     double implementLastRequest(double pBad, double energyInc, const changeRequest &input, mt19937_64 &generator); // Returns if accepted or rejected
 

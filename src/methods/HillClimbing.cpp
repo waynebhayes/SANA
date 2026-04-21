@@ -42,7 +42,7 @@ HillClimbing::HillClimbing(const Graph* G1, const Graph* G2, MeasureCombination*
         startA = Alignment::random(n1, n2);
     }
     else {
-        startA = Alignment::loadMapping(startAName);
+        startA = Alignment::loadMapping(startAName, *G1, *G2);
     }
 
     random_device rd;
@@ -68,7 +68,7 @@ Alignment HillClimbing::run() {
     throw runtime_error("Hill climbing only supports ec/ics/s3/wec/local measures");
 #else
     uint n1 = G1->getNumNodes(), n2 = G2->getNumNodes();
-    vector<uint> A(startA.asVector());
+    Alignment A = startA;
 
     vector<bool> assignedNodesG2(n2, false);
     for (uint i = 0; i < n1; i++) {
@@ -90,10 +90,10 @@ Alignment HillClimbing::run() {
     double g1Edges = G1->getNumEdges();
     double g1Nodes = n1;
 
-    int aligEdges = Alignment(A).computeNumAlignedEdges(*G1, *G2);
+    int aligEdges = A.computeNumAlignedEdges(*G1, *G2);
     bool needG2InducedEdges = (icsWeight > 0 or s3Weight > 0);
     int g2InducedEdges;
-    if (needG2InducedEdges) g2InducedEdges = G2->numEdgesInNodeInducedSubgraph(A);
+    if (needG2InducedEdges) g2InducedEdges = G2->numEdgesInNodeInducedSubgraph(A.copyPegsToHoles());
     else g2InducedEdges = 1; //dummy value
 
     //initialize data structures for incremental evaluation of local measures
@@ -296,7 +296,7 @@ Alignment HillClimbing::run() {
         if (useChangeOperator) {
             uint newTarget = unassignedNodesG2[bestNewTargetIndex];
             uint oldTarget = A[bestSource];
-            A[bestSource] = newTarget;
+            A.movePeg(bestSource, oldTarget, newTarget);
             unassignedNodesG2[bestNewTargetIndex] = oldTarget;
             assignedNodesG2[oldTarget] = false;
             assignedNodesG2[newTarget] = true;
@@ -304,8 +304,7 @@ Alignment HillClimbing::run() {
         }
         else {
             uint target1 = A[bestSource1], target2 = A[bestSource2];
-            A[bestSource1] = target2;
-            A[bestSource2] = target1;
+            A.swapPegs(bestSource1, bestSource2, target1, target2);
         }
     }
     return A;

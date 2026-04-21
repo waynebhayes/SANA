@@ -14,7 +14,7 @@ ExternalWeightedEdgeConservation::ExternalWeightedEdgeConservation(
 
 double ExternalWeightedEdgeConservation::eval(const Alignment& A) {
     double score = 0;
-    for (const auto& edge: *(G1->getEdgeList())) {
+    for (const auto& edge: G1->getEdgeList()) {
         uint node1 = edge[0], node2 = edge[1];
         if (G2->hasEdge(A[node1], A[node2])) {
             string n1s = G1->getNodeName(node1), n2s = G1->getNodeName(node2);

@@ -464,7 +464,7 @@ double MultiS3::eval(const Alignment& A) {
 void MultiS3::initDegrees(const Alignment& A, const Graph& G1, const Graph& G2) {
     shadowDegree = vector<uint>(G2.getNumNodes(), 0);
     for (uint i = 0; i < G2.getNumNodes(); i++) shadowDegree[i] = G2.getNumNbrs(i);
-    for (const auto& edge : *(G2.getEdgeList())) {
+    for (const auto& edge : G2.getEdgeList()) {
         auto w = G2.getEdgeWeight(edge[0],edge[1]);
         shadowDegree[edge[0]] += w; // doesn't this overcount by 1 since we already set it to getNumNbrs(i) above?
         if (edge[0] != edge[1]) shadowDegree[edge[1]] += w; //avoid double-counting for self-lopos

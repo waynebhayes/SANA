@@ -35,11 +35,11 @@ FMeasure::~FMeasure(){}
 
 double FMeasure::eval(const Alignment& A) {
     if(beta==inf){
-        return (double) A.computeNumAlignedEdges(*G1, *G2)/G2->numEdgesInNodeInducedSubgraph(A.asVector());
+        return (double) A.computeNumAlignedEdges(*G1, *G2)/G2->numEdgesInNodeInducedSubgraph(A.copyPegsToHoles());
     }
     double alignedEdges = A.computeNumAlignedEdges(*G1, *G2);
     double totalEdgesG1 = G1->getNumEdges();
-    double inducedEdgesG2 = G2->numEdgesInNodeInducedSubgraph(A.asVector());
+    double inducedEdgesG2 = G2->numEdgesInNodeInducedSubgraph(A.copyPegsToHoles());
 
     double numerator = (1 + beta * beta) * alignedEdges;
     double denominator = totalEdgesG1 + (beta * beta * inducedEdgesG2);

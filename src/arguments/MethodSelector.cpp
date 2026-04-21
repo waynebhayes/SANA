@@ -124,7 +124,7 @@ SANAThree* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
     if (goldilocksMethodName == "comparison") {
         Alignment startAlig;
         if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
-        if (allowedPartnersName != "") startAlig.loadAllowedPartners(G1, G2, allowedPartnersName);
+        // if (allowedPartnersName != "") startAlig.loadAllowedPartners(G1, G2, allowedPartnersName);
         SANAThree sana(&G1, &G2, 0.0, 0.0, 0, 0, 0.0, 0, &M,
                   args.strings["-combinedScoreAs"], startAlig, "", "", args.doubles["-maxthreads"]);
         goldilocksMethodComparison(&sana);
@@ -163,7 +163,7 @@ SANAThree* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
 
     Alignment startAlig;
     if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
-    if (allowedPartnersName != "") startAlig.loadAllowedPartners(G1, G2, allowedPartnersName);
+    // if (allowedPartnersName != "") startAlig.loadAllowedPartners(G1, G2, allowedPartnersName);
 
     SANAThree* sana = new SANAThree(&G1, &G2, TInitial, TDecay, maxSeconds, maxIterations, tolerance,
         args.bools["-add-hill-climbing"], &M, args.strings["-combinedScoreAs"],

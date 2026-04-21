@@ -158,10 +158,10 @@ pair<Graph,Graph> GraphLoader::initGraphs(ArgumentParser& args) {
         vector<EDGE_T> g2Weights;
         if (g2HasWeights) {
             g2Weights.reserve(G2->getNumEdges());
-            for (const auto& edge : *(G2->getEdgeList()))
+            for (const auto& edge : G2->getEdgeList())
                 g2Weights.push_back(G2->getEdgeWeight(edge[0], edge[1]));
         }
-        G2.reset(new Graph(G2->directed, G2->getName(), G2->getFilePath(), *(G2->getEdgeList()), g2NodeNames, g2Weights, g2Colors));
+        G2.reset(new Graph(G2->directed, G2->getName(), G2->getFilePath(), G2->getEdgeList(), g2NodeNames, g2Weights, g2Colors));
     }
 
     string path1 = args.strings["-pathmap1"], path2 = args.strings["-pathmap2"];
@@ -224,7 +224,7 @@ void GraphLoader::saveInGWFormat(const Graph& G, const string& outFile, bool sav
     ofs << G.getNumNodes() << endl;
     for (const auto& name : G.getNodeNames()) ofs << "|{" << name << "}|" << endl;
     ofs << G.getNumEdges() << endl;
-    for (const auto& edge : *(G.getEdgeList())) {
+    for (const auto& edge : G.getEdgeList()) {
         ofs << edge[0]+1 << " " << edge[1]+1 << " 0 |{"; //re-indexing to 1-based
         if (saveWeights) ofs << +G.getEdgeWeight(edge[0], edge[1]); //the + makes it print as a number even if it has type char/bool
         ofs << "}|" << endl;
@@ -236,8 +236,8 @@ void GraphLoader::saveInEdgeListFormat(const Graph& G, const string& outFile, bo
                                        const string& headerLine, const string& sep) {
     ofstream ofs(outFile);
     if (headerLine.size() != 0) ofs<<headerLine<<endl;
-    const vector<array<uint, 2>>* edges = G.getEdgeList();
-    for (const auto& edge : *edges) {
+    const vector<array<uint, 2>> &edges = G.getEdgeList();
+    for (const auto& edge : edges) {
         if (namedEdges) ofs<<G.getNodeName(edge[0])<<sep<<G.getNodeName(edge[1]);
         else ofs<<edge[0]<<sep<<edge[1];
         if (weightColumn) ofs<<sep<<+G.getEdgeWeight(edge[0], edge[1]); //the + makes it print as a number even if it has type char/bool

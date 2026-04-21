@@ -10,7 +10,7 @@ NoneMethod::NoneMethod(const Graph* G1, const Graph* G2, string startAName):
         uint n2 = G2->getNumNodes();
         A = Alignment(Alignment::random(n1, n2));
     } else {
-        A = Alignment(Alignment::loadMapping(startAName));
+        A = Alignment(Alignment::loadMapping(startAName, *G1, *G2));
     }
     A = Alignment::loadEdgeList(*G1, *G2, startAName);
 }

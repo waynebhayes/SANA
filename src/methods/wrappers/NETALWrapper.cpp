@@ -54,7 +54,7 @@ Alignment NETALWrapper::loadAlignment(const Graph* G1, const Graph* G2, string f
         mapping[stoi(words[0])] = stoi(words[2]);
         }
     }
-    return Alignment(mapping);
+    return Alignment(mapping, G2->getNumNodes());
 }
 
 void NETALWrapper::deleteAuxFiles() {

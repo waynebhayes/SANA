@@ -233,17 +233,17 @@ double Experiment::getAverageScore(string method, string G1Name,
     return -1;
 }
 
-double Experiment::computeScore(string method, string G1Name,
-        string G2Name, uint numSub, Measure* measure) {
+double Experiment::computeScore(string method, string G1Name, string G2Name, uint numSub,
+    Measure* measure, Graph &G1, Graph &G2) {
 
     string subId = getSubId(method, G1Name, G2Name, numSub);
     string resultFile = resultsFolder+subId+".out";
 
     bool NA = measure->getName() == "invalid" or not FileIO::fileExists(resultFile);
     double score;
-    if (NA) score = -1;
+    if (NA) score = -1.;
     else {
-        Alignment A = Alignment::loadMapping(resultFile);
+        Alignment A = Alignment::loadMapping(resultFile, G1, G2);
         score = measure->eval(A);
     }
     return score;
@@ -269,7 +269,7 @@ void Experiment::collectResults() {
             for (string method : methods) {
                 for (uint numSub = 0; numSub < nSubs; numSub++) {
                     string resultKey = getResultId(method, G1Name, G2Name, numSub, measureName);
-                    double score = computeScore(method, G1Name, G2Name, numSub, measure);
+                    double score = computeScore(method, G1Name, G2Name, numSub, measure, *G1, *G2);
                     resultMap[resultKey] = score;
                 }
             }
@@ -575,7 +575,7 @@ Measure* Experiment::loadMeasure(Graph* G1, Graph* G2, string name) {
     if (name == "nc") {
         if (NodeCorrectness::fulfillsPrereqs(G1, G2)) {
             auto alig = Alignment::correctMapping(*G1, *G2);
-            return new NodeCorrectness(alig.asVector());
+            return new NodeCorrectness(alig.copyPegsToHoles());
         } else {
             return new InvalidMeasure();
         }

@@ -28,14 +28,20 @@
 ///
 /// const double temperature: the annealing temperature, higher temperature -> bad change more likely
 double static inline acceptingProbability(const double energyInc, const double temperature) {
-    if (temperature == 0.) // Float comparisons are definitely a bad practice. -ML
-        return energyInc >= 0; // Bool coerced into 0.0 and 1.0. Probably a bad practice - ML
-	if (energyInc >= 0.)
+	// Float comparisons are definitely a bad practice, we need to find an epsilon for this. -ML
+	if (temperature == 0.) {
+    	return energyInc >= 0; // Bool coerced into 0.0 and 1.0. Probably also a bad practice - ML
+    }
+
+	if (energyInc >= 0.) {
 		return 1.0;
+	}
 
 	const double exponent = energyInc / temperature;
-	if (exponent < -700)
+	// That is, if the exponent would produce a subnormal number, truncate final answer to zero.
+	if (exponent < -700) {
 		return 0.0;
+	}
 
 	return exp(exponent);
 }

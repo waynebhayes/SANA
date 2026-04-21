@@ -10,5 +10,5 @@ SymmetricSubstructureScore::~SymmetricSubstructureScore() {
 double SymmetricSubstructureScore::eval(const Alignment& A) {
     double aligEdges = A.computeNumAlignedEdges(*G1, *G2);
     return aligEdges / 
-        (G1->getNumEdges() + G2->numEdgesInNodeInducedSubgraph(A.asVector()) - aligEdges);
+        (G1->getNumEdges() + G2->numEdgesInNodeInducedSubgraph(A.copyPegsToHoles()) - aligEdges);
 }

@@ -33,12 +33,12 @@ HubAlignWrapper::HubAlignWrapper(const Graph* G1, const Graph* G2, double alpha)
 void HubAlignWrapper::generateEdgeListFile(int graphNum) {
     const Graph* G = (graphNum == 1 ? G1 : G2);
 
-    const vector<array<uint, 2>>* edgeList = G->getEdgeList();
+    const vector<array<uint, 2>> &edgeList = G->getEdgeList();
     uint m = G->getNumEdges();
     vector<vector<string>> edgeListNames(m, vector<string> (2));
     for (uint i = 0; i < m; i++) {
-        edgeListNames[i][0] = G->getNodeName((*edgeList)[i][0]);
-        edgeListNames[i][1] = G->getNodeName((*edgeList)[i][1]);
+        edgeListNames[i][0] = G->getNodeName(edgeList[i][0]);
+        edgeListNames[i][1] = G->getNodeName(edgeList[i][1]);
     }
 
     //to avoid the case where aligning a network to itself

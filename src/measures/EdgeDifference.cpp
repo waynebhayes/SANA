@@ -18,7 +18,7 @@ double EdgeDifference::eval(const Alignment& A) {
 double EdgeDifference::getEdgeDifferenceSum(const Graph* G1, const Graph* G2, const Alignment &A) {
     double edgeDifferenceSum = 0;
     double c = 0; //use descriptive name please
-    for (const auto& edge : *(G1->getEdgeList())) {
+    for (const auto& edge : G1->getEdgeList()) {
        uint node1 = edge[0], node2 = edge[1];
        double y = abs(G1->getEdgeWeight(node1,node2) - G2->getEdgeWeight(A[node1],A[node2])) - c;
        double t = edgeDifferenceSum + y;

@@ -27,9 +27,9 @@ double AlphaEstimation::computeAlpha(Graph& G1, Graph& G2, string methodName, Me
     if (not FileIO::fileExists(aligFileAlpha0)) return -1;
     if (not FileIO::fileExists(aligFileAlpha1)) return -1;
 
-    double topScore = topMeasure->eval(Alignment::loadMapping(aligFileAlpha0));
+    double topScore = topMeasure->eval(Alignment::loadMapping(aligFileAlpha0, G1, G2));
     Sequence seq(&G1, &G2);
-    double seqScore = seq.eval(Alignment::loadMapping(aligFileAlpha1));
+    double seqScore = seq.eval(Alignment::loadMapping(aligFileAlpha1, G1, G2));
 
     return topScore/(topScore+seqScore);
 }
@@ -93,7 +93,7 @@ double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasu
             sampleCount--;
         }
         else {
-            topScore += topMeasure->eval(Alignment::loadMapping(aligFileAlpha0));
+            topScore += topMeasure->eval(Alignment::loadMapping(aligFileAlpha0, G1, G2));
         }
 
     }
@@ -114,7 +114,7 @@ double AlphaEstimation::computeAlphaSANA(Graph& G1, Graph& G2, Measure* topMeasu
             sampleCount--;
         }
         else {
-            seqScore += seq.eval(Alignment::loadMapping(aligFileAlpha1));
+            seqScore += seq.eval(Alignment::loadMapping(aligFileAlpha1, G1, G2));
         }
     }
     seqScore /= sampleCount;

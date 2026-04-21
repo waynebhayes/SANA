@@ -43,7 +43,7 @@ vector<vector<uint>> ComputeGraphletsWrapper::computeGraphletDegreeVectors(const
     cout<<"Computing Graphlet Degree Vectors... "<<endl;
     FILE *fp = tmpfile();
     fprintf(fp, "%d %d\n", G.getNumNodes(), G.getNumEdges()); 
-    for (const auto& edge : *(G.getEdgeList())) {
+    for (const auto& edge : G.getEdgeList()) {
         fprintf(fp, "%d %d\n", edge[0], edge[1]);
     }
     rewind(fp); //because computeGraphlets starts reading the file from the start

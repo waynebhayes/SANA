@@ -330,7 +330,7 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
     }
     else if (G1.hasSameNodeNamesAs(G2)) {
         Alignment a(Alignment::correctMapping(G1,G2));
-        vector<uint> mapping = a.asVector();
+        vector<uint> mapping = a.copyPegsToHoles();
         mapping.push_back(G1.getNumNodes()); //storing the size at the end of the alignment is insane -Nil
         double ncWeight = 0;
         try{  ncWeight = getWeight("nc", G1, G2, args); }

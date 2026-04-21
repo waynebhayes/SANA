@@ -43,7 +43,7 @@ Alignment MIGRAALWrapper::loadAlignment(const Graph* G1, const Graph* G2, string
         cout << node1 << " " << node2 << endl;
         mapping[G1->getNameIndex(node1)] = G2->getNameIndex(node2);
     }
-    return Alignment(mapping);
+    return Alignment(mapping, G2->getNumNodes());
 }
 
 void MIGRAALWrapper::deleteAuxFiles() {

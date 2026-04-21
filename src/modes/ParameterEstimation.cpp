@@ -119,7 +119,7 @@ void ParameterEstimation::submitScriptsToCluster() {
 
 double ParameterEstimation::getScore(double k, double l) {
     string aligFileName = getAlignmentFileName(k, l);
-    Alignment A = Alignment::loadMapping(aligFileName);
+    Alignment A = Alignment::loadMapping(aligFileName, *G1, *G2);
     return measure->eval(A);
 }
 

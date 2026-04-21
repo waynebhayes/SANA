@@ -1,35 +1,65 @@
 #include "Alignment.hpp"
 #include "Graph.hpp"
+#include "measures/EdgeCorrectness.hpp"
 #include "utils/utils.hpp"
 #include "utils/FileIO.hpp"
 using namespace std;
 
-Alignment::Alignment() = default;
-Alignment::Alignment(const vector<uint>& mapping) {
-    vector<atomic_uint> align(mapping.size());
+Alignment::Alignment():
+pegNum(0), holeNum(0), pegsToHoles(0), holesToPegs(0) {}
 
-    for (size_t i = 0; i < mapping.size(); ++i) {
-        align[i].store(mapping[i]);
+Alignment::Alignment(const Alignment& other):
+    pegNum(other.pegNum),
+    holeNum(other.holeNum) {
+    pegsToHoles = move(vector<atomic_uint>(pegNum));
+    holesToPegs = move(vector<atomic_uint>(holeNum));
+    for (size_t peg = 0; peg < pegNum; ++peg) {
+        pegsToHoles[peg].store(other.pegsToHoles[peg].load());
     }
-    A = move(align);
+    for (size_t hole = 0; hole < holeNum; ++hole) {
+        holesToPegs[hole].store(other.holesToPegs[hole].load());
+    }
 }
-Alignment::Alignment(const Alignment& alig){
-    vector<atomic_uint> align(alig.A.size());
 
-    for (size_t i = 0; i < alig.A.size(); ++i) {
-        align[i].store(alig.A[i].load());
+Alignment &Alignment::operator=(Alignment other) {
+    std::swap(pegsToHoles, other.pegsToHoles);
+    std::swap(holesToPegs, other.holesToPegs);
+    pegNum = other.pegNum;
+    holeNum = other.holeNum;
+    return *this;
+}
+
+Alignment::Alignment(const vector<uint>& mapping, uint holeNum):
+    pegNum(mapping.size()),
+    holeNum(holeNum) {
+    pegsToHoles = move(vector<atomic_uint>(mapping.size()));
+    holesToPegs = move(vector<atomic_uint>(holeNum));
+
+    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg);
+
+    for (size_t peg = 0; peg < mapping.size(); ++peg) {
+        uint hole = mapping[peg];
+        pegsToHoles[peg].store(hole);
+        holesToPegs[hole].store(peg);
     }
-    A = move(align);
-};
+}
 
-Alignment::Alignment(const Graph& G1, const Graph& G2, const vector<array<string, 2>>& edgeList) {
-    uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();
-    assert(n1 == edgeList.size());
-    A = vector<atomic_uint>(n1); //n2 used to denote invalid index
-    for (auto &value: A) value.store(n2);
+Alignment::Alignment(const Graph& G1, const Graph& G2, const vector<array<string, 2>>& edgeList):
+    pegNum(G1.getNumNodes()),
+    holeNum(G2.getNumNodes()) {
+    assert(pegNum == edgeList.size());
+
+    pegsToHoles = move(vector<atomic_uint>(pegNum));
+    holesToPegs = move(vector<atomic_uint>(holeNum));
+    for (auto &pegsHole: pegsToHoles) pegsHole.store(invalidHole);
+    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg);
+
     for (const auto& edge : edgeList) {
-        const string &nodeG1 = edge[0], &nodeG2 = edge[1];
-        A[G1.getNameIndex(nodeG1)].store(G2.getNameIndex(nodeG2));
+        const string &pegName = edge[0], &holeName = edge[1];
+        uint peg = G1.getNameIndex(pegName);
+        uint hole = G2.getNameIndex(holeName);
+        pegsToHoles[peg].store(hole);
+        holesToPegs[hole].store(peg);
     }
     printDefinitionErrors(G1,G2);
     assert(isCorrectlyDefined(G1, G2));
@@ -42,7 +72,7 @@ Alignment Alignment::loadEdgeList(const Graph& G1, const Graph& G2, const string
     for (uint i = 0; i < edges.size(); i += 2) {
         edgeList.push_back({edges[i], edges[i+1]});
     }
-    return {G1, G2, edgeList};
+    return Alignment(G1, G2, edgeList);
 }
 
 Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, const string& fileName) {
@@ -62,29 +92,42 @@ Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, con
             edgeList.push_back({name2, name1});
         }
     }
-    return {G1, G2, edgeList};
+    return Alignment(G1, G2, edgeList);
 }
 
-Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
-                                    const string& fileName, bool byName) {
+Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2, const string& fileName, bool byName) {
     vector<string> edges = FileIO::fileToWords(fileName);
     vector<array<string, 2>> edgeList;
     edgeList.reserve(edges.size()/2);
-    for (uint i = 0; i < edges.size(); i += 2) {
+    for (size_t i = 0; i < edges.size(); i += 2) {
         edgeList.push_back({edges[i], edges[i+1]});
     }
-    uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();
-    vector<uint> A(n1, n2); //n2 used to note invalid value
+    uint pegNum = G1.getNumNodes();
+    uint holeNum = G2.getNumNodes();
+
+    Alignment newAlignment;
+    newAlignment.pegNum = pegNum;
+    newAlignment.holeNum = holeNum;
+    newAlignment.pegsToHoles = move(vector<atomic_uint>(pegNum));
+    newAlignment.holesToPegs = move(vector<atomic_uint>(holeNum));
+
+    vector<atomic_uint> &pegsToHoles = newAlignment.pegsToHoles;
+    vector<atomic_uint> &holesToPegs = newAlignment.holesToPegs;
+    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg);
+
     for (const auto& edge : edgeList) {
-        string nodeG1 = edge[0], nodeG2 = edge[1];
+        const string *pegName = &edge[0], *holeName = &edge[1];
         if (not byName) {
-            A[stoi(nodeG1)] = stoi(nodeG2);
+            uint peg = stoul(*pegName);
+            uint hole = stoul(*holeName);
+            pegsToHoles[peg].store(hole);
+            holesToPegs[hole].store(peg);
         } else {
             bool nodeG1Misplaced = false;
             bool nodeG2Misplaced = false;
-            if (not G1.hasNodeName(nodeG1)) {
-                cout << nodeG1 << " not in G1 " << G1.getName();
-                if (G2.hasNodeName(nodeG1)) {
+            if (not G1.hasNodeName(*pegName)) {
+                cout << pegName << " not in G1 " << G1.getName();
+                if (G2.hasNodeName(*pegName)) {
                     cout << ", but it is in G2. Will switch if appropriate." << endl;
                     nodeG1Misplaced = true;
                 } else {
@@ -92,9 +135,9 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
                     continue;
                 }
             }
-            if (not G2.hasNodeName(nodeG2)) {
-                cout << nodeG2 << " not in G2 " << G2.getName();
-                if (G1.hasNodeName(nodeG2)) {
+            if (not G2.hasNodeName(*holeName)) {
+                cout << holeName << " not in G2 " << G2.getName();
+                if (G1.hasNodeName(*holeName)) {
                     cout << ", but it is in G1. Will switch if appropriate." << endl;
                     nodeG2Misplaced = true;
                 } else {
@@ -103,34 +146,39 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2,
                 }
             }
             if (nodeG1Misplaced and nodeG2Misplaced) {
-                std::swap(nodeG1, nodeG2);
-                cout << nodeG1 << " and " << nodeG2 << " swapped." << endl;
+                std::swap(pegName, holeName);
+                cout << pegName << " and " << holeName << " swapped." << endl;
             }
-            A[G1.getNameIndex(nodeG1)] = G2.getNameIndex(nodeG2);
+            uint peg = G1.getNameIndex(*pegName);
+            uint hole = G2.getNameIndex(*holeName);
+            pegsToHoles[peg].store(hole);
+            holesToPegs[hole].store(peg);
         }
     }
-    vector<bool> G2AssignedNodes(n2, false);
-    for (uint i = 0; i < n1; i++) {
-        if (A[i] != n2) {
-            if (G2AssignedNodes[A[i]]) throw runtime_error("two G1 nodes map to the same G2 node");
-            G2AssignedNodes[A[i]] = true;
+    for (uint peg = 0; peg < pegNum; peg++) {
+        const uint hole = pegsToHoles[peg].load();
+        if (hole != invalidHole) {
+            if (holesToPegs[hole].load() != peg) {
+                throw runtime_error("two G1 nodes map to the same G2 node");
+            }
         }
     }
-    for (uint i = 0; i < n1; i++) {
-        if (A[i] == n2) {
-            unsigned j = randIndex(n2);
-            while (G2AssignedNodes[j]) j = randIndex(n2);
-            A[i] = j;
-            G2AssignedNodes[j] = true;
+    for (uint peg = 0; peg < pegNum; peg++) {
+        if (pegsToHoles[peg] == holeNum) {
+            uint hole = randIndex(holeNum);
+            while (holesToPegs[hole] != invalidPeg) {
+                hole = randIndex(holeNum);
+            }
+            pegsToHoles[peg].store(hole);
+            holesToPegs[hole].store(peg);
         }
     }
-    Alignment alig(A);
-    alig.printDefinitionErrors(G1, G2);
-    assert(alig.isCorrectlyDefined(G1, G2));
-    return alig;
+    newAlignment.printDefinitionErrors(G1, G2);
+    assert(newAlignment.isCorrectlyDefined(G1, G2));
+    return newAlignment;
 }
 
-Alignment Alignment::loadMapping(const string& fileName) {
+Alignment Alignment::loadMapping(const string& fileName, const Graph& G1, const Graph& G2) {
     if (not FileIO::fileExists(fileName)) {
         throw runtime_error("Starting alignment file "+fileName+" not found");
     }
@@ -141,17 +189,66 @@ Alignment Alignment::loadMapping(const string& fileName) {
     vector<uint> A(0);
     int g2Ind;
     while (iss >> g2Ind) A.push_back(g2Ind);
-    return A;
+    return Alignment(A, G2.getNumNodes());
 }
 
-Alignment Alignment::random(uint n1, uint n2) {
+
+//precondition: a valid color-restricted matching exists between G1 and G2
+//equivalently: every color in G1 has at least as many nodes in G2
+Alignment Alignment::randomColorRestrictedAlignment(const Graph& G1, const Graph& G2) {
+
+    const vector<uint> holeColorToPegColor = G2.myColorIdsToOtherGraphColorIds(G1);
+    vector<vector<uint>> pegColorToHoles(G1.numColors());
+    for (uint hole = 0; hole < G2.getNumNodes(); hole++) {
+        uint holeColor = G2.getNodeColor(hole);
+        uint pegColor = holeColorToPegColor[holeColor];
+        if (pegColor == Graph::INVALID_COLOR_ID) continue;
+        pegColorToHoles[pegColor].push_back(hole);
+    }
+    for (uint pegColor = 0; pegColor < G1.numColors(); pegColor++) {
+        randomShuffle(pegColorToHoles[pegColor]);
+    }
+
+    uint pegNum = G1.getNumNodes();
+    uint holeNum = G2.getNumNodes();
+
+    Alignment newAlignment;
+    newAlignment.pegNum = pegNum;
+    newAlignment.holeNum = holeNum;
+    newAlignment.pegsToHoles = move(vector<atomic_uint>(pegNum));
+    newAlignment.holesToPegs = move(vector<atomic_uint>(holeNum));
+
+    vector<atomic_uint> &pegsToHoles = newAlignment.pegsToHoles;
+    vector<atomic_uint> &holesToPegs = newAlignment.holesToPegs;
+    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg);
+
+    for (uint peg = 0; peg < pegNum; peg++) {
+        uint pegColor = G1.getNodeColor(peg);
+        if (pegColorToHoles[pegColor].empty()) {
+            throw runtime_error("not enough nodes in G2 with color "+G1.getColorName(pegColor));
+        }
+        uint hole = pegColorToHoles[pegColor].back();
+        pegColorToHoles[pegColor].pop_back();
+
+        pegsToHoles[peg].store(hole);
+        holesToPegs[hole].store(peg);
+    }
+
+    if (not newAlignment.isCorrectlyDefined(G1, G2)) {
+        newAlignment.printDefinitionErrors(G1, G2);
+        throw runtime_error("alignment not correctly defined");
+    }
+    return newAlignment;
+}
+
+Alignment Alignment::random(uint pegNum, uint holeNum) {
     //taken from: http://stackoverflow.com/questions/311703/algorithm-for-sampling-without-replacement
-    vector<uint> alignment(n1);
+    vector<uint> alignment(pegNum);
     uint t = 0; // total input records dealt with
     uint m = 0; // number of items selected so far
-    while (m < n1) {
+    while (m < pegNum) {
         double u = randDouble();
-        if ((n2 - t)*u >= n1 - m) {
+        if ((holeNum - t)*u >= pegNum - m) {
             t++;
         }
         else {
@@ -161,20 +258,50 @@ Alignment Alignment::random(uint n1, uint n2) {
         }
     }
     randomShuffle(alignment);
-    return alignment;
+
+    return Alignment(alignment, holeNum);
 }
 
 Alignment Alignment::empty() {
-    vector<uint> emptyMapping(0);
-    return {emptyMapping};
+    return Alignment();
 }
 
 Alignment Alignment::identity(uint n) {
-    vector<uint> A(n);
-    for (uint i = 0; i < n; i++) {
-        A[i] = i;
+    Alignment newAlignment;
+    newAlignment.pegNum = n;
+    newAlignment.holeNum = n;
+
+    vector<atomic_uint> A(n);
+    vector<atomic_uint> invA(n);
+    for (size_t i = 0; i < n; i++) {
+        A[i].store(i);
+        invA[i].store(i);
     }
-    return {A};
+    newAlignment.pegsToHoles = move(A);
+    newAlignment.holesToPegs = move(invA);
+
+    return newAlignment;
+}
+
+Alignment Alignment::reverse() const {
+    Alignment newAlignment;
+    newAlignment.pegNum = holeNum;
+    newAlignment.holeNum = pegNum;
+
+    vector<atomic_uint> newA(holeNum);
+    vector<atomic_uint> newInvA(pegNum);
+
+    for (size_t i = 0; i < pegNum; i++) {
+        newInvA[i].store(pegsToHoles[i].load());
+    }
+    for (size_t i = 0; i < holeNum; i++) {
+        newA[i].store(holesToPegs[i].load());
+    }
+
+    newAlignment.holesToPegs = move(newInvA);
+    newAlignment.pegsToHoles = move(newA);
+
+    return newAlignment;
 }
 
 Alignment Alignment::correctMapping(const Graph& G1, const Graph& G2) {
@@ -185,12 +312,67 @@ Alignment Alignment::correctMapping(const Graph& G1, const Graph& G2) {
     for (uint i = 0; i < G1.getNumNodes(); i++) {
         A[i] = G2.getNameIndex(G1.getNodeName(i));
     }
-    return {A};
+    return Alignment(A, G2.getNumNodes());
 }
 
-Alignment &Alignment::operator=(Alignment other) {
-    std::swap(A, other.A);
-    return *this;
+vector<uint> Alignment::copyPegsToHoles() const {
+    vector<uint> v;
+    v.reserve(pegNum);
+    for (const auto& e : pegsToHoles) {
+        v.push_back(e.load());
+    }
+    return v;
+}
+
+vector<uint> Alignment::copyHolesToPegs() const {
+    vector<uint> v;
+    v.reserve(holeNum);
+    for (const auto& e : holesToPegs) {
+        v.push_back(e.load());
+    }
+    return v;
+}
+
+void Alignment::movePeg(uint peg, uint newHole) {
+    uint oldHole = pegsToHoles[peg].exchange(newHole);
+    holesToPegs[oldHole].store(invalidPeg);
+    holesToPegs[newHole].store(peg);
+}
+
+void Alignment::movePeg(uint peg, uint oldHole, uint newHole) {
+    pegsToHoles[peg].store(newHole);
+    holesToPegs[oldHole].store(invalidPeg);
+    holesToPegs[newHole].store(peg);
+}
+
+void Alignment::swapPegs(uint peg1, uint peg2) {
+    uint hole1 = pegsToHoles[peg1].load();
+    uint hole2 = pegsToHoles[peg2].exchange(hole1);
+    pegsToHoles[peg1].store(hole2);
+
+    holesToPegs[hole1].store(peg2);
+    holesToPegs[hole2].store(peg1);
+}
+
+void Alignment::swapPegs(uint peg1, uint peg2, uint hole1, uint hole2) {
+    pegsToHoles[peg1].store(hole2);
+    pegsToHoles[peg2].store(hole1);
+
+    holesToPegs[hole1].store(peg2);
+    holesToPegs[hole2].store(peg1);
+}
+
+void Alignment::compose(const Alignment& other) {
+    holeNum = other.holeNum;
+    holesToPegs = move(vector<atomic_uint>(holeNum));
+    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg);
+
+    for (uint peg = 0; peg < numOfPegs(); peg++) {
+        uint oldHole = pegsToHoles[peg].load();
+        uint newHole = other.pegsToHoles[oldHole].load();
+        pegsToHoles[peg].store(newHole);
+        holesToPegs[newHole].store(peg);
+    }
 }
 
 uint Alignment::computeNumAlignedEdges(const Graph& G1, const Graph& G2) const {
@@ -203,101 +385,123 @@ uint Alignment::computeNumAlignedEdges(const Graph& G1, const Graph& G2) const {
     // arbitrary specifications on what an aligned edge costs. For example if the edges are weighted, then EdgeRatio
     // says the aligned edges is min(e1,e2)/max(e1,e2), whereas EdgeMin is just min(e1,e2). In such cases "counting"
     // aligned edges is irrelevant.
-    for (const auto& edge: *(G1.getEdgeList()))
-        res += G2.getEdgeWeight(A[edge[0]], A[edge[1]]);
+    for (const auto& edge: G1.getEdgeList()) {
+        uint peg1 = edge[0];
+        uint peg2 = edge[1];
+        uint hole1 = pegsToHoles[peg1].load();
+        uint hole2 = pegsToHoles[peg2].load();
+
+        res += G2.getEdgeWeight(hole1, hole2);
+    }
     return res;
-}
-
-Alignment Alignment::reverse(uint n2) const {
-    uint n1 = numOfPegs();
-    vector<uint> A(n2, n1); //n1 used for invalid mapping
-    for (uint i = 0; i < n1; i++) A[this->A[i].load()] = i;
-    return {A};
-}
-
-void Alignment::compose(const Alignment& other) {
-    for (uint i = 0; i < numOfPegs(); i++) A[i].store(other.A[A[i].load()].load());
 }
 
 bool Alignment::isCorrectlyDefined(const Graph& G1, const Graph& G2) const {
     uint n1 = G1.getNumNodes();
     uint n2 = G2.getNumNodes();
-    vector<bool> G2AssignedNodes(n2, false);
+    if (n1 != pegNum || n2 != holeNum) {
+        return false;
+    }
+
+    if (n1 != pegsToHoles.size() || n2 != holesToPegs.size()) {
+        return false;
+    }
+
     vector<uint> colorMap = G1.myColorIdsToOtherGraphColorIds(G2);
 
-    if (A.size() != n1) return false;
-    for (uint i = 0; i < n1; i++) {
-        if (A[i] < 0 or A[i] >= n2 or G2AssignedNodes[A[i]]) return false;
-        G2AssignedNodes[A[i]] = true;
-        uint g1Color = G1.getNodeColor(i);
-        uint g2Color = G2.getNodeColor(A[i]);
-        if (colorMap.at(g1Color) != g2Color) return false;
+    for (uint peg = 0; peg < pegNum; ++peg) {
+        uint hole = pegsToHoles[peg].load();
+        if (hole >= invalidHole) {
+            return false;
+        }
+        if (holesToPegs[hole].load() != peg) {
+            return false;
+        }
+
+        uint pegColor = G1.getNodeColor(peg);
+        uint holeColor = G2.getNodeColor(pegsToHoles[peg]);
+        if (colorMap.at(pegColor) != holeColor) {
+            return false;
+        }
     }
+    for (uint hole = 0; hole < holeNum; ++hole) {
+        uint peg = holesToPegs[hole].load();
+        if (peg > invalidPeg) {
+            return false;
+        }
+        if (peg == invalidPeg) {
+            continue;
+        }
+        if (pegsToHoles[peg].load() != hole) {
+            return false;
+        }
+    }
+
     return true;
 }
 
 void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) const {
-    uint n1 = G1.getNumNodes(), n2 = G2.getNumNodes();
-    vector<bool> G2AssignedNodes(n2, false);
+    uint n1 = G1.getNumNodes();
+    uint n2 = G2.getNumNodes();
+
     vector<uint> colorMap = G1.myColorIdsToOtherGraphColorIds(G2);
+
     int count = 0;
-    if (A.size() != n1) 
-        cerr << "Incorrect size: "<<A.size()<<", should be "<<n1<<endl;
-    for (uint i = 0; i < n1; i++) {
-        if (A[i] < 0 or A[i] >= n2) {
-            cerr<<count<<": node "<<i<<" ("<<G1.getNodeName(i)<<") maps to ";
-            cerr<<A[i]<<", which is not in range 0..n2 ("<<n2<<")"<<endl;
-            count++;
+
+    if (pegNum != n1) {
+        cerr << "Incorrect pegNum: "<<pegNum<<", should be "<<n1<<endl;
+    }
+    if (pegsToHoles.size() != n1) {
+        cerr << "Incorrect pegsToHoles size: "<<pegsToHoles.size()<<", should be "<<n1<<endl;
+    }
+    if (holeNum != n2) {
+        cerr << "Incorrect holeNum: "<<pegNum<<", should be "<<n2<<endl;
+    }
+    if (holesToPegs.size() != n1) {
+        cerr << "Incorrect holesToPegs size: "<<holesToPegs.size()<<", should be "<<n2<<endl;
+    }
+
+    for (uint peg = 0; peg < pegNum; ++peg) {
+        uint hole = pegsToHoles[peg].load();
+        if (hole >= invalidHole) {
+            cerr<<count++<<": peg "<<peg<<" ("<<G1.getNodeName(peg)<<") maps to hole ";
+            cerr<<hole<<", which is not in range 0..n2 ("<<n2<<")"<<endl;
         }
-        if (G2AssignedNodes[A[i]]) {
-            cerr<<count<<": node "<<i<<" ("<<G1.getNodeName(i)<<") maps to "<<A[i]<<" (";
-            cerr<<G2.getNodeName(A[i])<<"), which is also mapped to by a previous node"<<endl;
-            count++;
+        uint peg2 = holesToPegs[hole].load();
+        if (peg != peg2 && peg2 < invalidPeg) {
+            cerr<<count++<<": peg "<<peg<<" ("<<G1.getNodeName(peg)<<") maps to hole "<<hole<<" (";
+            cerr<<G2.getNodeName(hole)<<"), which actually maps back to peg "<<peg2;
+            cerr<<" ("<<G1.getNodeName(peg2)<<")"<<endl;
         }
-        G2AssignedNodes[A[i]] = true;
-        uint g1Color = G1.getNodeColor(i);
-        uint g2Color = G2.getNodeColor(A[i]);
-        if (colorMap.at(g1Color) != g2Color) {
-            string g1ColorName = G1.getColorName(g1Color);
-            string g2ColorName = G2.getColorName(g2Color);
-            cerr<<count<<": node "<<i<<" ("<<G1.getNodeName(i)<<") of color ";
-            cerr<<G1.getColorName(g1Color)<<" maps to "<<A[i]<<" (";
-            cerr<<G2.getNodeName(A[i])<<") of color "<<G2.getColorName(g2Color)<<endl;
-            count++;
+        uint pegColor = G1.getNodeColor(peg);
+        uint holeColor = G2.getNodeColor(hole);
+        if (colorMap.at(pegColor) != holeColor) {
+            string pegColorName = G1.getColorName(pegColor);
+            string holeColorName = G2.getColorName(holeColor);
+            cerr<<count<<": peg "<<peg<<" ("<<G1.getNodeName(peg)<<") of color ";
+            cerr<<G1.getColorName(pegColor)<<" maps to hole "<<pegsToHoles[peg]<<" (";
+            cerr<<G2.getNodeName(pegsToHoles[peg])<<") of color "<<G2.getColorName(holeColor)<<endl;
+            ++count;
+        }
+    }
+
+    for (uint hole = 0; hole < pegNum; ++hole) {
+        uint peg = holesToPegs[hole].load();
+
+        if (peg > invalidPeg) {
+            cerr<<count++<<": hole "<<hole<<" ("<<G2.getNodeName(hole)<<") maps to ";
+            cerr<<peg<<", which is not neither a valid peg nor the None value ("<<invalidPeg<<")"<<endl;
+        }
+        if (peg == invalidPeg) {
+            continue;
+        }
+
+        uint hole2 = pegsToHoles[peg].load();
+        if (hole != hole2) {
+            cerr<<count++<<": hole "<<hole<<" ("<<G2.getNodeName(hole)<<") maps to peg "<<peg<<" (";
+            cerr<<G1.getNodeName(peg)<<"), which actually maps back to hole "<<hole2;
+            cerr<<" ("<<G2.getNodeName(hole2)<<")"<<endl;
         }
     }
 }
 
-//precondition: a valid color-restricted matching exists between G1 and G2
-//equivalently: every color in G1 has at least as many nodes in G2
-Alignment Alignment::randomColorRestrictedAlignment(const Graph& G1, const Graph& G2) {
-    vector<uint> g2ColIdToG1ColId = G2.myColorIdsToOtherGraphColorIds(G1);
-    vector<vector<uint>> g1ColIdToG2Nodes(G1.numColors());
-    for (uint g2Node = 0; g2Node < G2.getNumNodes(); g2Node++) {
-        uint g2ColId = G2.getNodeColor(g2Node);
-        uint g1ColId = g2ColIdToG1ColId[g2ColId];
-        if (g1ColId == Graph::INVALID_COLOR_ID) continue;
-        g1ColIdToG2Nodes[g1ColId].push_back(g2Node);
-    }
-    for (uint g1ColId = 0; g1ColId < G1.numColors(); g1ColId++) {
-        randomShuffle(g1ColIdToG2Nodes[g1ColId]);
-    }
-    
-    vector<uint> A(0);
-    A.reserve(G1.getNumNodes());
-    for (uint g1Node = 0; g1Node < G1.getNumNodes(); g1Node++) {
-        uint g1ColId = G1.getNodeColor(g1Node);
-        if (g1ColIdToG2Nodes[g1ColId].empty()) {
-            throw runtime_error("not enough nodes in G2 with color "+G1.getColorName(g1ColId));
-        }
-        A.push_back(g1ColIdToG2Nodes[g1ColId].back());
-        g1ColIdToG2Nodes[g1ColId].pop_back();
-    }
-
-    Alignment alig(A);
-    if (not alig.isCorrectlyDefined(G1, G2)) {
-        alig.printDefinitionErrors(G1, G2);
-        throw runtime_error("alignment not correctly defined");
-    }
-    return alig;   
-}

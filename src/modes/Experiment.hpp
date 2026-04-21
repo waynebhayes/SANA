@@ -85,7 +85,7 @@ private:
     double getAverageScore(string method, string G1Name,
         string G2Name, string measure);
     double computeScore(string method, string G1Name,
-        string G2Name, uint numSub, Measure* measure);
+                        string G2Name, uint numSub, Measure *measure, Graph &G1, Graph &G2);
 
 
 

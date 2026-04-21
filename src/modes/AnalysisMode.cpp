@@ -14,7 +14,7 @@ Alignment loadAlignment(int format, const string& file, const Graph& G1, const G
         throw runtime_error("When using analysis mode you must specify both -alignFile and -alignFormat. "+errorHelpMsg);
 
     switch (format) {
-    case 1: return Alignment::loadMapping(file);
+    case 1: return Alignment::loadMapping(file, G1, G2);
     case 2: return Alignment::loadEdgeList(G1, G2, file);
     case 3: return Alignment::loadPartialEdgeList(G1, G2, file, true);
     case 4: return Alignment::loadPartialEdgeList(G1, G2, file, false);
