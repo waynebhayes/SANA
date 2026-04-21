@@ -73,7 +73,12 @@ public:
     }
 
     double quickAverage() const {
-        return full ? sum / data.size() : static_cast<double>(sum) / (currentPlace - data.begin());
+        const size_t count = full ? data.size() : currentPlace - data.begin();
+        if (count == 0) {
+            return 0.0;
+        }
+        const double castedSum = static_cast<double>(sum);
+        return castedSum / count;
     }
 
     double accurateAverage() {
