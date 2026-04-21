@@ -1,5 +1,6 @@
 #ifndef SANATHREE_HPP
 #define SANATHREE_HPP
+#include <csignal>
 #include <mutex>
 #include <map>
 #include <ctime>
@@ -72,7 +73,7 @@ private:
     const double tolerance;
     const double maxSeconds;
     const uint64_t maxIterations;
-    const uint64_t batchSize;
+    const uint64_t batchSize; // MUST BE A MULTIPLE OF CHUNK_SIZE!!
     const unsigned threadNumber;
     const bool hillClimbing, needEC, needEM, needER;
     const MeasureCombination *const MC;
@@ -92,34 +93,30 @@ private:
     // Set-up function
     void resetAlignment();
 
-    // Main run function and variables
-    uint64_t totalMovesCalculated;
-    uint64_t totalMovesAccepted;
-    uint64_t totalSwapsCalculated;
-    uint64_t totalSwapsAccepted;
-    void runIterations();
-    void runConfidenceIntervals();
-    void runHillClimbing();
+    uint64_t runIterations();
+    uint64_t runConfidenceIntervals();
+    uint64_t runHillClimbing();
 
     // THE REQUEST SYSTEM
-    uniform_real_distribution<> randomReal;
-
     // Hole locking system
     vector<atomic_flag> holeLocks;
     bool tryToLockHoles(unsigned hole1, unsigned hole2);
     void releaseHoles(unsigned hole1, unsigned hole2);
 
     changeRequest chooseNextRequest(mt19937_64 &generator);
-    double implementLastRequest(double pBad, double energyInc, const changeRequest &input, mt19937_64 &generator); // Returns if accepted or rejected
+    double implementLastRequest(double pBad, double energyInc, const changeRequest &input, mt19937_64 &generator, uniform_real_distribution<> &dist); // Returns if accepted or rejected
 
     // TRACKING SYSTEM
     void trackProgress(long long unsigned iter, double fractionTime, double elapsedTime,
         double temperature, double lastAvgPBad, unsigned batches = 0, double batchScore = 0., double batchPbad = 0.) const;
+
+    static void handleInterruption();
+
     static void setInterruptSignal(); // Control+C during execution offers options
     void printReportOnInterruption() const;
 public:
     // Interrupt handler
-    // These need to be public to be set from the interruption handler
+    static volatile std::sig_atomic_t userInterrupted;
     static bool saveAligAndExitOnInterruption;
     static bool saveAligAndContOnInterruption;
 };

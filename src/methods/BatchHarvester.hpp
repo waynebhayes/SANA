@@ -1,6 +1,8 @@
 #ifndef BATCHHARVESTER_HPP
 #define BATCHHARVESTER_HPP
 
+#define CHUNK_SIZE 4096
+
 #include <condition_variable>
 
 #include "SANAThree.hpp"
@@ -43,6 +45,7 @@ private:
     // Yes, even the member functions!
     // I really wish C++ had a way to enforce this at compile-time -ML
     mutex stateMutex;
+        uint64_t activationID = 0;
         State currentState;
         condition_variable waitDaughters;
         condition_variable waitMom;
@@ -54,6 +57,7 @@ private:
         void activateDaughters(const State state) {
             currentState = state;
             daughtersPaused = 0;
+            ++activationID;
             waitDaughters.notify_all();
         }
 

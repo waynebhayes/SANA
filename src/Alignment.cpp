@@ -14,10 +14,10 @@ Alignment::Alignment(const Alignment& other):
     pegsToHoles = move(vector<atomic_uint>(pegNum));
     holesToPegs = move(vector<atomic_uint>(holeNum));
     for (size_t peg = 0; peg < pegNum; ++peg) {
-        pegsToHoles[peg].store(other.pegsToHoles[peg].load());
+        pegsToHoles[peg].store(other.pegsToHoles[peg].load(memory_order_relaxed), memory_order_relaxed);
     }
     for (size_t hole = 0; hole < holeNum; ++hole) {
-        holesToPegs[hole].store(other.holesToPegs[hole].load());
+        holesToPegs[hole].store(other.holesToPegs[hole].load(memory_order_relaxed), memory_order_relaxed);
     }
 }
 
@@ -35,12 +35,12 @@ Alignment::Alignment(const vector<uint>& mapping, uint holeNum):
     pegsToHoles = move(vector<atomic_uint>(mapping.size()));
     holesToPegs = move(vector<atomic_uint>(holeNum));
 
-    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg);
+    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg, memory_order_relaxed);
 
     for (size_t peg = 0; peg < mapping.size(); ++peg) {
         uint hole = mapping[peg];
-        pegsToHoles[peg].store(hole);
-        holesToPegs[hole].store(peg);
+        pegsToHoles[peg].store(hole, memory_order_relaxed);
+        holesToPegs[hole].store(peg, memory_order_relaxed);
     }
 }
 
@@ -51,15 +51,15 @@ Alignment::Alignment(const Graph& G1, const Graph& G2, const vector<array<string
 
     pegsToHoles = move(vector<atomic_uint>(pegNum));
     holesToPegs = move(vector<atomic_uint>(holeNum));
-    for (auto &pegsHole: pegsToHoles) pegsHole.store(invalidHole);
-    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg);
+    for (auto &pegsHole: pegsToHoles) pegsHole.store(invalidHole, memory_order_relaxed);
+    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg, memory_order_relaxed);
 
     for (const auto& edge : edgeList) {
         const string &pegName = edge[0], &holeName = edge[1];
         uint peg = G1.getNameIndex(pegName);
         uint hole = G2.getNameIndex(holeName);
-        pegsToHoles[peg].store(hole);
-        holesToPegs[hole].store(peg);
+        pegsToHoles[peg].store(hole, memory_order_relaxed);
+        holesToPegs[hole].store(peg, memory_order_relaxed);
     }
     printDefinitionErrors(G1,G2);
     assert(isCorrectlyDefined(G1, G2));
@@ -113,15 +113,15 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2, const
 
     vector<atomic_uint> &pegsToHoles = newAlignment.pegsToHoles;
     vector<atomic_uint> &holesToPegs = newAlignment.holesToPegs;
-    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg);
+    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg, memory_order_relaxed);
 
     for (const auto& edge : edgeList) {
         const string *pegName = &edge[0], *holeName = &edge[1];
         if (not byName) {
             uint peg = stoul(*pegName);
             uint hole = stoul(*holeName);
-            pegsToHoles[peg].store(hole);
-            holesToPegs[hole].store(peg);
+            pegsToHoles[peg].store(hole, memory_order_relaxed);
+            holesToPegs[hole].store(peg, memory_order_relaxed);
         } else {
             bool nodeG1Misplaced = false;
             bool nodeG2Misplaced = false;
@@ -151,14 +151,14 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2, const
             }
             uint peg = G1.getNameIndex(*pegName);
             uint hole = G2.getNameIndex(*holeName);
-            pegsToHoles[peg].store(hole);
-            holesToPegs[hole].store(peg);
+            pegsToHoles[peg].store(hole, memory_order_relaxed);
+            holesToPegs[hole].store(peg, memory_order_relaxed);
         }
     }
     for (uint peg = 0; peg < pegNum; peg++) {
-        const uint hole = pegsToHoles[peg].load();
+        const uint hole = pegsToHoles[peg].load(memory_order_relaxed);
         if (hole != invalidHole) {
-            if (holesToPegs[hole].load() != peg) {
+            if (holesToPegs[hole].load(memory_order_relaxed) != peg) {
                 throw runtime_error("two G1 nodes map to the same G2 node");
             }
         }
@@ -169,8 +169,8 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2, const
             while (holesToPegs[hole] != invalidPeg) {
                 hole = randIndex(holeNum);
             }
-            pegsToHoles[peg].store(hole);
-            holesToPegs[hole].store(peg);
+            pegsToHoles[peg].store(hole, memory_order_relaxed);
+            holesToPegs[hole].store(peg, memory_order_relaxed);
         }
     }
     newAlignment.printDefinitionErrors(G1, G2);
@@ -220,7 +220,7 @@ Alignment Alignment::randomColorRestrictedAlignment(const Graph& G1, const Graph
 
     vector<atomic_uint> &pegsToHoles = newAlignment.pegsToHoles;
     vector<atomic_uint> &holesToPegs = newAlignment.holesToPegs;
-    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg);
+    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg, memory_order_relaxed);
 
     for (uint peg = 0; peg < pegNum; peg++) {
         uint pegColor = G1.getNodeColor(peg);
@@ -230,8 +230,8 @@ Alignment Alignment::randomColorRestrictedAlignment(const Graph& G1, const Graph
         uint hole = pegColorToHoles[pegColor].back();
         pegColorToHoles[pegColor].pop_back();
 
-        pegsToHoles[peg].store(hole);
-        holesToPegs[hole].store(peg);
+        pegsToHoles[peg].store(hole, memory_order_relaxed);
+        holesToPegs[hole].store(peg, memory_order_relaxed);
     }
 
     if (not newAlignment.isCorrectlyDefined(G1, G2)) {
@@ -274,8 +274,8 @@ Alignment Alignment::identity(uint n) {
     vector<atomic_uint> A(n);
     vector<atomic_uint> invA(n);
     for (size_t i = 0; i < n; i++) {
-        A[i].store(i);
-        invA[i].store(i);
+        A[i].store(i, memory_order_relaxed);
+        invA[i].store(i, memory_order_relaxed);
     }
     newAlignment.pegsToHoles = move(A);
     newAlignment.holesToPegs = move(invA);
@@ -292,10 +292,10 @@ Alignment Alignment::reverse() const {
     vector<atomic_uint> newInvA(pegNum);
 
     for (size_t i = 0; i < pegNum; i++) {
-        newInvA[i].store(pegsToHoles[i].load());
+        newInvA[i].store(pegsToHoles[i].load(memory_order_relaxed), memory_order_relaxed);
     }
     for (size_t i = 0; i < holeNum; i++) {
-        newA[i].store(holesToPegs[i].load());
+        newA[i].store(holesToPegs[i].load(memory_order_relaxed), memory_order_relaxed);
     }
 
     newAlignment.holesToPegs = move(newInvA);
@@ -319,7 +319,7 @@ vector<uint> Alignment::copyPegsToHoles() const {
     vector<uint> v;
     v.reserve(pegNum);
     for (const auto& e : pegsToHoles) {
-        v.push_back(e.load());
+        v.push_back(e.load(memory_order_relaxed));
     }
     return v;
 }
@@ -328,50 +328,50 @@ vector<uint> Alignment::copyHolesToPegs() const {
     vector<uint> v;
     v.reserve(holeNum);
     for (const auto& e : holesToPegs) {
-        v.push_back(e.load());
+        v.push_back(e.load(memory_order_relaxed));
     }
     return v;
 }
 
 void Alignment::movePeg(uint peg, uint newHole) {
-    uint oldHole = pegsToHoles[peg].exchange(newHole);
-    holesToPegs[oldHole].store(invalidPeg);
-    holesToPegs[newHole].store(peg);
+    uint oldHole = pegsToHoles[peg].exchange(newHole, memory_order_relaxed);
+    holesToPegs[oldHole].store(invalidPeg, memory_order_relaxed);
+    holesToPegs[newHole].store(peg, memory_order_relaxed);
 }
 
 void Alignment::movePeg(uint peg, uint oldHole, uint newHole) {
-    pegsToHoles[peg].store(newHole);
-    holesToPegs[oldHole].store(invalidPeg);
-    holesToPegs[newHole].store(peg);
+    pegsToHoles[peg].store(newHole, memory_order_relaxed);
+    holesToPegs[oldHole].store(invalidPeg, memory_order_relaxed);
+    holesToPegs[newHole].store(peg, memory_order_relaxed);
 }
 
 void Alignment::swapPegs(uint peg1, uint peg2) {
-    uint hole1 = pegsToHoles[peg1].load();
-    uint hole2 = pegsToHoles[peg2].exchange(hole1);
-    pegsToHoles[peg1].store(hole2);
+    uint hole1 = pegsToHoles[peg1].load(memory_order_relaxed);
+    uint hole2 = pegsToHoles[peg2].exchange(hole1, memory_order_relaxed);
+    pegsToHoles[peg1].store(hole2, memory_order_relaxed);
 
-    holesToPegs[hole1].store(peg2);
-    holesToPegs[hole2].store(peg1);
+    holesToPegs[hole1].store(peg2, memory_order_relaxed);
+    holesToPegs[hole2].store(peg1, memory_order_relaxed);
 }
 
 void Alignment::swapPegs(uint peg1, uint peg2, uint hole1, uint hole2) {
-    pegsToHoles[peg1].store(hole2);
-    pegsToHoles[peg2].store(hole1);
+    pegsToHoles[peg1].store(hole2, memory_order_relaxed);
+    pegsToHoles[peg2].store(hole1, memory_order_relaxed);
 
-    holesToPegs[hole1].store(peg2);
-    holesToPegs[hole2].store(peg1);
+    holesToPegs[hole1].store(peg2, memory_order_relaxed);
+    holesToPegs[hole2].store(peg1, memory_order_relaxed);
 }
 
 void Alignment::compose(const Alignment& other) {
     holeNum = other.holeNum;
     holesToPegs = move(vector<atomic_uint>(holeNum));
-    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg);
+    for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg, memory_order_relaxed);
 
     for (uint peg = 0; peg < numOfPegs(); peg++) {
-        uint oldHole = pegsToHoles[peg].load();
-        uint newHole = other.pegsToHoles[oldHole].load();
-        pegsToHoles[peg].store(newHole);
-        holesToPegs[newHole].store(peg);
+        uint oldHole = pegsToHoles[peg].load(memory_order_relaxed);
+        uint newHole = other.pegsToHoles[oldHole].load(memory_order_relaxed);
+        pegsToHoles[peg].store(newHole, memory_order_relaxed);
+        holesToPegs[newHole].store(peg, memory_order_relaxed);
     }
 }
 
@@ -388,8 +388,8 @@ uint Alignment::computeNumAlignedEdges(const Graph& G1, const Graph& G2) const {
     for (const auto& edge: G1.getEdgeList()) {
         uint peg1 = edge[0];
         uint peg2 = edge[1];
-        uint hole1 = pegsToHoles[peg1].load();
-        uint hole2 = pegsToHoles[peg2].load();
+        uint hole1 = pegsToHoles[peg1].load(memory_order_relaxed);
+        uint hole2 = pegsToHoles[peg2].load(memory_order_relaxed);
 
         res += G2.getEdgeWeight(hole1, hole2);
     }
@@ -410,11 +410,11 @@ bool Alignment::isCorrectlyDefined(const Graph& G1, const Graph& G2) const {
     vector<uint> colorMap = G1.myColorIdsToOtherGraphColorIds(G2);
 
     for (uint peg = 0; peg < pegNum; ++peg) {
-        uint hole = pegsToHoles[peg].load();
+        uint hole = pegsToHoles[peg].load(memory_order_relaxed);
         if (hole >= invalidHole) {
             return false;
         }
-        if (holesToPegs[hole].load() != peg) {
+        if (holesToPegs[hole].load(memory_order_relaxed) != peg) {
             return false;
         }
 
@@ -425,14 +425,14 @@ bool Alignment::isCorrectlyDefined(const Graph& G1, const Graph& G2) const {
         }
     }
     for (uint hole = 0; hole < holeNum; ++hole) {
-        uint peg = holesToPegs[hole].load();
+        uint peg = holesToPegs[hole].load(memory_order_relaxed);
         if (peg > invalidPeg) {
             return false;
         }
         if (peg == invalidPeg) {
             continue;
         }
-        if (pegsToHoles[peg].load() != hole) {
+        if (pegsToHoles[peg].load(memory_order_relaxed) != hole) {
             return false;
         }
     }
@@ -457,17 +457,17 @@ void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) const {
     if (holeNum != n2) {
         cerr << "Incorrect holeNum: "<<pegNum<<", should be "<<n2<<endl;
     }
-    if (holesToPegs.size() != n1) {
+    if (holesToPegs.size() != n2) {
         cerr << "Incorrect holesToPegs size: "<<holesToPegs.size()<<", should be "<<n2<<endl;
     }
 
     for (uint peg = 0; peg < pegNum; ++peg) {
-        uint hole = pegsToHoles[peg].load();
+        uint hole = pegsToHoles[peg].load(memory_order_relaxed);
         if (hole >= invalidHole) {
             cerr<<count++<<": peg "<<peg<<" ("<<G1.getNodeName(peg)<<") maps to hole ";
             cerr<<hole<<", which is not in range 0..n2 ("<<n2<<")"<<endl;
         }
-        uint peg2 = holesToPegs[hole].load();
+        uint peg2 = holesToPegs[hole].load(memory_order_relaxed);
         if (peg != peg2 && peg2 < invalidPeg) {
             cerr<<count++<<": peg "<<peg<<" ("<<G1.getNodeName(peg)<<") maps to hole "<<hole<<" (";
             cerr<<G2.getNodeName(hole)<<"), which actually maps back to peg "<<peg2;
@@ -486,7 +486,7 @@ void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) const {
     }
 
     for (uint hole = 0; hole < pegNum; ++hole) {
-        uint peg = holesToPegs[hole].load();
+        uint peg = holesToPegs[hole].load(memory_order_relaxed);
 
         if (peg > invalidPeg) {
             cerr<<count++<<": hole "<<hole<<" ("<<G2.getNodeName(hole)<<") maps to ";
@@ -496,7 +496,7 @@ void Alignment::printDefinitionErrors(const Graph& G1, const Graph& G2) const {
             continue;
         }
 
-        uint hole2 = pegsToHoles[peg].load();
+        uint hole2 = pegsToHoles[peg].load(memory_order_relaxed);
         if (hole != hole2) {
             cerr<<count++<<": hole "<<hole<<" ("<<G2.getNodeName(hole)<<") maps to peg "<<peg<<" (";
             cerr<<G1.getNodeName(peg)<<"), which actually maps back to hole "<<hole2;

@@ -42,7 +42,7 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, const double TInitial, co
     tolerance(tolerance),
     maxSeconds(maxSeconds),
     maxIterations(maxIterations),
-    batchSize(max<uint64_t>(15000u,n2)),
+    batchSize((max<uint64_t>(CHUNK_SIZE * threadNumber * 2, G2->getNumEdges()) / CHUNK_SIZE) * CHUNK_SIZE),
     threadNumber(threadNumber),
     hillClimbing(addHillClimbing),
     needEC(MC->getWeight("ec") > 0),
@@ -54,7 +54,11 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, const double TInitial, co
     localScoresFileName(localScoresFileName),
     tInitial(TInitial),
     tDecay(TDecay),
-    holeLocks(n2) {
+    holeLocks(n2)
+    {
+    if (batchSize % CHUNK_SIZE != 0) {
+        throw runtime_error("batchSize needs to be a multiple of CHUNK_SIZE!");
+    }
     // This should never happen, and if it does, it is 100% user error.
     if (threadNumber >= n1 / 2) {
         throw runtime_error(
@@ -78,8 +82,6 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, const double TInitial, co
                 "sums.\n If you really need a complex aggregation, either wait for a new version or"
                 "run the old version." << endl;
     }
-
-    randomReal = uniform_real_distribution<>(0, 1);
 
     // NODE COLOR SYSTEM initialization
     // TODO: Preferred Holes
@@ -117,11 +119,6 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, const double TInitial, co
     if (numAdjacentAlignments == 0)
         throw runtime_error(
             "There is a unique valid alignment, so running SANA is pointless");
-
-    totalMovesCalculated = 0;
-    totalMovesAccepted = 0;
-    totalSwapsCalculated = 0;
-    totalSwapsAccepted = 0;
 
     if (startingAlignment.numOfPegs() == 0)
         alignment = Alignment::randomColorRestrictedAlignment(*G1, *G2);
@@ -184,26 +181,22 @@ double SANAThree::getEquilibriumPBadAtTemp(double temperature, unsigned timeoutS
 Alignment SANAThree::run() {
     setInterruptSignal();
 
+    uint64_t iter;
     if (tolerance > 0)
-        runConfidenceIntervals();
+        iter = runConfidenceIntervals();
     else
-        runIterations();
+        iter = runIterations();
 
-    if (hillClimbing) runHillClimbing();
+    if (hillClimbing) iter += runHillClimbing();
 
-    cout<<"Calculated "<< totalMovesCalculated <<" moves\n";
-    cout<<"Calculated "<< totalSwapsCalculated <<" swaps\n";
-    cout<<"Calculated "<< totalMovesCalculated + totalSwapsCalculated <<" total iterations\n";
-    cout<<"Accepted "<< totalMovesAccepted <<" moves\n";
-    cout<<"Accepted "<< totalSwapsAccepted <<" swaps\n";
-    cout<<"Accepted "<< totalMovesAccepted + totalSwapsAccepted <<" total iterations\n";
+    cout<<"Calculated "<<iter<<" total iterations."<<endl;
 
     return alignment;
 }
 
 #define LEEWAY 1.75
 #define temperatureFunction(f, i, d) ((i) * exp(-(d) * (f)))
-void SANAThree::runIterations() {
+uint64_t SANAThree::runIterations() {
     double maxSecondsWithLeeway;
     long long unsigned maxBatches;
     unsigned batchesPerStep;
@@ -227,29 +220,28 @@ void SANAThree::runIterations() {
         maxBatches = 1 + maxIterations / batchSize;
         maxSecondsWithLeeway = 0;
     }
-    totalMovesCalculated = 0;
-    totalMovesAccepted = 0;
-    totalSwapsCalculated = 0;
-    totalSwapsAccepted = 0;
     resetAlignment();
     T.start();
-    long long unsigned iter = 0;
+    long long unsigned batch = 0;
     double temperature = tInitial;
-    for (; iter < maxBatches; iter += 1) {
-        temperature = temperatureFunction(static_cast<double>(iter)/static_cast<double>(maxBatches),
-                                                 tInitial, tDecay);
-        const batchOutput output = threadPool->collectBatch(temperature);
+    for (; batch < maxBatches; batch += 1) {
+        if (userInterrupted) {handleInterruption();}
         if (saveAligAndExitOnInterruption) break;
         if (saveAligAndContOnInterruption) printReportOnInterruption();
-        if (iter % batchesPerStep == 0) {
+
+        temperature = temperatureFunction(static_cast<double>(batch)/static_cast<double>(maxBatches),
+                                                 tInitial, tDecay);
+        const batchOutput output = threadPool->collectBatch(temperature);
+        if (batch % batchesPerStep == 0) {
             currentScore = MC->eval(alignment);
-            trackProgress(iter * batchSize, static_cast<double>(iter)/static_cast<double>(maxBatches), T.elapsed(),
+            trackProgress(batch * batchSize, static_cast<double>(batch)/static_cast<double>(maxBatches), T.elapsed(),
                 temperature, output.averagePBad);
         }
         if (maxSecondsWithLeeway != 0. and T.elapsed() > maxSecondsWithLeeway) break;
     }
-    trackProgress(iter * batchSize, static_cast<double>(iter)/static_cast<double>(maxBatches), T.elapsed(),
+    trackProgress(batch * batchSize, static_cast<double>(batch)/static_cast<double>(maxBatches), T.elapsed(),
                 temperature, 0.);
+    return batch * batchSize;
 }
 
 // All of these are purely heuristic -Wayne (I think, at least -Marcus)
@@ -260,7 +252,7 @@ void SANAThree::runIterations() {
 #define HAPPY_BATCHES MIN(10000, (int)(m1+m2))
 #define MIN_CONFIDENCE 0.99999
 #define TOL_SAFETY_MARGIN 1.07 // empirically this seems to cut failure rates to below 5%.
-void SANAThree::runConfidenceIntervals() {
+uint64_t SANAThree::runConfidenceIntervals() {
     TimerTrue T;
 
     // TODO: make all of these changeable on the command line
@@ -280,12 +272,8 @@ void SANAThree::runConfidenceIntervals() {
 
     // TODO: add batchesPerStep from runIterations for a regular re-eval of score
     long int lastBatchCount=0;
-    double previousScore = currentScore;
+    double previousScore = currentScore.load();
     double temperature = 0;
-    totalMovesCalculated = 0;
-    totalMovesAccepted = 0;
-    totalSwapsCalculated = 0;
-    totalSwapsAccepted = 0;
     resetAlignment();
 
     double lastPBad = 0.0;
@@ -300,6 +288,7 @@ void SANAThree::runConfidenceIntervals() {
 	// Now the "inner loop"
 	bool satisfied = false;
 	while(!satisfied) {
+	    if (userInterrupted) {handleInterruption();}
 	    if (saveAligAndExitOnInterruption) break;
 	    if (saveAligAndContOnInterruption) printReportOnInterruption();
 
@@ -308,6 +297,10 @@ void SANAThree::runConfidenceIntervals() {
 	    StatAddSample(scoreBatchMeans, output.averageScore);
 	    StatAddSample(pBadBatchMeans, output.averagePBad);
 	    lastPBad = output.averagePBad;
+
+	    if (batchesThisTemperature % MIN_BATCHES) {
+	        currentScore = MC->eval(alignment);
+	    }
 
 	    if(StatNumSamples(scoreBatchMeans)>=MIN_BATCHES) {
 		double pBadInterval = tolPerStep;
@@ -381,6 +374,7 @@ void SANAThree::runConfidenceIntervals() {
     }
     cout<<"Performed "<<batch<<" total batches\n";
     trackProgress(batch * batchSize, tau, T.elapsed(), temperature, lastPBad);
+    return batch * batchSize;
 }
 
 // I stole this duration from SANA proper. I will repeat the comment there that this is
@@ -388,28 +382,25 @@ void SANAThree::runConfidenceIntervals() {
 // class?? TODO: fix this
 // -Marcus
 #define HILLCLIMB_DURATION 10000000000u
-void SANAThree::runHillClimbing() {
+uint64_t SANAThree::runHillClimbing() {
     Timer T;
     T.start();
 
     const unsigned long runTime = 1 + HILLCLIMB_DURATION / batchSize;
-    unsigned long long iter = 0;
-    for (; iter < runTime; iter++) {
+    unsigned long long batch = 0;
+    for (; batch < runTime; batch++) {
         threadPool->collectBatch(0.);
         currentScore = MC->eval(alignment);
     }
     cout<<"Hill climbing took "<<T.elapsedString()<<"s"<<endl;
+    return batch * batchSize;
 }
 
 SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
-
-    // Request parameters
-    bool twoPegs = true;
-
-    // Garbage allocation so that an exception will occur if not set and then used
-
     // Loop while we look for a valid adjacent alignment.
     while (true) {
+        bool twoPegs = true;
+
         unsigned peg1 = randIndex_64(n1, generator);
         unsigned hole1 = alignment.pegToHole(peg1);
 
@@ -430,7 +421,7 @@ SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
             continue;
         }
 
-        if (alignment.pegToHole(peg1) != hole1 || alignment.pegToHole(peg2) != hole2) {
+        if (alignment.pegToHole(peg1) != hole1 || alignment.holeToPeg(hole2) != peg2) {
             releaseHoles(hole1, hole2);
             continue;
         }
@@ -492,32 +483,25 @@ void SANAThree::releaseHoles(unsigned hole1, unsigned hole2) {
 }
 
 
-double SANAThree::implementLastRequest(const double pBad, const double energyInc, const changeRequest &input, mt19937_64 &generator) {
-    if (input.twoPegs)
-        totalSwapsCalculated++;
-    else
-        totalMovesCalculated++;
-
-    if (randomReal(generator) >= pBad) {
+double SANAThree::implementLastRequest(const double pBad, const double energyInc, const changeRequest &input, mt19937_64 &generator, uniform_real_distribution<> &dist) {
+    if (dist(generator) >= pBad) {
         releaseHoles(input.hole1, input.hole2);
         return currentScore;
     }
 
     if (input.twoPegs) {
-        alignment.swapPegs(input.peg1, input.peg2);
-        totalSwapsAccepted++;
+        alignment.swapPegs(input.peg1, input.peg2, input.hole1, input.hole2);
     }
     else {
-        alignment.movePeg(input.peg1, input.hole2);
-        totalMovesAccepted++;
+        alignment.movePeg(input.peg1, input.hole1, input.hole2);
     }
     releaseHoles(input.hole1, input.hole2);
 
     // Yes, this causes a data race if two thread try to adjust the score at once. Too bad!
     // The energyInc is already stale and we've already got floating point error accumulation.
-    // So this is acceptable
-    const double val = currentScore.load() + energyInc;
-    currentScore.store(val);
+    // So this is acceptable, as long as we don't drift too far.
+    const double val = currentScore.load(memory_order_relaxed) + energyInc;
+    currentScore.store(val, memory_order_relaxed);
     return val;
 }
 
@@ -541,35 +525,44 @@ void SANAThree::trackProgress(long long unsigned iter, double fractionTime, doub
     fflush(stdout);
 }
 
+volatile sig_atomic_t SANAThree::userInterrupted = 0;
+
 void sigHandlerThree(const int s) {
-    string line;
-    if(s == SIGINT) {
-        int c = 3; // default to save and continue
-        // probably an interactive ^C
-        do {
-            cout<<"Select an option (0 - 3):"<<endl<<"  (0) Do nothing and continue"<<endl<<"  (1) Exit"<<endl
-            <<"  (2) Save Alignment and Exit"<<endl<<"  (3) Save Alignment and Continue"<<endl<<">> ";
-            cin >> c;
-            if (cin.eof()) { // hmm, assume ^D means "save and continue"
-                SANAThree::saveAligAndContOnInterruption = true;
-                cin.clear();
-                return;
-            }
-            if (cin.fail()) {
-                c = -1;
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            }
-            if      (c == 0) cout<<"Continuing..."<<endl;
-            else if (c == 1) exit(0);
-            else if (c == 2) SANAThree::saveAligAndExitOnInterruption = true;
-            else if (c == 3) SANAThree::saveAligAndContOnInterruption = true;
-        } while (c < 0 || c > 3);
+    if (s == SIGINT || s == SIGTERM || s == SIGHUP) {
+        SANAThree::userInterrupted = 1;
     }
-    else if(s == SIGTERM) // probably sent via top(1), so save and exit
-        SANAThree::saveAligAndExitOnInterruption = true;
-    else // any other signal (eg USR1 or something unexpected), save and continue
-        SANAThree::saveAligAndContOnInterruption = true;
+}
+
+void SANAThree::handleInterruption() {
+    userInterrupted = 0; // Reset the flag
+
+    int c = 3;
+    do {
+        cout << "\n--- SANA Interrupted ---" << endl;
+        cout << "Select an option (0 - 3):" << endl
+             << "  (0) Do nothing and continue" << endl
+             << "  (1) Exit" << endl
+             << "  (2) Save Alignment and Exit" << endl
+             << "  (3) Save Alignment and Continue" << endl << ">> ";
+
+        cin >> c;
+        if (cin.eof()) {
+            saveAligAndContOnInterruption = true;
+            cin.clear();
+            return;
+        }
+        if (cin.fail()) {
+            c = -1;
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+
+        if      (c == 0) cout << "Continuing..." << endl;
+        else if (c == 1) exit(0);
+        else if (c == 2) saveAligAndExitOnInterruption = true;
+        else if (c == 3) saveAligAndContOnInterruption = true;
+
+    } while (c < 0 || c > 3);
 }
 
 void SANAThree::setInterruptSignal() {

@@ -28,9 +28,9 @@
 ///
 /// const double temperature: the annealing temperature, higher temperature -> bad change more likely
 double static inline acceptingProbability(const double energyInc, const double temperature) {
-	// Float comparisons are definitely a bad practice, we need to find an epsilon for this. -ML
+	// Float comparisons are usually a bad practice, this case is fine -ML
 	if (temperature == 0.) {
-    	return energyInc >= 0; // Bool coerced into 0.0 and 1.0. Probably also a bad practice - ML
+    	return energyInc >= 0; // Bool coerced into 0.0 and 1.0
     }
 
 	if (energyInc >= 0.) {
@@ -204,6 +204,7 @@ SANAThree::batchOutput SANAThree::BatchHarvester::collectBatch(double temperatur
 
 void SANAThree::BatchHarvester::daughterFunction(uint64_t seed) {
     mt19937_64 generator(seed);
+	auto randomReal = uniform_real_distribution<>(0, 1);
 
     unique_lock<mutex> bufferLock(bufferMutex, defer_lock); // Defer
     unique_lock<mutex> stateLock(stateMutex); // Held
@@ -236,11 +237,25 @@ void SANAThree::BatchHarvester::daughterFunction(uint64_t seed) {
 			if (++daughtersPaused == daughterNum)
 				waitMom.notify_all();
 
+			uint64_t lastActivation = activationID;
+
 			// Now we wait until we told that daughter threads should be unpaused.
+			//
 			// A condition is required here because the C++ standard does not guarantee that a
 			// thread will never be woken up without our code asking for it. This is called a
-			// spurious wakeup. -ML
-			waitDaughters.wait(stateLock, [this]{return currentState != State::pause;});
+			// spurious wakeup. Originally, the condition was currentState != State::pause.
+			//
+			// So why activationID instead? My code is sometimes so fast that the threads will
+			// finish a batch before all of them have been woken up. This is bad, because it means
+			// we return to the pause state before the sleepy thread can wake up, which means it
+			// never does a state machine loop to increment daughtersPaused which means Mom is never
+			// woken up. So we cannot rely on pause to tell threads to wake up, we need a different indicator.
+			// This is called the ABA problem. The solution is to have a counter we can check that
+			// will never return to the same state.
+			// -ML
+			waitDaughters.wait(stateLock, [this, lastActivation]{
+				return activationID != lastActivation;
+			});
 
 			// Reset our daughter stats.
 			collectedScore = 0.0;
@@ -261,32 +276,39 @@ void SANAThree::BatchHarvester::daughterFunction(uint64_t seed) {
 	    case State::anneal: {
 	        stateLock.unlock();
 
-	        // Pause all threads if we've met the quota. We jump to reassess state.
-	        if (startedRequests++ >= batchSize) {
-	            stateLock.lock();
-	            currentState = State::pause;
-	            continue;
-	        }
+			while (true) {
+				uint64_t newStartedRequests = startedRequests.fetch_add(CHUNK_SIZE);
 
-	        // Part 1, ask the SANA class for a request to process
-	        changeRequest currentRequest = parent.chooseNextRequest(generator);
+				// Break if we've met the quota.
+				if (newStartedRequests >= batchSize) {
+					break;
+				}
 
-	        // Part 2, assess request
-	        double energyInc = assessRequest(currentRequest);
-	        const double pBad = acceptingProbability(energyInc, temperature);
+				for (size_t i = 0; i < CHUNK_SIZE; ++i) {
+					// Part 1, ask the SANA class for a request to process
+					changeRequest currentRequest = parent.chooseNextRequest(generator);
 
-	        // Part 3, implement (or don't implement) request
-	        const double newScore = parent.implementLastRequest(pBad, energyInc, currentRequest, generator);
+					// Part 2, assess request
+					double energyInc = assessRequest(currentRequest);
+					const double pBad = acceptingProbability(energyInc, temperature);
 
-	        // Part 4, record the results
-	        collectedScore += newScore;
-			if (energyInc < 0.0) {
-				collectedPBad += pBad;
-				++processedPBad;
+					// Part 3, implement (or don't implement) request
+					const double newScore = parent.implementLastRequest(pBad, energyInc, currentRequest, generator, randomReal);
+
+					// Part 4, record the results
+					collectedScore += newScore;
+					if (energyInc < 0.0) {
+						collectedPBad += pBad;
+						++processedPBad;
+					}
+				}
+				finishedRequests.fetch_add(CHUNK_SIZE);
 			}
-	        ++finishedRequests;
 
 	        stateLock.lock();
+			if (currentState != State::terminate) {
+				currentState = State::pause;
+			}
 	        continue;
 	    }
 
@@ -294,39 +316,44 @@ void SANAThree::BatchHarvester::daughterFunction(uint64_t seed) {
 		// otherwise process requests indefinitely or until equilibrium is reached.
 	    case State::equilibrate: {
 	        stateLock.unlock();
-	        // Part 1, select request to process
-	        changeRequest currentRequest = parent.chooseNextRequest(generator);
 
-	        // Part 2, assess request
-	        const double energyInc = assessRequest(currentRequest);
-	        const double pBad = acceptingProbability(energyInc, temperature);
+			double newScore = 0.0;
+			for (size_t i = 0; i < CHUNK_SIZE; ++i) {
+				// Part 1, select request to process
+				changeRequest currentRequest = parent.chooseNextRequest(generator);
 
-	        // Part 3, implement (or don't implement) request
-	        const double newScore = parent.implementLastRequest(pBad, energyInc, currentRequest, generator);
+				// Part 2, assess request
+				const double energyInc = assessRequest(currentRequest);
+				const double pBad = acceptingProbability(energyInc, temperature);
 
-	    	// Part 4, record the results
-	        bufferLock.lock();
-	        if (energyInc < 0) {
-	            pBadCircBuffer.insert(pBad);
-	        }
-			// Every batchSize, we add a new score to the scoreCircBuffer.
-	        if (++finishedRequests % batchSize == 0) {
-	            scoreCircBuffer.insert(newScore);
-	            if (scoreCircBuffer.isFull() && !scoreCircBuffer.trendingUpwards()) {
-					// This looks a little ridiculous, and it wouldn't really cause a data race if
-	            	// you don't unlock the bufferLock before modifying the state, but I don't want
-	            	// to set a bad example that someone will emulate. And moving this pause
-	            	// requires putting a conditional outside the batchSize modulo check which could
-	            	// slightly reduce performance. Just tolerate this unless entirely refactoring.
-	            	// -ML
-	            	bufferLock.unlock();
-		                stateLock.lock();
-							currentState = State::pause;
-		                stateLock.unlock();
-	            	bufferLock.lock();
-	            }
-	        }
-	        bufferLock.unlock();
+				// Part 3, implement (or don't implement) request
+				newScore = parent.implementLastRequest(pBad, energyInc, currentRequest, generator, randomReal);
+
+				// Part 4, record the results
+				bufferLock.lock();
+				if (energyInc < 0) {
+					pBadCircBuffer.insert(pBad);
+				}
+				bufferLock.unlock();
+			}
+
+	        uint64_t newFinishedRequests = finishedRequests.fetch_add(CHUNK_SIZE);
+			if (newFinishedRequests % batchSize == 0) {
+				bufferLock.lock();
+				scoreCircBuffer.insert(newScore);
+				if (scoreCircBuffer.isFull() && !scoreCircBuffer.trendingUpwards()) {
+					bufferLock.unlock();
+					stateLock.lock();
+					if (currentState != State::terminate) {
+						currentState = State::pause;
+						continue; // We can do this because stateLock() is held.
+					}
+					stateLock.unlock();
+				}
+				else {
+					bufferLock.unlock();
+				}
+			}
 
 	        stateLock.lock();
 	        continue;

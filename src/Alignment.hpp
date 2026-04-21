@@ -65,8 +65,8 @@ public:
     void swapPegs(uint peg1, uint peg2);
     void swapPegs(uint peg1, uint peg2, uint hole1, uint hole2);
 
-    uint pegToHole(uint peg) const {return pegsToHoles[peg].load();}
-    uint holeToPeg(uint hole) const {return holesToPegs[hole].load();}
+    uint pegToHole(uint peg) const {return pegsToHoles[peg].load(std::memory_order_relaxed);}
+    uint holeToPeg(uint hole) const {return holesToPegs[hole].load(std::memory_order_relaxed);}
     uint operator[](uint peg) const {return pegsToHoles[peg].load(memory_order_relaxed);} // No write access.
     uint numOfPegs() const {return pegNum;}
     uint numOfHoles() const {return holeNum;}
