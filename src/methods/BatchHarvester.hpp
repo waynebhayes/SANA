@@ -21,8 +21,9 @@ public:
     ~BatchHarvester();
 
     // Collect a batch from BatchHarvester for annealing purposes. Note that this WILL mutate the
-    // alignment (which is its job, after all)
-    batchOutput collectBatch(double temperature);
+    // alignment (which is its job, after all). Returns the average score and average pBad of the
+    // batch.
+    ScoreWithPBad collectBatch(double temperature);
 
     // Find the equilibrium pBad of the annealing process at a certain temperature, timing out if
     // timeoutSeconds is exceeded.
@@ -93,13 +94,13 @@ private:
     void daughterFunction(uint64_t seed);
 
     // Calculate the expected results of a request.
-    double assessRequest(const changeRequest& currentRequest) const {
+    double assessRequest(const ChangeRequest& currentRequest) const {
         if (currentRequest.twoPegs)
             return assessSwap_(currentRequest);
         return assessMove_(currentRequest);
     }
-    double assessMove_(const changeRequest &input) const; // One pin
-    double assessSwap_(const changeRequest &input) const; // Two pins
+    double assessMove_(const ChangeRequest &input) const; // One pin
+    double assessSwap_(const ChangeRequest &input) const; // Two pins
 };
 
 #endif //MOVECALCULATOR_HPP

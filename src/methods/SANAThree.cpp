@@ -26,13 +26,11 @@
 #include "../Report.hpp"
 #include "../utils/Stats.hpp"
 
-bool SANAThree::saveAligAndExitOnInterruption = false;
-bool SANAThree::saveAligAndContOnInterruption = false;
 SANAThree::SANAThree(const Graph* G1, const Graph* G2, const double TInitial, const double TDecay,
-    const double maxSeconds, const long long maxIterations, const double tolerance,
-    const bool addHillClimbing, const MeasureCombination* MC, const string& scoreAggrStr,
-    const Alignment& optionalStartAlig, const string& outputFileName,
-    const string& localScoresFileName, unsigned threadNumber):
+                     const double maxSeconds, const long long maxIterations, const double tolerance,
+                     const bool addHillClimbing, const MeasureCombination* MC, const string& scoreAggrStr,
+                     const Alignment& optionalStartAlig, const string& outputFileName,
+                     const string& localScoresFileName, unsigned threadNumber):
 
     Method(G1, G2, "SANAThree_" + MC->toString()),
     n1(G1->getNumNodes()),
@@ -45,30 +43,29 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, const double TInitial, co
     batchSize((max<uint64_t>(CHUNK_SIZE * threadNumber * 2, G2->getNumEdges()) / CHUNK_SIZE) * CHUNK_SIZE),
     threadNumber(threadNumber),
     hillClimbing(addHillClimbing),
-    needEC(MC->getWeight("ec") > 0),
-    needEM(MC->getWeight("emin") > 0),
-    needER(MC->getWeight("er") > 0),
     MC(MC),
     startingAlignment(optionalStartAlig),
     outputFileName(outputFileName),
     localScoresFileName(localScoresFileName),
     tInitial(TInitial),
     tDecay(TDecay),
+    pegColorToHoleColor(G1->myColorIdsToOtherGraphColorIds(*G2)),
     holeLocks(n2)
-    {
+{
     if (batchSize % CHUNK_SIZE != 0) {
         throw runtime_error("batchSize needs to be a multiple of CHUNK_SIZE!");
     }
     // This should never happen, and if it does, it is 100% user error.
     if (threadNumber >= n1 / 2) {
         throw runtime_error(
-            "You should not request more threads than half the network size of G1.");
+            "You should not request more threads than half the network size of G1."
+        );
     }
 
     if (tolerance > 0) {
         if (maxIterations > 0 or maxSeconds > 0)
             throw runtime_error(
-                "To use iterations or time, first set \"-tolerance 0\" on the command line (NOT RECOMMENDED!)");
+                "To use iterations or time, first set \"-tolerance 0\" on the command line (NOT RECOMMENDED)");
     }
 
     for (size_t i = 0; i < n2; ++i) {
@@ -77,14 +74,20 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, const double TInitial, co
 
     currentScore = 0.;
 
+
+    // An old feature that I did not see much use of. It should be reimplemented with the Measure
+    // refactor. -ML
     if (scoreAggrStr != "sum") {
-        cerr << "SANA 3.0 alpha does not yet support score aggregation methods other than weighted"
+        cerr << "SANA 3.5 does not yet support score aggregation methods other than weighted"
                 "sums.\n If you really need a complex aggregation, either wait for a new version or"
                 "run the old version." << endl;
     }
 
     // NODE COLOR SYSTEM initialization
     // TODO: Preferred Holes
+    // Preferred Holes is like non-exclusive colors. Each peg has a number of holes that it would
+    // like to be matched which. For example: peg 1 might prefer holes A, B, and C while peg 2 might
+    // prefer holes B and D.
 
     assert(G1->numColors() <= G2->numColors());
 
@@ -120,16 +123,31 @@ SANAThree::SANAThree(const Graph* G1, const Graph* G2, const double TInitial, co
         throw runtime_error(
             "There is a unique valid alignment, so running SANA is pointless");
 
-    if (startingAlignment.numOfPegs() == 0)
-        alignment = Alignment::randomColorRestrictedAlignment(*G1, *G2);
-    else
-        alignment = startingAlignment;
-    currentScore = MC->eval(alignment);
+    resetAlignment();
 
-    threadPool = new BatchHarvester {threadNumber, *this, batchSize / 2};
+    threadPool = new BatchHarvester{threadNumber, *this, batchSize / 2};
 }
 
 SANAThree::~SANAThree() {delete threadPool;}
+
+Alignment SANAThree::run() {
+    setInterruptSignal();
+
+    uint64_t iter;
+
+    // Tolerance > 0 is considered the default setting, as runConfidenceInterval has a
+    // self-adjusting temperature schedule.
+    if (tolerance > 0)
+        iter = runConfidenceIntervals();
+    else
+        iter = runIterations();
+
+    if (hillClimbing) iter += runHillClimbing();
+
+    cout<<"Calculated "<<iter<<" total iterations."<<endl;
+
+    return alignment;
+}
 
 Alignment SANAThree::runUsingIterations() {
     cerr << "Warning, direct public access to SANA's different run types is being phased out." << endl;
@@ -149,17 +167,13 @@ Alignment SANAThree::runUsingConfidenceIntervals() {
     return run();
 }
 
-void SANAThree::resetAlignment() {
-    if (startingAlignment.numOfPegs() == 0) alignment = Alignment::randomColorRestrictedAlignment(*G1, *G2);
-    else alignment = startingAlignment;
-
-    currentScore = MC->eval(alignment);
+double SANAThree::getEquilibriumPBadAtTemp(double temperature, unsigned timeoutSeconds) const {
+    return threadPool->runUntilEquilibrium(temperature, timeoutSeconds);
 }
-
 
 // TODO:
 // This is terribly outdated. I'll buy a (soft) cider for anyone who takes it upon themselves to
-// make a better version, but this relatively low priority. -Marcus
+// make a better version, but this relatively low priority. -ML
 void SANAThree::describeParameters(ostream &stream) const {
     stream << "Temperature goldilocks:" << endl;
     stream << "T_initial: " << tInitial << endl;
@@ -174,214 +188,244 @@ string SANAThree::fileNameSuffix(const Alignment& Al) const {
     return "_" + extractDecimals(MC->eval(Al),3);
 }
 
-double SANAThree::getEquilibriumPBadAtTemp(double temperature, unsigned timeoutSeconds) const {
-    return threadPool->runUntilEquilibrium(temperature, timeoutSeconds);
+void SANAThree::resetAlignment() {
+    if (startingAlignment.numOfPegs() == 0)
+        alignment = Alignment::randomColorRestrictedAlignment(*G1, *G2);
+    else alignment = Alignment(startingAlignment);
+
+    currentScore = MC->eval(alignment);
 }
 
-Alignment SANAThree::run() {
-    setInterruptSignal();
+bool SANAThree::saveAligAndExitOnInterruption = false;
 
-    uint64_t iter;
-    if (tolerance > 0)
-        iter = runConfidenceIntervals();
-    else
-        iter = runIterations();
+bool SANAThree::saveAligAndContOnInterruption = false;
 
-    if (hillClimbing) iter += runHillClimbing();
-
-    cout<<"Calculated "<<iter<<" total iterations."<<endl;
-
-    return alignment;
-}
-
-#define LEEWAY 1.75
+#define SECONDS_PER_REPORT 30
 #define temperatureFunction(f, i, d) ((i) * exp(-(d) * (f)))
+// runIterations has two modes: maxSeconds mode and maxIterations mode. They work nearly identically,
+// but change the standard we use for the temperature schedule to break our loop.
 uint64_t SANAThree::runIterations() {
-    double maxSecondsWithLeeway;
-    long long unsigned maxBatches;
-    unsigned batchesPerStep;
+    // Control variables
+    const bool isTimerBound = (maxSeconds > 0);
+    const uint64_t maxBatches = !isTimerBound ? 1 + maxIterations / batchSize : 0;
+
+    uint64_t batches = 0;
+
+    double lastReportTime = 0.0;
+    double fractionComplete = 0.0;
+    resetAlignment();
     TimerTrue T;
     T.start();
-    double iterationsPerSecond;
-    {
-        unsigned batches = 0;
-        while (T.elapsed() < 1.) {
-            threadPool->collectBatch(0.);
-            batches++;
-        }
-        iterationsPerSecond = batchSize * batches / T.elapsed();
-        batchesPerStep = ceil(batches * 10 / T.elapsed());
-    }
-    if (maxSeconds > 0) {
-        maxBatches = ceil(maxSeconds * iterationsPerSecond / batchSize);
-        maxSecondsWithLeeway = maxSeconds * LEEWAY;
-    }
-    else {
-        maxBatches = 1 + maxIterations / batchSize;
-        maxSecondsWithLeeway = 0;
-    }
-    resetAlignment();
-    T.start();
-    long long unsigned batch = 0;
-    double temperature = tInitial;
-    for (; batch < maxBatches; batch += 1) {
-        if (userInterrupted) {handleInterruption();}
-        if (saveAligAndExitOnInterruption) break;
+    while (fractionComplete < 1.0) {
+        // Resolve interrupts
+        if (userInterrupted) interruptionUserInput();
         if (saveAligAndContOnInterruption) printReportOnInterruption();
+        if (saveAligAndExitOnInterruption) break;
 
-        temperature = temperatureFunction(static_cast<double>(batch)/static_cast<double>(maxBatches),
-                                                 tInitial, tDecay);
-        const batchOutput output = threadPool->collectBatch(temperature);
-        if (batch % batchesPerStep == 0) {
+        const double temperature = temperatureFunction(fractionComplete, tInitial, tDecay);
+        const ScoreWithPBad output = threadPool->collectBatch(temperature);
+        ++batches;
+
+        const double elapsed = T.elapsed();
+        fractionComplete = isTimerBound ? elapsed / maxSeconds : static_cast<double>(batches) / maxBatches;
+        if (elapsed - lastReportTime >= SECONDS_PER_REPORT || fractionComplete >= 1.0) {
             currentScore = MC->eval(alignment);
-            trackProgress(batch * batchSize, static_cast<double>(batch)/static_cast<double>(maxBatches), T.elapsed(),
-                temperature, output.averagePBad);
+            lastReportTime = elapsed;
+            trackProgress(batches * batchSize, fractionComplete, elapsed, temperature, output.pBad);
         }
-        if (maxSecondsWithLeeway != 0. and T.elapsed() > maxSecondsWithLeeway) break;
     }
-    trackProgress(batch * batchSize, static_cast<double>(batch)/static_cast<double>(maxBatches), T.elapsed(),
-                temperature, 0.);
-    return batch * batchSize;
+    return batches * batchSize;
 }
 
-// All of these are purely heuristic -Wayne (I think, at least -Marcus)
-// TODO: This should be refactored! (Marcus also wants tab characters replaced with spaces, but WH likes tabs)
+// All of these are purely heuristic -WH
+// TODO: Marcus suggests that this be put in a config document for more advanced settings
 #define MAX_TAU_STEP 0.01
 #define MIN_TAU_STEP 0.001
 #define MIN_BATCHES 30
-#define HAPPY_BATCHES MIN(10000, (int)(m1+m2))
-#define MIN_CONFIDENCE 0.99999
-#define TOL_SAFETY_MARGIN 1.07 // empirically this seems to cut failure rates to below 5%.
+#define MIN_CONFIDENCE 0.99999  // doesn't add much CPU to increase confidence. -WH
+#define TOL_SAFETY_MARGIN 1.07 // empirically this seems to cut failure rates to below 5%. - WH
+#define VERBOSE true
 uint64_t SANAThree::runConfidenceIntervals() {
+    // TODO: We should try using CircularSTATBuffer for this for a rolling average rather
+    // than resetting the stat buffer entirely after an arbitrary number of batches. It
+    // would also require less confusing logic. -ML
+
     TimerTrue T;
+    T.start();
 
-    // TODO: make all of these changeable on the command line
-    unsigned batch = 0;
-    double tau, tauStep = MAX_TAU_STEP; // dynamically made smaller or bigger as necessary
-    assert(tolerance > 0);
-    double tolPerStep = tolerance * (tauStep) / TOL_SAFETY_MARGIN;
-    double confidence = 1-pow(tolPerStep, 1.5); // empirically works well.
-    if(confidence < MIN_CONFIDENCE) confidence = MIN_CONFIDENCE; // doesn't add much CPU to increase confidence.
+    const double tolPerStep = tolerance * MAX_TAU_STEP / TOL_SAFETY_MARGIN;
+    const double confidence = max(MIN_CONFIDENCE, 1 - pow(tolPerStep, 1.5)); // empirically works well. - WH
+    const uint64_t happyBatches = min<uint64_t>(10000u, m1 + m2);
 
-    bool verbose = true;
-    if(verbose) printf("SANAThree::runConfidenceIntervals Parameters: batchSize %" PRIu64 " confidence %g tolerance per step %g\n",
-	batchSize, confidence, tolPerStep);
+    if (VERBOSE) {
+        printf("SANAThree::runConfidenceIntervals Parameters: batchSize %" PRIu64 " confidence %g tolerance per step %g\n",
+            batchSize, confidence, tolPerStep);
+    }
 
+    // These come from a C library, so we have to manually allocate and free rather than using a
+    // smart pointer. The CircularSTATBuffer does not have this problem. -ML
     STAT *scoreBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
     STAT *pBadBatchMeans = StatAlloc(0, 0.0, 0.0, false, false);
 
-    // TODO: add batchesPerStep from runIterations for a regular re-eval of score
-    long int lastBatchCount=0;
-    double previousScore = currentScore.load();
-    double temperature = 0;
+    uint64_t totalBatches = 0;
+
+    double recentPBad = 0.0;
+    double previousStageScore = currentScore.load();
+    double temperature = 0.0;
+    double tauStep = MAX_TAU_STEP; // dynamically made smaller or bigger as necessary -WH
+
     resetAlignment();
 
-    double lastPBad = 0.0;
-
-    T.start();
-
-    // Technical start of the loop, we do not indent for aesthetic reasons
-    for (tau = 0; tau <= 1; tau += tauStep) {
-	int batchesThisTemperature = 0;
+    // We set through the temperature schedule gradually, with the possibility of staying longer at
+    // certain temperature if they are "productive" (that is, the score and pBad keep changing,
+    // indicating that progress towards a better region of the solution space is still being made.)
+    // The tau system was manually tuned by Dr.WH. It uses floats because sometimes we want to take
+    // a smaller step to the final temperature.
+    for (double tau = 0; tau <= 1; tau += tauStep) {
+        uint64_t stageBatches = 0;
+        uint64_t previousStageBatches = 0;
         temperature = temperatureFunction(tau, tInitial, tDecay);
 
-	// Now the "inner loop"
-	bool satisfied = false;
-	while(!satisfied) {
-	    if (userInterrupted) {handleInterruption();}
-	    if (saveAligAndExitOnInterruption) break;
-	    if (saveAligAndContOnInterruption) printReportOnInterruption();
+        // Inner loop that defines the temperature stage.
+        // The conditions for exiting are too complex for a simple while expression
+        while (true) {
+            // RESOLVE INTERRUPTS
+            if (userInterrupted) interruptionUserInput();
+            if (saveAligAndContOnInterruption) printReportOnInterruption();
+            if (saveAligAndExitOnInterruption) break;
 
-	    const batchOutput output = threadPool->collectBatch(temperature);
-        ++batch; ++batchesThisTemperature;
-	    StatAddSample(scoreBatchMeans, output.averageScore);
-	    StatAddSample(pBadBatchMeans, output.averagePBad);
-	    lastPBad = output.averagePBad;
+            // PROCESS BATCH
+            const ScoreWithPBad output = threadPool->collectBatch(temperature);
+            ++totalBatches; ++stageBatches;
+            StatAddSample(scoreBatchMeans, output.score);
+            StatAddSample(pBadBatchMeans, output.pBad);
+            recentPBad = output.pBad;
 
-	    if (batchesThisTemperature % MIN_BATCHES) {
-	        currentScore = MC->eval(alignment);
-	    }
+            // TODO: Report mid-stage results without MIN_BATCHES
+            if (stageBatches % MIN_BATCHES == 0) {
+                currentScore = MC->eval(alignment);
+            }
 
-	    if(StatNumSamples(scoreBatchMeans)>=MIN_BATCHES) {
-		double pBadInterval = tolPerStep;
-		double scoreInterval = pBadInterval;
+            // This is a hidden cast from int to uint64_t.
+            // Yet another good reason to use CircularSTATBuffer, which doesn't use signed integers
+            // for an unsigned quantity. -ML
+            const uint64_t numSamples = StatNumSamples(scoreBatchMeans);
 
-		// The user specifies a *relative* tolerance on the FINAL score... but we don't know what the final
-		// score will be. Thus, early on when the score is low and pBad is high, we punt to using (effectively)
-		// an absolute tolerance by multiplying the tolerance by pBad. Then, as the score increases and
-		// surpasses pBad, transition to a genuine relative tolerance by multiplying by the score.
-		double relativeMultiplier = MAX(StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
+            // Continue loop if we do not have enough samples to make a judgement.
+            if (numSamples < MIN_BATCHES) {continue;}
 
-		// HOWEVER, we also slowly decrease the tolerance (by slowly increasing the Interval), because
-		// sometimes we can get "stuck" for a VERY long time at one temperature because the score
-		// is fluctuating too much. Let's not get stuck too long.
-		relativeMultiplier *= (1+log(batchesThisTemperature));
+            // LOOP BREAK DECISION CODE
 
-		scoreInterval *= relativeMultiplier;
-		pBadInterval *= relativeMultiplier;
-		if(StatConfInterval(scoreBatchMeans, confidence) < scoreInterval &&
-		    StatConfInterval(pBadBatchMeans,  confidence) < pBadInterval) satisfied = true;
-		else if(StatNumSamples(scoreBatchMeans) >= HAPPY_BATCHES) {
-		    // Reset the batch system if the score is increasing steadily, otherwise it can't "converge" without
-		    // an ENORMOUS number of batches to compensate for the "bias" that occurs in early batches.
-		    if(StatMean(scoreBatchMeans) > previousScore) { // adding + tolPerSstep/2 seems too much.
-			if(verbose)
-			    printf(" ++++> temp %.4g, batchMeanScore %.3f (pBad %.3g) still increasing after %d batches; reset batches and continue\n",
-			    temperature, StatMean(scoreBatchMeans),
-			    StatConfInterval(pBadBatchMeans,  confidence), StatNumSamples(scoreBatchMeans));
-			fflush(stdout);
-			previousScore = StatMean(scoreBatchMeans);
-			lastBatchCount = 0; StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
-		    } else if(tauStep>MIN_TAU_STEP && StatNumSamples(scoreBatchMeans) >= HAPPY_BATCHES+lastBatchCount) {
-			if(verbose)
-			    printf(" ----> %d batches, avg score %g decreased at tau %g; reduce next tauStep from %g",
-				StatNumSamples(scoreBatchMeans), StatMean(scoreBatchMeans), tau, tauStep);
-			fflush(stdout);
-			// tau -= tauStep;
-			tauStep *= 2.0/3.0;
-			if(tauStep < MIN_TAU_STEP) tauStep = MIN_TAU_STEP;
-			// tau += tauStep;
-			if(verbose) printf(" to %g and backtrack to tau %g\n", tauStep, tau);
-			lastBatchCount = StatNumSamples(scoreBatchMeans);
-		    }
-		}
-	    }
-	}
+            const double meanScore = StatMean(scoreBatchMeans);
+            const double meanPBad = StatMean(pBadBatchMeans);
 
-    currentScore = MC->eval(alignment);
-    trackProgress(batch * batchSize, tau, T.elapsed(), temperature, lastPBad, batchesThisTemperature,
-                  StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
+            // The user specifies a *relative* tolerance on the FINAL score... but we don't know what the final
+            // score will be. Thus, early on when the score is low and pBad is high, we punt to using (effectively)
+            // an absolute tolerance by multiplying the tolerance by pBad. Then, as the score increases and
+            // surpasses pBad, transition to a genuine relative tolerance by multiplying by the score.
+            double relativeMultiplier = MAX(meanScore, meanPBad);
+            // HOWEVER, we also slowly decrease the tolerance (by slowly increasing the Interval), because
+            // sometimes we can get "stuck" for a VERY long time at one temperature because the score
+            // is fluctuating too much. Let's not get stuck too long.
+            relativeMultiplier *= 1+log(stageBatches);
 
-    if(tauStep < MAX_TAU_STEP) {
-	    if(StatNumSamples(scoreBatchMeans) < HAPPY_BATCHES) {
-		if(verbose) printf(" *****> doing OK at tau %g & %d batches; increasing tauStep from %g",
-		    tau, StatNumSamples(scoreBatchMeans), tauStep);
-		tauStep *= 3;
-		if(tauStep > MAX_TAU_STEP) tauStep = MAX_TAU_STEP;
-		if(verbose) printf(" to %g\n", tauStep);
-	    }
-	    else if(StatMean(scoreBatchMeans) + 0.00 < previousScore) {
-		if(verbose) printf(" !!!!!> score %g is stuck below previous %g; skip region by increasing tauStep from %g",
-		    StatMean(scoreBatchMeans), previousScore, tauStep);
-		fflush(stdout);
-		tauStep *= 10; // if the score is not increasing... skip this region
-		if(tauStep > MAX_TAU_STEP) tauStep = MAX_TAU_STEP;
-		if(verbose) printf(" to %g\n", tauStep);
-	    }
-	}
-	previousScore = StatMean(scoreBatchMeans);
-	StatReset(scoreBatchMeans); StatReset(pBadBatchMeans);
+            const double scoreInterval = tolPerStep * relativeMultiplier;
+            const double pBadInterval = tolPerStep * relativeMultiplier;
+
+            const bool scoreConfident = StatConfInterval(scoreBatchMeans, confidence) < scoreInterval;
+            const bool pBadConfident = StatConfInterval(pBadBatchMeans, confidence) < pBadInterval;
+
+            // Break if we are satisfied
+            if (scoreConfident && pBadConfident) {break;}
+
+            // Continue unless we have been stuck in this stage for too long.
+            if (numSamples < happyBatches) {continue;}
+
+            // ADJUST HEURISTICS
+
+            // Reset the batch system if the score is increasing steadily, otherwise it can't "converge" without
+            // an ENORMOUS number of batches to compensate for the "bias" that occurs in early batches. -WH
+            // This is why I would rather use a circular buffer. -ML
+            if (meanScore > previousStageScore) {
+                if(VERBOSE) {
+                    printf(" ++++> temp %.4g, batchMeanScore %.3f (pBad %.3g) still increasing after %lu batches; reset batches and continue\n",
+                    temperature, meanScore, StatConfInterval(pBadBatchMeans, confidence), numSamples);
+                    fflush(stdout);
+                }
+                previousStageScore = meanScore;
+                previousStageBatches = 0;
+                StatReset(scoreBatchMeans);
+                StatReset(pBadBatchMeans);
+                continue;
+            }
+
+            // If the score keeps decreasing, tauStep gets reduced
+            if (tauStep > MIN_TAU_STEP && numSamples >= happyBatches + previousStageBatches) {
+                if(VERBOSE) {
+                    printf(" ----> %d batches, avg score %g decreased at tau %g; reduce next tauStep from %g",
+                           StatNumSamples(scoreBatchMeans), StatMean(scoreBatchMeans), tau, tauStep);
+                }
+                tauStep = max(MIN_TAU_STEP, tauStep * 2.0/3.0);
+                if(VERBOSE) {
+                    printf(" to %g and backtrack to tau %g\n", tauStep, tau);
+                    fflush(stdout);
+                }
+                previousStageBatches = numSamples;
+            }
+        }
+
+        // CLEAN UP FOR NEXT TEMPERATURE STAGE
+
+        currentScore = MC->eval(alignment);
+        trackProgress(totalBatches * batchSize, tau, T.elapsed(), temperature, recentPBad, stageBatches,
+                      StatMean(scoreBatchMeans), StatMean(pBadBatchMeans));
+
+        // Marcus says: My assumption is that this logic is meant to skip over regions of inactivity,
+        // particularly if tauStep has shrunk, but it is not how I would design it.
+        if(tauStep < MAX_TAU_STEP) {
+            if(StatNumSamples(scoreBatchMeans) < happyBatches) {
+                if(VERBOSE) {
+                    printf(" *****> doing OK at tau %g & %d batches; increasing tauStep from %g",
+                        tau, StatNumSamples(scoreBatchMeans), tauStep);
+                }
+                tauStep = min(MAX_TAU_STEP, tauStep * 3);
+                if(VERBOSE) {
+                    printf(" to %g\n", tauStep);
+                    fflush(stdout);
+                }
+            }
+            else if(StatMean(scoreBatchMeans) < previousStageScore) {
+                if(VERBOSE) {
+                    printf(" !!!!!> score %g is stuck below previous %g; skip region by increasing tauStep from %g",
+                        StatMean(scoreBatchMeans), previousStageScore, tauStep);
+                }
+                tauStep = min(MAX_TAU_STEP, tauStep * 10);
+                if(VERBOSE) {
+                    printf(" to %g\n", tauStep);
+                    fflush(stdout);
+                }
+            }
+        }
+
+        previousStageScore = StatMean(scoreBatchMeans);
+        StatReset(scoreBatchMeans);
+        StatReset(pBadBatchMeans);
     }
-    cout<<"Performed "<<batch<<" total batches\n";
-    trackProgress(batch * batchSize, tau, T.elapsed(), temperature, lastPBad);
-    return batch * batchSize;
+
+    // FINISHED CALCULATIONS
+
+    cout<<"Performed "<<totalBatches<<" total batches\n";
+    trackProgress(totalBatches * batchSize, 1, T.elapsed(), temperature, recentPBad);
+
+    StatFree(scoreBatchMeans);
+    StatFree(pBadBatchMeans);
+
+    return totalBatches * batchSize;
 }
 
 // I stole this duration from SANA proper. I will repeat the comment there that this is
-// "arbitrarily chosen, probably too long". Regardless, shouldn't we be using the actual hillClimbing
-// class?? TODO: fix this
-// -Marcus
-#define HILLCLIMB_DURATION 10000000000u
+// "arbitrarily chosen, probably too long". -ML
+#define HILLCLIMB_DURATION 10000000000ull
 uint64_t SANAThree::runHillClimbing() {
     Timer T;
     T.start();
@@ -396,7 +440,11 @@ uint64_t SANAThree::runHillClimbing() {
     return batch * batchSize;
 }
 
-SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
+SANAThree::ChangeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
+    // TODO: Decisions must be made about calculation speed vs function bias.
+    // As this is currently written, each swap has twice the probability of being selected as a move.
+    // Is this acceptable? I do not know, we need to perform tests on this. -ML
+
     // Loop while we look for a valid adjacent alignment.
     while (true) {
         bool twoPegs = true;
@@ -404,13 +452,25 @@ SANAThree::changeRequest SANAThree::chooseNextRequest(mt19937_64 &generator) {
         unsigned peg1 = randIndex_64(n1, generator);
         unsigned hole1 = alignment.pegToHole(peg1);
 
+        // We reroll until we find a hole that is not hole1.
         // TODO: Preferred Hole System
-        unsigned color = G1->getNodeColor(peg1);
-        unsigned colorNum = G2->getNodesWithColor(color)->size();
-        unsigned hole2 = G2->getNodesWithColor(color)->at(randIndex_64(colorNum, generator));
-        if (hole1 == hole2) {
+        // We could easily select hole2 from the preferred holes of peg1.
+        bool foundHoleFlag = false;
+        unsigned hole2;
+        for (size_t i = 0; i < 20; ++i) {
+            unsigned pegColor = G1->getNodeColor(peg1);
+            unsigned holeColor = pegColorToHoleColor[pegColor];
+            unsigned holeColorNum = G2->getNodesWithColor(holeColor)->size();
+            hole2 = G2->getNodesWithColor(holeColor)->at(randIndex_64(holeColorNum, generator));
+            if (hole1 != hole2) {
+                foundHoleFlag = true;
+                break; // At times like this, I miss Rust's loop labels and loop assignments.
+            }
+        }
+        if (!foundHoleFlag) {
             continue;
         }
+
         unsigned peg2 = alignment.holeToPeg(hole2);
 
         if (peg2 == n1) {
@@ -482,11 +542,10 @@ void SANAThree::releaseHoles(unsigned hole1, unsigned hole2) {
     holeLocks[holeA].clear(memory_order_release);
 }
 
-
-double SANAThree::implementLastRequest(const double pBad, const double energyInc, const changeRequest &input, mt19937_64 &generator, uniform_real_distribution<> &dist) {
-    if (dist(generator) >= pBad) {
+double SANAThree::implementLastRequest(const ScoreWithPBad calculations, const ChangeRequest &input, mt19937_64 &generator, uniform_real_distribution<> &dist) {
+    if (dist(generator) >= calculations.pBad) {
         releaseHoles(input.hole1, input.hole2);
-        return currentScore;
+        return currentScore.load(memory_order_relaxed);
     }
 
     if (input.twoPegs) {
@@ -499,8 +558,8 @@ double SANAThree::implementLastRequest(const double pBad, const double energyInc
 
     // Yes, this causes a data race if two thread try to adjust the score at once. Too bad!
     // The energyInc is already stale and we've already got floating point error accumulation.
-    // So this is acceptable, as long as we don't drift too far.
-    const double val = currentScore.load(memory_order_relaxed) + energyInc;
+    // So this is acceptable, as long as we don't drift too far. Synchronizing is too expensive. -ML
+    const double val = currentScore.load(memory_order_relaxed) + calculations.score;
     currentScore.store(val, memory_order_relaxed);
     return val;
 }
@@ -514,7 +573,7 @@ void SANAThree::trackProgress(long long unsigned iter, double fractionTime, doub
         oldTimeElapsed = 0;
         lastIterations = 0;
     }
-    const double ips = (iter - lastIterations) / (elapsedTime - oldTimeElapsed);
+    const double ips = static_cast<double>(iter - lastIterations) / (elapsedTime - oldTimeElapsed);
     oldTimeElapsed = elapsedTime;
     lastIterations = iter;
 
@@ -525,15 +584,14 @@ void SANAThree::trackProgress(long long unsigned iter, double fractionTime, doub
     fflush(stdout);
 }
 
+// INTERRUPTION CODE
 volatile sig_atomic_t SANAThree::userInterrupted = 0;
-
 void sigHandlerThree(const int s) {
     if (s == SIGINT || s == SIGTERM || s == SIGHUP) {
         SANAThree::userInterrupted = 1;
     }
 }
-
-void SANAThree::handleInterruption() {
+void SANAThree::interruptionUserInput() {
     userInterrupted = 0; // Reset the flag
 
     int c = 3;
@@ -564,7 +622,6 @@ void SANAThree::handleInterruption() {
 
     } while (c < 0 || c > 3);
 }
-
 void SANAThree::setInterruptSignal() {
     saveAligAndExitOnInterruption = false;
     struct sigaction sigInt{};
@@ -575,7 +632,6 @@ void SANAThree::setInterruptSignal() {
     sigaction(SIGTERM, &sigInt, nullptr);
     sigaction(SIGHUP, &sigInt, nullptr);
 }
-
 void SANAThree::printReportOnInterruption() const {
     saveAligAndContOnInterruption = false; //reset value
     auto timestamp = string(currentDateTime()); //necessary to make it not const

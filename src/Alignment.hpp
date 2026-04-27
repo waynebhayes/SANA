@@ -5,9 +5,6 @@
 #include <vector>
 #include <sstream>
 #include <array>
-#include <iostream>
-#include <cassert>
-#include <algorithm>
 #include "Graph.hpp"
 #include "utils/utils.hpp"
 #include <atomic>
@@ -28,7 +25,7 @@ public:
     // CONSTRUCTORS
     Alignment();
     Alignment(const Alignment& other);
-    Alignment &operator=(Alignment);
+    Alignment &operator=(Alignment&&) noexcept;
     Alignment(const vector<uint>& mapping, unsigned holeNum);
     Alignment(const Graph& G1, const Graph& G2, const vector<array<string, 2>>& edgeList);
 
