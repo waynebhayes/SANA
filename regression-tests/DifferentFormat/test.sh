@@ -21,7 +21,7 @@ echo "****************************** WARNING: IGNORING GML TEST FOR NOW ********
 for network in $NETS; do
     file="$REG_DIR/$network"
     for type in $TYPES; do
-	echo "'$SANA_EXE' -ec 1 -tolerance 0 -t 1 -fg1 '$file.el' -fg2 '$file.$type' -o '$file' &> '${file}_$type.progress'"
+	echo "'$SANA_EXE' -s3 1 -tolerance 0 -t 1 -fg1 '$file.el' -fg2 '$file.$type' -o '$file' &> '${file}_$type.progress'"
     done
 done | $PARALLEL_EXE $CORES
 status=$?

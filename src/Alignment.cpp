@@ -1,6 +1,5 @@
 #include "Alignment.hpp"
 #include "Graph.hpp"
-#include "measures/EdgeCorrectness.hpp"
 #include "utils/utils.hpp"
 #include "utils/FileIO.hpp"
 using namespace std;
@@ -11,8 +10,8 @@ pegNum(0), holeNum(0), pegsToHoles(0), holesToPegs(0) {}
 Alignment::Alignment(const Alignment& other):
     pegNum(other.pegNum),
     holeNum(other.holeNum) {
-    pegsToHoles = move(vector<atomic_uint>(pegNum));
-    holesToPegs = move(vector<atomic_uint>(holeNum));
+    pegsToHoles = vector<atomic_uint>(pegNum);
+    holesToPegs = vector<atomic_uint>(holeNum);
     for (size_t peg = 0; peg < pegNum; ++peg) {
         pegsToHoles[peg].store(other.pegsToHoles[peg].load(memory_order_relaxed), memory_order_relaxed);
     }
@@ -21,7 +20,7 @@ Alignment::Alignment(const Alignment& other):
     }
 }
 
-Alignment &Alignment::operator=(Alignment other) {
+Alignment &Alignment::operator=(Alignment &&other) noexcept{
     std::swap(pegsToHoles, other.pegsToHoles);
     std::swap(holesToPegs, other.holesToPegs);
     pegNum = other.pegNum;
@@ -32,8 +31,8 @@ Alignment &Alignment::operator=(Alignment other) {
 Alignment::Alignment(const vector<uint>& mapping, uint holeNum):
     pegNum(mapping.size()),
     holeNum(holeNum) {
-    pegsToHoles = move(vector<atomic_uint>(mapping.size()));
-    holesToPegs = move(vector<atomic_uint>(holeNum));
+    pegsToHoles = vector<atomic_uint>(mapping.size());
+    holesToPegs = vector<atomic_uint>(holeNum);
 
     for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg, memory_order_relaxed);
 
@@ -49,8 +48,8 @@ Alignment::Alignment(const Graph& G1, const Graph& G2, const vector<array<string
     holeNum(G2.getNumNodes()) {
     assert(pegNum == edgeList.size());
 
-    pegsToHoles = move(vector<atomic_uint>(pegNum));
-    holesToPegs = move(vector<atomic_uint>(holeNum));
+    pegsToHoles = vector<atomic_uint>(pegNum);
+    holesToPegs = vector<atomic_uint>(holeNum);
     for (auto &pegsHole: pegsToHoles) pegsHole.store(invalidHole, memory_order_relaxed);
     for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg, memory_order_relaxed);
 
@@ -72,7 +71,7 @@ Alignment Alignment::loadEdgeList(const Graph& G1, const Graph& G2, const string
     for (uint i = 0; i < edges.size(); i += 2) {
         edgeList.push_back({edges[i], edges[i+1]});
     }
-    return Alignment(G1, G2, edgeList);
+    return {G1, G2, edgeList};
 }
 
 Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, const string& fileName) {
@@ -92,7 +91,7 @@ Alignment Alignment::loadEdgeListUnordered(const Graph& G1, const Graph& G2, con
             edgeList.push_back({name2, name1});
         }
     }
-    return Alignment(G1, G2, edgeList);
+    return {G1, G2, edgeList};
 }
 
 Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2, const string& fileName, bool byName) {
@@ -108,8 +107,8 @@ Alignment Alignment::loadPartialEdgeList(const Graph& G1, const Graph& G2, const
     Alignment newAlignment;
     newAlignment.pegNum = pegNum;
     newAlignment.holeNum = holeNum;
-    newAlignment.pegsToHoles = move(vector<atomic_uint>(pegNum));
-    newAlignment.holesToPegs = move(vector<atomic_uint>(holeNum));
+    newAlignment.pegsToHoles = vector<atomic_uint>(pegNum);
+    newAlignment.holesToPegs = vector<atomic_uint>(holeNum);
 
     vector<atomic_uint> &pegsToHoles = newAlignment.pegsToHoles;
     vector<atomic_uint> &holesToPegs = newAlignment.holesToPegs;
@@ -189,7 +188,7 @@ Alignment Alignment::loadMapping(const string& fileName, const Graph& G1, const 
     vector<uint> A(0);
     int g2Ind;
     while (iss >> g2Ind) A.push_back(g2Ind);
-    return Alignment(A, G2.getNumNodes());
+    return {A, G2.getNumNodes()};
 }
 
 
@@ -215,8 +214,8 @@ Alignment Alignment::randomColorRestrictedAlignment(const Graph& G1, const Graph
     Alignment newAlignment;
     newAlignment.pegNum = pegNum;
     newAlignment.holeNum = holeNum;
-    newAlignment.pegsToHoles = move(vector<atomic_uint>(pegNum));
-    newAlignment.holesToPegs = move(vector<atomic_uint>(holeNum));
+    newAlignment.pegsToHoles = vector<atomic_uint>(pegNum);
+    newAlignment.holesToPegs = vector<atomic_uint>(holeNum);
 
     vector<atomic_uint> &pegsToHoles = newAlignment.pegsToHoles;
     vector<atomic_uint> &holesToPegs = newAlignment.holesToPegs;
@@ -243,7 +242,7 @@ Alignment Alignment::randomColorRestrictedAlignment(const Graph& G1, const Graph
 
 Alignment Alignment::random(uint pegNum, uint holeNum) {
     //taken from: http://stackoverflow.com/questions/311703/algorithm-for-sampling-without-replacement
-    vector<uint> alignment(pegNum);
+    vector<uint> pegsToHoles(pegNum);
     uint t = 0; // total input records dealt with
     uint m = 0; // number of items selected so far
     while (m < pegNum) {
@@ -252,18 +251,18 @@ Alignment Alignment::random(uint pegNum, uint holeNum) {
             t++;
         }
         else {
-            alignment[m] = t;
+            pegsToHoles[m] = t;
             t++;
             m++;
         }
     }
-    randomShuffle(alignment);
+    randomShuffle(pegsToHoles);
 
-    return Alignment(alignment, holeNum);
+    return {pegsToHoles, holeNum};
 }
 
 Alignment Alignment::empty() {
-    return Alignment();
+    return {};
 }
 
 Alignment Alignment::identity(uint n) {
@@ -277,8 +276,8 @@ Alignment Alignment::identity(uint n) {
         A[i].store(i, memory_order_relaxed);
         invA[i].store(i, memory_order_relaxed);
     }
-    newAlignment.pegsToHoles = move(A);
-    newAlignment.holesToPegs = move(invA);
+    newAlignment.pegsToHoles = std::move(A);
+    newAlignment.holesToPegs = std::move(invA);
 
     return newAlignment;
 }
@@ -298,8 +297,8 @@ Alignment Alignment::reverse() const {
         newA[i].store(holesToPegs[i].load(memory_order_relaxed), memory_order_relaxed);
     }
 
-    newAlignment.holesToPegs = move(newInvA);
-    newAlignment.pegsToHoles = move(newA);
+    newAlignment.holesToPegs = std::move(newInvA);
+    newAlignment.pegsToHoles = std::move(newA);
 
     return newAlignment;
 }
@@ -312,7 +311,7 @@ Alignment Alignment::correctMapping(const Graph& G1, const Graph& G2) {
     for (uint i = 0; i < G1.getNumNodes(); i++) {
         A[i] = G2.getNameIndex(G1.getNodeName(i));
     }
-    return Alignment(A, G2.getNumNodes());
+    return {A, G2.getNumNodes()};
 }
 
 vector<uint> Alignment::copyPegsToHoles() const {
@@ -364,7 +363,7 @@ void Alignment::swapPegs(uint peg1, uint peg2, uint hole1, uint hole2) {
 
 void Alignment::compose(const Alignment& other) {
     holeNum = other.holeNum;
-    holesToPegs = move(vector<atomic_uint>(holeNum));
+    holesToPegs = vector<atomic_uint>(holeNum);
     for (auto &holesPeg: holesToPegs) holesPeg.store(invalidPeg, memory_order_relaxed);
 
     for (uint peg = 0; peg < numOfPegs(); peg++) {

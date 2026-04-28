@@ -37,7 +37,7 @@ if [ ! -x NetGO/NetGO.awk ]; then
     [ -x NetGO/NetGO.awk ] || die "Still can't find NetGO"
 fi
 
-export `grep '^SANA_VER=' Makefile`
+export SANA_VER=3.0
 export SANA_EXE="${SANA_EXE:=./sana$SANA_VER}"
 export SANA_DIR="${SANA_DIR:=`/bin/pwd`}"
 MAKE=false
@@ -70,8 +70,7 @@ fi
 echo "Using $MAKE_CORES threads to make and $CORES threads for regression tests"
 
 NUM_FAILS=0
-#export EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v "MAIN|[<>]"`
-export EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/), [0-9].*//' | egrep -v "MAIN|[<>]" | uniq`
+export EXECS=`sed '/MAIN=error/q' Makefile | grep '^ifeq (' | sed -e 's/.*(//' -e 's/).*//' | egrep -v "MAIN|[<>]"`
 [ `echo $EXECS | newlines | wc -l` -eq `echo $EXECS | newlines | sort -u | wc -l` ] || die "Internal error: list of EXECS <$EXECS> contains duplicates"
 
 export PARALLEL_EXE=/tmp/parallel.$$
@@ -117,7 +116,7 @@ for EXT in '' $EXECS; do
     #[ -x "$EXE" ] || die "Executable '$EXE' must exist or you must specify -make"
     # skip mpi, multi and weight since they will be tested separately below
     [ "$ext" = .multi -o "$ext" = .weight -o "$ext" = .mpi ] && continue
-    if ./$SANA_EXE$ext -tolerance 0 -itm 1 -ec 1 -g1 yeast -g2 human -tinitial 1 -tdecay 1 >/dev/null 2>&1; then
+    if ./$SANA_EXE$ext -tolerance 0 -itm 1 -s3 1 -g1 yeast -g2 human -tinitial 1 -tdecay 1 >/dev/null 2>&1; then
 	WORKING_EXECS="${WORKING_EXECS}$SANA_EXE$ext$TAB"
     else
 	warn "executable $SANA_EXE$ext failed a trivial test"
