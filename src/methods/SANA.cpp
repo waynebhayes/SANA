@@ -54,6 +54,7 @@ static uint MAX_STATIONARY = MAX_ST_INVALID, _numNonstationaryColors, *_pickArra
 bool SANA::saveAligAndExitOnInterruption = false;
 bool SANA::saveAligAndContOnInterruption = false;
 uint SANA::INVALID_ACTIVE_COLOR_ID;
+
 SANA::SANA(const Graph* G1, const Graph* G2,
         double TInitial, double TDecay, double maxSeconds, long long int maxIterations, double tolerance,
 	bool addHillClimbing, MeasureCombination* MC, const string& scoreAggrStr, const Alignment& startA,
@@ -163,6 +164,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
 
     // Cache measure pointers once to avoid per-iteration string-keyed lookups
     ecMeasurePtr  = (needAligEdges || needSec) ? (BooleanMeasure*)  MC->getMeasure("ec")   : nullptr;
+    jsMeasurePtr  = needJs   ? (JaccardSimilarityScore*) MC->getMeasure("js") : nullptr;
     edMeasurePtr  = needEd   ? (WeightedMeasure*) MC->getMeasure("ed")   : nullptr;
     erMeasurePtr  = needEr   ? (WeightedMeasure*) MC->getMeasure("er")   : nullptr;
     egmMeasurePtr = needEgm  ? (WeightedMeasure*) MC->getMeasure("egm")  : nullptr;
@@ -369,9 +371,7 @@ void SANA::initDataStructures() {
         wecSum          = wecScore*2*g1Edges;
     }
     if (needJs) {
-        Measure* js = MC->getMeasure("js");
-        jsSum       = js->eval(alig);
-        alignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, alig);
+        jsSum = jsMeasurePtr->eval(alig);
     }
     if (needEwec) {
         ewec    = (ExternalWeightedEdgeConservation*)(MC->getMeasure("ewec"));
@@ -1670,6 +1670,7 @@ void SANA::performChange(uint actColId) {
         inducedEdges                  = newInducedEdges;
         localScoreSum                 = newLocalScoreSum;
         wecSum                        = newWecSum;
+        jsSum                         = newJsSum;
         ewecSum                       = newEwecSum;
         ncSum                         = newNcSum;
         if (needLocal) localScoreSumMap = newLocalScoreSumMap;
@@ -2057,6 +2058,7 @@ void SANA::performSwap(uint actColId) {
 	eminSum             = newEminSum;
 	localScoreSum       = newLocalScoreSum;
 	wecSum              = newWecSum;
+	jsSum               = newJsSum;
 	ewecSum             = newEwecSum;
 	ncSum               = newNcSum;
 	currentScore        = newCurrentScore;
@@ -2982,113 +2984,12 @@ double SANA::localScoreSumIncSwapOp(const vector<vector<float>>& sim, uint peg1,
 
 double SANA::JSIncChangeOp(uint peg, uint oldHole, uint newHole) {
     if (jsWeight == 0) return 0;
-
-    //eval newJsSum
-    //update alignedByNode with peg and peg neighbors using oldHole and newHole
-
-    // eval for peg from scratch
-    uint pegOldAlingedEdges = alignedByNode[peg];
-    uint pegAlignedEdges = 0;
-    vector<uint> pegNeighbors = G1->adjLists[peg];
-    for (uint nbr : pegNeighbors) {
-        uint neighborAlignedTo = A[nbr];
-        pegAlignedEdges += G2->getEdgeWeight(newHole, neighborAlignedTo);
-    }
-    alignedByNode[peg] = pegAlignedEdges;
-    //update newJsSum
-    uint pegTotalEdges = pegNeighbors.size();
-    double change = ((pegAlignedEdges - pegOldAlingedEdges)/(double)pegTotalEdges);
-
-    // for each peg neighbor update do iterative changes to the jsAlingedByNode vector
-    // in each update get the G2mapping of neighbor and then check if edge was aligned by oldHole to G2mapping and reduce score if newHole to G2mapping doesnt exist
-    // increase score if oldHole to G2 mapping edge didnt exist but newHole to G2 mapping does
-    //no changes other wise
-    for (uint nbr : pegNeighbors) {
-        uint neighborAlignedTo = A[nbr];
-        uint neighborOldAlignedEdges = alignedByNode[nbr];
-        uint neighborTotalEdges = G1->adjLists[nbr].size();
-        alignedByNode[nbr] -= G2->getEdgeWeight(oldHole, neighborAlignedTo);
-        alignedByNode[nbr] += G2->getEdgeWeight(newHole, neighborAlignedTo);
-        //update newJsSum
-        change += ((alignedByNode[nbr] - neighborOldAlignedEdges)/(double)neighborTotalEdges);
-    }
-    return change;
+    return jsMeasurePtr->getIncChangeOp(peg, oldHole, newHole, alignment);
 }
 
 double SANA::JSIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     if (jsWeight == 0) return 0;
-
-    //eval swap as two pegs and then loop neighbors
-
-    uint peg1OldAlingedEdges = alignedByNode[peg1];
-    uint peg1AlignedEdges = 0;
-    vector<uint> peg1Neighbors = G1->adjLists[peg1];
-    uint peg1TotalEdges = peg1Neighbors.size();
-
-    uint peg2OldAlingedEdges = alignedByNode[peg2];
-    uint peg2AlignedEdges = 0;
-    vector<uint> peg2Neighbors = G1->adjLists[peg2];
-    uint peg2TotalEdges = peg2Neighbors.size();
-
-    // eval for peg1 from sratch
-    for (uint nbr : peg1Neighbors) {
-        uint neighborAlignedTo = A[nbr];
-        // if (G2->getEdgeWeight(hole2, neighborAlignedTo) == true) {
-        //     peg1AlignedEdges += 1;
-        // }
-        peg1AlignedEdges = G2->getEdgeWeight(hole2, neighborAlignedTo);
-    }
-    alignedByNode[peg1] = peg1AlignedEdges;
-
-    double change = ((peg1AlignedEdges - peg1OldAlingedEdges)/(double)peg1TotalEdges);
-
-    //for each peg neighbor update do iterative changes to the jsAlingedByNode vector
-    //in each update get the G2mapping of neighbor and then check if edge was aligned by
-    //oldHole to G2mapping and reduce score if newHole to G2mapping doesnt exist
-    //increase score if oldHole to G2 mapping edge didnt exist but newHole to G2 mapping does
-    //no changes other wise
-    for (uint nbr : peg1Neighbors) {
-        uint neighborAlignedTo = A[nbr];
-        uint neighborOldAlignedEdges = alignedByNode[nbr];
-        uint neighborTotalEdges = G1->adjLists[nbr].size();
-        if (std::find (peg1Neighbors.begin(), peg1Neighbors.end(), nbr) == peg1Neighbors.end()) {
-            alignedByNode[nbr] -= G2->getEdgeWeight(hole1, neighborAlignedTo);
-            alignedByNode[nbr] += G2->getEdgeWeight(hole2, neighborAlignedTo);
-            //update newJsSum
-            change += ((alignedByNode[nbr] - neighborOldAlignedEdges)/(double)neighborTotalEdges);
-        }
-    }
-
-    // eval for peg2 from scratch
-    for (uint nbr : peg2Neighbors) {
-        uint neighborAlignedTo = A[nbr];
-        peg2AlignedEdges += G2->getEdgeWeight(hole1, neighborAlignedTo);
-    }
-    alignedByNode[peg2] = peg2AlignedEdges;
-    change += ((peg2AlignedEdges - peg2OldAlingedEdges)/(double)peg2TotalEdges);
-
-    // for each peg neighbor update do iterative changes to the jsAlingedByNode vector
-    // in each update get the G2mapping of neighbor and then check if edge was aligned by oldHole to G2mapping and reduce score if newHole to G2mapping doesnt exist
-    // increase score if oldHole to G2 mapping edge didnt exist but newHole to G2 mapping does
-    //no changes other wise
-    for (uint nbr : peg2Neighbors) {
-        uint neighborAlignedTo = A[nbr];
-        uint neighborOldAlignedEdges = alignedByNode[nbr];
-        uint neighborTotalEdges = G1->adjLists[nbr].size();
-        if (std::find (peg1Neighbors.begin(), peg1Neighbors.end(), nbr) == peg1Neighbors.end()) {
-            alignedByNode[nbr] -= G2->getEdgeWeight(hole2, neighborAlignedTo);
-            alignedByNode[nbr] += G2->getEdgeWeight(hole1, neighborAlignedTo);
-            //update newJsSum
-            change += ((alignedByNode[nbr] - neighborOldAlignedEdges)/(double)neighborTotalEdges);
-        }
-    }
-
-    //eval for common neighbors
-    vector<uint> peg1peg2commonneighbors(peg1Neighbors.size() + peg2Neighbors.size());
-    set_intersection(peg1Neighbors.begin(), peg1Neighbors.end(),
-                     peg2Neighbors.begin(), peg2Neighbors.end(),
-                     peg1peg2commonneighbors.begin());
-    return change;
+    return jsMeasurePtr->getIncSwapOp(peg1, peg2, hole1, hole2, alignment);
 }
 
 double SANA::WECIncChangeOp(uint peg, uint oldHole, uint newHole) {

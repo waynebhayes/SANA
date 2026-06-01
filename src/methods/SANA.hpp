@@ -27,6 +27,7 @@
 
 using namespace std;
 
+class JaccardSimilarityScore;
 
 class SANA: public Method {
 
@@ -233,7 +234,6 @@ private:
     //to evaluate js incrementally
     bool needJs;
     double jsSum;
-    vector<uint> alignedByNode;
     double JSIncChangeOp(uint peg, uint oldHole, uint newHole);
     double JSIncSwapOp(uint peg1, uint Peg2, uint node1, uint node2);
 
@@ -248,6 +248,7 @@ private:
     // Cached measure pointers -- eliminates per-iteration string-keyed
     // map lookups in the hot loop (MC->getMeasure("ec") etc.)
     BooleanMeasure*  ecMeasurePtr;
+    JaccardSimilarityScore* jsMeasurePtr;
     WeightedMeasure* edMeasurePtr;
     WeightedMeasure* erMeasurePtr;
     WeightedMeasure* egmMeasurePtr;
