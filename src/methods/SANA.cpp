@@ -2103,7 +2103,7 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
 	if(f_betaWeight) {
 	    if(beta_value==inf){
-		newCurrentScore += f_betaWeight * (newAligEdges / newInducedEdges);
+		newCurrentScore += (newInducedEdges != 0) ? f_betaWeight * (newAligEdges / newInducedEdges):0;
 	    }else{
 		newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
