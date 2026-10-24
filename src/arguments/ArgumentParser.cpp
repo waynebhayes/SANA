@@ -4,34 +4,21 @@
 #include "../utils/FileIO.hpp"
 #include "SupportedArguments.hpp"
 #include <limits>
-#include <cctype>
+#include <cmath>
 using namespace std;
 
 bool isValidSubstring(const std::string& substring) {
-    
-    size_t startIndex = 0;
+    if (substring == "#" || substring == "inf") return true;
 
-    // If the first character is a '-', start checking from the second character
-    if (substring[0] == '-') {
-        if (substring.size() == 1) {
-            return false; // A single '-' is invalid
-        }
-        startIndex = 1; // Start from the second character
+    try {
+        size_t parsedLength = 0;
+        double value = std::stod(substring, &parsedLength);
+        return parsedLength == substring.size() && std::isfinite(value);
+    } catch (const std::invalid_argument&) {
+        return false;
+    } catch (const std::out_of_range&) {
+        return false;
     }
-
-    // Check if the substring is a single '#'
-    if (substring == "#") {
-        return true; 
-    }
-
-    // Check if the substring consists only of digits (after handling optional '-')
-    for (size_t i = startIndex; i < substring.size(); ++i) {
-        if (!isdigit(substring[i])) {
-            return false; // If any character (except '-') is not a digit, it's invalid
-        }
-    }
-
-    return true; // All characters are valid (digits or single '-')
 }
 
 ArgumentParser::ArgumentParser(int argc, char* argv[]) {
@@ -127,6 +114,7 @@ ArgumentParser::ArgumentParser(int argc, char* argv[]) {
             }
 
             std::string weightStr = commaBuffer.substr(0, commaPos);
+            std::string betaStr = commaBuffer.substr(commaPos + 1);
             try {
                 double weight = std::stod(weightStr);
                 if (weight < 0 || weight > 1) {
@@ -138,8 +126,8 @@ ArgumentParser::ArgumentParser(int argc, char* argv[]) {
             if (commaBuffer.size() < 3) {
                 throw std::runtime_error("The correct format for the f_beta parameter is: -f_beta weight,beta_value. Kindly ensure that this format is adhered to.\n");
             }
-            if (!isValidSubstring(commaBuffer.substr(commaBuffer.find(',') + 1)) && commaBuffer.substr(commaBuffer.find(',') + 1) != "inf") {
-                std::cout << commaBuffer.substr(commaBuffer.find(',') + 1) << "\n";
+            if (!isValidSubstring(betaStr)) {
+                std::cout << betaStr << "\n";
                 throw std::runtime_error("The correct format for the f_beta parameter is: -f_beta weight,beta_value. Kindly ensure that this format is adhered to.\n");
             }
 
@@ -148,12 +136,12 @@ ArgumentParser::ArgumentParser(int argc, char* argv[]) {
             //     throw std::runtime_error("f_beta does not accept infinity at the moment. Coming soon....\n");
             // }
 
-            double beta_value = std::stod(commaBuffer.substr(commaBuffer.find(',') + 1));
-            if (beta_value < 0 && commaBuffer[commaBuffer.find(',') + 1] != '#' && passedFirstF_beta) {
+            double beta_value = std::stod(betaStr);
+            if (beta_value < 0 && betaStr[0] != '#' && passedFirstF_beta) {
                 throw std::runtime_error("The range of beta values is [0, inf) or #. The current value is not in this range.\n");
             }
 
-            if (commaBuffer[commaBuffer.find(',') + 1] == '#') {
+            if (betaStr[0] == '#') {
                 commaVectors[arg] = std::make_pair(static_cast<double>(std::stod(weightStr)), -1);
             } else {
                 commaVectors[arg] = std::make_pair(static_cast<double>(std::stod(weightStr)), beta_value);
