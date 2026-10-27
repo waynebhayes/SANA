@@ -159,6 +159,7 @@ MEASURES_SRCS = 							\
 	src/measures/localMeasures/Sequence.cpp 			\
 	src/measures/localMeasures/GraphletCosine.cpp 			\
 	src/measures/FMeasure.cpp			\
+	src/measures/LPSMeasure.cpp			\
 	src/measures/localMeasures/GraphletNorm.cpp
 
 METHOD_WRAPPERS_SRC =    						\
@@ -240,10 +241,14 @@ TEST_SRC = $(wildcard test/*_UT.cpp)
 # TEST_DEPENDS is all the OBJS without main and Gtest
 _MAIN_OBJ = $(OBJDIR)/src/main.o
 TEST_DEPENDS = $(filter-out $(_MAIN_OBJ), $(OBJS))
-GTEST_OBJS = test/gtest/gtest-main.o test/gtest/gtest-all.o
+GTEST_OBJS = $(OBJDIR)/test/gtest/gtest-main.o
 TEST_OBJS = $(addprefix $(OBJDIR)/, $(TEST_SRC:.cpp=.o))
 TEST_MAIN = unit_test
-TEST_CXXFLAGS = $(CXXFLAGS) -lpthread # add pthread for Gtest
+TEST_CXXFLAGS = $(CXXFLAGS) -std=gnu++14
+
+$(OBJDIR)/test/%.o: test/%.cpp
+	@mkdir -p $(dir $@)
+	$(CC) -c $(INCLUDES) -o $@ $< $(TEST_CXXFLAGS)
 
 regression_test:
 	./regressionTest.sh
@@ -252,15 +257,12 @@ argumentCSV:
 	(cd src/arguments; ./create-csv.sh)
 
 test_all: $(TEST_OBJS) $(GTEST_OBJS) $(TEST_DEPENDS)
-	$(CC) $(TEST_CXXFLAGS) $(INCLUDES) -o $(OBJDIR)/$(TEST_MAIN) $(TEST_OBJS) $(GTEST_OBJS) $(TEST_DEPENDS) $(LFLAGS) $(LIBS)
+	$(CC) $(TEST_CXXFLAGS) $(INCLUDES) -o $(OBJDIR)/$(TEST_MAIN) $(TEST_OBJS) $(GTEST_OBJS) $(TEST_DEPENDS) $(LFLAGS) $(LIBS) -lgtest -pthread
 	./$(OBJDIR)/$(TEST_MAIN)
 
 test: $(OBJDIR)/test/$(tg).o $(GTEST_OBJS) $(TEST_DEPENDS)
-	$(CC) $(TEST_CXXFLAGS) $(INCLUDES) -o $(OBJDIR)/$(tg) $(OBJDIR)/test/$(tg).o $(GTEST_OBJS) $(TEST_DEPENDS) $(LFLAGS) $(LIBS)
+	$(CC) $(TEST_CXXFLAGS) $(INCLUDES) -o $(OBJDIR)/$(tg) $(OBJDIR)/test/$(tg).o $(GTEST_OBJS) $(TEST_DEPENDS) $(LFLAGS) $(LIBS) -lgtest -pthread
 	./$(OBJDIR)/$(tg)
-
-$(GTEST_OBJS):
-	cd test/gtest && make
 
 clean: #clear_cache
 	$(RM) -rf cache*  # mostly for pBad

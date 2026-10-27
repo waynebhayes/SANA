@@ -157,7 +157,7 @@ private:
     MeasureCombination* MC;
     double eval(const Alignment& A) const;
     double ecWeight, edWeight, erWeight, eminWeight, egmWeight, s3Weight, icsWeight, wecWeight, jsWeight, secWeight,
-           ncWeight, localWeight, mecWeight, sesWeight, eeWeight, ms3Weight, ewecWeight,f_betaWeight;
+           ncWeight, localWeight, mecWeight, sesWeight, eeWeight, ms3Weight, ewecWeight,f_betaWeight, lpsLWeight, lpsIWeight, lpsSWeight;
 
     //this should be refactored so that the return parameter is not the 9th one out of 15
     // changed in June 2020 to return pBad, not the decision itself. -WH
@@ -262,6 +262,10 @@ private:
 
     //beta_Value for the FMeasure
     double beta_value;
+
+    // Omega value for LPS measure
+    double lpsOmega;
+
 
     //to evaluate core scores    
 #ifdef CORES
