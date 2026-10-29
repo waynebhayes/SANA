@@ -125,6 +125,19 @@ SANA::SANA(const Graph* G1, const Graph* G2,
         FMeasure* fMeasurePtr = dynamic_cast<FMeasure*>(measurePtr);
         beta_value = fMeasurePtr->getBeta();
     }
+
+    lpsLWeight = MC->containsMeasure("lps_l") ? MC->getWeight("lps_l") : 0;
+    lpsIWeight = MC->containsMeasure("lps_i") ? MC->getWeight("lps_i") : 0;
+    lpsSWeight = MC->containsMeasure("lps_s") ? MC->getWeight("lps_s") : 0;
+    bool needLPS = (lpsLWeight > 0) || (lpsIWeight > 0) || (lpsSWeight > 0);
+    lpsOmega = (double)n1 * (double)(n1 - 1) / 2.0;
+    if (needLPS) {
+        if (G1->directed or G2->directed)
+            throw runtime_error("LPS measures do not support directed graphs");
+        for (uint i = 0; i < n1; i++) if (G1->hasSelfLoop(i)) throw runtime_error("LPS: G1 has self-loops");
+        for (uint i = 0; i < n2; i++) if (G2->hasSelfLoop(i)) throw runtime_error("LPS: G2 has self-loops");
+    }
+
     try { wecWeight = MC->getWeight("wec"); }
     catch(...) { wecWeight = 0; }
     try { ewecWeight = MC->getWeight("ewec"); }
@@ -142,7 +155,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     localWeight = MC->getSumLocalWeight();
 
     //indicate which variables need to be maintained incrementally
-    needAligEdges        = icsWeight > 0 or ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0 or mecWeight > 0 or f_betaWeight > 0;
+    needAligEdges        = icsWeight > 0 or ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0 or mecWeight > 0 or f_betaWeight > 0 or needLPS;
     needEd               = edWeight > 0; //edge difference
     needEr               = erWeight > 0; //edge ratio
     needEgm              = egmWeight > 0; //edgeGeoMen
@@ -150,7 +163,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     needSquaredAligEdges = sesWeight > 0; //SES
     needExposedEdges     = eeWeight > 0 or MultiS3::denominator_type == MultiS3::ee_global; //EE; if needMS3, might use EE as denom
     needMS3              = ms3Weight > 0;
-    needInducedEdges     = s3Weight > 0 or icsWeight > 0 or f_betaWeight > 0;
+    needInducedEdges     = s3Weight > 0 or icsWeight > 0 or f_betaWeight > 0 or needLPS;
     needJs               = jsWeight > 0;
     needWec              = wecWeight > 0;
     needEwec             = ewecWeight>0;
@@ -2077,6 +2090,9 @@ void SANA::performSwap(uint actColId) {
     }
 }
 
+// Helper function for computing the LPS term in the score comparison. Returns 0 if d <= 0, otherwise returns x / (2 * d).
+static inline double lpsTerm(double x, double d) { return d > 0 ? x / (2.0 * d) : 0.0; }
+
 // returns pBad
 double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum,
 	double newJsSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges,
@@ -2084,6 +2100,21 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 	double newEdgeMinSum, double newEdgeGeoMeanSum) {
     wasBadMove = false;
     double pBad = 0;
+    array<double, 3> newLpsScores = {{0, 0, 0}};
+    array<double, 3> currentLpsScores = {{0, 0, 0}};
+    if (lpsLWeight > 0 or lpsIWeight > 0 or lpsSWeight > 0) {
+        auto lpsScores = [&](double alignedEdges, double inducedEdges) {
+            double falsePositives = inducedEdges - alignedEdges;
+            double trueNegatives = lpsOmega - g1Edges - falsePositives;
+            double lpsL = lpsTerm(alignedEdges, g1Edges)
+                        + lpsTerm(trueNegatives, lpsOmega - g1Edges);
+            double lpsI = lpsTerm(alignedEdges, inducedEdges)
+                        + lpsTerm(trueNegatives, lpsOmega - inducedEdges);
+            return array<double, 3>{{lpsL, lpsI, 0.5 * (lpsL + lpsI)}};
+        };
+        currentLpsScores = lpsScores(aligEdges, inducedEdges);
+        newLpsScores = lpsScores(newAligEdges, newInducedEdges);
+    }
 
     switch (scoreAggr) {
     case ScoreAggregation::sum:
@@ -2108,6 +2139,9 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 		newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
 	}
+        newCurrentScore += lpsLWeight * newLpsScores[0]
+                         + lpsIWeight * newLpsScores[1]
+                         + lpsSWeight * newLpsScores[2];
 
 #if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
         newCurrentScore += mecWeight?mecWeight * (newAligEdges / (g1TotalWeight + g2TotalWeight)):0;
@@ -2123,21 +2157,24 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
     case ScoreAggregation::product:
     {
         newCurrentScore = 1;
-        newCurrentScore *= ecWeight?ecWeight * (newAligEdges / g1Edges):0;
-        newCurrentScore *= s3Weight?s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
-        newCurrentScore *= (icsWeight && newInducedEdges != 0)?icsWeight * (newAligEdges / newInducedEdges):0;
-        newCurrentScore *= localWeight?localWeight * (newLocalScoreSum / n1):0;
-        newCurrentScore *= secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
-        newCurrentScore *= wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
-        newCurrentScore *= jsWeight?jsWeight * (newJsSum):0;
-        newCurrentScore *= ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
+    if (ecWeight > 0) newCurrentScore *= ecWeight * (newAligEdges / g1Edges);
+    if (s3Weight > 0) newCurrentScore *= s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+    if (icsWeight > 0) newCurrentScore *= newInducedEdges != 0 ? icsWeight * (newAligEdges / newInducedEdges) : 0;
+    if (localWeight > 0) newCurrentScore *= localWeight * (newLocalScoreSum / n1);
+    if (secWeight > 0) newCurrentScore *= secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges) * 0.5;
+    if (wecWeight > 0) newCurrentScore *= wecWeight * (newWecSum / (2 * g1Edges));
+    if (jsWeight > 0) newCurrentScore *= jsWeight * newJsSum;
+    if (ncWeight > 0) newCurrentScore *= ncWeight * (newNcSum / trueAWithValidCountAppended.back());
 	if(f_betaWeight) {
 	    if(beta_value==inf){
-		newCurrentScore *= f_betaWeight * (newAligEdges / newInducedEdges);
+        newCurrentScore *= newInducedEdges ? f_betaWeight * (newAligEdges / newInducedEdges) : 0;
 	    }else{
 		newCurrentScore *= f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
 	}
+    if (lpsLWeight > 0) newCurrentScore *= lpsLWeight * newLpsScores[0];
+    if (lpsIWeight > 0) newCurrentScore *= lpsIWeight * newLpsScores[1];
+    if (lpsSWeight > 0) newCurrentScore *= lpsSWeight * newLpsScores[2];
 
         energyInc = (newCurrentScore - currentScore) * MC->getOptimizationDirection();
         wasBadMove = energyInc < 0;
@@ -2159,9 +2196,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
         newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
         newCurrentScore += ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
+        newCurrentScore += lpsLWeight * newLpsScores[0]
+                     + lpsIWeight * newLpsScores[1]
+                     + lpsSWeight * newLpsScores[2];
 	if(f_betaWeight) {
 	    if(beta_value==inf){
-		newCurrentScore += f_betaWeight * (newAligEdges / newInducedEdges);
+		newCurrentScore += newInducedEdges?f_betaWeight * (newAligEdges / newInducedEdges):0;
 	    }else{
 		newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
@@ -2186,9 +2226,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
         newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
         newCurrentScore += ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
+        newCurrentScore += lpsLWeight * newLpsScores[0]
+                     + lpsIWeight * newLpsScores[1]
+                     + lpsSWeight * newLpsScores[2];
 	if(f_betaWeight) {
 	    if(beta_value==inf){
-		newCurrentScore += f_betaWeight * (newAligEdges / newInducedEdges);
+		newCurrentScore += newInducedEdges?f_betaWeight * (newAligEdges / newInducedEdges):0;
 	    }else{
 		newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
@@ -2208,9 +2251,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += wecWeight?wecWeight / (newWecSum / (2 * g1Edges)):0;
         newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
         newCurrentScore += ncWeight?ncWeight / (newNcSum / trueAWithValidCountAppended.back()):0;
+        newCurrentScore += (lpsLWeight > 0 && newLpsScores[0] != 0) ? lpsLWeight / newLpsScores[0] : 0;
+        newCurrentScore += (lpsIWeight > 0 && newLpsScores[1] != 0) ? lpsIWeight / newLpsScores[1] : 0;
+        newCurrentScore += (lpsSWeight > 0 && newLpsScores[2] != 0) ? lpsSWeight / newLpsScores[2] : 0;
 	if(f_betaWeight) {
 	    if(beta_value==inf){
-		newCurrentScore += f_betaWeight * (newAligEdges / newInducedEdges);
+		newCurrentScore += newInducedEdges?f_betaWeight * (newAligEdges / newInducedEdges):0;
 	    }else{
 		newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
@@ -2234,6 +2280,13 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
             min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
+       
+            for (uint i = 0; i < newLpsScores.size(); i++) {
+            double weight = i == 0 ? lpsLWeight : (i == 1 ? lpsIWeight : lpsSWeight);
+            double delta = weight * (newLpsScores[i] - currentLpsScores[i]);
+            maxScore = max(maxScore, delta);
+            minScore = min(minScore, delta);
+        }
 
         newCurrentScore += ecWeight?ecWeight * (newAligEdges / g1Edges):0;
         newCurrentScore += secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
@@ -2243,9 +2296,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
         newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
         newCurrentScore += ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
+        newCurrentScore += lpsLWeight * newLpsScores[0]
+                     + lpsIWeight * newLpsScores[1]
+                     + lpsSWeight * newLpsScores[2];
 	if(f_betaWeight) {
 	    if(beta_value==inf){
-		newCurrentScore += f_betaWeight * (newAligEdges / newInducedEdges);
+		newCurrentScore += newInducedEdges?f_betaWeight * (newAligEdges / newInducedEdges):0;
 	    } else {
 		newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }

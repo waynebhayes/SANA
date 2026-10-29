@@ -21,6 +21,7 @@
 #include "../measures/MultiMeasures/EdgeExposure.hpp"
 #include "../measures/MultiMeasures/MultiS3.hpp"
 #include "../measures/FMeasure.hpp"
+#include "../measures/LPSMeasure.hpp"
 #include "../measures/localMeasures/NodeCount.hpp"
 #include "../measures/localMeasures/NodeDensity.hpp"
 #include "../measures/localMeasures/EdgeCount.hpp"
@@ -93,7 +94,7 @@ double totalGenericWeight(ArgumentParser& args) {
     vector<string> optimizableDoubleMeasures = {
         "ec", "ec1", "ec2", "ed","er","emin","egm", "s3","js","ics","tc","sec","wec","nodec","noded","edgec","edged", "go",
         "importance", "sequence","graphlet","graphletlgraal", "graphletcosine", "graphletnorm", "spc", "nc",
-        "mec", "ewec", "ses", "ee", "ms3"
+        "mec", "ewec", "ses", "ee", "ms3", "lps_l", "lps_i", "lps_s"
     };
     vector<string> optimizableCommaMeasures = {
        "f_beta"
@@ -177,6 +178,9 @@ void initMeasures(MeasureCombination& M, const Graph& G1, const Graph& G2, Argum
     m = new SquaredEdgeScore(&G1, &G2); M.addMeasure(m, getWeight("ses", G1, G2, args));
     m = new EdgeExposure(&G1, &G2); M.addMeasure(m, getWeight("ee", G1, G2, args));
     m = new FMeasure(&G1, &G2,args.commaVectors["-f_beta"].second); M.addMeasure(m, getWeight("f_beta", G1, G2, args));
+    m = new LPS(&G1, &G2, "l"); M.addMeasure(m, getWeight("lps_l", G1, G2, args));
+    m = new LPS(&G1, &G2, "i"); M.addMeasure(m, getWeight("lps_i", G1, G2, args));
+    m = new LPS(&G1, &G2, "s"); M.addMeasure(m, getWeight("lps_s", G1, G2, args));
     
     MultiS3::NumeratorType _numerator_type;
     MultiS3::DenominatorType _denominator_type;
