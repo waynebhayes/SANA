@@ -16,6 +16,7 @@
 
 #include "../src/Graph.hpp"
 #include "../src/Alignment.hpp"
+#include "../src/measures/FMeasure.hpp"
 #include "../src/measures/LPSMeasure.hpp"
 
 using namespace std;
@@ -110,6 +111,20 @@ TEST(LPSTest, PerfectAlignmentScoresOne) {
     EXPECT_NEAR(1.0, score(G1, G2, a, "l"), EPS);
     EXPECT_NEAR(1.0, score(G1, G2, a, "i"), EPS);
     EXPECT_NEAR(1.0, score(G1, G2, a, "s"), EPS);
+}
+
+TEST(LPSTest, DirectedMeasuresRespectEdgeOrientation) {
+    Graph G1 = makeGraph(4, EdgeList{e(0,1), e(1,2), e(2,3)}, true);
+    Graph G2 = makeGraph(4, EdgeList{e(0,1), e(1,2), e(3,2), e(0,3)}, true);
+    Mapping a = {0, 1, 2, 3};
+
+    EXPECT_NEAR(13.0 / 18, score(G1, G2, a, "l"), EPS);
+    EXPECT_NEAR(11.0 / 16, score(G1, G2, a, "i"), EPS);
+    EXPECT_NEAR(203.0 / 288, score(G1, G2, a, "s"), EPS);
+
+    FMeasure fBeta(&G1, &G2, 1.0);
+    EXPECT_NEAR(4.0 / 7, fBeta.eval(Alignment(a)), EPS);
+    EXPECT_NEAR(1.0 / 3, FMeasure(&G1, &G2, -1).getBeta(), EPS);
 }
 
 // G1 aligned into a larger G2 whose induced subgraph is isomorphic to G1.
@@ -210,8 +225,7 @@ TEST(LPSTest, ConstructorRejectsUnsupportedInputs) {
     Graph loopy  = makeGraph(3, EdgeList{e(0,0), e(0,1)});
 
     EXPECT_THROW(LPS(&path3, &path3, "x"), std::exception);   // bad mode
-    EXPECT_THROW(LPS(&dir, &path3, "s"), std::exception);     // directed G1
-    EXPECT_THROW(LPS(&path3, &dir, "s"), std::exception);     // directed G2
+    EXPECT_NO_THROW(LPS(&dir, &dir, "s"));
     EXPECT_THROW(LPS(&loopy, &path3, "s"), std::exception);   // self-loop in G1
     EXPECT_THROW(LPS(&path3, &loopy, "s"), std::exception);   // self-loop in G2
     EXPECT_THROW(LPS(&empty3, &path3, "l"), std::exception);  // edgeless G1: LPS_L undefined

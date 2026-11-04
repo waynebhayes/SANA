@@ -55,6 +55,18 @@ bool SANA::saveAligAndExitOnInterruption = false;
 bool SANA::saveAligAndContOnInterruption = false;
 uint SANA::INVALID_ACTIVE_COLOR_ID;
 
+static inline int swapAlignedEdgeCorrection(const Graph* G1, const Graph* G2,
+                                             uint peg1, uint peg2, uint hole1, uint hole2) {
+    if (!G1->directed)
+        return G1->hasEdge(peg1, peg2) && G2->hasEdge(hole1, hole2) ? 2 : 0;
+    int correction = 0;
+    int directedArcCorrection = G2->hasEdge(hole1, hole2) + G2->hasEdge(hole2, hole1)
+                              - G2->hasEdge(hole1, hole1) - G2->hasEdge(hole2, hole2);
+    if (G1->hasEdge(peg1, peg2)) correction += directedArcCorrection;
+    if (G1->hasEdge(peg2, peg1)) correction += directedArcCorrection;
+    return correction;
+}
+
 SANA::SANA(const Graph* G1, const Graph* G2,
         double TInitial, double TDecay, double maxSeconds, long long int maxIterations, double tolerance,
 	bool addHillClimbing, MeasureCombination* MC, const string& scoreAggrStr, const Alignment& startA,
@@ -130,10 +142,8 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     lpsIWeight = MC->containsMeasure("lps_i") ? MC->getWeight("lps_i") : 0;
     lpsSWeight = MC->containsMeasure("lps_s") ? MC->getWeight("lps_s") : 0;
     bool needLPS = (lpsLWeight > 0) || (lpsIWeight > 0) || (lpsSWeight > 0);
-    lpsOmega = (double)n1 * (double)(n1 - 1) / 2.0;
+    lpsOmega = (double)n1 * (double)(n1 - 1) / (G1->directed ? 1.0 : 2.0);
     if (needLPS) {
-        if (G1->directed or G2->directed)
-            throw runtime_error("LPS measures do not support directed graphs");
         for (uint i = 0; i < n1; i++) if (G1->hasSelfLoop(i)) throw runtime_error("LPS: G1 has self-loops");
         for (uint i = 0; i < n2; i++) if (G2->hasSelfLoop(i)) throw runtime_error("LPS: G2 has self-loops");
     }
@@ -839,8 +849,7 @@ double SANA::performSwapThreads(uint actColId, mt19937& rng, uniform_real_distri
 #if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
         ecDelta += (-1 << 1) & (G1->getEdgeWeight(peg1, peg2) + G2->getEdgeWeight(hole1, hole2));
 #else
-        if (G1->hasEdge(peg1, peg2) && G2->hasEdge(hole1, hole2)) ecDelta += 2;
-        if (G1->directed && G1->hasEdge(peg2, peg1) && G2->hasEdge(hole2, hole1)) ecDelta += 2;
+    ecDelta += swapAlignedEdgeCorrection(G1, G2, peg1, peg2, hole1, hole2);
 #endif
     }
 
@@ -1820,8 +1829,7 @@ void SANA::performSwap(uint actColId) {
 #if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
         ecDelta += (-1 << 1) & (G1->getEdgeWeight(peg1, peg2) + G2->getEdgeWeight(hole1, hole2));
 #else
-        if (G1->hasEdge(peg1, peg2) && G2->hasEdge(hole1, hole2)) ecDelta += 2;
-        if (G1->directed && G1->hasEdge(peg2, peg1) && G2->hasEdge(hole2, hole1)) ecDelta += 2;
+    ecDelta += swapAlignedEdgeCorrection(G1, G2, peg1, peg2, hole1, hole2);
 #endif
     } else if (doEc || doWeighted) {
         // --- Full fused loop: EC + weighted measures in a single pass ---
@@ -2011,8 +2019,7 @@ void SANA::performSwap(uint actColId) {
 #if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
             ecDelta += (-1 << 1) & (G1->getEdgeWeight(peg1, peg2) + G2->getEdgeWeight(hole1, hole2));
 #else
-            if (G1->hasEdge(peg1, peg2) && G2->hasEdge(hole1, hole2)) ecDelta += 2;
-            if (G1->directed && G1->hasEdge(peg2, peg1) && G2->hasEdge(hole2, hole1)) ecDelta += 2;
+            ecDelta += swapAlignedEdgeCorrection(G1, G2, peg1, peg2, hole1, hole2);
 #endif
         }
     }
@@ -3026,6 +3033,11 @@ int SANA::inducedEdgesIncChangeOp(uint peg, uint oldHole, uint newHole) {
     int res = 0;
     for (uint nbr : G2->adjSpan(oldHole)) res -= assignedNodesG2[nbr];
     for (uint nbr : G2->adjSpan(newHole)) res += assignedNodesG2[nbr];
+    if (G2->directed) {
+        for (uint nbr : G2->injSpan(oldHole)) res -= assignedNodesG2[nbr];
+        for (uint nbr : G2->injSpan(newHole)) res += assignedNodesG2[nbr];
+        res -= G2->getEdgeWeight(newHole, oldHole);
+    }
     res -= G2->getEdgeWeight(oldHole, newHole); //address case changing between adjacent nodes:
     return res;
 }

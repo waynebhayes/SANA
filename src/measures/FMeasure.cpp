@@ -14,7 +14,8 @@ FMeasure::FMeasure(const Graph* G1, const Graph* G2, const double input_beta)
         if (G1->getNumNodes() <= 1) 
             throw std::invalid_argument("Graph must have more than one node to calculate density.");
     
-        double network_density = (G1->getNumEdges()) / (0.5 * G1->getNumNodes() * (G1->getNumNodes() - 1));
+        double network_density = G1->getNumEdges() /
+            ((G1->isDirected() ? 1.0 : 0.5) * G1->getNumNodes() * (G1->getNumNodes() - 1));
 
         if (network_density < density_threshold) {
             beta = 1 / (4 * (1 - network_density));

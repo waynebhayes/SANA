@@ -8,8 +8,6 @@ LPS::LPS(const Graph* G1, const Graph* G2, const string& modeStr)
         throw invalid_argument("LPS mode must be l, i or s");
     mode = modeStr[0];
 
-    if (G1->isDirected() || G2->isDirected())
-        throw runtime_error("LPS: directed graphs not supported");
     for (uint i = 0; i < G1->getNumNodes(); i++)
         if (G1->hasSelfLoop(i))
             throw runtime_error("LPS: G1 has self-loops; remove them first");
@@ -18,7 +16,7 @@ LPS::LPS(const Graph* G1, const Graph* G2, const string& modeStr)
             throw runtime_error("LPS: G2 has self-loops; remove them first");
 
     double n = G1->getNumNodes();
-    omega = n * (n - 1) / 2.0;
+    omega = n * (n - 1) / (G1->isDirected() ? 1.0 : 2.0);
     e1 = G1->getNumEdges();
 
     // LPS_L and LPS_S are undefined when G1 is edgeless or complete
