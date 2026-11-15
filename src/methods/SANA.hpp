@@ -148,7 +148,7 @@ private:
     //if startA is empty, a random alignment is used
     void initDataStructures();
     vector<uint> A, A_; // A_ is the inverse alignment of A
-    vector<uint8_t> assignedNodesG2;
+    vector<bool> assignedNodesG2;
 
     bool isHappyPeg (const uint peg ) { return alignment.isHappy(peg, A[peg]); }
     bool isHappyHole(const uint hole) { return alignment.isHappy(A_[hole], hole); }
