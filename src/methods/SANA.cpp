@@ -54,6 +54,7 @@ static uint MAX_STATIONARY = MAX_ST_INVALID, _numNonstationaryColors, *_pickArra
 bool SANA::saveAligAndExitOnInterruption = false;
 bool SANA::saveAligAndContOnInterruption = false;
 uint SANA::INVALID_ACTIVE_COLOR_ID;
+
 SANA::SANA(const Graph* G1, const Graph* G2,
         double TInitial, double TDecay, double maxSeconds, long long int maxIterations, double tolerance,
 	bool addHillClimbing, MeasureCombination* MC, const string& scoreAggrStr, const Alignment& startA,
@@ -124,6 +125,19 @@ SANA::SANA(const Graph* G1, const Graph* G2,
         FMeasure* fMeasurePtr = dynamic_cast<FMeasure*>(measurePtr);
         beta_value = fMeasurePtr->getBeta();
     }
+
+    lpsLWeight = MC->containsMeasure("lps_l") ? MC->getWeight("lps_l") : 0;
+    lpsIWeight = MC->containsMeasure("lps_i") ? MC->getWeight("lps_i") : 0;
+    lpsSWeight = MC->containsMeasure("lps_s") ? MC->getWeight("lps_s") : 0;
+    bool needLPS = (lpsLWeight > 0) || (lpsIWeight > 0) || (lpsSWeight > 0);
+    lpsOmega = (double)n1 * (double)(n1 - 1) / 2.0;
+    if (needLPS) {
+        if (G1->directed or G2->directed)
+            throw runtime_error("LPS measures do not support directed graphs");
+        for (uint i = 0; i < n1; i++) if (G1->hasSelfLoop(i)) throw runtime_error("LPS: G1 has self-loops");
+        for (uint i = 0; i < n2; i++) if (G2->hasSelfLoop(i)) throw runtime_error("LPS: G2 has self-loops");
+    }
+
     try { wecWeight = MC->getWeight("wec"); }
     catch(...) { wecWeight = 0; }
     try { ewecWeight = MC->getWeight("ewec"); }
@@ -141,7 +155,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     localWeight = MC->getSumLocalWeight();
 
     //indicate which variables need to be maintained incrementally
-    needAligEdges        = icsWeight > 0 or ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0 or mecWeight > 0 or f_betaWeight > 0;
+    needAligEdges        = icsWeight > 0 or ecWeight > 0 or s3Weight > 0 or wecWeight > 0 or secWeight > 0 or mecWeight > 0 or f_betaWeight > 0 or needLPS;
     needEd               = edWeight > 0; //edge difference
     needEr               = erWeight > 0; //edge ratio
     needEgm              = egmWeight > 0; //edgeGeoMen
@@ -149,7 +163,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     needSquaredAligEdges = sesWeight > 0; //SES
     needExposedEdges     = eeWeight > 0 or MultiS3::denominator_type == MultiS3::ee_global; //EE; if needMS3, might use EE as denom
     needMS3              = ms3Weight > 0;
-    needInducedEdges     = s3Weight > 0 or icsWeight > 0 or f_betaWeight > 0;
+    needInducedEdges     = s3Weight > 0 or icsWeight > 0 or f_betaWeight > 0 or needLPS;
     needJs               = jsWeight > 0;
     needWec              = wecWeight > 0;
     needEwec             = ewecWeight>0;
@@ -163,6 +177,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
 
     // Cache measure pointers once to avoid per-iteration string-keyed lookups
     ecMeasurePtr  = (needAligEdges || needSec) ? (BooleanMeasure*)  MC->getMeasure("ec")   : nullptr;
+    jsMeasurePtr  = needJs   ? (JaccardSimilarityScore*) MC->getMeasure("js") : nullptr;
     edMeasurePtr  = needEd   ? (WeightedMeasure*) MC->getMeasure("ed")   : nullptr;
     erMeasurePtr  = needEr   ? (WeightedMeasure*) MC->getMeasure("er")   : nullptr;
     egmMeasurePtr = needEgm  ? (WeightedMeasure*) MC->getMeasure("egm")  : nullptr;
@@ -272,7 +287,7 @@ SANA::SANA(const Graph* G1, const Graph* G2,
     }
     //things initialized in initDataStructures because they depend on the starting alignment
     //they have the same size for every run, so we can allocate the size here
-    assignedNodesG2 = vector<uint8_t> (n2, 0);
+    assignedNodesG2 = vector<bool> (n2, 0);
     totalInducedWeight = vector<uint> (n2,0);
     actColToUnassignedG2Nodes = vector<vector<uint>> (actColToG1ColId.size());
 }
@@ -369,9 +384,7 @@ void SANA::initDataStructures() {
         wecSum          = wecScore*2*g1Edges;
     }
     if (needJs) {
-        Measure* js = MC->getMeasure("js");
-        jsSum       = js->eval(alig);
-        alignedByNode = JaccardSimilarityScore::getAlignedByNode(G1, G2, alig);
+        jsSum = jsMeasurePtr->eval(alig);
     }
     if (needEwec) {
         ewec    = (ExternalWeightedEdgeConservation*)(MC->getMeasure("ewec"));
@@ -529,121 +542,21 @@ double SANA::performChangeThreads(uint actColId, mt19937& rng, uniform_real_dist
             oldMs3Numer = MultiS3::numer;
         }
 
-        int ecDelta = 0;
-        double edDelta = 0, erDelta = 0, egmDelta = 0, eminDelta = 0;
-        bool doEc = needAligEdges || needSec;
-        bool doWeighted = needEd || needEr || needEgm || needEmin;
-        if (doEc && !doWeighted) {
-            if (G1->hasSelfLoop(peg)) {
-                if (G2->hasSelfLoop(oldHole)) ecDelta -= G2->getEdgeWeight(oldHole, oldHole);
-                if (G2->hasSelfLoop(newHole)) ecDelta += G2->getEdgeWeight(newHole, newHole);
-            }
-            for (uint nbr : G1->adjSpan(peg)) {
-                if (nbr == peg) continue;
-                uint aHole = A[nbr];
-                ecDelta += G2->adjMatrix.get(newHole, aHole) - G2->adjMatrix.get(oldHole, aHole);
-            }
-            if (G1->directed) {
-                for (uint nbr : G1->injSpan(peg)) {
-                    if (nbr == peg) continue;
-                    uint aHole = A[nbr];
-                    ecDelta += G2->getEdgeWeight(aHole, newHole) - G2->getEdgeWeight(aHole, oldHole);
-                }
-            }
-        } else if (doEc || doWeighted) {
-            if (G1->hasSelfLoop(peg)) {
-                if (doEc) {
-                    if (G2->hasSelfLoop(oldHole)) ecDelta -= G2->getEdgeWeight(oldHole, oldHole);
-                    if (G2->hasSelfLoop(newHole)) ecDelta += G2->getEdgeWeight(newHole, newHole);
-                }
-                if (doWeighted) {
-                    double g1sw = G1->getEdgeWeight(peg, peg);
-                    if (needEd) {
-                        if (G2->hasSelfLoop(oldHole)) edDelta -= edMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(oldHole, oldHole));
-                        if (G2->hasSelfLoop(newHole)) edDelta += edMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(newHole, newHole));
-                    }
-                    if (needEr) {
-                        if (G2->hasSelfLoop(oldHole)) erDelta -= erMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(oldHole, oldHole));
-                        if (G2->hasSelfLoop(newHole)) erDelta += erMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(newHole, newHole));
-                    }
-                    if (needEgm) {
-                        if (G2->hasSelfLoop(oldHole)) egmDelta -= egmMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(oldHole, oldHole));
-                        if (G2->hasSelfLoop(newHole)) egmDelta += egmMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(newHole, newHole));
-                    }
-                    if (needEmin) {
-                        if (G2->hasSelfLoop(oldHole)) eminDelta -= eminMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(oldHole, oldHole));
-                        if (G2->hasSelfLoop(newHole)) eminDelta += eminMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(newHole, newHole));
-                    }
-                }
-            }
-            for (uint nbr : G1->adjSpan(peg)) {
-                if (nbr == peg) continue;
-                uint aHole = A[nbr];
-                EDGE_T oldW2 = G2->adjMatrix.get(oldHole, aHole);
-                EDGE_T newW2 = G2->adjMatrix.get(newHole, aHole);
-                if (doEc) { ecDelta -= oldW2; ecDelta += newW2; }
-                if (doWeighted) {
-                    double g1w = G1->getEdgeWeight(peg, nbr);
-                    if (needEd) {
-                        if (oldW2) edDelta -= edMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) edDelta += edMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                    if (needEr) {
-                        if (oldW2) erDelta -= erMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) erDelta += erMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                    if (needEgm) {
-                        if (oldW2) egmDelta -= egmMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) egmDelta += egmMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                    if (needEmin) {
-                        if (oldW2) eminDelta -= eminMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) eminDelta += eminMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                }
-            }
-            if (G1->directed) {
-                for (uint nbr : G1->injSpan(peg)) {
-                    if (nbr == peg) continue;
-                    uint aHole = A[nbr];
-                    if (doEc) {
-                        ecDelta -= G2->getEdgeWeight(aHole, oldHole);
-                        ecDelta += G2->getEdgeWeight(aHole, newHole);
-                    }
-                    if (doWeighted) {
-                        double g1w = G1->getEdgeWeight(nbr, peg);
-                        EDGE_T oldW2 = G2->adjMatrix.get(aHole, oldHole);
-                        EDGE_T newW2 = G2->adjMatrix.get(aHole, newHole);
-                        if (needEd) {
-                            if (oldW2) edDelta -= edMeasurePtr->getEdgeScore(g1w, oldW2);
-                            if (newW2) edDelta += edMeasurePtr->getEdgeScore(g1w, newW2);
-                        }
-                        if (needEr) {
-                            if (oldW2) erDelta -= erMeasurePtr->getEdgeScore(g1w, oldW2);
-                            if (newW2) erDelta += erMeasurePtr->getEdgeScore(g1w, newW2);
-                        }
-                        if (needEgm) {
-                            if (oldW2) egmDelta -= egmMeasurePtr->getEdgeScore(g1w, oldW2);
-                            if (newW2) egmDelta += egmMeasurePtr->getEdgeScore(g1w, newW2);
-                        }
-                        if (needEmin) {
-                            if (oldW2) eminDelta -= eminMeasurePtr->getEdgeScore(g1w, oldW2);
-                            if (newW2) eminDelta += eminMeasurePtr->getEdgeScore(g1w, newW2);
-                        }
-                    }
-                }
-            }
-        }
+        int newAligEdges            = ecMeasurePtr ? aligEdges + ecMeasurePtr->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+        double newEdSum             = edMeasurePtr ? edSum + edMeasurePtr->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+        double newErSum             = erMeasurePtr ? erSum + erMeasurePtr->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+        double newEgmSum            = egmMeasurePtr ? egmSum + egmMeasurePtr->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+        double newEminSum           = eminMeasurePtr ? eminSum + eminMeasurePtr->getIncChangeOp(peg, oldHole, newHole, A) : -1;
 
-        int sqAeDelta       = needSquaredAligEdges  ? squaredAligEdgesIncChangeOp(peg, oldHole, newHole) : 0;
-        int expEdNumerDelta = needExposedEdges      ? exposedEdgesIncChangeOp(peg, oldHole, newHole) : 0;
-        int ms3NumerDelta   = needMS3               ? MS3IncChangeOp(peg, oldHole, newHole) : 0;
-        int inducedEdDelta  = needInducedEdges      ? inducedEdgesIncChangeOp(peg, oldHole, newHole) : 0;
-        double localSumDelta = needLocal            ? localScoreSumIncChangeOp(sims, peg, oldHole, newHole) : 0;
-        double wecSumDelta   = needWec              ? WECIncChangeOp(peg, oldHole, newHole) : 0;
-        double jsSumDelta    = needJs               ? JSIncChangeOp(peg, oldHole, newHole) : 0;
-        double ewecSumDelta  = needEwec             ? EWECIncChangeOp(peg, oldHole, newHole) : 0;
-        double ncSumDelta    = needNC               ? ncIncChangeOp(peg, oldHole, newHole) : 0;
+        double newSquaredAligEdges  = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncChangeOp(peg, oldHole, newHole) : -1;
+        double newExposedEdgesNumer = needExposedEdges ? EdgeExposure::numer + exposedEdgesIncChangeOp(peg, oldHole, newHole) : -1;
+        double newMS3Numer          = needMS3 ? MultiS3::numer + MS3IncChangeOp(peg, oldHole, newHole) : -1;
+        int newInducedEdges         = needInducedEdges ? inducedEdges + inducedEdgesIncChangeOp(peg, oldHole, newHole) : -1;
+        double newLocalScoreSum     = needLocal ? localScoreSum + localScoreSumIncChangeOp(sims, peg, oldHole, newHole) : -1;
+        double newWecSum            = needWec ? wecSum + WECIncChangeOp(peg, oldHole, newHole) : -1;
+        double newJsSum             = needJs ? jsSum + JSIncChangeOp(peg, oldHole, newHole) : -1;
+        double newEwecSum           = needEwec ? ewecSum + EWECIncChangeOp(peg, oldHole, newHole) : -1;
+        double newNcSum             = needNC ? ncSum + ncIncChangeOp(peg, oldHole, newHole) : -1;
 
         map<string, double> newLocalScoreSumMap;
         if (needLocal) {
@@ -651,21 +564,6 @@ double SANA::performChangeThreads(uint actColId, mt19937& rng, uniform_real_dist
             for (auto& item : newLocalScoreSumMap)
                 item.second += localScoreSumIncChangeOp(localSimMatrixMap[item.first], peg, oldHole, newHole);
         }
-
-        int newAligEdges           = doEc ? aligEdges + ecDelta : -1;
-        double newEdSum            = needEd ? edSum + edDelta : -1;
-        double newErSum            = needEr ? erSum + erDelta : -1;
-        double newEgmSum           = needEgm ? egmSum + egmDelta : -1;
-        double newEminSum          = needEmin ? eminSum + eminDelta : -1;
-        double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + sqAeDelta : -1;
-        double newExposedEdgesNumer = needExposedEdges ? EdgeExposure::numer + expEdNumerDelta : -1;
-        double newMS3Numer         = needMS3 ? MultiS3::numer + ms3NumerDelta : -1;
-        int newInducedEdges        = needInducedEdges ? inducedEdges + inducedEdDelta : -1;
-        double newLocalScoreSum    = needLocal ? localScoreSum + localSumDelta : -1;
-        double newWecSum           = needWec ? wecSum + wecSumDelta : -1;
-        double newJsSum            = needJs ? jsSum + jsSumDelta : -1;
-        double newEwecSum          = needEwec ? ewecSum + ewecSumDelta : -1;
-        double newNcSum            = needNC ? ncSum + ncSumDelta : -1;
 
         double newCurrentScore = 0;
         double pBad = scoreComparison(newAligEdges, newInducedEdges, newLocalScoreSum,
@@ -786,64 +684,20 @@ double SANA::performSwapThreads(uint actColId, mt19937& rng, uniform_real_distri
         oldMs3Denom = MultiS3::denom;
     }
 
-    int ecDelta = 0;
-    double edDelta = 0, erDelta = 0, egmDelta = 0, eminDelta = 0;
-    bool doEc = needAligEdges || needSec;
-    bool doWeighted = needEd || needEr || needEgm || needEmin;
-    if (doEc && !doWeighted) {
-        if (G1->hasSelfLoop(peg1)) {
-            if (G2->hasSelfLoop(hole1)) ecDelta -= G2->getEdgeWeight(hole1, hole1);
-            if (G2->hasSelfLoop(hole2)) ecDelta += G2->getEdgeWeight(hole2, hole2);
-        }
-        for (uint nbr : G1->adjSpan(peg1)) {
-            if (nbr == peg1) continue;
-            uint aHole = A[nbr];
-            ecDelta += G2->adjMatrix.get(hole2, aHole) - G2->adjMatrix.get(hole1, aHole);
-        }
-        if (G1->directed) {
-            for (uint nbr : G1->injSpan(peg1)) {
-                if (nbr == peg1) continue;
-                uint aHole = A[nbr];
-                ecDelta += G2->getEdgeWeight(aHole, hole2) - G2->getEdgeWeight(aHole, hole1);
-            }
-        }
-        if (G1->hasSelfLoop(peg2)) {
-            if (G2->hasSelfLoop(hole2)) ecDelta -= G2->getEdgeWeight(hole2, hole2);
-            if (G2->hasSelfLoop(hole1)) ecDelta += G2->getEdgeWeight(hole1, hole1);
-        }
-        for (uint nbr : G1->adjSpan(peg2)) {
-            if (nbr == peg2) continue;
-            uint aHole = A[nbr];
-            ecDelta += G2->adjMatrix.get(hole1, aHole) - G2->adjMatrix.get(hole2, aHole);
-        }
-        if (G1->directed) {
-            for (uint nbr : G1->injSpan(peg2)) {
-                if (nbr == peg2) continue;
-                uint aHole = A[nbr];
-                ecDelta += G2->getEdgeWeight(aHole, hole1) - G2->getEdgeWeight(aHole, hole2);
-            }
-        }
-#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
-        ecDelta += (-1 << 1) & (G1->getEdgeWeight(peg1, peg2) + G2->getEdgeWeight(hole1, hole2));
-#else
-        if (G1->hasEdge(peg1, peg2) && G2->hasEdge(hole1, hole2)) ecDelta += 2;
-        if (G1->directed && G1->hasEdge(peg2, peg1) && G2->hasEdge(hole2, hole1)) ecDelta += 2;
-#endif
-    }
+    int newAligEdges            = ecMeasurePtr ? aligEdges + ecMeasurePtr->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newEdSum             = edMeasurePtr ? edSum + edMeasurePtr->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newErSum             = erMeasurePtr ? erSum + erMeasurePtr->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newEgmSum            = egmMeasurePtr ? egmSum + egmMeasurePtr->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newEminSum           = eminMeasurePtr ? eminSum + eminMeasurePtr->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
 
-    int newAligEdges           = doEc ? aligEdges + ecDelta : -1;
-    double newEdSum            = needEd ? edSum + edDelta : -1;
-    double newErSum            = needEr ? erSum + erDelta : -1;
-    double newEgmSum           = needEgm ? egmSum + egmDelta : -1;
-    double newEminSum          = needEmin ? eminSum + eminDelta : -1;
-    double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newWecSum           = needWec ? wecSum + WECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newJsSum            = needJs ? jsSum + JSIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newEwecSum          = needEwec ? ewecSum + EWECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newNcSum            = needNC ? ncSum + ncIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, peg1, peg2, hole1, hole2) : -1;
+    double newSquaredAligEdges  = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newExposedEdgesNumer = needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newMS3Numer          = needMS3 ? MultiS3::numer + MS3IncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newWecSum            = needWec ? wecSum + WECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newJsSum             = needJs ? jsSum + JSIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newEwecSum           = needEwec ? ewecSum + EWECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newNcSum             = needNC ? ncSum + ncIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newLocalScoreSum     = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, peg1, peg2, hole1, hole2) : -1;
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
@@ -1440,7 +1294,7 @@ Basic idea:
     fi
     // NOTE: "pull it here" means "move" it if the hole was empty, otherwise "swap" with the hole the other peg is in.
 #endif
-__attribute__((flatten))
+
 void SANA::performChange(uint actColId) {
     uint peg, oldHole, numUnassigWithCol, unassignedVecIndex, newHole;
     numUnassigWithCol = actColToUnassignedG2Nodes[actColId].size();
@@ -1496,133 +1350,22 @@ void SANA::performChange(uint actColId) {
         oldMs3Denom = MultiS3::denom;
         oldMs3Numer = MultiS3::numer;
     }
-    // --- Fused incremental computation for edge-based measures ---
-    // Instead of iterating G1's neighbor list once per measure (EC, ED, ER, etc.),
-    // we iterate it once and compute all deltas in a single pass.
-    int ecDelta = 0;
-    double edDelta = 0, erDelta = 0, egmDelta = 0, eminDelta = 0;
-    bool doEc = needAligEdges || needSec;
-    bool doWeighted = needEd || needEr || needEgm || needEmin;
-    if (doEc && !doWeighted) {
-        // --- EC-only fast path (S3, SEC) - no weighted-measure branches ---
-        if (G1->hasSelfLoop(peg)) {
-            if (G2->hasSelfLoop(oldHole)) ecDelta -= G2->getEdgeWeight(oldHole, oldHole);
-            if (G2->hasSelfLoop(newHole)) ecDelta += G2->getEdgeWeight(newHole, newHole);
-        }
-        for (uint nbr : G1->adjSpan(peg)) {
-            if (nbr == peg) continue;
-            uint aHole = A[nbr];
-            ecDelta += G2->adjMatrix.get(newHole, aHole) - G2->adjMatrix.get(oldHole, aHole);
-        }
-        if (G1->directed) {
-            for (uint nbr : G1->injSpan(peg)) {
-                if (nbr == peg) continue;
-                uint aHole = A[nbr];
-                ecDelta += G2->getEdgeWeight(aHole, newHole) - G2->getEdgeWeight(aHole, oldHole);
-            }
-        }
-    } else if (doEc || doWeighted) {
-        // --- Full fused loop: EC + weighted measures in a single pass ---
-        if (G1->hasSelfLoop(peg)) {
-            if (doEc) {
-                if (G2->hasSelfLoop(oldHole)) ecDelta -= G2->getEdgeWeight(oldHole, oldHole);
-                if (G2->hasSelfLoop(newHole)) ecDelta += G2->getEdgeWeight(newHole, newHole);
-            }
-            if (doWeighted) {
-                double g1sw = G1->getEdgeWeight(peg, peg);
-                if (needEd) {
-                    if (G2->hasSelfLoop(oldHole)) edDelta -= edMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(oldHole, oldHole));
-                    if (G2->hasSelfLoop(newHole)) edDelta += edMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(newHole, newHole));
-                }
-                if (needEr) {
-                    if (G2->hasSelfLoop(oldHole)) erDelta -= erMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(oldHole, oldHole));
-                    if (G2->hasSelfLoop(newHole)) erDelta += erMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(newHole, newHole));
-                }
-                if (needEgm) {
-                    if (G2->hasSelfLoop(oldHole)) egmDelta -= egmMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(oldHole, oldHole));
-                    if (G2->hasSelfLoop(newHole)) egmDelta += egmMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(newHole, newHole));
-                }
-                if (needEmin) {
-                    if (G2->hasSelfLoop(oldHole)) eminDelta -= eminMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(oldHole, oldHole));
-                    if (G2->hasSelfLoop(newHole)) eminDelta += eminMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(newHole, newHole));
-                }
-            }
-        }
-        for (uint nbr : G1->adjSpan(peg)) {
-            if (nbr == peg) continue;
-            uint aHole = A[nbr];
-            EDGE_T oldW2 = G2->adjMatrix.get(oldHole, aHole);
-            EDGE_T newW2 = G2->adjMatrix.get(newHole, aHole);
-            if (doEc) {
-                ecDelta -= oldW2;
-                ecDelta += newW2;
-            }
-            if (doWeighted) {
-                double g1w = G1->getEdgeWeight(peg, nbr);
-                if (needEd) {
-                    if (oldW2) edDelta -= edMeasurePtr->getEdgeScore(g1w, oldW2);
-                    if (newW2) edDelta += edMeasurePtr->getEdgeScore(g1w, newW2);
-                }
-                if (needEr) {
-                    if (oldW2) erDelta -= erMeasurePtr->getEdgeScore(g1w, oldW2);
-                    if (newW2) erDelta += erMeasurePtr->getEdgeScore(g1w, newW2);
-                }
-                if (needEgm) {
-                    if (oldW2) egmDelta -= egmMeasurePtr->getEdgeScore(g1w, oldW2);
-                    if (newW2) egmDelta += egmMeasurePtr->getEdgeScore(g1w, newW2);
-                }
-                if (needEmin) {
-                    if (oldW2) eminDelta -= eminMeasurePtr->getEdgeScore(g1w, oldW2);
-                    if (newW2) eminDelta += eminMeasurePtr->getEdgeScore(g1w, newW2);
-                }
-            }
-        }
-        if (G1->directed) {
-            for (uint nbr : G1->injSpan(peg)) {
-                if (nbr == peg) continue;
-                uint aHole = A[nbr];
-                if (doEc) {
-                    ecDelta -= G2->getEdgeWeight(aHole, oldHole);
-                    ecDelta += G2->getEdgeWeight(aHole, newHole);
-                }
-                if (doWeighted) {
-                    double g1w = G1->getEdgeWeight(nbr, peg);
-                    EDGE_T oldW2 = G2->adjMatrix.get(aHole, oldHole);
-                    EDGE_T newW2 = G2->adjMatrix.get(aHole, newHole);
-                    if (needEd) {
-                        if (oldW2) edDelta -= edMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) edDelta += edMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                    if (needEr) {
-                        if (oldW2) erDelta -= erMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) erDelta += erMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                    if (needEgm) {
-                        if (oldW2) egmDelta -= egmMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) egmDelta += egmMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                    if (needEmin) {
-                        if (oldW2) eminDelta -= eminMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) eminDelta += eminMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                }
-            }
-        }
-    }
-    int newAligEdges           = doEc ? aligEdges + ecDelta : -1;
-    double newEdSum            = needEd ? edSum + edDelta : -1;
-    double newErSum            = needEr ? erSum + erDelta : -1;
-    double newEgmSum           = needEgm ? egmSum + egmDelta : -1;
-    double newEminSum          = needEmin ? eminSum + eminDelta : -1;
-    double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncChangeOp(peg, oldHole, newHole) : -1;
-    double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncChangeOp(peg, oldHole, newHole) : -1;
-    double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncChangeOp(peg, oldHole, newHole) : -1;
-    int newInducedEdges        = needInducedEdges ? inducedEdges + inducedEdgesIncChangeOp(peg, oldHole, newHole) : -1;
-    double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncChangeOp(sims, peg, oldHole, newHole) : -1;
-    double newWecSum           = needWec ? wecSum + WECIncChangeOp(peg, oldHole, newHole) : -1;
-    double newJsSum            = needJs ? jsSum + JSIncChangeOp(peg, oldHole, newHole) : -1;
-    double newEwecSum          = needEwec ? ewecSum + EWECIncChangeOp(peg, oldHole, newHole) : -1;
-    double newNcSum            = needNC ? ncSum + ncIncChangeOp(peg, oldHole, newHole) : -1;
+    
+    int newAligEdges            = ecMeasurePtr ? aligEdges + ecMeasurePtr->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+    double newEdSum             = edMeasurePtr ? edSum + edMeasurePtr->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+    double newErSum             = erMeasurePtr ? erSum + erMeasurePtr->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+    double newEgmSum            = egmMeasurePtr ? egmSum + egmMeasurePtr->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+    double newEminSum           = eminMeasurePtr ? eminSum + eminMeasurePtr->getIncChangeOp(peg, oldHole, newHole, A) : -1;
+    
+    double newSquaredAligEdges  = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncChangeOp(peg, oldHole, newHole) : -1;
+    double newExposedEdgesNumer = needExposedEdges ? EdgeExposure::numer + exposedEdgesIncChangeOp(peg, oldHole, newHole) : -1;
+    double newMS3Numer          = needMS3 ? MultiS3::numer + MS3IncChangeOp(peg, oldHole, newHole) : -1;
+    int newInducedEdges         = needInducedEdges ? inducedEdges + inducedEdgesIncChangeOp(peg, oldHole, newHole) : -1;
+    double newLocalScoreSum     = needLocal ? localScoreSum + localScoreSumIncChangeOp(sims, peg, oldHole, newHole) : -1;
+    double newWecSum            = needWec ? wecSum + WECIncChangeOp(peg, oldHole, newHole) : -1;
+    double newJsSum             = needJs ? jsSum + JSIncChangeOp(peg, oldHole, newHole) : -1;
+    double newEwecSum           = needEwec ? ewecSum + EWECIncChangeOp(peg, oldHole, newHole) : -1;
+    double newNcSum             = needNC ? ncSum + ncIncChangeOp(peg, oldHole, newHole) : -1;
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
@@ -1670,6 +1413,7 @@ void SANA::performChange(uint actColId) {
         inducedEdges                  = newInducedEdges;
         localScoreSum                 = newLocalScoreSum;
         wecSum                        = newWecSum;
+        jsSum                         = newJsSum;
         ewecSum                       = newEwecSum;
         ncSum                         = newNcSum;
         if (needLocal) localScoreSumMap = newLocalScoreSumMap;
@@ -1694,7 +1438,6 @@ void SANA::performChange(uint actColId) {
 #endif
 }
 
-__attribute__((flatten))
 void SANA::performSwap(uint actColId) {
     uint peg1, peg2, hole1, hole2;
     if(alignment.allowedPartnersEnabled()) {
@@ -1758,263 +1501,20 @@ void SANA::performSwap(uint actColId) {
         oldMs3Denom = MultiS3::denom;
     }
 
-    // --- Fused incremental computation for edge-based measures (swap) ---
-    // Instead of calling each measure's getIncSwapOp (which independently
-    // iterates both pegs' neighbor lists), we iterate once per peg and
-    // compute EC + ED + ER + EGM + EMIN deltas in a single pass.
-    int ecDelta = 0;
-    double edDelta = 0, erDelta = 0, egmDelta = 0, eminDelta = 0;
-    bool doEc = needAligEdges || needSec;
-    bool doWeighted = needEd || needEr || needEgm || needEmin;
-    if (doEc && !doWeighted) {
-        // --- EC-only fast path: no weighted-measure branches ---
-        // peg1: hole1 -> hole2
-        if (G1->hasSelfLoop(peg1)) {
-            if (G2->hasSelfLoop(hole1)) ecDelta -= G2->getEdgeWeight(hole1, hole1);
-            if (G2->hasSelfLoop(hole2)) ecDelta += G2->getEdgeWeight(hole2, hole2);
-        }
-        for (uint nbr : G1->adjSpan(peg1)) {
-            if (nbr == peg1) continue;
-            uint aHole = A[nbr];
-            ecDelta += G2->adjMatrix.get(hole2, aHole) - G2->adjMatrix.get(hole1, aHole);
-        }
-        if (G1->directed) {
-            for (uint nbr : G1->injSpan(peg1)) {
-                if (nbr == peg1) continue;
-                uint aHole = A[nbr];
-                ecDelta += G2->getEdgeWeight(aHole, hole2) - G2->getEdgeWeight(aHole, hole1);
-            }
-        }
-        // peg2: hole2 -> hole1
-        if (G1->hasSelfLoop(peg2)) {
-            if (G2->hasSelfLoop(hole2)) ecDelta -= G2->getEdgeWeight(hole2, hole2);
-            if (G2->hasSelfLoop(hole1)) ecDelta += G2->getEdgeWeight(hole1, hole1);
-        }
-        for (uint nbr : G1->adjSpan(peg2)) {
-            if (nbr == peg2) continue;
-            uint aHole = A[nbr];
-            ecDelta += G2->adjMatrix.get(hole1, aHole) - G2->adjMatrix.get(hole2, aHole);
-        }
-        if (G1->directed) {
-            for (uint nbr : G1->injSpan(peg2)) {
-                if (nbr == peg2) continue;
-                uint aHole = A[nbr];
-                ecDelta += G2->getEdgeWeight(aHole, hole1) - G2->getEdgeWeight(aHole, hole2);
-            }
-        }
-        // Correction for swap between adjacent nodes with adjacent images
-#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
-        ecDelta += (-1 << 1) & (G1->getEdgeWeight(peg1, peg2) + G2->getEdgeWeight(hole1, hole2));
-#else
-        if (G1->hasEdge(peg1, peg2) && G2->hasEdge(hole1, hole2)) ecDelta += 2;
-        if (G1->directed && G1->hasEdge(peg2, peg1) && G2->hasEdge(hole2, hole1)) ecDelta += 2;
-#endif
-    } else if (doEc || doWeighted) {
-        // --- Full fused loop: EC + weighted measures in a single pass ---
-        // peg1: hole1 -> hole2
-        if (G1->hasSelfLoop(peg1)) {
-            if (doEc) {
-                if (G2->hasSelfLoop(hole1)) ecDelta -= G2->getEdgeWeight(hole1, hole1);
-                if (G2->hasSelfLoop(hole2)) ecDelta += G2->getEdgeWeight(hole2, hole2);
-            }
-            if (doWeighted) {
-                double g1sw = G1->getEdgeWeight(peg1, peg1);
-                if (needEd) {
-                    if (G2->hasSelfLoop(hole1)) edDelta -= edMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole1, hole1));
-                    if (G2->hasSelfLoop(hole2)) edDelta += edMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole2, hole2));
-                }
-                if (needEr) {
-                    if (G2->hasSelfLoop(hole1)) erDelta -= erMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole1, hole1));
-                    if (G2->hasSelfLoop(hole2)) erDelta += erMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole2, hole2));
-                }
-                if (needEgm) {
-                    if (G2->hasSelfLoop(hole1)) egmDelta -= egmMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole1, hole1));
-                    if (G2->hasSelfLoop(hole2)) egmDelta += egmMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole2, hole2));
-                }
-                if (needEmin) {
-                    if (G2->hasSelfLoop(hole1)) eminDelta -= eminMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole1, hole1));
-                    if (G2->hasSelfLoop(hole2)) eminDelta += eminMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole2, hole2));
-                }
-            }
-        }
-        for (uint nbr : G1->adjSpan(peg1)) {
-            if (nbr == peg1) continue;
-            uint aHole = A[nbr];
-            if (doEc) {
-                ecDelta -= G2->adjMatrix.get(hole1, aHole);
-                ecDelta += G2->adjMatrix.get(hole2, aHole);
-            }
-            if (doWeighted) {
-                // Weighted measures need swap-aware lookups when nbr is the other peg
-                uint nbrHole    = (nbr == peg2) ? hole2 : aHole;
-                uint newNbrHole = (nbr == peg2) ? hole1 : aHole;
-                EDGE_T oldW2 = G2->adjMatrix.get(hole1, nbrHole);
-                EDGE_T newW2 = G2->adjMatrix.get(hole2, newNbrHole);
-                double g1w = G1->getEdgeWeight(peg1, nbr);
-                if (needEd) {
-                    if (oldW2) edDelta -= edMeasurePtr->getEdgeScore(g1w, oldW2);
-                    if (newW2) edDelta += edMeasurePtr->getEdgeScore(g1w, newW2);
-                }
-                if (needEr) {
-                    if (oldW2) erDelta -= erMeasurePtr->getEdgeScore(g1w, oldW2);
-                    if (newW2) erDelta += erMeasurePtr->getEdgeScore(g1w, newW2);
-                }
-                if (needEgm) {
-                    if (oldW2) egmDelta -= egmMeasurePtr->getEdgeScore(g1w, oldW2);
-                    if (newW2) egmDelta += egmMeasurePtr->getEdgeScore(g1w, newW2);
-                }
-                if (needEmin) {
-                    if (oldW2) eminDelta -= eminMeasurePtr->getEdgeScore(g1w, oldW2);
-                    if (newW2) eminDelta += eminMeasurePtr->getEdgeScore(g1w, newW2);
-                }
-            }
-        }
-        if (G1->directed) {
-            for (uint nbr : G1->injSpan(peg1)) {
-                if (nbr == peg1) continue;
-                uint aHole = A[nbr];
-                if (doEc) {
-                    ecDelta -= G2->getEdgeWeight(aHole, hole1);
-                    ecDelta += G2->getEdgeWeight(aHole, hole2);
-                }
-                if (doWeighted) {
-                    uint nbrHole    = (nbr == peg2) ? hole2 : aHole;
-                    uint newNbrHole = (nbr == peg2) ? hole1 : aHole;
-                    EDGE_T oldW2 = G2->adjMatrix.get(nbrHole, hole1);
-                    EDGE_T newW2 = G2->adjMatrix.get(newNbrHole, hole2);
-                    double g1w = G1->getEdgeWeight(nbr, peg1);
-                    if (needEd) {
-                        if (oldW2) edDelta -= edMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) edDelta += edMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                    if (needEr) {
-                        if (oldW2) erDelta -= erMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) erDelta += erMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                    if (needEgm) {
-                        if (oldW2) egmDelta -= egmMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) egmDelta += egmMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                    if (needEmin) {
-                        if (oldW2) eminDelta -= eminMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) eminDelta += eminMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                }
-            }
-        }
-        // peg2: hole2 -> hole1
-        if (G1->hasSelfLoop(peg2)) {
-            if (doEc) {
-                if (G2->hasSelfLoop(hole2)) ecDelta -= G2->getEdgeWeight(hole2, hole2);
-                if (G2->hasSelfLoop(hole1)) ecDelta += G2->getEdgeWeight(hole1, hole1);
-            }
-            if (doWeighted) {
-                double g1sw = G1->getEdgeWeight(peg2, peg2);
-                if (needEd) {
-                    if (G2->hasSelfLoop(hole2)) edDelta -= edMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole2, hole2));
-                    if (G2->hasSelfLoop(hole1)) edDelta += edMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole1, hole1));
-                }
-                if (needEr) {
-                    if (G2->hasSelfLoop(hole2)) erDelta -= erMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole2, hole2));
-                    if (G2->hasSelfLoop(hole1)) erDelta += erMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole1, hole1));
-                }
-                if (needEgm) {
-                    if (G2->hasSelfLoop(hole2)) egmDelta -= egmMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole2, hole2));
-                    if (G2->hasSelfLoop(hole1)) egmDelta += egmMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole1, hole1));
-                }
-                if (needEmin) {
-                    if (G2->hasSelfLoop(hole2)) eminDelta -= eminMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole2, hole2));
-                    if (G2->hasSelfLoop(hole1)) eminDelta += eminMeasurePtr->getEdgeScore(g1sw, G2->getEdgeWeight(hole1, hole1));
-                }
-            }
-        }
-        for (uint nbr : G1->adjSpan(peg2)) {
-            if (nbr == peg2) continue;
-            uint aHole = A[nbr];
-            if (doEc) {
-                ecDelta -= G2->adjMatrix.get(hole2, aHole);
-                ecDelta += G2->adjMatrix.get(hole1, aHole);
-            }
-            if (doWeighted) {
-                uint nbrHole    = (nbr == peg1) ? hole1 : aHole;
-                uint newNbrHole = (nbr == peg1) ? hole2 : aHole;
-                EDGE_T oldW2 = G2->adjMatrix.get(hole2, nbrHole);
-                EDGE_T newW2 = G2->adjMatrix.get(hole1, newNbrHole);
-                double g1w = G1->getEdgeWeight(peg2, nbr);
-                if (needEd) {
-                    if (oldW2) edDelta -= edMeasurePtr->getEdgeScore(g1w, oldW2);
-                    if (newW2) edDelta += edMeasurePtr->getEdgeScore(g1w, newW2);
-                }
-                if (needEr) {
-                    if (oldW2) erDelta -= erMeasurePtr->getEdgeScore(g1w, oldW2);
-                    if (newW2) erDelta += erMeasurePtr->getEdgeScore(g1w, newW2);
-                }
-                if (needEgm) {
-                    if (oldW2) egmDelta -= egmMeasurePtr->getEdgeScore(g1w, oldW2);
-                    if (newW2) egmDelta += egmMeasurePtr->getEdgeScore(g1w, newW2);
-                }
-                if (needEmin) {
-                    if (oldW2) eminDelta -= eminMeasurePtr->getEdgeScore(g1w, oldW2);
-                    if (newW2) eminDelta += eminMeasurePtr->getEdgeScore(g1w, newW2);
-                }
-            }
-        }
-        if (G1->directed) {
-            for (uint nbr : G1->injSpan(peg2)) {
-                if (nbr == peg2) continue;
-                uint aHole = A[nbr];
-                if (doEc) {
-                    ecDelta -= G2->getEdgeWeight(aHole, hole2);
-                    ecDelta += G2->getEdgeWeight(aHole, hole1);
-                }
-                if (doWeighted) {
-                    uint nbrHole    = (nbr == peg1) ? hole1 : aHole;
-                    uint newNbrHole = (nbr == peg1) ? hole2 : aHole;
-                    EDGE_T oldW2 = G2->adjMatrix.get(nbrHole, hole2);
-                    EDGE_T newW2 = G2->adjMatrix.get(newNbrHole, hole1);
-                    double g1w = G1->getEdgeWeight(nbr, peg2);
-                    if (needEd) {
-                        if (oldW2) edDelta -= edMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) edDelta += edMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                    if (needEr) {
-                        if (oldW2) erDelta -= erMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) erDelta += erMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                    if (needEgm) {
-                        if (oldW2) egmDelta -= egmMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) egmDelta += egmMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                    if (needEmin) {
-                        if (oldW2) eminDelta -= eminMeasurePtr->getEdgeScore(g1w, oldW2);
-                        if (newW2) eminDelta += eminMeasurePtr->getEdgeScore(g1w, newW2);
-                    }
-                }
-            }
-        }
-        // EC correction for swap between adjacent nodes with adjacent images
-        if (doEc) {
-#if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
-            ecDelta += (-1 << 1) & (G1->getEdgeWeight(peg1, peg2) + G2->getEdgeWeight(hole1, hole2));
-#else
-            if (G1->hasEdge(peg1, peg2) && G2->hasEdge(hole1, hole2)) ecDelta += 2;
-            if (G1->directed && G1->hasEdge(peg2, peg1) && G2->hasEdge(hole2, hole1)) ecDelta += 2;
-#endif
-        }
-    }
-    int newAligEdges           = doEc ? aligEdges + ecDelta : -1;
-    double newEdSum            = needEd ? edSum + edDelta : -1;
-    double newErSum            = needEr ? erSum + erDelta : -1;
-    double newEgmSum           = needEgm ? egmSum + egmDelta : -1;
-    double newEminSum          = needEmin ? eminSum + eminDelta : -1;
-    double newSquaredAligEdges = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newExposedEdgesNumer= needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newMS3Numer         = needMS3 ? MultiS3::numer + MS3IncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newWecSum           = needWec ? wecSum + WECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newJsSum            = needJs ? jsSum + JSIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newEwecSum          = needEwec ? ewecSum + EWECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newNcSum            = needNC ? ncSum + ncIncSwapOp(peg1, peg2, hole1, hole2) : -1;
-    double newLocalScoreSum    = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, peg1, peg2, hole1, hole2) : -1;
+    int newAligEdges            = ecMeasurePtr ? aligEdges + ecMeasurePtr->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newEdSum             = edMeasurePtr ? edSum + edMeasurePtr->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newErSum             = erMeasurePtr ? erSum + erMeasurePtr->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newEgmSum            = egmMeasurePtr ? egmSum + egmMeasurePtr->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    double newEminSum           = eminMeasurePtr ? eminSum + eminMeasurePtr->getIncSwapOp(peg1, peg2, hole1, hole2, A) : -1;
+    
+    double newSquaredAligEdges  = needSquaredAligEdges ? squaredAligEdges + squaredAligEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newExposedEdgesNumer = needExposedEdges ? EdgeExposure::numer + exposedEdgesIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newMS3Numer          = needMS3 ? MultiS3::numer + MS3IncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newWecSum            = needWec ? wecSum + WECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newJsSum             = needJs ? jsSum + JSIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newEwecSum           = needEwec ? ewecSum + EWECIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newNcSum             = needNC ? ncSum + ncIncSwapOp(peg1, peg2, hole1, hole2) : -1;
+    double newLocalScoreSum     = needLocal ? localScoreSum + localScoreSumIncSwapOp(sims, peg1, peg2, hole1, hole2) : -1;
 
     map<string, double> newLocalScoreSumMap;
     if (needLocal) {
@@ -2057,6 +1557,7 @@ void SANA::performSwap(uint actColId) {
 	eminSum             = newEminSum;
 	localScoreSum       = newLocalScoreSum;
 	wecSum              = newWecSum;
+	jsSum               = newJsSum;
 	ewecSum             = newEwecSum;
 	ncSum               = newNcSum;
 	currentScore        = newCurrentScore;
@@ -2075,6 +1576,9 @@ void SANA::performSwap(uint actColId) {
     }
 }
 
+// Helper function for computing the LPS term in the score comparison. Returns 0 if d <= 0, otherwise returns x / (2 * d).
+static inline double lpsTerm(double x, double d) { return d > 0 ? x / (2.0 * d) : 0.0; }
+
 // returns pBad
 double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double newLocalScoreSum, double newWecSum,
 	double newJsSum, double newNcSum, double& newCurrentScore, double newEwecSum, double newSquaredAligEdges,
@@ -2082,6 +1586,21 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
 	double newEdgeMinSum, double newEdgeGeoMeanSum) {
     wasBadMove = false;
     double pBad = 0;
+    array<double, 3> newLpsScores = {{0, 0, 0}};
+    array<double, 3> currentLpsScores = {{0, 0, 0}};
+    if (lpsLWeight > 0 or lpsIWeight > 0 or lpsSWeight > 0) {
+        auto lpsScores = [&](double alignedEdges, double inducedEdges) {
+            double falsePositives = inducedEdges - alignedEdges;
+            double trueNegatives = lpsOmega - g1Edges - falsePositives;
+            double lpsL = lpsTerm(alignedEdges, g1Edges)
+                        + lpsTerm(trueNegatives, lpsOmega - g1Edges);
+            double lpsI = lpsTerm(alignedEdges, inducedEdges)
+                        + lpsTerm(trueNegatives, lpsOmega - inducedEdges);
+            return array<double, 3>{{lpsL, lpsI, 0.5 * (lpsL + lpsI)}};
+        };
+        currentLpsScores = lpsScores(aligEdges, inducedEdges);
+        newLpsScores = lpsScores(newAligEdges, newInducedEdges);
+    }
 
     switch (scoreAggr) {
     case ScoreAggregation::sum:
@@ -2101,11 +1620,14 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
 	if(f_betaWeight) {
 	    if(beta_value==inf){
-		newCurrentScore += f_betaWeight * (newAligEdges / newInducedEdges);
+		newCurrentScore += (newInducedEdges != 0) ? f_betaWeight * (newAligEdges / newInducedEdges):0;
 	    }else{
 		newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
 	}
+        newCurrentScore += lpsLWeight * newLpsScores[0]
+                         + lpsIWeight * newLpsScores[1]
+                         + lpsSWeight * newLpsScores[2];
 
 #if defined(MULTI_PAIRWISE) || defined(MULTI_MPI)
         newCurrentScore += mecWeight?mecWeight * (newAligEdges / (g1TotalWeight + g2TotalWeight)):0;
@@ -2121,21 +1643,24 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
     case ScoreAggregation::product:
     {
         newCurrentScore = 1;
-        newCurrentScore *= ecWeight?ecWeight * (newAligEdges / g1Edges):0;
-        newCurrentScore *= s3Weight?s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges)):0;
-        newCurrentScore *= (icsWeight && newInducedEdges != 0)?icsWeight * (newAligEdges / newInducedEdges):0;
-        newCurrentScore *= localWeight?localWeight * (newLocalScoreSum / n1):0;
-        newCurrentScore *= secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
-        newCurrentScore *= wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
-        newCurrentScore *= jsWeight?jsWeight * (newJsSum):0;
-        newCurrentScore *= ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
+    if (ecWeight > 0) newCurrentScore *= ecWeight * (newAligEdges / g1Edges);
+    if (s3Weight > 0) newCurrentScore *= s3Weight * (newAligEdges / (g1Edges + newInducedEdges - newAligEdges));
+    if (icsWeight > 0) newCurrentScore *= newInducedEdges != 0 ? icsWeight * (newAligEdges / newInducedEdges) : 0;
+    if (localWeight > 0) newCurrentScore *= localWeight * (newLocalScoreSum / n1);
+    if (secWeight > 0) newCurrentScore *= secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges) * 0.5;
+    if (wecWeight > 0) newCurrentScore *= wecWeight * (newWecSum / (2 * g1Edges));
+    if (jsWeight > 0) newCurrentScore *= jsWeight * newJsSum;
+    if (ncWeight > 0) newCurrentScore *= ncWeight * (newNcSum / trueAWithValidCountAppended.back());
 	if(f_betaWeight) {
 	    if(beta_value==inf){
-		newCurrentScore *= f_betaWeight * (newAligEdges / newInducedEdges);
+        newCurrentScore *= newInducedEdges ? f_betaWeight * (newAligEdges / newInducedEdges) : 0;
 	    }else{
 		newCurrentScore *= f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
 	}
+    if (lpsLWeight > 0) newCurrentScore *= lpsLWeight * newLpsScores[0];
+    if (lpsIWeight > 0) newCurrentScore *= lpsIWeight * newLpsScores[1];
+    if (lpsSWeight > 0) newCurrentScore *= lpsSWeight * newLpsScores[2];
 
         energyInc = (newCurrentScore - currentScore) * MC->getOptimizationDirection();
         wasBadMove = energyInc < 0;
@@ -2157,9 +1682,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
         newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
         newCurrentScore += ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
+        newCurrentScore += lpsLWeight * newLpsScores[0]
+                     + lpsIWeight * newLpsScores[1]
+                     + lpsSWeight * newLpsScores[2];
 	if(f_betaWeight) {
 	    if(beta_value==inf){
-		newCurrentScore += f_betaWeight * (newAligEdges / newInducedEdges);
+		newCurrentScore += newInducedEdges?f_betaWeight * (newAligEdges / newInducedEdges):0;
 	    }else{
 		newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
@@ -2184,9 +1712,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
         newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
         newCurrentScore += ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
+        newCurrentScore += lpsLWeight * newLpsScores[0]
+                     + lpsIWeight * newLpsScores[1]
+                     + lpsSWeight * newLpsScores[2];
 	if(f_betaWeight) {
 	    if(beta_value==inf){
-		newCurrentScore += f_betaWeight * (newAligEdges / newInducedEdges);
+		newCurrentScore += newInducedEdges?f_betaWeight * (newAligEdges / newInducedEdges):0;
 	    }else{
 		newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
@@ -2206,9 +1737,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += wecWeight?wecWeight / (newWecSum / (2 * g1Edges)):0;
         newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
         newCurrentScore += ncWeight?ncWeight / (newNcSum / trueAWithValidCountAppended.back()):0;
+        newCurrentScore += (lpsLWeight > 0 && newLpsScores[0] != 0) ? lpsLWeight / newLpsScores[0] : 0;
+        newCurrentScore += (lpsIWeight > 0 && newLpsScores[1] != 0) ? lpsIWeight / newLpsScores[1] : 0;
+        newCurrentScore += (lpsSWeight > 0 && newLpsScores[2] != 0) ? lpsSWeight / newLpsScores[2] : 0;
 	if(f_betaWeight) {
 	    if(beta_value==inf){
-		newCurrentScore += f_betaWeight * (newAligEdges / newInducedEdges);
+		newCurrentScore += newInducedEdges?f_betaWeight * (newAligEdges / newInducedEdges):0;
 	    }else{
 		newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
@@ -2232,6 +1766,13 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
             secWeight*0.5*(newAligEdges / g1Edges - aligEdges / g1Edges + newAligEdges / g2Edges - aligEdges / g2Edges))),
             min(localWeight*((newLocalScoreSum / n1) - (localScoreSum)),
             min(wecWeight*(newWecSum / (2 * g1Edges) - wecSum / (2 * g1Edges)), jsWeight*(newJsSum - jsSum)))));
+       
+            for (uint i = 0; i < newLpsScores.size(); i++) {
+            double weight = i == 0 ? lpsLWeight : (i == 1 ? lpsIWeight : lpsSWeight);
+            double delta = weight * (newLpsScores[i] - currentLpsScores[i]);
+            maxScore = max(maxScore, delta);
+            minScore = min(minScore, delta);
+        }
 
         newCurrentScore += ecWeight?ecWeight * (newAligEdges / g1Edges):0;
         newCurrentScore += secWeight?secWeight * (newAligEdges / g1Edges + newAligEdges / g2Edges)*0.5:0;
@@ -2241,9 +1782,12 @@ double SANA::scoreComparison(double newAligEdges, double newInducedEdges, double
         newCurrentScore += wecWeight?wecWeight * (newWecSum / (2 * g1Edges)):0;
         newCurrentScore += jsWeight?jsWeight * (newJsSum):0;
         newCurrentScore += ncWeight?ncWeight * (newNcSum / trueAWithValidCountAppended.back()):0;
+        newCurrentScore += lpsLWeight * newLpsScores[0]
+                     + lpsIWeight * newLpsScores[1]
+                     + lpsSWeight * newLpsScores[2];
 	if(f_betaWeight) {
 	    if(beta_value==inf){
-		newCurrentScore += f_betaWeight * (newAligEdges / newInducedEdges);
+		newCurrentScore += newInducedEdges?f_betaWeight * (newAligEdges / newInducedEdges):0;
 	    } else {
 		newCurrentScore += f_betaWeight * (((1 + (beta_value * beta_value)) * newAligEdges) / (g1Edges + (beta_value * beta_value * newInducedEdges)));
 	    }
@@ -2982,113 +2526,12 @@ double SANA::localScoreSumIncSwapOp(const vector<vector<float>>& sim, uint peg1,
 
 double SANA::JSIncChangeOp(uint peg, uint oldHole, uint newHole) {
     if (jsWeight == 0) return 0;
-
-    //eval newJsSum
-    //update alignedByNode with peg and peg neighbors using oldHole and newHole
-
-    // eval for peg from scratch
-    uint pegOldAlingedEdges = alignedByNode[peg];
-    uint pegAlignedEdges = 0;
-    vector<uint> pegNeighbors = G1->adjLists[peg];
-    for (uint nbr : pegNeighbors) {
-        uint neighborAlignedTo = A[nbr];
-        pegAlignedEdges += G2->getEdgeWeight(newHole, neighborAlignedTo);
-    }
-    alignedByNode[peg] = pegAlignedEdges;
-    //update newJsSum
-    uint pegTotalEdges = pegNeighbors.size();
-    double change = ((pegAlignedEdges - pegOldAlingedEdges)/(double)pegTotalEdges);
-
-    // for each peg neighbor update do iterative changes to the jsAlingedByNode vector
-    // in each update get the G2mapping of neighbor and then check if edge was aligned by oldHole to G2mapping and reduce score if newHole to G2mapping doesnt exist
-    // increase score if oldHole to G2 mapping edge didnt exist but newHole to G2 mapping does
-    //no changes other wise
-    for (uint nbr : pegNeighbors) {
-        uint neighborAlignedTo = A[nbr];
-        uint neighborOldAlignedEdges = alignedByNode[nbr];
-        uint neighborTotalEdges = G1->adjLists[nbr].size();
-        alignedByNode[nbr] -= G2->getEdgeWeight(oldHole, neighborAlignedTo);
-        alignedByNode[nbr] += G2->getEdgeWeight(newHole, neighborAlignedTo);
-        //update newJsSum
-        change += ((alignedByNode[nbr] - neighborOldAlignedEdges)/(double)neighborTotalEdges);
-    }
-    return change;
+    return jsMeasurePtr->getIncChangeOp(peg, oldHole, newHole, alignment);
 }
 
 double SANA::JSIncSwapOp(uint peg1, uint peg2, uint hole1, uint hole2) {
     if (jsWeight == 0) return 0;
-
-    //eval swap as two pegs and then loop neighbors
-
-    uint peg1OldAlingedEdges = alignedByNode[peg1];
-    uint peg1AlignedEdges = 0;
-    vector<uint> peg1Neighbors = G1->adjLists[peg1];
-    uint peg1TotalEdges = peg1Neighbors.size();
-
-    uint peg2OldAlingedEdges = alignedByNode[peg2];
-    uint peg2AlignedEdges = 0;
-    vector<uint> peg2Neighbors = G1->adjLists[peg2];
-    uint peg2TotalEdges = peg2Neighbors.size();
-
-    // eval for peg1 from sratch
-    for (uint nbr : peg1Neighbors) {
-        uint neighborAlignedTo = A[nbr];
-        // if (G2->getEdgeWeight(hole2, neighborAlignedTo) == true) {
-        //     peg1AlignedEdges += 1;
-        // }
-        peg1AlignedEdges = G2->getEdgeWeight(hole2, neighborAlignedTo);
-    }
-    alignedByNode[peg1] = peg1AlignedEdges;
-
-    double change = ((peg1AlignedEdges - peg1OldAlingedEdges)/(double)peg1TotalEdges);
-
-    //for each peg neighbor update do iterative changes to the jsAlingedByNode vector
-    //in each update get the G2mapping of neighbor and then check if edge was aligned by
-    //oldHole to G2mapping and reduce score if newHole to G2mapping doesnt exist
-    //increase score if oldHole to G2 mapping edge didnt exist but newHole to G2 mapping does
-    //no changes other wise
-    for (uint nbr : peg1Neighbors) {
-        uint neighborAlignedTo = A[nbr];
-        uint neighborOldAlignedEdges = alignedByNode[nbr];
-        uint neighborTotalEdges = G1->adjLists[nbr].size();
-        if (std::find (peg1Neighbors.begin(), peg1Neighbors.end(), nbr) == peg1Neighbors.end()) {
-            alignedByNode[nbr] -= G2->getEdgeWeight(hole1, neighborAlignedTo);
-            alignedByNode[nbr] += G2->getEdgeWeight(hole2, neighborAlignedTo);
-            //update newJsSum
-            change += ((alignedByNode[nbr] - neighborOldAlignedEdges)/(double)neighborTotalEdges);
-        }
-    }
-
-    // eval for peg2 from scratch
-    for (uint nbr : peg2Neighbors) {
-        uint neighborAlignedTo = A[nbr];
-        peg2AlignedEdges += G2->getEdgeWeight(hole1, neighborAlignedTo);
-    }
-    alignedByNode[peg2] = peg2AlignedEdges;
-    change += ((peg2AlignedEdges - peg2OldAlingedEdges)/(double)peg2TotalEdges);
-
-    // for each peg neighbor update do iterative changes to the jsAlingedByNode vector
-    // in each update get the G2mapping of neighbor and then check if edge was aligned by oldHole to G2mapping and reduce score if newHole to G2mapping doesnt exist
-    // increase score if oldHole to G2 mapping edge didnt exist but newHole to G2 mapping does
-    //no changes other wise
-    for (uint nbr : peg2Neighbors) {
-        uint neighborAlignedTo = A[nbr];
-        uint neighborOldAlignedEdges = alignedByNode[nbr];
-        uint neighborTotalEdges = G1->adjLists[nbr].size();
-        if (std::find (peg1Neighbors.begin(), peg1Neighbors.end(), nbr) == peg1Neighbors.end()) {
-            alignedByNode[nbr] -= G2->getEdgeWeight(hole2, neighborAlignedTo);
-            alignedByNode[nbr] += G2->getEdgeWeight(hole1, neighborAlignedTo);
-            //update newJsSum
-            change += ((alignedByNode[nbr] - neighborOldAlignedEdges)/(double)neighborTotalEdges);
-        }
-    }
-
-    //eval for common neighbors
-    vector<uint> peg1peg2commonneighbors(peg1Neighbors.size() + peg2Neighbors.size());
-    set_intersection(peg1Neighbors.begin(), peg1Neighbors.end(),
-                     peg2Neighbors.begin(), peg2Neighbors.end(),
-                     peg1peg2commonneighbors.begin());
-    return change;
+    return jsMeasurePtr->getIncSwapOp(peg1, peg2, hole1, hole2, alignment);
 }
 
 double SANA::WECIncChangeOp(uint peg, uint oldHole, uint newHole) {

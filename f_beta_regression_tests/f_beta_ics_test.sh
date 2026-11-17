@@ -1,4 +1,5 @@
 #!/bin/bash
+REG_DIR=${REG_DIR:-f_beta_regression_tests}
 
 # List of networks to process
 networks=(
@@ -11,15 +12,15 @@ networks=(
 )
 
 # Output log file
-log_file="f-beta_results_log.txt"
+log_file="$REG_DIR/f_beta_ics_test.txt"
 
 # SANA command base
-sana_command="./sana2.0 -ec 0.75 -f_beta 0.25,inf -fg1"
+sana_command="${SANA_EXE:-./sana2.2} -ec 0.75 -f_beta 0.25,inf -fg1"
 
 # Clean previous log
 > "$log_file"
 
-# Function to parse `sana.out`
+# Function to parse outfile
 parse_sana_out() {
     local file=$1
     local ics=0.0
@@ -46,10 +47,11 @@ die() {
 for ((i = 0; i < ${#networks[@]} - 1; i++)); do
     network1=${networks[$i]}
     network2=${networks[$i+1]}
+    out_file="$REG_DIR/fbeta-ics-${network1##*/}-${network2##*/}"
 
     # Build and run the SANA command
     echo "Processing: $network1 and $network2" | tee -a "$log_file"
-    command="$sana_command $network1 -fg2 $network2 > /dev/null"
+    command="$sana_command $network1 -fg2 $network2 -tolerance 0 -seed 1 -it 1 -o $out_file > /dev/null"
     eval "$command"
     
     PARA_STATUS=$?
@@ -58,13 +60,13 @@ for ((i = 0; i < ${#networks[@]} - 1; i++)); do
         die "Error: Command failed for $network1 and $network2 with status $PARA_STATUS"
     fi
 
-    # Check if `sana.out` was created
-    if [[ ! -f "sana.out" ]]; then
-        die "Error: `sana.out` not generated for $network1 and $network2"
+    # Check for outfile
+    if [[ ! -f "$out_file.out" ]]; then
+        die "Error: outfile '$out_file.out' was not generated for $network1 and $network2"
     fi
 
-    # Parse `sana.out`
-    metrics=$(parse_sana_out "sana.out")
+    # Parse outfile
+    metrics=$(parse_sana_out "$out_file.out")
     ics=$(echo "$metrics" | awk '{print $1}')
     f_beta=$(echo "$metrics" | awk '{print $2}')
 
@@ -81,8 +83,8 @@ for ((i = 0; i < ${#networks[@]} - 1; i++)); do
         echo ""
     } >> "$log_file"
 
-    # Clean up `sana.out`
-    rm -f "sana.out"
+    # Remove outfile
+    rm -f "$out_file.out"
 done
 
 # Final report

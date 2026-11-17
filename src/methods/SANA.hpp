@@ -27,6 +27,7 @@
 
 using namespace std;
 
+class JaccardSimilarityScore;
 
 class SANA: public Method {
 
@@ -147,7 +148,7 @@ private:
     //if startA is empty, a random alignment is used
     void initDataStructures();
     vector<uint> A, A_; // A_ is the inverse alignment of A
-    vector<uint8_t> assignedNodesG2;
+    vector<bool> assignedNodesG2;
 
     bool isHappyPeg (const uint peg ) { return alignment.isHappy(peg, A[peg]); }
     bool isHappyHole(const uint hole) { return alignment.isHappy(A_[hole], hole); }
@@ -156,7 +157,7 @@ private:
     MeasureCombination* MC;
     double eval(const Alignment& A) const;
     double ecWeight, edWeight, erWeight, eminWeight, egmWeight, s3Weight, icsWeight, wecWeight, jsWeight, secWeight,
-           ncWeight, localWeight, mecWeight, sesWeight, eeWeight, ms3Weight, ewecWeight,f_betaWeight;
+           ncWeight, localWeight, mecWeight, sesWeight, eeWeight, ms3Weight, ewecWeight,f_betaWeight, lpsLWeight, lpsIWeight, lpsSWeight;
 
     //this should be refactored so that the return parameter is not the 9th one out of 15
     // changed in June 2020 to return pBad, not the decision itself. -WH
@@ -233,7 +234,6 @@ private:
     //to evaluate js incrementally
     bool needJs;
     double jsSum;
-    vector<uint> alignedByNode;
     double JSIncChangeOp(uint peg, uint oldHole, uint newHole);
     double JSIncSwapOp(uint peg1, uint Peg2, uint node1, uint node2);
 
@@ -248,6 +248,7 @@ private:
     // Cached measure pointers -- eliminates per-iteration string-keyed
     // map lookups in the hot loop (MC->getMeasure("ec") etc.)
     BooleanMeasure*  ecMeasurePtr;
+    JaccardSimilarityScore* jsMeasurePtr;
     WeightedMeasure* edMeasurePtr;
     WeightedMeasure* erMeasurePtr;
     WeightedMeasure* egmMeasurePtr;
@@ -261,6 +262,10 @@ private:
 
     //beta_Value for the FMeasure
     double beta_value;
+
+    // Omega value for LPS measure
+    double lpsOmega;
+
 
     //to evaluate core scores    
 #ifdef CORES

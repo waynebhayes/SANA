@@ -34,18 +34,24 @@ FMeasure::FMeasure(const Graph* G1, const Graph* G2, const double input_beta)
 FMeasure::~FMeasure(){}
 
 double FMeasure::eval(const Alignment& A) {
-    if(beta==inf){
-        return (double) A.computeNumAlignedEdges(*G1, *G2)/G2->numEdgesInNodeInducedSubgraph(A.asVector());
-    }
     double alignedEdges = A.computeNumAlignedEdges(*G1, *G2);
-    double totalEdgesG1 = G1->getNumEdges();
     double inducedEdgesG2 = G2->numEdgesInNodeInducedSubgraph(A.asVector());
-
+    
+    if(beta==inf){
+        if (inducedEdgesG2 == 0) {
+            // If there are no induced edges in G2, return 0.0 to avoid division by zero
+            return 0.0;
+        }
+        return alignedEdges / inducedEdgesG2;
+    }
+    
+    double totalEdgesG1 = G1->getNumEdges();
     double numerator = (1 + beta * beta) * alignedEdges;
     double denominator = totalEdgesG1 + (beta * beta * inducedEdgesG2);
 
+
     if (denominator == 0) {
-        throw std::runtime_error("Denominator is zero in FMeasure::eval, resulting in division by zero.");
+        return 0.0;
     }
 
     return numerator / denominator;

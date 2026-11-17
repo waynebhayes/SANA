@@ -1,6 +1,5 @@
 #!/bin/bash
-echo "Skipping f_beta until it works" >&2
-exit 0
+REG_DIR=${REG_DIR:-regression-tests/f_beta}
 
 # List of networks to process
 networks=(
@@ -13,8 +12,8 @@ networks=(
 )
 
 # SANA command base
-sana_command="./sana2.0 -f_beta 1,1 -fg1"
-log_file="f-beta_sana_log.txt"
+sana_command="${SANA_EXE:-./sana2.2} -f_beta 1,1 -fg1"
+log_file="$REG_DIR/f_beta_s3_test.txt"
 
 parse_sana_out() {
     local file=$1
@@ -82,19 +81,20 @@ results_list=()  # Initialize results_list
 for ((i = 0; i < ${#networks[@]} - 1; i++)); do
     network1=${networks[$i]}
     network2=${networks[$i+1]}
+    out_file="$REG_DIR/fbeta-f1-${network1##*/}-${network2##*/}"
 
     echo "Processing: $network1 and $network2" | tee -a "$log_file"
-    command="$sana_command $network1 -fg2 $network2 > /dev/null"
+    command="$sana_command $network1 -fg2 $network2 -tolerance 0 -seed 1 -it 1 -o $out_file > /dev/null"
     eval "$command"
     
     PARA_STATUS=$?
-    if [[ $PARA_STATUS -ne 0 || ! -f "sana.out" ]]; then
+    if [[ $PARA_STATUS -ne 0 || ! -f "$out_file.out" ]]; then
         echo "Error: Failed for $network1 and $network2" | tee -a "$log_file" >&2
         exit 1  # Exit with failure code
     fi
 
-    # Parse `sana.out`
-    metrics=$(parse_sana_out "sana.out")
+    # Parse outfile
+    metrics=$(parse_sana_out "$out_file.out")
     s3=$(echo "$metrics" | awk '{print $1}')
     f_beta=$(echo "$metrics" | awk '{print $2}')
 
@@ -108,10 +108,10 @@ for ((i = 0; i < ${#networks[@]} - 1; i++)); do
         echo "f_beta: $f_beta" | tee -a "$log_file"
         echo "" | tee -a "$log_file"
     else
-        die "f_beta s3 test failed" # Exit with failure code if results are invalid
+        die "F-beta/S3 output check failed for $network1 and $network2"
     fi
 
-    rm -f "sana.out"
+    rm -f "$out_file.out"
 done
 
 # Check monotonicity after processing
