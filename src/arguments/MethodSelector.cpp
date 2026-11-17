@@ -44,11 +44,11 @@ Method* MethodSelector::initMethod(const Graph& G1, const Graph& G2, ArgumentPar
                          or args.strings["-fcolor2"] != ""))
         cerr <<"Warning: only sana takes colors into consideration" << endl;
 
-    if (args.strings["-allowedPartners"] != "") {
+    if (args.strings["-preferredPartners"] != "") {
 	if (name != "sana")
-	    cerr <<"Warning: only sana takes allowedPartners into consideration" << endl;
+	    cerr <<"Warning: only sana takes preferredPartners into consideration" << endl;
 	if (args.strings["-fcolor1"] != "" or args.strings["-fcolor2"] != "")
-	    throw runtime_error("allowedPartners is not compatible with node colors");
+	    throw runtime_error("preferredPartners is not compatible with node colors");
     }
 
     if (name == "sana")        return static_cast<Method*>(initSANA(G1, G2, args, M, startAligName));
@@ -113,14 +113,14 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
     string TIniArg = args.strings["-tinitial"];
     string TDecayArg = args.strings["-tdecay"];
     string goldilocksMethodName = args.strings["-goldilocksmethod"];
-    string allowedPartnersName = args.strings["-allowedPartners"];
+    string preferredPartnersName = args.strings["-preferredPartners"];
 
     //this is a special argument value that does a comparison between all temperature goldilocks methods
     //made for the purpose of running the experiments for the paper on the tempertaure goldilocks
     if (goldilocksMethodName == "comparison") {
         Alignment startAlig;
         if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
-	if (allowedPartnersName != "") startAlig.loadAllowedPartners(G1, G2, allowedPartnersName);
+	if (preferredPartnersName != "") startAlig.loadAllowedPartners(G1, G2, preferredPartnersName);
         SANA sana(&G1, &G2, 0.0, 0.0, 0, 0, 0.0, 0, &M, 
                   args.strings["-combinedScoreAs"], startAlig, "", "");
         goldilocksMethodComparison(&sana);
