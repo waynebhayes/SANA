@@ -123,7 +123,7 @@ vector<double> Importance::getImportances(const Graph& G) {
             removeFromAdjList(adjLists[v], u);
         }
 
-        nodeWeights[u] = 0;
+        // nodeWeights[u] = 0;
         /* The paper says: "When one node is removed, its adjacent
         edges are also removed and the weight of the removed node and
         edges are allocated to their neighboring nodes and edges. In this
@@ -137,9 +137,9 @@ vector<double> Importance::getImportances(const Graph& G) {
         Note: in a test, the scores were similar in both cases */
 
         /* same story with edge weights... */
-        for (uint i = 0; i < n; i++) {
-            edgeWeights[u][i] = edgeWeights[i][u] = 0;
-        }
+        // for (uint i = 0; i < n; i++) {
+            // edgeWeights[u][i] = edgeWeights[i][u] = 0;
+        // }
     }
 
     //compute importances
