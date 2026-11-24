@@ -83,6 +83,9 @@ ArgumentParser::ArgumentParser(int argc, char* argv[]) {
     bool passedFirstF_beta = false;
     for (uint i = 0; i < vArg.size(); i++) {
         string arg = vArg[i];
+        if (arg == "-pp"){
+            arg = "-preferredPartners";
+        }
         if(strings.count(arg)) {
             strings[arg]=vArg[i+1];
             i++;
