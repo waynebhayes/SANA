@@ -120,7 +120,7 @@ SANA* MethodSelector::initSANA(const Graph& G1, const Graph& G2,
     if (goldilocksMethodName == "comparison") {
         Alignment startAlig;
         if (startAligName != "") startAlig = Alignment::loadEdgeList(G1, G2, startAligName);
-	if (preferredPartnersName != "") startAlig.loadAllowedPartners(G1, G2, preferredPartnersName);
+	if (preferredPartnersName != "") startAlig.loadPreferredPartners(G1, G2, preferredPartnersName);
         SANA sana(&G1, &G2, 0.0, 0.0, 0, 0, 0.0, 0, &M, 
                   args.strings["-combinedScoreAs"], startAlig, "", "");
         goldilocksMethodComparison(&sana);

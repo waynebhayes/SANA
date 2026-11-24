@@ -4,8 +4,8 @@
 #include "utils/FileIO.hpp"
 using namespace std;
 
-// WARNING: the allowed list is GLOBAL to the Alignment class
-unordered_map<uint, unordered_set<uint>> Alignment::allowedPeg2Hole, Alignment::allowedHole2Peg;
+// WARNING: the preferred list is GLOBAL to the Alignment class
+unordered_map<uint, unordered_set<uint>> Alignment::preferredPeg2Hole, Alignment::preferredHole2Peg;
 
 Alignment::Alignment() {}
 Alignment::Alignment(const vector<uint>& mapping): A(mapping) {}
@@ -149,34 +149,34 @@ static std::vector<std::string> lineToWords(const std::string& line) {
     return words;
 }
 
-void Alignment::loadAllowedPartners(const Graph& G1, const Graph& G2, const string& fileName) {
+void Alignment::loadPreferredPartners(const Graph& G1, const Graph& G2, const string& fileName) {
     if (not FileIO::fileExists(fileName)) {
 	throw runtime_error("Starting alignment file "+fileName+" not found");
     }
-    cout << "loading allowed partners from file " << fileName << '\n';
+    cout << "loading preferred partners from file " << fileName << '\n';
     ifstream ifs(fileName);
     string line;
     while(FileIO::safeGetLine(ifs, line)) {
 	std::vector<std::string> words = lineToWords(line);
 	assert(words.size() >= 2);
 	if(!G1.hasNodeName(words[0])) {
-	    cerr << "WARNING: can't load allowedPartners for non-existant G1 node " << words[0] << '\n';
+	    cerr << "WARNING: can't load preferredPartners for non-existant G1 node " << words[0] << '\n';
 	    continue;
 	}
 	uint peg = G1.getNameIndex(words[0]);
 	unordered_set<uint> partners;
 	for (size_t i = 1; i < words.size(); ++i) {
 	    if(!G2.hasNodeName(words[i])) {
-		cerr << "WARNING: can't load non-existant allowedPartner G2 node " << words[i] << '\n';
+		cerr << "WARNING: can't load non-existant preferredPartner G2 node " << words[i] << '\n';
 		continue;
 	    }
 	    uint hole = G2.getNameIndex(words[i]);
 	    partners.insert(hole);
-	    allowedHole2Peg[hole].insert(peg);
+	    preferredHole2Peg[hole].insert(peg);
 	}
-	allowedPeg2Hole[peg] = partners;
+	preferredPeg2Hole[peg] = partners;
     }
-    cout << "loaded " << allowedPeg2Hole.size() << " allowed pegs and " << allowedHole2Peg.size() << " holes.\n";
+    cout << "loaded " << preferredPeg2Hole.size() << " preferred pegs and " << preferredHole2Peg.size() << " holes.\n";
 }
 
 Alignment Alignment::random(uint n1, uint n2) {
