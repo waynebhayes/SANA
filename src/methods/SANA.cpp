@@ -429,8 +429,8 @@ Alignment SANA::runUsingIterations() {
 
 #ifdef SANA_THREADS
     if (numThreads > 1) {
-        if (alignment.allowedPartnersEnabled()) {
-            throw runtime_error("THREADS>1 is not currently supported when allowedPartnersEnabled()");
+        if (alignment.preferredPartnersEnabled()) {
+            throw runtime_error("THREADS>1 is not currently supported when preferredPartnersEnabled()");
         }
         return runUsingIterationsThreads();
     }
@@ -500,7 +500,7 @@ void SANA::SANAIterationThreads(double temperature, mt19937& rng, uniform_real_d
 }
 
 double SANA::performChangeThreads(uint actColId, mt19937& rng, uniform_real_distribution<>& rnd, double temperature) {
-    if (alignment.allowedPartnersEnabled()) {
+    if (alignment.preferredPartnersEnabled()) {
         assert(numThreads == 1);
         assert(G1->numColors() == 1 && G2->numColors() == 1);
     }
@@ -852,8 +852,8 @@ Alignment SANA::runUsingConfidenceIntervals() {
 
 #ifdef SANA_THREADS
     if (numThreads > 1) {
-        if (alignment.allowedPartnersEnabled()) {
-            throw runtime_error("THREADS>1 is not supported when allowedPartnersEnabled()");
+        if (alignment.preferredPartnersEnabled()) {
+            throw runtime_error("THREADS>1 is not supported when preferredPartnersEnabled()");
         }
         return runUsingConfidenceIntervalsThreads();
     }
@@ -1277,13 +1277,13 @@ uint SANA::randomG1NodeWithActiveColor(uint actColId, bool dynamic) const {
 }
 
 #if 0
-    ********************** pseudo-code for the allowedPartners case ***********************
+    ********************** pseudo-code for the preferredPartners case ***********************
     Note: The deterministic if-cascade below may instead need to use randomness to choose among the possibilities.
        One way to do this could be to do a "normal" (Marcus) move, perhaps with probability (1-tau) \in [0,1], so that
-       we initially do mostly "Marcus" moves, transitioning to "allowed Partner" moves as the anneal progresses.
+       we initially do mostly "Marcus" moves, transitioning to "preferred Partner" moves as the anneal progresses.
 Basic idea:
     pick any hole at random (possibly restricted to those that are either EMPTY or UNHAPPY)
-    if hole has no allowed partner pegs
+    if hole has no preferred partner pegs
 	pick ANY (unhappy?) peg and pull it here
     else
 	if hole has any unhappy partner pegs
@@ -1299,7 +1299,7 @@ void SANA::performChange(uint actColId) {
     uint peg, oldHole, numUnassigWithCol, unassignedVecIndex, newHole;
     numUnassigWithCol = actColToUnassignedG2Nodes[actColId].size();
     assert(numUnassigWithCol > 0);
-    if(alignment.allowedPartnersEnabled()) {
+    if(alignment.preferredPartnersEnabled()) {
 	// assert(threads == 1); // Luca don't worry about this case for now
 	assert(G1->numColors()==1 && G2->numColors()==1);
         do {
@@ -1308,21 +1308,21 @@ void SANA::performChange(uint actColId) {
 	    // FIXME: it would be better to keep & update the set of unhappy holes, so picking one is O(1).
         } while(isHappyHole(newHole));
 	assert(A_[newHole]==G1->getNumNodes()); // ensure it's unassigned
-	if(alignment.allowedPegs(newHole).size() == 0) // if no partners exist, pick a random UNHAPPY peg
+	if(alignment.preferredPegs(newHole).size() == 0) // if no partners exist, pick a random UNHAPPY peg
             do peg = randomG1NodeWithActiveColor(actColId, true);
             while(isHappyPeg(peg)); // again, keep + update unhappy list so picking one is O(1)
         else {
             unordered_set<uint> myUnhappyPegs;
-            for(const auto p : alignment.allowedPegs(newHole))
+            for(const auto p : alignment.preferredPegs(newHole))
                 if(!alignment.isHappy(p, newHole))
                     myUnhappyPegs.insert(p);
             if(myUnhappyPegs.size()) { // there exist unhappy pegs; choose one and pull it here
                 uint randIndex = myUnhappyPegs.size() * randomReal(gen);
                 auto it = myUnhappyPegs.begin(); std::advance(it, randIndex);
                 peg = *it;
-            } else { // all of hole2's allowed pegs are already happy, but pick one and pull it here anyay
-                uint randIndex = alignment.allowedPegs(newHole).size() * randomReal(gen);
-                auto it = alignment.allowedPegs(newHole).begin(); std::advance(it, randIndex);
+            } else { // all of hole2's preferred pegs are already happy, but pick one and pull it here anyay
+                uint randIndex = alignment.preferredPegs(newHole).size() * randomReal(gen);
+                auto it = alignment.preferredPegs(newHole).begin(); std::advance(it, randIndex);
                 peg = *it;
             }
         }
@@ -1440,7 +1440,7 @@ void SANA::performChange(uint actColId) {
 
 void SANA::performSwap(uint actColId) {
     uint peg1, peg2, hole1, hole2;
-    if(alignment.allowedPartnersEnabled()) {
+    if(alignment.preferredPartnersEnabled()) {
 	// Luca: for now assert numThreads == 1 and don't worry about this case
 	assert(G1->numColors()==1 && G2->numColors()==1);
         do {
@@ -1448,23 +1448,23 @@ void SANA::performSwap(uint actColId) {
         } while(isHappyHole(hole2)); // isHappyHole is false if the hole is empty
 	peg2 = A_[hole2];
 	assert(peg2 < G1->getNumNodes());
-	uint h2s = alignment.allowedPegs(hole2).size();
+	uint h2s = alignment.preferredPegs(hole2).size();
 	if(h2s == 0) // if no partners exist, pick a random UNHAPPY peg
 	    do peg1 = randomG1NodeWithActiveColor(actColId, true);
 	    while(isHappyPeg(peg1));
         else {
             unordered_set<uint> myUnhappyPegs;
-            for(const auto peg : alignment.allowedPegs(hole2))
+            for(const auto peg : alignment.preferredPegs(hole2))
                 if(peg!=peg2 && !alignment.isHappy(peg, hole2))
                     myUnhappyPegs.insert(peg);
             if(myUnhappyPegs.size()) { // there exist unhappy pegs; choose one and pull it here
                 uint randIndex = myUnhappyPegs.size() * randomReal(gen);
                 auto it = myUnhappyPegs.begin(); std::advance(it, randIndex);
                 peg1 = *it;
-            } else { // all of hole2's allowed pegs are already happy, but pick one and pull it here anyay
+            } else { // all of hole2's preferred pegs are already happy, but pick one and pull it here anyay
 		do {
 		    uint randIndex = h2s * randomReal(gen);
-		    auto it = alignment.allowedPegs(hole2).begin(); std::advance(it, randIndex);
+		    auto it = alignment.preferredPegs(hole2).begin(); std::advance(it, randIndex);
 		    peg1 = *it;
 		} while(peg1==peg2); // this should be rare, so expected number of while iterations is 1+epsilon
             }
